@@ -11,6 +11,7 @@ import {
   Calendar,
   Building2,
   Info,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
@@ -52,6 +53,13 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import {
@@ -296,107 +304,217 @@ export default function PlansManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
-              <Table className="min-w-[800px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="hidden md:table-cell">Billing</TableHead>
-                  <TableHead className="hidden lg:table-cell text-right">License (AFN)</TableHead>
-                  <TableHead className="hidden lg:table-cell text-right">Maintenance (AFN)</TableHead>
-                  <TableHead className="hidden md:table-cell text-center">Max Schools</TableHead>
-                  <TableHead className="hidden lg:table-cell text-center">Features</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-            <TableBody>
-              {plans?.map((plan) => (
-                <TableRow 
-                  key={plan.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={(e) => {
-                    // Don't open view dialog if clicking on the edit button
-                    if ((e.target as HTMLElement).closest('button')) {
-                      return;
-                    }
-                    setViewingPlan(plan);
-                    setIsViewDialogOpen(true);
-                  }}
-                >
-                  <TableCell className="font-medium">
-                    <div>
-                      {plan.name}
-                      {plan.isDefault && (
-                        <Badge variant="secondary" className="ml-2">
-                          Default
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{plan.slug}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {plan.billingPeriodLabel || 'Yearly'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {plan.hasLicenseFee ? (
-                      <div>
-                        <div>{plan.licenseFeeAfn?.toLocaleString() || 0}</div>
-                        <div className="text-xs text-muted-foreground">(one-time)</div>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {plan.hasMaintenanceFee ? (
-                      <div>
-                        <div>{plan.maintenanceFeeAfn?.toLocaleString() || plan.priceYearlyAfn?.toLocaleString()}</div>
-                        <div className="text-xs text-muted-foreground">/{plan.billingPeriod || 'year'}</div>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {plan.maxSchools === -1 ? 'Unlimited' : plan.maxSchools}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline">
-                      {plan.features?.length || 0}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {plan.deletedAt ? (
-                      <Badge variant="destructive">
-                        <XCircle className="mr-1 h-3 w-3" />
-                        Inactive
-                      </Badge>
-                    ) : (
-                      <Badge variant="default" className="bg-green-500">
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                        Active
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleOpenEdit(plan)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {!plans || plans.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground px-4 sm:px-0">
+              <p>No plans found</p>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Billing</TableHead>
+                      <TableHead className="hidden lg:table-cell text-right">License (AFN)</TableHead>
+                      <TableHead className="hidden lg:table-cell text-right">Maintenance (AFN)</TableHead>
+                      <TableHead className="text-center">Max Schools</TableHead>
+                      <TableHead className="hidden lg:table-cell text-center">Features</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {plans.map((plan) => (
+                      <TableRow 
+                        key={plan.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={(e) => {
+                          // Don't open view dialog if clicking on the edit button
+                          if ((e.target as HTMLElement).closest('button')) {
+                            return;
+                          }
+                          setViewingPlan(plan);
+                          setIsViewDialogOpen(true);
+                        }}
+                      >
+                        <TableCell className="font-medium max-w-[200px]">
+                          <div>
+                            <div className="line-clamp-2 break-words">{plan.name}</div>
+                            {plan.isDefault && (
+                              <Badge variant="secondary" className="ml-2 mt-1">
+                                Default
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">{plan.slug}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {plan.billingPeriodLabel || 'Yearly'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-right">
+                          {plan.hasLicenseFee ? (
+                            <div>
+                              <div>{plan.licenseFeeAfn?.toLocaleString() || 0}</div>
+                              <div className="text-xs text-muted-foreground">(one-time)</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-right">
+                          {plan.hasMaintenanceFee ? (
+                            <div>
+                              <div>{plan.maintenanceFeeAfn?.toLocaleString() || plan.priceYearlyAfn?.toLocaleString()}</div>
+                              <div className="text-xs text-muted-foreground">/{plan.billingPeriod || 'year'}</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {plan.maxSchools === -1 ? 'Unlimited' : plan.maxSchools}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-center">
+                          <Badge variant="outline">
+                            {plan.features?.length || 0}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {plan.deletedAt ? (
+                            <Badge variant="destructive">
+                              <XCircle className="mr-1 h-3 w-3" />
+                              Inactive
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" className="bg-green-500">
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Active
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEdit(plan)}
+                            className="flex-shrink-0"
+                            aria-label="Edit plan"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3 px-4 sm:px-0">
+                {plans.map((plan) => (
+                  <Card 
+                    key={plan.id} 
+                    className="p-4 cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setViewingPlan(plan);
+                      setIsViewDialogOpen(true);
+                    }}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-base line-clamp-2 break-words">{plan.name}</h3>
+                            {plan.isDefault && (
+                              <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                Default
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">{plan.slug}</div>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <Badge variant="outline" className="text-xs">
+                              {plan.billingPeriodLabel || 'Yearly'}
+                            </Badge>
+                            {plan.deletedAt ? (
+                              <Badge variant="destructive" className="text-xs">
+                                <XCircle className="mr-1 h-3 w-3" />
+                                Inactive
+                              </Badge>
+                            ) : (
+                              <Badge variant="default" className="bg-green-500 text-xs">
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Active
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Actions">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Actions</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => {
+                                setViewingPlan(plan);
+                                setIsViewDialogOpen(true);
+                              }}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleOpenEdit(plan)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Plan
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1.5 text-sm pt-1.5 border-t">
+                        {plan.hasLicenseFee && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">License Fee (AFN):</span>
+                            <span className="text-xs font-medium">
+                              {plan.licenseFeeAfn?.toLocaleString() || 0} <span className="text-muted-foreground">(one-time)</span>
+                            </span>
+                          </div>
+                        )}
+                        {plan.hasMaintenanceFee && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Maintenance Fee (AFN):</span>
+                            <span className="text-xs font-medium">
+                              {plan.maintenanceFeeAfn?.toLocaleString() || plan.priceYearlyAfn?.toLocaleString()} /{plan.billingPeriod || 'year'}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Max Schools:</span>
+                          <span className="text-xs font-medium">
+                            {plan.maxSchools === -1 ? 'Unlimited' : plan.maxSchools}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Features:</span>
+                          <Badge variant="outline" className="text-xs">
+                            {plan.features?.length || 0}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

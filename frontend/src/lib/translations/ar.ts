@@ -1258,7 +1258,13 @@ export const ar: TranslationKeys = {
       "totalSessions": "إجمالي الجلسات",
       "attendanceRate": "معدل الحضور",
       "note": "ملاحظة",
-      "noStudentsFound": "لم يتم العثور على طلاب"
+      "noStudentsFound": "لم يتم العثور على طلاب",
+      "searchStudents": "البحث عن الطلاب...",
+      "searchScans": "البحث في عمليات المسح الأخيرة...",
+      "attendanceSaved": "تم حفظ الحضور بنجاح",
+      "students": "الطلاب",
+      "noRecords": "لا توجد سجلات",
+      "noRecordsYet": "لا توجد سجلات بعد"
     },
     "assignToCourseDialog": {
       "title": "تعيين طالب إلى دورة جديدة",

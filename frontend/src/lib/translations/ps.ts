@@ -1202,7 +1202,13 @@ export const ps: TranslationKeys = {
       totalSessions: 'ټولې جلسې',
       attendanceRate: 'د حاضري کچه',
       note: 'یادښت',
-      noStudentsFound: 'هیڅ زده کوونکی ونه موندل شول'
+      noStudentsFound: 'هیڅ زده کوونکی ونه موندل شول',
+      searchStudents: 'زده کوونکي لټون...',
+      searchScans: 'د وروستي سکینونو لټون...',
+      attendanceSaved: 'حاضري بریالۍ سره خوندي شوه',
+      students: 'زده کوونکي',
+      noRecords: 'هیڅ ریکارډ نشته',
+      noRecordsYet: 'تر اوسه هیڅ ریکارډ نشته'
     },
     enrollFromMainDialog: {
       title: 'د اصلي ډیټابیس څخه زده کوونکي نوم لیکنه',

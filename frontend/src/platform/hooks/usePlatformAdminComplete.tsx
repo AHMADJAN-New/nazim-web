@@ -417,6 +417,7 @@ export const usePlatformCreateOrganization = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-organizations'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-organization-admins'] });
       showToast.success(t('toast.organizationCreated') || 'Organization created successfully');
     },
     onError: (error: any) => {
@@ -475,6 +476,7 @@ export const usePlatformUpdateOrganization = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-organizations'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-organization-admins'] });
       showToast.success(t('toast.organizationUpdated') || 'Organization updated successfully');
     },
     onError: (error: Error) => {
@@ -497,6 +499,8 @@ export const usePlatformDeleteOrganization = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['platform-organizations'] });
       await queryClient.refetchQueries({ queryKey: ['platform-organizations'] });
+      await queryClient.invalidateQueries({ queryKey: ['platform-organization-admins'] });
+      await queryClient.refetchQueries({ queryKey: ['platform-organization-admins'] });
       showToast.success(t('toast.organizationDeleted') || 'Organization deleted successfully');
     },
     onError: (error: Error) => {

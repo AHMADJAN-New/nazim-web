@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon, GraduationCap, BookOpen, UserCheck, Mail, Phone, Globe, MapPin, FileText, User, CheckCircle, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon, GraduationCap, BookOpen, UserCheck, Mail, Phone, Globe, MapPin, FileText, User, CheckCircle, Package, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useLocation } from 'react-router-dom';
@@ -69,6 +69,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { LoadingSpinner } from '@/components/ui/loading';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/hooks/useLanguage';
 
 export function OrganizationsManagement() {
@@ -384,15 +391,16 @@ export function OrganizationsManagement() {
               {searchQuery ? t('auth.noOrganizationsFound') : t('organizations.noOrganizationsMessage')}
             </div>
           ) : (
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
-                <Table className="min-w-[800px]">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="whitespace-nowrap">{t('events.name')}</TableHead>
-                      <TableHead className="hidden md:table-cell whitespace-nowrap">{t('organizations.slug')}</TableHead>
+                      <TableHead className="whitespace-nowrap">{t('organizations.slug')}</TableHead>
                       <TableHead className="hidden lg:table-cell whitespace-nowrap">{t('organizations.settings')}</TableHead>
-                      <TableHead className="hidden md:table-cell whitespace-nowrap">{t('events.createdAt')}</TableHead>
+                      <TableHead className="whitespace-nowrap">{t('events.createdAt')}</TableHead>
                       <TableHead className="hidden lg:table-cell whitespace-nowrap">{t('events.updatedAt')}</TableHead>
                       <TableHead className="text-right whitespace-nowrap">{t('events.actions')}</TableHead>
                     </TableRow>
@@ -402,15 +410,10 @@ export function OrganizationsManagement() {
                       const hasSettings = org.settings && Object.keys(org.settings).length > 0;
                       return (
                         <TableRow key={org.id}>
-                          <TableCell className="font-medium">
-                            <div>
-                              {org.name}
-                              <div className="md:hidden mt-1">
-                                <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{org.slug}</code>
-                              </div>
-                            </div>
+                          <TableCell className="font-medium max-w-[200px]">
+                            <div className="line-clamp-2 break-words">{org.name}</div>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">
+                          <TableCell>
                             <code className="text-sm bg-muted px-2 py-1 rounded">{org.slug}</code>
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
@@ -423,7 +426,7 @@ export function OrganizationsManagement() {
                               <span className="text-muted-foreground text-sm">No settings</span>
                             )}
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">
+                          <TableCell>
                             <div className="flex items-center gap-1 text-sm">
                               <Calendar className="h-3 w-3 text-muted-foreground" />
                               {formatDate(org.createdAt)}
@@ -436,7 +439,8 @@ export function OrganizationsManagement() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end gap-1.5 sm:gap-2">
+                            {/* Desktop: Show buttons */}
+                            <div className="hidden md:flex justify-end gap-1.5 sm:gap-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -489,6 +493,56 @@ export function OrganizationsManagement() {
                                 </Button>
                               )}
                             </div>
+                            
+                            {/* Mobile: Show dropdown */}
+                            <div className="md:hidden flex justify-end">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('events.actions')}>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">{t('events.actions')}</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => {
+                                    setSelectedOrganization(org.id);
+                                    setIsDetailsDialogOpen(true);
+                                  }}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    {t('events.viewDetails')}
+                                  </DropdownMenuItem>
+                                  {isPlatformAdminRoute && hasSubscriptionAdminPermission && (
+                                    <DropdownMenuItem asChild>
+                                      <Link to={`/platform/organizations/${org.id}/subscription`} className="flex items-center">
+                                        <Package className="mr-2 h-4 w-4" />
+                                        View Subscription
+                                      </Link>
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canUpdateOrganization && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem onClick={() => handleOpenDialog(org.id)}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        {t('events.edit')}
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                  {canDeleteOrganization && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem 
+                                        onClick={() => handleDeleteClick(org.id)}
+                                        className="text-destructive focus:text-destructive"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        {t('events.delete')}
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -496,7 +550,95 @@ export function OrganizationsManagement() {
                   </TableBody>
                 </Table>
               </div>
-            </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {filteredOrganizations.map((org) => {
+                  const hasSettings = org.settings && Object.keys(org.settings).length > 0;
+                  return (
+                    <Card key={org.id} className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-base line-clamp-2 break-words">{org.name}</h3>
+                            <div className="mt-1">
+                              <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{org.slug}</code>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('events.actions')}>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">{t('events.actions')}</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedOrganization(org.id);
+                                  setIsDetailsDialogOpen(true);
+                                }}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  {t('events.viewDetails')}
+                                </DropdownMenuItem>
+                                {isPlatformAdminRoute && hasSubscriptionAdminPermission && (
+                                  <DropdownMenuItem asChild>
+                                    <Link to={`/platform/organizations/${org.id}/subscription`} className="flex items-center">
+                                      <Package className="mr-2 h-4 w-4" />
+                                      View Subscription
+                                    </Link>
+                                  </DropdownMenuItem>
+                                )}
+                                {canUpdateOrganization && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => handleOpenDialog(org.id)}>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      {t('events.edit')}
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {canDeleteOrganization && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteClick(org.id)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      {t('events.delete')}
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2 text-sm">
+                          {hasSettings && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                                <SettingsIcon className="h-3 w-3" />
+                                {Object.keys(org.settings).length} setting{Object.keys(org.settings).length !== 1 ? 's' : ''}
+                              </Badge>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="text-xs">Created: {formatDate(org.createdAt)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="text-xs">Updated: {formatDate(org.updatedAt)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -298,34 +298,34 @@ export default function OrganizationSubscriptionDetail() {
 
       {/* Subscription Status Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
+        <CardHeader className="p-3 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Package className="h-4 w-4 sm:h-5 sm:w-5" />
             Subscription Status
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="hidden sm:block text-xs sm:text-sm">
             Current subscription information and status
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6 pt-0">
           {subscription ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-muted-foreground">Status</div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs sm:text-sm text-muted-foreground">Status</div>
                   <div className="mt-1">
                     <StatusBadge status={subscription.status} />
                   </div>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Plan</div>
-                  <div className="mt-1 font-medium">
+                <div className="flex-1 min-w-0 sm:text-right">
+                  <div className="text-xs sm:text-sm text-muted-foreground">Plan</div>
+                  <div className="mt-1 font-medium text-sm sm:text-base line-clamp-2 break-words">
                     {subscription.plan?.name || 'No Plan'}
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
                 <div>
                   <div className="text-sm text-muted-foreground">
                     Started At
@@ -384,25 +384,25 @@ export default function OrganizationSubscriptionDetail() {
               </div>
 
               {subscription.notes && (
-                <div className="rounded-lg border p-4">
-                  <div className="text-sm text-muted-foreground">Notes</div>
-                  <div className="mt-1 text-sm">{subscription.notes}</div>
+                <div className="rounded-lg border p-3 sm:p-4">
+                  <div className="text-xs sm:text-sm text-muted-foreground">Notes</div>
+                  <div className="mt-1 text-xs sm:text-sm line-clamp-4 break-words">{subscription.notes}</div>
                 </div>
               )}
 
               {subscription.suspension_reason && (
-                <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
+                <div className="rounded-lg border border-destructive bg-destructive/10 p-3 sm:p-4">
                   <div className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <div className="font-medium">Suspension Reason</div>
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                    <div className="font-medium text-sm sm:text-base">Suspension Reason</div>
                   </div>
-                  <div className="mt-2 text-sm">
+                  <div className="mt-2 text-xs sm:text-sm line-clamp-4 break-words">
                     {subscription.suspension_reason}
                   </div>
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 {subscription.status !== 'active' && (
                   <Button
                     onClick={() => {
@@ -416,16 +416,19 @@ export default function OrganizationSubscriptionDetail() {
                       setIsActivateDialogOpen(true);
                     }}
                     disabled={activateSubscription.isPending}
+                    className="w-full sm:w-auto"
                   >
                     {activateSubscription.isPending ? (
                       <>
                         <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Activating...
+                        <span className="hidden sm:inline">Activating...</span>
+                        <span className="sm:hidden">Activating...</span>
                       </>
                     ) : (
                       <>
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Activate Subscription
+                        <span className="hidden sm:inline">Activate Subscription</span>
+                        <span className="sm:hidden">Activate</span>
                       </>
                     )}
                   </Button>
@@ -435,16 +438,19 @@ export default function OrganizationSubscriptionDetail() {
                     variant="destructive"
                     onClick={() => setIsSuspendDialogOpen(true)}
                     disabled={suspendSubscription.isPending}
+                    className="w-full sm:w-auto"
                   >
                     {suspendSubscription.isPending ? (
                       <>
                         <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Suspending...
+                        <span className="hidden sm:inline">Suspending...</span>
+                        <span className="sm:hidden">Suspending...</span>
                       </>
                     ) : (
                       <>
                         <XCircle className="mr-2 h-4 w-4" />
-                        Suspend Subscription
+                        <span className="hidden sm:inline">Suspend Subscription</span>
+                        <span className="sm:hidden">Suspend</span>
                       </>
                     )}
                   </Button>
@@ -888,66 +894,64 @@ export default function OrganizationSubscriptionDetail() {
 
       {/* Usage Card */}
       <Card>
-        <CardHeader>
-          <CardTitle>Usage Statistics</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-3 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Usage Statistics</CardTitle>
+          <CardDescription className="hidden sm:block text-xs sm:text-sm">
             Current usage across all tracked metrics
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           {Object.keys(usage || {}).length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {Object.entries(usage || {}).map(([key, info]: [string, any]) => (
                 <div
                   key={key}
-                  className="flex items-center justify-between rounded-lg border p-4"
+                  className="rounded-lg border p-3 sm:p-4 space-y-3"
                 >
-                  <div className="flex-1">
-                    <div className="font-medium">
+                  <div className="space-y-1.5">
+                    <div className="font-medium text-sm sm:text-base break-words">
                       {info.name || key.replace(/_/g, ' ')}
                     </div>
                     {info.description && (
-                      <div className="text-sm text-muted-foreground mt-1">
+                      <div className="text-xs sm:text-sm text-muted-foreground line-clamp-2 break-words">
                         {info.description}
                       </div>
                     )}
-                    <div className="text-sm text-muted-foreground mt-1">
+                    <div className="text-xs sm:text-sm text-muted-foreground">
                       {info.current} / {info.limit || '∞'} {info.unit && `(${info.unit})`}
                     </div>
                   </div>
-                  <div className="w-32 ml-4">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                      <div
-                        className={cn(
-                          'h-full transition-all',
-                          info.limit && info.current / info.limit > 0.9
-                            ? 'bg-destructive'
-                            : info.limit && info.current / info.limit > 0.75
-                            ? 'bg-yellow-500'
-                            : ''
-                        )}
-                        style={{
-                          width: `${
-                            info.limit
-                              ? Math.min(
-                                  (info.current / info.limit) * 100,
-                                  100
-                                )
-                              : 0
-                          }%`,
-                          backgroundColor: info.limit && info.current / info.limit > 0.9
-                            ? undefined // Use bg-destructive class
-                            : info.limit && info.current / info.limit > 0.75
-                            ? undefined // Use bg-yellow-500 class
-                            : '#f59e0b', // amber-500 - vibrant yellow/amber color
-                        }}
-                      />
-                    </div>
-                    {info.limit && (
-                      <div className="text-xs text-muted-foreground mt-1 text-right">
-                        {Math.round((info.current / info.limit) * 100)}%
+                  {/* Progress Bar Section - Below Usage Info */}
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 h-2.5 sm:h-3 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={cn(
+                            'h-full transition-all',
+                            info.limit && info.current / info.limit > 0.9
+                              ? 'bg-destructive'
+                              : info.limit && info.current / info.limit > 0.75
+                              ? 'bg-yellow-500'
+                              : 'bg-primary'
+                          )}
+                          style={{
+                            width: `${
+                              info.limit
+                                ? Math.min(
+                                    (info.current / info.limit) * 100,
+                                    100
+                                  )
+                                : 0
+                            }%`,
+                          }}
+                        />
                       </div>
-                    )}
+                      {info.limit && (
+                        <div className="text-xs sm:text-sm font-semibold text-muted-foreground whitespace-nowrap flex-shrink-0">
+                          {Math.round((info.current / info.limit) * 100)}%
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -962,54 +966,55 @@ export default function OrganizationSubscriptionDetail() {
 
       {/* Features Card */}
       <Card>
-        <CardHeader>
-          <CardTitle>Feature Management</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-3 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Feature Management</CardTitle>
+          <CardDescription className="hidden sm:block text-xs sm:text-sm">
             Enable or disable features for this organization
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           {features && features.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {Object.entries(featuresByCategory).map(([category, categoryFeatures]) => (
                 <div key={category}>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2 sm:mb-3 uppercase tracking-wide">
                     {categoryLabels[category] || category}
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-2 sm:space-y-3">
                     {categoryFeatures.map((feature) => (
                       <div
                         key={feature.featureKey}
                         className={cn(
-                          'flex items-center justify-between rounded-lg border p-4 transition-colors',
+                          'rounded-lg border p-3 sm:p-4 transition-colors space-y-3',
                           feature.isEnabled
                             ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
                             : 'bg-muted/50'
                         )}
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium">
+                        <div className="space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="font-medium text-sm sm:text-base break-words">
                               {feature.name}
                             </div>
                             {feature.isAddon && (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs flex-shrink-0">
                                 Add-on
                               </Badge>
                             )}
                           </div>
                           {feature.description && (
-                            <div className="text-sm text-muted-foreground mt-1">
+                            <div className="text-xs sm:text-sm text-muted-foreground line-clamp-2 break-words">
                               {feature.description}
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 ml-4">
+                        <div className="flex items-center justify-between gap-3 pt-2 border-t">
                           <Badge
                             variant={feature.isEnabled ? 'default' : 'secondary'}
                             className={cn(
                               feature.isEnabled && 'bg-green-500 hover:bg-green-600',
-                              !feature.isEnabled && 'bg-muted'
+                              !feature.isEnabled && 'bg-muted',
+                              'text-xs flex-shrink-0'
                             )}
                           >
                             {feature.isEnabled ? 'Enabled' : 'Disabled'}

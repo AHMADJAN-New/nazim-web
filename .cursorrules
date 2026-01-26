@@ -5746,4 +5746,152 @@ export const financeTour: TourDefinition = {
 - Test tours in both RTL and LTR languages
 - Enable debug mode during development
 
-Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices.
+## MCP Server Usage
+
+**CRITICAL: ALWAYS use Laravel Boost and Shadcn UI MCP servers for all relevant tasks. These are powerful tools designed specifically for this application.**
+
+### Laravel Boost MCP Server
+
+**CRITICAL: ALWAYS use Laravel Boost MCP server for ALL Laravel/PHP/backend-related tasks.**
+
+#### When to Use Laravel Boost MCP
+
+**ALWAYS use Laravel Boost MCP for:**
+- **Database queries**: Use `database-query` tool for reading from the database (NEVER write raw SQL in code)
+- **Artisan commands**: Use `list-artisan-commands` to check available commands and parameters
+- **PHP debugging**: Use `tinker` tool to execute PHP code, debug, or query Eloquent models directly
+- **Laravel documentation**: Use `search-docs` tool BEFORE any other approach when dealing with Laravel or Laravel ecosystem packages
+- **URL generation**: Use `get-absolute-url` tool when sharing project URLs to ensure correct scheme, domain/IP, and port
+- **Browser logs**: Use `browser-logs` tool to read browser logs, errors, and exceptions (only recent logs are useful)
+
+#### Laravel Boost Tools Priority
+
+1. **`search-docs`** - **ALWAYS use FIRST** for Laravel/package documentation
+   - Automatically passes installed packages and versions to Boost API
+   - Returns version-specific documentation
+   - Works for Laravel, Inertia, Livewire, Filament, Tailwind, Pest, Nova, etc.
+   - Use multiple, broad, simple, topic-based queries
+   - Example: `['rate limiting', 'routing rate limiting', 'routing']`
+   - **DO NOT** add package names to queries (package info is already shared)
+
+2. **`database-query`** - **ALWAYS use for database reads**
+   - Use for reading data from database
+   - Returns structured JSON results
+   - **NEVER** use for writes (use Eloquent models or migrations)
+
+3. **`tinker`** - **ALWAYS use for PHP debugging**
+   - Execute PHP code directly
+   - Query Eloquent models
+   - Debug code execution
+   - Test database queries
+
+4. **`list-artisan-commands`** - **ALWAYS use before calling Artisan commands**
+   - Check available commands
+   - Verify command parameters
+   - Understand command options
+
+5. **`get-absolute-url`** - **ALWAYS use when sharing URLs**
+   - Ensures correct scheme, domain/IP, and port
+   - Prevents broken links
+
+6. **`browser-logs`** - **Use for debugging frontend issues**
+   - Read recent browser logs
+   - Check for JavaScript errors
+   - Verify frontend behavior
+
+#### Laravel Boost Usage Rules
+
+- ✅ **ALWAYS** use `search-docs` before searching documentation elsewhere
+- ✅ **ALWAYS** use `database-query` for database reads (never write raw SQL in code)
+- ✅ **ALWAYS** use `tinker` for PHP debugging and Eloquent queries
+- ✅ **ALWAYS** use `list-artisan-commands` before calling Artisan commands
+- ✅ **ALWAYS** use `get-absolute-url` when sharing project URLs
+- ✅ **ALWAYS** use `browser-logs` for frontend debugging
+- ❌ **NEVER** write raw SQL queries in code (use `database-query` or Eloquent)
+- ❌ **NEVER** search Laravel docs manually (use `search-docs` first)
+- ❌ **NEVER** guess Artisan command parameters (use `list-artisan-commands`)
+
+### Shadcn UI MCP Server
+
+**CRITICAL: ALWAYS use Shadcn UI MCP server for ALL UI component-related tasks.**
+
+#### When to Use Shadcn UI MCP
+
+**ALWAYS use Shadcn UI MCP for:**
+- **Adding new components**: Use to add shadcn/ui components to the project
+- **Component installation**: Install components with proper configuration
+- **Component updates**: Update existing shadcn/ui components
+- **Component discovery**: Find available shadcn/ui components
+- **UI component queries**: Any questions about shadcn/ui components
+
+#### Shadcn UI MCP Usage Rules
+
+- ✅ **ALWAYS** use Shadcn UI MCP when adding new UI components
+- ✅ **ALWAYS** use Shadcn UI MCP for component installation
+- ✅ **ALWAYS** use Shadcn UI MCP for component updates
+- ✅ **ALWAYS** use Shadcn UI MCP for component-related questions
+- ❌ **NEVER** manually install shadcn/ui components (use MCP server)
+- ❌ **NEVER** copy-paste component code without using MCP server
+
+### MCP Server Configuration
+
+**MCP servers are configured in `.cursor/mcp.json`:**
+
+```json
+{
+  "mcpServers": {
+    "laravel-boost": {
+      "command": "php",
+      "args": ["-ddisplay_errors=0", "-ddisplay_startup_errors=0", "E:/Nazim Production/nazim-web-1/backend/artisan", "boost:mcp"],
+      "cwd": "E:/Nazim Production/nazim-web-1/backend"
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": ["--yes", "shadcn@latest", "mcp"]
+    }
+  }
+}
+```
+
+### MCP Server Checklist
+
+Before starting any task, verify:
+
+- [ ] **Laravel/PHP tasks**: Use Laravel Boost MCP server
+- [ ] **UI component tasks**: Use Shadcn UI MCP server
+- [ ] **Database queries**: Use `database-query` tool (Laravel Boost)
+- [ ] **Documentation**: Use `search-docs` tool (Laravel Boost) FIRST
+- [ ] **PHP debugging**: Use `tinker` tool (Laravel Boost)
+- [ ] **Artisan commands**: Check with `list-artisan-commands` (Laravel Boost)
+- [ ] **Component installation**: Use Shadcn UI MCP server
+
+### Common MCP Server Patterns
+
+#### Database Query Pattern
+```typescript
+// ✅ CORRECT: Use database-query tool
+// Query: SELECT COUNT(*) FROM students WHERE deleted_at IS NULL
+
+// ❌ WRONG: Don't write raw SQL in code
+const count = DB::raw("SELECT COUNT(*) FROM students WHERE deleted_at IS NULL");
+```
+
+#### Documentation Search Pattern
+```typescript
+// ✅ CORRECT: Use search-docs tool FIRST
+// Queries: ['rate limiting', 'routing rate limiting']
+
+// ❌ WRONG: Don't search documentation manually
+// Go to laravel.com/docs and search...
+```
+
+#### Component Installation Pattern
+```typescript
+// ✅ CORRECT: Use Shadcn UI MCP server
+// Command: Add button component
+
+// ❌ WRONG: Don't manually install components
+// npx shadcn@latest add button
+```
+
+Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices. **ALWAYS use Laravel Boost and Shadcn UI MCP servers for all relevant tasks.**

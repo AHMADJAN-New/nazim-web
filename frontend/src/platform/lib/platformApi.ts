@@ -243,6 +243,9 @@ export const platformApi = {
     resetPassword: async (id: string, password: string) => {
       return apiClient.post(`/platform/users/${id}/reset-password`, { password });
     },
+    resetPasswordAny: async (id: string, password: string) => {
+      return apiClient.post(`/platform/users/${id}/reset-password-any`, { password });
+    },
   },
 
   // User Permissions Management (Platform Admin)

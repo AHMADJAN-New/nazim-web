@@ -1233,7 +1233,13 @@ export const en = {
       totalSessions: 'Total Sessions',
       attendanceRate: 'Attendance Rate',
       note: 'Note',
-      noStudentsFound: 'No students found'
+      noStudentsFound: 'No students found',
+      searchStudents: 'Search students...',
+      searchScans: 'Search recent scans...',
+      attendanceSaved: 'Attendance saved successfully',
+      students: 'students',
+      noRecords: 'No records',
+      noRecordsYet: 'No records yet'
     },
     enrollFromMainDialog: {
       title: 'Enroll Students from Main Database',

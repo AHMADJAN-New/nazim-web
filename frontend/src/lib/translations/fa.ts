@@ -1230,7 +1230,13 @@ export const fa: TranslationKeys = {
       totalSessions: 'مجموع جلسات',
       attendanceRate: 'نرخ حضور و غیاب',
       note: 'یادداشت',
-      noStudentsFound: 'هیچ دانش‌آموزی یافت نشد'
+      noStudentsFound: 'هیچ دانش‌آموزی یافت نشد',
+      searchStudents: 'جستجوی دانش‌آموزان...',
+      searchScans: 'جستجوی اسکن‌های اخیر...',
+      attendanceSaved: 'حضور و غیاب با موفقیت ذخیره شد',
+      students: 'دانش‌آموزان',
+      noRecords: 'هیچ رکوردی وجود ندارد',
+      noRecordsYet: 'هنوز رکوردی ثبت نشده است'
     },
     enrollFromMainDialog: {
       title: 'ثبت‌نام دانش‌آموزان از پایگاه داده اصلی',

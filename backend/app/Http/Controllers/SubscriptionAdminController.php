@@ -1701,6 +1701,44 @@ class SubscriptionAdminController extends Controller
         }
     }
 
+    /**
+     * Reset password for any user (organization admin or regular user)
+     * Platform admins can reset passwords for any user in the system
+     */
+    public function resetUserPassword(Request $request, string $id)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $request->validate([
+            'password' => 'required|string|min:8',
+        ]);
+
+        try {
+            $user = User::find($id);
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            // Platform admins can reset passwords for any user
+            // No need to check if user is platform admin or organization admin
+            // Update password
+            $encryptedPassword = Hash::make($request->password);
+            DB::table('users')
+                ->where('id', $id)
+                ->update([
+                    'encrypted_password' => $encryptedPassword,
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json(['message' => 'Password reset successfully']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to reset user password: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to reset password: ' . $e->getMessage()], 500);
+        }
+    }
+
     // =====================================================
     // DISCOUNT CODES
     // =====================================================

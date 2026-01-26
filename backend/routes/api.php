@@ -1467,6 +1467,9 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::delete('/users/{id}', [SubscriptionAdminController::class, 'deletePlatformUser']);
     Route::post('/users/{id}/reset-password', [SubscriptionAdminController::class, 'resetPlatformUserPassword']);
     
+    // Reset password for any user (organization admins, regular users, etc.)
+    Route::post('/users/{id}/reset-password-any', [SubscriptionAdminController::class, 'resetUserPassword']);
+    
     // Testimonials management
     Route::get('/testimonials', [TestimonialController::class, 'adminIndex']);
     Route::post('/testimonials', [TestimonialController::class, 'store']);

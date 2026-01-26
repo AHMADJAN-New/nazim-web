@@ -216,23 +216,25 @@ export function OrganizationSubscriptionDialog({
   return (
     <>
       <Dialog open={open && !!organizationId} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
-            <DialogTitle className="text-2xl flex items-center gap-2">
-              <Package className="h-6 w-6" />
-              Subscription Management
+        <DialogContent className="max-w-5xl max-h-[90vh] sm:max-h-[95vh] flex flex-col p-0 gap-0 overflow-hidden w-[95vw] sm:w-full">
+          <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b">
+            <DialogTitle className="text-lg sm:text-xl md:text-2xl flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+                <span>Subscription Management</span>
+              </div>
               {organization && (
-                <span className="text-lg font-normal text-muted-foreground">
-                  - {organization.name}
+                <span className="text-sm sm:text-base md:text-lg font-normal text-muted-foreground line-clamp-2 break-words">
+                  {organization.name}
                 </span>
               )}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden sm:block">
               Manage subscription, usage, and features for this organization
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 md:py-6 space-y-4 sm:space-y-6">
             {isLoading || permissionsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <LoadingSpinner />
@@ -250,111 +252,111 @@ export function OrganizationSubscriptionDialog({
               <>
                 {/* Subscription Status Card */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Package className="h-5 w-5" />
+                  <CardHeader className="p-3 sm:p-6">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                       Subscription Status
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="hidden sm:block text-xs sm:text-sm">
                       Current subscription information and status
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-3 sm:p-6 pt-0">
                     {subscription ? (
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-sm text-muted-foreground">Status</div>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs sm:text-sm text-muted-foreground">Status</div>
                             <div className="mt-1">
                               <StatusBadge status={subscription.status} />
                             </div>
                           </div>
-                          <div>
-                            <div className="text-sm text-muted-foreground">Plan</div>
-                            <div className="mt-1 font-medium">
+                          <div className="flex-1 min-w-0 sm:text-right">
+                            <div className="text-xs sm:text-sm text-muted-foreground">Plan</div>
+                            <div className="mt-1 font-medium line-clamp-2 break-words">
                               {subscription.plan?.name || 'No Plan'}
                             </div>
                           </div>
                         </div>
 
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
                           <div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               Started At
                             </div>
-                            <div className="mt-1 font-medium">
+                            <div className="mt-1 text-sm sm:text-base font-medium">
                               {subscription.started_at
                                 ? formatDate(new Date(subscription.started_at))
                                 : 'N/A'}
                             </div>
                           </div>
                           <div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               Expires At
                             </div>
-                            <div className="mt-1 font-medium">
+                            <div className="mt-1 text-sm sm:text-base font-medium">
                               {subscription.expires_at
                                 ? formatDate(new Date(subscription.expires_at))
                                 : 'N/A'}
                             </div>
                           </div>
                           <div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               Trial Ends At
                             </div>
-                            <div className="mt-1 font-medium">
+                            <div className="mt-1 text-sm sm:text-base font-medium">
                               {subscription.trial_ends_at
                                 ? formatDate(new Date(subscription.trial_ends_at))
                                 : 'N/A'}
                             </div>
                           </div>
                           <div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               Auto Renew
                             </div>
-                            <div className="mt-1 font-medium">
+                            <div className="mt-1 text-sm sm:text-base font-medium">
                               {subscription.auto_renew ? 'Yes' : 'No'}
                             </div>
                           </div>
                           <div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               Amount Paid
                             </div>
-                            <div className="mt-1 font-medium">
+                            <div className="mt-1 text-sm sm:text-base font-medium">
                               {subscription.amount_paid.toLocaleString()}{' '}
                               {subscription.currency}
                             </div>
                           </div>
                           <div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               Additional Schools
                             </div>
-                            <div className="mt-1 font-medium">
+                            <div className="mt-1 text-sm sm:text-base font-medium">
                               {subscription.additional_schools}
                             </div>
                           </div>
                         </div>
 
                         {subscription.notes && (
-                          <div className="rounded-lg border p-4">
-                            <div className="text-sm text-muted-foreground">Notes</div>
-                            <div className="mt-1 text-sm">{subscription.notes}</div>
+                          <div className="rounded-lg border p-3 sm:p-4">
+                            <div className="text-xs sm:text-sm text-muted-foreground">Notes</div>
+                            <div className="mt-1 text-xs sm:text-sm line-clamp-4 break-words">{subscription.notes}</div>
                           </div>
                         )}
 
                         {subscription.suspension_reason && (
-                          <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
+                          <div className="rounded-lg border border-destructive bg-destructive/10 p-3 sm:p-4">
                             <div className="flex items-center gap-2 text-destructive">
-                              <AlertTriangle className="h-4 w-4" />
-                              <div className="font-medium">Suspension Reason</div>
+                              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                              <div className="font-medium text-sm sm:text-base">Suspension Reason</div>
                             </div>
-                            <div className="mt-2 text-sm">
+                            <div className="mt-2 text-xs sm:text-sm line-clamp-4 break-words">
                               {subscription.suspension_reason}
                             </div>
                           </div>
                         )}
 
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           {subscription.status !== 'active' && (
                             <Button
                               onClick={() => {
@@ -368,16 +370,19 @@ export function OrganizationSubscriptionDialog({
                                 setIsActivateDialogOpen(true);
                               }}
                               disabled={activateSubscription.isPending}
+                              className="w-full sm:w-auto"
                             >
                               {activateSubscription.isPending ? (
                                 <>
                                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                                  Activating...
+                                  <span className="hidden sm:inline">Activating...</span>
+                                  <span className="sm:hidden">Activating...</span>
                                 </>
                               ) : (
                                 <>
                                   <CheckCircle className="mr-2 h-4 w-4" />
-                                  Activate Subscription
+                                  <span className="hidden sm:inline">Activate Subscription</span>
+                                  <span className="sm:hidden">Activate</span>
                                 </>
                               )}
                             </Button>
@@ -387,16 +392,19 @@ export function OrganizationSubscriptionDialog({
                               variant="destructive"
                               onClick={() => setIsSuspendDialogOpen(true)}
                               disabled={suspendSubscription.isPending}
+                              className="w-full sm:w-auto"
                             >
                               {suspendSubscription.isPending ? (
                                 <>
                                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                                  Suspending...
+                                  <span className="hidden sm:inline">Suspending...</span>
+                                  <span className="sm:hidden">Suspending...</span>
                                 </>
                               ) : (
                                 <>
                                   <XCircle className="mr-2 h-4 w-4" />
-                                  Suspend Subscription
+                                  <span className="hidden sm:inline">Suspend Subscription</span>
+                                  <span className="sm:hidden">Suspend</span>
                                 </>
                               )}
                             </Button>
@@ -404,23 +412,26 @@ export function OrganizationSubscriptionDialog({
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <p className="text-muted-foreground mb-4">
+                      <div className="text-center py-6 sm:py-8">
+                        <p className="text-sm sm:text-base text-muted-foreground mb-4">
                           No active subscription found for this organization
                         </p>
                         <Button
                           onClick={() => setIsActivateDialogOpen(true)}
                           disabled={activateSubscription.isPending}
+                          className="w-full sm:w-auto"
                         >
                           {activateSubscription.isPending ? (
                             <>
                               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                              Activating...
+                              <span className="hidden sm:inline">Activating...</span>
+                              <span className="sm:hidden">Activating...</span>
                             </>
                           ) : (
                             <>
                               <CheckCircle className="mr-2 h-4 w-4" />
-                              Create Subscription
+                              <span className="hidden sm:inline">Create Subscription</span>
+                              <span className="sm:hidden">Create</span>
                             </>
                           )}
                         </Button>
@@ -431,67 +442,70 @@ export function OrganizationSubscriptionDialog({
 
                 {/* Usage Card */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Usage Statistics</CardTitle>
-                    <CardDescription>
+                  <CardHeader className="p-3 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg">Usage Statistics</CardTitle>
+                    <CardDescription className="hidden sm:block text-xs sm:text-sm">
                       Current usage across all tracked metrics
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-3 sm:p-6 pt-0">
                     {Object.keys(usage || {}).length > 0 ? (
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {Object.entries(usage || {}).map(([key, info]: [string, any]) => (
                           <div
                             key={key}
-                            className="flex items-center justify-between rounded-lg border p-4"
+                            className="rounded-lg border p-3 sm:p-4 space-y-3"
                           >
-                            <div className="flex-1">
-                              <div className="font-medium">
+                            <div className="space-y-1.5">
+                              <div className="font-medium text-sm sm:text-base break-words">
                                 {info.name || key.replace(/_/g, ' ')}
                               </div>
                               {info.description && (
-                                <div className="text-sm text-muted-foreground mt-1">
+                                <div className="text-xs sm:text-sm text-muted-foreground line-clamp-2 break-words">
                                   {info.description}
                                 </div>
                               )}
-                              <div className="text-sm text-muted-foreground mt-1">
+                              <div className="text-xs sm:text-sm text-muted-foreground">
                                 {info.current} / {info.limit || '∞'} {info.unit && `(${info.unit})`}
                               </div>
                             </div>
-                            <div className="w-32 ml-4">
-                              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                                <div
-                                  className={cn(
-                                    'h-full transition-all',
-                                    info.limit && info.current / info.limit > 0.9
-                                      ? 'bg-destructive'
-                                      : info.limit && info.current / info.limit > 0.75
-                                      ? 'bg-yellow-500'
-                                      : 'bg-primary'
-                                  )}
-                                  style={{
-                                    width: `${
-                                      info.limit
-                                        ? Math.min(
-                                            (info.current / info.limit) * 100,
-                                            100
-                                          )
-                                        : 0
-                                    }%`,
-                                  }}
-                                />
-                              </div>
-                              {info.limit && (
-                                <div className="text-xs text-muted-foreground mt-1 text-right">
-                                  {Math.round((info.current / info.limit) * 100)}%
+                            {/* Progress Bar Section - Below Usage Info */}
+                            <div className="pt-2 border-t">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex-1 h-2.5 sm:h-3 overflow-hidden rounded-full bg-muted">
+                                  <div
+                                    className={cn(
+                                      'h-full transition-all',
+                                      info.limit && info.current / info.limit > 0.9
+                                        ? 'bg-destructive'
+                                        : info.limit && info.current / info.limit > 0.75
+                                        ? 'bg-yellow-500'
+                                        : 'bg-primary'
+                                    )}
+                                    style={{
+                                      width: `${
+                                        info.limit
+                                          ? Math.min(
+                                              (info.current / info.limit) * 100,
+                                              100
+                                            )
+                                          : 0
+                                      }%`,
+                                    }}
+                                  />
                                 </div>
-                              )}
+                                {info.limit && (
+                                  <div className="text-xs sm:text-sm font-semibold text-muted-foreground whitespace-nowrap flex-shrink-0">
+                                    {Math.round((info.current / info.limit) * 100)}%
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="py-8 text-center text-muted-foreground">
+                      <div className="py-6 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground">
                         No usage data available
                       </div>
                     )}
@@ -500,54 +514,55 @@ export function OrganizationSubscriptionDialog({
 
                 {/* Features Card */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Feature Management</CardTitle>
-                    <CardDescription>
+                  <CardHeader className="p-3 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg">Feature Management</CardTitle>
+                    <CardDescription className="hidden sm:block text-xs sm:text-sm">
                       Enable or disable features for this organization
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-3 sm:p-6 pt-0">
                     {features && features.length > 0 ? (
                       <div className="space-y-6">
                         {Object.entries(featuresByCategory).map(([category, categoryFeatures]) => (
                           <div key={category}>
-                            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                            <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2 sm:mb-3 uppercase tracking-wide">
                               {categoryLabels[category] || category}
                             </h3>
-                            <div className="space-y-2">
+                            <div className="space-y-2 sm:space-y-3">
                               {categoryFeatures.map((feature) => (
                                 <div
                                   key={feature.featureKey}
                                   className={cn(
-                                    'flex items-center justify-between rounded-lg border p-4 transition-colors',
+                                    'rounded-lg border p-3 sm:p-4 transition-colors space-y-3',
                                     feature.isEnabled
                                       ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
                                       : 'bg-muted/50'
                                   )}
                                 >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <div className="font-medium">
+                                  <div className="space-y-1.5">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <div className="font-medium text-sm sm:text-base break-words">
                                         {feature.name}
                                       </div>
                                       {feature.isAddon && (
-                                        <Badge variant="outline" className="text-xs">
+                                        <Badge variant="outline" className="text-xs flex-shrink-0">
                                           Add-on
                                         </Badge>
                                       )}
                                     </div>
                                     {feature.description && (
-                                      <div className="text-sm text-muted-foreground mt-1">
+                                      <div className="text-xs sm:text-sm text-muted-foreground line-clamp-2 break-words">
                                         {feature.description}
                                       </div>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-3 ml-4">
+                                  <div className="flex items-center justify-between gap-3 pt-2 border-t">
                                     <Badge
                                       variant={feature.isEnabled ? 'default' : 'secondary'}
                                       className={cn(
                                         feature.isEnabled && 'bg-green-500 hover:bg-green-600',
-                                        !feature.isEnabled && 'bg-muted'
+                                        !feature.isEnabled && 'bg-muted',
+                                        'text-xs flex-shrink-0'
                                       )}
                                     >
                                       {feature.isEnabled ? 'Enabled' : 'Disabled'}
@@ -579,7 +594,7 @@ export function OrganizationSubscriptionDialog({
                         ))}
                       </div>
                     ) : (
-                      <div className="py-8 text-center text-muted-foreground">
+                      <div className="py-6 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground">
                         No feature data available
                       </div>
                     )}
@@ -589,13 +604,13 @@ export function OrganizationSubscriptionDialog({
                 {/* Permissions Management */}
                 {organizationId && (
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Permissions Management</CardTitle>
-                      <CardDescription>
+                    <CardHeader className="p-3 sm:p-6">
+                      <CardTitle className="text-base sm:text-lg">Permissions Management</CardTitle>
+                      <CardDescription className="hidden sm:block text-xs sm:text-sm">
                         Manage permissions for this organization
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-3 sm:p-6 pt-0">
                       <OrganizationPermissionManagement 
                         organizationId={organizationId} 
                         usePlatformAdminApi={true}
@@ -607,8 +622,8 @@ export function OrganizationSubscriptionDialog({
             )}
           </div>
 
-          <DialogFooter className="flex-shrink-0 border-t px-6 py-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="flex-shrink-0 border-t px-4 sm:px-6 py-3 sm:py-4 flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
               Close
             </Button>
           </DialogFooter>
@@ -617,10 +632,10 @@ export function OrganizationSubscriptionDialog({
 
       {/* Activate Subscription Dialog */}
       <Dialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full">
           <DialogHeader>
-            <DialogTitle>Activate Subscription</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Activate Subscription</DialogTitle>
+            <DialogDescription className="hidden sm:block">
               Configure and activate a subscription for this organization
             </DialogDescription>
           </DialogHeader>
@@ -645,7 +660,7 @@ export function OrganizationSubscriptionDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {plans?.map((plan) => (
-                    <SelectItem key={plan.id} value={plan.id}>
+                    <SelectItem key={plan.id} value={plan.id} className="line-clamp-2">
                       {plan.name} - {plan.priceYearlyAfn} AFN / {plan.priceYearlyUsd} USD
                     </SelectItem>
                   ))}
@@ -654,12 +669,12 @@ export function OrganizationSubscriptionDialog({
             </div>
 
             {selectedPlan && (
-              <div className="rounded-lg border p-4 bg-muted/50">
-                <div className="text-sm font-medium mb-2">Plan Details</div>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <div>Price: {selectedPlan.priceYearlyAfn} AFN / {selectedPlan.priceYearlyUsd} USD</div>
+              <div className="rounded-lg border p-3 sm:p-4 bg-muted/50">
+                <div className="text-xs sm:text-sm font-medium mb-2">Plan Details</div>
+                <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
+                  <div className="line-clamp-2 break-words">Price: {selectedPlan.priceYearlyAfn} AFN / {selectedPlan.priceYearlyUsd} USD</div>
                   {selectedPlan.description && (
-                    <div>{selectedPlan.description}</div>
+                    <div className="line-clamp-3 break-words">{selectedPlan.description}</div>
                   )}
                 </div>
               </div>
@@ -736,10 +751,11 @@ export function OrganizationSubscriptionDialog({
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setIsActivateDialogOpen(false)}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -750,16 +766,19 @@ export function OrganizationSubscriptionDialog({
                 activateFormData.amount_paid < 0 ||
                 activateSubscription.isPending
               }
+              className="w-full sm:w-auto"
             >
               {activateSubscription.isPending ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Activating...
+                  <span className="hidden sm:inline">Activating...</span>
+                  <span className="sm:hidden">Activating...</span>
                 </>
               ) : (
                 <>
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Activate Subscription
+                  <span className="hidden sm:inline">Activate Subscription</span>
+                  <span className="sm:hidden">Activate</span>
                 </>
               )}
             </Button>
@@ -769,10 +788,10 @@ export function OrganizationSubscriptionDialog({
 
       {/* Suspend Subscription Dialog */}
       <Dialog open={isSuspendDialogOpen} onOpenChange={setIsSuspendDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] sm:w-full max-w-md">
           <DialogHeader>
-            <DialogTitle>Suspend Subscription</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Suspend Subscription</DialogTitle>
+            <DialogDescription className="hidden sm:block">
               Suspend this organization's subscription. Provide a reason for
               suspension.
             </DialogDescription>
@@ -791,10 +810,11 @@ export function OrganizationSubscriptionDialog({
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setIsSuspendDialogOpen(false)}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -802,16 +822,19 @@ export function OrganizationSubscriptionDialog({
               variant="destructive"
               onClick={handleSuspend}
               disabled={!suspendReason.trim() || suspendSubscription.isPending}
+              className="w-full sm:w-auto"
             >
               {suspendSubscription.isPending ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Suspending...
+                  <span className="hidden sm:inline">Suspending...</span>
+                  <span className="sm:hidden">Suspending...</span>
                 </>
               ) : (
                 <>
                   <XCircle className="mr-2 h-4 w-4" />
-                  Suspend Subscription
+                  <span className="hidden sm:inline">Suspend Subscription</span>
+                  <span className="sm:hidden">Suspend</span>
                 </>
               )}
             </Button>

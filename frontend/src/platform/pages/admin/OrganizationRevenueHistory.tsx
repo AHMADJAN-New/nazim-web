@@ -211,10 +211,10 @@ export default function OrganizationRevenueHistory() {
                             className="cursor-pointer hover:bg-muted/50"
                             onClick={() => setSelectedOrganizationId(org.id)}
                           >
-                            <TableCell className="font-medium">
+                            <TableCell className="font-medium max-w-[200px]">
                               <div className="flex items-center gap-2">
                                 <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                <span className="truncate">{org.name}</span>
+                                <span className="line-clamp-2 break-words">{org.name}</span>
                               </div>
                               <div className="md:hidden mt-1 text-xs text-muted-foreground">
                                 {org.email || '-'}

@@ -125,6 +125,7 @@ export default function CourseAttendance() {
   const [sessionSearchTerm, setSessionSearchTerm] = useState('');
   const [isSessionSelectOpen, setIsSessionSelectOpen] = useState(false);
   const [isSessionPanelOpen, setIsSessionPanelOpen] = useState(true);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // Session creation form state
   const [sessionDate, setSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -265,6 +266,19 @@ export default function CourseAttendance() {
     );
   };
 
+  // Get status badge function (returns JSX)
+  const getStatusBadge = (status: AttendanceStatus) => {
+    const option = attendanceOptions.find(opt => opt.value === status);
+    if (!option) return <Badge variant="outline">{status}</Badge>;
+    const Icon = option.icon;
+    return (
+      <Badge variant="outline" className={`${option.color} flex items-center gap-1.5 font-medium w-fit`}>
+        <Icon className="h-3.5 w-3.5" />
+        {option.label}
+      </Badge>
+    );
+  };
+
   // Focus barcode input when in barcode mode
   useEffect(() => {
     if (attendanceMode === 'barcode' && scanInputRef.current) {
@@ -327,7 +341,7 @@ export default function CourseAttendance() {
       // Switch to mark tab and select the new session
       setMainTab('mark');
       setSelectedSessionId(created.id);
-      showToast.success(t('courses.attendance.sessionCreated') || 'Session created successfully');
+      showToast.success(t('toast.courseAttendance.sessionCreated') || 'Session created successfully');
     } catch (error: any) {
       showToast.error(error.message || t('events.error'));
     }
@@ -504,21 +518,15 @@ export default function CourseAttendance() {
   }, [currentSession]);
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">{t('courses.courseAttendance')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-
+    <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6 max-w-7xl overflow-x-hidden">
       {/* Course Selection */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{t('events.selectCourse')}</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg md:text-xl">{t('events.selectCourse')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Select value={selectedCourseId} onValueChange={(v) => { setSelectedCourseId(v); setSelectedSessionId(null); }}>
-            <SelectTrigger className="w-full max-w-md">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder={t('events.selectCourse')} />
             </SelectTrigger>
             <SelectContent>
@@ -536,33 +544,33 @@ export default function CourseAttendance() {
         <>
           {/* Main Tabs */}
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 md:pt-6">
               <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as typeof mainTab)}>
-                <TabsList className="grid w-full grid-cols-3 mb-6">
-                  <TabsTrigger value="mark" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
+                <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-6">
+                  <TabsTrigger value="mark" className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
+                    <Users className="h-4 w-4 flex-shrink-0" />
                     <span className="hidden sm:inline">{t('courses.attendance.markAttendance')}</span>
                   </TabsTrigger>
-                  <TabsTrigger value="session-report" className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
+                  <TabsTrigger value="session-report" className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
+                    <FileText className="h-4 w-4 flex-shrink-0" />
                     <span className="hidden sm:inline">{t('courses.attendance.sessionReport') || 'Session Report'}</span>
                   </TabsTrigger>
-                  <TabsTrigger value="course-report" className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4" />
+                  <TabsTrigger value="course-report" className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
+                    <BarChart3 className="h-4 w-4 flex-shrink-0" />
                     <span className="hidden sm:inline">{t('courses.attendance.courseReport') || 'Course Report'}</span>
                   </TabsTrigger>
                 </TabsList>
 
                 {/* Mark Attendance Tab */}
-                <TabsContent value="mark" className="space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <TabsContent value="mark" className="space-y-4 md:space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                     {/* Sessions List */}
                     <Card className="lg:col-span-1">
-                      <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">{t('courses.sessions')}</CardTitle>
+                      <CardHeader className="flex flex-row items-center justify-between pb-3">
+                        <CardTitle className="text-base md:text-lg">{t('courses.sessions')}</CardTitle>
                         <Button size="sm" onClick={() => setIsCreateDialogOpen(true)} className="flex-shrink-0">
                           <Plus className="h-4 w-4" />
-                          <span className="ml-2">{t('events.add')}</span>
+                          <span className="hidden sm:inline ml-2">{t('events.add')}</span>
                         </Button>
                       </CardHeader>
                       <CardContent>
@@ -572,52 +580,140 @@ export default function CourseAttendance() {
                           <p className="text-muted-foreground">{t('courses.attendance.noSessionsYet')}</p>
                         ) : (
                           <div className="space-y-2">
-                            {sessions.map((session) => (
-                              <div
-                                key={session.id}
-                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                                  selectedSessionId === session.id ? 'border-primary bg-primary/5' : 'hover:bg-muted'
-                                }`}
-                                onClick={() => setSelectedSessionId(session.id)}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-medium">
-                                      {formatDate(session.session_date)}
-                                    </p>
-                                    {session.session_title && (
-                                      <p className="text-sm text-muted-foreground">{session.session_title}</p>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant={session.status === 'open' ? 'default' : 'secondary'}>
-                                      {session.status === 'open' ? t('courses.attendance.open') : t('courses.attendance.closed')}
-                                    </Badge>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSessionToDelete(session.id);
-                                        setIsDeleteDialogOpen(true);
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
+                            {sessions.map((session) => {
+                              // Calculate additional stats from records if available
+                              const records = session.records || [];
+                              const totalStudents = session.records_count || records.length || 0;
+                              const presentCount = session.present_count || records.filter(r => r.status === 'present').length || 0;
+                              const absentCount = session.absent_count || records.filter(r => r.status === 'absent').length || 0;
+                              const lateCount = records.filter(r => r.status === 'late').length || 0;
+                              const excusedCount = records.filter(r => r.status === 'excused').length || 0;
+                              const sickCount = records.filter(r => r.status === 'sick').length || 0;
+                              const leaveCount = records.filter(r => r.status === 'leave').length || 0;
+                              
+                              // Get method display
+                              const methodDisplay = session.method === 'manual' 
+                                ? t('courses.attendance.manual')
+                                : session.method === 'barcode'
+                                ? t('courses.attendance.barcode')
+                                : t('courses.attendance.mixed');
+
+                              return (
+                                <div
+                                  key={session.id}
+                                  className={`p-3 md:p-4 border rounded-lg cursor-pointer transition-colors touch-manipulation ${
+                                    selectedSessionId === session.id ? 'border-primary bg-primary/5' : 'hover:bg-muted active:bg-muted/80'
+                                  }`}
+                                  onClick={() => setSelectedSessionId(session.id)}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <p className="font-medium text-sm md:text-base">
+                                          {formatDate(session.session_date)}
+                                        </p>
+                                        <Badge variant="outline" className="text-xs">
+                                          {session.method === 'manual' ? (
+                                            <Users className="h-3 w-3 mr-1" />
+                                          ) : session.method === 'barcode' ? (
+                                            <QrCode className="h-3 w-3 mr-1" />
+                                          ) : (
+                                            <Activity className="h-3 w-3 mr-1" />
+                                          )}
+                                          <span className="hidden sm:inline">{methodDisplay}</span>
+                                          <span className="sm:hidden">
+                                            {session.method === 'manual' ? 'M' : session.method === 'barcode' ? 'B' : 'MX'}
+                                          </span>
+                                        </Badge>
+                                      </div>
+                                      {session.session_title && (
+                                        <p className="text-xs md:text-sm text-muted-foreground truncate mb-2">{session.session_title}</p>
+                                      )}
+                                      
+                                      {/* Total Students */}
+                                      <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
+                                        <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                                        <span className="font-medium">{totalStudents || 0}</span>
+                                        <span>{t('courses.attendance.students') || 'students'}</span>
+                                      </div>
+
+                                      {/* Attendance Stats */}
+                                      {(presentCount > 0 || absentCount > 0 || lateCount > 0 || excusedCount > 0 || sickCount > 0 || leaveCount > 0) ? (
+                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                          {presentCount > 0 && (
+                                            <span className="flex items-center gap-1 text-xs bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 px-2 py-0.5 rounded font-medium">
+                                              <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                                              {presentCount}
+                                            </span>
+                                          )}
+                                          {absentCount > 0 && (
+                                            <span className="flex items-center gap-1 text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 px-2 py-0.5 rounded font-medium">
+                                              <XCircle className="h-3 w-3 flex-shrink-0" />
+                                              {absentCount}
+                                            </span>
+                                          )}
+                                          {lateCount > 0 && (
+                                            <span className="flex items-center gap-1 text-xs bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded font-medium">
+                                              <Clock className="h-3 w-3 flex-shrink-0" />
+                                              {lateCount}
+                                            </span>
+                                          )}
+                                          {excusedCount > 0 && (
+                                            <span className="flex items-center gap-1 text-xs bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded font-medium">
+                                              <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                              {excusedCount}
+                                            </span>
+                                          )}
+                                          {sickCount > 0 && (
+                                            <span className="flex items-center gap-1 text-xs bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded font-medium">
+                                              <Heart className="h-3 w-3 flex-shrink-0" />
+                                              {sickCount}
+                                            </span>
+                                          )}
+                                          {leaveCount > 0 && (
+                                            <span className="flex items-center gap-1 text-xs bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded font-medium">
+                                              <Calendar className="h-3 w-3 flex-shrink-0" />
+                                              {leaveCount}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-xs text-muted-foreground mt-2 italic">
+                                          {session.status === 'open' 
+                                            ? t('courses.attendance.noRecordsYet') || 'No attendance marked yet'
+                                            : t('courses.attendance.noRecords') || 'No records'}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                      <Badge variant={session.status === 'open' ? 'default' : 'secondary'} className="text-xs">
+                                        <span className="hidden sm:inline">
+                                          {session.status === 'open' ? t('courses.attendance.open') : t('courses.attendance.closed')}
+                                        </span>
+                                        <span className="sm:hidden">
+                                          {session.status === 'open' ? t('courses.attendance.open').charAt(0) : t('courses.attendance.closed').charAt(0)}
+                                        </span>
+                                      </Badge>
+                                      {/* Only show delete button for open sessions */}
+                                      {session.status === 'open' && (
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSessionToDelete(session.id);
+                                            setIsDeleteDialogOpen(true);
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="flex gap-3 mt-2 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <CheckCircle2 className="h-3 w-3 text-green-500" />
-                                    {session.present_count || 0}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <XCircle className="h-3 w-3 text-red-500" />
-                                    {session.absent_count || 0}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </CardContent>
@@ -625,15 +721,15 @@ export default function CourseAttendance() {
 
                     {/* Attendance Taking */}
                     <Card className="lg:col-span-2">
-                      <CardHeader>
-                        <CardTitle className="text-lg flex items-center justify-between">
-                          <span>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base md:text-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                          <span className="text-sm md:text-base">
                             {selectedSessionId ? t('courses.attendance.markAttendance') : t('courses.attendance.selectSession')}
                           </span>
                           {selectedSessionId && currentSession?.status === 'open' && (
-                            <Button variant="outline" size="sm" onClick={handleCloseSession}>
-                              <Lock className="h-4 w-4 mr-1" />
-                              {t('courses.attendance.closeSession')}
+                            <Button variant="outline" size="sm" onClick={handleCloseSession} className="w-full sm:w-auto">
+                              <Lock className="h-4 w-4 mr-1.5" />
+                              <span className="text-xs md:text-sm">{t('courses.attendance.closeSession')}</span>
                             </Button>
                           )}
                         </CardTitle>
@@ -650,67 +746,145 @@ export default function CourseAttendance() {
                           </div>
                         ) : (
                           <Tabs value={attendanceMode} onValueChange={(v) => setAttendanceMode(v as 'manual' | 'barcode')}>
-                            <TabsList className="mb-4">
-                              <TabsTrigger value="manual">
-                                <Users className="h-4 w-4 mr-1" />
-                                {t('courses.attendance.manual')}
+                            <TabsList className="mb-4 w-full grid grid-cols-2">
+                              <TabsTrigger value="manual" className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
+                                <Users className="h-4 w-4 flex-shrink-0" />
+                                <span>{t('courses.attendance.manual')}</span>
                               </TabsTrigger>
-                              <TabsTrigger value="barcode">
-                                <QrCode className="h-4 w-4 mr-1" />
-                                {t('courses.attendance.barcode')}
+                              <TabsTrigger value="barcode" className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
+                                <QrCode className="h-4 w-4 flex-shrink-0" />
+                                <span>{t('courses.attendance.barcode')}</span>
                               </TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="manual" className="space-y-4">
-                              <div className="flex gap-2 mb-4">
-                                <Button size="sm" variant="outline" onClick={() => handleMarkAll('present')}>
-                                  {t('courses.attendance.markAllPresent')}
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleMarkAll('absent')}>
-                                  {t('courses.attendance.markAllAbsent')}
-                                </Button>
+                              {/* Search and Quick Actions */}
+                              <div className="space-y-3">
+                                <div className="relative">
+                                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                  <Input
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder={t('courses.attendance.searchStudents') || 'Search students...'}
+                                    className="pl-9"
+                                  />
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button size="sm" variant="outline" onClick={() => handleMarkAll('present')} className="flex-1 sm:flex-none">
+                                    <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                                    <span className="text-xs md:text-sm">{t('courses.attendance.markAllPresent')}</span>
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleMarkAll('absent')} className="flex-1 sm:flex-none">
+                                    <XCircle className="h-4 w-4 mr-1.5" />
+                                    <span className="text-xs md:text-sm">{t('courses.attendance.markAllAbsent')}</span>
+                                  </Button>
+                                </div>
                               </div>
 
-                              <div className="border rounded-lg max-h-96 overflow-y-auto">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead>{t('courses.attendance.student')}</TableHead>
-                                      <TableHead>{t('courses.attendance.cardNumber')}</TableHead>
-                                      <TableHead>{t('courses.attendance.status')}</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {rosterLoading ? (
+                              {/* Mobile: Card Layout, Desktop: Table Layout */}
+                              <div className="border rounded-lg max-h-[60vh] md:max-h-96 overflow-y-auto">
+                                {/* Desktop Table View */}
+                                <div className="hidden md:block">
+                                  <Table>
+                                    <TableHeader>
                                       <TableRow>
-                                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                                          {t('courses.attendance.loadingStudents')}
-                                        </TableCell>
+                                        <TableHead>{t('courses.attendance.student')}</TableHead>
+                                        <TableHead>{t('courses.attendance.cardNumber')}</TableHead>
+                                        <TableHead>{t('courses.attendance.status')}</TableHead>
                                       </TableRow>
-                                    ) : roster.length === 0 ? (
-                                      <TableRow>
-                                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                                          {t('courses.attendance.noEnrolledStudents')}
-                                        </TableCell>
-                                      </TableRow>
-                                    ) : (
-                                      roster.map((student) => {
+                                    </TableHeader>
+                                    <TableBody>
+                                      {rosterLoading ? (
+                                        <TableRow>
+                                          <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                                            {t('courses.attendance.loadingStudents')}
+                                          </TableCell>
+                                        </TableRow>
+                                      ) : orderedRoster.length === 0 ? (
+                                        <TableRow>
+                                          <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                                            {t('courses.attendance.noEnrolledStudents')}
+                                          </TableCell>
+                                        </TableRow>
+                                      ) : (
+                                        orderedRoster.map((student) => {
+                                          const record = attendanceRecords.get(student.id);
+                                          return (
+                                            <TableRow key={student.id}>
+                                              <TableCell>
+                                                <div>
+                                                  <p className="font-medium">{student.full_name}</p>
+                                                  <p className="text-sm text-muted-foreground">{student.father_name}</p>
+                                                </div>
+                                              </TableCell>
+                                              <TableCell>{student.card_number || student.admission_no || '-'}</TableCell>
+                                              <TableCell>
+                                                <Select
+                                                  value={record?.status || 'absent'}
+                                                  onValueChange={(v) => handleStatusChange(student.id, v as AttendanceStatus)}
+                                                >
+                                                  <SelectTrigger className="w-40">
+                                                    <SelectValue>
+                                                      {record?.status ? (
+                                                        getStatusBadge(record.status)
+                                                      ) : (
+                                                        getStatusBadge('absent')
+                                                      )}
+                                                    </SelectValue>
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    {attendanceOptions.map(option => {
+                                                      const Icon = option.icon;
+                                                      return (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                          <div className="flex items-center gap-2">
+                                                            <Icon className="h-4 w-4" />
+                                                            {option.label}
+                                                          </div>
+                                                        </SelectItem>
+                                                      );
+                                                    })}
+                                                  </SelectContent>
+                                                </Select>
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })
+                                      )}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+
+                                {/* Mobile Card View */}
+                                <div className="md:hidden space-y-2 p-2">
+                                  {rosterLoading ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                      {t('courses.attendance.loadingStudents')}
+                                    </div>
+                                  ) : orderedRoster.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                      {t('courses.attendance.noEnrolledStudents')}
+                                    </div>
+                                  ) : (
+                                    orderedRoster.map((student) => {
                                       const record = attendanceRecords.get(student.id);
                                       return (
-                                        <TableRow key={student.id}>
-                                          <TableCell>
+                                        <Card key={student.id} className="p-3">
+                                          <div className="space-y-3">
                                             <div>
-                                              <p className="font-medium">{student.full_name}</p>
-                                              <p className="text-sm text-muted-foreground">{student.father_name}</p>
+                                              <p className="font-medium text-sm">{student.full_name}</p>
+                                              {student.father_name && (
+                                                <p className="text-xs text-muted-foreground mt-0.5">{student.father_name}</p>
+                                              )}
+                                              <p className="text-xs text-muted-foreground mt-1">
+                                                {t('courses.attendance.cardNumber')}: {student.card_number || student.admission_no || '-'}
+                                              </p>
                                             </div>
-                                          </TableCell>
-                                          <TableCell>{student.card_number || student.admission_no || '-'}</TableCell>
-                                          <TableCell>
                                             <Select
                                               value={record?.status || 'absent'}
                                               onValueChange={(v) => handleStatusChange(student.id, v as AttendanceStatus)}
                                             >
-                                              <SelectTrigger className="w-40">
+                                              <SelectTrigger className="w-full">
                                                 <SelectValue>
                                                   {record?.status ? (
                                                     getStatusBadge(record.status)
@@ -733,55 +907,104 @@ export default function CourseAttendance() {
                                                 })}
                                               </SelectContent>
                                             </Select>
-                                          </TableCell>
-                                        </TableRow>
+                                          </div>
+                                        </Card>
                                       );
                                     })
-                                    )}
-                                  </TableBody>
-                                </Table>
+                                  )}
+                                </div>
                               </div>
 
-                              <Button onClick={handleSaveAttendance} disabled={markRecords.isPending}>
+                              <Button 
+                                onClick={handleSaveAttendance} 
+                                disabled={markRecords.isPending}
+                                className="w-full sm:w-auto"
+                                size="lg"
+                              >
+                                <Save className="h-4 w-4 mr-2" />
                                 {markRecords.isPending ? t('courses.attendance.saving') : t('courses.attendance.saveAttendance')}
                               </Button>
                             </TabsContent>
 
                             <TabsContent value="barcode" className="space-y-4">
-                              <div className="space-y-2">
-                                <Label>{t('courses.attendance.scanBarcodeOrCard')}</Label>
-                                <Input
-                                  ref={barcodeInputRef}
-                                  value={barcodeInput}
-                                  onChange={(e) => setBarcodeInput(e.target.value)}
-                                  onKeyDown={handleBarcodeScan}
-                                  placeholder={t('events.scanCardNumber')}
-                                  className="text-lg"
-                                  autoFocus
-                                />
-                                <p className="text-sm text-muted-foreground">
-                                  {t('courses.attendance.scanInstructions')}
-                                </p>
+                              <div className="space-y-3">
+                                <div className="space-y-2">
+                                  <Label className="text-sm md:text-base">{t('courses.attendance.scanBarcodeOrCard')}</Label>
+                                  <div className="relative">
+                                    <QrCode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                      ref={scanInputRef}
+                                      value={scanCardNumber}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        setScanCardNumber(value);
+                                        setScanError(null);
+                                        // Auto-submit when barcode scanner adds Enter/newline (fast scanning)
+                                        if (value.includes('\n') || value.includes('\r')) {
+                                          const cleanValue = value.replace(/[\n\r]/g, '').trim();
+                                          if (cleanValue) {
+                                            setScanCardNumber(cleanValue);
+                                            setTimeout(() => handleScanSubmit(), 0);
+                                          }
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          handleScanSubmit();
+                                        }
+                                      }}
+                                      placeholder={t('events.scanCardNumber')}
+                                      className="text-base md:text-lg pl-9 h-12 md:h-10"
+                                      autoFocus
+                                    />
+                                  </div>
+                                  {scanError && (
+                                    <p className="text-sm text-destructive animate-in fade-in">{scanError}</p>
+                                  )}
+                                  {lastScanId && (
+                                    <p className="text-sm text-green-600 animate-in fade-in flex items-center gap-1.5">
+                                      <CheckCircle2 className="h-4 w-4" />
+                                      {t('courses.attendance.scanSuccess') || 'Scan successful!'}
+                                    </p>
+                                  )}
+                                  <p className="text-xs md:text-sm text-muted-foreground">
+                                    {t('courses.attendance.scanInstructions')}
+                                  </p>
+                                </div>
+
+                                {/* Search for scan feed */}
+                                <div className="relative">
+                                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                  <Input
+                                    value={scanFeedSearch}
+                                    onChange={(e) => setScanFeedSearch(e.target.value)}
+                                    placeholder={t('courses.attendance.searchScans') || 'Search recent scans...'}
+                                    className="pl-9"
+                                  />
+                                </div>
                               </div>
 
                               <div className="border rounded-lg">
                                 <div className="p-3 border-b bg-muted">
-                                  <h4 className="font-medium">{t('courses.attendance.recentScans')}</h4>
+                                  <h4 className="font-medium text-sm md:text-base">{t('courses.attendance.recentScans')}</h4>
                                 </div>
                                 <div className="max-h-64 overflow-y-auto">
-                                  {recentScans.length === 0 ? (
-                                    <p className="p-4 text-muted-foreground text-center">{t('courses.attendance.noScansYet')}</p>
+                                  {filteredScanFeed.length === 0 ? (
+                                    <p className="p-4 text-muted-foreground text-center text-sm">{t('courses.attendance.noScansYet')}</p>
                                   ) : (
                                     <div className="divide-y">
-                                      {recentScans.map((scan) => (
-                                        <div key={scan.id} className="p-3 flex items-center justify-between">
-                                          <div>
-                                            <p className="font-medium">{scan.course_student?.full_name}</p>
-                                            <p className="text-sm text-muted-foreground">
+                                      {filteredScanFeed.map((scan) => (
+                                        <div key={scan.id} className="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                          <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-sm md:text-base truncate">{scan.course_student?.full_name}</p>
+                                            <p className="text-xs md:text-sm text-muted-foreground">
                                               {scan.marked_at && formatDate(scan.marked_at)}
                                             </p>
                                           </div>
-                                          {getStatusBadge(scan.status)}
+                                          <div className="flex-shrink-0">
+                                            {getStatusBadge(scan.status)}
+                                          </div>
                                         </div>
                                       ))}
                                     </div>
@@ -797,19 +1020,19 @@ export default function CourseAttendance() {
                 </TabsContent>
 
                 {/* Session Report Tab */}
-                <TabsContent value="session-report" className="space-y-6">
+                <TabsContent value="session-report" className="space-y-4 md:space-y-6">
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{t('courses.attendance.sessionReport') || 'Session Report'}</CardTitle>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base md:text-lg">{t('courses.attendance.sessionReport') || 'Session Report'}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label>{t('courses.attendance.selectSession') || 'Select Session'}</Label>
+                        <Label className="text-sm md:text-base">{t('courses.attendance.selectSession') || 'Select Session'}</Label>
                         <Select
                           value={reportSessionId || ''}
                           onValueChange={(value) => setReportSessionId(value || null)}
                         >
-                          <SelectTrigger className="w-full max-w-md">
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder={t('courses.attendance.selectSession') || 'Select a session'} />
                           </SelectTrigger>
                           <SelectContent>
@@ -823,11 +1046,13 @@ export default function CourseAttendance() {
                         </Select>
                       </div>
                       {reportSessionId && (
-                        <SessionReportTable data={sessionReport} isLoading={sessionReportLoading} />
+                        <div className="overflow-x-auto">
+                          <SessionReportTable data={sessionReport} isLoading={sessionReportLoading} />
+                        </div>
                       )}
                       {!reportSessionId && (
                         <div className="text-center py-8 text-muted-foreground">
-                          <p>{t('courses.attendance.selectSessionToViewReport') || 'Please select a session to view the report'}</p>
+                          <p className="text-sm md:text-base">{t('courses.attendance.selectSessionToViewReport') || 'Please select a session to view the report'}</p>
                         </div>
                       )}
                     </CardContent>
@@ -835,18 +1060,20 @@ export default function CourseAttendance() {
                 </TabsContent>
 
                 {/* Course Report Tab */}
-                <TabsContent value="course-report" className="space-y-6">
+                <TabsContent value="course-report" className="space-y-4 md:space-y-6">
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{t('courses.attendance.courseReport') || 'Course Report'}</CardTitle>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base md:text-lg">{t('courses.attendance.courseReport') || 'Course Report'}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <CourseReportTable
-                        data={courseReport}
-                        isLoading={courseReportLoading}
-                        completionStatus={courseReportStatus}
-                        onStatusChange={setCourseReportStatus}
-                      />
+                      <div className="overflow-x-auto">
+                        <CourseReportTable
+                          data={courseReport}
+                          isLoading={courseReportLoading}
+                          completionStatus={courseReportStatus}
+                          onStatusChange={setCourseReportStatus}
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -858,26 +1085,27 @@ export default function CourseAttendance() {
 
       {/* Create Session Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md w-[95vw] sm:w-full">
           <DialogHeader>
-            <DialogTitle>{t('courses.attendance.createSession')}</DialogTitle>
+            <DialogTitle className="text-lg md:text-xl">{t('courses.attendance.createSession')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t('courses.attendance.date')}</Label>
-              <CalendarDatePicker date={newSessionDate ? new Date(newSessionDate) : undefined} onDateChange={(date) => setNewSessionDate(date ? date.toISOString().split("T")[0] : "")} />
+              <Label className="text-sm md:text-base">{t('courses.attendance.date')}</Label>
+              <CalendarDatePicker date={sessionDate ? new Date(sessionDate) : undefined} onDateChange={(date) => setSessionDate(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="space-y-2">
-              <Label>{t('courses.attendance.titleOptional')}</Label>
+              <Label className="text-sm md:text-base">{t('courses.attendance.titleOptional')}</Label>
               <Input
-                value={newSessionTitle}
-                onChange={(e) => setNewSessionTitle(e.target.value)}
+                value={sessionTitle}
+                onChange={(e) => setSessionTitle(e.target.value)}
                 placeholder={t('courses.attendance.titlePlaceholder')}
+                className="text-sm md:text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label>{t('courses.attendance.method')}</Label>
-              <Select value={newSessionMethod} onValueChange={(v) => setNewSessionMethod(v as any)}>
+              <Label className="text-sm md:text-base">{t('courses.attendance.method')}</Label>
+              <Select value={sessionMethod} onValueChange={(v) => setSessionMethod(v as 'manual' | 'barcode')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -889,11 +1117,11 @@ export default function CourseAttendance() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} className="w-full sm:w-auto">
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleCreateSession} disabled={createSession.isPending}>
+            <Button onClick={handleCreateSession} disabled={createSession.isPending} className="w-full sm:w-auto">
               {createSession.isPending ? t('courses.attendance.creating') : t('courses.attendance.createSession')}
             </Button>
           </DialogFooter>
@@ -902,21 +1130,19 @@ export default function CourseAttendance() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md w-[95vw] sm:w-full">
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('courses.attendance.deleteSession')}</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-lg md:text-xl">{t('courses.attendance.deleteSession')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm md:text-base">
               {t('courses.attendance.deleteSessionConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteSession}>{t('courses.attendance.delete')}</AlertDialogAction>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="w-full sm:w-auto">{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSession} className="w-full sm:w-auto">{t('courses.attendance.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-        </CardContent>
-      </Card>
     </div>
   );
 }

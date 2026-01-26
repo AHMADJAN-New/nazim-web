@@ -1,5 +1,6 @@
-import { Building2, Users, Mail, Phone, Search, Shield, Settings } from 'lucide-react';
+import { Building2, Users, Mail, Phone, Search, Shield, Settings, MoreHorizontal, KeyRound } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading';
 import {
   Table,
@@ -23,7 +25,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/hooks/useLanguage';
+import { showToast } from '@/lib/toast';
+import { platformApi } from '@/platform/lib/platformApi';
 import { formatDate } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { 
@@ -39,9 +50,14 @@ import {
 
 export function OrganizationAdminsManagement() {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAdmin, setSelectedAdmin] = useState<{ id: string; organizationId: string; name: string } | null>(null);
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordAdmin, setPasswordAdmin] = useState<{ id: string; name: string } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const { data, isLoading, error } = usePlatformOrganizationAdmins();
   
@@ -58,6 +74,50 @@ export function OrganizationAdminsManagement() {
   const removePermission = usePlatformRemovePermissionFromUser();
   const assignPermissionGroup = usePlatformAssignPermissionGroupToUser();
   const removePermissionGroup = usePlatformRemovePermissionGroupFromUser();
+
+  // Password reset mutation
+  const resetPassword = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      // Use resetPasswordAny for organization admins (not platform admins)
+      return platformApi.users.resetPasswordAny(userId, password);
+    },
+    onSuccess: () => {
+      showToast.success('Password reset successfully');
+      setIsPasswordDialogOpen(false);
+      setPasswordAdmin(null);
+      setNewPassword('');
+      setConfirmPassword('');
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to reset password');
+    },
+  });
+
+  const handleOpenPasswordDialog = (admin: { id: string; name: string }) => {
+    setPasswordAdmin(admin);
+    setIsPasswordDialogOpen(true);
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleResetPassword = () => {
+    if (!passwordAdmin) return;
+    
+    if (!newPassword || newPassword.length < 8) {
+      showToast.error('Password must be at least 8 characters long');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      showToast.error('Passwords do not match');
+      return;
+    }
+
+    resetPassword.mutate({
+      userId: passwordAdmin.id,
+      password: newPassword,
+    });
+  };
 
   const filteredData = useMemo(() => {
     if (!data) return [];
@@ -151,7 +211,7 @@ export function OrganizationAdminsManagement() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                         <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary hidden sm:inline-flex flex-shrink-0" />
-                        <CardTitle className="text-sm sm:text-base md:text-lg truncate min-w-0 flex-1">{item.organization.name}</CardTitle>
+                        <CardTitle className="text-sm sm:text-base md:text-lg line-clamp-2 break-words min-w-0 flex-1">{item.organization.name}</CardTitle>
                         <Badge variant={item.organization.is_active ? 'default' : 'secondary'} className="flex-shrink-0 text-xs">
                           {item.organization.is_active ? 'Active' : 'Inactive'}
                         </Badge>
@@ -212,7 +272,7 @@ export function OrganizationAdminsManagement() {
                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <span className="truncate">Created: {formatDate(new Date(admin.created_at))}</span>
                                   </div>
-                                  <div className="pt-2 border-t">
+                                  <div className="pt-2 border-t space-y-2">
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -229,6 +289,19 @@ export function OrganizationAdminsManagement() {
                                     >
                                       <Settings className="h-3.5 w-3.5 mr-1.5" />
                                       Manage Permissions
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleOpenPasswordDialog({
+                                        id: admin.id,
+                                        name: admin.full_name || admin.email,
+                                      })}
+                                      className="w-full text-xs h-8"
+                                      aria-label="Reset Password"
+                                    >
+                                      <KeyRound className="h-3.5 w-3.5 mr-1.5" />
+                                      Reset Password
                                     </Button>
                                   </div>
                                 </div>
@@ -254,10 +327,10 @@ export function OrganizationAdminsManagement() {
                               <TableBody>
                                 {item.admins.map((admin: any) => (
                                   <TableRow key={admin.id}>
-                                    <TableCell className="font-medium">
+                                    <TableCell className="font-medium max-w-[200px]">
                                       <div className="flex items-center gap-2 min-w-0">
                                         <Shield className="h-4 w-4 text-primary flex-shrink-0" />
-                                        <div className="truncate">{admin.full_name || 'N/A'}</div>
+                                        <div className="line-clamp-2 break-words">{admin.full_name || 'N/A'}</div>
                                       </div>
                                     </TableCell>
                                     <TableCell>
@@ -271,23 +344,72 @@ export function OrganizationAdminsManagement() {
                                       {formatDate(new Date(admin.created_at))}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedAdmin({
+                                      {/* Desktop: Show buttons */}
+                                      <div className="hidden md:flex items-center gap-1.5 sm:gap-2 justify-end">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setSelectedAdmin({
+                                              id: admin.id,
+                                              organizationId: item.organization.id,
+                                              name: admin.full_name || admin.email,
+                                            });
+                                            setIsPermissionsDialogOpen(true);
+                                          }}
+                                          className="flex-shrink-0"
+                                          aria-label="Manage Permissions"
+                                        >
+                                          <Settings className="h-4 w-4" />
+                                          <span className="hidden sm:inline ml-2">Manage</span>
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleOpenPasswordDialog({
                                             id: admin.id,
-                                            organizationId: item.organization.id,
                                             name: admin.full_name || admin.email,
-                                          });
-                                          setIsPermissionsDialogOpen(true);
-                                        }}
-                                        className="flex-shrink-0"
-                                        aria-label="Manage Permissions"
-                                      >
-                                        <Settings className="h-4 w-4" />
-                                        <span className="hidden sm:inline ml-2">Manage</span>
-                                      </Button>
+                                          })}
+                                          className="flex-shrink-0"
+                                          aria-label="Reset Password"
+                                        >
+                                          <KeyRound className="h-4 w-4" />
+                                          <span className="hidden sm:inline ml-2">Password</span>
+                                        </Button>
+                                      </div>
+                                      
+                                      {/* Mobile: Show dropdown */}
+                                      <div className="md:hidden flex justify-end">
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label="Actions">
+                                              <MoreHorizontal className="h-4 w-4" />
+                                              <span className="sr-only">Actions</span>
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => {
+                                              setSelectedAdmin({
+                                                id: admin.id,
+                                                organizationId: item.organization.id,
+                                                name: admin.full_name || admin.email,
+                                              });
+                                              setIsPermissionsDialogOpen(true);
+                                            }}>
+                                              <Settings className="mr-2 h-4 w-4" />
+                                              Manage Permissions
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => handleOpenPasswordDialog({
+                                              id: admin.id,
+                                              name: admin.full_name || admin.email,
+                                            })}>
+                                              <KeyRound className="mr-2 h-4 w-4" />
+                                              Reset Password
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
                                     </TableCell>
                                   </TableRow>
                                 ))}
@@ -579,9 +701,69 @@ export function OrganizationAdminsManagement() {
               Close
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+          </DialogContent>
+        </Dialog>
+
+        {/* Password Reset Dialog */}
+        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+          <DialogContent className="max-w-md w-[95vw] sm:w-full">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5" />
+                Reset Password
+              </DialogTitle>
+              <DialogDescription>
+                Reset password for {passwordAdmin?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 8 characters)"
+                  minLength={8}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  minLength={8}
+                />
+              </div>
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsPasswordDialogOpen(false);
+                  setPasswordAdmin(null);
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleResetPassword}
+                disabled={resetPassword.isPending || !newPassword || !confirmPassword || newPassword.length < 8}
+                className="w-full sm:w-auto"
+              >
+                {resetPassword.isPending ? 'Resetting...' : 'Reset Password'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
 
