@@ -4131,6 +4131,8 @@ export const fa: TranslationKeys = {
     'events.users': 'کاربران رویداد',
     'events.export': 'صادرات کارت شناسایی',
     websiteManager: 'مدیر وب‌سایت',
+    'websiteManager.settings': 'تنظیمات',
+    'websiteManager.openPublicSite': 'باز کردن سایت عمومی',
     'students.management': 'مدیریت',
     assets: 'دارایی‌ها',
     'assets.dashboard': 'داشبورد دارایی‌ها',
@@ -6771,6 +6773,40 @@ export const fa: TranslationKeys = {
     noDomains: 'دامنه‌ای متصل نشده است.',
     public: 'عمومی',
     private: 'خصوصی'
+  },
+  website: {
+    editor: {
+      placeholder: 'شروع به تایپ کنید...',
+      loading: 'در حال بارگذاری ویرایشگر...',
+      toolbar: {
+        bold: 'ضخیم',
+        italic: 'مورب',
+        heading1: 'عنوان 1',
+        heading2: 'عنوان 2',
+        heading3: 'عنوان 3',
+        bulletList: 'فهرست نقطه‌ای',
+        orderedList: 'فهرست شماره‌دار',
+        blockquote: 'نقل قول',
+        link: 'لینک',
+        image: 'تصویر',
+        undo: 'بازگشت',
+        redo: 'بازگشت مجدد'
+      },
+      link: {
+        title: 'درج لینک',
+        description: 'آدرس URL لینک را وارد کنید',
+        url: 'URL',
+        insert: 'درج'
+      },
+      image: {
+        title: 'درج تصویر',
+        description: 'آدرس URL تصویر را وارد کنید یا فایل را آپلود کنید',
+        url: 'آدرس URL تصویر',
+        or: 'یا',
+        insert: 'درج',
+        upload: 'آپلود تصویر'
+      }
+    }
   },
   websitePublic: {
     badge: 'مدرسه اسلامی',

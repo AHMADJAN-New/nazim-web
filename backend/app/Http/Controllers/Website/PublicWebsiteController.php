@@ -15,11 +15,16 @@ use App\Models\WebsiteCourse;
 use App\Models\WebsiteGraduate;
 use App\Models\WebsiteDonation;
 use App\Models\WebsiteInbox;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class PublicWebsiteController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
+
     public function site(Request $request)
     {
         $schoolId = $request->attributes->get('school_id');
@@ -33,10 +38,13 @@ class PublicWebsiteController extends Controller
             $school = SchoolBranding::where('id', $schoolId)->first();
             $menu = WebsiteMenuLink::where('school_id', $schoolId)
                 ->where('is_visible', true)
+                ->whereNull('deleted_at')
                 ->orderBy('sort_order')
                 ->get();
             $home = WebsitePage::where('school_id', $schoolId)
                 ->where('slug', 'home')
+                ->where('status', 'published')
+                ->whereNull('deleted_at')
                 ->first();
             $posts = WebsitePost::where('school_id', $schoolId)
                 ->where('status', 'published')
@@ -88,6 +96,7 @@ class PublicWebsiteController extends Controller
             $page = WebsitePage::where('school_id', $schoolId)
                 ->where('slug', $slug)
                 ->where('status', 'published')
+                ->whereNull('deleted_at')
                 ->firstOrFail();
 
             return response()->json($page);
@@ -166,11 +175,12 @@ class PublicWebsiteController extends Controller
         $category = $request->query('category');
         $level = $request->query('level');
 
-        $cacheKey = "public-courses:{$organizationId}:{$schoolId}:" . md5($category . $level);
+        $cacheKey = "public-courses:{$organizationId}:{$schoolId}:" . md5(($category ?? '') . ($level ?? ''));
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId, $category, $level) {
+        $courses = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId, $category, $level) {
             $coursesQuery = WebsiteCourse::where('school_id', $schoolId)
-                ->where('status', 'published');
+                ->where('status', 'published')
+                ->whereNull('deleted_at'); // CRITICAL: Exclude soft-deleted courses
 
             if ($category) {
                 $coursesQuery->where('category', $category);
@@ -183,6 +193,19 @@ class PublicWebsiteController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
         });
+
+        // Convert cover_image_path to URL for each course
+        $coursesWithUrls = $courses->map(function ($course) {
+            if ($course->cover_image_path) {
+                $course->cover_image_url = $this->fileStorageService->getPublicUrl($course->cover_image_path);
+            } else {
+                $course->cover_image_url = null;
+            }
+            return $course;
+        });
+
+        // Ensure we return a proper JSON response
+        return response()->json($coursesWithUrls);
     }
 
     public function scholars(Request $request)
@@ -271,6 +294,7 @@ class PublicWebsiteController extends Controller
 
         $pages = WebsitePage::where('school_id', $schoolId)
             ->where('status', 'published')
+            ->whereNull('deleted_at')
             ->get(['slug', 'updated_at']);
 
         $posts = WebsitePost::where('school_id', $schoolId)

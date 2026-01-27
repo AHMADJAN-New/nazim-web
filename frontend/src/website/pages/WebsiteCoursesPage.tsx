@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, GraduationCap, Search, Star } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useState, useMemo, useRef } from 'react';
+import { Plus, Pencil, Trash2, GraduationCap, Search, Star, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/website/components/StatusBadge';
+import { useWebsiteImageUpload } from '@/website/hooks/useWebsiteImageUpload';
 import {
     useWebsiteCourses,
     useCreateWebsiteCourse,
@@ -50,12 +51,16 @@ export default function WebsiteCoursesPage() {
     const createCourse = useCreateWebsiteCourse();
     const updateCourse = useUpdateWebsiteCourse();
     const deleteCourse = useDeleteWebsiteCourse();
+    const uploadImage = useWebsiteImageUpload();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editCourse, setEditCourse] = useState<WebsiteCourse | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<CourseFormData>({
         resolver: zodResolver(courseSchema),
@@ -78,6 +83,10 @@ export default function WebsiteCoursesPage() {
         await createCourse.mutateAsync(data);
         setIsCreateOpen(false);
         form.reset();
+        setImagePreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     const handleUpdate = async (data: CourseFormData) => {
@@ -85,6 +94,10 @@ export default function WebsiteCoursesPage() {
         await updateCourse.mutateAsync({ id: editCourse.id, ...data });
         setEditCourse(null);
         form.reset();
+        setImagePreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     const handleDelete = async () => {
@@ -95,12 +108,43 @@ export default function WebsiteCoursesPage() {
 
     const openEditDialog = (course: WebsiteCourse) => {
         setEditCourse(course);
+        // Use cover_image_url if available (from admin API), otherwise use path directly
+        // The backend now returns cover_image_url in the admin API
+        setImagePreview(course.cover_image_url || course.cover_image_path || null);
         form.reset({
             title: course.title, category: course.category, description: course.description,
             duration: course.duration, level: course.level, instructor_name: course.instructor_name,
             cover_image_path: course.cover_image_path, enrollment_cta: course.enrollment_cta,
             is_featured: course.is_featured, sort_order: course.sort_order, status: course.status,
         });
+    };
+
+    const handleImageUpload = async (file: File) => {
+        setIsUploadingImage(true);
+        try {
+            const result = await uploadImage.mutateAsync(file);
+            form.setValue('cover_image_path', result.path);
+            setImagePreview(result.url);
+        } catch (error) {
+            // Error is handled by the hook
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
+
+    const handleImageRemove = () => {
+        form.setValue('cover_image_path', null);
+        setImagePreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleImageUpload(file);
+        }
     };
 
     if (isLoading) {
@@ -189,7 +233,16 @@ export default function WebsiteCoursesPage() {
             </div>
 
             {/* Create Dialog */}
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <Dialog open={isCreateOpen} onOpenChange={(open) => {
+                setIsCreateOpen(open);
+                if (!open) {
+                    form.reset();
+                    setImagePreview(null);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
+                }
+            }}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Add Course</DialogTitle>
@@ -241,6 +294,57 @@ export default function WebsiteCoursesPage() {
                         <div className="space-y-2">
                             <Label>Description</Label>
                             <Textarea {...form.register('description')} placeholder="Course description..." rows={3} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Cover Image</Label>
+                            <div className="space-y-2">
+                                {imagePreview ? (
+                                    <div className="relative w-full h-48 border rounded-lg overflow-hidden">
+                                        <img src={imagePreview} alt="Course cover" className="w-full h-full object-cover" />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            className="absolute top-2 right-2"
+                                            onClick={handleImageRemove}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                                        <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                                        <p className="text-sm text-muted-foreground mb-2">No image uploaded</p>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={isUploadingImage}
+                                        >
+                                            <Upload className="h-4 w-4 mr-2" />
+                                            {isUploadingImage ? 'Uploading...' : 'Upload Image'}
+                                        </Button>
+                                    </div>
+                                )}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Enrollment Link (Optional)</Label>
+                            <Input
+                                {...form.register('enrollment_cta')}
+                                placeholder="e.g. /contact or https://example.com/enroll"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Link to enrollment page or contact form. Leave empty to use default contact link.
+                            </p>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch checked={form.watch('is_featured')} onCheckedChange={(c) => form.setValue('is_featured', c)} />
@@ -306,6 +410,57 @@ export default function WebsiteCoursesPage() {
                         <div className="space-y-2">
                             <Label>Description</Label>
                             <Textarea {...form.register('description')} rows={3} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Cover Image</Label>
+                            <div className="space-y-2">
+                                {imagePreview ? (
+                                    <div className="relative w-full h-48 border rounded-lg overflow-hidden">
+                                        <img src={imagePreview} alt="Course cover" className="w-full h-full object-cover" />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            className="absolute top-2 right-2"
+                                            onClick={handleImageRemove}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                                        <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                                        <p className="text-sm text-muted-foreground mb-2">No image uploaded</p>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={isUploadingImage}
+                                        >
+                                            <Upload className="h-4 w-4 mr-2" />
+                                            {isUploadingImage ? 'Uploading...' : 'Upload Image'}
+                                        </Button>
+                                    </div>
+                                )}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Enrollment Link (Optional)</Label>
+                            <Input
+                                {...form.register('enrollment_cta')}
+                                placeholder="e.g. /contact or https://example.com/enroll"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Link to enrollment page or contact form. Leave empty to use default contact link.
+                            </p>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch checked={form.watch('is_featured')} onCheckedChange={(c) => form.setValue('is_featured', c)} />

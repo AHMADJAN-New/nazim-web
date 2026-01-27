@@ -43,6 +43,11 @@ class WebsiteFatwa extends Model
         'deleted_at' => 'datetime',
     ];
 
+    public function category()
+    {
+        return $this->belongsTo(WebsiteFatwaCategory::class, 'category_id');
+    }
+
     protected static function boot()
     {
         parent::boot();

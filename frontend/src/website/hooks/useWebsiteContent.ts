@@ -44,6 +44,7 @@ export interface WebsiteCourse {
     level: string | null;
     instructor_name: string | null;
     cover_image_path: string | null;
+    cover_image_url?: string | null; // Added by backend for public API
     enrollment_cta: string | null;
     is_featured: boolean;
     sort_order: number;

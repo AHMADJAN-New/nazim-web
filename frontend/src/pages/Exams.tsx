@@ -438,8 +438,8 @@ export function Exams() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <PageHeader
-        title={t('exams') || 'Exams'}
-        description={t('students.management') || 'Create and manage exams for academic years'}
+        title={t('exams.title') || 'Exams'}
+        description={t('exams.management') || 'Create and manage exams for academic years'}
         primaryAction={
           hasCreate
             ? {

@@ -31,6 +31,7 @@ class PublicFatwaController extends Controller
     {
         $schoolId = $request->attributes->get('school_id');
         $categorySlug = $request->query('category');
+        $searchQuery = $request->query('search');
 
         $query = WebsiteFatwa::where('school_id', $schoolId)
             ->where('status', 'published')
@@ -49,6 +50,19 @@ class PublicFatwaController extends Controller
                 
                 $query->whereIn('category_id', $allCategoryIds);
             }
+        }
+
+        // Add search functionality
+        if ($searchQuery && !empty(trim($searchQuery))) {
+            $searchTerm = '%' . trim($searchQuery) . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('question_title', 'ILIKE', $searchTerm)
+                  ->orWhere('question_text', 'ILIKE', $searchTerm)
+                  ->orWhere('answer_text', 'ILIKE', $searchTerm)
+                  ->orWhereHas('category', function($categoryQuery) use ($searchTerm) {
+                      $categoryQuery->where('name', 'ILIKE', $searchTerm);
+                  });
+            });
         }
 
         $fatwas = $query->orderBy('published_at', 'desc')->get();

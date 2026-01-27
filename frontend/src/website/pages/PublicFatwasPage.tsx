@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -11,10 +11,21 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 export default function PublicFatwasPage() {
-    const { category: categorySlug } = useParams();
+    const { category: categoryParam, slug } = useParams();
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
+    // Debounce search query to avoid too many API calls
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 300); // 300ms delay
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Determine category slug: use category param if available, otherwise check if slug is a category
     const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
         queryKey: ['public-fatwa-categories'],
         queryFn: async () => {
@@ -23,13 +34,41 @@ export default function PublicFatwasPage() {
         }
     });
 
-    const { data: fatwas = [], isLoading: isLoadingFatwas } = useQuery({
-        queryKey: ['public-fatwas', categorySlug],
-        queryFn: async () => {
-            // Updated to pass category param
-            const response = await publicWebsiteApi.getFatwas({ category: categorySlug });
-            return (response as any).data || response;
+    // Flatten categories to check if slug is a category
+    const allCategories = useMemo(() => {
+        const flattenCategories = (cats: any[]): any[] => {
+            const result: any[] = [];
+            cats.forEach(cat => {
+                result.push(cat);
+                if (cat.children && cat.children.length > 0) {
+                    result.push(...flattenCategories(cat.children));
+                }
+            });
+            return result;
+        };
+        return flattenCategories(categories);
+    }, [categories]);
+
+    // Determine category slug: use category param if available, otherwise check if slug is a category
+    const categorySlug = useMemo(() => {
+        if (categoryParam) return categoryParam;
+        if (slug && allCategories.find((c: any) => c.slug === slug)) {
+            return slug;
         }
+        return null;
+    }, [categoryParam, slug, allCategories]);
+
+    const { data: fatwas = [], isLoading: isLoadingFatwas } = useQuery({
+        queryKey: ['public-fatwas', categorySlug, debouncedSearchQuery],
+        queryFn: async () => {
+            // Pass category and search params to filter fatwas
+            const response = await publicWebsiteApi.getFatwas({ 
+                category: categorySlug || undefined,
+                search: debouncedSearchQuery.trim() || undefined,
+            });
+            return (response as any).data || response;
+        },
+        enabled: !isLoadingCategories, // Wait for categories to load first
     });
 
     // Toggle category expansion
@@ -47,10 +86,9 @@ export default function PublicFatwasPage() {
         );
     }
 
-    const filteredFatwas = fatwas.filter((f: any) =>
-        f.question_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        f.question_text?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Backend handles search, so we just use the fatwas as returned
+    // (backend filters by question_title, question_text, answer_text, and category name)
+    const filteredFatwas = fatwas;
 
     // Recursive category renderer
     const renderCategories = (cats: any[], depth = 0) => {
@@ -65,7 +103,7 @@ export default function PublicFatwasPage() {
                         <div key={cat.id}>
                             <div className="flex items-center justify-between group">
                                 <Link
-                                    to={`/public-site/fatwas/category/${cat.slug}`}
+                                    to={`/public-site/fatwas/${cat.slug}`}
                                     className={cn(
                                         "flex-1 py-2 text-sm transition-colors hover:text-emerald-700 block",
                                         isActive ? "text-emerald-700 font-medium" : "text-slate-600"
@@ -113,13 +151,30 @@ export default function PublicFatwasPage() {
 
                     {/* Search */}
                     <div className="max-w-xl mx-auto relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5 z-10" />
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search fatwas..."
-                            className="pl-10 h-12 bg-white/95 border-0 text-slate-900 placeholder:text-slate-500 rounded-lg shadow-lg"
+                            placeholder="Search fatwas by question, answer, or topic..."
+                            className="pl-10 pr-10 h-12 bg-white/95 border-0 text-slate-900 placeholder:text-slate-500 rounded-lg shadow-lg focus:ring-2 focus:ring-emerald-300"
                         />
+                        {searchQuery && (
+                            <button
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setDebouncedSearchQuery('');
+                                }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors z-10"
+                                aria-label="Clear search"
+                            >
+                                <span className="text-xl font-bold leading-none">×</span>
+                            </button>
+                        )}
+                        {searchQuery !== debouncedSearchQuery && (
+                            <div className="absolute right-12 top-1/2 -translate-y-1/2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-emerald-500 border-t-transparent"></div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
@@ -166,22 +221,31 @@ export default function PublicFatwasPage() {
 
                     {/* Content: List */}
                     <div className="lg:col-span-3">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-slate-900">
-                                {categorySlug ?
-                                    (categories.find((c: any) => c.slug === categorySlug)?.name || 'Filtered Results')
-                                    : 'Recent Fatwas'
-                                }
-                            </h2>
-                            <Badge variant="outline" className="text-slate-500">
-                                {filteredFatwas.length} results
+                        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-900">
+                                    {debouncedSearchQuery 
+                                        ? `Search Results${categorySlug ? ` in ${allCategories.find((c: any) => c.slug === categorySlug)?.name || 'Category'}` : ''}`
+                                        : categorySlug
+                                            ? (allCategories.find((c: any) => c.slug === categorySlug)?.name || 'Filtered Results')
+                                            : 'Recent Fatwas'
+                                    }
+                                </h2>
+                                {debouncedSearchQuery && (
+                                    <p className="text-sm text-slate-500 mt-1">
+                                        Searching for: <span className="font-medium">"{debouncedSearchQuery}"</span>
+                                    </p>
+                                )}
+                            </div>
+                            <Badge variant="outline" className="text-slate-500 flex-shrink-0">
+                                {filteredFatwas.length} {filteredFatwas.length === 1 ? 'result' : 'results'}
                             </Badge>
                         </div>
 
                         {filteredFatwas.length > 0 ? (
                             <div className="space-y-4">
                                 {filteredFatwas.map((fatwa: any) => (
-                                    <Link key={fatwa.id} to={`/public-site/fatwas/${fatwa.slug}`} className="block group">
+                                    <Link key={fatwa.id} to={`/public-site/fatwas/view/${fatwa.slug}`} className="block group">
                                         <Card className="hover:shadow-md transition-all duration-200 border-l-4 border-l-transparent hover:border-l-emerald-500">
                                             <CardContent className="p-6">
                                                 <div className="flex items-start gap-4">
@@ -217,11 +281,26 @@ export default function PublicFatwasPage() {
                                 <HelpCircle className="h-12 w-12 mx-auto text-slate-300 mb-4" />
                                 <h3 className="text-lg font-medium text-slate-900 mb-1">No fatwas found</h3>
                                 <p className="text-slate-500 mb-6">
-                                    {searchQuery ? 'Try adjusting your search terms.' : (categorySlug ? 'No fatwas found in this category.' : 'There are no published fatwas yet.')}
+                                    {debouncedSearchQuery 
+                                        ? `No fatwas found matching "${debouncedSearchQuery}". Try adjusting your search terms or browse by category.`
+                                        : (categorySlug 
+                                            ? 'No fatwas found in this category.' 
+                                            : 'There are no published fatwas yet.')
+                                    }
                                 </p>
-                                {searchQuery && (
-                                    <Button variant="outline" onClick={() => setSearchQuery('')}>
+                                {debouncedSearchQuery && (
+                                    <Button variant="outline" onClick={() => {
+                                        setSearchQuery('');
+                                        setDebouncedSearchQuery('');
+                                    }}>
                                         Clear Search
+                                    </Button>
+                                )}
+                                {categorySlug && !debouncedSearchQuery && (
+                                    <Button variant="outline" asChild className="ml-2">
+                                        <Link to="/public-site/fatwas">
+                                            View All Fatwas
+                                        </Link>
                                     </Button>
                                 )}
                             </div>

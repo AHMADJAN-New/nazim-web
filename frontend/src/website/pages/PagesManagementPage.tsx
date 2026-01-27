@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, FileText, Search } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -47,11 +47,13 @@ import { StatusBadge } from '@/website/components/StatusBadge';
 import { SeoFields } from '@/website/components/SeoFields';
 import { ContentEditor } from '@/website/components/ContentEditor';
 import { formatDate } from '@/lib/utils';
+import { useWebsiteImageUpload } from '@/website/hooks/useWebsiteImageUpload';
 
 const pageSchema = z.object({
   slug: z.string().min(1, 'Slug is required').max(120),
   title: z.string().min(1, 'Title is required').max(200),
   status: z.enum(['draft', 'published', 'archived']),
+  content_json: z.any().optional().nullable(),
   seoTitle: z.string().max(60).optional().nullable(),
   seoDescription: z.string().max(160).optional().nullable(),
   seoImagePath: z.string().optional().nullable(),
@@ -66,6 +68,7 @@ export default function PagesManagementPage() {
   const createPage = useCreateWebsitePage();
   const updatePage = useUpdateWebsitePage();
   const deletePage = useDeleteWebsitePage();
+  const imageUpload = useWebsiteImageUpload();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -73,12 +76,19 @@ export default function PagesManagementPage() {
   const [editPage, setEditPage] = useState<WebsitePage | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  // Image upload handler for ContentEditor
+  const handleImageUpload = async (file: File): Promise<string> => {
+    const result = await imageUpload.mutateAsync(file);
+    return result.url;
+  };
+
   const form = useForm<PageFormData>({
     resolver: zodResolver(pageSchema),
     defaultValues: {
       slug: '',
       title: '',
       status: 'draft',
+      content_json: null,
       seoTitle: null,
       seoDescription: null,
       seoImagePath: null,
@@ -100,6 +110,7 @@ export default function PagesManagementPage() {
       slug: data.slug,
       title: data.title,
       status: data.status,
+      contentJson: data.content_json,
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
       seoImagePath: data.seoImagePath,
@@ -116,6 +127,7 @@ export default function PagesManagementPage() {
       slug: data.slug,
       title: data.title,
       status: data.status,
+      contentJson: data.content_json,
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
       seoImagePath: data.seoImagePath,
@@ -137,6 +149,7 @@ export default function PagesManagementPage() {
       slug: page.slug,
       title: page.title,
       status: page.status as 'draft' | 'published' | 'archived',
+      content_json: page.contentJson || null,
       seoTitle: page.seoTitle,
       seoDescription: page.seoDescription,
       seoImagePath: page.seoImagePath,
@@ -262,7 +275,8 @@ export default function PagesManagementPage() {
             <DialogTitle>Create Page</DialogTitle>
             <DialogDescription>Create a new website page</DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
+          <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="slug">Slug *</Label>
@@ -303,6 +317,11 @@ export default function PagesManagementPage() {
                 {...form.register('publishedAt')}
               />
             </div>
+            <ContentEditor 
+              name="content_json" 
+              label="Content" 
+              onImageUpload={handleImageUpload}
+            />
             <SeoFields />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
@@ -312,7 +331,8 @@ export default function PagesManagementPage() {
                 Create
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 
@@ -323,7 +343,8 @@ export default function PagesManagementPage() {
             <DialogTitle>Edit Page</DialogTitle>
             <DialogDescription>Update page details</DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
+          <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-slug">Slug *</Label>
@@ -364,6 +385,11 @@ export default function PagesManagementPage() {
                 {...form.register('publishedAt')}
               />
             </div>
+            <ContentEditor 
+              name="content_json" 
+              label="Content" 
+              onImageUpload={handleImageUpload}
+            />
             <SeoFields />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditPage(null)}>
@@ -373,7 +399,8 @@ export default function PagesManagementPage() {
                 Update
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

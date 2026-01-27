@@ -43,7 +43,7 @@ function renderNode(node: any): string {
             return `<li>${content}</li>`;
         }
         case 'text': {
-            let text = node.text || '';
+            let text = escapeHtml(node.text || ''); // Escape text content for security
             if (node.marks) {
                 node.marks.forEach((mark: any) => {
                     switch (mark.type) {
@@ -54,7 +54,10 @@ function renderNode(node: any): string {
                             text = `<em>${text}</em>`;
                             break;
                         case 'link':
-                            text = `<a href="${mark.attrs?.href || '#'}">${text}</a>`;
+                            const href = mark.attrs?.href || '#';
+                            const target = mark.attrs?.target || '_blank';
+                            const rel = mark.attrs?.rel || 'noopener noreferrer';
+                            text = `<a href="${escapeHtml(href)}" target="${escapeHtml(target)}" rel="${escapeHtml(rel)}">${text}</a>`;
                             break;
                     }
                 });
@@ -65,12 +68,45 @@ function renderNode(node: any): string {
             const content = node.content?.map(renderNode).join('') || '';
             return `<blockquote>${content}</blockquote>`;
         }
+        case 'image': {
+            const src = node.attrs?.src || '';
+            const alt = node.attrs?.alt || '';
+            const title = node.attrs?.title || '';
+            if (!src) return '';
+            return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" title="${escapeHtml(title || alt)}" class="max-w-full h-auto rounded-lg my-4" />`;
+        }
+        case 'hardBreak': {
+            return '<br />';
+        }
+        case 'horizontalRule': {
+            return '<hr />';
+        }
+        case 'codeBlock': {
+            const content = node.content?.map((n: any) => n.text || '').join('') || '';
+            const language = node.attrs?.language || '';
+            return `<pre><code${language ? ` class="language-${language}"` : ''}>${escapeHtml(content)}</code></pre>`;
+        }
+        case 'code': {
+            const text = node.text || '';
+            return `<code>${escapeHtml(text)}</code>`;
+        }
         default:
             if (node.content) {
                 return node.content.map(renderNode).join('');
             }
             return '';
     }
+}
+
+function escapeHtml(text: string): string {
+    const map: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
 function renderContent(content: any[]): string {

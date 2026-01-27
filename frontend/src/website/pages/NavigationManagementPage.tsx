@@ -289,14 +289,14 @@ export default function NavigationManagementPage() {
             <div className="space-y-2">
               <Label htmlFor="parentId">Parent Menu</Label>
               <Select
-                value={form.watch('parentId') || ''}
-                onValueChange={(value) => form.setValue('parentId', value || null)}
+                value={form.watch('parentId') || 'none'}
+                onValueChange={(value) => form.setValue('parentId', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="None (Top Level)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None (Top Level)</SelectItem>
+                  <SelectItem value="none">None (Top Level)</SelectItem>
                   {menus.filter(m => !m.parentId).map((menu) => (
                     <SelectItem key={menu.id} value={menu.id}>
                       {menu.label}
@@ -382,14 +382,14 @@ export default function NavigationManagementPage() {
             <div className="space-y-2">
               <Label htmlFor="edit-parentId">Parent Menu</Label>
               <Select
-                value={form.watch('parentId') || ''}
-                onValueChange={(value) => form.setValue('parentId', value || null)}
+                value={form.watch('parentId') || 'none'}
+                onValueChange={(value) => form.setValue('parentId', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="None (Top Level)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None (Top Level)</SelectItem>
+                  <SelectItem value="none">None (Top Level)</SelectItem>
                   {menus.filter(m => !m.parentId && m.id !== editMenu?.id).map((menu) => (
                     <SelectItem key={menu.id} value={menu.id}>
                       {menu.label}

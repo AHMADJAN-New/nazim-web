@@ -2350,6 +2350,7 @@ export const en = {
     invigilator: 'Invigilator',
     list: 'Exams List',
     listDescription: 'View and manage all exams',
+    title: 'Exams',
     locked: 'Locked',
     management: 'Create and manage exams for academic years',
     marks: 'Marks Entry',
@@ -4288,6 +4289,8 @@ export const en = {
     'events.users': 'Event Users',
     'events.export': 'Export ID Cards',
     websiteManager: 'Website Manager',
+    'websiteManager.settings': 'Settings',
+    'websiteManager.openPublicSite': 'Open Public Site',
     'students.management': 'Management',
     assets: 'Assets',
     'assets.dashboard': 'Assets Dashboard',
@@ -6732,6 +6735,40 @@ export const en = {
     noDomains: 'No domains connected yet.',
     public: 'Public',
     private: 'Private'
+  },
+  website: {
+    editor: {
+      placeholder: 'Start typing...',
+      loading: 'Loading editor...',
+      toolbar: {
+        bold: 'Bold',
+        italic: 'Italic',
+        heading1: 'Heading 1',
+        heading2: 'Heading 2',
+        heading3: 'Heading 3',
+        bulletList: 'Bullet List',
+        orderedList: 'Ordered List',
+        blockquote: 'Quote',
+        link: 'Link',
+        image: 'Image',
+        undo: 'Undo',
+        redo: 'Redo'
+      },
+      link: {
+        title: 'Insert Link',
+        description: 'Enter the URL for the link',
+        url: 'URL',
+        insert: 'Insert'
+      },
+      image: {
+        title: 'Insert Image',
+        description: 'Enter image URL or upload a file',
+        url: 'Image URL',
+        or: 'OR',
+        upload: 'Upload Image',
+        insert: 'Insert'
+      }
+    }
   },
   websitePublic: {
     badge: 'Islamic School',

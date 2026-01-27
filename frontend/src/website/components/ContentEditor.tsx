@@ -1,25 +1,29 @@
 import { Controller, useFormContext } from 'react-hook-form';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { TipTapEditor } from './pageBuilder/TipTapEditor';
+import { TipTapToolbar } from './pageBuilder/TipTapToolbar';
+import { useRef, useState } from 'react';
+import { Editor } from '@tiptap/react';
 
 interface ContentEditorProps {
   name?: string;
   label?: string;
   placeholder?: string;
-  rows?: number;
+  onImageUpload?: (file: File) => Promise<string>;
 }
 
 /**
- * Simple content editor wrapper
- * For now, uses a textarea. Can be extended to use a rich text editor later.
+ * Rich content editor using TipTap
+ * Stores content as ProseMirror JSON format
  */
 export function ContentEditor({
-  name = 'content',
+  name = 'content_json',
   label = 'Content',
-  placeholder = 'Enter content...',
-  rows = 10,
+  placeholder = 'Start writing...',
+  onImageUpload,
 }: ContentEditorProps) {
   const { control } = useFormContext();
+  const [editor, setEditor] = useState<Editor | null>(null);
 
   return (
     <div className="space-y-2">
@@ -28,18 +32,17 @@ export function ContentEditor({
         name={name}
         control={control}
         render={({ field }) => (
-          <Textarea
-            id={name}
-            {...field}
-            placeholder={placeholder}
-            rows={rows}
-            className="font-mono text-sm"
-          />
+          <div className="border rounded-lg overflow-hidden bg-background">
+            <TipTapToolbar editor={editor} onImageUpload={onImageUpload} />
+            <TipTapEditor
+              content={field.value || { type: 'doc', content: [] }}
+              onChange={field.onChange}
+              placeholder={placeholder}
+              onEditorReady={setEditor}
+            />
+          </div>
         )}
       />
-      <p className="text-xs text-muted-foreground">
-        Content is stored as JSON. For now, use plain text. Rich editor coming soon.
-      </p>
     </div>
   );
 }

@@ -23,28 +23,34 @@ interface PublicHeaderProps {
     logo?: string;
 }
 
-// Default navigation items when no database menus exist
+// Default navigation items when no database menus exist (Pashto)
 const defaultNavItems: WebsiteMenu[] = [
-    { id: 'home', label: 'Home', url: '/public-site', parentId: null, sortOrder: 0, isVisible: true },
-    { id: 'about', label: 'About', url: '/public-site/about', parentId: null, sortOrder: 1, isVisible: true },
-    { id: 'programs', label: 'Programs', url: '/public-site/programs', parentId: null, sortOrder: 2, isVisible: true },
+    { id: 'home', label: 'کور', url: '/public-site', parentId: null, sortOrder: 0, isVisible: true },
+    { id: 'about', label: 'زموږ په اړه', url: '/public-site/about', parentId: null, sortOrder: 1, isVisible: true },
+    { id: 'programs', label: 'پروګرامونه', url: '/public-site/programs', parentId: null, sortOrder: 2, isVisible: true },
 
     // Resources Dropdown
-    { id: 'resources', label: 'Resources', url: '#', parentId: null, sortOrder: 3, isVisible: true },
-    { id: 'library', label: 'Library', url: '/public-site/library', parentId: 'resources', sortOrder: 0, isVisible: true },
-    { id: 'scholars', label: 'Scholars', url: '/public-site/scholars', parentId: 'resources', sortOrder: 1, isVisible: true },
-    { id: 'alumni', label: 'Alumni', url: '/public-site/alumni', parentId: 'resources', sortOrder: 2, isVisible: true },
-    { id: 'fatwas', label: 'Fatwas', url: '/public-site/fatwas', parentId: 'resources', sortOrder: 3, isVisible: true },
+    { id: 'resources', label: 'سرچینې', url: '#', parentId: null, sortOrder: 3, isVisible: true },
+    { id: 'library', label: 'کتابتون', url: '/public-site/library', parentId: 'resources', sortOrder: 0, isVisible: true },
+    { id: 'alumni', label: 'فارغ التحصیلان', url: '/public-site/alumni', parentId: 'resources', sortOrder: 2, isVisible: true },
+    { id: 'fatwas', label: 'فتاوي', url: '/public-site/fatwas', parentId: 'resources', sortOrder: 3, isVisible: true },
+    { id: 'ask_fatwa', label: 'پوښتنه وکړئ', url: '/public-site/fatwas/ask', parentId: 'resources', sortOrder: 4, isVisible: true },
 
-    { id: 'news', label: 'News', url: '/public-site/news', parentId: null, sortOrder: 4, isVisible: true },
-    { id: 'results', label: 'Results', url: '/public-site/results', parentId: null, sortOrder: 5, isVisible: true },
-    { id: 'contact', label: 'Contact', url: '/public-site/contact', parentId: null, sortOrder: 6, isVisible: true },
-    { id: 'donate', label: 'Donate', url: '/public-site/donate', parentId: null, sortOrder: 6, isVisible: true },
+    // Top bar items
+    { id: 'scholars', label: 'علما', url: '/public-site/scholars', parentId: null, sortOrder: 4, isVisible: true },
+    { id: 'staff', label: 'کارمندان', url: '/public-site/staff', parentId: null, sortOrder: 5, isVisible: true },
+    { id: 'articles', label: 'مقالې او بلاګ', url: '/public-site/articles', parentId: null, sortOrder: 6, isVisible: true },
+    { id: 'gallery', label: 'ګالري', url: '/public-site/gallery', parentId: null, sortOrder: 7, isVisible: true },
+    { id: 'announcements', label: 'اعلانات', url: '/public-site/announcements', parentId: null, sortOrder: 8, isVisible: true },
+    { id: 'results', label: 'پایلې', url: '/public-site/results', parentId: null, sortOrder: 9, isVisible: true },
+    { id: 'contact', label: 'اړیکه', url: '/public-site/contact', parentId: null, sortOrder: 9, isVisible: true },
+    { id: 'donate', label: 'مرسته', url: '/public-site/donate', parentId: null, sortOrder: 10, isVisible: true },
 ];
 
 export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: PublicHeaderProps) {
     const { t } = useLanguage();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
     // Fetch site data (includes school branding and menus)
     const { data: siteData } = useWebsiteSite();
@@ -69,6 +75,10 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
     const secondaryColorStyle = school?.secondary_color ? { backgroundColor: school.secondary_color } : {};
     // Calculate lighter shade for hover effects (simplified)
     const hoverBgStyle = school?.primary_color ? { '--hover-color': `${school.primary_color}10` } as React.CSSProperties : {};
+    
+    // Get font family from school or default to Bahij Nassim
+    const fontFamily = school?.font_family || 'Bahij Nassim';
+    const fontStyle = { fontFamily: `"${fontFamily}", "Noto Sans Arabic", "Inter", sans-serif` };
 
     const navItems = menus.length > 0 ? menus.map((item: any) => ({
         id: item.id,
@@ -82,16 +92,63 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
     // Build menu tree
     const menuTree = navItems.reduce((acc: WebsiteMenu[], item: WebsiteMenu) => {
         if (!item.parentId) {
+            // Find all children that reference this parent by ID
+            // Convert both to strings for reliable comparison (UUIDs are strings)
+            const itemIdStr = String(item.id || '');
             const children = navItems
-                .filter((child: WebsiteMenu) => child.parentId === item.id)
+                .filter((child: WebsiteMenu) => {
+                    if (!child.parentId) return false;
+                    // Match by comparing as strings (handles UUID string comparison)
+                    const childParentIdStr = String(child.parentId || '');
+                    return childParentIdStr === itemIdStr;
+                })
                 .sort((a: WebsiteMenu, b: WebsiteMenu) => (a.sortOrder || 0) - (b.sortOrder || 0));
-            acc.push({ ...item, children });
+            acc.push({ ...item, children: children.length > 0 ? children : undefined });
         }
         return acc;
     }, []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
+    // Debug logging (only in development)
+    if (import.meta.env.DEV) {
+        console.log('[PublicHeader] Menus from API:', menus.length);
+        console.log('[PublicHeader] Nav items:', navItems.length);
+        console.log('[PublicHeader] Menu tree:', menuTree.length);
+        console.log('[PublicHeader] All nav items with parentId:', navItems.filter(item => item.parentId).map(item => ({
+            label: item.label,
+            parentId: item.parentId,
+            id: item.id
+        })));
+        console.log('[PublicHeader] All parent items:', navItems.filter(item => !item.parentId).map(item => ({
+            label: item.label,
+            id: item.id,
+            url: item.url
+        })));
+        menuTree.forEach(item => {
+            if (item.children && item.children.length > 0) {
+                console.log(`[PublicHeader] ${item.label} (url: "${item.url}", id: "${item.id}") has ${item.children.length} children:`, item.children.map(c => ({ label: c.label, parentId: c.parentId, id: c.id })));
+            }
+        });
+        // Specifically check Resources
+        const resourcesItem = menuTree.find(item => item.label === 'سرچینې' || item.url === '#');
+        if (resourcesItem) {
+            console.log('[PublicHeader] Resources item found:', {
+                label: resourcesItem.label,
+                url: resourcesItem.url,
+                id: resourcesItem.id,
+                hasChildren: !!(resourcesItem.children && resourcesItem.children.length > 0),
+                childrenCount: resourcesItem.children?.length || 0,
+                children: resourcesItem.children?.map(c => ({ label: c.label, parentId: c.parentId, id: c.id })) || [],
+            });
+            // Check if any nav items have this as parent
+            const childrenWithThisParent = navItems.filter(child => child.parentId === resourcesItem.id || child.parentId === resourcesItem.id?.toString());
+            console.log('[PublicHeader] Nav items with Resources as parent:', childrenWithThisParent.map(c => ({ label: c.label, parentId: c.parentId, id: c.id })));
+        } else {
+            console.log('[PublicHeader] Resources item NOT found in menu tree');
+        }
+    }
+
     return (
-        <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-slate-100">
+        <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-slate-100" style={fontStyle}>
             {/* Top bar with contact info */}
             <div className="bg-emerald-900 text-emerald-100 py-2 hidden md:block" style={primaryColorStyle}>
                 <div className="container mx-auto px-4 flex justify-between items-center text-sm">
@@ -104,13 +161,13 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                         )}
                         <span className="flex items-center gap-2">
                             <Calendar className="h-3.5 w-3.5" />
-                            Mon - Fri: 8:00 AM - 5:00 PM
+                            د دو شنبې - د جمې: ۸:۰۰ بجو - ۵:۰۰ بجو
                         </span>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Link to="/auth" className="hover:text-white transition-colors">Parent Portal</Link>
+                        <Link to="/auth" className="hover:text-white transition-colors">د والدینو پورټل</Link>
                         <span className="text-emerald-400 opacity-50">|</span>
-                        <Link to="/auth" className="hover:text-white transition-colors">Staff Login</Link>
+                        <Link to="/auth" className="hover:text-white transition-colors">د کارکوونکو ننوتل</Link>
                     </div>
                 </div>
             </div>
@@ -146,56 +203,85 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                             {schoolName}
                         </span>
                         {/* Only show tagline if desired, but for now fixed is potentially cleaner or could be from DB too */}
-                        <span className="text-xs text-slate-500 hidden sm:block">Excellence in Education</span>
+                        <span className="text-xs text-slate-500 hidden sm:block">په تعلیم کې بریالیتوب</span>
                     </Link>
                 </div>
 
                 {/* Desktop Nav */}
                 <nav className="hidden lg:flex items-center gap-1">
-                    {menuTree.filter(m => m.isVisible).map((item) => (
-                        <div key={item.id} className="relative group">
-                            <Link
-                                to={item.url}
-                                className="px-4 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-1"
-                                style={school?.primary_color ? { '--hover-color': school.primary_color } as React.CSSProperties : {}}
+                    {menuTree.filter(m => m.isVisible).map((item) => {
+                        // Check if this item should be a dropdown parent (has children AND url is # or empty)
+                        const hasChildren = item.children && item.children.length > 0;
+                        const isDropdownParent = hasChildren && (item.url === '#' || item.url === '' || !item.url);
+                        const NavComponent = isDropdownParent ? 'div' : Link;
+                        const navProps = isDropdownParent 
+                            ? { 
+                                className: "px-4 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-1 cursor-pointer",
+                                onMouseEnter: () => {}, // Ensure hover works
+                            }
+                            : { 
+                                to: item.url, 
+                                className: "px-4 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-1" 
+                            };
+                        
+                        const isOpen = openDropdown === item.id;
+                        
+                        return (
+                            <div 
+                                key={item.id} 
+                                className="relative group"
+                                onMouseEnter={() => hasChildren && setOpenDropdown(item.id)}
+                                onMouseLeave={() => setOpenDropdown(null)}
                             >
-                                <span className="group-hover:text-emerald-700" style={school?.primary_color ? { color: 'inherit' } : {}}>
-                                    {item.label}
-                                </span>
-                                {item.children && item.children.length > 0 && (
-                                    <ChevronDown className="h-4 w-4" />
-                                )}
-                            </Link>
-                            {/* Dropdown */}
-                            {item.children && item.children.length > 0 && (
-                                <div className="absolute top-full left-0 w-56 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                                    <div className="rounded-lg border bg-white p-2 shadow-lg">
-                                        {item.children.filter(c => c.isVisible).map(child => (
-                                            <Link
-                                                key={child.id}
-                                                to={child.url}
-                                                className="block px-4 py-2.5 text-sm rounded-md hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
-                                            >
-                                                {child.label}
-                                            </Link>
-                                        ))}
+                                <NavComponent
+                                    {...navProps}
+                                    style={school?.primary_color ? { '--hover-color': school.primary_color } as React.CSSProperties : {}}
+                                >
+                                    <span className="group-hover:text-emerald-700" style={school?.primary_color ? { color: 'inherit' } : {}}>
+                                        {item.label}
+                                    </span>
+                                    {hasChildren && (
+                                        <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                                    )}
+                                </NavComponent>
+                                {/* Dropdown - Show for any item with children */}
+                                {hasChildren && (
+                                    <div 
+                                        className={cn(
+                                            "absolute top-full left-0 rtl:left-auto rtl:right-0 w-56 pt-2 transition-all duration-200",
+                                            isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+                                        )}
+                                        style={{ zIndex: 9999 }}
+                                    >
+                                        <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
+                                            {item.children.filter(c => c.isVisible).map(child => (
+                                                <Link
+                                                    key={child.id}
+                                                    to={child.url}
+                                                    className="block px-4 py-2.5 text-sm text-slate-700 rounded-md hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                                                    onClick={() => setOpenDropdown(null)}
+                                                >
+                                                    {child.label}
+                                                </Link>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                )}
+                            </div>
+                        );
+                    })}
                 </nav>
 
                 <div className="hidden lg:flex items-center gap-3">
                     <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50" asChild>
-                        <Link to="/auth">Login</Link>
+                        <Link to="/auth">ننوتل</Link>
                     </Button>
                     <Button
                         size="sm"
                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
                         style={secondaryColorStyle}
                     >
-                        Apply Now
+                        اوس غوښتنه وکړئ
                     </Button>
                 </div>
 
@@ -212,40 +298,51 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
             {isMobileMenuOpen && (
                 <div className="lg:hidden border-t border-slate-100 bg-white shadow-lg">
                     <div className="container mx-auto px-4 py-4 space-y-2">
-                        {menuTree.filter(m => m.isVisible).map((item) => (
-                            <div key={item.id} className="space-y-1">
-                                <Link
-                                    to={item.url}
-                                    className="block px-4 py-2 font-medium text-slate-700 rounded-md hover:bg-emerald-50 hover:text-emerald-700"
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                >
-                                    {item.label}
-                                </Link>
-                                {item.children && item.children.length > 0 && (
-                                    <div className="pl-4 space-y-1">
-                                        {item.children.filter(c => c.isVisible).map(child => (
-                                            <Link
-                                                key={child.id}
-                                                to={child.url}
-                                                className="block px-4 py-2 text-sm text-slate-500 rounded-md hover:text-emerald-600 pl-8"
-                                                onClick={() => setIsMobileMenuOpen(false)}
-                                            >
-                                                {child.label}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                        {menuTree.filter(m => m.isVisible).map((item) => {
+                            const hasChildren = item.children && item.children.length > 0;
+                            const isDropdownParent = hasChildren && (item.url === '#' || item.url === '' || !item.url);
+                            
+                            return (
+                                <div key={item.id} className="space-y-1">
+                                    {isDropdownParent ? (
+                                        <div className="block px-4 py-2 font-medium text-slate-700 rounded-md cursor-default">
+                                            {item.label}
+                                        </div>
+                                    ) : (
+                                        <Link
+                                            to={item.url}
+                                            className="block px-4 py-2 font-medium text-slate-700 rounded-md hover:bg-emerald-50 hover:text-emerald-700"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                        >
+                                            {item.label}
+                                        </Link>
+                                    )}
+                                    {hasChildren && (
+                                        <div className="pl-4 space-y-1">
+                                            {item.children.filter(c => c.isVisible).map(child => (
+                                                <Link
+                                                    key={child.id}
+                                                    to={child.url}
+                                                    className="block px-4 py-2 text-sm text-slate-500 rounded-md hover:text-emerald-600 pl-8"
+                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                >
+                                                    {child.label}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                         <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
                             <Button variant="outline" className="w-full border-emerald-200 text-emerald-700" asChild>
-                                <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
+                                <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>ننوتل</Link>
                             </Button>
                             <Button
                                 className="w-full bg-emerald-600 hover:bg-emerald-700"
                                 style={secondaryColorStyle}
                             >
-                                Apply Now
+                                اوس غوښتنه وکړئ
                             </Button>
                         </div>
                     </div>

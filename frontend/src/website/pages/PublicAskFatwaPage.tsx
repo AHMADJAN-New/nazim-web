@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -60,16 +60,21 @@ export default function PublicAskFatwaPage() {
         }
     };
 
-    const renderCategoryOptions = (cats: any[], depth = 0) => {
-        return cats.map(cat => (
-            <>
-                <SelectItem key={cat.id} value={cat.id}>
-                    {'\u00A0\u00A0'.repeat(depth)}{cat.name}
-                </SelectItem>
-                {cat.children && cat.children.length > 0 && renderCategoryOptions(cat.children, depth + 1)}
-            </>
-        ));
+    const flattenCategories = (cats: any[], depth = 0): any[] => {
+        const result: any[] = [];
+        cats.forEach(cat => {
+            result.push({ ...cat, depth });
+            if (cat.children && cat.children.length > 0) {
+                result.push(...flattenCategories(cat.children, depth + 1));
+            }
+        });
+        return result;
     };
+
+    const flatCategories = useMemo(() => {
+        if (!categories || categories.length === 0) return [];
+        return flattenCategories(categories);
+    }, [categories]);
 
     if (isSuccess) {
         return (
@@ -143,7 +148,11 @@ export default function PublicAskFatwaPage() {
                                                 {isLoadingCategories ? (
                                                     <div className="p-2 text-center text-sm text-slate-500">Loading topics...</div>
                                                 ) : (
-                                                    renderCategoryOptions(categories)
+                                                    flatCategories.map(cat => (
+                                                        <SelectItem key={cat.id} value={cat.id}>
+                                                            {'\u00A0\u00A0'.repeat(cat.depth)}{cat.name}
+                                                        </SelectItem>
+                                                    ))
                                                 )}
                                             </SelectGroup>
                                         </SelectContent>

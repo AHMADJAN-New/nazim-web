@@ -40,6 +40,7 @@ class FileStorageService
     private const PATH_EVENTS = 'events';
     private const PATH_TEMPLATES = 'templates';
     private const PATH_REPORTS = 'reports';
+    private const PATH_WEBSITE = 'website';
 
     // ==============================================
     // STUDENT FILES
@@ -441,6 +442,31 @@ class FileStorageService
         $this->checkStorageLimit($file, $organizationId);
 
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'thumbnails');
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    // ==============================================
+    // WEBSITE FILES
+    // ==============================================
+
+    /**
+     * Store website image (PUBLIC - for display on public website)
+     * CRITICAL: Website files are school-scoped and MUST include schoolId
+     */
+    public function storeWebsiteImage(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId
+    ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'images');
         $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
 
         // Update storage usage after successful storage

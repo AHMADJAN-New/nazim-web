@@ -2350,6 +2350,7 @@ export const ar: TranslationKeys = {
     "invigilator": "Exams",
     "list": "قائمة الامتحانات",
     "listDescription": "عرض وإدارة جميع الامتحانات",
+    "title": "الامتحانات",
     "locked": "Locked",
     "management": "إنشاء وإدارة الامتحانات للسنوات الأكاديمية",
     "markAttendance": null,
@@ -4261,6 +4262,8 @@ export const ar: TranslationKeys = {
     'events.users': 'مستخدمي الأحداث',
     'events.export': 'تصدير بطاقة الهوية',
     websiteManager: 'إدارة موقع المدرسة',
+    'websiteManager.settings': 'الإعدادات',
+    'websiteManager.openPublicSite': 'فتح الموقع العام',
     'students.management': 'الإدارة',
     assets: 'الأصول',
     'assets.dashboard': 'لوحة تحكم الأصول',
@@ -6767,6 +6770,40 @@ export const ar: TranslationKeys = {
     noDomains: 'لا توجد نطاقات مرتبطة بعد.',
     public: 'عام',
     private: 'خاص'
+  },
+  website: {
+    editor: {
+      placeholder: 'ابدأ الكتابة...',
+      loading: 'جاري تحميل المحرر...',
+      toolbar: {
+        bold: 'عريض',
+        italic: 'مائل',
+        heading1: 'عنوان 1',
+        heading2: 'عنوان 2',
+        heading3: 'عنوان 3',
+        bulletList: 'قائمة نقطية',
+        orderedList: 'قائمة مرقمة',
+        blockquote: 'اقتباس',
+        link: 'رابط',
+        image: 'صورة',
+        undo: 'تراجع',
+        redo: 'إعادة'
+      },
+      link: {
+        title: 'إدراج رابط',
+        description: 'أدخل عنوان URL للرابط',
+        url: 'URL',
+        insert: 'إدراج'
+      },
+      image: {
+        title: 'إدراج صورة',
+        description: 'أدخل عنوان URL للصورة أو ارفع ملف',
+        url: 'عنوان URL للصورة',
+        or: 'أو',
+        insert: 'إدراج',
+        upload: 'رفع صورة'
+      }
+    }
   },
   websitePublic: {
     badge: 'مدرسة إسلامية',

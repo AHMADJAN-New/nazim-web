@@ -1478,6 +1478,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: ListChecks,
           },
           {
+            title: "Pages",
+            url: "/website/pages",
+            icon: FileText,
+          },
+          {
             title: "Announcements",
             url: "/website/announcements",
             icon: PartyPopper,
@@ -2047,14 +2052,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         }
         return;
       }
-      // Toggle secondary sidebar
-      if (secondarySidebarOpen && secondarySidebarItem?.titleKey === 'websiteManager') {
-        if (import.meta.env.DEV) {
-          console.log('[SmartSidebar] Closing secondary sidebar');
-        }
-        setSecondarySidebarOpen(false);
-        setSecondarySidebarItem(null);
-      } else {
+      // Open secondary sidebar (don't toggle - keep it persistent)
+      // Only open if not already open for this item
+      if (!secondarySidebarOpen || secondarySidebarItem?.titleKey !== 'websiteManager') {
         if (import.meta.env.DEV) {
           console.log('[SmartSidebar] Opening secondary sidebar for websiteManager', item);
         }
@@ -2063,6 +2063,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         setSecondarySidebarItem(item);
         setSecondarySidebarOpen(true);
       }
+      // If already open, do nothing - keep it persistent
     } else {
       // Normal toggle for other menus
       toggleExpanded(item.titleKey);
@@ -3073,8 +3074,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
           setOpen(true);
         }}
         onItemClick={() => {
-          // Expand main sidebar when an item in secondary sidebar is clicked
-          setOpen(true);
+          // Keep main sidebar collapsed when item is clicked - don't expand it
+          // Secondary sidebar stays open and main sidebar stays collapsed
         }}
         item={secondarySidebarItem}
         isRTL={isRTL}

@@ -18,6 +18,7 @@ export function PublicLayout() {
 
     const siteData = siteQuery.data || {};
     const school = siteData.school || {};
+    const settings = siteData.settings || {};
 
     if (siteQuery.isLoading) {
         return (
@@ -27,10 +28,14 @@ export function PublicLayout() {
         );
     }
 
+    // Get font family from settings theme, school font_family, or default to Bahij Nassim
+    const fontFamily = settings?.theme?.font_family || school?.font_family || 'Bahij Nassim';
+    const fontStyle = { fontFamily: `"${fontFamily}", "Noto Sans Arabic", "Inter", sans-serif` };
+
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+        <div className="min-h-screen bg-slate-50 flex flex-col" style={fontStyle} data-public-website="true">
             <PublicHeader schoolName={school.name || school.school_name} logo={school.logo} />
-            <main className="flex-1">
+            <main className="flex-1" style={fontStyle}>
                 <Outlet context={{ siteData }} />
             </main>
             <PublicFooter schoolName={school.name || school.school_name} contact={siteData.contact} />

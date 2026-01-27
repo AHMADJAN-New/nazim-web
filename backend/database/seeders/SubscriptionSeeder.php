@@ -122,7 +122,7 @@ class SubscriptionSeeder extends Seeder
             [
                 'name' => 'Trial',
                 'slug' => 'trial',
-                'description' => '7-day free trial with full features but limited counts',
+                'description' => '7-day free trial with full features including website portal, but limited counts',
                 // New fee separation structure
                 'billing_period' => 'yearly',
                 'license_fee_afn' => 0,
@@ -180,14 +180,14 @@ class SubscriptionSeeder extends Seeder
                     'hostel' => true,
                     'multi_school' => false,
                     'api_access' => false,
-                    'public_website' => false,
+                    'public_website' => true, // Enabled for trial to showcase full features
                 ],
                 'limits' => [
                     'students' => 5, 'staff' => 2, 'users' => 1, 'schools' => 1, 'classes' => 2,
                     'documents' => 5, 'exams' => 1, 'report_exports' => 2, 'finance_accounts' => 2,
                     'income_entries' => 10, 'expense_entries' => 10, 'assets' => 5,
                     'library_books' => 10, 'events' => 1, 'certificate_templates' => 1,
-                    'id_card_templates' => 1, 'storage_gb' => 0,
+                    'id_card_templates' => 1, 'storage_gb' => 1, // 1GB for trial (was 0)
                 ],
             ],
             [
@@ -387,7 +387,7 @@ class SubscriptionSeeder extends Seeder
                     'hostel' => false,
                     'multi_school' => false,
                     'api_access' => false,
-                    'public_website' => true,
+                    'public_website' => true, // Website portal enabled for Complete plan
                 ],
                 'limits' => [
                     'students' => 1200, 'staff' => 200, 'users' => 50, 'schools' => 1, 'classes' => 150,

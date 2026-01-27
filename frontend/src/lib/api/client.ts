@@ -4751,6 +4751,11 @@ export const websiteMediaApi = {
   }) => {
     return apiClient.post('/website/media', data);
   },
+  uploadImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post<{ url: string; path: string; media_id: string }>('/website/media/upload-image', formData);
+  },
   update: async (id: string, data: {
     type?: string;
     file_path?: string;
@@ -4836,7 +4841,7 @@ export const publicWebsiteApi = {
   getFatwaCategories: async () => {
     return apiClient.get('/public/website/fatwas/categories');
   },
-  getFatwas: async (params?: { category?: string }) => {
+  getFatwas: async (params?: { category?: string; search?: string }) => {
     return apiClient.get('/public/website/fatwas', { params });
   },
   getFatwa: async (slug: string) => {

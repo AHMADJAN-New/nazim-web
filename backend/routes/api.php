@@ -1377,6 +1377,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/media', [WebsiteMediaController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/media', [WebsiteMediaController::class, 'store']);
+                Route::post('/media/upload-image', [WebsiteMediaController::class, 'uploadImage']);
                 Route::put('/media/{id}', [WebsiteMediaController::class, 'update']);
                 Route::delete('/media/{id}', [WebsiteMediaController::class, 'destroy']);
             });

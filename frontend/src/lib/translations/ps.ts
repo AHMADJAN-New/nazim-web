@@ -4305,6 +4305,8 @@ export const ps: TranslationKeys = {
     'events.users': 'د جلسې/ غونډې کارونکي',
     'events.export': 'د پېژندنې کارت  ID صادرول',
     websiteManager: 'د ویبپاڼې مدیر',
+    'websiteManager.settings': 'تنظیمات',
+    'websiteManager.openPublicSite': 'عامه ویبپاڼه خلاص کړئ',
     'students.management': 'مدیریت',
     assets: 'شتمنۍ',
     'assets.dashboard': 'د شتمنیو ډشبورډ',
@@ -6758,6 +6760,40 @@ export const ps: TranslationKeys = {
     noDomains: 'تر اوسه ډومېنونه نه دي نښلول شوي.',
     public: 'عامه',
     private: 'شخصي'
+  },
+  website: {
+    editor: {
+      placeholder: 'لیکل پیل کړئ...',
+      loading: 'د ادیتور پورته کول...',
+      toolbar: {
+        bold: 'ټینګ',
+        italic: 'مورب',
+        heading1: 'سرلیک 1',
+        heading2: 'سرلیک 2',
+        heading3: 'سرلیک 3',
+        bulletList: 'د نقطو لیست',
+        orderedList: 'د شمیرو لیست',
+        blockquote: 'اقتباس',
+        link: 'لینک',
+        image: 'انځور',
+        undo: 'بیرته',
+        redo: 'بیا'
+      },
+      link: {
+        title: 'لینک اضافه کړئ',
+        description: 'د لینک لپاره URL ولیکئ',
+        url: 'URL',
+        insert: 'اضافه کړئ'
+      },
+      image: {
+        title: 'انځور اضافه کړئ',
+        description: 'د انځور URL ولیکئ یا فایل پورته کړئ',
+        url: 'د انځور URL',
+        or: 'یا',
+        insert: 'اضافه کړئ',
+        upload: 'انځور پورته کړئ'
+      }
+    }
   },
   websitePublic: {
     badge: 'اسلامي ښوونځی',

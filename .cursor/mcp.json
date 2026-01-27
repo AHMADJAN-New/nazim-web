@@ -1,0 +1,42 @@
+﻿{
+  "mcpServers": {
+    "laravel-boost": {
+      "command": "php",
+      "args": [
+        "-ddisplay_errors=0",
+        "-ddisplay_startup_errors=0",
+        "E:/Nazim Production/nazim-web-1/backend/artisan",
+        "boost:mcp"
+      ],
+      "cwd": "E:/Nazim Production/nazim-web-1/backend"
+    },
+    "laravel-boost-pc2": {
+      "command": "php",
+      "args": [
+        "-ddisplay_errors=0",
+        "-ddisplay_startup_errors=0",
+        "D:/Local-repos/nazim-web/backend/artisan",
+        "boost:mcp"
+      ],
+      "cwd": "D:/Local-repos/nazim-web/backend"
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "shadcn@latest",
+        "mcp"
+      ],
+      "cwd": "E:/Nazim Production/nazim-web-1/frontend"
+    },
+    "shadcn-pc2": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "shadcn@latest",
+        "mcp"
+      ],
+      "cwd": "D:/Local-repos/nazim-web/frontend"
+    }
+  }
+}

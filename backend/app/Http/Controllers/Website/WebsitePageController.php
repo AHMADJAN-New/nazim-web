@@ -111,11 +111,18 @@ class WebsitePageController extends Controller
             'published_at' => 'nullable|date',
         ]);
 
+        // Store old slug before updating (in case it changes)
+        $oldSlug = $page->slug;
+
         $page->fill($data);
         $page->updated_by = $user->id;
         $page->save();
 
+        // Clear cache for both old and new slug (if slug changed)
         $this->clearPublicCaches($profile->organization_id, $schoolId, $page->slug);
+        if ($oldSlug !== $page->slug) {
+            $this->clearPublicCaches($profile->organization_id, $schoolId, $oldSlug);
+        }
 
         return response()->json($page);
     }

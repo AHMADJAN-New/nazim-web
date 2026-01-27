@@ -1,6 +1,5 @@
 import { X } from "lucide-react";
 import { memo, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -35,7 +34,6 @@ export const SecondarySidebar = memo(function SecondarySidebar({
   const { t, tUnsafe } = useLanguage();
   const location = useLocation();
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
 
   // Close on ESC key
   useEffect(() => {
@@ -51,24 +49,8 @@ export const SecondarySidebar = memo(function SecondarySidebar({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [open, onClose]);
 
-  // Close on click outside
-  useEffect(() => {
-    if (!open) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        sidebarRef.current &&
-        !sidebarRef.current.contains(e.target as Node) &&
-        backdropRef.current &&
-        backdropRef.current.contains(e.target as Node)
-      ) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open, onClose]);
+  // Don't close on click outside - keep sidebar persistent
+  // User can manually close using the close button
 
   // Don't auto-close on navigation - let user manually close or click item
   // The secondary sidebar will stay open until user closes it or clicks an item
@@ -113,60 +95,23 @@ export const SecondarySidebar = memo(function SecondarySidebar({
 
   const label = tUnsafe(`nav.${item.titleKey}`);
 
-  // Render using portal to ensure it's at the root level
-  const sidebarContent = (
-    <>
-      {/* Backdrop - covers content area but not sidebars */}
-      {open && (
-        <div
-          ref={backdropRef}
-          className={cn(
-            "fixed top-0 bottom-0 bg-black/20 z-[35] transition-opacity duration-300",
-            open ? "opacity-100" : "opacity-0 pointer-events-none",
-            // Position backdrop to start after secondary sidebar (which is after main sidebar)
-            // Account for both collapsed and expanded states
-            collapsed
-              ? isRTL
-                ? "right-[calc(3.5rem+16rem)] left-0"   // 3.5rem (main collapsed) + 16rem (secondary)
-                : "left-[calc(3.5rem+16rem)] right-0"   // 3.5rem (main collapsed) + 16rem (secondary)
-              : isRTL
-              ? "right-[calc(18rem+16rem)] left-0"     // 18rem (main expanded) + 16rem (secondary)
-              : "left-[calc(18rem+16rem)] right-0"     // 18rem (main expanded) + 16rem (secondary)
-          )}
-          onClick={onClose}
-          aria-hidden="true"
-        />
+  // Render inline (not as portal) - part of the layout
+  // When closed, hide it but keep it in the layout flow (width 0)
+  return (
+    <div
+      ref={sidebarRef}
+      className={cn(
+        "flex-shrink-0 bg-sidebar text-sidebar-foreground border-sidebar-border",
+        "transition-all duration-300 ease-in-out overflow-hidden h-screen flex flex-col",
+        // Border based on RTL
+        isRTL ? "border-l" : "border-r",
+        open
+          ? "w-64 opacity-100"
+          : "w-0 opacity-0 pointer-events-none border-0"
       )}
-
-      {/* Secondary Sidebar */}
-      <div
-        ref={sidebarRef}
-        className={cn(
-          "fixed top-0 bottom-0 z-[60] w-64 bg-sidebar text-sidebar-foreground border-sidebar-border shadow-2xl",
-          "transition-all duration-300 ease-in-out",
-          // Position next to main sidebar
-          // When expanded: sidebar is w-72 (18rem = 288px = 72 * 4px)
-          // When collapsed: sidebar is w-14 (3.5rem = 56px = 14 * 4px)
-          // LTR: sidebar on left, secondary on right of sidebar
-          // RTL: sidebar on right, secondary on left of sidebar
-          // Position based on collapsed state
-          collapsed
-            ? isRTL
-              ? "right-14 border-l"  // 3.5rem = 56px from right (collapsed)
-              : "left-14 border-r"   // 3.5rem = 56px from left (collapsed)
-            : isRTL
-            ? "right-72 border-l"    // 18rem = 288px from right (expanded)
-            : "left-72 border-r",    // 18rem = 288px from left (expanded)
-          open
-            ? "translate-x-0 opacity-100"
-            : isRTL
-            ? "translate-x-full opacity-0"
-            : "-translate-x-full opacity-0"
-        )}
-        role="complementary"
-        aria-label={label}
-        style={{ height: '100vh' }}
-      >
+      role="complementary"
+      aria-label={label}
+    >
         {/* Header */}
         <div
           className={cn(
@@ -219,11 +164,12 @@ export const SecondarySidebar = memo(function SecondarySidebar({
                       )}
                       end={(child.url || "#") === "/"}
                       onClick={() => {
-                        // Close secondary sidebar and expand main sidebar when item is clicked
+                        // Keep secondary sidebar open when item is clicked
+                        // Only expand main sidebar if needed
                         if (onItemClick) {
                           onItemClick();
                         }
-                        onClose();
+                        // Don't close secondary sidebar - keep it persistent
                       }}
                     >
                       <child.icon className="h-4 w-4" />
@@ -236,10 +182,6 @@ export const SecondarySidebar = memo(function SecondarySidebar({
           </SidebarMenu>
         </SidebarContent>
       </div>
-    </>
   );
-
-  // Render to document.body to ensure it's above everything
-  return createPortal(sidebarContent, document.body);
 });
 

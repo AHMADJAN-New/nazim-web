@@ -28,6 +28,7 @@ import PublicDynamicPage from '@/website/pages/PublicDynamicPage';
 import PublicNewsPage from '@/website/pages/PublicNewsPage';
 import PublicFatwasPage from '@/website/pages/PublicFatwasPage';
 import PublicAskFatwaPage from '@/website/pages/PublicAskFatwaPage';
+import PublicFatwaDetailPage from '@/website/pages/PublicFatwaDetailPage';
 import PublicExamResultsPage from '@/website/pages/PublicExamResultsPage';
 import PublicContactPage from '@/website/pages/PublicContactPage';
 import PublicLibraryPage from '@/website/pages/PublicLibraryPage';
@@ -35,6 +36,9 @@ import PublicCoursesPage from '@/website/pages/PublicCoursesPage';
 import PublicScholarsPage from '@/website/pages/PublicScholarsPage';
 import PublicGraduatesPage from '@/website/pages/PublicGraduatesPage';
 import PublicDonationsPage from '@/website/pages/PublicDonationsPage';
+import PublicPostDetailPage from '@/website/pages/PublicPostDetailPage';
+import PublicEventsPage from '@/website/pages/PublicEventsPage';
+import PublicEventDetailPage from '@/website/pages/PublicEventDetailPage';
 import { PublicHeader } from '@/website/components/layout/PublicHeader';
 import { PublicFooter } from '@/website/components/layout/PublicFooter';
 import PublicWebsitePlaceholderPage from '@/website/pages/PublicWebsitePlaceholderPage';
@@ -469,6 +473,9 @@ const App = () => (
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                   <Route element={<PublicLayout />}>
+                    {/* Short URL routes for pages (e.g., /page/about, /page/admissions) */}
+                    <Route path="/page/:slug" element={<PublicDynamicPage />} />
+                    
                     <Route path="/public-site" element={<PublicWebsitePage />} />
                     <Route path="/public-site/pages/:slug" element={<PublicDynamicPage />} />
 
@@ -479,21 +486,35 @@ const App = () => (
 
                     {/* Specialized Pages */}
                     <Route path="/public-site/news" element={<PublicNewsPage />} />
+                    <Route path="/public-site/announcements" element={<PublicNewsPage />} />
+                    <Route path="/public-site/articles" element={<PublicNewsPage />} />
+                    <Route path="/public-site/announcements/:slug" element={<PublicPostDetailPage />} />
+                    <Route path="/public-site/articles/:slug" element={<PublicPostDetailPage />} />
+                    <Route path="/public-site/posts/:slug" element={<PublicPostDetailPage />} />
+                    <Route path="/public-site/fatwas/ask" element={<PublicAskFatwaPage />} />
+                    <Route path="/public-site/fatwas/view/:slug" element={<PublicFatwaDetailPage />} />
+                    <Route path="/public-site/fatwas/category/:category" element={<PublicFatwasPage />} />
+                    <Route path="/public-site/fatwas/:slug" element={<PublicFatwasPage />} />
                     <Route path="/public-site/fatwas" element={<PublicFatwasPage />} />
                     <Route path="/public-site/results" element={<PublicExamResultsPage />} />
-                    <Route path="/public-site/fatwas/ask" element={<PublicAskFatwaPage />} />
-                    <Route path="/public-site/fatwas/category/:category" element={<PublicFatwasPage />} />
                     <Route path="/public-site/contact" element={<PublicContactPage />} />
 
                     {/* New Public Modules */}
                     <Route path="/public-site/library" element={<PublicLibraryPage />} />
+                    <Route path="/public-site/courses" element={<PublicCoursesPage />} />
                     <Route path="/public-site/programs" element={<PublicCoursesPage />} />
                     <Route path="/public-site/scholars" element={<PublicScholarsPage />} />
+                    <Route path="/public-site/staff" element={<PublicScholarsPage />} />
+                    <Route path="/public-site/graduates" element={<PublicGraduatesPage />} />
                     <Route path="/public-site/alumni" element={<PublicGraduatesPage />} />
+                    <Route path="/public-site/donations" element={<PublicDonationsPage />} />
                     <Route path="/public-site/donate" element={<PublicDonationsPage />} />
+                    <Route path="/public-site/gallery" element={<PublicWebsitePlaceholderPage title="Gallery" description="Browse our photo gallery and media collections." highlights={["Photo albums", "Event galleries", "School life moments"]} />} />
+                    <Route path="/public-site/staff" element={<PublicScholarsPage />} />
 
                     {/* Events Fallback (can be specialized later) */}
-                    <Route path="/public-site/events" element={<PublicDynamicPage />} />
+                    <Route path="/public-site/events" element={<PublicEventsPage />} />
+                    <Route path="/public-site/events/:id" element={<PublicEventDetailPage />} />
 
                     {/* Placeholders for any other dynamic routes */}
                     {publicWebsitePlaceholders.map((page) => (
@@ -838,6 +859,13 @@ const App = () => (
                     <Route path="/website/navigation" element={
                       <PermissionRoute permission="website_settings.read">
                         <NavigationManagementPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/pages" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <PagesManagementPage />
+                        </Suspense>
                       </PermissionRoute>
                     } />
                     <Route path="/website/articles" element={

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { PublicHeader } from '@/website/components/layout/PublicHeader';
 import { PublicFooter } from '@/website/components/layout/PublicFooter';
+import { LoadingSpinner } from '@/components/ui/loading';
 import {
   BookOpen,
   Users,
@@ -18,6 +19,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import type { WebsiteCourse } from '@/website/hooks/useWebsiteContent';
 
 export default function PublicWebsitePage() {
   const { t } = useLanguage();
@@ -33,26 +35,69 @@ export default function PublicWebsitePage() {
   const posts = site.posts || [];
   const events = site.events || [];
 
-  const programs = useMemo(() => [
-    {
-      title: "Hifz Program",
-      description: "Complete Quran memorization with emphasis on Tajweed and revision.",
-      icon: <BookOpen className="h-6 w-6 text-emerald-600" />,
-      link: "/programs/hifz"
+  // Fetch courses from API
+  const { data: courses = [], isLoading: coursesLoading } = useQuery({
+    queryKey: ['public-courses-featured'],
+    queryFn: async () => {
+      const response = await publicWebsiteApi.getCourses();
+      // Handle both direct array and wrapped response
+      let data: WebsiteCourse[] = [];
+      if (Array.isArray(response)) {
+        data = response;
+      } else if (response && typeof response === 'object' && 'data' in response && Array.isArray((response as any).data)) {
+        data = (response as any).data;
+      } else {
+        if (import.meta.env.DEV) {
+          console.warn('[PublicWebsitePage] Unexpected courses response format:', response);
+        }
+        return [];
+      }
+      
+      // Backend already filters for published, but double-check for safety
+      // Get featured courses first, then top courses by sort_order, limit to 6
+      return data
+        .filter(course => course.status === 'published')
+        .sort((a, b) => {
+          // Featured courses first
+          if (a.is_featured && !b.is_featured) return -1;
+          if (!a.is_featured && b.is_featured) return 1;
+          // Then by sort_order
+          return a.sort_order - b.sort_order;
+        })
+        .slice(0, 6);
     },
-    {
-      title: "Alim Course",
-      description: "In-depth study of Islamic theology, jurisprudence, and Arabic language.",
-      icon: <GraduationCap className="h-6 w-6 text-emerald-600" />,
-      link: "/programs/alim"
-    },
-    {
-      title: "Community Services",
-      description: "Marriage counseling, youth mentoring, and community outreach programs.",
-      icon: <Users className="h-6 w-6 text-emerald-600" />,
-      link: "/services"
-    },
-  ], []);
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+
+      // Map courses to program cards format
+      const programs = useMemo(() => {
+        return courses.map((course) => {
+          // Choose icon based on category or default
+          let icon = <GraduationCap className="h-6 w-6 text-emerald-600" />;
+          if (course.category) {
+            const categoryLower = course.category.toLowerCase();
+            if (categoryLower.includes('hifz') || categoryLower.includes('quran') || categoryLower.includes('memorization')) {
+              icon = <BookOpen className="h-6 w-6 text-emerald-600" />;
+            } else if (categoryLower.includes('alim') || categoryLower.includes('theology') || categoryLower.includes('fiqh')) {
+              icon = <GraduationCap className="h-6 w-6 text-emerald-600" />;
+            } else if (categoryLower.includes('community') || categoryLower.includes('service')) {
+              icon = <Users className="h-6 w-6 text-emerald-600" />;
+            }
+          }
+
+          return {
+            id: course.id,
+            title: course.title,
+            description: course.description || 'Explore this comprehensive program designed to enrich your Islamic knowledge and practice.',
+            icon,
+            imageUrl: course.cover_image_url || course.cover_image_path || null,
+            link: `/public-site/courses`,
+            category: course.category,
+            isFeatured: course.is_featured,
+          };
+        });
+      }, [courses]);
 
   const stats = [
     { label: "Students", value: "500+", icon: <Users className="h-5 w-5" /> },
@@ -132,26 +177,77 @@ export default function PublicWebsitePage() {
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          {programs.map((program) => (
-            <Card key={program.title} className="border-none shadow-md hover:shadow-xl transition-shadow duration-300">
-              <CardHeader>
-                <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center mb-4">
-                  {program.icon}
-                </div>
-                <CardTitle className="text-xl">{program.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-slate-600">{program.description}</p>
-              </CardContent>
-              <CardFooter>
-                <Link to={program.link} className="text-emerald-600 font-medium hover:text-emerald-700 flex items-center gap-2 group">
-                  Learn more <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        {coursesLoading ? (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner />
+          </div>
+        ) : programs.length > 0 ? (
+          <div className="grid gap-8 md:grid-cols-3">
+            {programs.map((program) => (
+              <Card key={program.id} className="border-none shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                {program.imageUrl ? (
+                  <div className="relative h-48 w-full overflow-hidden">
+                    <img
+                      src={program.imageUrl}
+                      alt={program.title}
+                      className="w-full h-full object-cover"
+                    />
+                    {program.isFeatured && (
+                      <Badge variant="secondary" className="absolute top-3 right-3 bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
+                        Featured
+                      </Badge>
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative h-48 w-full bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
+                    <div className="w-16 h-16 bg-emerald-50 rounded-lg flex items-center justify-center">
+                      {program.icon}
+                    </div>
+                    {program.isFeatured && (
+                      <Badge variant="secondary" className="absolute top-3 right-3 bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
+                        Featured
+                      </Badge>
+                    )}
+                  </div>
+                )}
+                <CardHeader>
+                  <CardTitle className="text-xl">{program.title}</CardTitle>
+                  {program.category && (
+                    <Badge variant="outline" className="mt-2 w-fit text-xs">
+                      {program.category}
+                    </Badge>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <p className="text-slate-600 line-clamp-3">{program.description}</p>
+                </CardContent>
+                <CardFooter>
+                  <Link to={program.link} className="text-emerald-600 font-medium hover:text-emerald-700 flex items-center gap-2 group">
+                    Learn more <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 bg-slate-50 rounded-lg">
+            <GraduationCap className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-500">Programs will be displayed here once they are published.</p>
+            <Link to="/public-site/courses" className="text-emerald-600 font-medium hover:text-emerald-700 mt-4 inline-block">
+              View all courses →
+            </Link>
+          </div>
+        )}
+
+        {programs.length > 0 && (
+          <div className="text-center mt-12">
+            <Link to="/public-site/courses">
+              <Button variant="outline" className="text-emerald-700 border-emerald-200 hover:bg-emerald-50">
+                View All Programs
+              </Button>
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Latest Updates Section (News & Events) */}
