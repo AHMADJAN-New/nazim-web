@@ -134,6 +134,10 @@ Route::post('auth/login', [AuthController::class, 'login']);
 Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scanPublic']);
 Route::get('/maintenance/status/public', [App\Http\Controllers\MaintenanceController::class, 'getPublicStatus']);
 
+// Public desktop license key lookup (for desktop app license verification)
+Route::get('/desktop-licenses/keys/public/{kid}', [App\Http\Controllers\DesktopLicenseController::class, 'getPublicKeyByKid'])
+    ->middleware('throttle:60,1'); // Rate limit: 60 requests per minute
+
 // Public certificate verification routes (rate limited)
 use App\Http\Controllers\CertificateVerifyController;
 use App\Http\Controllers\Website\PublicFatwaController;
@@ -1678,6 +1682,8 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
         // License Keys
         Route::get('/keys', [App\Http\Controllers\DesktopLicenseController::class, 'listKeys']);
         Route::post('/keys', [App\Http\Controllers\DesktopLicenseController::class, 'generateKeyPair']);
+        Route::post('/keys/import', [App\Http\Controllers\DesktopLicenseController::class, 'importKeys']);
+        Route::get('/keys/check-sodium', [App\Http\Controllers\DesktopLicenseController::class, 'checkSodium']);
         Route::get('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'getKey']);
         Route::put('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'updateKey']);
         Route::delete('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'deleteKey']);

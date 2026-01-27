@@ -103,6 +103,7 @@ export function mapUpdateKeyRequestDomainToApi(
   domain: UpdateKeyRequest
 ): DesktopLicenseApi.UpdateKeyRequest {
   return {
+    kid: domain.kid,
     notes: domain.notes ?? null,
   };
 }

@@ -868,6 +868,9 @@ export const platformApi = {
       generate: async (data: DesktopLicenseApi.GenerateKeyPairRequest) => {
         return apiClient.post<{ data: DesktopLicenseApi.LicenseKey }>('/platform/desktop-licenses/keys', data);
       },
+      import: async (data: DesktopLicenseApi.ImportKeysRequest) => {
+        return apiClient.post<{ data: DesktopLicenseApi.ImportKeysResponse }>('/platform/desktop-licenses/keys/import', data);
+      },
       get: async (id: string) => {
         return apiClient.get<{ data: DesktopLicenseApi.LicenseKey }>(`/platform/desktop-licenses/keys/${id}`);
       },
