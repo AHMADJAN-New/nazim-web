@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { PublicPageHeader } from '@/website/components/PublicPageHeader';
 import { Button } from '@/components/ui/button';
 import { Link, useParams } from 'react-router-dom';
 import { BookOpen, Search, HelpCircle, ChevronRight, MessageCircle, ChevronDown } from 'lucide-react';
@@ -58,18 +59,22 @@ export default function PublicFatwasPage() {
         return null;
     }, [categoryParam, slug, allCategories]);
 
-    const { data: fatwas = [], isLoading: isLoadingFatwas } = useQuery({
-        queryKey: ['public-fatwas', categorySlug, debouncedSearchQuery],
+    const [page, setPage] = useState(1);
+    const { data: fatwasData, isLoading: isLoadingFatwas } = useQuery({
+        queryKey: ['public-fatwas', categorySlug, debouncedSearchQuery, page],
         queryFn: async () => {
-            // Pass category and search params to filter fatwas
-            const response = await publicWebsiteApi.getFatwas({ 
+            const response = await publicWebsiteApi.getFatwas({
                 category: categorySlug || undefined,
                 search: debouncedSearchQuery.trim() || undefined,
+                page: page
             });
             return (response as any).data || response;
         },
-        enabled: !isLoadingCategories, // Wait for categories to load first
+        enabled: !isLoadingCategories,
     });
+
+    const fatwas = fatwasData?.data || [];
+    const totalPages = fatwasData?.last_page || 1;
 
     // Toggle category expansion
     const toggleCategory = (catId: string, e: React.MouseEvent) => {
@@ -224,7 +229,7 @@ export default function PublicFatwasPage() {
                         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-900">
-                                    {debouncedSearchQuery 
+                                    {debouncedSearchQuery
                                         ? `Search Results${categorySlug ? ` in ${allCategories.find((c: any) => c.slug === categorySlug)?.name || 'Category'}` : ''}`
                                         : categorySlug
                                             ? (allCategories.find((c: any) => c.slug === categorySlug)?.name || 'Filtered Results')
@@ -281,10 +286,10 @@ export default function PublicFatwasPage() {
                                 <HelpCircle className="h-12 w-12 mx-auto text-slate-300 mb-4" />
                                 <h3 className="text-lg font-medium text-slate-900 mb-1">No fatwas found</h3>
                                 <p className="text-slate-500 mb-6">
-                                    {debouncedSearchQuery 
+                                    {debouncedSearchQuery
                                         ? `No fatwas found matching "${debouncedSearchQuery}". Try adjusting your search terms or browse by category.`
-                                        : (categorySlug 
-                                            ? 'No fatwas found in this category.' 
+                                        : (categorySlug
+                                            ? 'No fatwas found in this category.'
                                             : 'There are no published fatwas yet.')
                                     }
                                 </p>

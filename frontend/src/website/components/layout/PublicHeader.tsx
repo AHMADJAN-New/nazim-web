@@ -36,13 +36,15 @@ const defaultNavItems: WebsiteMenu[] = [
     { id: 'fatwas', label: 'فتاوي', url: '/public-site/fatwas', parentId: 'resources', sortOrder: 3, isVisible: true },
     { id: 'ask_fatwa', label: 'پوښتنه وکړئ', url: '/public-site/fatwas/ask', parentId: 'resources', sortOrder: 4, isVisible: true },
 
-    // Top bar items
-    { id: 'scholars', label: 'علما', url: '/public-site/scholars', parentId: null, sortOrder: 4, isVisible: true },
-    { id: 'staff', label: 'کارمندان', url: '/public-site/staff', parentId: null, sortOrder: 5, isVisible: true },
-    { id: 'articles', label: 'مقالې او بلاګ', url: '/public-site/articles', parentId: null, sortOrder: 6, isVisible: true },
-    { id: 'gallery', label: 'ګالري', url: '/public-site/gallery', parentId: null, sortOrder: 7, isVisible: true },
-    { id: 'announcements', label: 'اعلانات', url: '/public-site/announcements', parentId: null, sortOrder: 8, isVisible: true },
-    { id: 'results', label: 'پایلې', url: '/public-site/results', parentId: null, sortOrder: 9, isVisible: true },
+    // Moved features to Resources
+    { id: 'scholars', label: 'علما', url: '/public-site/scholars', parentId: 'resources', sortOrder: 5, isVisible: true },
+    { id: 'staff', label: 'کارمندان', url: '/public-site/staff', parentId: 'resources', sortOrder: 6, isVisible: true },
+    { id: 'articles', label: 'مقالې او بلاګ', url: '/public-site/articles', parentId: 'resources', sortOrder: 7, isVisible: true },
+    { id: 'gallery', label: 'ګالري', url: '/public-site/gallery', parentId: 'resources', sortOrder: 8, isVisible: true },
+    { id: 'announcements', label: 'اعلانات', url: '/public-site/announcements', parentId: 'resources', sortOrder: 9, isVisible: true },
+    { id: 'results', label: 'پایلې', url: '/public-site/results', parentId: 'resources', sortOrder: 10, isVisible: true },
+    { id: 'events', label: 'پیښې', url: '/public-site/events', parentId: 'resources', sortOrder: 11, isVisible: true },
+
     { id: 'contact', label: 'اړیکه', url: '/public-site/contact', parentId: null, sortOrder: 9, isVisible: true },
     { id: 'donate', label: 'مرسته', url: '/public-site/donate', parentId: null, sortOrder: 10, isVisible: true },
 ];
@@ -75,22 +77,127 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
     const secondaryColorStyle = school?.secondary_color ? { backgroundColor: school.secondary_color } : {};
     // Calculate lighter shade for hover effects (simplified)
     const hoverBgStyle = school?.primary_color ? { '--hover-color': `${school.primary_color}10` } as React.CSSProperties : {};
-    
+
     // Get font family from school or default to Bahij Nassim
     const fontFamily = school?.font_family || 'Bahij Nassim';
     const fontStyle = { fontFamily: `"${fontFamily}", "Noto Sans Arabic", "Inter", sans-serif` };
 
-    const navItems = menus.length > 0 ? menus.map((item: any) => ({
+    // Updated logic: Professional Header Structure
+    // Groups: Community (Scholars, Staff, Alumni), Media (Gallery, News, Events), Resources (Library, Fatwas)
+
+    // 1. Get base items (API or defaults)
+    // We filter out items that we are about to force-group to avoid duplicates if they were top-level in DB
+    // IMPORTANT: We filter by URL as well, because DB IDs might be UUIDs and not match our hardcoded IDs.
+    const forcedGroupIds = [
+        'scholars', 'staff', 'alumni',
+        'gallery', 'articles', 'announcements', 'events',
+        'library', 'fatwas', 'ask_fatwa', 'results'
+    ];
+
+    const forcedGroupUrls = [
+        '/public-site/scholars',
+        '/public-site/staff',
+        '/public-site/alumni',
+        '/public-site/gallery',
+        '/public-site/articles',
+        '/public-site/news', // In case old link exists
+        '/public-site/announcements',
+        '/public-site/events',
+        '/public-site/library',
+        '/public-site/fatwas',
+        '/public-site/fatwas/ask',
+        '/public-site/results',
+        '/public-site/exams/results', // Variant
+    ];
+
+    let navItems = menus.length > 0 ? menus.map((item: any) => ({
         id: item.id,
         label: item.label,
         url: item.url,
         parentId: item.parent_id,
         sortOrder: item.sort_order,
         isVisible: item.is_visible
-    })) : defaultNavItems;
+    })).filter((item: WebsiteMenu) => {
+        // Filter out if ID matches forced IDs OR if URL matches forced URLs
+        if (forcedGroupIds.includes(item.id)) return false;
+        if (item.url && forcedGroupUrls.some(forcedUrl => item.url.includes(forcedUrl))) return false;
+        return true;
+    })
+        : [];
+
+    // 2. Define Groups
+    const communityGroup = { id: 'community', label: 'ټولنه', url: '#', parentId: null, sortOrder: 3, isVisible: true, children: [] as WebsiteMenu[] };
+    const mediaGroup = { id: 'media', label: 'رسنۍ', url: '#', parentId: null, sortOrder: 4, isVisible: true, children: [] as WebsiteMenu[] };
+    const resourcesGroup = { id: 'resources', label: 'سرچینې', url: '#', parentId: null, sortOrder: 5, isVisible: true, children: [] as WebsiteMenu[] };
+
+    // 3. Define Items for each group
+    const communityItems = [
+        { id: 'scholars', label: 'علما', url: '/public-site/scholars', parentId: 'community', sortOrder: 0, isVisible: true },
+        { id: 'staff', label: 'کارمندان', url: '/public-site/staff', parentId: 'community', sortOrder: 1, isVisible: true },
+        { id: 'alumni', label: 'فارغ التحصیلان', url: '/public-site/alumni', parentId: 'community', sortOrder: 2, isVisible: true },
+    ];
+
+    const mediaItems = [
+        { id: 'gallery', label: 'ګالري', url: '/public-site/gallery', parentId: 'media', sortOrder: 0, isVisible: true },
+        { id: 'articles', label: 'مقالې او بلاګ', url: '/public-site/articles', parentId: 'media', sortOrder: 1, isVisible: true },
+        { id: 'announcements', label: 'اعلانات', url: '/public-site/announcements', parentId: 'media', sortOrder: 2, isVisible: true },
+        { id: 'events', label: 'پیښې', url: '/public-site/events', parentId: 'media', sortOrder: 3, isVisible: true },
+    ];
+
+    const resourceItems = [
+        { id: 'library', label: 'کتابتون', url: '/public-site/library', parentId: 'resources', sortOrder: 0, isVisible: true },
+        { id: 'fatwas', label: 'فتاوي', url: '/public-site/fatwas', parentId: 'resources', sortOrder: 1, isVisible: true },
+        { id: 'ask_fatwa', label: 'پوښتنه وکړئ', url: '/public-site/fatwas/ask', parentId: 'resources', sortOrder: 2, isVisible: true },
+        // Results removed as requested
+    ];
+
+    // 4. Merge Groups into NavItems
+    // Function to add group if not exists (checking by ID or Label)
+    const addGroup = (group: any, items: any[]) => {
+        let existingGroup = navItems.find((i: WebsiteMenu) => i.id === group.id || i.label === group.label);
+        if (!existingGroup) {
+            existingGroup = group;
+            // Insert at correct sort order position if possible, or just push.
+            // Since we reconstructed navItems, let's just push and sort later.
+            navItems.push(existingGroup);
+        }
+
+        const parentId = existingGroup.id;
+        items.forEach(item => {
+            // Check if exists
+            const exists = navItems.some((i: WebsiteMenu) => i.url === item.url && String(i.parentId) === String(parentId));
+            if (!exists) {
+                navItems.push({ ...item, parentId });
+            }
+        });
+    };
+
+    addGroup(communityGroup, communityItems);
+    addGroup(mediaGroup, mediaItems);
+    addGroup(resourcesGroup, resourceItems);
+
+    // 5. Ensure default items exist if DB is empty or missing them
+    const essentialDefaults = [
+        { id: 'home', label: 'کور', url: '/public-site', parentId: null, sortOrder: 0, isVisible: true },
+        { id: 'about', label: 'زموږ په اړه', url: '/public-site/about', parentId: null, sortOrder: 1, isVisible: true },
+        { id: 'programs', label: 'پروګرامونه', url: '/public-site/programs', parentId: null, sortOrder: 2, isVisible: true },
+        { id: 'contact', label: 'اړیکه', url: '/public-site/contact', parentId: null, sortOrder: 9, isVisible: true },
+        { id: 'donate', label: 'مرسته', url: '/public-site/donate', parentId: null, sortOrder: 10, isVisible: true },
+    ];
+
+    essentialDefaults.forEach(def => {
+        // Strict check: if URL exists anywhere, don't add default top level (unless it IS the default top level we want)
+        // Actually, we want these essential defaults to be present.
+        // But we should check if they are ALREADY present from DB to avoid duplicating "Home" or "About".
+        const exists = navItems.some((i: WebsiteMenu) => i.url === def.url);
+        if (!exists) {
+            navItems.push(def);
+        }
+    });
 
     // Build menu tree
     const menuTree = navItems.reduce((acc: WebsiteMenu[], item: WebsiteMenu) => {
+        // Only top level items go here
         if (!item.parentId) {
             // Find all children that reference this parent by ID
             // Convert both to strings for reliable comparison (UUIDs are strings)
@@ -106,7 +213,7 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
             acc.push({ ...item, children: children.length > 0 ? children : undefined });
         }
         return acc;
-    }, []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    }, []).sort((a: WebsiteMenu, b: WebsiteMenu) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
     // Debug logging (only in development)
     if (import.meta.env.DEV) {
@@ -214,21 +321,21 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                         const hasChildren = item.children && item.children.length > 0;
                         const isDropdownParent = hasChildren && (item.url === '#' || item.url === '' || !item.url);
                         const NavComponent = isDropdownParent ? 'div' : Link;
-                        const navProps = isDropdownParent 
-                            ? { 
+                        const navProps = isDropdownParent
+                            ? {
                                 className: "px-4 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-1 cursor-pointer",
-                                onMouseEnter: () => {}, // Ensure hover works
+                                onMouseEnter: () => { }, // Ensure hover works
                             }
-                            : { 
-                                to: item.url, 
-                                className: "px-4 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-1" 
+                            : {
+                                to: item.url,
+                                className: "px-4 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-1"
                             };
-                        
+
                         const isOpen = openDropdown === item.id;
-                        
+
                         return (
-                            <div 
-                                key={item.id} 
+                            <div
+                                key={item.id}
                                 className="relative group"
                                 onMouseEnter={() => hasChildren && setOpenDropdown(item.id)}
                                 onMouseLeave={() => setOpenDropdown(null)}
@@ -246,7 +353,7 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                                 </NavComponent>
                                 {/* Dropdown - Show for any item with children */}
                                 {hasChildren && (
-                                    <div 
+                                    <div
                                         className={cn(
                                             "absolute top-full left-0 rtl:left-auto rtl:right-0 w-56 pt-2 transition-all duration-200",
                                             isOpen ? "opacity-100 visible" : "opacity-0 invisible"
@@ -301,7 +408,7 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                         {menuTree.filter(m => m.isVisible).map((item) => {
                             const hasChildren = item.children && item.children.length > 0;
                             const isDropdownParent = hasChildren && (item.url === '#' || item.url === '' || !item.url);
-                            
+
                             return (
                                 <div key={item.id} className="space-y-1">
                                     {isDropdownParent ? (

@@ -21,19 +21,28 @@ class WebsiteMedia extends Model
         'id',
         'organization_id',
         'school_id',
-        'type',
+        'category_id',
+        'type', // image, video, document, audio
         'file_path',
         'file_name',
         'alt_text',
         'metadata',
+        'created_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(WebsiteMediaCategory::class, 'category_id');
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
 
     protected static function boot()
     {
@@ -46,8 +55,5 @@ class WebsiteMedia extends Model
         });
     }
 
-    public function school()
-    {
-        return $this->belongsTo(SchoolBranding::class, 'school_id');
-    }
+
 }

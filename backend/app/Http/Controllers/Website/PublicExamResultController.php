@@ -53,6 +53,8 @@ class PublicExamResultController extends Controller
 
         // 1. Find the student in this school matching the search term
         // We search by name, code, admission number
+        // Limit matches to prevent leaking too much info if generic search
+        // We need to paginate the *students* first
         $students = Student::where('school_id', $schoolId)
             ->whereNull('deleted_at')
             ->where(function ($query) use ($searchTerm) {
@@ -62,16 +64,16 @@ class PublicExamResultController extends Controller
                     // Optional: Father name search if needed
                     ->orWhere(DB::raw('lower(father_name)'), 'like', "%{$searchTerm}%");
             })
-            ->limit(5) // Limit matches to prevent leaking too much info if generic search
-            ->get();
+            ->paginate(10); // Use paginate instead of get/limit
 
         if ($students->isEmpty()) {
-            return response()->json(['results' => []]);
+            return response()->json($students); // Returns empty paginated response
         }
 
         $results = [];
 
         foreach ($students as $student) {
+            // ... (Logic remains same) ...
             // 2. Check if student is enrolled in this exam
             $examStudent = ExamStudent::where('exam_id', $examId)
                 ->where('student_id', $student->id)
@@ -82,7 +84,8 @@ class PublicExamResultController extends Controller
                 continue;
             }
 
-            // 3. Get Results using DB query builder for better control
+            // ... (Logic to fetch results) ...
+            // Copying existing logic
             $examResultsData = DB::table('exam_results')
                 ->where('exam_results.exam_student_id', $examStudent->id)
                 ->where('exam_results.school_id', $schoolId)
@@ -110,8 +113,8 @@ class PublicExamResultController extends Controller
                 )
                 ->orderBy('subjects.name')
                 ->get();
-            
-            // Convert to collection of objects for consistency
+
+            // Formatting
             $examResults = collect($examResultsData)->map(function ($item) {
                 return (object) [
                     'id' => $item->id,
@@ -132,7 +135,7 @@ class PublicExamResultController extends Controller
                 continue;
             }
 
-            // Calculate totals
+            // Calculations
             $totalMaxMarks = $examResults->sum(function ($result) {
                 return $result->max_marks ?? 0;
             });
@@ -140,8 +143,7 @@ class PublicExamResultController extends Controller
                 return $result->is_absent ? 0 : ($result->marks_obtained ?? 0);
             });
             $percentage = $totalMaxMarks > 0 ? ($totalObtained / $totalMaxMarks) * 100 : 0;
-            
-            // Determine global pass/fail if logic exists, for now simple aggregation
+
             $isPass = $examResults->every(function ($result) {
                 if ($result->is_absent) {
                     return false;
@@ -150,10 +152,6 @@ class PublicExamResultController extends Controller
                 $obtained = $result->marks_obtained ?? 0;
                 return $obtained >= $passMarks;
             });
-
-            // If we have a position/rank stored in ExamStudent, use it
-            // Assuming rank might be stored in ExamStudent table or calculated dynamically
-            // For now, we'll leave rank out unless requested to calculate it on the fly (expensive)
 
             $results[] = [
                 'student' => [
@@ -168,11 +166,33 @@ class PublicExamResultController extends Controller
                     'total_max' => $totalMaxMarks,
                     'total_obtained' => $totalObtained,
                     'percentage' => round($percentage, 2),
-                    'result_status' => $isPass ? 'PASS' : 'FAIL', // This is simplistic, might need more complex logic
+                    'result_status' => $isPass ? 'PASS' : 'FAIL',
                 ]
             ];
         }
 
-        return response()->json(['results' => $results]);
+        // We need to return the pagination metadata along with the *processed* results
+        // The $students object contains the pagination info.
+        // We can use setCollection to replace the raw student list with our processed results,
+        // BUT strict typings/structure might differ. 
+        // Safer to construct response normally.
+
+        $customPagination = [
+            'current_page' => $students->currentPage(),
+            'data' => $results,
+            'first_page_url' => $students->url(1),
+            'from' => $students->firstItem(),
+            'last_page' => $students->lastPage(),
+            'last_page_url' => $students->url($students->lastPage()),
+            'links' => $students->linkCollection()->toArray(),
+            'next_page_url' => $students->nextPageUrl(),
+            'path' => $students->path(),
+            'per_page' => $students->perPage(),
+            'prev_page_url' => $students->previousPageUrl(),
+            'to' => $students->lastItem(),
+            'total' => $students->total(),
+        ];
+
+        return response()->json($customPagination);
     }
 }

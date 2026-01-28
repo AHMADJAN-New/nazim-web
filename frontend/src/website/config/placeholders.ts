@@ -29,12 +29,7 @@ export const publicWebsitePlaceholders = [
         description: "Upcoming events and calendar view.",
         highlights: ["Event list", "Calendar view", "Event detail pages", "RSVP prompts"],
     },
-    {
-        path: "/public-site/gallery",
-        title: "Gallery",
-        description: "Albums, photos, and media highlights.",
-        highlights: ["Album grid", "Photo carousel", "Video embeds", "Media filters"],
-    },
+
     {
         path: "/public-site/scholars",
         title: "Scholars & Teachers",

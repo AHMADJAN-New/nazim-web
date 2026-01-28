@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
+import { PublicPageHeader } from '@/website/components/PublicPageHeader';
 
 export default function PublicContactPage() {
     const { toast } = useToast();
@@ -68,19 +69,15 @@ export default function PublicContactPage() {
     if (isSuccess) {
         return (
             <div className="flex-1">
-                <section className="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
-                    <div className="container mx-auto px-4 relative z-10 text-center">
-                        <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in duration-300">
-                            <CheckCircle className="h-10 w-10 text-white" />
-                        </div>
-                        <h1 className="text-3xl md:text-5xl font-bold mb-4">Message Sent!</h1>
-                        <p className="text-emerald-200 max-w-lg mx-auto mb-8">
-                            Thank you for reaching out to us. A member of our team has received your message and will respond as soon as possible.
-                        </p>
+                <PublicPageHeader
+                    title="Message Sent!"
+                    description="Thank you for reaching out to us. A member of our team has received your message and will respond as soon as possible."
+                >
+                    <div className="flex justify-center gap-4">
                         <Button
                             variant="secondary"
                             onClick={() => setIsSuccess(false)}
-                            className="mr-4"
+                            className="mr-0"
                         >
                             Send Another Message
                         </Button>
@@ -88,7 +85,7 @@ export default function PublicContactPage() {
                             <a href="/public-site">Back to Home</a>
                         </Button>
                     </div>
-                </section>
+                </PublicPageHeader>
             </div>
         );
     }
@@ -96,17 +93,10 @@ export default function PublicContactPage() {
     return (
         <div className="flex-1 bg-slate-50">
             {/* Header */}
-            <section className="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                }}></div>
-                <div className="container mx-auto px-4 relative z-10 text-center">
-                    <h1 className="text-3xl md:text-5xl font-bold mb-4">Contact Us</h1>
-                    <p className="text-emerald-200 max-w-2xl mx-auto">
-                        Have questions about admissions, programs, or events? We're here to help.
-                    </p>
-                </div>
-            </section>
+            <PublicPageHeader
+                title="Contact Us"
+                description="Have questions about admissions, programs, or events? We're here to help."
+            />
 
             <section className="container mx-auto px-4 py-12 -mt-10 relative z-20">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

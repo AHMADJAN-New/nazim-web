@@ -4822,6 +4822,28 @@ export const websiteMenusApi = {
   },
 };
 
+
+// Pagination Interface
+export interface PaginatedResponse<T> {
+  current_page: number;
+  data: T[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: {
+    url: string | null;
+    label: string;
+    active: boolean;
+  }[];
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
+}
+
 export const publicWebsiteApi = {
   getSite: async (params?: { locale?: string }) => {
     return apiClient.get('/public/website/site', params);
@@ -4832,16 +4854,22 @@ export const publicWebsiteApi = {
   getPage: async (slug: string) => {
     return apiClient.get(`/public/website/pages/${slug}`);
   },
-  getPosts: async () => {
-    return apiClient.get('/public/website/posts');
+  getPosts: async (page = 1) => {
+    return apiClient.get('/public/website/posts', { params: { page } });
   },
   getEvents: async () => {
     return apiClient.get('/public/website/events');
   },
+  getMedia: async (params?: { category?: string; page?: number }) => {
+    return apiClient.get('/public/website/media', { params });
+  },
+  getMediaCategories: async () => {
+    return apiClient.get('/public/website/media', { params: { get_categories: true } });
+  },
   getFatwaCategories: async () => {
     return apiClient.get('/public/website/fatwas/categories');
   },
-  getFatwas: async (params?: { category?: string; search?: string }) => {
+  getFatwas: async (params?: { category?: string; search?: string; page?: number }) => {
     return apiClient.get('/public/website/fatwas', { params });
   },
   getFatwa: async (slug: string) => {
@@ -4878,8 +4906,11 @@ export const publicWebsiteApi = {
   getPublicExamOptions: async () => {
     return apiClient.get('/public/website/exams/options');
   },
-  searchPublicExamResults: async (data: { exam_id: string; search_term: string }) => {
-    return apiClient.post('/public/website/exams/results', data);
+  searchPublicExamResults: async (params: { page?: number; exam_id: string; search_term: string }) => {
+    return apiClient.post('/public/website/exams/results/search?page=' + (params.page || 1), {
+      exam_id: params.exam_id,
+      search_term: params.search_term,
+    });
   },
 };
 

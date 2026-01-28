@@ -167,6 +167,7 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/pages/{slug}', [PublicWebsiteController::class, 'page']);
         Route::get('/posts', [PublicWebsiteController::class, 'posts']);
         Route::get('/events', [PublicWebsiteController::class, 'events']);
+        Route::get('/media', [PublicWebsiteController::class, 'media']);
         Route::get('/fatwas/categories', [PublicFatwaController::class, 'categories']);
         Route::get('/fatwas', [PublicFatwaController::class, 'index']);
         Route::get('/fatwas/{slug}', [PublicFatwaController::class, 'show']);
@@ -205,7 +206,7 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
     Route::get('/organizations/accessible', [OrganizationController::class, 'accessible']);
     Route::get('/organizations/{id}/permissions', [OrganizationController::class, 'permissions']);
     Route::put('/organizations/{id}/permissions', [OrganizationController::class, 'updatePermissions']);
-    
+
     // User permissions (needed for UI to work correctly, even during setup)
     Route::get('/permissions/user', [PermissionController::class, 'userPermissions']);
 });
@@ -216,10 +217,10 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
 Route::prefix('help-center')->group(function () {
     // Context-based article lookup (must come before {id} route to avoid conflict)
     Route::get('/articles/context', [\App\Http\Controllers\HelpCenterArticleController::class, 'getByContext']);
-    
+
     // Public article access by ID (for frontend routes like /help-center/article/{id})
     Route::get('/articles/{id}', [\App\Http\Controllers\HelpCenterArticleController::class, 'show']);
-    
+
     // Slug-based public routes (under /s prefix to avoid conflicts)
     Route::prefix('s')->group(function () {
         Route::get('/{categorySlug}', [\App\Http\Controllers\HelpCenterArticleController::class, 'showCategoryBySlug']);
@@ -502,7 +503,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/students/{student}/history/{section}', [StudentHistoryController::class, 'section']);
         Route::post('/students/{student}/history/export/pdf', [StudentHistoryController::class, 'exportPdf']);
         Route::post('/students/{student}/history/export/excel', [StudentHistoryController::class, 'exportExcel']);
-        
+
         // Preview route for student history template (development only)
         // Supports token in query parameter for easy browser testing
         Route::get('/reports/student-history/preview', [StudentHistoryController::class, 'previewTemplate'])
@@ -600,181 +601,181 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-    // Exam Classes (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
-        Route::get('/exam-classes', [ExamClassController::class, 'index']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exam-classes', [ExamClassController::class, 'store']);
-            Route::delete('/exam-classes/{exam_class}', [ExamClassController::class, 'destroy']);
+        // Exam Classes (requires exams feature)
+        Route::middleware(['feature:exams'])->group(function () {
+            Route::get('/exam-classes', [ExamClassController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exam-classes', [ExamClassController::class, 'store']);
+                Route::delete('/exam-classes/{exam_class}', [ExamClassController::class, 'destroy']);
+            });
         });
-    });
 
-    // Exam Subjects (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
-        Route::get('/exam-subjects', [ExamSubjectController::class, 'index']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exam-subjects', [ExamSubjectController::class, 'store']);
-            Route::put('/exam-subjects/{exam_subject}', [ExamSubjectController::class, 'update']);
-            Route::delete('/exam-subjects/{exam_subject}', [ExamSubjectController::class, 'destroy']);
+        // Exam Subjects (requires exams feature)
+        Route::middleware(['feature:exams'])->group(function () {
+            Route::get('/exam-subjects', [ExamSubjectController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exam-subjects', [ExamSubjectController::class, 'store']);
+                Route::put('/exam-subjects/{exam_subject}', [ExamSubjectController::class, 'update']);
+                Route::delete('/exam-subjects/{exam_subject}', [ExamSubjectController::class, 'destroy']);
+            });
         });
-    });
 
-    // Exam Timetable (requires exams full)
-    Route::middleware(['feature:exams_full'])->group(function () {
-        Route::get('/exams/{exam}/times', [ExamTimeController::class, 'index']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exams/{exam}/times', [ExamTimeController::class, 'store']);
-            Route::put('/exam-times/{examTime}', [ExamTimeController::class, 'update']);
-            Route::delete('/exam-times/{examTime}', [ExamTimeController::class, 'destroy']);
-            Route::post('/exam-times/{examTime}/toggle-lock', [ExamTimeController::class, 'toggleLock']);
+        // Exam Timetable (requires exams full)
+        Route::middleware(['feature:exams_full'])->group(function () {
+            Route::get('/exams/{exam}/times', [ExamTimeController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exams/{exam}/times', [ExamTimeController::class, 'store']);
+                Route::put('/exam-times/{examTime}', [ExamTimeController::class, 'update']);
+                Route::delete('/exam-times/{examTime}', [ExamTimeController::class, 'destroy']);
+                Route::post('/exam-times/{examTime}/toggle-lock', [ExamTimeController::class, 'toggleLock']);
+            });
         });
-    });
 
-    // Exam Students (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
-        Route::get('/exam-students', [ExamStudentController::class, 'index']);
-        Route::get('/exams/{exam}/enrollment-stats', [ExamStudentController::class, 'stats']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exam-students', [ExamStudentController::class, 'store']);
-            Route::delete('/exam-students/{exam_student}', [ExamStudentController::class, 'destroy']);
-            Route::post('/exam-students/bulk-enroll', [ExamStudentController::class, 'bulkEnroll']);
-            Route::post('/exams/{exam}/enroll-all', [ExamStudentController::class, 'enrollAll']);
+        // Exam Students (requires exams feature)
+        Route::middleware(['feature:exams'])->group(function () {
+            Route::get('/exam-students', [ExamStudentController::class, 'index']);
+            Route::get('/exams/{exam}/enrollment-stats', [ExamStudentController::class, 'stats']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exam-students', [ExamStudentController::class, 'store']);
+                Route::delete('/exam-students/{exam_student}', [ExamStudentController::class, 'destroy']);
+                Route::post('/exam-students/bulk-enroll', [ExamStudentController::class, 'bulkEnroll']);
+                Route::post('/exams/{exam}/enroll-all', [ExamStudentController::class, 'enrollAll']);
+            });
         });
-    });
 
-    // Exam Results (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
-        Route::get('/exam-results', [ExamResultController::class, 'index']);
-        Route::get('/exams/{exam}/marks-progress', [ExamResultController::class, 'progress']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exam-results', [ExamResultController::class, 'store']);
-            Route::put('/exam-results/{exam_result}', [ExamResultController::class, 'update']);
-            Route::delete('/exam-results/{exam_result}', [ExamResultController::class, 'destroy']);
-            Route::post('/exam-results/bulk-store', [ExamResultController::class, 'bulkStore']);
+        // Exam Results (requires exams feature)
+        Route::middleware(['feature:exams'])->group(function () {
+            Route::get('/exam-results', [ExamResultController::class, 'index']);
+            Route::get('/exams/{exam}/marks-progress', [ExamResultController::class, 'progress']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exam-results', [ExamResultController::class, 'store']);
+                Route::put('/exam-results/{exam_result}', [ExamResultController::class, 'update']);
+                Route::delete('/exam-results/{exam_result}', [ExamResultController::class, 'destroy']);
+                Route::post('/exam-results/bulk-store', [ExamResultController::class, 'bulkStore']);
+            });
         });
-    });
 
-    // Exam Reports (requires exams feature)
-    Route::middleware(['feature:exams'])->group(function () {
-        Route::get('/exams/{exam}/report', [ExamReportController::class, 'show']);
-        Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
-        Route::get('/exams/{exam}/reports/classes/{class}', [ExamReportController::class, 'classReport']);
-        Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
-        Route::get('/exams/{exam}/reports/classes/{class}/consolidated', [ExamReportController::class, 'consolidatedClassReport']);
-        Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
-    });
-
-    // Exam Documents (requires exams full)
-    Route::middleware(['feature:exams_full'])->group(function () {
-        Route::get('/exam-documents/{id}/download', [ExamDocumentController::class, 'download']);
-        Route::get('/exam-documents', [ExamDocumentController::class, 'index']);
-        Route::get('/exam-documents/{exam_document}', [ExamDocumentController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exam-documents', [ExamDocumentController::class, 'store']);
-            Route::put('/exam-documents/{exam_document}', [ExamDocumentController::class, 'update']);
-            Route::delete('/exam-documents/{exam_document}', [ExamDocumentController::class, 'destroy']);
+        // Exam Reports (requires exams feature)
+        Route::middleware(['feature:exams'])->group(function () {
+            Route::get('/exams/{exam}/report', [ExamReportController::class, 'show']);
+            Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
+            Route::get('/exams/{exam}/reports/classes/{class}', [ExamReportController::class, 'classReport']);
+            Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
+            Route::get('/exams/{exam}/reports/classes/{class}/consolidated', [ExamReportController::class, 'consolidatedClassReport']);
+            Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
         });
-    });
 
-    // Finance Documents (requires finance feature)
-    Route::middleware(['feature:finance'])->group(function () {
-        Route::get('/finance-documents/{id}/download', [FinanceDocumentController::class, 'download']);
-        Route::get('/finance-documents', [FinanceDocumentController::class, 'index']);
-        Route::get('/finance-documents/{finance_document}', [FinanceDocumentController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/finance-documents', [FinanceDocumentController::class, 'store']);
-            Route::put('/finance-documents/{finance_document}', [FinanceDocumentController::class, 'update']);
-            Route::delete('/finance-documents/{finance_document}', [FinanceDocumentController::class, 'destroy']);
+        // Exam Documents (requires exams full)
+        Route::middleware(['feature:exams_full'])->group(function () {
+            Route::get('/exam-documents/{id}/download', [ExamDocumentController::class, 'download']);
+            Route::get('/exam-documents', [ExamDocumentController::class, 'index']);
+            Route::get('/exam-documents/{exam_document}', [ExamDocumentController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exam-documents', [ExamDocumentController::class, 'store']);
+                Route::put('/exam-documents/{exam_document}', [ExamDocumentController::class, 'update']);
+                Route::delete('/exam-documents/{exam_document}', [ExamDocumentController::class, 'destroy']);
+            });
         });
-    });
 
-    // Exam Numbers (Roll Numbers & Secret Numbers) - requires exams full
-    Route::middleware(['feature:exams_full'])->group(function () {
-        Route::get('/exams/{exam}/students-with-numbers', [ExamNumberController::class, 'studentsWithNumbers']);
-        Route::get('/exams/{exam}/roll-numbers/start-from', [ExamNumberController::class, 'rollNumberStartFrom']);
-        Route::get('/exams/{exam}/secret-numbers/start-from', [ExamNumberController::class, 'secretNumberStartFrom']);
-        Route::get('/exams/{exam}/secret-numbers/lookup', [ExamNumberController::class, 'lookupBySecretNumber']);
-        Route::get('/exams/{exam}/reports/roll-numbers', [ExamNumberController::class, 'rollNumberReport']);
-        Route::get('/exams/{exam}/reports/roll-slips', [ExamNumberController::class, 'rollSlipsHtml']);
-        Route::get('/exams/{exam}/reports/secret-labels', [ExamNumberController::class, 'secretLabelsHtml']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exams/{exam}/roll-numbers/preview-auto-assign', [ExamNumberController::class, 'previewRollNumberAssignment']);
-            Route::post('/exams/{exam}/roll-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmRollNumberAssignment']);
-            Route::patch('/exams/{exam}/students/{examStudent}/roll-number', [ExamNumberController::class, 'updateRollNumber']);
-            Route::post('/exams/{exam}/secret-numbers/preview-auto-assign', [ExamNumberController::class, 'previewSecretNumberAssignment']);
-            Route::post('/exams/{exam}/secret-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmSecretNumberAssignment']);
-            Route::patch('/exams/{exam}/students/{examStudent}/secret-number', [ExamNumberController::class, 'updateSecretNumber']);
+        // Finance Documents (requires finance feature)
+        Route::middleware(['feature:finance'])->group(function () {
+            Route::get('/finance-documents/{id}/download', [FinanceDocumentController::class, 'download']);
+            Route::get('/finance-documents', [FinanceDocumentController::class, 'index']);
+            Route::get('/finance-documents/{finance_document}', [FinanceDocumentController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/finance-documents', [FinanceDocumentController::class, 'store']);
+                Route::put('/finance-documents/{finance_document}', [FinanceDocumentController::class, 'update']);
+                Route::delete('/finance-documents/{finance_document}', [FinanceDocumentController::class, 'destroy']);
+            });
         });
-    });
 
-    // Exam Attendance - requires exams full
-    Route::middleware(['feature:exams_full'])->group(function () {
-        Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);
-        Route::get('/exams/{exam}/attendance/summary', [ExamAttendanceController::class, 'summary']);
-        Route::get('/exams/{exam}/attendance/class/{classId}', [ExamAttendanceController::class, 'byClass']);
-        Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}', [ExamAttendanceController::class, 'byTimeslot']);
-        Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/students', [ExamAttendanceController::class, 'getTimeslotStudents']);
-        Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/summary', [ExamAttendanceController::class, 'timeslotSummary']);
-        Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/scans', [ExamAttendanceController::class, 'scanFeed']);
-        Route::get('/exams/{exam}/attendance/students/{studentId}', [ExamAttendanceController::class, 'studentReport']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exams/{exam}/attendance/mark', [ExamAttendanceController::class, 'mark']);
-            Route::post('/exams/{exam}/attendance/scan', [ExamAttendanceController::class, 'scan']);
-            Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
-            Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);
+        // Exam Numbers (Roll Numbers & Secret Numbers) - requires exams full
+        Route::middleware(['feature:exams_full'])->group(function () {
+            Route::get('/exams/{exam}/students-with-numbers', [ExamNumberController::class, 'studentsWithNumbers']);
+            Route::get('/exams/{exam}/roll-numbers/start-from', [ExamNumberController::class, 'rollNumberStartFrom']);
+            Route::get('/exams/{exam}/secret-numbers/start-from', [ExamNumberController::class, 'secretNumberStartFrom']);
+            Route::get('/exams/{exam}/secret-numbers/lookup', [ExamNumberController::class, 'lookupBySecretNumber']);
+            Route::get('/exams/{exam}/reports/roll-numbers', [ExamNumberController::class, 'rollNumberReport']);
+            Route::get('/exams/{exam}/reports/roll-slips', [ExamNumberController::class, 'rollSlipsHtml']);
+            Route::get('/exams/{exam}/reports/secret-labels', [ExamNumberController::class, 'secretLabelsHtml']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exams/{exam}/roll-numbers/preview-auto-assign', [ExamNumberController::class, 'previewRollNumberAssignment']);
+                Route::post('/exams/{exam}/roll-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmRollNumberAssignment']);
+                Route::patch('/exams/{exam}/students/{examStudent}/roll-number', [ExamNumberController::class, 'updateRollNumber']);
+                Route::post('/exams/{exam}/secret-numbers/preview-auto-assign', [ExamNumberController::class, 'previewSecretNumberAssignment']);
+                Route::post('/exams/{exam}/secret-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmSecretNumberAssignment']);
+                Route::patch('/exams/{exam}/students/{examStudent}/secret-number', [ExamNumberController::class, 'updateSecretNumber']);
+            });
         });
-    });
 
-    // Exam Questions (requires question bank)
-    Route::middleware(['feature:question_bank'])->group(function () {
-        Route::get('/exam/questions', [QuestionController::class, 'index']);
-        Route::get('/exam/questions/{question}', [QuestionController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exam/questions', [QuestionController::class, 'store'])->middleware('limit:questions');
-            Route::put('/exam/questions/{question}', [QuestionController::class, 'update']);
-            Route::delete('/exam/questions/{question}', [QuestionController::class, 'destroy']);
-            Route::post('/exam/questions/{question}/duplicate', [QuestionController::class, 'duplicate']);
-            Route::post('/exam/questions/bulk-update', [QuestionController::class, 'bulkUpdate']);
+        // Exam Attendance - requires exams full
+        Route::middleware(['feature:exams_full'])->group(function () {
+            Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);
+            Route::get('/exams/{exam}/attendance/summary', [ExamAttendanceController::class, 'summary']);
+            Route::get('/exams/{exam}/attendance/class/{classId}', [ExamAttendanceController::class, 'byClass']);
+            Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}', [ExamAttendanceController::class, 'byTimeslot']);
+            Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/students', [ExamAttendanceController::class, 'getTimeslotStudents']);
+            Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/summary', [ExamAttendanceController::class, 'timeslotSummary']);
+            Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/scans', [ExamAttendanceController::class, 'scanFeed']);
+            Route::get('/exams/{exam}/attendance/students/{studentId}', [ExamAttendanceController::class, 'studentReport']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exams/{exam}/attendance/mark', [ExamAttendanceController::class, 'mark']);
+                Route::post('/exams/{exam}/attendance/scan', [ExamAttendanceController::class, 'scan']);
+                Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
+                Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);
+            });
         });
-    });
 
-    // Exam Paper Generator (requires exam_paper_generator)
-    Route::middleware(['feature:exam_paper_generator'])->group(function () {
-        Route::get('/exam/paper-templates', [ExamPaperTemplateController::class, 'index']);
-        Route::get('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'show']);
-        Route::get('/exam/paper-templates/{id}/preview', [ExamPaperTemplateController::class, 'preview']);
-        Route::get('/exams/{examId}/paper-stats', [ExamPaperTemplateController::class, 'examPaperStats']);
-        Route::post('/exam/paper-templates/{id}/generate', [ExamPaperTemplateController::class, 'generate']);
-        Route::post('/exam/paper-templates/{id}/generate-html', [ExamPaperTemplateController::class, 'generateHtml']);
-
-        Route::get('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'index']);
-        Route::get('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'show']);
-        Route::get('/exam/paper-template-files/{id}/preview', [ExamPaperTemplateFileController::class, 'preview']);
-
-        Route::get('/exam/paper-preview/{templateId}/student', [ExamPaperPreviewController::class, 'studentView']);
-        Route::get('/exam/paper-preview/{templateId}/teacher', [ExamPaperPreviewController::class, 'teacherView']);
-        Route::get('/exam-subjects/{examSubjectId}/paper-preview', [ExamPaperPreviewController::class, 'examSubjectPreview']);
-        Route::get('/exam-subjects/{examSubjectId}/available-templates', [ExamPaperPreviewController::class, 'availableTemplates']);
-
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/exam/paper-templates', [ExamPaperTemplateController::class, 'store']);
-            Route::put('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'update']);
-            Route::delete('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'destroy']);
-            Route::post('/exam/paper-templates/{id}/duplicate', [ExamPaperTemplateController::class, 'duplicate']);
-            Route::post('/exam/paper-templates/{id}/items', [ExamPaperTemplateController::class, 'addItem']);
-            Route::put('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'updateItem']);
-            Route::delete('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'removeItem']);
-            Route::post('/exam/paper-templates/{id}/reorder', [ExamPaperTemplateController::class, 'reorderItems']);
-            Route::post('/exam/paper-templates/{id}/print-status', [ExamPaperTemplateController::class, 'updatePrintStatus']);
-
-            Route::post('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'store']);
-            Route::put('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'update']);
-            Route::delete('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'destroy']);
-            Route::post('/exam/paper-template-files/{id}/set-default', [ExamPaperTemplateFileController::class, 'setDefault']);
-
-            Route::post('/exam-subjects/{examSubjectId}/set-default-template', [ExamPaperPreviewController::class, 'setDefaultTemplate']);
+        // Exam Questions (requires question bank)
+        Route::middleware(['feature:question_bank'])->group(function () {
+            Route::get('/exam/questions', [QuestionController::class, 'index']);
+            Route::get('/exam/questions/{question}', [QuestionController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exam/questions', [QuestionController::class, 'store'])->middleware('limit:questions');
+                Route::put('/exam/questions/{question}', [QuestionController::class, 'update']);
+                Route::delete('/exam/questions/{question}', [QuestionController::class, 'destroy']);
+                Route::post('/exam/questions/{question}/duplicate', [QuestionController::class, 'duplicate']);
+                Route::post('/exam/questions/bulk-update', [QuestionController::class, 'bulkUpdate']);
+            });
         });
-    });
+
+        // Exam Paper Generator (requires exam_paper_generator)
+        Route::middleware(['feature:exam_paper_generator'])->group(function () {
+            Route::get('/exam/paper-templates', [ExamPaperTemplateController::class, 'index']);
+            Route::get('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'show']);
+            Route::get('/exam/paper-templates/{id}/preview', [ExamPaperTemplateController::class, 'preview']);
+            Route::get('/exams/{examId}/paper-stats', [ExamPaperTemplateController::class, 'examPaperStats']);
+            Route::post('/exam/paper-templates/{id}/generate', [ExamPaperTemplateController::class, 'generate']);
+            Route::post('/exam/paper-templates/{id}/generate-html', [ExamPaperTemplateController::class, 'generateHtml']);
+
+            Route::get('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'index']);
+            Route::get('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'show']);
+            Route::get('/exam/paper-template-files/{id}/preview', [ExamPaperTemplateFileController::class, 'preview']);
+
+            Route::get('/exam/paper-preview/{templateId}/student', [ExamPaperPreviewController::class, 'studentView']);
+            Route::get('/exam/paper-preview/{templateId}/teacher', [ExamPaperPreviewController::class, 'teacherView']);
+            Route::get('/exam-subjects/{examSubjectId}/paper-preview', [ExamPaperPreviewController::class, 'examSubjectPreview']);
+            Route::get('/exam-subjects/{examSubjectId}/available-templates', [ExamPaperPreviewController::class, 'availableTemplates']);
+
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exam/paper-templates', [ExamPaperTemplateController::class, 'store']);
+                Route::put('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'update']);
+                Route::delete('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'destroy']);
+                Route::post('/exam/paper-templates/{id}/duplicate', [ExamPaperTemplateController::class, 'duplicate']);
+                Route::post('/exam/paper-templates/{id}/items', [ExamPaperTemplateController::class, 'addItem']);
+                Route::put('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'updateItem']);
+                Route::delete('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'removeItem']);
+                Route::post('/exam/paper-templates/{id}/reorder', [ExamPaperTemplateController::class, 'reorderItems']);
+                Route::post('/exam/paper-templates/{id}/print-status', [ExamPaperTemplateController::class, 'updatePrintStatus']);
+
+                Route::post('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'store']);
+                Route::put('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'update']);
+                Route::delete('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'destroy']);
+                Route::post('/exam/paper-template-files/{id}/set-default', [ExamPaperTemplateFileController::class, 'setDefault']);
+
+                Route::post('/exam-subjects/{examSubjectId}/set-default-template', [ExamPaperPreviewController::class, 'setDefaultTemplate']);
+            });
+        });
 
         // Academic Years (core feature)
         Route::get('/academic-years', [AcademicYearController::class, 'index']);
@@ -947,34 +948,34 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-    // Course student discipline records (requires short_courses feature)
-    Route::middleware(['feature:short_courses'])->group(function () {
-        Route::get('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'index']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'store']);
-            Route::put('/course-student-discipline-records/{id}', [CourseStudentDisciplineRecordController::class, 'update']);
-            Route::delete('/course-student-discipline-records/{id}', [CourseStudentDisciplineRecordController::class, 'destroy']);
-            Route::post('/course-student-discipline-records/{id}/resolve', [CourseStudentDisciplineRecordController::class, 'resolve']);
+        // Course student discipline records (requires short_courses feature)
+        Route::middleware(['feature:short_courses'])->group(function () {
+            Route::get('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'store']);
+                Route::put('/course-student-discipline-records/{id}', [CourseStudentDisciplineRecordController::class, 'update']);
+                Route::delete('/course-student-discipline-records/{id}', [CourseStudentDisciplineRecordController::class, 'destroy']);
+                Route::post('/course-student-discipline-records/{id}/resolve', [CourseStudentDisciplineRecordController::class, 'resolve']);
+            });
         });
-    });
 
-    // Course Attendance Sessions (requires short_courses feature)
-    Route::middleware(['feature:short_courses'])->group(function () {
-        Route::get('/course-attendance-sessions/roster', [CourseAttendanceSessionController::class, 'roster']);
-        Route::get('/course-attendance-sessions/report', [CourseAttendanceSessionController::class, 'report']);
-        Route::get('/course-attendance-sessions/{id}/session-report', [CourseAttendanceSessionController::class, 'sessionReport']);
-        Route::get('/course-attendance-sessions/{id}/scans', [CourseAttendanceSessionController::class, 'scans']);
-        Route::get('/course-attendance-sessions', [CourseAttendanceSessionController::class, 'index']);
-        Route::get('/course-attendance-sessions/{course_attendance_session}', [CourseAttendanceSessionController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/course-attendance-sessions/{id}/close', [CourseAttendanceSessionController::class, 'close']);
-            Route::post('/course-attendance-sessions/{id}/records', [CourseAttendanceSessionController::class, 'markRecords']);
-            Route::post('/course-attendance-sessions/{id}/scan', [CourseAttendanceSessionController::class, 'scan']);
-            Route::post('/course-attendance-sessions', [CourseAttendanceSessionController::class, 'store']);
-            Route::put('/course-attendance-sessions/{course_attendance_session}', [CourseAttendanceSessionController::class, 'update']);
-            Route::delete('/course-attendance-sessions/{course_attendance_session}', [CourseAttendanceSessionController::class, 'destroy']);
+        // Course Attendance Sessions (requires short_courses feature)
+        Route::middleware(['feature:short_courses'])->group(function () {
+            Route::get('/course-attendance-sessions/roster', [CourseAttendanceSessionController::class, 'roster']);
+            Route::get('/course-attendance-sessions/report', [CourseAttendanceSessionController::class, 'report']);
+            Route::get('/course-attendance-sessions/{id}/session-report', [CourseAttendanceSessionController::class, 'sessionReport']);
+            Route::get('/course-attendance-sessions/{id}/scans', [CourseAttendanceSessionController::class, 'scans']);
+            Route::get('/course-attendance-sessions', [CourseAttendanceSessionController::class, 'index']);
+            Route::get('/course-attendance-sessions/{course_attendance_session}', [CourseAttendanceSessionController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/course-attendance-sessions/{id}/close', [CourseAttendanceSessionController::class, 'close']);
+                Route::post('/course-attendance-sessions/{id}/records', [CourseAttendanceSessionController::class, 'markRecords']);
+                Route::post('/course-attendance-sessions/{id}/scan', [CourseAttendanceSessionController::class, 'scan']);
+                Route::post('/course-attendance-sessions', [CourseAttendanceSessionController::class, 'store']);
+                Route::put('/course-attendance-sessions/{course_attendance_session}', [CourseAttendanceSessionController::class, 'update']);
+                Route::delete('/course-attendance-sessions/{course_attendance_session}', [CourseAttendanceSessionController::class, 'destroy']);
+            });
         });
-    });
 
         // Course Documents (requires short_courses feature)
         Route::middleware(['feature:short_courses'])->group(function () {
@@ -1031,19 +1032,19 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-    // Certificate Templates (v2 API - frontend compatibility) - requires graduation feature
-    Route::middleware(['feature:graduation'])->group(function () {
-        Route::get('/certificates/templates', [CertificateTemplateController::class, 'index']);
-        Route::get('/certificates/templates/{id}', [CertificateTemplateController::class, 'show']);
-        Route::get('/certificates/templates/{id}/background', [CertificateTemplateController::class, 'getBackgroundImage']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/certificates/templates', [CertificateTemplateController::class, 'store']);
-            Route::put('/certificates/templates/{id}', [CertificateTemplateController::class, 'update']);
-            Route::delete('/certificates/templates/{id}', [CertificateTemplateController::class, 'destroy']);
-            Route::post('/certificates/templates/{id}/activate', [CertificateTemplateController::class, 'activate']);
-            Route::post('/certificates/templates/{id}/deactivate', [CertificateTemplateController::class, 'deactivate']);
+        // Certificate Templates (v2 API - frontend compatibility) - requires graduation feature
+        Route::middleware(['feature:graduation'])->group(function () {
+            Route::get('/certificates/templates', [CertificateTemplateController::class, 'index']);
+            Route::get('/certificates/templates/{id}', [CertificateTemplateController::class, 'show']);
+            Route::get('/certificates/templates/{id}/background', [CertificateTemplateController::class, 'getBackgroundImage']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/certificates/templates', [CertificateTemplateController::class, 'store']);
+                Route::put('/certificates/templates/{id}', [CertificateTemplateController::class, 'update']);
+                Route::delete('/certificates/templates/{id}', [CertificateTemplateController::class, 'destroy']);
+                Route::post('/certificates/templates/{id}/activate', [CertificateTemplateController::class, 'activate']);
+                Route::post('/certificates/templates/{id}/deactivate', [CertificateTemplateController::class, 'deactivate']);
+            });
         });
-    });
 
         // Graduation Batches (requires graduation feature)
         Route::middleware(['feature:graduation'])->group(function () {
@@ -1059,28 +1060,28 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-    // Issued Certificates (requires graduation feature)
-    Route::middleware(['feature:graduation'])->group(function () {
-        Route::get('/issued-certificates', [IssuedCertificateController::class, 'index']);
-        Route::get('/issued-certificates/{id}', [IssuedCertificateController::class, 'show']);
-        Route::get('/issued-certificates/{id}/download', [IssuedCertificateController::class, 'downloadPdf']);
-        Route::get('/issued-certificates/batch/{batchId}/download-zip', [IssuedCertificateController::class, 'downloadBatchZip']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/issued-certificates/{id}/revoke', [IssuedCertificateController::class, 'revoke']);
+        // Issued Certificates (requires graduation feature)
+        Route::middleware(['feature:graduation'])->group(function () {
+            Route::get('/issued-certificates', [IssuedCertificateController::class, 'index']);
+            Route::get('/issued-certificates/{id}', [IssuedCertificateController::class, 'show']);
+            Route::get('/issued-certificates/{id}/download', [IssuedCertificateController::class, 'downloadPdf']);
+            Route::get('/issued-certificates/batch/{batchId}/download-zip', [IssuedCertificateController::class, 'downloadBatchZip']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/issued-certificates/{id}/revoke', [IssuedCertificateController::class, 'revoke']);
+            });
         });
-    });
 
-    // Issued Certificates (v2 API - frontend compatibility) - requires graduation feature
-    Route::middleware(['feature:graduation'])->group(function () {
-        Route::get('/certificates/issued', [IssuedCertificateController::class, 'index']);
-        Route::get('/certificates/issued/{id}', [IssuedCertificateController::class, 'show']);
-        Route::get('/certificates/issued/{id}/data', [IssuedCertificateController::class, 'getCertificateData']);
-        Route::get('/certificates/issued/{id}/pdf', [IssuedCertificateController::class, 'downloadPdf']);
-        Route::get('/certificates/batches/{batchId}/pdf', [IssuedCertificateController::class, 'downloadBatchZip']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/certificates/issued/{id}/revoke', [IssuedCertificateController::class, 'revoke']);
+        // Issued Certificates (v2 API - frontend compatibility) - requires graduation feature
+        Route::middleware(['feature:graduation'])->group(function () {
+            Route::get('/certificates/issued', [IssuedCertificateController::class, 'index']);
+            Route::get('/certificates/issued/{id}', [IssuedCertificateController::class, 'show']);
+            Route::get('/certificates/issued/{id}/data', [IssuedCertificateController::class, 'getCertificateData']);
+            Route::get('/certificates/issued/{id}/pdf', [IssuedCertificateController::class, 'downloadPdf']);
+            Route::get('/certificates/batches/{batchId}/pdf', [IssuedCertificateController::class, 'downloadBatchZip']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/certificates/issued/{id}/revoke', [IssuedCertificateController::class, 'revoke']);
+            });
         });
-    });
 
         // Leave Requests (requires leave_management feature)
         Route::middleware(['feature:leave_management'])->group(function () {
@@ -1100,129 +1101,129 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         // Dashboard
         Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
-    // ============================================
-    // Finance Module (requires finance feature)
-    // ============================================
-    Route::middleware(['feature:finance'])->group(function () {
-        // Finance Accounts (cash locations) with limit enforcement
-        Route::get('/finance-accounts', [\App\Http\Controllers\FinanceAccountController::class, 'index']);
-        Route::get('/finance-accounts/{finance_account}', [\App\Http\Controllers\FinanceAccountController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/finance-accounts', [\App\Http\Controllers\FinanceAccountController::class, 'store'])->middleware('limit:finance_accounts');
-            Route::put('/finance-accounts/{finance_account}', [\App\Http\Controllers\FinanceAccountController::class, 'update']);
-            Route::delete('/finance-accounts/{finance_account}', [\App\Http\Controllers\FinanceAccountController::class, 'destroy']);
+        // ============================================
+        // Finance Module (requires finance feature)
+        // ============================================
+        Route::middleware(['feature:finance'])->group(function () {
+            // Finance Accounts (cash locations) with limit enforcement
+            Route::get('/finance-accounts', [\App\Http\Controllers\FinanceAccountController::class, 'index']);
+            Route::get('/finance-accounts/{finance_account}', [\App\Http\Controllers\FinanceAccountController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/finance-accounts', [\App\Http\Controllers\FinanceAccountController::class, 'store'])->middleware('limit:finance_accounts');
+                Route::put('/finance-accounts/{finance_account}', [\App\Http\Controllers\FinanceAccountController::class, 'update']);
+                Route::delete('/finance-accounts/{finance_account}', [\App\Http\Controllers\FinanceAccountController::class, 'destroy']);
+            });
+
+            // Income Categories
+            Route::get('/income-categories', [\App\Http\Controllers\IncomeCategoryController::class, 'index']);
+            Route::get('/income-categories/{income_category}', [\App\Http\Controllers\IncomeCategoryController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/income-categories', [\App\Http\Controllers\IncomeCategoryController::class, 'store']);
+                Route::put('/income-categories/{income_category}', [\App\Http\Controllers\IncomeCategoryController::class, 'update']);
+                Route::delete('/income-categories/{income_category}', [\App\Http\Controllers\IncomeCategoryController::class, 'destroy']);
+            });
+
+            // Expense Categories
+            Route::get('/expense-categories', [\App\Http\Controllers\ExpenseCategoryController::class, 'index']);
+            Route::get('/expense-categories/{expense_category}', [\App\Http\Controllers\ExpenseCategoryController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/expense-categories', [\App\Http\Controllers\ExpenseCategoryController::class, 'store']);
+                Route::put('/expense-categories/{expense_category}', [\App\Http\Controllers\ExpenseCategoryController::class, 'update']);
+                Route::delete('/expense-categories/{expense_category}', [\App\Http\Controllers\ExpenseCategoryController::class, 'destroy']);
+            });
+
+            // Finance Projects
+            Route::get('/finance-projects/{id}/summary', [\App\Http\Controllers\FinanceProjectController::class, 'summary']);
+            Route::get('/finance-projects', [\App\Http\Controllers\FinanceProjectController::class, 'index']);
+            Route::get('/finance-projects/{finance_project}', [\App\Http\Controllers\FinanceProjectController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/finance-projects', [\App\Http\Controllers\FinanceProjectController::class, 'store']);
+                Route::put('/finance-projects/{finance_project}', [\App\Http\Controllers\FinanceProjectController::class, 'update']);
+                Route::delete('/finance-projects/{finance_project}', [\App\Http\Controllers\FinanceProjectController::class, 'destroy']);
+            });
+
+            // Donors
+            Route::get('/donors/{id}/summary', [\App\Http\Controllers\DonorController::class, 'summary']);
+            Route::get('/donors', [\App\Http\Controllers\DonorController::class, 'index']);
+            Route::get('/donors/{donor}', [\App\Http\Controllers\DonorController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/donors', [\App\Http\Controllers\DonorController::class, 'store']);
+                Route::put('/donors/{donor}', [\App\Http\Controllers\DonorController::class, 'update']);
+                Route::delete('/donors/{donor}', [\App\Http\Controllers\DonorController::class, 'destroy']);
+            });
+
+            // Income Entries with limit enforcement
+            Route::get('/income-entries', [\App\Http\Controllers\IncomeEntryController::class, 'index']);
+            Route::get('/income-entries/{income_entry}', [\App\Http\Controllers\IncomeEntryController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/income-entries', [\App\Http\Controllers\IncomeEntryController::class, 'store'])->middleware('limit:income_entries');
+                Route::put('/income-entries/{income_entry}', [\App\Http\Controllers\IncomeEntryController::class, 'update']);
+                Route::delete('/income-entries/{income_entry}', [\App\Http\Controllers\IncomeEntryController::class, 'destroy']);
+            });
+
+            // Expense Entries with limit enforcement
+            Route::get('/expense-entries', [\App\Http\Controllers\ExpenseEntryController::class, 'index']);
+            Route::get('/expense-entries/{expense_entry}', [\App\Http\Controllers\ExpenseEntryController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/expense-entries', [\App\Http\Controllers\ExpenseEntryController::class, 'store'])->middleware('limit:expense_entries');
+                Route::put('/expense-entries/{expense_entry}', [\App\Http\Controllers\ExpenseEntryController::class, 'update']);
+                Route::delete('/expense-entries/{expense_entry}', [\App\Http\Controllers\ExpenseEntryController::class, 'destroy']);
+            });
+
+            // Finance Reports
+            Route::get('/finance/dashboard', [\App\Http\Controllers\FinanceReportController::class, 'dashboard']);
+            Route::get('/finance/reports/daily-cashbook', [\App\Http\Controllers\FinanceReportController::class, 'dailyCashbook']);
+            Route::get('/finance/reports/income-vs-expense', [\App\Http\Controllers\FinanceReportController::class, 'incomeVsExpense']);
+            Route::get('/finance/reports/project-summary', [\App\Http\Controllers\FinanceReportController::class, 'projectSummary']);
+            Route::get('/finance/reports/donor-summary', [\App\Http\Controllers\FinanceReportController::class, 'donorSummary']);
+            Route::get('/finance/reports/account-balances', [\App\Http\Controllers\FinanceReportController::class, 'accountBalances']);
         });
 
-        // Income Categories
-        Route::get('/income-categories', [\App\Http\Controllers\IncomeCategoryController::class, 'index']);
-        Route::get('/income-categories/{income_category}', [\App\Http\Controllers\IncomeCategoryController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/income-categories', [\App\Http\Controllers\IncomeCategoryController::class, 'store']);
-            Route::put('/income-categories/{income_category}', [\App\Http\Controllers\IncomeCategoryController::class, 'update']);
-            Route::delete('/income-categories/{income_category}', [\App\Http\Controllers\IncomeCategoryController::class, 'destroy']);
+        // Fees (requires fees feature)
+        Route::middleware(['feature:fees'])->group(function () {
+            Route::get('/fees/structures', [FeeStructureController::class, 'index']);
+            Route::get('/fees/structures/{id}', [FeeStructureController::class, 'show']);
+            Route::get('/fees/assignments', [FeeAssignmentController::class, 'index']);
+            Route::get('/fees/payments', [FeePaymentController::class, 'index']);
+            Route::get('/fees/exceptions', [FeeExceptionController::class, 'index']);
+            Route::get('/fees/exceptions/{id}', [FeeExceptionController::class, 'show']);
+            Route::get('/fees/reports/dashboard', [FeeReportController::class, 'dashboard']);
+            Route::get('/fees/reports/students', [FeeReportController::class, 'studentFees']);
+            Route::get('/fees/reports/collection', [FeeReportController::class, 'collectionReport']);
+            Route::get('/fees/reports/defaulters', [FeeReportController::class, 'defaulters']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/fees/structures', [FeeStructureController::class, 'store']);
+                Route::put('/fees/structures/{id}', [FeeStructureController::class, 'update']);
+                Route::patch('/fees/structures/{id}', [FeeStructureController::class, 'update']);
+                Route::delete('/fees/structures/{id}', [FeeStructureController::class, 'destroy']);
+                Route::post('/fees/assignments', [FeeAssignmentController::class, 'store']);
+                Route::put('/fees/assignments/{id}', [FeeAssignmentController::class, 'update']);
+                Route::patch('/fees/assignments/{id}', [FeeAssignmentController::class, 'update']);
+                Route::delete('/fees/assignments/{id}', [FeeAssignmentController::class, 'destroy']);
+                Route::post('/fees/payments', [FeePaymentController::class, 'store']);
+                Route::post('/fees/exceptions', [FeeExceptionController::class, 'store']);
+                Route::put('/fees/exceptions/{id}', [FeeExceptionController::class, 'update']);
+                Route::patch('/fees/exceptions/{id}', [FeeExceptionController::class, 'update']);
+                Route::delete('/fees/exceptions/{id}', [FeeExceptionController::class, 'destroy']);
+            });
         });
 
-        // Expense Categories
-        Route::get('/expense-categories', [\App\Http\Controllers\ExpenseCategoryController::class, 'index']);
-        Route::get('/expense-categories/{expense_category}', [\App\Http\Controllers\ExpenseCategoryController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/expense-categories', [\App\Http\Controllers\ExpenseCategoryController::class, 'store']);
-            Route::put('/expense-categories/{expense_category}', [\App\Http\Controllers\ExpenseCategoryController::class, 'update']);
-            Route::delete('/expense-categories/{expense_category}', [\App\Http\Controllers\ExpenseCategoryController::class, 'destroy']);
+        // Currency Management (requires multi_currency feature)
+        Route::middleware(['feature:multi_currency'])->group(function () {
+            Route::get('/currencies', [\App\Http\Controllers\CurrencyController::class, 'index']);
+            Route::get('/currencies/{currency}', [\App\Http\Controllers\CurrencyController::class, 'show']);
+            Route::get('/exchange-rates', [\App\Http\Controllers\ExchangeRateController::class, 'index']);
+            Route::get('/exchange-rates/{exchange_rate}', [\App\Http\Controllers\ExchangeRateController::class, 'show']);
+            Route::post('/exchange-rates/convert', [\App\Http\Controllers\ExchangeRateController::class, 'convert']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/currencies', [\App\Http\Controllers\CurrencyController::class, 'store']);
+                Route::put('/currencies/{currency}', [\App\Http\Controllers\CurrencyController::class, 'update']);
+                Route::delete('/currencies/{currency}', [\App\Http\Controllers\CurrencyController::class, 'destroy']);
+                Route::post('/exchange-rates', [\App\Http\Controllers\ExchangeRateController::class, 'store']);
+                Route::put('/exchange-rates/{exchange_rate}', [\App\Http\Controllers\ExchangeRateController::class, 'update']);
+                Route::delete('/exchange-rates/{exchange_rate}', [\App\Http\Controllers\ExchangeRateController::class, 'destroy']);
+            });
         });
-
-        // Finance Projects
-        Route::get('/finance-projects/{id}/summary', [\App\Http\Controllers\FinanceProjectController::class, 'summary']);
-        Route::get('/finance-projects', [\App\Http\Controllers\FinanceProjectController::class, 'index']);
-        Route::get('/finance-projects/{finance_project}', [\App\Http\Controllers\FinanceProjectController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/finance-projects', [\App\Http\Controllers\FinanceProjectController::class, 'store']);
-            Route::put('/finance-projects/{finance_project}', [\App\Http\Controllers\FinanceProjectController::class, 'update']);
-            Route::delete('/finance-projects/{finance_project}', [\App\Http\Controllers\FinanceProjectController::class, 'destroy']);
-        });
-
-        // Donors
-        Route::get('/donors/{id}/summary', [\App\Http\Controllers\DonorController::class, 'summary']);
-        Route::get('/donors', [\App\Http\Controllers\DonorController::class, 'index']);
-        Route::get('/donors/{donor}', [\App\Http\Controllers\DonorController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/donors', [\App\Http\Controllers\DonorController::class, 'store']);
-            Route::put('/donors/{donor}', [\App\Http\Controllers\DonorController::class, 'update']);
-            Route::delete('/donors/{donor}', [\App\Http\Controllers\DonorController::class, 'destroy']);
-        });
-
-        // Income Entries with limit enforcement
-        Route::get('/income-entries', [\App\Http\Controllers\IncomeEntryController::class, 'index']);
-        Route::get('/income-entries/{income_entry}', [\App\Http\Controllers\IncomeEntryController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/income-entries', [\App\Http\Controllers\IncomeEntryController::class, 'store'])->middleware('limit:income_entries');
-            Route::put('/income-entries/{income_entry}', [\App\Http\Controllers\IncomeEntryController::class, 'update']);
-            Route::delete('/income-entries/{income_entry}', [\App\Http\Controllers\IncomeEntryController::class, 'destroy']);
-        });
-
-        // Expense Entries with limit enforcement
-        Route::get('/expense-entries', [\App\Http\Controllers\ExpenseEntryController::class, 'index']);
-        Route::get('/expense-entries/{expense_entry}', [\App\Http\Controllers\ExpenseEntryController::class, 'show']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/expense-entries', [\App\Http\Controllers\ExpenseEntryController::class, 'store'])->middleware('limit:expense_entries');
-            Route::put('/expense-entries/{expense_entry}', [\App\Http\Controllers\ExpenseEntryController::class, 'update']);
-            Route::delete('/expense-entries/{expense_entry}', [\App\Http\Controllers\ExpenseEntryController::class, 'destroy']);
-        });
-
-        // Finance Reports
-        Route::get('/finance/dashboard', [\App\Http\Controllers\FinanceReportController::class, 'dashboard']);
-        Route::get('/finance/reports/daily-cashbook', [\App\Http\Controllers\FinanceReportController::class, 'dailyCashbook']);
-        Route::get('/finance/reports/income-vs-expense', [\App\Http\Controllers\FinanceReportController::class, 'incomeVsExpense']);
-        Route::get('/finance/reports/project-summary', [\App\Http\Controllers\FinanceReportController::class, 'projectSummary']);
-        Route::get('/finance/reports/donor-summary', [\App\Http\Controllers\FinanceReportController::class, 'donorSummary']);
-        Route::get('/finance/reports/account-balances', [\App\Http\Controllers\FinanceReportController::class, 'accountBalances']);
-    });
-
-    // Fees (requires fees feature)
-    Route::middleware(['feature:fees'])->group(function () {
-        Route::get('/fees/structures', [FeeStructureController::class, 'index']);
-        Route::get('/fees/structures/{id}', [FeeStructureController::class, 'show']);
-        Route::get('/fees/assignments', [FeeAssignmentController::class, 'index']);
-        Route::get('/fees/payments', [FeePaymentController::class, 'index']);
-        Route::get('/fees/exceptions', [FeeExceptionController::class, 'index']);
-        Route::get('/fees/exceptions/{id}', [FeeExceptionController::class, 'show']);
-        Route::get('/fees/reports/dashboard', [FeeReportController::class, 'dashboard']);
-        Route::get('/fees/reports/students', [FeeReportController::class, 'studentFees']);
-        Route::get('/fees/reports/collection', [FeeReportController::class, 'collectionReport']);
-        Route::get('/fees/reports/defaulters', [FeeReportController::class, 'defaulters']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/fees/structures', [FeeStructureController::class, 'store']);
-            Route::put('/fees/structures/{id}', [FeeStructureController::class, 'update']);
-            Route::patch('/fees/structures/{id}', [FeeStructureController::class, 'update']);
-            Route::delete('/fees/structures/{id}', [FeeStructureController::class, 'destroy']);
-            Route::post('/fees/assignments', [FeeAssignmentController::class, 'store']);
-            Route::put('/fees/assignments/{id}', [FeeAssignmentController::class, 'update']);
-            Route::patch('/fees/assignments/{id}', [FeeAssignmentController::class, 'update']);
-            Route::delete('/fees/assignments/{id}', [FeeAssignmentController::class, 'destroy']);
-            Route::post('/fees/payments', [FeePaymentController::class, 'store']);
-            Route::post('/fees/exceptions', [FeeExceptionController::class, 'store']);
-            Route::put('/fees/exceptions/{id}', [FeeExceptionController::class, 'update']);
-            Route::patch('/fees/exceptions/{id}', [FeeExceptionController::class, 'update']);
-            Route::delete('/fees/exceptions/{id}', [FeeExceptionController::class, 'destroy']);
-        });
-    });
-
-    // Currency Management (requires multi_currency feature)
-    Route::middleware(['feature:multi_currency'])->group(function () {
-        Route::get('/currencies', [\App\Http\Controllers\CurrencyController::class, 'index']);
-        Route::get('/currencies/{currency}', [\App\Http\Controllers\CurrencyController::class, 'show']);
-        Route::get('/exchange-rates', [\App\Http\Controllers\ExchangeRateController::class, 'index']);
-        Route::get('/exchange-rates/{exchange_rate}', [\App\Http\Controllers\ExchangeRateController::class, 'show']);
-        Route::post('/exchange-rates/convert', [\App\Http\Controllers\ExchangeRateController::class, 'convert']);
-        Route::middleware(['subscription:write'])->group(function () {
-            Route::post('/currencies', [\App\Http\Controllers\CurrencyController::class, 'store']);
-            Route::put('/currencies/{currency}', [\App\Http\Controllers\CurrencyController::class, 'update']);
-            Route::delete('/currencies/{currency}', [\App\Http\Controllers\CurrencyController::class, 'destroy']);
-            Route::post('/exchange-rates', [\App\Http\Controllers\ExchangeRateController::class, 'store']);
-            Route::put('/exchange-rates/{exchange_rate}', [\App\Http\Controllers\ExchangeRateController::class, 'update']);
-            Route::delete('/exchange-rates/{exchange_rate}', [\App\Http\Controllers\ExchangeRateController::class, 'destroy']);
-        });
-    });
 
         // Document Management System (DMS) - requires dms feature with limit enforcement
         Route::middleware(['feature:dms'])->group(function () {
@@ -1250,7 +1251,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/dms/letter-types/{id}', [LetterTypesController::class, 'show']);
             Route::get('/dms/files', [DocumentFilesController::class, 'index']);
             Route::get('/dms/files/{id}/download', [DocumentFilesController::class, 'download']);
-            
+
             Route::middleware(['subscription:write'])->group(function () {
                 Route::put('/dms/settings', [DocumentSettingsController::class, 'update']);
                 Route::post('/dms/departments', [DmsDepartmentsController::class, 'store']);
@@ -1277,7 +1278,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-    // ============================================
+        // ============================================
         // Central Reporting System (requires reports feature with limit enforcement)
         // ============================================
         Route::middleware(['feature:reports'])->group(function () {
@@ -1297,47 +1298,47 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/event-types', [\App\Http\Controllers\EventTypeController::class, 'index']);
             Route::get('/event-types/{id}', [\App\Http\Controllers\EventTypeController::class, 'show']);
             Route::get('/event-types/{id}/fields', [\App\Http\Controllers\EventTypeController::class, 'getFields']);
-            
+
             // Events
             Route::get('/events', [\App\Http\Controllers\EventController::class, 'index']);
             Route::get('/events/{id}', [\App\Http\Controllers\EventController::class, 'show']);
             Route::get('/events/{id}/stats', [\App\Http\Controllers\EventController::class, 'stats']);
-            
+
             // Event Guests
             Route::get('/events/{eventId}/guests', [\App\Http\Controllers\EventGuestController::class, 'index']);
             Route::get('/events/{eventId}/guests/lookup', [\App\Http\Controllers\EventGuestController::class, 'lookup']);
             Route::get('/events/{eventId}/guests/{guestId}', [\App\Http\Controllers\EventGuestController::class, 'show']);
-            
+
             // Guest Photo Upload
             Route::get('/guests/{guestId}/photo', [\App\Http\Controllers\EventGuestController::class, 'getPhoto']);
-            
+
             // Event Check-in
             Route::get('/events/{eventId}/checkin/history', [\App\Http\Controllers\EventCheckinController::class, 'history']);
-            
+
             // Event-specific users management
             Route::get('/events/{eventId}/users', [\App\Http\Controllers\EventUserController::class, 'index']);
-            
+
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/event-types', [\App\Http\Controllers\EventTypeController::class, 'store']);
                 Route::put('/event-types/{id}', [\App\Http\Controllers\EventTypeController::class, 'update']);
                 Route::delete('/event-types/{id}', [\App\Http\Controllers\EventTypeController::class, 'destroy']);
                 Route::post('/event-types/{id}/fields', [\App\Http\Controllers\EventTypeController::class, 'saveFields']);
-                
+
                 Route::post('/events', [\App\Http\Controllers\EventController::class, 'store'])->middleware('limit:events');
                 Route::put('/events/{id}', [\App\Http\Controllers\EventController::class, 'update']);
                 Route::delete('/events/{id}', [\App\Http\Controllers\EventController::class, 'destroy']);
-                
+
                 Route::post('/events/{eventId}/guests', [\App\Http\Controllers\EventGuestController::class, 'store']);
                 Route::post('/events/{eventId}/guests/import', [\App\Http\Controllers\EventGuestController::class, 'import']);
                 Route::put('/events/{eventId}/guests/{guestId}', [\App\Http\Controllers\EventGuestController::class, 'update']);
                 Route::delete('/events/{eventId}/guests/{guestId}', [\App\Http\Controllers\EventGuestController::class, 'destroy']);
-                
+
                 Route::post('/guests/{guestId}/photo', [\App\Http\Controllers\EventGuestController::class, 'uploadPhoto']);
-                
+
                 Route::post('/events/{eventId}/checkin', [\App\Http\Controllers\EventCheckinController::class, 'checkin']);
                 Route::post('/events/{eventId}/checkin/lookup', [\App\Http\Controllers\EventCheckinController::class, 'lookupByToken']);
                 Route::delete('/events/{eventId}/checkin/{checkinId}', [\App\Http\Controllers\EventCheckinController::class, 'undoCheckin']);
-                
+
                 Route::post('/events/{eventId}/users', [\App\Http\Controllers\EventUserController::class, 'store']);
                 Route::put('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'update']);
                 Route::delete('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'destroy']);
@@ -1493,27 +1494,27 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->gro
     // Current subscription status (lite version - no permission required, for all users)
     // CRITICAL: This endpoint is used for frontend gating and must be accessible to ALL authenticated users
     Route::get('/status-lite', [SubscriptionController::class, 'statusLite']);
-    
+
     // Current subscription status (full version - requires subscription.read permission)
     Route::get('/status', [SubscriptionController::class, 'status']);
     Route::get('/usage', [SubscriptionController::class, 'usage']);
     Route::get('/features', [SubscriptionController::class, 'features']);
-    
+
     // Pricing & discount codes
     Route::post('/calculate-price', [SubscriptionController::class, 'calculatePrice']);
     Route::post('/validate-discount', [SubscriptionController::class, 'validateDiscountCode']);
-    
+
     // Renewal requests
     Route::post('/renewal-request', [SubscriptionController::class, 'createRenewalRequest']);
     Route::get('/renewal-history', [SubscriptionController::class, 'renewalHistory']);
-    
+
     // Payments
     Route::post('/submit-payment', [SubscriptionController::class, 'submitPayment']);
     Route::get('/payment-history', [SubscriptionController::class, 'paymentHistory']);
-    
+
     // History
     Route::get('/history', [SubscriptionController::class, 'subscriptionHistory']);
-    
+
     // Maintenance Fees (recurring payments)
     Route::prefix('maintenance-fees')->group(function () {
         Route::get('/', [MaintenanceFeeController::class, 'status']);
@@ -1523,7 +1524,7 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->gro
         Route::post('/pay', [MaintenanceFeeController::class, 'submitPayment']);
         Route::get('/payment-history', [MaintenanceFeeController::class, 'paymentHistory']);
     });
-    
+
     // License Fees (one-time payments)
     Route::prefix('license-fees')->group(function () {
         Route::get('/', [LicenseFeeController::class, 'status']);
@@ -1537,12 +1538,12 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->gro
 Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group(function () {
     // Dashboard
     Route::get('/dashboard', [SubscriptionAdminController::class, 'dashboard']);
-    
+
     // Plans management
     Route::get('/plans', [SubscriptionAdminController::class, 'listPlans']);
     Route::post('/plans', [SubscriptionAdminController::class, 'createPlan']);
     Route::put('/plans/{id}', [SubscriptionAdminController::class, 'updatePlan']);
-    
+
     // Organization subscriptions
     Route::get('/subscriptions', [SubscriptionAdminController::class, 'listSubscriptions']);
     Route::get('/organizations/{organizationId}/subscription', [SubscriptionAdminController::class, 'getOrganizationSubscription']);
@@ -1553,7 +1554,7 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/organizations/{organizationId}/feature-addon', [SubscriptionAdminController::class, 'addFeatureAddon']);
     Route::get('/organizations/{organizationId}/usage-snapshots', [SubscriptionAdminController::class, 'getUsageSnapshots']);
     Route::post('/organizations/{organizationId}/recalculate-usage', [SubscriptionAdminController::class, 'recalculateUsage']);
-    
+
     // Payments & renewals
     Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);
     Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmPayment']);
@@ -1562,21 +1563,21 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::get('/renewals/{renewalId}', [SubscriptionAdminController::class, 'getRenewal']);
     Route::post('/renewals/{renewalId}/approve', [SubscriptionAdminController::class, 'approveRenewal']);
     Route::post('/renewals/{renewalId}/reject', [SubscriptionAdminController::class, 'rejectRenewal']);
-    
+
     // Organizations management
     Route::get('/organizations', [SubscriptionAdminController::class, 'listOrganizations']);
     Route::post('/organizations', [OrganizationController::class, 'storePlatformAdmin']);
-    
+
     // Organization admins - MUST be before /organizations/{id} to avoid route conflict
     Route::get('/organizations/admins', [OrganizationController::class, 'admins']);
-    
+
     // Platform admin - User permissions management (can manage permissions for users in any organization)
     Route::get('/permissions/all', [PermissionController::class, 'platformAdminAllPermissions']); // All permissions for global groups
     Route::get('/organizations/{organizationId}/permissions', [PermissionController::class, 'platformAdminOrganizationPermissions']);
     Route::get('/users/{userId}/permissions', [PermissionController::class, 'platformAdminUserPermissions']);
     Route::post('/users/{userId}/permissions/assign', [PermissionController::class, 'platformAdminAssignPermissionToUser']);
     Route::post('/users/{userId}/permissions/remove', [PermissionController::class, 'platformAdminRemovePermissionFromUser']);
-    
+
     // Permission Groups Management (Platform Admin) - Global groups
     Route::get('/permission-groups', [PermissionController::class, 'platformAdminListPermissionGroups']);
     Route::post('/permission-groups', [PermissionController::class, 'platformAdminCreatePermissionGroup']);
@@ -1584,31 +1585,31 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::delete('/permission-groups/{groupId}', [PermissionController::class, 'platformAdminDeletePermissionGroup']);
     Route::post('/users/{userId}/permission-groups/assign', [PermissionController::class, 'platformAdminAssignPermissionGroupToUser']);
     Route::post('/users/{userId}/permission-groups/remove', [PermissionController::class, 'platformAdminRemovePermissionGroupFromUser']);
-    
+
     // Organization CRUD - MUST be after /organizations/admins
     Route::get('/organizations/{id}', [OrganizationController::class, 'showPlatformAdmin']);
     Route::put('/organizations/{id}', [OrganizationController::class, 'updatePlatformAdmin']);
     Route::delete('/organizations/{id}', [OrganizationController::class, 'destroyPlatformAdmin']);
     Route::get('/organizations/{id}/website', [OrganizationController::class, 'websiteData']);
     Route::post('/organizations/{organizationId}/features/{featureKey}/toggle', [SubscriptionAdminController::class, 'toggleFeature']);
-    
+
     // Discount codes
     Route::get('/discount-codes', [SubscriptionAdminController::class, 'listDiscountCodes']);
     Route::post('/discount-codes', [SubscriptionAdminController::class, 'createDiscountCode']);
     Route::put('/discount-codes/{id}', [SubscriptionAdminController::class, 'updateDiscountCode']);
     Route::delete('/discount-codes/{id}', [SubscriptionAdminController::class, 'deleteDiscountCode']);
-    
+
     // Plan requests (Enterprise contact requests)
     Route::get('/plan-requests', [\App\Http\Controllers\LandingController::class, 'listPlanRequests']);
     Route::get('/plan-requests/{id}', [\App\Http\Controllers\LandingController::class, 'getPlanRequest']);
-    
+
     // Feature & Limit Definitions
     Route::get('/feature-definitions', [SubscriptionAdminController::class, 'listFeatureDefinitions']);
     Route::get('/limit-definitions', [SubscriptionAdminController::class, 'listLimitDefinitions']);
-    
+
     // System Operations
     Route::post('/process-transitions', [SubscriptionAdminController::class, 'processStatusTransitions']);
-    
+
     // Maintenance Fees (Platform Admin)
     Route::prefix('maintenance-fees')->group(function () {
         Route::get('/', [SubscriptionAdminController::class, 'listMaintenanceFees']);
@@ -1617,37 +1618,37 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
         Route::post('/generate-invoices', [SubscriptionAdminController::class, 'generateMaintenanceInvoices']);
         Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmMaintenancePayment']);
     });
-    
+
     // License Fees (Platform Admin)
     Route::prefix('license-fees')->group(function () {
         Route::get('/unpaid', [SubscriptionAdminController::class, 'listUnpaidLicenseFees']);
         Route::get('/payments', [SubscriptionAdminController::class, 'listLicensePayments']);
         Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmLicensePayment']);
     });
-    
+
     // Platform admin permissions (global, not organization-scoped)
     Route::get('/permissions/platform-admin', [PermissionController::class, 'platformAdminPermissions']);
-    
+
     // Platform admin users (users with subscription.admin permission)
     Route::get('/users', [SubscriptionAdminController::class, 'listPlatformUsers']);
     Route::post('/users', [SubscriptionAdminController::class, 'createPlatformUser']);
     Route::put('/users/{id}', [SubscriptionAdminController::class, 'updatePlatformUser']);
     Route::delete('/users/{id}', [SubscriptionAdminController::class, 'deletePlatformUser']);
     Route::post('/users/{id}/reset-password', [SubscriptionAdminController::class, 'resetPlatformUserPassword']);
-    
+
     // Testimonials management
     Route::get('/testimonials', [TestimonialController::class, 'adminIndex']);
     Route::post('/testimonials', [TestimonialController::class, 'store']);
     Route::put('/testimonials/{id}', [TestimonialController::class, 'update']);
     Route::delete('/testimonials/{id}', [TestimonialController::class, 'destroy']);
-    
+
     // Contact messages management
     Route::get('/contact-messages', [ContactMessageController::class, 'adminIndex']);
     Route::get('/contact-messages/stats', [ContactMessageController::class, 'stats']);
     Route::get('/contact-messages/{id}', [ContactMessageController::class, 'show']);
     Route::put('/contact-messages/{id}', [ContactMessageController::class, 'update']);
     Route::delete('/contact-messages/{id}', [ContactMessageController::class, 'destroy']);
-    
+
     // Help Center management (platform admin - no organization filter)
     Route::prefix('help-center')->group(function () {
         // Categories CRUD
@@ -1655,7 +1656,7 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
         Route::post('/categories', [HelpCenterCategoryController::class, 'platformStore']);
         Route::put('/categories/{id}', [HelpCenterCategoryController::class, 'platformUpdate']);
         Route::delete('/categories/{id}', [HelpCenterCategoryController::class, 'platformDestroy']);
-        
+
         // Articles CRUD
         Route::get('/articles', [HelpCenterArticleController::class, 'platformIndex']);
         Route::post('/articles', [HelpCenterArticleController::class, 'platformStore']);
@@ -1676,7 +1677,7 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/maintenance/enable', [App\Http\Controllers\MaintenanceController::class, 'enable']);
     Route::post('/maintenance/disable', [App\Http\Controllers\MaintenanceController::class, 'disable']);
     Route::get('/maintenance/history', [App\Http\Controllers\MaintenanceController::class, 'history']);
-    
+
     // Desktop License Management
     Route::prefix('desktop-licenses')->group(function () {
         // License Keys
@@ -1687,11 +1688,11 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
         Route::get('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'getKey']);
         Route::put('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'updateKey']);
         Route::delete('/keys/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'deleteKey']);
-        
+
         // License Operations
         Route::post('/sign', [App\Http\Controllers\DesktopLicenseController::class, 'signLicense']);
         Route::post('/verify', [App\Http\Controllers\DesktopLicenseController::class, 'verifyLicense']);
-        
+
         // Desktop Licenses
         Route::get('/', [App\Http\Controllers\DesktopLicenseController::class, 'listLicenses']);
         Route::get('/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'getLicense']);
@@ -1705,12 +1706,12 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
 Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription')->group(function () {
     // Dashboard
     Route::get('/dashboard', [SubscriptionAdminController::class, 'dashboard']);
-    
+
     // Plans management
     Route::get('/plans', [SubscriptionAdminController::class, 'listPlans']);
     Route::post('/plans', [SubscriptionAdminController::class, 'createPlan']);
     Route::put('/plans/{id}', [SubscriptionAdminController::class, 'updatePlan']);
-    
+
     // Organization subscriptions
     Route::get('/subscriptions', [SubscriptionAdminController::class, 'listSubscriptions']);
     Route::get('/organizations/{organizationId}/subscription', [SubscriptionAdminController::class, 'getOrganizationSubscription']);
@@ -1721,7 +1722,7 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription'
     Route::post('/organizations/{organizationId}/feature-addon', [SubscriptionAdminController::class, 'addFeatureAddon']);
     Route::get('/organizations/{organizationId}/usage-snapshots', [SubscriptionAdminController::class, 'getUsageSnapshots']);
     Route::post('/organizations/{organizationId}/recalculate-usage', [SubscriptionAdminController::class, 'recalculateUsage']);
-    
+
     // Payments & renewals
     Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);
     Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmPayment']);
@@ -1730,21 +1731,21 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription'
     Route::get('/renewals/{renewalId}', [SubscriptionAdminController::class, 'getRenewal']);
     Route::post('/renewals/{renewalId}/approve', [SubscriptionAdminController::class, 'approveRenewal']);
     Route::post('/renewals/{renewalId}/reject', [SubscriptionAdminController::class, 'rejectRenewal']);
-    
+
     // Organizations (for subscription admin - all organizations)
     Route::get('/organizations', [SubscriptionAdminController::class, 'listOrganizations']);
     Route::post('/organizations/{organizationId}/features/{featureKey}/toggle', [SubscriptionAdminController::class, 'toggleFeature']);
-    
+
     // Discount codes
     Route::get('/discount-codes', [SubscriptionAdminController::class, 'listDiscountCodes']);
     Route::post('/discount-codes', [SubscriptionAdminController::class, 'createDiscountCode']);
     Route::put('/discount-codes/{id}', [SubscriptionAdminController::class, 'updateDiscountCode']);
     Route::delete('/discount-codes/{id}', [SubscriptionAdminController::class, 'deleteDiscountCode']);
-    
+
     // Definitions
     Route::get('/feature-definitions', [SubscriptionAdminController::class, 'listFeatureDefinitions']);
     Route::get('/limit-definitions', [SubscriptionAdminController::class, 'listLimitDefinitions']);
-    
+
     // System operations
     Route::post('/process-transitions', [SubscriptionAdminController::class, 'processStatusTransitions']);
 });

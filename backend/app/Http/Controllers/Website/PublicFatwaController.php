@@ -17,9 +17,11 @@ class PublicFatwaController extends Controller
         $categories = WebsiteFatwaCategory::where('school_id', $schoolId)
             ->where('is_active', true)
             ->whereNull('parent_id')
-            ->with(['children' => function($query) {
-                $query->where('is_active', true)->orderBy('sort_order')->orderBy('name');
-            }])
+            ->with([
+                'children' => function ($query) {
+                    $query->where('is_active', true)->orderBy('sort_order')->orderBy('name');
+                }
+            ])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
@@ -41,13 +43,13 @@ class PublicFatwaController extends Controller
             $category = WebsiteFatwaCategory::where('school_id', $schoolId)
                 ->where('slug', $categorySlug)
                 ->first();
-            
+
             if ($category) {
                 // Get fatwas for this category AND its children
                 $categoryIds = [$category->id];
                 $childrenIds = $category->children()->pluck('id')->toArray();
                 $allCategoryIds = array_merge($categoryIds, $childrenIds);
-                
+
                 $query->whereIn('category_id', $allCategoryIds);
             }
         }
@@ -55,17 +57,17 @@ class PublicFatwaController extends Controller
         // Add search functionality
         if ($searchQuery && !empty(trim($searchQuery))) {
             $searchTerm = '%' . trim($searchQuery) . '%';
-            $query->where(function($q) use ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm) {
                 $q->where('question_title', 'ILIKE', $searchTerm)
-                  ->orWhere('question_text', 'ILIKE', $searchTerm)
-                  ->orWhere('answer_text', 'ILIKE', $searchTerm)
-                  ->orWhereHas('category', function($categoryQuery) use ($searchTerm) {
-                      $categoryQuery->where('name', 'ILIKE', $searchTerm);
-                  });
+                    ->orWhere('question_text', 'ILIKE', $searchTerm)
+                    ->orWhere('answer_text', 'ILIKE', $searchTerm)
+                    ->orWhereHas('category', function ($categoryQuery) use ($searchTerm) {
+                        $categoryQuery->where('name', 'ILIKE', $searchTerm);
+                    });
             });
         }
 
-        $fatwas = $query->orderBy('published_at', 'desc')->get();
+        $fatwas = $query->orderBy('published_at', 'desc')->paginate(10);
 
         return response()->json($fatwas);
     }

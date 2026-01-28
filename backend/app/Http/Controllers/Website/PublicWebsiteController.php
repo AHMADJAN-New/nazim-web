@@ -23,7 +23,8 @@ class PublicWebsiteController extends Controller
 {
     public function __construct(
         private FileStorageService $fileStorageService
-    ) {}
+    ) {
+    }
 
     public function site(Request $request)
     {
@@ -72,7 +73,7 @@ class PublicWebsiteController extends Controller
     {
         $schoolId = $request->attributes->get('school_id');
         $organizationId = $request->attributes->get('organization_id');
-        
+
         $cacheKey = "public-menus:{$organizationId}:{$schoolId}";
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId) {
@@ -80,7 +81,7 @@ class PublicWebsiteController extends Controller
                 ->where('is_visible', true)
                 ->orderBy('sort_order')
                 ->get();
-                
+
             return response()->json($menus);
         });
     }
@@ -108,15 +109,11 @@ class PublicWebsiteController extends Controller
         $schoolId = $request->attributes->get('school_id');
         $organizationId = $request->attributes->get('organization_id');
 
-        $cacheKey = "public-posts:{$organizationId}:{$schoolId}";
-
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId) {
-            $posts = WebsitePost::where('school_id', $schoolId)
+        return Cache::remember("public-posts:{$organizationId}:{$schoolId}:" . request('page', 1), now()->addMinutes(10), function () use ($schoolId) {
+            return WebsitePost::where('school_id', $schoolId)
                 ->where('status', 'published')
                 ->orderBy('published_at', 'desc')
-                ->get();
-
-            return response()->json($posts);
+                ->paginate(9);
         });
     }
 
@@ -131,9 +128,47 @@ class PublicWebsiteController extends Controller
             $events = WebsiteEvent::where('school_id', $schoolId)
                 ->where('is_public', true)
                 ->orderBy('starts_at', 'asc')
-                ->get();
+                ->get(); // Keeping events as list for now or pagination if preferred? Plan said paginated posts/media. 
 
             return response()->json($events);
+        });
+    }
+
+    public function media(Request $request)
+    {
+        $schoolId = $request->attributes->get('school_id');
+        $organizationId = $request->attributes->get('organization_id');
+        $categorySlug = $request->query('category');
+        $page = $request->query('page', 1);
+
+        // Separate cache key for categories vs items to keep it clean
+        if ($request->has('get_categories')) {
+            return Cache::remember("public-media-categories:{$organizationId}:{$schoolId}", now()->addMinutes(10), function () use ($schoolId) {
+                return \App\Models\WebsiteMediaCategory::where('school_id', $schoolId)
+                    ->where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->get();
+            });
+        }
+
+        $cacheKey = "public-media:{$organizationId}:{$schoolId}:{$categorySlug}:{$page}";
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId, $categorySlug) {
+            $query = \App\Models\WebsiteMedia::where('school_id', $schoolId);
+
+            if ($categorySlug) {
+                // Determine if we want to show items related to *specifically* this category
+                // or just filter. 
+                $category = \App\Models\WebsiteMediaCategory::where('school_id', $schoolId)
+                    ->where('slug', $categorySlug)
+                    ->first();
+
+                if ($category) {
+                    $query->where('category_id', $category->id);
+                }
+            }
+
+            return $query->orderBy('created_at', 'desc')->paginate(12);
         });
     }
 
@@ -151,10 +186,10 @@ class PublicWebsiteController extends Controller
                 ->where('status', 'published');
 
             if ($query) {
-                $booksQuery->where(function($q) use ($query) {
+                $booksQuery->where(function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
-                      ->orWhere('author', 'like', "%{$query}%")
-                      ->orWhere('description', 'like', "%{$query}%");
+                        ->orWhere('author', 'like', "%{$query}%")
+                        ->orWhere('description', 'like', "%{$query}%");
                 });
             }
 
@@ -234,7 +269,7 @@ class PublicWebsiteController extends Controller
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId, $year) {
             $query = WebsiteGraduate::where('school_id', $schoolId)
                 ->where('status', 'published');
-            
+
             if ($year) {
                 $query->where('graduation_year', $year);
             }
@@ -301,13 +336,13 @@ class PublicWebsiteController extends Controller
             ->where('status', 'published')
             ->get(['slug', 'updated_at']);
 
-        $urls = collect($pages)->map(fn ($page) => [
+        $urls = collect($pages)->map(fn($page) => [
             'loc' => "{$host}/pages/{$page->slug}",
             'lastmod' => optional($page->updated_at)->toDateString(),
-        ])->merge(collect($posts)->map(fn ($post) => [
-            'loc' => "{$host}/announcements/{$post->slug}",
-            'lastmod' => optional($post->updated_at)->toDateString(),
-        ]));
+        ])->merge(collect($posts)->map(fn($post) => [
+                        'loc' => "{$host}/announcements/{$post->slug}",
+                        'lastmod' => optional($post->updated_at)->toDateString(),
+                    ]));
 
         $xmlEntries = $urls->map(function ($url) {
             $lastmod = $url['lastmod'] ? "<lastmod>{$url['lastmod']}</lastmod>" : '';
@@ -382,18 +417,18 @@ class PublicWebsiteController extends Controller
         if (is_resource($binary)) {
             $binary = stream_get_contents($binary);
         }
-        
+
         // Ensure binary is a string (handle any other edge cases)
         $binary = (string) $binary;
 
         $mimeType = $school->getAttribute($mimeField) ?: 'image/png';
         $filename = $school->getAttribute($filenameField) ?: "{$type}_logo";
-        $fileSize = (int)($school->getAttribute($sizeField) ?: strlen($binary));
+        $fileSize = (int) ($school->getAttribute($sizeField) ?: strlen($binary));
         $updatedAtTimestamp = $school->updated_at ? $school->updated_at->getTimestamp() : 0;
 
         // Generate ETag based on school ID, type, updated timestamp, size, filename, and mime type
         $etag = '"' . sha1($school->id . '|' . $type . '|' . $updatedAtTimestamp . '|' . $fileSize . '|' . $filename . '|' . $mimeType) . '"';
-        
+
         // Cache for 7 days, allow stale-while-revalidate for 1 day
         $cacheControl = 'public, max-age=604800, stale-while-revalidate=86400';
 
@@ -407,7 +442,7 @@ class PublicWebsiteController extends Controller
         // Return logo with proper headers
         return response($binary, 200)
             ->header('Content-Type', $mimeType)
-            ->header('Content-Length', (string)$fileSize)
+            ->header('Content-Length', (string) $fileSize)
             ->header('Content-Disposition', 'inline; filename="' . addslashes($filename) . '"')
             ->header('ETag', $etag)
             ->header('Cache-Control', $cacheControl);

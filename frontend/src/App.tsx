@@ -39,6 +39,7 @@ import PublicDonationsPage from '@/website/pages/PublicDonationsPage';
 import PublicPostDetailPage from '@/website/pages/PublicPostDetailPage';
 import PublicEventsPage from '@/website/pages/PublicEventsPage';
 import PublicEventDetailPage from '@/website/pages/PublicEventDetailPage';
+import PublicGalleryPage from '@/website/pages/PublicGalleryPage';
 import { PublicHeader } from '@/website/components/layout/PublicHeader';
 import { PublicFooter } from '@/website/components/layout/PublicFooter';
 import PublicWebsitePlaceholderPage from '@/website/pages/PublicWebsitePlaceholderPage';
@@ -475,7 +476,7 @@ const App = () => (
                   <Route element={<PublicLayout />}>
                     {/* Short URL routes for pages (e.g., /page/about, /page/admissions) */}
                     <Route path="/page/:slug" element={<PublicDynamicPage />} />
-                    
+
                     <Route path="/public-site" element={<PublicWebsitePage />} />
                     <Route path="/public-site/pages/:slug" element={<PublicDynamicPage />} />
 
@@ -486,8 +487,8 @@ const App = () => (
 
                     {/* Specialized Pages */}
                     <Route path="/public-site/news" element={<PublicNewsPage />} />
-                    <Route path="/public-site/announcements" element={<PublicNewsPage />} />
-                    <Route path="/public-site/articles" element={<PublicNewsPage />} />
+                    <Route path="/public-site/announcements" element={<PublicNewsPage type="announcement" />} />
+                    <Route path="/public-site/articles" element={<PublicNewsPage type="article" />} />
                     <Route path="/public-site/announcements/:slug" element={<PublicPostDetailPage />} />
                     <Route path="/public-site/articles/:slug" element={<PublicPostDetailPage />} />
                     <Route path="/public-site/posts/:slug" element={<PublicPostDetailPage />} />
@@ -509,12 +510,14 @@ const App = () => (
                     <Route path="/public-site/alumni" element={<PublicGraduatesPage />} />
                     <Route path="/public-site/donations" element={<PublicDonationsPage />} />
                     <Route path="/public-site/donate" element={<PublicDonationsPage />} />
-                    <Route path="/public-site/gallery" element={<PublicWebsitePlaceholderPage title="Gallery" description="Browse our photo gallery and media collections." highlights={["Photo albums", "Event galleries", "School life moments"]} />} />
+
                     <Route path="/public-site/staff" element={<PublicScholarsPage />} />
 
                     {/* Events Fallback (can be specialized later) */}
                     <Route path="/public-site/events" element={<PublicEventsPage />} />
                     <Route path="/public-site/events/:id" element={<PublicEventDetailPage />} />
+                    <Route path="/public-site/gallery" element={<PublicGalleryPage />} />
+                    <Route path="/public-site/media" element={<PublicGalleryPage />} />
 
                     {/* Placeholders for any other dynamic routes */}
                     {publicWebsitePlaceholders.map((page) => (
