@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Calendar } from 'lucide-react';
+import { renderRichText } from '@/website/lib/renderRichText';
 
 interface WebsitePost {
   id: string;
@@ -15,116 +16,37 @@ interface WebsitePost {
   published_at?: string | null;
   created_at?: string | null;
   seo_image_path?: string | null;
+  seo_image_url?: string | null;
 }
 
-function renderJsonContent(content: unknown): string {
-  if (!content) return '';
-  if (typeof content === 'string') return content;
-
-  if (typeof content === 'object' && (content as { type?: string }).type === 'doc') {
-    const doc = content as { content?: unknown[] };
-    return (doc.content || []).map(renderNode).join('');
-  }
-
-  return '';
-}
-
-type RichTextNode = {
-  type?: string;
-  attrs?: {
-    level?: number;
-    href?: string;
-  };
-  content?: RichTextNode[];
-  marks?: Array<{
-    type?: string;
-    attrs?: {
-      href?: string;
-    };
-  }>;
-  text?: string;
-};
-
-function renderNode(node: RichTextNode | null | undefined): string {
-  if (!node) return '';
-
-  switch (node.type) {
-    case 'heading': {
-      const level = node.attrs?.level || 2;
-      const text = renderContent(node.content);
-      return `<h${level}>${text}</h${level}>`;
-    }
-    case 'paragraph': {
-      const text = renderContent(node.content);
-      return `<p>${text}</p>`;
-    }
-    case 'bulletList': {
-      const items = node.content?.map(renderNode).join('') || '';
-      return `<ul>${items}</ul>`;
-    }
-    case 'orderedList': {
-      const items = node.content?.map(renderNode).join('') || '';
-      return `<ol>${items}</ol>`;
-    }
-    case 'listItem': {
-      const listContent = node.content?.map(renderNode).join('') || '';
-      return `<li>${listContent}</li>`;
-    }
-    case 'text': {
-      let text = node.text || '';
-      if (node.marks) {
-        node.marks.forEach((mark) => {
-          switch (mark.type) {
-            case 'bold':
-              text = `<strong>${text}</strong>`;
-              break;
-            case 'italic':
-              text = `<em>${text}</em>`;
-              break;
-            case 'link':
-              text = `<a href="${mark.attrs?.href || '#'}">${text}</a>`;
-              break;
-          }
-        });
-      }
-      return text;
-    }
-    case 'blockquote': {
-      const quoteContent = node.content?.map(renderNode).join('') || '';
-      return `<blockquote>${quoteContent}</blockquote>`;
-    }
-    default:
-      if (node.content) {
-        return node.content.map(renderNode).join('');
-      }
-      return '';
-  }
-}
-
-function renderContent(content: RichTextNode[] | undefined): string {
-  if (!content || !Array.isArray(content)) return '';
-  return content.map(renderNode).join('');
+interface WebsiteAnnouncement {
+  id: string;
+  title: string;
+  content?: string | null;
+  published_at?: string | null;
+  created_at?: string | null;
+  is_pinned?: boolean;
 }
 
 export default function PublicPostDetailPage() {
   const { slug } = useParams<{ slug: string }>();
+  const location = useLocation();
+  const isAnnouncement = location.pathname.includes('/announcements/');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['public-post', slug],
+    queryKey: ['public-post', slug, isAnnouncement],
     queryFn: async () => {
-      const response = await publicWebsiteApi.getPosts();
-      if (typeof response === 'object' && response !== null && 'data' in response) {
-        const data = (response as { data?: unknown }).data;
-        return Array.isArray(data) ? data : [];
-      }
-      return Array.isArray(response) ? response : [];
+      if (!slug) return null;
+      return isAnnouncement
+        ? publicWebsiteApi.getAnnouncement(slug)
+        : publicWebsiteApi.getPost(slug);
     },
     enabled: !!slug,
   });
 
   const post = useMemo(() => {
-    if (!slug || !Array.isArray(data)) return undefined;
-    return data.find((item: WebsitePost) => item.slug === slug || item.id === slug);
+    if (!slug || !data) return undefined;
+    return data as WebsitePost | WebsiteAnnouncement;
   }, [data, slug]);
 
   if (isLoading) {
@@ -137,17 +59,21 @@ export default function PublicPostDetailPage() {
 
   if (!slug || !post) {
     return (
-      <div className="flex-1">
+      <div className="flex-1 overflow-x-hidden">
         <section className="bg-slate-50 py-20">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-3xl font-bold text-slate-900 mb-4">Post Not Found</h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-4">
+              {isAnnouncement ? 'Announcement Not Found' : 'Article Not Found'}
+            </h1>
             <p className="text-slate-600 mb-8">
-              We could not find the announcement you are looking for.
+              {isAnnouncement
+                ? 'We could not find the announcement you are looking for.'
+                : 'We could not find the article you are looking for.'}
             </p>
             <Button variant="outline" asChild>
-              <Link to="/public-site/announcements">
+              <Link to={isAnnouncement ? '/public-site/announcements' : '/public-site/articles'}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Announcements
+                Back to {isAnnouncement ? 'Announcements' : 'Articles'}
               </Link>
             </Button>
           </div>
@@ -156,11 +82,11 @@ export default function PublicPostDetailPage() {
     );
   }
 
-  const htmlContent = renderJsonContent(post.content_json);
-  const displayDate = post.published_at || post.created_at || '';
+  const htmlContent = !isAnnouncement ? renderRichText((post as WebsitePost).content_json) : '';
+  const displayDate = (post as WebsitePost).published_at || post.created_at || '';
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 overflow-x-hidden">
       <section className="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-10"
@@ -180,27 +106,33 @@ export default function PublicPostDetailPage() {
       </section>
 
       <section className="container mx-auto px-4 py-12 md:py-16">
-        {post.seo_image_path && (
+        {!isAnnouncement && (post as WebsitePost).seo_image_path && (
           <div className="max-w-4xl mx-auto mb-8">
             <img
-              src={post.seo_image_path}
+              src={(post as WebsitePost).seo_image_url || (post as WebsitePost).seo_image_path || ''}
               alt={post.title}
               className="w-full rounded-xl shadow-md"
             />
           </div>
         )}
         <article className="prose prose-emerald lg:prose-lg mx-auto bg-white p-6 md:p-12 rounded-xl shadow-sm">
-          {htmlContent ? (
+          {isAnnouncement ? (
+            <p className="text-slate-700 leading-relaxed whitespace-pre-line">
+              {(post as WebsiteAnnouncement).content || 'No announcement content available.'}
+            </p>
+          ) : htmlContent ? (
             <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
           ) : (
-            <p className="text-slate-500 italic text-center">{post.excerpt || 'No content available.'}</p>
+            <p className="text-slate-500 italic text-center">
+              {(post as WebsitePost).excerpt || 'No content available.'}
+            </p>
           )}
         </article>
         <div className="max-w-4xl mx-auto mt-10">
           <Button variant="outline" asChild>
-            <Link to="/public-site/announcements">
+            <Link to={isAnnouncement ? '/public-site/announcements' : '/public-site/articles'}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Announcements
+              Back to {isAnnouncement ? 'Announcements' : 'Articles'}
             </Link>
           </Button>
         </div>

@@ -27,7 +27,7 @@ export default function PublicLibraryPage() {
     const categories = Array.from(new Set(books.map(b => b.category).filter(Boolean))) as string[];
 
     return (
-        <div className="container mx-auto px-4 py-12 max-w-7xl">
+        <div className="container mx-auto px-4 py-12 max-w-7xl overflow-x-hidden">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-bold text-slate-900 mb-4">Digital Library</h1>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto">
@@ -75,9 +75,9 @@ export default function PublicLibraryPage() {
                     {books.map((book) => (
                         <Card key={book.id} className="hover:shadow-lg transition-shadow flex flex-col">
                             <div className="aspect-[3/4] bg-slate-100 relative overflow-hidden group">
-                                {book.cover_image_path ? (
+                                {(book.cover_image_url || book.cover_image_path) ? (
                                     <img
-                                        src={book.cover_image_path}
+                                        src={book.cover_image_url || book.cover_image_path || ''}
                                         alt={book.title}
                                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
                                     />
@@ -87,9 +87,9 @@ export default function PublicLibraryPage() {
                                     </div>
                                 )}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                    {book.file_path && (
+                                    {(book.file_url || book.file_path) && (
                                         <Button variant="secondary" size="sm" asChild>
-                                            <a href={book.file_path} target="_blank" rel="noreferrer">
+                                            <a href={book.file_url || book.file_path || ''} target="_blank" rel="noreferrer">
                                                 <BookOpen className="h-4 w-4 mr-2" /> Read
                                             </a>
                                         </Button>
@@ -118,9 +118,9 @@ export default function PublicLibraryPage() {
                                 </p>
                             </CardContent>
                             <CardFooter className="pt-0">
-                                {book.file_path ? (
+                                {(book.file_url || book.file_path) ? (
                                     <Button className="w-full" variant="outline" asChild>
-                                        <a href={book.file_path} download className="flex items-center gap-2">
+                                        <a href={book.file_url || book.file_path || ''} download className="flex items-center gap-2">
                                             <Download className="h-4 w-4" /> Download PDF
                                         </a>
                                     </Button>

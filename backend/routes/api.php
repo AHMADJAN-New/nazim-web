@@ -64,6 +64,7 @@ use App\Http\Controllers\Website\WebsitePostController;
 use App\Http\Controllers\Website\WebsiteEventController;
 use App\Http\Controllers\Website\WebsiteAnnouncementController;
 use App\Http\Controllers\Website\WebsiteMediaController;
+use App\Http\Controllers\Website\WebsiteMediaCategoryController;
 use App\Http\Controllers\Website\WebsiteDomainController;
 use App\Http\Controllers\Website\WebsiteMenuController;
 use App\Http\Controllers\Website\PublicWebsiteController;
@@ -166,6 +167,9 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/menus', [PublicWebsiteController::class, 'menus']);
         Route::get('/pages/{slug}', [PublicWebsiteController::class, 'page']);
         Route::get('/posts', [PublicWebsiteController::class, 'posts']);
+        Route::get('/posts/{slug}', [PublicWebsiteController::class, 'post']);
+        Route::get('/announcements', [PublicWebsiteController::class, 'announcements']);
+        Route::get('/announcements/{id}', [PublicWebsiteController::class, 'announcement']);
         Route::get('/events', [PublicWebsiteController::class, 'events']);
         Route::get('/media', [PublicWebsiteController::class, 'media']);
         Route::get('/fatwas/categories', [PublicFatwaController::class, 'categories']);
@@ -1377,6 +1381,13 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::post('/announcements', [WebsiteAnnouncementController::class, 'store']);
                 Route::put('/announcements/{id}', [WebsiteAnnouncementController::class, 'update']);
                 Route::delete('/announcements/{id}', [WebsiteAnnouncementController::class, 'destroy']);
+            });
+
+            Route::get('/media-categories', [WebsiteMediaCategoryController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/media-categories', [WebsiteMediaCategoryController::class, 'store']);
+                Route::put('/media-categories/{id}', [WebsiteMediaCategoryController::class, 'update']);
+                Route::delete('/media-categories/{id}', [WebsiteMediaCategoryController::class, 'destroy']);
             });
 
             Route::get('/media', [WebsiteMediaController::class, 'index']);

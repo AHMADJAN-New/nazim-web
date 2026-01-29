@@ -57,7 +57,7 @@ class WebsiteAnnouncementController extends Controller
             'school_id' => $schoolId,
         ]));
 
-        $this->clearPublicCaches($profile->organization_id, $schoolId);
+        $this->clearPublicCaches($profile->organization_id, $schoolId, $announcement->id);
 
         return response()->json($announcement, 201);
     }
@@ -90,7 +90,7 @@ class WebsiteAnnouncementController extends Controller
         $announcement->fill($data);
         $announcement->save();
 
-        $this->clearPublicCaches($profile->organization_id, $schoolId);
+        $this->clearPublicCaches($profile->organization_id, $schoolId, $announcement->id);
 
         return response()->json($announcement);
     }
@@ -113,16 +113,20 @@ class WebsiteAnnouncementController extends Controller
 
         $announcement->delete();
 
-        $this->clearPublicCaches($profile->organization_id, $schoolId);
+        $this->clearPublicCaches($profile->organization_id, $schoolId, $announcement->id);
 
         return response()->noContent();
     }
 
-    private function clearPublicCaches(string $organizationId, string $schoolId): void
+    private function clearPublicCaches(string $organizationId, string $schoolId, ?string $announcementId = null): void
     {
         foreach (self::PUBLIC_LANGUAGES as $lang) {
             Cache::forget("public-site:{$organizationId}:{$schoolId}:{$lang}");
         }
         Cache::forget("public-announcements:{$organizationId}:{$schoolId}");
+        Cache::forget("public-announcements:{$organizationId}:{$schoolId}:1");
+        if ($announcementId) {
+            Cache::forget("public-announcement:{$organizationId}:{$schoolId}:{$announcementId}");
+        }
     }
 }

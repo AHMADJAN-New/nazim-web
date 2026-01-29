@@ -4743,6 +4743,7 @@ export const websiteMediaApi = {
     return apiClient.get('/website/media');
   },
   create: async (data: {
+    category_id?: string | null;
     type: string;
     file_path: string;
     file_name?: string | null;
@@ -4757,6 +4758,7 @@ export const websiteMediaApi = {
     return apiClient.post<{ url: string; path: string; media_id: string }>('/website/media/upload-image', formData);
   },
   update: async (id: string, data: {
+    category_id?: string | null;
     type?: string;
     file_path?: string;
     file_name?: string | null;
@@ -4767,6 +4769,35 @@ export const websiteMediaApi = {
   },
   delete: async (id: string) => {
     return apiClient.delete(`/website/media/${id}`);
+  },
+};
+
+export const websiteMediaCategoriesApi = {
+  list: async () => {
+    return apiClient.get('/website/media-categories');
+  },
+  create: async (data: {
+    name: string;
+    slug?: string | null;
+    description?: string | null;
+    cover_image_path?: string | null;
+    sort_order?: number | null;
+    is_active?: boolean;
+  }) => {
+    return apiClient.post('/website/media-categories', data);
+  },
+  update: async (id: string, data: {
+    name?: string;
+    slug?: string | null;
+    description?: string | null;
+    cover_image_path?: string | null;
+    sort_order?: number | null;
+    is_active?: boolean;
+  }) => {
+    return apiClient.put(`/website/media-categories/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/media-categories/${id}`);
   },
 };
 
@@ -4856,6 +4887,15 @@ export const publicWebsiteApi = {
   },
   getPosts: async (page = 1) => {
     return apiClient.get('/public/website/posts', { params: { page } });
+  },
+  getPost: async (slug: string) => {
+    return apiClient.get(`/public/website/posts/${slug}`);
+  },
+  getAnnouncements: async (page = 1) => {
+    return apiClient.get('/public/website/announcements', { params: { page } });
+  },
+  getAnnouncement: async (id: string) => {
+    return apiClient.get(`/public/website/announcements/${id}`);
   },
   getEvents: async () => {
     return apiClient.get('/public/website/events');

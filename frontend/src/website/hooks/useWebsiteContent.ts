@@ -10,7 +10,9 @@ export interface WebsitePublicBook {
     category: string | null;
     description: string | null;
     cover_image_path: string | null;
+    cover_image_url?: string | null;
     file_path: string | null;
+    file_url?: string | null;
     file_size: number | null;
     download_count: number;
     is_featured: boolean;
@@ -26,6 +28,7 @@ export interface WebsiteScholar {
     title: string | null;
     bio: string | null;
     photo_path: string | null;
+    photo_url?: string | null;
     specializations: string[] | null;
     contact_email: string | null;
     sort_order: number;
@@ -59,6 +62,7 @@ export interface WebsiteGraduate {
     graduation_year: number | null;
     program: string | null;
     photo_path: string | null;
+    photo_url?: string | null;
     bio: string | null;
     is_featured: boolean;
     sort_order: number;

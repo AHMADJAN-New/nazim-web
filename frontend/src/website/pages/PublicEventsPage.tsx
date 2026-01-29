@@ -36,7 +36,7 @@ export default function PublicEventsPage() {
   }
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 overflow-x-hidden">
       <section className="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-10"

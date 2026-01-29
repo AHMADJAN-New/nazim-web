@@ -231,6 +231,7 @@ import ArticlesManagementPage from "@/website/pages/ArticlesManagementPage";
 import EventsManagementPage from "@/website/pages/EventsManagementPage";
 import NavigationManagementPage from "@/website/pages/NavigationManagementPage";
 import MediaManagementPage from "@/website/pages/MediaManagementPage";
+import WebsiteGalleryPage from "@/website/pages/WebsiteGalleryPage";
 import DomainsManagementPage from "@/website/pages/DomainsManagementPage";
 import FatwasManagementPage from "@/website/pages/FatwasManagementPage";
 import AnnouncementsManagementPage from "@/website/pages/AnnouncementsManagementPage";
@@ -891,6 +892,11 @@ const App = () => (
                         <MediaManagementPage />
                       </PermissionRoute>
                     } />
+                    <Route path="/website/gallery" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteGalleryPage />
+                      </PermissionRoute>
+                    } />
                     <Route path="/website/domains" element={
                       <PermissionRoute permission="website_settings.read">
                         <DomainsManagementPage />
@@ -934,7 +940,7 @@ const App = () => (
                     {/* Phase 2: Pages requiring backend work - still use placeholders */}
                     {websiteModulePlaceholders
                       .filter(module =>
-                        !['/website/navigation', '/website/articles', '/website/events', '/website/fatwas', '/website/media', '/website/domains', '/website/announcements',
+                        !['/website/navigation', '/website/articles', '/website/events', '/website/fatwas', '/website/media', '/website/gallery', '/website/domains', '/website/announcements',
                           '/website/library', '/website/courses', '/website/scholars', '/website/graduates', '/website/donations', '/website/inbox'].includes(module.path)
                       )
                       .map((module) => (

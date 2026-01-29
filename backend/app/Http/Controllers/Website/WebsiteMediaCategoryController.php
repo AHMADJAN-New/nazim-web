@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
-use App\Models\WebsitePost;
+use App\Models\WebsiteMediaCategory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
-class WebsitePostController extends Controller
+class WebsiteMediaCategoryController extends Controller
 {
     private const PUBLIC_LANGUAGES = ['en', 'ps', 'fa', 'ar'];
 
@@ -23,12 +23,13 @@ class WebsitePostController extends Controller
 
         $schoolId = $this->getCurrentSchoolId($request);
 
-        $posts = WebsitePost::where('organization_id', $profile->organization_id)
+        $categories = WebsiteMediaCategory::where('organization_id', $profile->organization_id)
             ->where('school_id', $schoolId)
+            ->orderBy('sort_order')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return response()->json($posts);
+        return response()->json($categories);
     }
 
     public function store(Request $request)
@@ -43,27 +44,22 @@ class WebsitePostController extends Controller
         $schoolId = $this->getCurrentSchoolId($request);
 
         $data = $request->validate([
-            'slug' => 'required|string|max:120',
-            'title' => 'required|string|max:200',
-            'status' => 'required|string|max:20',
-            'excerpt' => 'nullable|string',
-            'content_json' => 'array|nullable',
-            'seo_title' => 'nullable|string|max:200',
-            'seo_description' => 'nullable|string|max:400',
-            'seo_image_path' => 'nullable|string',
-            'published_at' => 'nullable|date',
+            'name' => 'required|string|max:200',
+            'slug' => 'nullable|string|max:200',
+            'description' => 'nullable|string',
+            'cover_image_path' => 'nullable|string',
+            'sort_order' => 'nullable|integer',
+            'is_active' => 'boolean',
         ]);
 
-        $post = WebsitePost::create(array_merge($data, [
+        $category = WebsiteMediaCategory::create(array_merge($data, [
             'organization_id' => $profile->organization_id,
             'school_id' => $schoolId,
-            'created_by' => $user->id,
-            'updated_by' => $user->id,
         ]));
 
-        $this->clearPublicCaches($profile->organization_id, $schoolId, $post->slug);
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
 
-        return response()->json($post, 201);
+        return response()->json($category, 201);
     }
 
     public function update(Request $request, string $id)
@@ -77,30 +73,26 @@ class WebsitePostController extends Controller
 
         $schoolId = $this->getCurrentSchoolId($request);
 
-        $post = WebsitePost::where('organization_id', $profile->organization_id)
+        $category = WebsiteMediaCategory::where('organization_id', $profile->organization_id)
             ->where('school_id', $schoolId)
             ->where('id', $id)
             ->firstOrFail();
 
         $data = $request->validate([
-            'slug' => 'sometimes|required|string|max:120',
-            'title' => 'sometimes|required|string|max:200',
-            'status' => 'sometimes|required|string|max:20',
-            'excerpt' => 'nullable|string',
-            'content_json' => 'array|nullable',
-            'seo_title' => 'nullable|string|max:200',
-            'seo_description' => 'nullable|string|max:400',
-            'seo_image_path' => 'nullable|string',
-            'published_at' => 'nullable|date',
+            'name' => 'sometimes|required|string|max:200',
+            'slug' => 'nullable|string|max:200',
+            'description' => 'nullable|string',
+            'cover_image_path' => 'nullable|string',
+            'sort_order' => 'nullable|integer',
+            'is_active' => 'boolean',
         ]);
 
-        $post->fill($data);
-        $post->updated_by = $user->id;
-        $post->save();
+        $category->fill($data);
+        $category->save();
 
-        $this->clearPublicCaches($profile->organization_id, $schoolId, $post->slug);
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
 
-        return response()->json($post);
+        return response()->json($category);
     }
 
     public function destroy(Request $request, string $id)
@@ -114,26 +106,24 @@ class WebsitePostController extends Controller
 
         $schoolId = $this->getCurrentSchoolId($request);
 
-        $post = WebsitePost::where('organization_id', $profile->organization_id)
+        $category = WebsiteMediaCategory::where('organization_id', $profile->organization_id)
             ->where('school_id', $schoolId)
             ->where('id', $id)
             ->firstOrFail();
 
-        $post->delete();
+        $category->delete();
 
-        $this->clearPublicCaches($profile->organization_id, $schoolId, $post->slug);
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
 
-        return response()->json(['status' => 'deleted']);
+        return response()->noContent();
     }
 
-    private function clearPublicCaches(string $organizationId, string $schoolId, string $slug): void
+    private function clearPublicCaches(string $organizationId, string $schoolId): void
     {
         foreach (self::PUBLIC_LANGUAGES as $lang) {
             Cache::forget("public-site:{$organizationId}:{$schoolId}:{$lang}");
         }
-        Cache::forget("public-posts:{$organizationId}:{$schoolId}");
-        Cache::forget("public-posts:{$organizationId}:{$schoolId}:1");
-        Cache::forget("public-post:{$organizationId}:{$schoolId}:{$slug}");
-        Cache::forget("public-page:{$organizationId}:{$schoolId}:{$slug}");
+        Cache::forget("public-media-categories:{$organizationId}:{$schoolId}");
+        Cache::forget("public-media:{$organizationId}:{$schoolId}::1");
     }
 }

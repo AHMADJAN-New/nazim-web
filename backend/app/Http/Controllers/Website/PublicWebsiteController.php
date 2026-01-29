@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\WebsiteEvent;
 use App\Models\WebsitePage;
 use App\Models\WebsitePost;
+use App\Models\WebsiteAnnouncement;
 use App\Models\WebsiteSetting;
 use App\Models\WebsiteMenuLink;
 use App\Models\SchoolBranding;
@@ -52,6 +53,11 @@ class PublicWebsiteController extends Controller
                 ->orderBy('published_at', 'desc')
                 ->limit(5)
                 ->get();
+
+            $posts = $posts->map(function ($post) {
+                $post->seo_image_url = $this->resolvePublicUrl($post->seo_image_path);
+                return $post;
+            });
             $events = WebsiteEvent::where('school_id', $schoolId)
                 ->where('is_public', true)
                 ->orderBy('starts_at', 'asc')
@@ -110,10 +116,96 @@ class PublicWebsiteController extends Controller
         $organizationId = $request->attributes->get('organization_id');
 
         return Cache::remember("public-posts:{$organizationId}:{$schoolId}:" . request('page', 1), now()->addMinutes(10), function () use ($schoolId) {
-            return WebsitePost::where('school_id', $schoolId)
+            $posts = WebsitePost::where('school_id', $schoolId)
                 ->where('status', 'published')
+                ->whereNull('deleted_at')
                 ->orderBy('published_at', 'desc')
                 ->paginate(9);
+
+            $posts->getCollection()->transform(function ($post) {
+                $post->seo_image_url = $this->resolvePublicUrl($post->seo_image_path);
+                return $post;
+            });
+
+            return $posts;
+        });
+    }
+
+    public function post(Request $request, string $slug)
+    {
+        $schoolId = $request->attributes->get('school_id');
+        $organizationId = $request->attributes->get('organization_id');
+
+        $cacheKey = "public-post:{$organizationId}:{$schoolId}:{$slug}";
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId, $slug) {
+            $post = WebsitePost::where('school_id', $schoolId)
+                ->where('status', 'published')
+                ->whereNull('deleted_at')
+                ->where(function ($query) use ($slug) {
+                    $query->where('slug', $slug)->orWhere('id', $slug);
+                })
+                ->firstOrFail();
+
+            $post->seo_image_url = $this->resolvePublicUrl($post->seo_image_path);
+
+            return response()->json($post);
+        });
+    }
+
+    public function announcements(Request $request)
+    {
+        $schoolId = $request->attributes->get('school_id');
+        $organizationId = $request->attributes->get('organization_id');
+        $page = $request->query('page', 1);
+
+        $cacheKey = "public-announcements:{$organizationId}:{$schoolId}:{$page}";
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId) {
+            $now = now();
+
+            return WebsiteAnnouncement::where('school_id', $schoolId)
+                ->where('status', 'published')
+                ->whereNull('deleted_at')
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('published_at')
+                        ->orWhere('published_at', '<=', $now);
+                })
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>=', $now);
+                })
+                ->orderBy('is_pinned', 'desc')
+                ->orderBy('published_at', 'desc')
+                ->paginate(9);
+        });
+    }
+
+    public function announcement(Request $request, string $id)
+    {
+        $schoolId = $request->attributes->get('school_id');
+        $organizationId = $request->attributes->get('organization_id');
+
+        $cacheKey = "public-announcement:{$organizationId}:{$schoolId}:{$id}";
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId, $id) {
+            $now = now();
+
+            $announcement = WebsiteAnnouncement::where('school_id', $schoolId)
+                ->where('status', 'published')
+                ->whereNull('deleted_at')
+                ->where('id', $id)
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('published_at')
+                        ->orWhere('published_at', '<=', $now);
+                })
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>=', $now);
+                })
+                ->firstOrFail();
+
+            return response()->json($announcement);
         });
     }
 
@@ -144,10 +236,15 @@ class PublicWebsiteController extends Controller
         // Separate cache key for categories vs items to keep it clean
         if ($request->has('get_categories')) {
             return Cache::remember("public-media-categories:{$organizationId}:{$schoolId}", now()->addMinutes(10), function () use ($schoolId) {
-                return \App\Models\WebsiteMediaCategory::where('school_id', $schoolId)
+                $categories = \App\Models\WebsiteMediaCategory::where('school_id', $schoolId)
                     ->where('is_active', true)
                     ->orderBy('sort_order')
                     ->get();
+
+                return $categories->map(function ($category) {
+                    $category->cover_image_url = $this->resolvePublicUrl($category->cover_image_path);
+                    return $category;
+                });
             });
         }
 
@@ -168,7 +265,14 @@ class PublicWebsiteController extends Controller
                 }
             }
 
-            return $query->orderBy('created_at', 'desc')->paginate(12);
+            $media = $query->orderBy('created_at', 'desc')->paginate(12);
+
+            $media->getCollection()->transform(function ($item) {
+                $item->file_url = $this->resolvePublicUrl($item->file_path);
+                return $item;
+            });
+
+            return $media;
         });
     }
 
@@ -197,9 +301,15 @@ class PublicWebsiteController extends Controller
                 $booksQuery->where('category', $category);
             }
 
-            return $booksQuery->orderBy('sort_order')
+            $books = $booksQuery->orderBy('sort_order')
                 ->orderBy('created_at', 'desc')
                 ->get();
+
+            return $books->map(function ($book) {
+                $book->cover_image_url = $this->resolvePublicUrl($book->cover_image_path);
+                $book->file_url = $this->resolvePublicUrl($book->file_path);
+                return $book;
+            });
         });
     }
 
@@ -231,11 +341,7 @@ class PublicWebsiteController extends Controller
 
         // Convert cover_image_path to URL for each course
         $coursesWithUrls = $courses->map(function ($course) {
-            if ($course->cover_image_path) {
-                $course->cover_image_url = $this->fileStorageService->getPublicUrl($course->cover_image_path);
-            } else {
-                $course->cover_image_url = null;
-            }
+            $course->cover_image_url = $this->resolvePublicUrl($course->cover_image_path);
             return $course;
         });
 
@@ -251,10 +357,15 @@ class PublicWebsiteController extends Controller
         $cacheKey = "public-scholars:{$organizationId}:{$schoolId}";
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId) {
-            return WebsiteScholar::where('school_id', $schoolId)
+            $scholars = WebsiteScholar::where('school_id', $schoolId)
                 ->where('status', 'published')
                 ->orderBy('sort_order')
                 ->get();
+
+            return $scholars->map(function ($scholar) {
+                $scholar->photo_url = $this->resolvePublicUrl($scholar->photo_path);
+                return $scholar;
+            });
         });
     }
 
@@ -274,9 +385,14 @@ class PublicWebsiteController extends Controller
                 $query->where('graduation_year', $year);
             }
 
-            return $query->orderBy('graduation_year', 'desc')
+            $graduates = $query->orderBy('graduation_year', 'desc')
                 ->orderBy('sort_order')
                 ->get();
+
+            return $graduates->map(function ($graduate) {
+                $graduate->photo_url = $this->resolvePublicUrl($graduate->photo_path);
+                return $graduate;
+            });
         });
     }
 
@@ -316,7 +432,7 @@ class PublicWebsiteController extends Controller
         $inbox->subject = $validated['subject'];
         $inbox->message = $validated['message'];
         $inbox->type = 'contact';
-        $inbox->status = 'unread';
+        $inbox->status = 'new';
         $inbox->save();
 
         return response()->json(['message' => 'Message sent successfully']);
@@ -334,15 +450,24 @@ class PublicWebsiteController extends Controller
 
         $posts = WebsitePost::where('school_id', $schoolId)
             ->where('status', 'published')
+            ->whereNull('deleted_at')
             ->get(['slug', 'updated_at']);
 
+        $announcements = WebsiteAnnouncement::where('school_id', $schoolId)
+            ->where('status', 'published')
+            ->whereNull('deleted_at')
+            ->get(['id', 'updated_at']);
+
         $urls = collect($pages)->map(fn($page) => [
-            'loc' => "{$host}/pages/{$page->slug}",
+            'loc' => "{$host}/public-site/pages/{$page->slug}",
             'lastmod' => optional($page->updated_at)->toDateString(),
         ])->merge(collect($posts)->map(fn($post) => [
-                        'loc' => "{$host}/announcements/{$post->slug}",
-                        'lastmod' => optional($post->updated_at)->toDateString(),
-                    ]));
+            'loc' => "{$host}/public-site/articles/{$post->slug}",
+            'lastmod' => optional($post->updated_at)->toDateString(),
+        ]))->merge(collect($announcements)->map(fn($announcement) => [
+            'loc' => "{$host}/public-site/announcements/{$announcement->id}",
+            'lastmod' => optional($announcement->updated_at)->toDateString(),
+        ]));
 
         $xmlEntries = $urls->map(function ($url) {
             $lastmod = $url['lastmod'] ? "<lastmod>{$url['lastmod']}</lastmod>" : '';
@@ -360,9 +485,22 @@ class PublicWebsiteController extends Controller
     public function robots(Request $request)
     {
         $host = $request->getSchemeAndHttpHost();
-        $content = "User-agent: *\nAllow: /\nSitemap: {$host}/sitemap.xml\n";
+        $content = "User-agent: *\nAllow: /\nSitemap: {$host}/api/public/website/sitemap.xml\n";
 
         return response($content, 200)->header('Content-Type', 'text/plain');
+    }
+
+    private function resolvePublicUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return $this->fileStorageService->getPublicUrl($path);
     }
 
     public function logo(Request $request, string $schoolId, string $type)

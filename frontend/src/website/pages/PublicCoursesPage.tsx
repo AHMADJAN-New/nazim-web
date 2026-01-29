@@ -32,7 +32,7 @@ export default function PublicCoursesPage() {
     const categories = Array.from(new Set(courses.map(c => c.category).filter(Boolean))) as string[];
 
     return (
-        <div className="container mx-auto px-4 py-12 max-w-7xl">
+        <div className="container mx-auto px-4 py-12 max-w-7xl overflow-x-hidden">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-bold text-slate-900 mb-4">Academic Programs</h1>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto">
@@ -80,9 +80,9 @@ export default function PublicCoursesPage() {
                     {courses.map((course) => (
                         <Card key={course.id} className="hover:shadow-lg transition-shadow flex flex-col border-none shadow-md">
                             <div className="h-48 bg-emerald-900 relative overflow-hidden flex items-center justify-center">
-                                {course.cover_image_path ? (
+                                {(course.cover_image_url || course.cover_image_path) ? (
                                     <img
-                                        src={course.cover_image_path}
+                                        src={course.cover_image_url || course.cover_image_path || ''}
                                         alt={course.title}
                                         className="w-full h-full object-cover"
                                     />

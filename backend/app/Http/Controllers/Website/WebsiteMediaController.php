@@ -48,6 +48,7 @@ class WebsiteMediaController extends Controller
         $schoolId = $this->getCurrentSchoolId($request);
 
         $data = $request->validate([
+            'category_id' => 'nullable|uuid',
             'type' => 'required|string|max:30',
             'file_path' => 'required|string',
             'file_name' => 'nullable|string|max:255',
@@ -82,6 +83,7 @@ class WebsiteMediaController extends Controller
             ->firstOrFail();
 
         $data = $request->validate([
+            'category_id' => 'nullable|uuid',
             'type' => 'sometimes|required|string|max:30',
             'file_path' => 'sometimes|required|string',
             'file_name' => 'nullable|string|max:255',
@@ -179,5 +181,7 @@ class WebsiteMediaController extends Controller
         foreach (self::PUBLIC_LANGUAGES as $lang) {
             Cache::forget("public-site:{$organizationId}:{$schoolId}:{$lang}");
         }
+        Cache::forget("public-media-categories:{$organizationId}:{$schoolId}");
+        Cache::forget("public-media:{$organizationId}:{$schoolId}::1");
     }
 }

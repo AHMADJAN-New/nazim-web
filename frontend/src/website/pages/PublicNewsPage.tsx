@@ -13,20 +13,40 @@ interface WebsitePost {
     id: string;
     title: string;
     slug: string;
-    excerpt: string;
-    content_json: any;
-    published_at: string;
-    seo_image_path?: string;
-    created_at: string;
+    excerpt?: string | null;
+    content_json?: any;
+    published_at?: string | null;
+    seo_image_path?: string | null;
+    seo_image_url?: string | null;
+    created_at?: string | null;
+}
+
+interface WebsiteAnnouncement {
+    id: string;
+    title: string;
+    content?: string | null;
+    published_at?: string | null;
+    created_at?: string | null;
+    is_pinned?: boolean;
 }
 
 export default function PublicNewsPage({ type }: { type?: 'article' | 'announcement' }) {
     const [page, setPage] = useState(1);
+    const isAnnouncements = type === 'announcement';
     const { data: postsData, isLoading } = useQuery({
-        queryKey: ['public-posts', page],
+        queryKey: [isAnnouncements ? 'public-announcements' : 'public-posts', page],
         queryFn: async () => {
-            const response = await publicWebsiteApi.getPosts(page);
-            return (response as any).data || response;
+            const response = isAnnouncements
+                ? await publicWebsiteApi.getAnnouncements(page)
+                : await publicWebsiteApi.getPosts(page);
+
+            if (typeof response === 'object' && response !== null && 'data' in response) {
+                return response as { data: any[]; last_page?: number };
+            }
+            return {
+                data: Array.isArray(response) ? response : [],
+                last_page: 1,
+            };
         }
     });
 
@@ -36,10 +56,12 @@ export default function PublicNewsPage({ type }: { type?: 'article' | 'announcem
     // Filter logic can remain if we eventually support filtering by type on backend.
     // For now we just display what we get.
 
-    const pageTitle = type === 'article' ? 'Articles & Blog' : 'News & Announcements';
+    const pageTitle = type === 'article' ? 'Articles & Blog' : isAnnouncements ? 'Announcements' : 'News & Updates';
     const pageDescription = type === 'article'
         ? 'Read our latest articles, thoughts, and educational content.'
-        : 'Stay updated with the latest happenings, events, and announcements from our school community.';
+        : isAnnouncements
+            ? 'Official announcements from our school community.'
+            : 'Stay updated with the latest happenings, events, and announcements from our school community.';
 
     if (isLoading) {
         return (
@@ -50,7 +72,7 @@ export default function PublicNewsPage({ type }: { type?: 'article' | 'announcem
     }
 
     return (
-        <div className="flex-1">
+        <div className="flex-1 overflow-x-hidden">
             {/* Header */}
             <PublicPageHeader
                 title={pageTitle}
@@ -62,13 +84,13 @@ export default function PublicNewsPage({ type }: { type?: 'article' | 'announcem
                 {posts.length > 0 ? (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {posts.map((post: WebsitePost) => (
+                            {posts.map((post: WebsitePost | WebsiteAnnouncement) => (
                                 <Card key={post.id} className="flex flex-col h-full hover:shadow-md transition-shadow">
                                     <CardHeader className="p-0 overflow-hidden">
                                         <div className="aspect-video w-full bg-slate-100 relative group">
-                                            {post.seo_image_path ? (
+                                            {!isAnnouncements && (post as WebsitePost).seo_image_path ? (
                                                 <img
-                                                    src={post.seo_image_path}
+                                                    src={(post as WebsitePost).seo_image_url || (post as WebsitePost).seo_image_path || ''}
                                                     alt={post.title}
                                                     className="w-full h-full object-cover transition-transform group-hover:scale-105"
                                                 />
@@ -79,23 +101,28 @@ export default function PublicNewsPage({ type }: { type?: 'article' | 'announcem
                                             )}
                                             <div className="absolute top-4 left-4 bg-emerald-600/90 text-white text-xs px-2 py-1 rounded backdrop-blur border border-emerald-500/50 flex items-center gap-1.5 shadow-sm">
                                                 <Calendar className="h-3 w-3" />
-                                                {formatDate(post.published_at || post.created_at)}
+                                                {formatDate((post as WebsitePost).published_at || post.created_at)}
                                             </div>
+                                            {isAnnouncements && (post as WebsiteAnnouncement).is_pinned && (
+                                                <div className="absolute top-4 right-4 bg-amber-500/90 text-white text-xs px-2 py-1 rounded backdrop-blur border border-amber-400/50 shadow-sm">
+                                                    Pinned
+                                                </div>
+                                            )}
                                         </div>
                                     </CardHeader>
                                     <CardContent className="flex-1 p-6 pt-6">
                                         <CardTitle className="mb-2 line-clamp-2 hover:text-emerald-700 transition-colors">
-                                            <Link to={`/public-site/${type === 'article' ? 'articles' : 'announcements'}/${post.slug}`}>
+                                            <Link to={getDetailLink(type, post as WebsitePost, post as WebsiteAnnouncement)}>
                                                 {post.title}
                                             </Link>
                                         </CardTitle>
                                         <CardDescription className="line-clamp-3 mb-4">
-                                            {post.excerpt}
+                                            {isAnnouncements ? (post as WebsiteAnnouncement).content : (post as WebsitePost).excerpt}
                                         </CardDescription>
                                     </CardContent>
                                     <CardFooter className="p-6 pt-0 mt-auto">
                                         <Button variant="ghost" className="p-0 h-auto text-emerald-600 hover:text-emerald-700 hover:bg-transparent" asChild>
-                                            <Link to={`/public-site/${type === 'article' ? 'articles' : 'announcements'}/${post.slug}`} className="flex items-center group/btn">
+                                            <Link to={getDetailLink(type, post as WebsitePost, post as WebsiteAnnouncement)} className="flex items-center group/btn">
                                                 Read More
                                                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
                                             </Link>
@@ -142,11 +169,22 @@ export default function PublicNewsPage({ type }: { type?: 'article' | 'announcem
     );
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr?: string | null) {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
     });
+}
+
+function getDetailLink(
+    type: 'article' | 'announcement' | undefined,
+    post: WebsitePost,
+    announcement: WebsiteAnnouncement
+) {
+    if (type === 'announcement') {
+        return `/public-site/announcements/${announcement.id}`;
+    }
+    return `/public-site/articles/${post.slug}`;
 }

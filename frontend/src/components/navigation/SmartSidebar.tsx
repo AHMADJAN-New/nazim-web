@@ -1508,9 +1508,14 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: CalendarClock,
           },
           {
-            title: "Gallery",
-            url: "/website/media",
+            title: "Gallery Albums",
+            url: "/website/gallery",
             icon: GalleryVerticalEnd,
+          },
+          {
+            title: "Media Library",
+            url: "/website/media",
+            icon: FileImage,
           },
           {
             title: "Scholars & Staff",
