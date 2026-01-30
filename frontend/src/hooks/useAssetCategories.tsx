@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from './useAuth';
 
+import { queryOptionsNoRefetchOnFocus } from '@/lib/queryClient';
 import { assetCategoriesApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 
@@ -34,7 +35,7 @@ export const useAssetCategories = () => {
     },
     enabled: !!user && !!profile && !!profile.organization_id,
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    ...queryOptionsNoRefetchOnFocus,
   });
 };
 
@@ -57,6 +58,9 @@ export const useCreateAssetCategory = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asset-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['assets-dashboard'] });
       showToast.success('toast.assetCategories.created');
     },
     onError: (error: Error) => {
@@ -75,6 +79,8 @@ export const useUpdateAssetCategory = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asset-categories'] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['assets-dashboard'] });
       showToast.success('toast.assetCategories.updated');
     },
     onError: (error: Error) => {
@@ -93,6 +99,8 @@ export const useDeleteAssetCategory = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asset-categories'] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['assets-dashboard'] });
       showToast.success('toast.assetCategories.deleted');
     },
     onError: (error: Error) => {
@@ -100,4 +108,3 @@ export const useDeleteAssetCategory = () => {
     },
   });
 };
-

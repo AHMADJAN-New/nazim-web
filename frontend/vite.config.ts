@@ -188,6 +188,12 @@ export default defineConfig({
           });
         },
       },
+      // Proxy storage so relative URLs /storage/... work in dev (avoids mixed content when app is HTTPS)
+      '/storage': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
     },
     // Increase HMR timeout for mobile connections
     hmr: {

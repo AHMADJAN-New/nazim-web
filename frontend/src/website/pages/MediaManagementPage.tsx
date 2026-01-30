@@ -35,18 +35,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useLanguage } from '@/hooks/useLanguage';
 import {
   useWebsiteMedia,
+  useWebsiteMediaCategories,
   useCreateWebsiteMedia,
   useUpdateWebsiteMedia,
   useDeleteWebsiteMedia,
   type WebsiteMedia,
 } from '@/website/hooks/useWebsiteManager';
+import { useWebsiteImageUpload } from '@/website/hooks/useWebsiteImageUpload';
+import { resolveMediaUrl } from '@/website/lib/mediaUrl';
 import { formatDate } from '@/lib/utils';
 
 const mediaSchema = z.object({
   type: z.enum(['image', 'video', 'document']),
+  categoryId: z.string().optional().nullable(),
   filePath: z.string().min(1, 'File path is required'),
   fileName: z.string().optional().nullable(),
   altText: z.string().max(200).optional().nullable(),
@@ -55,22 +58,30 @@ const mediaSchema = z.object({
 type MediaFormData = z.infer<typeof mediaSchema>;
 
 export default function MediaManagementPage() {
-  const { t } = useLanguage();
   const { data: media = [], isLoading } = useWebsiteMedia();
+  const { data: categories = [] } = useWebsiteMediaCategories();
   const createMedia = useCreateWebsiteMedia();
   const updateMedia = useUpdateWebsiteMedia();
   const deleteMedia = useDeleteWebsiteMedia();
+  const formCategoryId = form.watch('categoryId');
+  const imageUpload = useWebsiteImageUpload(formCategoryId);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editMedia, setEditMedia] = useState<WebsiteMedia | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [uploadedMediaId, setUploadedMediaId] = useState<string | null>(null);
+  const [uploadedPreviewUrl, setUploadedPreviewUrl] = useState<string | null>(null);
+  const [showLibraryPicker, setShowLibraryPicker] = useState<'create' | 'edit' | null>(null);
+  const [pendingUploads, setPendingUploads] = useState<Array<{ path: string; fileName: string; mediaId?: string }>>([]);
 
   const form = useForm<MediaFormData>({
     resolver: zodResolver(mediaSchema),
     defaultValues: {
       type: 'image',
+      categoryId: null,
       filePath: '',
       fileName: null,
       altText: null,
@@ -83,19 +94,90 @@ export default function MediaManagementPage() {
         item.filePath.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.altText?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = typeFilter === 'all' || item.type === typeFilter;
-      return matchesSearch && matchesType;
+      const matchesCategory = categoryFilter === 'all' || item.categoryId === categoryFilter;
+      return matchesSearch && matchesType && matchesCategory;
     });
-  }, [media, searchQuery, typeFilter]);
+  }, [media, searchQuery, typeFilter, categoryFilter]);
+
+  const categoryLookup = useMemo(() => {
+    return new Map(categories.map((category) => [category.id, category.name]));
+  }, [categories]);
+
+  const handleImageUpload = async (file: File) => {
+    const result = await imageUpload.mutateAsync(file);
+    setUploadedMediaId(result.mediaId);
+    setUploadedPreviewUrl(result.url);
+    form.setValue('filePath', result.path, { shouldValidate: true });
+    form.setValue('fileName', file.name, { shouldValidate: true });
+    form.setValue('type', 'image');
+  };
+
+  const handleMultipleImageUpload = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const newPending: Array<{ path: string; fileName: string; mediaId: string }> = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      try {
+        const result = await imageUpload.mutateAsync(file);
+        newPending.push({ path: result.path, fileName: file.name, mediaId: result.mediaId });
+      } catch {
+        // toast already shown by hook
+      }
+    }
+    setPendingUploads((prev) => [...prev, ...newPending]);
+    if (newPending.length > 0) {
+      form.setValue('filePath', newPending[0].path, { shouldValidate: true });
+      form.setValue('fileName', newPending[0].fileName, { shouldValidate: true });
+      form.setValue('type', 'image');
+      setUploadedMediaId(newPending[0].mediaId);
+      setUploadedPreviewUrl(resolveMediaUrl(newPending[0].path));
+    }
+  };
+
+  const handlePickFromLibrary = (item: WebsiteMedia) => {
+    form.setValue('filePath', item.filePath, { shouldValidate: true });
+    form.setValue('fileName', item.fileName ?? item.filePath, { shouldValidate: true });
+    form.setValue('altText', item.altText ?? null, { shouldValidate: true });
+    form.setValue('type', 'image');
+    setUploadedMediaId(null);
+    setUploadedPreviewUrl(resolveMediaUrl(item.filePath));
+    setShowLibraryPicker(null);
+  };
 
   const handleCreate = async (data: MediaFormData) => {
-    await createMedia.mutateAsync({
-      type: data.type,
-      filePath: data.filePath,
-      fileName: data.fileName,
-      altText: data.altText,
-    });
+    if (pendingUploads.length > 0) {
+      for (const pending of pendingUploads) {
+        await updateMedia.mutateAsync({
+          id: pending.mediaId,
+          type: data.type,
+          categoryId: data.categoryId,
+          fileName: pending.fileName,
+          altText: data.altText,
+        });
+      }
+    } else if (uploadedMediaId) {
+      await updateMedia.mutateAsync({
+        id: uploadedMediaId,
+        type: data.type,
+        categoryId: data.categoryId,
+        fileName: data.fileName,
+        altText: data.altText,
+      });
+    } else {
+      await createMedia.mutateAsync({
+        type: data.type,
+        categoryId: data.categoryId,
+        filePath: data.filePath,
+        fileName: data.fileName,
+        altText: data.altText,
+      });
+    }
     setIsCreateOpen(false);
     form.reset();
+    setUploadedMediaId(null);
+    setUploadedPreviewUrl(null);
+    setPendingUploads([]);
   };
 
   const handleUpdate = async (data: MediaFormData) => {
@@ -103,6 +185,7 @@ export default function MediaManagementPage() {
     await updateMedia.mutateAsync({
       id: editMedia.id,
       type: data.type,
+      categoryId: data.categoryId,
       filePath: data.filePath,
       fileName: data.fileName,
       altText: data.altText,
@@ -121,6 +204,7 @@ export default function MediaManagementPage() {
     setEditMedia(item);
     form.reset({
       type: item.type as 'image' | 'video' | 'document',
+      categoryId: item.categoryId ?? null,
       filePath: item.filePath,
       fileName: item.fileName,
       altText: item.altText,
@@ -145,6 +229,8 @@ export default function MediaManagementPage() {
           label: 'Upload Media',
           onClick: () => {
             form.reset();
+            setUploadedMediaId(null);
+            setUploadedPreviewUrl(null);
             setIsCreateOpen(true);
           },
           icon: <Plus className="h-4 w-4" />,
@@ -152,7 +238,7 @@ export default function MediaManagementPage() {
       />
 
       <FilterPanel title="Filters">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>Search</Label>
             <div className="relative">
@@ -179,6 +265,22 @@ export default function MediaManagementPage() {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </FilterPanel>
 
@@ -190,6 +292,7 @@ export default function MediaManagementPage() {
                 <TableHead>Preview</TableHead>
                 <TableHead>File Name</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Alt Text</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -198,7 +301,7 @@ export default function MediaManagementPage() {
             <TableBody>
               {filteredMedia.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     No media found
                   </TableCell>
                 </TableRow>
@@ -208,7 +311,7 @@ export default function MediaManagementPage() {
                     <TableCell>
                       {item.type === 'image' ? (
                         <img
-                          src={item.filePath}
+                          src={resolveMediaUrl(item.filePath)}
                           alt={item.altText || item.fileName || 'Media'}
                           className="h-12 w-12 object-cover rounded"
                         />
@@ -221,6 +324,9 @@ export default function MediaManagementPage() {
                     <TableCell className="font-medium">{item.fileName || item.filePath}</TableCell>
                     <TableCell>
                       <span className="capitalize">{item.type}</span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {item.categoryId ? (categoryLookup.get(item.categoryId) || 'Uncategorized') : 'Uncategorized'}
                     </TableCell>
                     <TableCell className="text-muted-foreground max-w-xs truncate">
                       {item.altText || '-'}
@@ -255,7 +361,18 @@ export default function MediaManagementPage() {
       </div>
 
       {/* Create Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog
+        open={isCreateOpen}
+        onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) {
+            setUploadedMediaId(null);
+            setUploadedPreviewUrl(null);
+            setPendingUploads([]);
+            form.reset();
+          }
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Add Media</DialogTitle>
@@ -269,6 +386,8 @@ export default function MediaManagementPage() {
                 onValueChange={(value) => {
                   form.setValue('type', value as 'image' | 'video' | 'document');
                   form.setValue('filePath', ''); // Reset path on type change
+                  setUploadedMediaId(null);
+                  setUploadedPreviewUrl(null);
                 }}
               >
                 <SelectTrigger>
@@ -282,54 +401,99 @@ export default function MediaManagementPage() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="categoryId">Category</Label>
+              <Select
+                value={form.watch('categoryId') || 'none'}
+                onValueChange={(value) => form.setValue('categoryId', value === 'none' ? null : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Uncategorized</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {form.watch('type') === 'image' ? (
-              <div className="space-y-2">
-                <Label htmlFor="file-upload">Upload Image</Label>
-                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer relative"
-                  onClick={() => document.getElementById('file-upload-input')?.click()}>
-                  <input
-                    id="file-upload-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        // In a real app, we would upload here. 
-                        // Simulating data URL or creating a fake path for now as requested by user "past links from others" implies manual entry was bad.
-                        // We'll set the name automatically.
-                        form.setValue('fileName', file.name);
-                        // For now, assume this input MIGHT be handled by a real upload hook if avail, 
-                        // or if we just want to improve UX, we might need a real upload endpoint.
-                        // Since I can't check backend capability easily, I will allow manual override but autofill name.
-                        // Warning: local file paths won't work on other machines. 
-                        // Assuming user enters URL manually OR we use a placeholder "Uploaded" logic.
-                        // Let's stick to URL input BUT with a helper message, or if they really want "Select", we need upload.
-                        // I'll keep the text input but VISUALLY make it look like they can paste a URL easily, 
-                        // or leave the file input to just grab the name for now if we lack upload logic.
-                        // Actually, best "UX" without backend upload knowledge is to guide them to Paste URL.
-                        // BUT user said "UX is not able to correctly select them", suggesting they WANT selection.
-                        // I will add a mock file selection that sets a fake path or base64 if small? No, bad performance.
-                        // I'll fall back to: "Image URL" input but clearer.
-                        // Wait, "seeder or something" was for initial data. 
-                        // "CRUD page UX is not able to select them" -> implies they want a file picker.
-                        // I will add the UI element.
-                        form.setValue('filePath', URL.createObjectURL(file)); // Preview purposes only!
-                      }
-                    }}
-                  />
-                  <div className="flex flex-col items-center gap-2">
-                    <Upload className="h-8 w-8 text-slate-400" />
-                    <p className="text-sm text-slate-600">Click to select file (Preview only)</p>
-                    <p className="text-xs text-slate-400">or paste URL below</p>
+              <div className="space-y-3">
+                <Label>Upload or select image</Label>
+                <div className="flex flex-wrap gap-2">
+                  <div
+                    className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors cursor-pointer min-w-[140px]"
+                    onClick={() => document.getElementById('file-upload-input')?.click()}
+                  >
+                    <input
+                      id="file-upload-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      multiple
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files?.length === 1) void handleImageUpload(files[0]);
+                        else if (files?.length) void handleMultipleImageUpload(files);
+                        e.target.value = '';
+                      }}
+                    />
+                    <Upload className="h-6 w-6 text-slate-400 mx-auto mb-1" />
+                    <p className="text-xs text-slate-600">Upload (1 or many)</p>
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowLibraryPicker('create')}
+                    className="shrink-0"
+                  >
+                    Select from library
+                  </Button>
                 </div>
-                <Label htmlFor="filePath" className="text-xs text-slate-500">Image URL (Required for public access)</Label>
-                <Input id="filePath" {...form.register('filePath')} placeholder="https://..." />
-                {/* Helper Note */}
-                <p className="text-[10px] text-amber-600">
-                  Note: To upload real files, ensure backend storage is configured. Currently creating links.
-                </p>
+                {pendingUploads.length > 0 && (
+                  <div className="rounded-md border p-2 space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {pendingUploads.length} image(s) ready — category/alt below apply to all
+                    </p>
+                    <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                      {pendingUploads.map((p, i) => (
+                        <div key={p.mediaId} className="relative w-14 h-14 rounded border overflow-hidden shrink-0">
+                          <img src={resolveMediaUrl(p.path)} alt={p.fileName} className="w-full h-full object-cover" />
+                          <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center truncate">
+                            {i + 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(uploadedPreviewUrl || form.watch('filePath')) && pendingUploads.length === 0 && (
+                  <div className="rounded-md border overflow-hidden">
+                    <img
+                      src={uploadedPreviewUrl || resolveMediaUrl(form.watch('filePath'))}
+                      alt="Preview"
+                      className="w-full h-40 object-cover"
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="filePath" className="text-xs text-slate-500">
+                    Image URL or path (or use upload / library above)
+                  </Label>
+                  <Input
+                    id="filePath"
+                    {...form.register('filePath')}
+                    placeholder="https://... or path"
+                    disabled={!!uploadedMediaId && pendingUploads.length === 0}
+                  />
+                  {form.formState.errors.filePath && (
+                    <p className="text-sm text-destructive">{form.formState.errors.filePath.message}</p>
+                  )}
+                </div>
               </div>
             ) : form.watch('type') === 'video' ? (
               <div className="space-y-2">
@@ -341,11 +505,17 @@ export default function MediaManagementPage() {
                   <Input id="filePath" {...form.register('filePath')} className="rounded-l-none" placeholder="https://www.youtube.com/watch?v=..." />
                 </div>
                 <p className="text-xs text-slate-500">Supports YouTube, Vimeo, or direct MP4 links.</p>
+                {form.formState.errors.filePath && (
+                  <p className="text-sm text-destructive">{form.formState.errors.filePath.message}</p>
+                )}
               </div>
             ) : (
               <div className="space-y-2">
                 <Label htmlFor="filePath">Document URL</Label>
                 <Input id="filePath" {...form.register('filePath')} placeholder="https://..." />
+                {form.formState.errors.filePath && (
+                  <p className="text-sm text-destructive">{form.formState.errors.filePath.message}</p>
+                )}
               </div>
             )}
 
@@ -394,7 +564,46 @@ export default function MediaManagementPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-filePath">File Path *</Label>
+              <Label htmlFor="edit-category">Category</Label>
+              <Select
+                value={form.watch('categoryId') || 'none'}
+                onValueChange={(value) => form.setValue('categoryId', value === 'none' ? null : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Uncategorized</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {form.watch('type') === 'image' && form.watch('filePath') && (
+              <div className="rounded-md border overflow-hidden">
+                <img
+                  src={resolveMediaUrl(form.watch('filePath'))}
+                  alt={form.watch('altText') || form.watch('fileName') || 'Media preview'}
+                  className="w-full h-40 object-cover"
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="edit-filePath" className="shrink-0">File Path *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLibraryPicker('edit')}
+                  className="shrink-0"
+                >
+                  Select from library
+                </Button>
+              </div>
               <Input id="edit-filePath" {...form.register('filePath')} />
               {form.formState.errors.filePath && (
                 <p className="text-sm text-destructive">{form.formState.errors.filePath.message}</p>
@@ -420,6 +629,41 @@ export default function MediaManagementPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Library Picker Dialog (create or edit) */}
+      <Dialog open={!!showLibraryPicker} onOpenChange={(open) => !open && setShowLibraryPicker(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Select from library</DialogTitle>
+            <DialogDescription>Choose an existing image to use</DialogDescription>
+          </DialogHeader>
+          {filteredMedia.filter((m) => m.type === 'image').length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No images in library. Upload some first.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {filteredMedia
+                .filter((m) => m.type === 'image')
+                .map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handlePickFromLibrary(item)}
+                    className="relative aspect-square rounded-lg border-2 border-border hover:border-primary/50 overflow-hidden transition-colors"
+                  >
+                    <img
+                      src={resolveMediaUrl(item.filePath)}
+                      alt={item.altText || item.fileName || 'Media'}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+                      {item.fileName || item.filePath}
+                    </span>
+                  </button>
+                ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
@@ -440,4 +684,5 @@ export default function MediaManagementPage() {
     </div>
   );
 }
+
 

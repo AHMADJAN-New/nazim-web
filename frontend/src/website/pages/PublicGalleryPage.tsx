@@ -13,6 +13,7 @@ interface MediaItem {
     id: string;
     type: 'image' | 'video' | 'audio' | 'document';
     file_path: string;
+    file_url?: string | null;
     file_name?: string | null;
     alt_text?: string | null;
     created_at?: string;
@@ -25,6 +26,7 @@ interface MediaCategory {
     slug: string;
     description: string;
     cover_image_path?: string;
+    cover_image_url?: string | null;
 }
 
 export default function PublicGalleryPage() {
@@ -37,7 +39,10 @@ export default function PublicGalleryPage() {
         queryKey: ['public-media-categories'],
         queryFn: async () => {
             const response = await publicWebsiteApi.getMediaCategories();
-            return (response as any).data as MediaCategory[];
+            if (Array.isArray(response)) {
+                return response as MediaCategory[];
+            }
+            return ((response as { data?: MediaCategory[] })?.data || []) as MediaCategory[];
         },
         staleTime: 10 * 60 * 1000,
     });
@@ -50,7 +55,16 @@ export default function PublicGalleryPage() {
                 category: selectedCategory?.slug,
                 page: page
             });
-            return (response as any).data as PaginatedResponse<MediaItem>;
+            if (typeof response === 'object' && response !== null && 'data' in response) {
+                return response as PaginatedResponse<MediaItem>;
+            }
+            return {
+                data: Array.isArray(response) ? response : [],
+                current_page: 1,
+                last_page: 1,
+                per_page: 12,
+                total: Array.isArray(response) ? response.length : 0,
+            } as PaginatedResponse<MediaItem>;
         },
         placeholderData: (previousData) => previousData, // Keep previous data while fetching new page
     });
@@ -60,7 +74,7 @@ export default function PublicGalleryPage() {
         return mediaData.data.map((item) => ({
             id: item.id,
             type: item.type === 'document' ? 'audio' : item.type,
-            url: item.file_path,
+            url: item.file_url || item.file_path,
             title: item.file_name || 'Untitled',
             description: item.alt_text || '',
         }));
@@ -100,7 +114,7 @@ export default function PublicGalleryPage() {
     }
 
     return (
-        <div className="flex-1 min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        <div className="flex-1 min-h-screen bg-gradient-to-b from-slate-50 to-white overflow-x-hidden">
             {/* Header */}
             <PublicPageHeader
                 title={selectedCategory ? selectedCategory.name : 'ګالري او البومونه'}
@@ -134,9 +148,9 @@ export default function PublicGalleryPage() {
                                     className="group cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100"
                                 >
                                     <div className="aspect-[4/3] bg-slate-200 relative overflow-hidden">
-                                        {category.cover_image_path ? (
+                                        {(category.cover_image_url || category.cover_image_path) ? (
                                             <img
-                                                src={category.cover_image_path}
+                                                src={category.cover_image_url || category.cover_image_path || ''}
                                                 alt={category.name}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                             />

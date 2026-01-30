@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createQueryClient } from "@/lib/queryClient";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
@@ -32,7 +33,9 @@ import PublicFatwaDetailPage from '@/website/pages/PublicFatwaDetailPage';
 import PublicExamResultsPage from '@/website/pages/PublicExamResultsPage';
 import PublicContactPage from '@/website/pages/PublicContactPage';
 import PublicLibraryPage from '@/website/pages/PublicLibraryPage';
+import PublicBookDetailPage from '@/website/pages/PublicBookDetailPage';
 import PublicCoursesPage from '@/website/pages/PublicCoursesPage';
+import PublicCourseDetailPage from '@/website/pages/PublicCourseDetailPage';
 import PublicScholarsPage from '@/website/pages/PublicScholarsPage';
 import PublicGraduatesPage from '@/website/pages/PublicGraduatesPage';
 import PublicDonationsPage from '@/website/pages/PublicDonationsPage';
@@ -202,6 +205,7 @@ import {
   OrganizationRevenueHistory,
   PlanRequestsPage,
   ContactMessagesManagement,
+  LandingOffersPage,
   PlatformSettings,
   TranslationsManagement,
   HelpCenterManagement,
@@ -231,7 +235,7 @@ import ArticlesManagementPage from "@/website/pages/ArticlesManagementPage";
 import EventsManagementPage from "@/website/pages/EventsManagementPage";
 import NavigationManagementPage from "@/website/pages/NavigationManagementPage";
 import MediaManagementPage from "@/website/pages/MediaManagementPage";
-import DomainsManagementPage from "@/website/pages/DomainsManagementPage";
+import WebsiteGalleryPage from "@/website/pages/WebsiteGalleryPage";
 import FatwasManagementPage from "@/website/pages/FatwasManagementPage";
 import AnnouncementsManagementPage from "@/website/pages/AnnouncementsManagementPage";
 import WebsiteLibraryPage from "@/website/pages/WebsiteLibraryPage";
@@ -240,29 +244,11 @@ import WebsiteScholarsPage from "@/website/pages/WebsiteScholarsPage";
 import WebsiteGraduatesPage from "@/website/pages/WebsiteGraduatesPage";
 import WebsiteDonationsPage from "@/website/pages/WebsiteDonationsPage";
 import WebsiteInboxPage from "@/website/pages/WebsiteInboxPage";
+import WebsiteAdmissionsPage from "@/website/pages/WebsiteAdmissionsPage";
+import PublicAdmissionsPage from "@/website/pages/PublicAdmissionsPage";
 
-// Optimized QueryClient with better caching and performance settings
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30 * 60 * 1000, // 30 minutes - data doesn't change often
-      gcTime: 60 * 60 * 1000, // 1 hour (formerly cacheTime)
-      retry: (failureCount, error: { status?: number } | Error | unknown) => {
-        // Don't retry on 4xx errors
-        if (error && typeof error === 'object' && 'status' in error && typeof error.status === 'number' && error.status >= 400 && error.status < 500) {
-          return false;
-        }
-        return failureCount < 3;
-      },
-      refetchOnWindowFocus: false, // Don't refetch on window focus
-      refetchOnMount: false, // Don't refetch on mount if data is fresh
-      refetchOnReconnect: false, // Don't refetch on reconnect (prevents sidebar disappearing)
-    },
-    mutations: {
-      retry: 2,
-    },
-  },
-});
+// Centralized QueryClient – defaults (e.g. refetch on focus) live in @/lib/queryClient
+const queryClient = createQueryClient();
 
 const websiteModulePlaceholders = [
   {
@@ -483,7 +469,7 @@ const App = () => (
                     {/* Standard Content Pages (Generic Dynamic) */}
                     <Route path="/public-site/about" element={<PublicDynamicPage />} />
                     <Route path="/public-site/academics" element={<PublicDynamicPage />} />
-                    <Route path="/public-site/admissions" element={<PublicDynamicPage />} />
+                    <Route path="/public-site/admissions" element={<PublicAdmissionsPage />} />
 
                     {/* Specialized Pages */}
                     <Route path="/public-site/news" element={<PublicNewsPage />} />
@@ -501,8 +487,11 @@ const App = () => (
                     <Route path="/public-site/contact" element={<PublicContactPage />} />
 
                     {/* New Public Modules */}
+                    <Route path="/public-site/library/:id" element={<PublicBookDetailPage />} />
                     <Route path="/public-site/library" element={<PublicLibraryPage />} />
+                    <Route path="/public-site/courses/:id" element={<PublicCourseDetailPage />} />
                     <Route path="/public-site/courses" element={<PublicCoursesPage />} />
+                    <Route path="/public-site/programs/:id" element={<PublicCourseDetailPage />} />
                     <Route path="/public-site/programs" element={<PublicCoursesPage />} />
                     <Route path="/public-site/scholars" element={<PublicScholarsPage />} />
                     <Route path="/public-site/staff" element={<PublicScholarsPage />} />
@@ -646,6 +635,11 @@ const App = () => (
                     <Route path="discount-codes" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <DiscountCodesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="landing-offers" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <LandingOffersPage />
                       </Suspense>
                     } />
                     <Route path="maintenance-fees" element={
@@ -881,6 +875,11 @@ const App = () => (
                         <EventsManagementPage />
                       </PermissionRoute>
                     } />
+                    <Route path="/website/admissions" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteAdmissionsPage />
+                      </PermissionRoute>
+                    } />
                     <Route path="/website/fatwas" element={
                       <PermissionRoute permission="website_settings.read">
                         <FatwasManagementPage />
@@ -891,9 +890,9 @@ const App = () => (
                         <MediaManagementPage />
                       </PermissionRoute>
                     } />
-                    <Route path="/website/domains" element={
+                    <Route path="/website/gallery" element={
                       <PermissionRoute permission="website_settings.read">
-                        <DomainsManagementPage />
+                        <WebsiteGalleryPage />
                       </PermissionRoute>
                     } />
                     <Route path="/website/announcements" element={
@@ -934,7 +933,7 @@ const App = () => (
                     {/* Phase 2: Pages requiring backend work - still use placeholders */}
                     {websiteModulePlaceholders
                       .filter(module =>
-                        !['/website/navigation', '/website/articles', '/website/events', '/website/fatwas', '/website/media', '/website/domains', '/website/announcements',
+                        !['/website/navigation', '/website/articles', '/website/events', '/website/admissions', '/website/fatwas', '/website/media', '/website/gallery', '/website/announcements',
                           '/website/library', '/website/courses', '/website/scholars', '/website/graduates', '/website/donations', '/website/inbox'].includes(module.path)
                       )
                       .map((module) => (

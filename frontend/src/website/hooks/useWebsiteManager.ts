@@ -5,6 +5,7 @@ import {
   websitePostsApi,
   websiteEventsApi,
   websiteMediaApi,
+  websiteMediaCategoriesApi,
   websiteDomainsApi,
   websiteMenusApi,
   websiteFatwasApi,
@@ -21,6 +22,7 @@ import type * as WebsitePostApi from '@/types/api/websitePost';
 import type * as WebsiteEventApi from '@/types/api/websiteEvent';
 import type * as WebsiteMenuApi from '@/types/api/websiteMenu';
 import type * as WebsiteMediaApi from '@/types/api/websiteMedia';
+import type * as WebsiteMediaCategoryApi from '@/types/api/websiteMediaCategory';
 import type * as WebsiteDomainApi from '@/types/api/websiteDomain';
 import type * as WebsiteFatwaApi from '@/types/api/websiteFatwa';
 import type { WebsitePage } from '@/types/domain/websitePage';
@@ -28,6 +30,7 @@ import type { WebsitePost } from '@/types/domain/websitePost';
 import type { WebsiteEvent } from '@/types/domain/websiteEvent';
 import type { WebsiteMenu } from '@/types/domain/websiteMenu';
 import type { WebsiteMedia } from '@/types/domain/websiteMedia';
+import type { WebsiteMediaCategory } from '@/types/domain/websiteMediaCategory';
 import type { WebsiteDomain } from '@/types/domain/websiteDomain';
 import type { WebsiteFatwa, WebsiteFatwaCategory, WebsiteFatwaQuestion } from '@/types/domain/websiteFatwa';
 import { mapWebsitePageApiToDomain, mapWebsitePageDomainToInsert, mapWebsitePageDomainToUpdate } from '@/mappers/websitePageMapper';
@@ -35,6 +38,7 @@ import { mapWebsitePostApiToDomain, mapWebsitePostDomainToInsert, mapWebsitePost
 import { mapWebsiteEventApiToDomain, mapWebsiteEventDomainToInsert, mapWebsiteEventDomainToUpdate } from '@/mappers/websiteEventMapper';
 import { mapWebsiteMenuApiToDomain, mapWebsiteMenuDomainToInsert, mapWebsiteMenuDomainToUpdate } from '@/mappers/websiteMenuMapper';
 import { mapWebsiteMediaApiToDomain, mapWebsiteMediaDomainToInsert, mapWebsiteMediaDomainToUpdate } from '@/mappers/websiteMediaMapper';
+import { mapWebsiteMediaCategoryApiToDomain, mapWebsiteMediaCategoryDomainToInsert, mapWebsiteMediaCategoryDomainToUpdate } from '@/mappers/websiteMediaCategoryMapper';
 import { mapWebsiteDomainApiToDomain, mapWebsiteDomainDomainToInsert, mapWebsiteDomainDomainToUpdate } from '@/mappers/websiteDomainMapper';
 import { mapWebsiteFatwaApiToDomain, mapWebsiteFatwaDomainToInsert, mapWebsiteFatwaDomainToUpdate, mapWebsiteFatwaCategoryApiToDomain, mapWebsiteFatwaCategoryDomainToInsert, mapWebsiteFatwaCategoryDomainToUpdate, mapWebsiteFatwaQuestionApiToDomain, mapWebsiteFatwaQuestionDomainToUpdate } from '@/mappers/websiteFatwaMapper';
 import { mapWebsiteAnnouncementApiToDomain, mapWebsiteAnnouncementDomainToInsert, mapWebsiteAnnouncementDomainToUpdate } from '@/mappers/websiteAnnouncementMapper';
@@ -45,6 +49,7 @@ export type { WebsitePost } from '@/types/domain/websitePost';
 export type { WebsiteEvent } from '@/types/domain/websiteEvent';
 export type { WebsiteMenu } from '@/types/domain/websiteMenu';
 export type { WebsiteMedia } from '@/types/domain/websiteMedia';
+export type { WebsiteMediaCategory } from '@/types/domain/websiteMediaCategory';
 export type { WebsiteDomain } from '@/types/domain/websiteDomain';
 export type { WebsiteFatwa, WebsiteFatwaCategory, WebsiteFatwaQuestion } from '@/types/domain/websiteFatwa';
 export type { WebsiteAnnouncement } from '@/types/domain/websiteAnnouncement';
@@ -307,6 +312,82 @@ export const useDeleteWebsiteEvent = () => {
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.eventDeleteFailed') || 'Failed to delete event');
+    },
+  });
+};
+
+export const useWebsiteMediaCategories = () => {
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
+  return useQuery<WebsiteMediaCategory[]>({
+    queryKey: ['website-media-categories', profile?.organization_id, profile?.default_school_id ?? null],
+    queryFn: async () => {
+      if (!user || !profile?.organization_id || !profile?.default_school_id) return [];
+      const apiCategories = await websiteMediaCategoriesApi.list();
+      return (apiCategories as WebsiteMediaCategoryApi.WebsiteMediaCategory[]).map(mapWebsiteMediaCategoryApiToDomain);
+    },
+    enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useCreateWebsiteMediaCategory = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (data: Partial<WebsiteMediaCategory>) => {
+      const insertData = mapWebsiteMediaCategoryDomainToInsert(data);
+      const apiCategory = await websiteMediaCategoriesApi.create(insertData);
+      return mapWebsiteMediaCategoryApiToDomain(apiCategory as WebsiteMediaCategoryApi.WebsiteMediaCategory);
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.mediaCategoryCreated') || 'Media category created successfully');
+      void queryClient.invalidateQueries({ queryKey: ['website-media-categories'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.mediaCategoryCreateFailed') || 'Failed to create media category');
+    },
+  });
+};
+
+export const useUpdateWebsiteMediaCategory = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<WebsiteMediaCategory> & { id: string }) => {
+      const updateData = mapWebsiteMediaCategoryDomainToUpdate(updates);
+      const apiCategory = await websiteMediaCategoriesApi.update(id, updateData);
+      return mapWebsiteMediaCategoryApiToDomain(apiCategory as WebsiteMediaCategoryApi.WebsiteMediaCategory);
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.mediaCategoryUpdated') || 'Media category updated successfully');
+      void queryClient.invalidateQueries({ queryKey: ['website-media-categories'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.mediaCategoryUpdateFailed') || 'Failed to update media category');
+    },
+  });
+};
+
+export const useDeleteWebsiteMediaCategory = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await websiteMediaCategoriesApi.delete(id);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.mediaCategoryDeleted') || 'Media category deleted successfully');
+      await queryClient.invalidateQueries({ queryKey: ['website-media-categories'] });
+      await queryClient.refetchQueries({ queryKey: ['website-media-categories'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.mediaCategoryDeleteFailed') || 'Failed to delete media category');
     },
   });
 };

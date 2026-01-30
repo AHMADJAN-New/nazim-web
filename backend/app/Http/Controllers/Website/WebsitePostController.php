@@ -132,6 +132,8 @@ class WebsitePostController extends Controller
             Cache::forget("public-site:{$organizationId}:{$schoolId}:{$lang}");
         }
         Cache::forget("public-posts:{$organizationId}:{$schoolId}");
+        Cache::forget("public-posts:{$organizationId}:{$schoolId}:1");
+        Cache::forget("public-post:{$organizationId}:{$schoolId}:{$slug}");
         Cache::forget("public-page:{$organizationId}:{$schoolId}:{$slug}");
     }
 }

@@ -1739,6 +1739,7 @@ class SubscriptionAdminController extends Controller
             'max_uses_per_org' => 'integer|min:1',
             'valid_from' => 'nullable|date',
             'valid_until' => 'nullable|date|after:valid_from',
+            'metadata' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -1760,8 +1761,11 @@ class SubscriptionAdminController extends Controller
             'max_uses_per_org' => $request->max_uses_per_org ?? 1,
             'valid_from' => $request->valid_from,
             'valid_until' => $request->valid_until,
+            'metadata' => $request->metadata,
             'created_by' => $user->id,
         ]);
+
+        Cache::forget('subscription:plans:public:v1');
 
         return response()->json([
             'data' => $code,
@@ -1785,8 +1789,10 @@ class SubscriptionAdminController extends Controller
             'max_discount_amount' => 'nullable|numeric|min:0',
             'max_uses' => 'nullable|integer|min:1',
             'max_uses_per_org' => 'integer|min:1',
-            'valid_until' => 'nullable|date',
+            'valid_from' => 'nullable|date',
+            'valid_until' => 'nullable|date|after:valid_from',
             'is_active' => 'boolean',
+            'metadata' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -1795,8 +1801,10 @@ class SubscriptionAdminController extends Controller
 
         $code->update($request->only([
             'name', 'description', 'discount_value', 'max_discount_amount',
-            'max_uses', 'max_uses_per_org', 'valid_until', 'is_active',
+            'max_uses', 'max_uses_per_org', 'valid_from', 'valid_until', 'is_active', 'metadata',
         ]));
+
+        Cache::forget('subscription:plans:public:v1');
 
         return response()->json([
             'data' => $code->fresh(),
@@ -1813,6 +1821,8 @@ class SubscriptionAdminController extends Controller
 
         $code = DiscountCode::findOrFail($id);
         $code->delete();
+
+        Cache::forget('subscription:plans:public:v1');
 
         return response()->noContent();
     }

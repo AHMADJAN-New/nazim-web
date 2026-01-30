@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, BookText, Search } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -46,6 +46,8 @@ import {
 } from '@/website/hooks/useWebsiteManager';
 import { StatusBadge } from '@/website/components/StatusBadge';
 import { SeoFields } from '@/website/components/SeoFields';
+import { ContentEditor } from '@/website/components/ContentEditor';
+import { useWebsiteImageUpload } from '@/website/hooks/useWebsiteImageUpload';
 import { formatDate } from '@/lib/utils';
 
 const postSchema = z.object({
@@ -53,6 +55,7 @@ const postSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   status: z.enum(['draft', 'published', 'archived']),
   excerpt: z.string().max(500).optional().nullable(),
+  content_json: z.any().optional().nullable(),
   seoTitle: z.string().max(60).optional().nullable(),
   seoDescription: z.string().max(160).optional().nullable(),
   seoImagePath: z.string().optional().nullable(),
@@ -67,6 +70,7 @@ export default function ArticlesManagementPage() {
   const createPost = useCreateWebsitePost();
   const updatePost = useUpdateWebsitePost();
   const deletePost = useDeleteWebsitePost();
+  const imageUpload = useWebsiteImageUpload();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -81,6 +85,7 @@ export default function ArticlesManagementPage() {
       title: '',
       status: 'draft',
       excerpt: null,
+      content_json: null,
       seoTitle: null,
       seoDescription: null,
       seoImagePath: null,
@@ -97,12 +102,18 @@ export default function ArticlesManagementPage() {
     });
   }, [posts, searchQuery, statusFilter]);
 
+  const handleImageUpload = async (file: File): Promise<string> => {
+    const result = await imageUpload.mutateAsync(file);
+    return result.url;
+  };
+
   const handleCreate = async (data: PostFormData) => {
     await createPost.mutateAsync({
       slug: data.slug,
       title: data.title,
       status: data.status,
       excerpt: data.excerpt,
+      contentJson: data.content_json,
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
       seoImagePath: data.seoImagePath,
@@ -120,6 +131,7 @@ export default function ArticlesManagementPage() {
       title: data.title,
       status: data.status,
       excerpt: data.excerpt,
+      contentJson: data.content_json,
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
       seoImagePath: data.seoImagePath,
@@ -142,6 +154,7 @@ export default function ArticlesManagementPage() {
       title: post.title,
       status: post.status as 'draft' | 'published' | 'archived',
       excerpt: post.excerpt,
+      content_json: post.contentJson || null,
       seoTitle: post.seoTitle,
       seoDescription: post.seoDescription,
       seoImagePath: post.seoImagePath,
@@ -271,69 +284,77 @@ export default function ArticlesManagementPage() {
             <DialogTitle>Create Article</DialogTitle>
             <DialogDescription>Create a new blog post or article</DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug *</Label>
-                <Input id="slug" {...form.register('slug')} placeholder="my-article" />
-                {form.formState.errors.slug && (
-                  <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
-                )}
+          <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="slug">Slug *</Label>
+                  <Input id="slug" {...form.register('slug')} placeholder="my-article" />
+                  {form.formState.errors.slug && (
+                    <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title *</Label>
+                  <Input id="title" {...form.register('title')} placeholder="Article Title" />
+                  {form.formState.errors.title && (
+                    <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input id="title" {...form.register('title')} placeholder="Article Title" />
-                {form.formState.errors.title && (
-                  <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
-                )}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="excerpt">Excerpt</Label>
-              <Textarea
-                id="excerpt"
-                {...form.register('excerpt')}
-                placeholder="Brief summary of the article..."
-                rows={3}
-                maxLength={500}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={form.watch('status')}
-                  onValueChange={(value) => form.setValue('status', value as 'draft' | 'published' | 'archived')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="publishedAt">Published At</Label>
-                <Input
-                  id="publishedAt"
-                  type="datetime-local"
-                  {...form.register('publishedAt')}
+                <Label htmlFor="excerpt">Excerpt</Label>
+                <Textarea
+                  id="excerpt"
+                  {...form.register('excerpt')}
+                  placeholder="Brief summary of the article..."
+                  rows={3}
+                  maxLength={500}
                 />
               </div>
-            </div>
-            <SeoFields />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createPost.isPending}>
-                Create
-              </Button>
-            </DialogFooter>
-          </form>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={form.watch('status')}
+                    onValueChange={(value) => form.setValue('status', value as 'draft' | 'published' | 'archived')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="publishedAt">Published At</Label>
+                  <Input
+                    id="publishedAt"
+                    type="datetime-local"
+                    {...form.register('publishedAt')}
+                  />
+                </div>
+              </div>
+              <ContentEditor
+                name="content_json"
+                label="Article Content"
+                placeholder="Write your article..."
+                onImageUpload={handleImageUpload}
+              />
+              <SeoFields />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createPost.isPending}>
+                  Create
+                </Button>
+              </DialogFooter>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 
@@ -344,68 +365,76 @@ export default function ArticlesManagementPage() {
             <DialogTitle>Edit Article</DialogTitle>
             <DialogDescription>Update article details</DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-slug">Slug *</Label>
-                <Input id="edit-slug" {...form.register('slug')} />
-                {form.formState.errors.slug && (
-                  <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
-                )}
+          <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-slug">Slug *</Label>
+                  <Input id="edit-slug" {...form.register('slug')} />
+                  {form.formState.errors.slug && (
+                    <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Title *</Label>
+                  <Input id="edit-title" {...form.register('title')} />
+                  {form.formState.errors.title && (
+                    <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-title">Title *</Label>
-                <Input id="edit-title" {...form.register('title')} />
-                {form.formState.errors.title && (
-                  <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
-                )}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-excerpt">Excerpt</Label>
-              <Textarea
-                id="edit-excerpt"
-                {...form.register('excerpt')}
-                rows={3}
-                maxLength={500}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-status">Status</Label>
-                <Select
-                  value={form.watch('status')}
-                  onValueChange={(value) => form.setValue('status', value as 'draft' | 'published' | 'archived')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-publishedAt">Published At</Label>
-                <Input
-                  id="edit-publishedAt"
-                  type="datetime-local"
-                  {...form.register('publishedAt')}
+                <Label htmlFor="edit-excerpt">Excerpt</Label>
+                <Textarea
+                  id="edit-excerpt"
+                  {...form.register('excerpt')}
+                  rows={3}
+                  maxLength={500}
                 />
               </div>
-            </div>
-            <SeoFields />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditPost(null)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updatePost.isPending}>
-                Update
-              </Button>
-            </DialogFooter>
-          </form>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select
+                    value={form.watch('status')}
+                    onValueChange={(value) => form.setValue('status', value as 'draft' | 'published' | 'archived')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-publishedAt">Published At</Label>
+                  <Input
+                    id="edit-publishedAt"
+                    type="datetime-local"
+                    {...form.register('publishedAt')}
+                  />
+                </div>
+              </div>
+              <ContentEditor
+                name="content_json"
+                label="Article Content"
+                placeholder="Update the article content..."
+                onImageUpload={handleImageUpload}
+              />
+              <SeoFields />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditPost(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updatePost.isPending}>
+                  Update
+                </Button>
+              </DialogFooter>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

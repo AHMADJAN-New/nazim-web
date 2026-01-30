@@ -13,7 +13,7 @@ export default function PublicWebsitePlaceholderPage({
   highlights,
 }: PublicWebsitePlaceholderPageProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <section className="border-b bg-muted/30 py-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap items-center gap-3">

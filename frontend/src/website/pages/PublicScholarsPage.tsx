@@ -14,7 +14,7 @@ export default function PublicScholarsPage() {
     });
 
     return (
-        <div className="container mx-auto px-4 py-12 max-w-7xl">
+        <div className="container mx-auto px-4 py-12 max-w-7xl overflow-x-hidden">
             <div className="text-center mb-16">
                 <h1 className="text-4xl font-bold text-slate-900 mb-4">Our Scholars & Staff</h1>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto">
@@ -31,9 +31,9 @@ export default function PublicScholarsPage() {
                     {scholars.map((scholar) => (
                         <div key={scholar.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border text-center p-8 group">
                             <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-slate-100 ring-4 ring-emerald-50">
-                                {scholar.photo_path ? (
+                                {(scholar.photo_url || scholar.photo_path) ? (
                                     <img
-                                        src={scholar.photo_path}
+                                        src={scholar.photo_url || scholar.photo_path || ''}
                                         alt={scholar.name}
                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                     />

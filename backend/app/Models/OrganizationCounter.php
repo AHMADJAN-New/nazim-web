@@ -20,6 +20,7 @@ class OrganizationCounter extends Model
     // Counter type constants
     const COUNTER_TYPE_STUDENTS = 'students';
     const COUNTER_TYPE_STAFF = 'staff';
+    const COUNTER_TYPE_ADMISSIONS = 'admissions';
 
     protected $fillable = [
         'id',

@@ -5,9 +5,8 @@ import { publicWebsiteApi } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PublicHeader } from '@/website/components/layout/PublicHeader';
-import { PublicFooter } from '@/website/components/layout/PublicFooter';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { renderRichText } from '@/website/lib/renderRichText';
 import {
   BookOpen,
   Users,
@@ -22,11 +21,11 @@ import { Link } from 'react-router-dom';
 import type { WebsiteCourse } from '@/website/hooks/useWebsiteContent';
 
 export default function PublicWebsitePage() {
-  const { t } = useLanguage();
+  const { language } = useLanguage();
 
   const siteQuery = useQuery({
-    queryKey: ['public-site'],
-    queryFn: () => publicWebsiteApi.getSite(),
+    queryKey: ['public-site', language],
+    queryFn: () => publicWebsiteApi.getSite({ locale: language }),
   });
 
   const site = (siteQuery.data as any) || {};
@@ -34,6 +33,16 @@ export default function PublicWebsitePage() {
   const school = site.school || {};
   const posts = site.posts || [];
   const events = site.events || [];
+  const homePage = site.home || null;
+
+  const schoolName =
+    language === 'ar'
+      ? school?.school_name_arabic || school?.school_name || 'Nazim Academy'
+      : language === 'ps'
+        ? school?.school_name_pashto || school?.school_name || 'Nazim Academy'
+        : school?.school_name || 'Nazim Academy';
+
+  const homeContent = homePage?.content_json ? renderRichText(homePage.content_json) : '';
 
   // Fetch courses from API
   const { data: courses = [], isLoading: coursesLoading } = useQuery({
@@ -99,14 +108,8 @@ export default function PublicWebsitePage() {
         });
       }, [courses]);
 
-  const stats = [
-    { label: "Students", value: "500+", icon: <Users className="h-5 w-5" /> },
-    { label: "Teachers", value: "45", icon: <GraduationCap className="h-5 w-5" /> },
-    { label: "Years Served", value: "20+", icon: <Clock className="h-5 w-5" /> },
-  ];
-
   return (
-    <div className="flex-1">
+    <div className="flex-1 overflow-x-hidden">
       {/* Hero Section */}
       <section className="relative bg-emerald-900 text-white overflow-hidden">
         {/* Abstract pattern overlay */}
@@ -116,20 +119,20 @@ export default function PublicWebsitePage() {
 
         <div className="container relative mx-auto px-4 py-24 md:py-32 flex flex-col items-center text-center">
           <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm font-medium bg-emerald-800 text-emerald-100 hover:bg-emerald-700 border-none">
-            Welcome to {school?.school_name || 'Nazim Academy'}
+            Welcome to {schoolName}
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 max-w-4xl leading-tight">
-            Nurturing Faith, <span className="text-emerald-400">Knowledge</span>, and Character
+            {schoolName}
           </h1>
           <p className="text-lg md:text-xl text-emerald-100 mb-10 max-w-2xl leading-relaxed">
-            Provides a comprehensive Islamic education integrated with academic excellence, fostering a generation of leaders grounded in faith.
+            Nurturing faith, knowledge, and character with an education rooted in Islamic tradition.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 h-12 text-base">
-              Apply Now
+            <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 h-12 text-base" asChild>
+              <Link to="/public-site/admissions">Apply Now</Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-emerald-200 text-emerald-100 hover:bg-emerald-800 hover:text-white h-12 text-base">
-              Contact Us
+            <Button size="lg" variant="outline" className="border-emerald-200 text-emerald-100 hover:bg-emerald-800 hover:text-white h-12 text-base" asChild>
+              <Link to="/public-site/contact">Contact Us</Link>
             </Button>
           </div>
         </div>
@@ -144,7 +147,7 @@ export default function PublicWebsitePage() {
             </div>
             <div>
               <h4 className="font-semibold text-slate-900">Visit Us</h4>
-              <p className="text-sm text-slate-500">123 Islamic Center Dr</p>
+              <p className="text-sm text-slate-500">{school?.school_address || 'Address coming soon'}</p>
             </div>
           </div>
           <div className="flex items-center gap-4 py-2 px-4">
@@ -152,8 +155,10 @@ export default function PublicWebsitePage() {
               <Clock className="h-6 w-6" />
             </div>
             <div>
-              <h4 className="font-semibold text-slate-900">Prayer Times</h4>
-              <p className="text-sm text-slate-500">Dhuhr: 1:30 PM • Asr: 5:15 PM</p>
+              <h4 className="font-semibold text-slate-900">Contact</h4>
+              <p className="text-sm text-slate-500">
+                {school?.school_phone || school?.school_email || 'Contact details coming soon'}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-4 py-2 px-4">
@@ -162,11 +167,44 @@ export default function PublicWebsitePage() {
             </div>
             <div>
               <h4 className="font-semibold text-slate-900">Support Us</h4>
-              <p className="text-sm text-slate-500">Donate to build our future</p>
+              <p className="text-sm text-slate-500">
+                <Link to="/public-site/donations" className="text-emerald-700 hover:underline">
+                  Donate to build our future
+                </Link>
+              </p>
             </div>
           </div>
         </div>
       </section>
+
+      {homeContent && (
+        <section className="container mx-auto px-4 py-16">
+          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-start">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">
+                {homePage?.title || 'About Our School'}
+              </h2>
+              <div
+                className="prose prose-emerald max-w-none"
+                dangerouslySetInnerHTML={{ __html: homeContent }}
+              />
+            </div>
+            <Card className="border-emerald-100 shadow-sm">
+              <CardHeader>
+                <CardTitle>Discover more</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-slate-600">
+                <p>Explore our programs, community initiatives, and campus life.</p>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to={`/public-site/pages/${homePage?.slug || 'home'}`}>
+                    Read the full story
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
 
       {/* Programs Section */}
       <section className="container mx-auto px-4 py-20">
@@ -258,7 +296,9 @@ export default function PublicWebsitePage() {
               <h2 className="text-3xl font-bold text-slate-900 mb-2">Latest Updates</h2>
               <p className="text-slate-600">Stay connected with our community news and upcoming events.</p>
             </div>
-            <Button variant="outline" className="text-emerald-700 border-emerald-200 hover:bg-emerald-50">View All Updates</Button>
+            <Button variant="outline" className="text-emerald-700 border-emerald-200 hover:bg-emerald-50" asChild>
+              <Link to="/public-site/news">View All Updates</Link>
+            </Button>
           </div>
 
           {(posts.length > 0 || events.length > 0) && (
@@ -269,13 +309,20 @@ export default function PublicWebsitePage() {
                   <div className="grid gap-6 sm:grid-cols-2">
                     {posts.map((post: any) => (
                       <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                        {/* Placeholder image until media is handled */}
-                        <div className="h-48 bg-slate-100 flex items-center justify-center text-slate-300">
-                          <BookOpen className="h-10 w-10" />
+                        <div className="h-48 bg-slate-100 flex items-center justify-center text-slate-300 overflow-hidden">
+                          {post.seo_image_url || post.seo_image_path ? (
+                            <img
+                              src={post.seo_image_url || post.seo_image_path}
+                              alt={post.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <BookOpen className="h-10 w-10" />
+                          )}
                         </div>
                         <CardHeader>
-                          <Badge variant="secondary" className="w-fit mb-2">{post.category?.name || 'News'}</Badge>
-                          <Link to={`/public-site/posts/${post.slug || post.id}`}>
+                          <Badge variant="secondary" className="w-fit mb-2">Article</Badge>
+                          <Link to={`/public-site/articles/${post.slug || post.id}`}>
                             <CardTitle className="line-clamp-2 hover:text-emerald-600 transition-colors cursor-pointer">
                               {post.title}
                             </CardTitle>
@@ -283,7 +330,7 @@ export default function PublicWebsitePage() {
                         </CardHeader>
                         <CardContent>
                           <p className="text-slate-500 text-sm line-clamp-3">
-                            {post.excerpt || post.content?.substring(0, 100) + '...'}
+                            {post.excerpt || 'Read the latest update from our community.'}
                           </p>
                         </CardContent>
                         <CardFooter className="text-xs text-slate-400">
@@ -332,7 +379,9 @@ export default function PublicWebsitePage() {
                         </Link>
                       ))}
                     </div>
-                    <Button variant="link" className="w-full mt-6 text-emerald-600">Full Calendar</Button>
+                    <Button variant="link" className="w-full mt-6 text-emerald-600" asChild>
+                      <Link to="/public-site/events">Full Calendar</Link>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -355,11 +404,11 @@ export default function PublicWebsitePage() {
             Admissions for the upcoming academic year are now open. Secure your child's future with an education that matters.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-8 h-12">
-              Apply for Admission
+            <Button className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-8 h-12" asChild>
+              <Link to="/public-site/admissions">Apply for Admission</Link>
             </Button>
-            <Button variant="outline" className="border-emerald-400 text-emerald-100 hover:bg-emerald-800 hover:text-white h-12">
-              Schedule a Tour
+            <Button variant="outline" className="border-emerald-400 text-emerald-100 hover:bg-emerald-800 hover:text-white h-12" asChild>
+              <Link to="/public-site/contact">Schedule a Tour</Link>
             </Button>
           </div>
         </div>

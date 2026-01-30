@@ -33,7 +33,7 @@ export default function PublicGraduatesPage() {
     );
 
     return (
-        <div className="flex-1 bg-slate-50">
+        <div className="flex-1 bg-slate-50 overflow-x-hidden">
             {/* Hero Section */}
             <section className="bg-emerald-900 text-white py-20 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{
@@ -99,11 +99,11 @@ export default function PublicGraduatesPage() {
                             <div key={graduate.id} className="group bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
                                 {/* Graduate Photo/Header */}
                                 <div className="h-48 bg-emerald-50 relative flex items-center justify-center overflow-hidden">
-                                    {graduate.photo_path ? (
+                                    {(graduate.photo_url || graduate.photo_path) ? (
                                         <div className="w-full h-full relative">
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
                                             <img
-                                                src={graduate.photo_path}
+                                                src={graduate.photo_url || graduate.photo_path || ''}
                                                 alt={graduate.name}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                             />
@@ -127,7 +127,7 @@ export default function PublicGraduatesPage() {
                                     </div>
 
                                     {/* Name overlay on image if photo exists */}
-                                    {graduate.photo_path && (
+                                    {(graduate.photo_url || graduate.photo_path) && (
                                         <div className="absolute bottom-4 left-4 z-20 text-white">
                                             <h3 className="font-bold text-lg leading-tight line-clamp-2">{graduate.name}</h3>
                                             <p className="text-emerald-100 text-xs mt-1 font-medium">{graduate.program || 'Graduate'}</p>
@@ -137,7 +137,7 @@ export default function PublicGraduatesPage() {
 
                                 {/* Content Body */}
                                 <div className="p-5 flex flex-col flex-1">
-                                    {!graduate.photo_path && (
+                                    {!(graduate.photo_url || graduate.photo_path) && (
                                         <div className="mb-4">
                                             <h3 className="font-bold text-lg text-slate-900 mb-1 group-hover:text-emerald-700 transition-colors">{graduate.name}</h3>
                                             <p className="text-emerald-600 text-sm font-medium">{graduate.program || 'Graduate'}</p>

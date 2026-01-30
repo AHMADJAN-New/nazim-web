@@ -111,6 +111,7 @@ class CourseStudentController extends Controller
         $validated = $request->validated();
         $validated['organization_id'] = $profile->organization_id;
         $validated['school_id'] = $currentSchoolId;
+        $validated = $this->normalizeCourseStudentData($validated);
 
         // Auto-generate admission number if not provided or empty
         if (empty($validated['admission_no']) || trim($validated['admission_no'] ?? '') === '') {
@@ -227,6 +228,7 @@ class CourseStudentController extends Controller
 
         $payload = $request->validated();
         unset($payload['organization_id'], $payload['school_id']);
+        $payload = $this->normalizeCourseStudentData($payload);
         $student->update($payload);
 
         return response()->json($student);
@@ -741,6 +743,56 @@ class CourseStudentController extends Controller
         $sequence = CourseStudent::where('course_id', $course->id)->count() + 1;
         $year = $course->start_date ? $course->start_date->format('Y') : now()->format('Y');
         return sprintf('CS-%s-%s-%03d', strtoupper(substr($course->name, 0, 3)), $year, $sequence);
+    }
+
+    /**
+     * Normalize course student data so string columns get strings and integer columns get int|null.
+     * Prevents type mismatches when the client sends numbers for text fields or strings for numeric fields.
+     */
+    private function normalizeCourseStudentData(array $data): array
+    {
+        $stringColumns = [
+            'admission_no', 'card_number', 'full_name', 'father_name', 'grandfather_name', 'mother_name',
+            'gender', 'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village',
+            'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation',
+            'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address', 'zamin_name',
+            'zamin_phone', 'zamin_tazkira', 'zamin_address', 'emergency_contact_name', 'emergency_contact_phone',
+            'family_income', 'picture_path', 'disability_status', 'completion_status', 'grade',
+        ];
+        foreach ($stringColumns as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+            $value = $data[$key];
+            if ($value === null || $value === '') {
+                $data[$key] = null;
+            } else {
+                $data[$key] = is_string($value) ? $value : (string) $value;
+            }
+        }
+
+        foreach (['birth_year', 'age'] as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+            $value = $data[$key];
+            if ($value === null || $value === '') {
+                $data[$key] = null;
+            } else {
+                $data[$key] = is_numeric($value) ? (int) $value : null;
+            }
+        }
+
+        if (array_key_exists('fee_amount', $data)) {
+            $value = $data['fee_amount'];
+            if ($value === null || $value === '') {
+                $data['fee_amount'] = null;
+            } elseif (is_numeric($value)) {
+                $data['fee_amount'] = (float) $value;
+            }
+        }
+
+        return $data;
     }
 
     /**

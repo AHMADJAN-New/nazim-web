@@ -9,6 +9,7 @@ export function mapWebsiteMediaApiToDomain(api: WebsiteMediaApi.WebsiteMedia): W
     id: api.id,
     organizationId: api.organization_id,
     schoolId: api.school_id,
+    categoryId: api.category_id ?? null,
     type: api.type,
     filePath: api.file_path,
     fileName: api.file_name,
@@ -25,6 +26,7 @@ export function mapWebsiteMediaApiToDomain(api: WebsiteMediaApi.WebsiteMedia): W
  */
 export function mapWebsiteMediaDomainToInsert(domain: Partial<WebsiteMedia>): WebsiteMediaApi.WebsiteMediaInsert {
   return {
+    category_id: domain.categoryId ?? null,
     type: domain.type || 'image',
     file_path: domain.filePath || '',
     file_name: domain.fileName,
@@ -38,6 +40,7 @@ export function mapWebsiteMediaDomainToInsert(domain: Partial<WebsiteMedia>): We
  */
 export function mapWebsiteMediaDomainToUpdate(domain: Partial<WebsiteMedia>): WebsiteMediaApi.WebsiteMediaUpdate {
   return {
+    category_id: domain.categoryId ?? null,
     type: domain.type,
     file_path: domain.filePath,
     file_name: domain.fileName,

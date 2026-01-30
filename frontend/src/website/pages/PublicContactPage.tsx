@@ -1,18 +1,17 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
 import { useWebsiteSite } from '@/website/hooks/useWebsiteSite';
 import { publicWebsiteApi } from '@/lib/api/client';
-import { LoadingSpinner } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { PublicPageHeader } from '@/website/components/PublicPageHeader';
+import { showToast } from '@/lib/toast';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function PublicContactPage() {
-    const { toast } = useToast();
+    const { t } = useLanguage();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -50,17 +49,10 @@ export default function PublicContactPage() {
         try {
             await publicWebsiteApi.submitContact(data);
             setIsSuccess(true);
-            toast({
-                title: "Message Sent!",
-                description: "Thank you for contacting us. We will get back to you shortly.",
-            });
+            showToast.success(t('toast.contactMessageSent'));
         } catch (error) {
             console.error(error);
-            toast({
-                title: "Error",
-                description: "Failed to send message. Please try again.",
-                variant: "destructive"
-            });
+            showToast.error(t('toast.contactMessageFailed'));
         } finally {
             setIsSubmitting(false);
         }
@@ -68,7 +60,7 @@ export default function PublicContactPage() {
 
     if (isSuccess) {
         return (
-            <div className="flex-1">
+            <div className="flex-1 overflow-x-hidden">
                 <PublicPageHeader
                     title="Message Sent!"
                     description="Thank you for reaching out to us. A member of our team has received your message and will respond as soon as possible."
@@ -91,7 +83,7 @@ export default function PublicContactPage() {
     }
 
     return (
-        <div className="flex-1 bg-slate-50">
+        <div className="flex-1 bg-slate-50 overflow-x-hidden">
             {/* Header */}
             <PublicPageHeader
                 title="Contact Us"

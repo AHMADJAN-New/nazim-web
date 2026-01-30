@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
 use App\Models\WebsitePage;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -11,6 +12,10 @@ use Illuminate\Support\Facades\Cache;
 class WebsitePageController extends Controller
 {
     private const PUBLIC_LANGUAGES = ['en', 'ps', 'fa', 'ar'];
+
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
 
     public function index(Request $request)
     {
@@ -148,6 +153,49 @@ class WebsitePageController extends Controller
         $this->clearPublicCaches($profile->organization_id, $schoolId, $page->slug);
 
         return response()->json(['status' => 'deleted']);
+    }
+
+    /**
+     * Upload SEO/image for a page.
+     * Stores under website/pages/{pageId}/
+     */
+    public function uploadImage(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $schoolId = $this->getCurrentSchoolId($request);
+
+        $page = WebsitePage::where('organization_id', $profile->organization_id)
+            ->where('school_id', $schoolId)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $request->validate([
+            'file' => 'required|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml|max:10240',
+        ], [
+            'file.required' => 'Please select an image.',
+            'file.mimetypes' => 'The file must be an image (JPEG, PNG, GIF, WebP, BMP, or SVG).',
+        ]);
+
+        $file = $request->file('file');
+        $path = $this->fileStorageService->storeWebsitePageImage(
+            $file,
+            $profile->organization_id,
+            $schoolId,
+            $page->id
+        );
+
+        $page->seo_image_path = $path;
+        $page->save();
+
+        $this->clearPublicCaches($profile->organization_id, $schoolId, $page->slug);
+
+        return response()->json(['path' => $path, 'seo_image_path' => $path], 200);
     }
 
     private function clearPublicCaches(string $organizationId, string $schoolId, string $slug): void

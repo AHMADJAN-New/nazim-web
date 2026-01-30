@@ -23,7 +23,7 @@ export default function PublicFatwaDetailPage() {
 
     if (isLoading) {
         return (
-            <div className="flex-1 flex items-center justify-center py-20">
+            <div className="flex-1 flex items-center justify-center py-20 overflow-x-hidden">
                 <LoadingSpinner />
             </div>
         );
@@ -31,7 +31,7 @@ export default function PublicFatwaDetailPage() {
 
     if (error || !fatwa) {
         return (
-            <div className="flex-1">
+            <div className="flex-1 overflow-x-hidden">
                 <section className="bg-slate-50 py-20">
                     <div className="container mx-auto px-4 text-center">
                         <h1 className="text-3xl font-bold text-slate-900 mb-4">Fatwa Not Found</h1>
@@ -53,7 +53,7 @@ export default function PublicFatwaDetailPage() {
     const displayDate = fatwa.published_at || fatwa.created_at || '';
 
     return (
-        <div className="flex-1">
+        <div className="flex-1 overflow-x-hidden">
             {/* Header */}
             <section className="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{

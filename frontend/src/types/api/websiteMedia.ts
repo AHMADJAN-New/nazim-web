@@ -4,6 +4,7 @@ export interface WebsiteMedia {
   id: string;
   organization_id: string;
   school_id: string;
+  category_id?: string | null;
   type: string;
   file_path: string;
   file_name?: string | null;

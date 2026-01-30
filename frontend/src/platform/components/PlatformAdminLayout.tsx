@@ -249,6 +249,15 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       badge: null,
     },
     { 
+      name: 'Landing Offers', 
+      href: '/platform/landing-offers', 
+      icon: Ticket,
+      iconColor: 'text-rose-500',
+      iconBg: 'bg-rose-500/10',
+      description: 'Control pricing offers on the public site',
+      badge: null,
+    },
+    { 
       name: 'Maintenance Fees', 
       href: '/platform/maintenance-fees', 
       icon: RefreshCw,

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient as api } from '@/lib/api/client';
+import { apiClient as api, websitePublicBooksApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 
 // Types
@@ -10,7 +10,9 @@ export interface WebsitePublicBook {
     category: string | null;
     description: string | null;
     cover_image_path: string | null;
+    cover_image_url?: string | null;
     file_path: string | null;
+    file_url?: string | null;
     file_size: number | null;
     download_count: number;
     is_featured: boolean;
@@ -26,6 +28,7 @@ export interface WebsiteScholar {
     title: string | null;
     bio: string | null;
     photo_path: string | null;
+    photo_url?: string | null;
     specializations: string[] | null;
     contact_email: string | null;
     sort_order: number;
@@ -59,6 +62,7 @@ export interface WebsiteGraduate {
     graduation_year: number | null;
     program: string | null;
     photo_path: string | null;
+    photo_url?: string | null;
     bio: string | null;
     is_featured: boolean;
     sort_order: number;
@@ -154,6 +158,44 @@ export const useDeleteWebsitePublicBook = () => {
             queryClient.invalidateQueries({ queryKey: ['website-public-books'] });
         },
         onError: () => showToast.error('Failed to delete book'),
+    });
+};
+
+/** Upload a PDF file for a library book. Returns path and file_size. */
+export const useUploadPublicBookFile = () => {
+    return useMutation({
+        mutationFn: async (file: File) => {
+            if (file.type !== 'application/pdf') {
+                throw new Error('File must be a PDF');
+            }
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            if (file.size > maxSize) {
+                throw new Error('PDF must be less than 50MB');
+            }
+            return websitePublicBooksApi.uploadFile(file);
+        },
+        onError: (error: Error) => {
+            showToast.error(error.message || 'Failed to upload PDF');
+        },
+    });
+};
+
+/** Upload a cover image for a library book. Returns path for cover_image_path. */
+export const useUploadPublicBookCover = () => {
+    return useMutation({
+        mutationFn: async (file: File) => {
+            if (!file.type.startsWith('image/')) {
+                throw new Error('File must be an image');
+            }
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                throw new Error('Image must be less than 10MB');
+            }
+            return websitePublicBooksApi.uploadCover(file);
+        },
+        onError: (error: Error) => {
+            showToast.error(error.message || 'Failed to upload cover image');
+        },
     });
 };
 

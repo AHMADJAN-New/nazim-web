@@ -16,6 +16,9 @@ Set the base domain in your backend `.env`:
 NAZIM_PUBLIC_SITE_DOMAIN=nazim.cloud
 ```
 
+### Reverse proxy requirement (important)
+If you run behind Nginx/Cloudflare/ALB, make sure the proxy forwards the original host to Laravel (via `Host` and/or `X-Forwarded-Host`). Public website resolution depends on the visitor hostname (subdomain/custom domain).
+
 ### DNS setup
 Create a wildcard DNS record:
 
@@ -24,6 +27,11 @@ Create a wildcard DNS record:
 ```
 
 This allows any school slug to resolve to the public website portal.
+
+### Configure the school slug
+Each school must have a `school_slug` (subdomain slug). You can set it from:
+- Platform Admin → Website Management → Settings (recommended for platform admins)
+- Website Manager → Settings (school admins)
 
 ## Custom Domains (Enterprise)
 

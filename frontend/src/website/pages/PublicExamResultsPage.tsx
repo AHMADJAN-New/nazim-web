@@ -68,7 +68,7 @@ export default function PublicExamResultsPage() {
     const availableExams = options?.exams?.filter((e: any) => e.academic_year_id === selectedYear) || [];
 
     return (
-        <div className="flex-1 bg-slate-50 min-h-screen pb-20 print:bg-white print:pb-0">
+        <div className="flex-1 bg-slate-50 min-h-screen pb-20 print:bg-white print:pb-0 overflow-x-hidden">
             {/* Header - Hidden in Print */}
             <div className="print:hidden">
                 <PublicPageHeader
@@ -188,7 +188,8 @@ export default function PublicExamResultsPage() {
                                             </CardHeader>
 
                                             <CardContent className="p-0">
-                                                <Table>
+                                                <div className="overflow-x-auto">
+                                                    <Table>
                                                     <TableHeader>
                                                         <TableRow className="bg-slate-50/50 print:bg-transparent">
                                                             <TableHead className="w-[50%]">Subject</TableHead>
@@ -228,7 +229,8 @@ export default function PublicExamResultsPage() {
                                                             </TableCell>
                                                         </TableRow>
                                                     </TableBody>
-                                                </Table>
+                                                    </Table>
+                                                </div>
                                             </CardContent>
                                         </Card>
                                     ))}

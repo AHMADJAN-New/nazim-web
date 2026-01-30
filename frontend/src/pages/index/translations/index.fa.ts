@@ -286,26 +286,31 @@ export const indexTranslations = {
     },
   },
 
-  // Pricing Section
+  // Pricing Section (قیمت‌ها از API؛ فقط برچسب‌ها و fallback)
   pricing: {
     title: 'پکیج‌ها و قیمت‌های سیستم ناظم',
     subtitle: 'هر پکیج مطابق نیازمندی شما تعیین می‌شود؛ در پکیج‌های بالاتر امکانات پیشرفته فعال می‌باشند.',
+    currencyAfn: 'افغانی',
+    priceLoading: '—',
+    offer: {
+      label: 'تخفیف ویژه',
+      save: 'صرفه‌جویی',
+      endsIn: 'پایان در',
+      ended: 'تخفیف پایان یافته است',
+    },
     plans: {
       starter: {
         name: 'اساسی',
         nameEn: 'Starter',
-        price: '۱۲,۰۰۰ افغانی',
       },
       pro: {
         name: 'پرو',
         nameEn: 'Pro',
-        price: '۲۵,۰۰۰ افغانی',
         popular: 'محبوب',
       },
       complete: {
         name: 'مکمل',
         nameEn: 'Complete',
-        price: '۳۵,۰۰۰ افغانی',
       },
       enterprise: {
         name: 'انترپرایز',

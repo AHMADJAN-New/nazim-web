@@ -64,15 +64,21 @@ use App\Http\Controllers\Website\WebsitePostController;
 use App\Http\Controllers\Website\WebsiteEventController;
 use App\Http\Controllers\Website\WebsiteAnnouncementController;
 use App\Http\Controllers\Website\WebsiteMediaController;
-use App\Http\Controllers\Website\WebsiteDomainController;
+use App\Http\Controllers\Website\WebsiteMediaCategoryController;
 use App\Http\Controllers\Website\WebsiteMenuController;
 use App\Http\Controllers\Website\PublicWebsiteController;
+use App\Http\Controllers\Website\PublicOnlineAdmissionController;
 use App\Http\Controllers\Website\WebsitePublicBooksController;
 use App\Http\Controllers\Website\WebsiteScholarsController;
 use App\Http\Controllers\Website\WebsiteCoursesController;
 use App\Http\Controllers\Website\WebsiteGraduatesController;
 use App\Http\Controllers\Website\WebsiteDonationsController;
 use App\Http\Controllers\Website\WebsiteInboxController;
+use App\Http\Controllers\Website\WebsiteOnlineAdmissionController;
+use App\Http\Controllers\Website\WebsiteOnlineAdmissionFieldController;
+use App\Http\Controllers\PlatformWebsiteDomainController;
+use App\Http\Controllers\PlatformWebsiteConfigController;
+use App\Http\Controllers\PlatformWebsiteSettingsController;
 use App\Http\Controllers\IdCardTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
@@ -166,6 +172,11 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/menus', [PublicWebsiteController::class, 'menus']);
         Route::get('/pages/{slug}', [PublicWebsiteController::class, 'page']);
         Route::get('/posts', [PublicWebsiteController::class, 'posts']);
+        Route::get('/posts/{slug}', [PublicWebsiteController::class, 'post']);
+        Route::get('/announcements', [PublicWebsiteController::class, 'announcements']);
+        Route::get('/announcements/{id}', [PublicWebsiteController::class, 'announcement']);
+        Route::get('/admissions/fields', [PublicOnlineAdmissionController::class, 'fields']);
+        Route::post('/admissions', [PublicOnlineAdmissionController::class, 'submit']);
         Route::get('/events', [PublicWebsiteController::class, 'events']);
         Route::get('/media', [PublicWebsiteController::class, 'media']);
         Route::get('/fatwas/categories', [PublicFatwaController::class, 'categories']);
@@ -173,7 +184,10 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/fatwas/{slug}', [PublicFatwaController::class, 'show']);
         Route::post('/fatwas/questions', [PublicFatwaController::class, 'storeQuestion']);
         Route::get('/library', [PublicWebsiteController::class, 'library']);
+        Route::get('/library/{id}', [PublicWebsiteController::class, 'libraryBook']);
+        Route::get('/library/{id}/file', [PublicWebsiteController::class, 'libraryBookFile']);
         Route::get('/courses', [PublicWebsiteController::class, 'courses']);
+        Route::get('/courses/{id}', [PublicWebsiteController::class, 'course']);
         Route::get('/scholars', [PublicWebsiteController::class, 'scholars']);
         Route::get('/graduates', [PublicWebsiteController::class, 'graduates']);
         Route::get('/donations', [PublicWebsiteController::class, 'donations']);
@@ -1349,12 +1363,28 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::middleware(['feature:public_website'])->prefix('website')->group(function () {
             Route::get('/settings', [WebsiteSettingsController::class, 'show']);
             Route::put('/settings', [WebsiteSettingsController::class, 'update']);
+            Route::post('/forms/upload', [WebsiteSettingsController::class, 'uploadForm']);
+
+            Route::get('/admissions/fields', [WebsiteOnlineAdmissionFieldController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/admissions/fields', [WebsiteOnlineAdmissionFieldController::class, 'store']);
+                Route::put('/admissions/fields/{id}', [WebsiteOnlineAdmissionFieldController::class, 'update']);
+                Route::delete('/admissions/fields/{id}', [WebsiteOnlineAdmissionFieldController::class, 'destroy']);
+            });
+
+            Route::get('/admissions', [WebsiteOnlineAdmissionController::class, 'index']);
+            Route::get('/admissions/{id}', [WebsiteOnlineAdmissionController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::put('/admissions/{id}', [WebsiteOnlineAdmissionController::class, 'update']);
+                Route::post('/admissions/{id}/accept', [WebsiteOnlineAdmissionController::class, 'accept']);
+            });
 
             Route::get('/pages', [WebsitePageController::class, 'index']);
             Route::get('/pages/{id}', [WebsitePageController::class, 'show']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/pages', [WebsitePageController::class, 'store']);
                 Route::put('/pages/{id}', [WebsitePageController::class, 'update']);
+                Route::post('/pages/{id}/upload-image', [WebsitePageController::class, 'uploadImage']);
                 Route::delete('/pages/{id}', [WebsitePageController::class, 'destroy']);
             });
 
@@ -1379,19 +1409,20 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::delete('/announcements/{id}', [WebsiteAnnouncementController::class, 'destroy']);
             });
 
+            Route::get('/media-categories', [WebsiteMediaCategoryController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/media-categories', [WebsiteMediaCategoryController::class, 'store']);
+                Route::put('/media-categories/{id}', [WebsiteMediaCategoryController::class, 'update']);
+                Route::post('/media-categories/{id}/upload-cover', [WebsiteMediaCategoryController::class, 'uploadCover']);
+                Route::delete('/media-categories/{id}', [WebsiteMediaCategoryController::class, 'destroy']);
+            });
+
             Route::get('/media', [WebsiteMediaController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/media', [WebsiteMediaController::class, 'store']);
                 Route::post('/media/upload-image', [WebsiteMediaController::class, 'uploadImage']);
                 Route::put('/media/{id}', [WebsiteMediaController::class, 'update']);
                 Route::delete('/media/{id}', [WebsiteMediaController::class, 'destroy']);
-            });
-
-            Route::get('/domains', [WebsiteDomainController::class, 'index']);
-            Route::middleware(['subscription:write'])->group(function () {
-                Route::post('/domains', [WebsiteDomainController::class, 'store']);
-                Route::put('/domains/{id}', [WebsiteDomainController::class, 'update']);
-                Route::delete('/domains/{id}', [WebsiteDomainController::class, 'destroy']);
             });
 
             Route::get('/menus', [WebsiteMenuController::class, 'index']);
@@ -1418,6 +1449,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             // Public Books/Library
             Route::get('/public-books', [WebsitePublicBooksController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/public-books/upload-file', [WebsitePublicBooksController::class, 'uploadFile']);
+                Route::post('/public-books/upload-cover', [WebsitePublicBooksController::class, 'uploadCover']);
                 Route::post('/public-books', [WebsitePublicBooksController::class, 'store']);
                 Route::put('/public-books/{id}', [WebsitePublicBooksController::class, 'update']);
                 Route::delete('/public-books/{id}', [WebsitePublicBooksController::class, 'destroy']);
@@ -1436,6 +1469,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/courses', [WebsiteCoursesController::class, 'store']);
                 Route::put('/courses/{id}', [WebsiteCoursesController::class, 'update']);
+                Route::post('/courses/{id}/upload-cover', [WebsiteCoursesController::class, 'uploadCover']);
                 Route::delete('/courses/{id}', [WebsiteCoursesController::class, 'destroy']);
             });
 
@@ -1590,7 +1624,16 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::get('/organizations/{id}', [OrganizationController::class, 'showPlatformAdmin']);
     Route::put('/organizations/{id}', [OrganizationController::class, 'updatePlatformAdmin']);
     Route::delete('/organizations/{id}', [OrganizationController::class, 'destroyPlatformAdmin']);
+
+    // Public website configuration (platform-wide)
+    Route::get('/website/config', [PlatformWebsiteConfigController::class, 'show']);
+
     Route::get('/organizations/{id}/website', [OrganizationController::class, 'websiteData']);
+    Route::put('/organizations/{organizationId}/website/settings/{schoolId}', [PlatformWebsiteSettingsController::class, 'upsert']);
+    Route::get('/organizations/{organizationId}/domains', [PlatformWebsiteDomainController::class, 'index']);
+    Route::post('/organizations/{organizationId}/domains', [PlatformWebsiteDomainController::class, 'store']);
+    Route::put('/organizations/{organizationId}/domains/{id}', [PlatformWebsiteDomainController::class, 'update']);
+    Route::delete('/organizations/{organizationId}/domains/{id}', [PlatformWebsiteDomainController::class, 'destroy']);
     Route::post('/organizations/{organizationId}/features/{featureKey}/toggle', [SubscriptionAdminController::class, 'toggleFeature']);
 
     // Discount codes

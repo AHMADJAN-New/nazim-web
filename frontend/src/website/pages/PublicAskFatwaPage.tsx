@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -8,14 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle, Send, HelpCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { showToast } from '@/lib/toast';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function PublicAskFatwaPage() {
-    const { toast } = useToast();
+    const { t } = useLanguage();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -44,17 +45,10 @@ export default function PublicAskFatwaPage() {
         try {
             await publicWebsiteApi.submitFatwaQuestion(data);
             setIsSuccess(true);
-            toast({
-                title: "Question Submitted",
-                description: "Your question has been received. Our scholars will review it shortly.",
-            });
+            showToast.success(t('toast.fatwaQuestionSubmitted'));
         } catch (error) {
             console.error(error);
-            toast({
-                title: "Error",
-                description: "Failed to submit question. Please try again.",
-                variant: "destructive"
-            });
+            showToast.error(t('toast.fatwaQuestionSubmitFailed'));
         } finally {
             setIsSubmitting(false);
         }
@@ -78,7 +72,7 @@ export default function PublicAskFatwaPage() {
 
     if (isSuccess) {
         return (
-            <div className="flex-1 bg-slate-50 flex items-center justify-center py-20 px-4">
+            <div className="flex-1 bg-slate-50 flex items-center justify-center py-20 px-4 overflow-x-hidden">
                 <Card className="max-w-xl w-full text-center p-8 shadow-xl border-emerald-100">
                     <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
                         <CheckCircle className="h-10 w-10 text-emerald-600" />
@@ -101,7 +95,7 @@ export default function PublicAskFatwaPage() {
     }
 
     return (
-        <div className="flex-1 bg-slate-50 pb-20">
+        <div className="flex-1 bg-slate-50 pb-20 overflow-x-hidden">
             {/* Header */}
             <section className="bg-emerald-900 text-white py-16 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{

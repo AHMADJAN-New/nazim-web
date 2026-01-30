@@ -74,7 +74,6 @@ export const useLibraryBooks = (usePaginated?: boolean, search?: string) => {
     },
     enabled: !!user && !!profile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
 
@@ -115,6 +114,8 @@ export const useCreateLibraryBook = () => {
     onSuccess: async () => {
       showToast.success('toast.library.bookSaved');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.invalidateQueries({ queryKey: ['library-loans'] });
+      await qc.invalidateQueries({ queryKey: ['library-due-soon'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
       // Invalidate finance queries to refresh account balances and dashboard
       await qc.invalidateQueries({ queryKey: ['finance-accounts'] });
@@ -133,6 +134,8 @@ export const useUpdateLibraryBook = () => {
     onSuccess: async () => {
       showToast.success('toast.library.bookUpdated');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.invalidateQueries({ queryKey: ['library-loans'] });
+      await qc.invalidateQueries({ queryKey: ['library-due-soon'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
       // Invalidate finance queries to refresh account balances and dashboard
       await qc.invalidateQueries({ queryKey: ['finance-accounts'] });
@@ -151,6 +154,8 @@ export const useDeleteLibraryBook = () => {
     onSuccess: async () => {
       showToast.success('toast.library.bookRemoved');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.invalidateQueries({ queryKey: ['library-loans'] });
+      await qc.invalidateQueries({ queryKey: ['library-due-soon'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
       // Invalidate finance queries to refresh account balances and dashboard
       await qc.invalidateQueries({ queryKey: ['finance-accounts'] });
@@ -168,6 +173,8 @@ export const useCreateLibraryCopy = () => {
     mutationFn: (data: any) => libraryCopiesApi.create(data),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.invalidateQueries({ queryKey: ['library-loans'] });
+      await qc.invalidateQueries({ queryKey: ['library-due-soon'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
       showToast.success('toast.library.copyAdded');
     },
@@ -187,7 +194,6 @@ export const useLibraryLoans = (openOnly?: boolean) => {
     },
     enabled: !!user && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
   });
 };
 
@@ -199,6 +205,7 @@ export const useCreateLibraryLoan = () => {
       showToast.success('toast.library.loanCreated');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
       await qc.invalidateQueries({ queryKey: ['library-loans'] });
+      await qc.invalidateQueries({ queryKey: ['library-due-soon'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
       await qc.refetchQueries({ queryKey: ['library-loans'] });
     },
@@ -214,6 +221,7 @@ export const useReturnLibraryLoan = () => {
       showToast.success('toast.library.bookReturned');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
       await qc.invalidateQueries({ queryKey: ['library-loans'] });
+      await qc.invalidateQueries({ queryKey: ['library-due-soon'] });
       await qc.refetchQueries({ queryKey: ['library-loans'] });
     },
     onError: () => showToast.error('toast.library.bookReturnFailed'),
@@ -230,6 +238,5 @@ export const useDueSoonLoans = (days?: number) => {
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
   });
 };

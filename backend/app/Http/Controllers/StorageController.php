@@ -10,15 +10,46 @@ use Illuminate\Support\Facades\Log;
 /**
  * Storage Controller
  *
- * Handles secure file downloads for private files.
- * All private files are accessed through this controller with proper authentication
- * and organization access validation.
+ * Handles secure file downloads for private files and public file serving.
+ * - Private files: download/forceDownload/info (require auth, base64 path).
+ * - Public files: servePublic (no auth, for website images and other public disk files).
  */
 class StorageController extends Controller
 {
+    /** Public disk name - used for website images, media, etc. */
+    private const DISK_PUBLIC = 'public';
+
     public function __construct(
         private FileStorageService $fileStorageService
     ) {}
+
+    /**
+     * Serve a file from the public disk (no auth).
+     * Used for website images and other public assets so /storage/organizations/.../website/images/... work.
+     */
+    public function servePublic(Request $request, string $path): \Symfony\Component\HttpFoundation\Response
+    {
+        $path = trim($path, '/');
+        if ($path === '' || str_contains($path, '..')) {
+            abort(404);
+        }
+
+        if (!$this->fileStorageService->fileExists($path, self::DISK_PUBLIC)) {
+            abort(404);
+        }
+
+        $file = $this->fileStorageService->getFile($path, self::DISK_PUBLIC);
+        if ($file === null) {
+            abort(404);
+        }
+
+        $mimeType = $this->fileStorageService->getMimeType($path, self::DISK_PUBLIC)
+            ?? $this->fileStorageService->getMimeTypeFromExtension($path);
+
+        return response($file, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Cache-Control', 'public, max-age=86400');
+    }
 
     /**
      * Download a private file

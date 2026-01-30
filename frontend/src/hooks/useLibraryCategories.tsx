@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from './useAuth';
 
+import { queryOptionsNoRefetchOnFocus } from '@/lib/queryClient';
 import { libraryCategoriesApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import type { LibraryCategory } from '@/types/domain/library';
@@ -21,7 +22,7 @@ export const useLibraryCategories = () => {
     },
     enabled: !!user && !!profile && !!profile.organization_id,
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    ...queryOptionsNoRefetchOnFocus,
   });
 };
 
@@ -49,6 +50,9 @@ export const useCreateLibraryCategory = () => {
     onSuccess: async () => {
       showToast.success('toast.libraryCategories.created');
       await queryClient.invalidateQueries({ queryKey: ['library-categories'] });
+      await queryClient.invalidateQueries({ queryKey: ['library-books'] });
+      await queryClient.invalidateQueries({ queryKey: ['library-loans'] });
+      await queryClient.invalidateQueries({ queryKey: ['library-due-soon'] });
       await queryClient.refetchQueries({ queryKey: ['library-categories'] });
     },
     onError: (error: Error) => {
@@ -67,6 +71,9 @@ export const useUpdateLibraryCategory = () => {
     onSuccess: async () => {
       showToast.success('toast.libraryCategories.updated');
       await queryClient.invalidateQueries({ queryKey: ['library-categories'] });
+      await queryClient.invalidateQueries({ queryKey: ['library-books'] });
+      await queryClient.invalidateQueries({ queryKey: ['library-loans'] });
+      await queryClient.invalidateQueries({ queryKey: ['library-due-soon'] });
       await queryClient.refetchQueries({ queryKey: ['library-categories'] });
     },
     onError: (error: Error) => {
@@ -85,6 +92,9 @@ export const useDeleteLibraryCategory = () => {
     onSuccess: async () => {
       showToast.success('toast.libraryCategories.deleted');
       await queryClient.invalidateQueries({ queryKey: ['library-categories'] });
+      await queryClient.invalidateQueries({ queryKey: ['library-books'] });
+      await queryClient.invalidateQueries({ queryKey: ['library-loans'] });
+      await queryClient.invalidateQueries({ queryKey: ['library-due-soon'] });
       await queryClient.refetchQueries({ queryKey: ['library-categories'] });
     },
     onError: (error: Error) => {
@@ -92,4 +102,3 @@ export const useDeleteLibraryCategory = () => {
     },
   });
 };
-

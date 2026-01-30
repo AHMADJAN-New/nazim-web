@@ -1428,10 +1428,18 @@ class OrganizationController extends Controller
         $schools = [];
         try {
             $schools = DB::connection('pgsql')
-                ->table('school_branding')
-                ->where('organization_id', $organization->id)
-                ->whereNull('deleted_at')
-                ->select('id', 'school_name', 'school_slug')
+                ->table('school_branding as s')
+                ->leftJoin('website_settings as ws', function ($join) {
+                    $join->on('ws.school_id', '=', 's.id')
+                        ->whereNull('ws.deleted_at');
+                })
+                ->where('s.organization_id', $organization->id)
+                ->whereNull('s.deleted_at')
+                ->select(
+                    's.id',
+                    's.school_name',
+                    DB::raw('ws.school_slug as school_slug')
+                )
                 ->get()
                 ->toArray();
         } catch (\Exception $e) {

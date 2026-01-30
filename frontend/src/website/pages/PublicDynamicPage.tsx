@@ -4,115 +4,7 @@ import { publicWebsiteApi } from '@/lib/api/client';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { FileQuestion, ArrowLeft, PlusCircle } from 'lucide-react';
-
-// Simple JSON to HTML converter for TipTap/ProseMirror content
-function renderJsonContent(content: any): string {
-    if (!content) return '';
-    if (typeof content === 'string') return content;
-
-    if (content.type === 'doc' && Array.isArray(content.content)) {
-        return content.content.map(renderNode).join('');
-    }
-
-    return '';
-}
-
-function renderNode(node: any): string {
-    if (!node) return '';
-
-    switch (node.type) {
-        case 'heading': {
-            const level = node.attrs?.level || 2;
-            const text = renderContent(node.content);
-            return `<h${level}>${text}</h${level}>`;
-        }
-        case 'paragraph': {
-            const text = renderContent(node.content);
-            return `<p>${text}</p>`;
-        }
-        case 'bulletList': {
-            const items = node.content?.map(renderNode).join('') || '';
-            return `<ul>${items}</ul>`;
-        }
-        case 'orderedList': {
-            const items = node.content?.map(renderNode).join('') || '';
-            return `<ol>${items}</ol>`;
-        }
-        case 'listItem': {
-            const content = node.content?.map(renderNode).join('') || '';
-            return `<li>${content}</li>`;
-        }
-        case 'text': {
-            let text = escapeHtml(node.text || ''); // Escape text content for security
-            if (node.marks) {
-                node.marks.forEach((mark: any) => {
-                    switch (mark.type) {
-                        case 'bold':
-                            text = `<strong>${text}</strong>`;
-                            break;
-                        case 'italic':
-                            text = `<em>${text}</em>`;
-                            break;
-                        case 'link':
-                            const href = mark.attrs?.href || '#';
-                            const target = mark.attrs?.target || '_blank';
-                            const rel = mark.attrs?.rel || 'noopener noreferrer';
-                            text = `<a href="${escapeHtml(href)}" target="${escapeHtml(target)}" rel="${escapeHtml(rel)}">${text}</a>`;
-                            break;
-                    }
-                });
-            }
-            return text;
-        }
-        case 'blockquote': {
-            const content = node.content?.map(renderNode).join('') || '';
-            return `<blockquote>${content}</blockquote>`;
-        }
-        case 'image': {
-            const src = node.attrs?.src || '';
-            const alt = node.attrs?.alt || '';
-            const title = node.attrs?.title || '';
-            if (!src) return '';
-            return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" title="${escapeHtml(title || alt)}" class="max-w-full h-auto rounded-lg my-4" />`;
-        }
-        case 'hardBreak': {
-            return '<br />';
-        }
-        case 'horizontalRule': {
-            return '<hr />';
-        }
-        case 'codeBlock': {
-            const content = node.content?.map((n: any) => n.text || '').join('') || '';
-            const language = node.attrs?.language || '';
-            return `<pre><code${language ? ` class="language-${language}"` : ''}>${escapeHtml(content)}</code></pre>`;
-        }
-        case 'code': {
-            const text = node.text || '';
-            return `<code>${escapeHtml(text)}</code>`;
-        }
-        default:
-            if (node.content) {
-                return node.content.map(renderNode).join('');
-            }
-            return '';
-    }
-}
-
-function escapeHtml(text: string): string {
-    const map: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;',
-    };
-    return text.replace(/[&<>"']/g, (m) => map[m]);
-}
-
-function renderContent(content: any[]): string {
-    if (!content || !Array.isArray(content)) return '';
-    return content.map(renderNode).join('');
-}
+import { renderRichText } from '@/website/lib/renderRichText';
 
 export default function PublicDynamicPage() {
     const { slug } = useParams<{ slug: string }>();
@@ -142,7 +34,7 @@ export default function PublicDynamicPage() {
 
     if (error || !page) {
         return (
-            <div className="flex-1">
+            <div className="flex-1 overflow-x-hidden">
                 {/* Hero Section for 404 */}
                 <section className="bg-gradient-to-br from-slate-100 to-slate-200 py-20">
                     <div className="container mx-auto px-4 text-center">
@@ -188,10 +80,10 @@ export default function PublicDynamicPage() {
     }
 
     // Render content_json to HTML
-    const htmlContent = page.content_json ? renderJsonContent(page.content_json) : '';
+    const htmlContent = page.content_json ? renderRichText(page.content_json) : '';
 
     return (
-        <div className="flex-1">
+        <div className="flex-1 overflow-x-hidden">
             {/* Page Header */}
             <section className="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{

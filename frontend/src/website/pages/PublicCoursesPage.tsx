@@ -1,24 +1,39 @@
 import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { WebsiteCourse } from '@/website/hooks/useWebsiteContent';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, GraduationCap, Clock, User, BookOpen } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading';
 
+/** Build enrollment/admission link: use admissions page (no 404) or custom CTA if it's an in-app path */
+function enrollmentTo(course: WebsiteCourse): { to: string; label: string } {
+  const cta = (course.enrollment_cta || '').trim();
+  if (cta && cta.startsWith('/') && !cta.startsWith('//')) {
+    return { to: cta, label: 'Enroll Now' };
+  }
+  const params = course.id ? `?course=${course.id}` : '';
+  return { to: `/public-site/admissions${params}`, label: 'Enroll Now' };
+}
+
 export default function PublicCoursesPage() {
+    const [searchParams] = useSearchParams();
+    const schoolIdFromUrl = searchParams.get('school_id');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     const { data: courses = [], isLoading } = useQuery({
-        queryKey: ['public-courses', searchQuery, selectedCategory],
+        queryKey: ['public-courses', schoolIdFromUrl ?? null, searchQuery, selectedCategory],
         queryFn: async () => {
-            const response = await publicWebsiteApi.getCourses({
-                category: selectedCategory || undefined
-            });
+            const params: { category?: string; level?: string; school_id?: string } = {
+                category: selectedCategory || undefined,
+            };
+            if (schoolIdFromUrl) params.school_id = schoolIdFromUrl;
+            const response = await publicWebsiteApi.getCourses(params);
             // Client-side search filtering since API only supports category/level
             const data = response as unknown as WebsiteCourse[];
             if (!searchQuery) return data;
@@ -32,7 +47,7 @@ export default function PublicCoursesPage() {
     const categories = Array.from(new Set(courses.map(c => c.category).filter(Boolean))) as string[];
 
     return (
-        <div className="container mx-auto px-4 py-12 max-w-7xl">
+        <div className="container mx-auto px-4 py-12 max-w-7xl overflow-x-hidden">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-bold text-slate-900 mb-4">Academic Programs</h1>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto">
@@ -80,9 +95,9 @@ export default function PublicCoursesPage() {
                     {courses.map((course) => (
                         <Card key={course.id} className="hover:shadow-lg transition-shadow flex flex-col border-none shadow-md">
                             <div className="h-48 bg-emerald-900 relative overflow-hidden flex items-center justify-center">
-                                {course.cover_image_path ? (
+                                {(course.cover_image_url || course.cover_image_path) ? (
                                     <img
-                                        src={course.cover_image_path}
+                                        src={course.cover_image_url || course.cover_image_path || ''}
                                         alt={course.title}
                                         className="w-full h-full object-cover"
                                     />
@@ -116,12 +131,26 @@ export default function PublicCoursesPage() {
                                     {course.description}
                                 </p>
                             </CardContent>
-                            <CardFooter className="pt-0 border-t bg-slate-50/50 p-6">
-                                <Button className="w-full bg-emerald-600 hover:bg-emerald-700" asChild>
-                                    <a href={course.enrollment_cta || '#contact'} className="flex items-center justify-center gap-2">
-                                        {course.enrollment_cta ? 'Enroll Now' : 'Inquire for Details'}
-                                    </a>
-                                </Button>
+                            <CardFooter className="pt-0 border-t bg-slate-50/50 p-6 flex flex-col gap-2">
+                                {(() => {
+                                    const { to, label } = enrollmentTo(course);
+                                    const detailTo = `/public-site/courses/${course.id}`;
+                                    return (
+                                        <>
+                                            <Button className="w-full bg-emerald-600 hover:bg-emerald-700" asChild>
+                                                <Link to={to} className="flex items-center justify-center gap-2">
+                                                    {label}
+                                                </Link>
+                                            </Button>
+                                            <Link
+                                                to={detailTo}
+                                                className="text-center text-sm text-emerald-600 hover:text-emerald-700 hover:underline"
+                                            >
+                                                View details
+                                            </Link>
+                                        </>
+                                    );
+                                })()}
                             </CardFooter>
                         </Card>
                     ))}

@@ -158,6 +158,53 @@ class WebsiteCoursesController extends Controller
         return response()->json(['status' => 'deleted']);
     }
 
+    /**
+     * Upload cover image for a course.
+     * Stores under website/courses/{courseId}/
+     */
+    public function uploadCover(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $schoolId = $this->getCurrentSchoolId($request);
+
+        $course = WebsiteCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $schoolId)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $request->validate([
+            'file' => 'required|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml|max:10240',
+        ], [
+            'file.required' => 'Please select an image.',
+            'file.mimetypes' => 'The file must be an image (JPEG, PNG, GIF, WebP, BMP, or SVG).',
+        ]);
+
+        $file = $request->file('file');
+        $path = $this->fileStorageService->storeWebsiteCourseCover(
+            $file,
+            $profile->organization_id,
+            $schoolId,
+            $course->id
+        );
+
+        $course->cover_image_path = $path;
+        $course->save();
+
+        $this->clearPublicCaches($profile->organization_id, $schoolId);
+
+        return response()->json([
+            'path' => $path,
+            'cover_image_path' => $path,
+            'cover_image_url' => $this->fileStorageService->getPublicUrl($path),
+        ], 200);
+    }
+
     private function clearPublicCaches(string $organizationId, string $schoolId): void
     {
         foreach (self::PUBLIC_LANGUAGES as $lang) {

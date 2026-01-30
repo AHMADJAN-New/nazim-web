@@ -42,9 +42,6 @@ vi.mock('@/website/hooks/useWebsiteManager', () => ({
   useWebsiteMedia: () => ({
     data: [{ id: 'media-1', file_name: 'hero.jpg', type: 'image' }],
   }),
-  useWebsiteDomains: () => ({
-    data: [{ id: 'domain-1', domain: 'school.example.com', ssl_status: 'active', verification_status: 'verified' }],
-  }),
 }));
 
 describe('WebsiteManagerPage', () => {
@@ -75,8 +72,6 @@ describe('WebsiteManagerPage', () => {
     await user.click(screen.getByRole('tab', { name: 'websiteManager.media' }));
     expect(screen.getByText('hero.jpg')).toBeTruthy();
 
-    await user.click(screen.getByRole('tab', { name: 'websiteManager.domains' }));
-    expect(screen.getByText('school.example.com')).toBeTruthy();
   });
 
   it('submits updated settings with parsed languages', async () => {
