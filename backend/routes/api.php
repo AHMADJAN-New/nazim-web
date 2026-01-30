@@ -182,7 +182,10 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/fatwas/{slug}', [PublicFatwaController::class, 'show']);
         Route::post('/fatwas/questions', [PublicFatwaController::class, 'storeQuestion']);
         Route::get('/library', [PublicWebsiteController::class, 'library']);
+        Route::get('/library/{id}', [PublicWebsiteController::class, 'libraryBook']);
+        Route::get('/library/{id}/file', [PublicWebsiteController::class, 'libraryBookFile']);
         Route::get('/courses', [PublicWebsiteController::class, 'courses']);
+        Route::get('/courses/{id}', [PublicWebsiteController::class, 'course']);
         Route::get('/scholars', [PublicWebsiteController::class, 'scholars']);
         Route::get('/graduates', [PublicWebsiteController::class, 'graduates']);
         Route::get('/donations', [PublicWebsiteController::class, 'donations']);
@@ -1358,6 +1361,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::middleware(['feature:public_website'])->prefix('website')->group(function () {
             Route::get('/settings', [WebsiteSettingsController::class, 'show']);
             Route::put('/settings', [WebsiteSettingsController::class, 'update']);
+            Route::post('/forms/upload', [WebsiteSettingsController::class, 'uploadForm']);
 
             Route::get('/admissions/fields', [WebsiteOnlineAdmissionFieldController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {
@@ -1378,6 +1382,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/pages', [WebsitePageController::class, 'store']);
                 Route::put('/pages/{id}', [WebsitePageController::class, 'update']);
+                Route::post('/pages/{id}/upload-image', [WebsitePageController::class, 'uploadImage']);
                 Route::delete('/pages/{id}', [WebsitePageController::class, 'destroy']);
             });
 
@@ -1406,6 +1411,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/media-categories', [WebsiteMediaCategoryController::class, 'store']);
                 Route::put('/media-categories/{id}', [WebsiteMediaCategoryController::class, 'update']);
+                Route::post('/media-categories/{id}/upload-cover', [WebsiteMediaCategoryController::class, 'uploadCover']);
                 Route::delete('/media-categories/{id}', [WebsiteMediaCategoryController::class, 'destroy']);
             });
 
@@ -1441,6 +1447,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             // Public Books/Library
             Route::get('/public-books', [WebsitePublicBooksController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/public-books/upload-file', [WebsitePublicBooksController::class, 'uploadFile']);
+                Route::post('/public-books/upload-cover', [WebsitePublicBooksController::class, 'uploadCover']);
                 Route::post('/public-books', [WebsitePublicBooksController::class, 'store']);
                 Route::put('/public-books/{id}', [WebsitePublicBooksController::class, 'update']);
                 Route::delete('/public-books/{id}', [WebsitePublicBooksController::class, 'destroy']);
@@ -1459,6 +1467,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/courses', [WebsiteCoursesController::class, 'store']);
                 Route::put('/courses/{id}', [WebsiteCoursesController::class, 'update']);
+                Route::post('/courses/{id}/upload-cover', [WebsiteCoursesController::class, 'uploadCover']);
                 Route::delete('/courses/{id}', [WebsiteCoursesController::class, 'destroy']);
             });
 

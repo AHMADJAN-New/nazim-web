@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
 use App\Models\WebsitePublicBook;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
 class WebsitePublicBooksController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     private const PUBLIC_LANGUAGES = ['en', 'ps', 'fa', 'ar'];
 
     public function index(Request $request)
@@ -125,6 +129,73 @@ class WebsitePublicBooksController extends Controller
         $this->clearPublicCaches($profile->organization_id, $schoolId);
 
         return response()->json(['status' => 'deleted']);
+    }
+
+    /**
+     * Upload a document file (e.g. PDF) for a library book.
+     * Returns path and file_size for storing on the book record.
+     */
+    public function uploadFile(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $schoolId = $this->getCurrentSchoolId($request);
+
+        $request->validate([
+            'file' => 'required|file|mimetypes:application/pdf|max:51200', // 50MB
+        ], [
+            'file.required' => 'Please select a PDF file to upload.',
+            'file.mimetypes' => 'The file must be a PDF.',
+        ]);
+
+        $file = $request->file('file');
+        $path = $this->fileStorageService->storeWebsiteLibraryPdf(
+            $file,
+            $profile->organization_id,
+            $schoolId
+        );
+
+        return response()->json([
+            'path' => $path,
+            'file_size' => $file->getSize(),
+        ], 201);
+    }
+
+    /**
+     * Upload a cover image for a library book.
+     * Returns path for storing on the book record (cover_image_path).
+     */
+    public function uploadCover(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $schoolId = $this->getCurrentSchoolId($request);
+
+        $request->validate([
+            'file' => 'required|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml|max:10240',
+        ], [
+            'file.required' => 'Please select an image.',
+            'file.mimetypes' => 'The file must be an image (JPEG, PNG, GIF, WebP, BMP, or SVG).',
+        ]);
+
+        $file = $request->file('file');
+        $path = $this->fileStorageService->storeWebsiteLibraryCover(
+            $file,
+            $profile->organization_id,
+            $schoolId
+        );
+
+        return response()->json(['path' => $path], 201);
     }
 
     private function clearPublicCaches(string $organizationId, string $schoolId): void

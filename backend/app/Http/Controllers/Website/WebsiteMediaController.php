@@ -123,8 +123,8 @@ class WebsiteMediaController extends Controller
     }
 
     /**
-     * Upload website image for TipTap editor
-     * Returns public URL for immediate use in editor
+     * Upload website image for TipTap editor, gallery covers, media library.
+     * Returns path and relative URL so the frontend can avoid mixed content (HTTPS page loading HTTP image).
      */
     public function uploadImage(Request $request)
     {
@@ -138,25 +138,32 @@ class WebsiteMediaController extends Controller
         $schoolId = $this->getCurrentSchoolId($request);
 
         $request->validate([
-            'file' => 'required|image|max:10240', // 10MB max
+            'file' => 'required|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml|max:10240', // 10MB
+            'category_id' => 'nullable|uuid',
+        ], [
+            'file.required' => 'No file was uploaded. Please select an image.',
+            'file.mimetypes' => 'The file must be an image (JPEG, PNG, GIF, WebP, BMP, or SVG).',
         ]);
 
         $file = $request->file('file');
+        $categoryId = $request->input('category_id');
 
-        // Store image using FileStorageService
-        $filePath = $this->fileStorageService->storeWebsiteImage(
+        // Store under website/media/categories/{id}/items/ or website/media/items/
+        $filePath = $this->fileStorageService->storeWebsiteMediaItem(
             $file,
             $profile->organization_id,
-            $schoolId
+            $schoolId,
+            $categoryId,
+            null
         );
 
-        // Get public URL
-        $publicUrl = $this->fileStorageService->getPublicUrl($filePath);
+        // Return relative URL so frontend uses same origin (avoids mixed content when page is HTTPS)
+        $relativeUrl = '/storage/' . $filePath;
 
-        // Optionally create WebsiteMedia record
         $media = WebsiteMedia::create([
             'organization_id' => $profile->organization_id,
             'school_id' => $schoolId,
+            'category_id' => $categoryId,
             'type' => 'image',
             'file_path' => $filePath,
             'file_name' => $file->getClientOriginalName(),
@@ -170,7 +177,7 @@ class WebsiteMediaController extends Controller
         $this->clearPublicCaches($profile->organization_id, $schoolId);
 
         return response()->json([
-            'url' => $publicUrl,
+            'url' => $relativeUrl,
             'path' => $filePath,
             'media_id' => $media->id,
         ], 201);

@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, BookOpen, Search, Star, FileDown } from 'lucide-react';
+import { useState, useMemo, useRef } from 'react';
+import { Plus, Pencil, Trash2, BookOpen, Search, Star, FileDown, Upload, FileText } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -21,11 +21,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/website/components/StatusBadge';
+import { MediaPicker } from '@/website/components/MediaPicker';
+import { resolveMediaUrl } from '@/website/lib/mediaUrl';
 import {
     useWebsitePublicBooks,
     useCreateWebsitePublicBook,
     useUpdateWebsitePublicBook,
     useDeleteWebsitePublicBook,
+    useUploadPublicBookFile,
+    useUploadPublicBookCover,
     type WebsitePublicBook,
 } from '@/website/hooks/useWebsiteContent';
 
@@ -43,11 +47,21 @@ const bookSchema = z.object({
 
 type BookFormData = z.infer<typeof bookSchema>;
 
+function fileNameFromPath(path: string | null | undefined): string {
+    if (!path) return '';
+    if (path.startsWith('http')) try { return new URL(path).pathname.split('/').pop() || path; } catch { return path; }
+    return path.split('/').pop() || path;
+}
+
 export default function WebsiteLibraryPage() {
     const { data: books = [], isLoading } = useWebsitePublicBooks();
     const createBook = useCreateWebsitePublicBook();
     const updateBook = useUpdateWebsitePublicBook();
     const deleteBook = useDeleteWebsitePublicBook();
+    const coverUpload = useUploadPublicBookCover();
+    const fileUpload = useUploadPublicBookFile();
+    const coverInputRef = useRef<HTMLInputElement>(null);
+    const pdfInputRef = useRef<HTMLInputElement>(null);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -111,6 +125,30 @@ export default function WebsiteLibraryPage() {
             sort_order: book.sort_order,
             status: book.status,
         });
+    };
+
+    const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const result = await coverUpload.mutateAsync(file);
+            form.setValue('cover_image_path', result.path, { shouldValidate: true });
+        } catch {
+            // toast from hook
+        }
+        e.target.value = '';
+    };
+
+    const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const result = await fileUpload.mutateAsync(file);
+            form.setValue('file_path', result.path, { shouldValidate: true });
+        } catch {
+            // toast from hook
+        }
+        e.target.value = '';
     };
 
     if (isLoading) {
@@ -263,8 +301,82 @@ export default function WebsiteLibraryPage() {
                             <Textarea id="description" {...form.register('description')} placeholder="Book description..." rows={3} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="file_path">File URL (PDF)</Label>
-                            <Input id="file_path" {...form.register('file_path')} placeholder="https://..." />
+                            <Label>Cover image</Label>
+                            {form.watch('cover_image_path') && (
+                                <div className="relative w-24 h-24 rounded-md border overflow-hidden bg-muted shrink-0">
+                                    <img
+                                        src={resolveMediaUrl(form.watch('cover_image_path'))}
+                                        alt="Cover"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <input
+                                    ref={coverInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleCoverUpload}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={coverUpload.isPending}
+                                    onClick={() => coverInputRef.current?.click()}
+                                >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    {coverUpload.isPending ? 'Uploading…' : 'Upload image'}
+                                </Button>
+                                <MediaPicker
+                                    type="image"
+                                    value={form.watch('cover_image_path')}
+                                    onChange={(path) => form.setValue('cover_image_path', path ?? null, { shouldValidate: true })}
+                                    buttonOnly
+                                    triggerLabel="Select from library"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>PDF / File</Label>
+                            {form.watch('file_path') && (
+                                <div className="flex items-center gap-2 rounded-md border px-3 py-2 bg-muted/50">
+                                    <FileText className="h-8 w-8 text-muted-foreground shrink-0" />
+                                    <span className="text-sm truncate">{fileNameFromPath(form.watch('file_path'))}</span>
+                                </div>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <input
+                                    ref={pdfInputRef}
+                                    type="file"
+                                    accept=".pdf,application/pdf"
+                                    className="hidden"
+                                    onChange={handlePdfUpload}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={fileUpload.isPending}
+                                    onClick={() => pdfInputRef.current?.click()}
+                                >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    {fileUpload.isPending ? 'Uploading…' : 'Upload PDF'}
+                                </Button>
+                                <MediaPicker
+                                    type="document"
+                                    value={form.watch('file_path')}
+                                    onChange={(path) => form.setValue('file_path', path ?? null, { shouldValidate: true })}
+                                    buttonOnly
+                                    triggerLabel="Select from library"
+                                />
+                            </div>
+                            <Input
+                                {...form.register('file_path')}
+                                placeholder="Or paste file URL (e.g. https://...)"
+                                className="mt-2"
+                            />
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch
@@ -327,8 +439,83 @@ export default function WebsiteLibraryPage() {
                             <Textarea id="edit-description" {...form.register('description')} rows={3} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="edit-file_path">File URL (PDF)</Label>
-                            <Input id="edit-file_path" {...form.register('file_path')} />
+                            <Label>Cover image</Label>
+                            {form.watch('cover_image_path') && (
+                                <div className="relative w-24 h-24 rounded-md border overflow-hidden bg-muted shrink-0">
+                                    <img
+                                        src={resolveMediaUrl(form.watch('cover_image_path'))}
+                                        alt="Cover"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <input
+                                    ref={coverInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleCoverUpload}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={coverUpload.isPending}
+                                    onClick={() => coverInputRef.current?.click()}
+                                >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    {coverUpload.isPending ? 'Uploading…' : 'Upload image'}
+                                </Button>
+                                <MediaPicker
+                                    type="image"
+                                    value={form.watch('cover_image_path')}
+                                    onChange={(path) => form.setValue('cover_image_path', path ?? null, { shouldValidate: true })}
+                                    buttonOnly
+                                    triggerLabel="Select from library"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>PDF / File</Label>
+                            {form.watch('file_path') && (
+                                <div className="flex items-center gap-2 rounded-md border px-3 py-2 bg-muted/50">
+                                    <FileText className="h-8 w-8 text-muted-foreground shrink-0" />
+                                    <span className="text-sm truncate">{fileNameFromPath(form.watch('file_path'))}</span>
+                                </div>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <input
+                                    ref={pdfInputRef}
+                                    type="file"
+                                    accept=".pdf,application/pdf"
+                                    className="hidden"
+                                    onChange={handlePdfUpload}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={fileUpload.isPending}
+                                    onClick={() => pdfInputRef.current?.click()}
+                                >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    {fileUpload.isPending ? 'Uploading…' : 'Upload PDF'}
+                                </Button>
+                                <MediaPicker
+                                    type="document"
+                                    value={form.watch('file_path')}
+                                    onChange={(path) => form.setValue('file_path', path ?? null, { shouldValidate: true })}
+                                    buttonOnly
+                                    triggerLabel="Select from library"
+                                />
+                            </div>
+                            <Input
+                                id="edit-file_path"
+                                {...form.register('file_path')}
+                                placeholder="Or paste file URL (e.g. https://...)"
+                                className="mt-2"
+                            />
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch

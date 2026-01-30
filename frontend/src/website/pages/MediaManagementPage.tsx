@@ -44,6 +44,7 @@ import {
   type WebsiteMedia,
 } from '@/website/hooks/useWebsiteManager';
 import { useWebsiteImageUpload } from '@/website/hooks/useWebsiteImageUpload';
+import { resolveMediaUrl } from '@/website/lib/mediaUrl';
 import { formatDate } from '@/lib/utils';
 
 const mediaSchema = z.object({
@@ -62,7 +63,8 @@ export default function MediaManagementPage() {
   const createMedia = useCreateWebsiteMedia();
   const updateMedia = useUpdateWebsiteMedia();
   const deleteMedia = useDeleteWebsiteMedia();
-  const imageUpload = useWebsiteImageUpload();
+  const formCategoryId = form.watch('categoryId');
+  const imageUpload = useWebsiteImageUpload(formCategoryId);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -72,6 +74,8 @@ export default function MediaManagementPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [uploadedMediaId, setUploadedMediaId] = useState<string | null>(null);
   const [uploadedPreviewUrl, setUploadedPreviewUrl] = useState<string | null>(null);
+  const [showLibraryPicker, setShowLibraryPicker] = useState<'create' | 'edit' | null>(null);
+  const [pendingUploads, setPendingUploads] = useState<Array<{ path: string; fileName: string; mediaId?: string }>>([]);
 
   const form = useForm<MediaFormData>({
     resolver: zodResolver(mediaSchema),
@@ -108,8 +112,51 @@ export default function MediaManagementPage() {
     form.setValue('type', 'image');
   };
 
+  const handleMultipleImageUpload = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const newPending: Array<{ path: string; fileName: string; mediaId: string }> = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      try {
+        const result = await imageUpload.mutateAsync(file);
+        newPending.push({ path: result.path, fileName: file.name, mediaId: result.mediaId });
+      } catch {
+        // toast already shown by hook
+      }
+    }
+    setPendingUploads((prev) => [...prev, ...newPending]);
+    if (newPending.length > 0) {
+      form.setValue('filePath', newPending[0].path, { shouldValidate: true });
+      form.setValue('fileName', newPending[0].fileName, { shouldValidate: true });
+      form.setValue('type', 'image');
+      setUploadedMediaId(newPending[0].mediaId);
+      setUploadedPreviewUrl(resolveMediaUrl(newPending[0].path));
+    }
+  };
+
+  const handlePickFromLibrary = (item: WebsiteMedia) => {
+    form.setValue('filePath', item.filePath, { shouldValidate: true });
+    form.setValue('fileName', item.fileName ?? item.filePath, { shouldValidate: true });
+    form.setValue('altText', item.altText ?? null, { shouldValidate: true });
+    form.setValue('type', 'image');
+    setUploadedMediaId(null);
+    setUploadedPreviewUrl(resolveMediaUrl(item.filePath));
+    setShowLibraryPicker(null);
+  };
+
   const handleCreate = async (data: MediaFormData) => {
-    if (uploadedMediaId) {
+    if (pendingUploads.length > 0) {
+      for (const pending of pendingUploads) {
+        await updateMedia.mutateAsync({
+          id: pending.mediaId,
+          type: data.type,
+          categoryId: data.categoryId,
+          fileName: pending.fileName,
+          altText: data.altText,
+        });
+      }
+    } else if (uploadedMediaId) {
       await updateMedia.mutateAsync({
         id: uploadedMediaId,
         type: data.type,
@@ -130,6 +177,7 @@ export default function MediaManagementPage() {
     form.reset();
     setUploadedMediaId(null);
     setUploadedPreviewUrl(null);
+    setPendingUploads([]);
   };
 
   const handleUpdate = async (data: MediaFormData) => {
@@ -320,6 +368,7 @@ export default function MediaManagementPage() {
           if (!open) {
             setUploadedMediaId(null);
             setUploadedPreviewUrl(null);
+            setPendingUploads([]);
             form.reset();
           }
         }}
@@ -374,43 +423,72 @@ export default function MediaManagementPage() {
 
             {form.watch('type') === 'image' ? (
               <div className="space-y-3">
-                <Label htmlFor="file-upload">Upload Image</Label>
-                <div
-                  className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer"
-                  onClick={() => document.getElementById('file-upload-input')?.click()}
-                >
-                  <input
-                    id="file-upload-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        void handleImageUpload(file);
-                      }
-                    }}
-                  />
-                  <div className="flex flex-col items-center gap-2">
-                    <Upload className="h-8 w-8 text-slate-400" />
-                    <p className="text-sm text-slate-600">Click to select an image</p>
-                    <p className="text-xs text-slate-400">or paste a URL below</p>
+                <Label>Upload or select image</Label>
+                <div className="flex flex-wrap gap-2">
+                  <div
+                    className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors cursor-pointer min-w-[140px]"
+                    onClick={() => document.getElementById('file-upload-input')?.click()}
+                  >
+                    <input
+                      id="file-upload-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      multiple
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files?.length === 1) void handleImageUpload(files[0]);
+                        else if (files?.length) void handleMultipleImageUpload(files);
+                        e.target.value = '';
+                      }}
+                    />
+                    <Upload className="h-6 w-6 text-slate-400 mx-auto mb-1" />
+                    <p className="text-xs text-slate-600">Upload (1 or many)</p>
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowLibraryPicker('create')}
+                    className="shrink-0"
+                  >
+                    Select from library
+                  </Button>
                 </div>
-                {uploadedPreviewUrl && (
+                {pendingUploads.length > 0 && (
+                  <div className="rounded-md border p-2 space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {pendingUploads.length} image(s) ready — category/alt below apply to all
+                    </p>
+                    <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                      {pendingUploads.map((p, i) => (
+                        <div key={p.mediaId} className="relative w-14 h-14 rounded border overflow-hidden shrink-0">
+                          <img src={resolveMediaUrl(p.path)} alt={p.fileName} className="w-full h-full object-cover" />
+                          <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center truncate">
+                            {i + 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(uploadedPreviewUrl || form.watch('filePath')) && pendingUploads.length === 0 && (
                   <div className="rounded-md border overflow-hidden">
-                    <img src={uploadedPreviewUrl} alt="Uploaded preview" className="w-full h-40 object-cover" />
+                    <img
+                      src={uploadedPreviewUrl || resolveMediaUrl(form.watch('filePath'))}
+                      alt="Preview"
+                      className="w-full h-40 object-cover"
+                    />
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="filePath" className="text-xs text-slate-500">
-                    Image URL or Storage Path
+                    Image URL or path (or use upload / library above)
                   </Label>
                   <Input
                     id="filePath"
                     {...form.register('filePath')}
-                    placeholder="https://..."
-                    disabled={!!uploadedMediaId}
+                    placeholder="https://... or path"
+                    disabled={!!uploadedMediaId && pendingUploads.length === 0}
                   />
                   {form.formState.errors.filePath && (
                     <p className="text-sm text-destructive">{form.formState.errors.filePath.message}</p>
@@ -514,7 +592,18 @@ export default function MediaManagementPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="edit-filePath">File Path *</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="edit-filePath" className="shrink-0">File Path *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLibraryPicker('edit')}
+                  className="shrink-0"
+                >
+                  Select from library
+                </Button>
+              </div>
               <Input id="edit-filePath" {...form.register('filePath')} />
               {form.formState.errors.filePath && (
                 <p className="text-sm text-destructive">{form.formState.errors.filePath.message}</p>
@@ -540,6 +629,41 @@ export default function MediaManagementPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Library Picker Dialog (create or edit) */}
+      <Dialog open={!!showLibraryPicker} onOpenChange={(open) => !open && setShowLibraryPicker(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Select from library</DialogTitle>
+            <DialogDescription>Choose an existing image to use</DialogDescription>
+          </DialogHeader>
+          {filteredMedia.filter((m) => m.type === 'image').length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No images in library. Upload some first.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {filteredMedia
+                .filter((m) => m.type === 'image')
+                .map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handlePickFromLibrary(item)}
+                    className="relative aspect-square rounded-lg border-2 border-border hover:border-primary/50 overflow-hidden transition-colors"
+                  >
+                    <img
+                      src={resolveMediaUrl(item.filePath)}
+                      alt={item.altText || item.fileName || 'Media'}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+                      {item.fileName || item.filePath}
+                    </span>
+                  </button>
+                ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
@@ -561,11 +685,4 @@ export default function MediaManagementPage() {
   );
 }
 
-function resolveMediaUrl(path: string) {
-  if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
-    return path;
-  }
-  return `/storage/${path}`;
-}
 

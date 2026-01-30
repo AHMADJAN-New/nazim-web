@@ -9,7 +9,8 @@ export interface WebsiteImageUploadResult {
   mediaId: string;
 }
 
-export const useWebsiteImageUpload = () => {
+/** Optional categoryId stores the image under website/media/categories/{id}/items/ */
+export const useWebsiteImageUpload = (categoryId?: string | null) => {
   const { t } = useLanguage();
 
   return useMutation<WebsiteImageUploadResult, Error, File>({
@@ -25,7 +26,7 @@ export const useWebsiteImageUpload = () => {
         throw new Error('Image size must be less than 10MB');
       }
 
-      const response = await websiteMediaApi.uploadImage(file);
+      const response = await websiteMediaApi.uploadImage(file, categoryId);
       return {
         url: response.url,
         path: response.path,
@@ -33,7 +34,15 @@ export const useWebsiteImageUpload = () => {
       };
     },
     onError: (error: Error) => {
-      showToast.error(error.message || t('toast.imageUploadFailed') || 'Failed to upload image');
+      const msg = error.message || '';
+      const status = (error as { status?: number }).status;
+      const isImageValidation =
+        status === 422 ||
+        /file.*must be an image|must be an image|select an image|given data was invalid/i.test(msg);
+      const message = isImageValidation
+        ? (t('toast.fileMustBeImage') || 'Please select an image file (JPEG, PNG, GIF, WebP, BMP, or SVG).')
+        : (msg || t('toast.imageUploadFailed') || 'Failed to upload image');
+      showToast.error(message);
     },
   });
 };

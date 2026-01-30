@@ -142,6 +142,18 @@ class ApiClient {
       }
     }
 
+    // Public website: in dev/testing, backend resolves school from query param.
+    // Pass school_id when visiting public site with ?school_id= (stored in sessionStorage by PublicLayout).
+    if (typeof window !== 'undefined' && endpoint.startsWith('/public/website/') && !options.params?.school_id) {
+      const publicSchoolId = sessionStorage.getItem('public_website_school_id');
+      if (publicSchoolId) {
+        if (!options.params) {
+          options.params = {};
+        }
+        options.params = { ...options.params, school_id: publicSchoolId };
+      }
+    }
+
     // CRITICAL: Extract params BEFORE destructuring to ensure it's a plain object
     const params = options.params ? { ...options.params } : undefined;
     const { params: _, ...fetchOptions } = options;
@@ -454,6 +466,17 @@ class ApiClient {
 
     const blob = await response.blob();
     return { blob, filename };
+  }
+
+  /**
+   * Fetch a private storage URL (e.g. /api/storage/download/xxx) with auth and return blob.
+   * Use for <img> or file download when the URL requires Bearer token.
+   */
+  async getBlobForPrivateUrl(fullOrRelativeUrl: string): Promise<Blob> {
+    const pathMatch = fullOrRelativeUrl.match(/\/api(\/storage\/download\/[^?#]+)/);
+    const endpoint = pathMatch ? pathMatch[1] : fullOrRelativeUrl.replace(/^.*\/api/, '') || '/storage/download/';
+    const { blob } = await this.requestFile(endpoint);
+    return blob;
   }
 
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
@@ -4738,6 +4761,19 @@ export const websiteAnnouncementsApi = {
   },
 };
 
+export const websitePublicBooksApi = {
+  uploadFile: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post<{ path: string; file_size?: number }>('/website/public-books/upload-file', formData);
+  },
+  uploadCover: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post<{ path: string }>('/website/public-books/upload-cover', formData);
+  },
+};
+
 export const websiteMediaApi = {
   list: async () => {
     return apiClient.get('/website/media');
@@ -4752,9 +4788,12 @@ export const websiteMediaApi = {
   }) => {
     return apiClient.post('/website/media', data);
   },
-  uploadImage: async (file: File) => {
+  uploadImage: async (file: File, categoryId?: string | null) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (categoryId) {
+      formData.append('category_id', categoryId);
+    }
     return apiClient.post<{ url: string; path: string; media_id: string }>('/website/media/upload-image', formData);
   },
   update: async (id: string, data: {
@@ -4928,7 +4967,7 @@ export interface PaginatedResponse<T> {
 }
 
 export const publicWebsiteApi = {
-  getSite: async (params?: { locale?: string }) => {
+  getSite: async (params?: { locale?: string; school_id?: string }) => {
     return apiClient.get('/public/website/site', params);
   },
   getMenus: async () => {
@@ -4986,8 +5025,18 @@ export const publicWebsiteApi = {
   getLibrary: async (params?: { query?: string; category?: string }) => {
     return apiClient.get('/public/website/library', params);
   },
-  getCourses: async (params?: { category?: string; level?: string }) => {
+  getLibraryBook: async (id: string) => {
+    return apiClient.get(`/public/website/library/${id}`);
+  },
+  /** URL path for viewing or downloading a public library book file (use with same origin). */
+  getLibraryBookFileUrl: (id: string, disposition: 'inline' | 'attachment' = 'inline') => {
+    return `/api/public/website/library/${id}/file?disposition=${disposition}`;
+  },
+  getCourses: async (params?: { category?: string; level?: string; school_id?: string }) => {
     return apiClient.get('/public/website/courses', params);
+  },
+  getCourse: async (id: string, params?: { school_id?: string }) => {
+    return apiClient.get(`/public/website/courses/${id}`, params);
   },
   getScholars: async () => {
     return apiClient.get('/public/website/scholars');

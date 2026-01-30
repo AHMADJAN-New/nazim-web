@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
 use App\Models\WebsiteSetting;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -11,6 +12,10 @@ use Illuminate\Support\Facades\Cache;
 class WebsiteSettingsController extends Controller
 {
     private const PUBLIC_LANGUAGES = ['en', 'ps', 'fa', 'ar'];
+
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
 
     public function show(Request $request)
     {
@@ -76,6 +81,38 @@ class WebsiteSettingsController extends Controller
         $this->clearPublicCaches($profile->organization_id, $schoolId);
 
         return response()->json($setting);
+    }
+
+    /**
+     * Upload a general form document (e.g. PDF) for the school website.
+     * Stores under website/forms/. For use when a forms feature is added.
+     */
+    public function uploadForm(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $schoolId = $this->getCurrentSchoolId($request);
+
+        $request->validate([
+            'file' => 'required|file|mimetypes:application/pdf|max:51200',
+        ], [
+            'file.required' => 'Please select a file.',
+            'file.mimetypes' => 'The file must be a PDF.',
+        ]);
+
+        $file = $request->file('file');
+        $path = $this->fileStorageService->storeWebsiteForm(
+            $file,
+            $profile->organization_id,
+            $schoolId
+        );
+
+        return response()->json(['path' => $path], 201);
     }
 
     private function clearPublicCaches(string $organizationId, string $schoolId): void

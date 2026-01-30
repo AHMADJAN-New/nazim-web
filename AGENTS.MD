@@ -1043,8 +1043,23 @@ storage/app/
                     ├── events/{event_id}/
                     │   ├── banners/
                     │   └── thumbnails/
+                    ├── website/                    # Website feature files (school-scoped)
+                    │   ├── library/
+                    │   │   ├── covers/             # Book cover images
+                    │   │   └── pdfs/               # Book PDFs
+                    │   ├── media/
+                    │   │   ├── categories/{category_id}/   # Category cover image
+                    │   │   │   └── items/         # Media items in this category
+                    │   │   └── items/             # Uncategorized media (e.g. TipTap uploads)
+                    │   ├── courses/{course_id}/   # Course cover image
+                    │   ├── pages/{page_id}/       # Page SEO image
+                    │                       └── forms/                 # General school forms (PDFs)
                     └── shared/{resource_type}/
 ```
+
+**Website storage**: Use `storeWebsiteLibraryCover`, `storeWebsiteLibraryPdf`, `storeWebsiteMediaItem`, `storeWebsiteMediaCategoryCover`, `storeWebsiteCourseCover`, `storeWebsitePageImage`, `storeWebsiteForm` for new uploads. Legacy paths `website/images` and `website/documents` are still served; run `php artisan website:move-files-to-new-structure` (optionally with `--dry-run`) to migrate existing files and update DB paths.
+
+**Online admissions** (private) remain at school level: `admissions/{admission_id}/photos/student`, `photos/guardian`, `documents/{document_type}`. They are not under `website/` because they are application data, not public website content.
 
 #### Public vs Private Decision Matrix
 
