@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createQueryClient } from "@/lib/queryClient";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
@@ -246,28 +247,8 @@ import WebsiteInboxPage from "@/website/pages/WebsiteInboxPage";
 import WebsiteAdmissionsPage from "@/website/pages/WebsiteAdmissionsPage";
 import PublicAdmissionsPage from "@/website/pages/PublicAdmissionsPage";
 
-// Optimized QueryClient with better caching and performance settings
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30 * 60 * 1000, // 30 minutes - data doesn't change often
-      gcTime: 60 * 60 * 1000, // 1 hour (formerly cacheTime)
-      retry: (failureCount, error: { status?: number } | Error | unknown) => {
-        // Don't retry on 4xx errors
-        if (error && typeof error === 'object' && 'status' in error && typeof error.status === 'number' && error.status >= 400 && error.status < 500) {
-          return false;
-        }
-        return failureCount < 3;
-      },
-      refetchOnWindowFocus: false, // Don't refetch on window focus
-      refetchOnMount: false, // Don't refetch on mount if data is fresh
-      refetchOnReconnect: false, // Don't refetch on reconnect (prevents sidebar disappearing)
-    },
-    mutations: {
-      retry: 2,
-    },
-  },
-});
+// Centralized QueryClient – defaults (e.g. refetch on focus) live in @/lib/queryClient
+const queryClient = createQueryClient();
 
 const websiteModulePlaceholders = [
   {

@@ -160,6 +160,7 @@ export const useCreateAsset = () => {
       await queryClient.invalidateQueries({ queryKey: ['assets'] });
       await queryClient.refetchQueries({ queryKey: ['assets'] });
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
+      await queryClient.invalidateQueries({ queryKey: ['assets-dashboard'] });
       // Invalidate finance queries to refresh account balances and dashboard
       await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
       await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
@@ -186,6 +187,7 @@ export const useUpdateAsset = () => {
         await queryClient.invalidateQueries({ queryKey: ['assets', variables.id] });
       }
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
+      await queryClient.invalidateQueries({ queryKey: ['assets-dashboard'] });
       // Invalidate finance queries to refresh account balances and dashboard
       await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
       await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
@@ -205,6 +207,7 @@ export const useDeleteAsset = () => {
       await queryClient.invalidateQueries({ queryKey: ['assets'] });
       await queryClient.refetchQueries({ queryKey: ['assets'] });
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
+      await queryClient.invalidateQueries({ queryKey: ['assets-dashboard'] });
       // Invalidate finance queries to refresh account balances and dashboard
       await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
       await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
@@ -235,6 +238,7 @@ export const useAssignAsset = () => {
       }
       // Invalidate stats as well
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
+      await queryClient.invalidateQueries({ queryKey: ['assets-dashboard'], exact: false });
       showToast.success('toast.assets.assignmentSaved');
     },
     onError: (error: Error) => showToast.error(error.message || 'toast.assets.assignFailed'),
@@ -283,6 +287,7 @@ export const useUpdateAssignment = () => {
       
       // Invalidate stats as well
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
+      await queryClient.invalidateQueries({ queryKey: ['assets-dashboard'], exact: false });
       showToast.success('toast.assets.assignmentUpdated');
     },
     onError: (error: Error) => showToast.error(error.message || 'toast.assets.assignmentUpdateFailed'),
@@ -314,6 +319,7 @@ export const useRemoveAssignment = () => {
       await queryClient.invalidateQueries({ queryKey: ['asset-assignments'], exact: false });
       // Invalidate stats as well
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
+      await queryClient.invalidateQueries({ queryKey: ['assets-dashboard'], exact: false });
       showToast.success('toast.assets.assignmentRemoved');
     },
     onError: (error: Error) => showToast.error(error.message || 'toast.assets.assignmentRemoveFailed'),
@@ -346,6 +352,7 @@ export const useLogMaintenance = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['assets-dashboard'] });
       showToast.success('toast.assets.maintenanceSaved');
     },
     onError: (error: Error) => showToast.error(error.message || 'toast.assets.maintenanceSaveFailed'),
@@ -363,6 +370,7 @@ export const useUpdateMaintenance = () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset-maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['assets-dashboard'] });
       showToast.success('toast.assets.maintenanceUpdated');
     },
     onError: (error: Error) => showToast.error(error.message || 'toast.assets.maintenanceUpdateFailed'),
@@ -377,6 +385,7 @@ export const useRemoveMaintenance = () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset-maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['assets-dashboard'] });
       showToast.success('toast.assets.maintenanceRemoved');
     },
     onError: (error: Error) => showToast.error(error.message || 'toast.assets.maintenanceRemoveFailed'),
@@ -517,6 +526,5 @@ export const useAssetsDashboard = () => {
     },
     enabled: !!user && !!profile?.organization_id && !!stats,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchOnWindowFocus: false,
   });
 };

@@ -50,7 +50,6 @@ export const useAttendanceTotalsReport = (
     },
     enabled: !!user && !!profile && options?.enabled !== false,
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
 };

@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { createQueryClient } from '@/lib/queryClient';
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 
@@ -31,14 +32,8 @@ import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { LanguageProvider } from '@/hooks/useLanguage';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+// Same centralized defaults as main app (refetch on focus, etc.)
+const queryClient = createQueryClient();
 
 function ProtectedPlatformLayout() {
   const { user, loading } = useAuth();

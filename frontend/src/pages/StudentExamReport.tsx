@@ -592,7 +592,7 @@ export default function StudentExamReport() {
     enabled: Boolean(examStudentIds.length > 0 && selectedExamId),
     staleTime: 0,
     refetchOnMount: true,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
   });
 
   const handlePrint = () => {

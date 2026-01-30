@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
 import { useHasPermission } from './usePermissions';
 
+import { queryOptionsNoRefetchOnFocus } from '@/lib/queryClient';
 import { apiClient } from '@/lib/api/client';
 import { mapSubscriptionPlanApiToDomain } from '@/mappers/subscriptionMapper';
 import { showToast } from '@/lib/toast';
@@ -155,7 +156,7 @@ export const useSubscriptionPlans = () => {
       return response.data.map(mapSubscriptionPlanApiToDomain);
     },
     staleTime: 60 * 60 * 1000, // 1 hour
-    refetchOnWindowFocus: false,
+    ...queryOptionsNoRefetchOnFocus,
   });
 };
 
@@ -241,8 +242,7 @@ export const useSubscriptionGateStatus = () => {
     // CRITICAL: No permission check - this is accessible to ALL authenticated users
     enabled: !!user && !!profile?.organization_id,
     staleTime: 5 * 60 * 1000, // 5 minutes - same as other subscription queries
-    refetchOnWindowFocus: false, // CRITICAL: Prevent constant refetches on tab switch
-    refetchOnReconnect: false, // Prevent refetch on network reconnect
+    ...queryOptionsNoRefetchOnFocus,
     retry: (failureCount, error: any) => {
       // Don't retry on 403 errors
       if (error?.status === 403) {
@@ -331,8 +331,7 @@ export const useSubscriptionStatus = () => {
     },
     enabled: !!user && !!profile?.organization_id && hasSubscriptionRead === true,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false, // CRITICAL: Prevent constant refetches on tab switch
-    refetchOnReconnect: false, // Prevent refetch on network reconnect
+    ...queryOptionsNoRefetchOnFocus,
     retry: (failureCount, error: any) => {
       // Don't retry on 403 errors (permission denied)
       if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
@@ -382,8 +381,7 @@ export const useUsage = () => {
     },
     enabled: !!user && !!profile?.organization_id && hasSubscriptionRead === true,
     staleTime: 2 * 60 * 1000, // 2 minutes - usage changes but not that frequently
-    refetchOnWindowFocus: false, // CRITICAL: Prevent constant refetches on tab switch
-    refetchOnReconnect: false, // Prevent refetch on network reconnect
+    ...queryOptionsNoRefetchOnFocus,
     refetchOnMount: true, // Still refetch on mount to get fresh data
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes (reduced from 1 minute for better performance)
     retry: (failureCount, error: any) => {
@@ -509,7 +507,7 @@ export const useFeatures = () => {
     },
     enabled: !!user && !!organizationId && hasSubscriptionRead === true,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
+    ...queryOptionsNoRefetchOnFocus,
     retry: (failureCount, error: any) => {
       // Don't retry on 403 errors (permission denied)
       if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
@@ -548,7 +546,7 @@ export const useAllFeatures = () => {
       return response.data;
     },
     staleTime: 60 * 60 * 1000, // 1 hour - features don't change often
-    refetchOnWindowFocus: false,
+    ...queryOptionsNoRefetchOnFocus,
   });
 };
 

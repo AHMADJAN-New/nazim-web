@@ -10,6 +10,7 @@ import {
   studentEducationalHistoryApi, 
   studentDisciplineRecordsApi 
 } from '@/lib/api/client';
+import { queryOptionsNoRefetchOnFocus } from '@/lib/queryClient';
 import { showToast } from '@/lib/toast';
 import { mapStudentApiToDomain, mapStudentDomainToInsert, mapStudentDomainToUpdate } from '@/mappers/studentMapper';
 import type * as StudentApi from '@/types/api/student';
@@ -102,7 +103,6 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean) => 
     },
     enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
 
@@ -238,8 +238,7 @@ export const useStudentStats = (organizationId?: string) => {
     },
     enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
-    refetchOnReconnect: false, // REQUIRED: Performance optimization
+    ...queryOptionsNoRefetchOnFocus,
   });
 };
 
@@ -262,8 +261,7 @@ export const useStudentDocuments = (studentId?: string) => {
     },
     enabled: !!user && !!profile && !!studentId,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
-    refetchOnReconnect: false, // REQUIRED: Performance optimization
+    ...queryOptionsNoRefetchOnFocus,
   });
 };
 
@@ -458,8 +456,7 @@ export const useStudentEducationalHistory = (studentId?: string) => {
     },
     enabled: !!user && !!profile && !!studentId,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
-    refetchOnReconnect: false, // REQUIRED: Performance optimization
+    ...queryOptionsNoRefetchOnFocus,
   });
 };
 
@@ -558,8 +555,7 @@ export const useStudentDisciplineRecords = (studentId?: string) => {
     },
     enabled: !!user && !!profile && !!studentId,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
-    refetchOnReconnect: false, // REQUIRED: Performance optimization
+    ...queryOptionsNoRefetchOnFocus,
   });
 };
 
