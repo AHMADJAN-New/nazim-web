@@ -5476,6 +5476,8 @@ export const TRANSLATION_KEYS = [
   "toast.fileDownloadFailed",
   "toast.fileUploaded",
   "toast.fileUploadFailed",
+  "toast.fileMustBeImage",
+  "toast.imageUploadFailed",
   "toast.finance.accounts.account",
   "toast.finance.assets",
   "toast.finance.converted",

@@ -2,6 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CertificateVerifyController;
+use App\Http\Controllers\StorageController;
+
+// Serve public storage files via centralized StorageController (e.g. website images, media) - no auth required
+Route::get('/storage/{path}', [StorageController::class, 'servePublic'])
+    ->where('path', '.*');
 
 // Serve landing page - redirects to frontend React app
 Route::get('/', function () {

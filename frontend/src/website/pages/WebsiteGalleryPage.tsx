@@ -46,6 +46,7 @@ import {
   type WebsiteMediaCategory,
 } from '@/website/hooks/useWebsiteManager';
 import { useWebsiteImageUpload } from '@/website/hooks/useWebsiteImageUpload';
+import { resolveMediaUrl } from '@/website/lib/mediaUrl';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
@@ -154,7 +155,7 @@ export default function WebsiteGalleryPage() {
       sortOrder: category.sortOrder ?? null,
       isActive: category.isActive ?? true,
     });
-    setPreviewUrl(resolvePublicUrl(category.coverImagePath));
+    setPreviewUrl(resolveMediaUrl(category.coverImagePath) || null);
   };
 
   if (isLoading) {
@@ -221,9 +222,9 @@ export default function WebsiteGalleryPage() {
           {filteredCategories.map((category) => (
             <Card key={category.id} className="overflow-hidden">
               <div className="aspect-[4/3] bg-muted relative">
-                {resolvePublicUrl(category.coverImagePath) ? (
-                  <img
-                    src={resolvePublicUrl(category.coverImagePath) || ''}
+{resolveMediaUrl(category.coverImagePath) ? (
+                    <img
+                    src={resolveMediaUrl(category.coverImagePath)}
                     alt={category.name}
                     className="w-full h-full object-cover"
                   />
@@ -459,10 +460,3 @@ export default function WebsiteGalleryPage() {
   );
 }
 
-function resolvePublicUrl(path?: string | null) {
-  if (!path) return null;
-  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
-    return path;
-  }
-  return `/storage/${path}`;
-}

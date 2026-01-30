@@ -32,7 +32,9 @@ import PublicFatwaDetailPage from '@/website/pages/PublicFatwaDetailPage';
 import PublicExamResultsPage from '@/website/pages/PublicExamResultsPage';
 import PublicContactPage from '@/website/pages/PublicContactPage';
 import PublicLibraryPage from '@/website/pages/PublicLibraryPage';
+import PublicBookDetailPage from '@/website/pages/PublicBookDetailPage';
 import PublicCoursesPage from '@/website/pages/PublicCoursesPage';
+import PublicCourseDetailPage from '@/website/pages/PublicCourseDetailPage';
 import PublicScholarsPage from '@/website/pages/PublicScholarsPage';
 import PublicGraduatesPage from '@/website/pages/PublicGraduatesPage';
 import PublicDonationsPage from '@/website/pages/PublicDonationsPage';
@@ -503,8 +505,11 @@ const App = () => (
                     <Route path="/public-site/contact" element={<PublicContactPage />} />
 
                     {/* New Public Modules */}
+                    <Route path="/public-site/library/:id" element={<PublicBookDetailPage />} />
                     <Route path="/public-site/library" element={<PublicLibraryPage />} />
+                    <Route path="/public-site/courses/:id" element={<PublicCourseDetailPage />} />
                     <Route path="/public-site/courses" element={<PublicCoursesPage />} />
+                    <Route path="/public-site/programs/:id" element={<PublicCourseDetailPage />} />
                     <Route path="/public-site/programs" element={<PublicCoursesPage />} />
                     <Route path="/public-site/scholars" element={<PublicScholarsPage />} />
                     <Route path="/public-site/staff" element={<PublicScholarsPage />} />

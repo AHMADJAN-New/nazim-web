@@ -1,6 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, GraduationCap } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -26,11 +28,25 @@ const DOCUMENT_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-export function PublicAdmissionsPage() {
+export default function PublicAdmissionsPage() {
   const { t } = useLanguage();
+  const [searchParams] = useSearchParams();
+  const courseIdFromUrl = searchParams.get('course');
+  const schoolIdFromUrl = searchParams.get('school_id');
   const { data: extraFields = [] } = usePublicAdmissionFields();
   const [extraValues, setExtraValues] = useState<Record<string, string | string[] | boolean>>({});
   const [extraFiles, setExtraFiles] = useState<Record<string, File>>({});
+
+  const { data: courseForBanner } = useQuery({
+    queryKey: ['public-course-banner', courseIdFromUrl, schoolIdFromUrl ?? null],
+    queryFn: async () => {
+      if (!courseIdFromUrl) return null;
+      const params = schoolIdFromUrl ? { school_id: schoolIdFromUrl } : undefined;
+      const response = await publicWebsiteApi.getCourse(courseIdFromUrl, params);
+      return response as { id: string; title: string } | null;
+    },
+    enabled: !!courseIdFromUrl,
+  });
 
   const form = useForm<OnlineAdmissionFormData>({
     resolver: zodResolver(onlineAdmissionSchema),
@@ -272,8 +288,29 @@ export function PublicAdmissionsPage() {
     }
   };
 
+  const programsLink = schoolIdFromUrl
+    ? `/public-site/programs?school_id=${schoolIdFromUrl}`
+    : '/public-site/programs';
+  const courseDetailLink = courseIdFromUrl
+    ? `/public-site/courses/${courseIdFromUrl}${schoolIdFromUrl ? `?school_id=${schoolIdFromUrl}` : ''}`
+    : programsLink;
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-5xl overflow-x-hidden">
+      {courseForBanner && (
+        <Card className="overflow-hidden border-emerald-200 bg-emerald-50/50">
+          <CardContent className="py-4 flex flex-wrap items-center gap-3">
+            <GraduationCap className="h-8 w-8 text-emerald-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-emerald-800">Applying in connection with</p>
+              <p className="text-lg font-semibold text-emerald-900 truncate">{courseForBanner.title}</p>
+            </div>
+            <Button variant="outline" size="sm" className="border-emerald-300 text-emerald-800 hover:bg-emerald-100" asChild>
+              <Link to={courseDetailLink}>View program details</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="text-2xl">Online Admissions</CardTitle>

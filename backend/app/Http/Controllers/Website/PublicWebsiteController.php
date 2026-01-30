@@ -19,6 +19,7 @@ use App\Models\WebsiteInbox;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class PublicWebsiteController extends Controller
 {
@@ -139,13 +140,20 @@ class PublicWebsiteController extends Controller
         $cacheKey = "public-post:{$organizationId}:{$schoolId}:{$slug}";
 
         return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($schoolId, $slug) {
-            $post = WebsitePost::where('school_id', $schoolId)
+            $query = WebsitePost::where('school_id', $schoolId)
                 ->where('status', 'published')
-                ->whereNull('deleted_at')
-                ->where(function ($query) use ($slug) {
-                    $query->where('slug', $slug)->orWhere('id', $slug);
-                })
-                ->firstOrFail();
+                ->whereNull('deleted_at');
+
+            // Match by slug; only match by id when the parameter is a valid UUID
+            if (Str::isUuid($slug)) {
+                $query->where(function ($q) use ($slug) {
+                    $q->where('slug', $slug)->orWhere('id', $slug);
+                });
+            } else {
+                $query->where('slug', $slug);
+            }
+
+            $post = $query->firstOrFail();
 
             $post->seo_image_url = $this->resolvePublicUrl($post->seo_image_path);
 
@@ -313,6 +321,74 @@ class PublicWebsiteController extends Controller
         });
     }
 
+    /**
+     * Get a single published book by id (for public book detail page).
+     */
+    public function libraryBook(Request $request, string $id)
+    {
+        $schoolId = $request->attributes->get('school_id');
+
+        $book = WebsitePublicBook::where('school_id', $schoolId)
+            ->where('status', 'published')
+            ->where('id', $id)
+            ->first();
+
+        if (!$book) {
+            return response()->json(['error' => 'Book not found'], 404);
+        }
+
+        $book->cover_image_url = $this->resolvePublicUrl($book->cover_image_path);
+        $book->file_url = $this->resolvePublicUrl($book->file_path);
+
+        return response()->json($book);
+    }
+
+    /**
+     * Stream a published book's PDF file (no auth; for public library).
+     * Query: disposition=attachment to force download, otherwise inline (view in browser).
+     */
+    public function libraryBookFile(Request $request, string $id)
+    {
+        $schoolId = $request->attributes->get('school_id');
+        $disposition = $request->query('disposition', 'inline'); // inline | attachment
+
+        $book = WebsitePublicBook::where('school_id', $schoolId)
+            ->where('status', 'published')
+            ->where('id', $id)
+            ->first();
+
+        if (!$book || !$book->file_path) {
+            return response()->json(['error' => 'Book or file not found'], 404);
+        }
+
+        $path = $book->file_path;
+        if (!$this->fileStorageService->fileExists($path, 'public')) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        $file = $this->fileStorageService->getFile($path, 'public');
+        if ($file === null) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        $mimeType = $this->fileStorageService->getMimeType($path, 'public')
+            ?? $this->fileStorageService->getMimeTypeFromExtension($path)
+            ?? 'application/pdf';
+        $filename = basename($path);
+        if (!str_ends_with(strtolower($filename), '.pdf')) {
+            $filename .= '.pdf';
+        }
+
+        $contentDisposition = $disposition === 'attachment'
+            ? 'attachment; filename="' . addslashes($filename) . '"'
+            : 'inline; filename="' . addslashes($filename) . '"';
+
+        return response($file, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Disposition', $contentDisposition)
+            ->header('Cache-Control', 'public, max-age=86400');
+    }
+
     public function courses(Request $request)
     {
         $schoolId = $request->attributes->get('school_id');
@@ -347,6 +423,27 @@ class PublicWebsiteController extends Controller
 
         // Ensure we return a proper JSON response
         return response()->json($coursesWithUrls);
+    }
+
+    public function course(Request $request, string $id)
+    {
+        $schoolId = $request->attributes->get('school_id');
+        if (!$schoolId) {
+            return response()->json(['error' => 'School context not found'], 404);
+        }
+
+        $course = WebsiteCourse::where('school_id', $schoolId)
+            ->where('id', $id)
+            ->where('status', 'published')
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$course) {
+            return response()->json(['error' => 'Course not found'], 404);
+        }
+
+        $course->cover_image_url = $this->resolvePublicUrl($course->cover_image_path);
+        return response()->json($course);
     }
 
     public function scholars(Request $request)
@@ -490,6 +587,11 @@ class PublicWebsiteController extends Controller
         return response($content, 200)->header('Content-Type', 'text/plain');
     }
 
+    /**
+     * Resolve storage path to a URL for public website responses.
+     * Returns relative URLs (/storage/...) so the frontend (HTTPS) does not trigger mixed content
+     * when the API base URL is HTTP (e.g. dev proxy from https://localhost:5173 to http://localhost:8000).
+     */
     private function resolvePublicUrl(?string $path): ?string
     {
         if (!$path) {
@@ -500,7 +602,7 @@ class PublicWebsiteController extends Controller
             return $path;
         }
 
-        return $this->fileStorageService->getPublicUrl($path);
+        return '/storage/' . ltrim($path, '/');
     }
 
     public function logo(Request $request, string $schoolId, string $type)

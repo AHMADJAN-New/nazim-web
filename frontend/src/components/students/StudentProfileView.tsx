@@ -228,7 +228,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
   };
 
   const boolToText = (value?: boolean | null) => (value ? yesText : noText);
-  const formatDate = (value?: string | null) => {
+  const formatDateStr = (value?: string | null) => {
     if (!value) return '';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
@@ -247,7 +247,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
     return escapeHtml(val);
   };
   const printableDate = (value?: string | null) => {
-    const val = formatDate(value);
+    const val = formatDateStr(value);
     if (!val) return '&nbsp;';
     return escapeHtml(val);
   };

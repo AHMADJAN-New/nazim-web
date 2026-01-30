@@ -76,6 +76,9 @@ const categorySchema = z.object({
   sortOrder: z.number().optional(),
 });
 
+/** Sentinel value for "no category" in Select (Radix disallows empty string for SelectItem). */
+const CATEGORY_NONE_VALUE = '__none__';
+
 const questionUpdateSchema = z.object({
   status: z.string().optional(),
   assignedTo: z.string().optional().nullable(),
@@ -654,14 +657,14 @@ export default function FatwasManagementPage() {
             <div className="space-y-2">
               <Label htmlFor="categoryId">Category</Label>
               <Select
-                value={fatwaForm.watch('categoryId') || ''}
-                onValueChange={(value) => fatwaForm.setValue('categoryId', value || null)}
+                value={fatwaForm.watch('categoryId') ?? CATEGORY_NONE_VALUE}
+                onValueChange={(value) => fatwaForm.setValue('categoryId', value === CATEGORY_NONE_VALUE ? null : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value={CATEGORY_NONE_VALUE}>None</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
@@ -761,14 +764,14 @@ export default function FatwasManagementPage() {
             <div className="space-y-2">
               <Label htmlFor="edit-categoryId">Category</Label>
               <Select
-                value={fatwaForm.watch('categoryId') || ''}
-                onValueChange={(value) => fatwaForm.setValue('categoryId', value || null)}
+                value={fatwaForm.watch('categoryId') ?? CATEGORY_NONE_VALUE}
+                onValueChange={(value) => fatwaForm.setValue('categoryId', value === CATEGORY_NONE_VALUE ? null : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value={CATEGORY_NONE_VALUE}>None</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}

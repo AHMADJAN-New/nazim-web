@@ -3,7 +3,7 @@ import { CheckCircle2, Eye, Plus, Save, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,6 +27,7 @@ import {
   useDeleteWebsiteAdmissionField,
 } from '@/website/hooks/useWebsiteAdmissions';
 import type { OnlineAdmission, OnlineAdmissionField, OnlineAdmissionFieldType } from '@/types/domain/onlineAdmission';
+import { PrivateImage, PrivateDocumentLink } from '@/components/PrivateImage';
 
 const STATUS_OPTIONS = [
   { value: 'submitted', label: 'Submitted' },
@@ -62,7 +63,7 @@ const stringToOptions = (value: string) =>
     .filter(Boolean)
     .map((item) => ({ value: item, label: item }));
 
-export function WebsiteAdmissionsPage() {
+export default function WebsiteAdmissionsPage() {
   const { t } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -328,177 +329,202 @@ export function WebsiteAdmissionsPage() {
       </Tabs>
 
       <Dialog open={!!selectedAdmissionId} onOpenChange={(open) => !open && setSelectedAdmissionId(null)}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="admission-details-desc">
           <DialogHeader>
             <DialogTitle>Admission Details</DialogTitle>
+            <DialogDescription id="admission-details-desc">
+              View and manage this online admission application.
+            </DialogDescription>
           </DialogHeader>
-          {!admissionDetails && <p>Loading admission...</p>}
+          {!admissionDetails && <p className="text-muted-foreground py-4">Loading admission...</p>}
           {admissionDetails && (
             <div className="space-y-6">
+              {/* Student & Guardian cards with photos */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-semibold">Student</h3>
-                  <p>{admissionDetails.fullName}</p>
-                  <p className="text-sm text-muted-foreground">Father: {admissionDetails.fatherName}</p>
-                  <p className="text-sm text-muted-foreground">Applying: {admissionDetails.applyingGrade || '—'}</p>
-                  {admissionDetails.pictureUrl && (
-                    <img
-                      src={admissionDetails.pictureUrl}
-                      alt={admissionDetails.fullName}
-                      className="mt-2 h-32 w-32 rounded object-cover"
-                    />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold">Guardian</h3>
-                  <p>{admissionDetails.guardianName || '—'}</p>
-                  <p className="text-sm text-muted-foreground">{admissionDetails.guardianPhone || '—'}</p>
-                  {admissionDetails.guardianPictureUrl && (
-                    <img
-                      src={admissionDetails.guardianPictureUrl}
-                      alt={admissionDetails.guardianName || 'Guardian'}
-                      className="mt-2 h-32 w-32 rounded object-cover"
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-semibold">Address</h3>
-                  <p className="text-sm text-muted-foreground">{admissionDetails.homeAddress || '—'}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Origin: {admissionDetails.origProvince || '—'} / {admissionDetails.origDistrict || '—'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Current: {admissionDetails.currProvince || '—'} / {admissionDetails.currDistrict || '—'}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold">Previous School</h3>
-                  <p>{admissionDetails.previousSchool || '—'}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Grade: {admissionDetails.previousGradeLevel || '—'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Year: {admissionDetails.previousAcademicYear || '—'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Notes: {admissionDetails.previousSchoolNotes || '—'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Status</h3>
-                <div className="flex flex-col md:flex-row gap-4">
-                  <Select value={statusDraft} onValueChange={(value) => setStatusDraft(value as any)}>
-                    <SelectTrigger className="md:w-48">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(admissionDetails.status === 'accepted'
-                        ? STATUS_OPTIONS
-                        : STATUS_OPTIONS.filter((option) => option.value !== 'accepted')
-                      ).map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="default"
-                    onClick={() => {
-                      setAcceptDialogOpen(true);
-                      setAcceptAdmissionNo('');
-                      setAcceptAdmissionYear('');
-                    }}
-                    disabled={admissionDetails.status === 'accepted'}
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Accept & Create Student
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Internal Notes</Label>
-                <Textarea value={notesDraft} onChange={(event) => setNotesDraft(event.target.value)} />
-              </div>
-
-              {statusDraft === 'rejected' && (
-                <div className="space-y-2">
-                  <Label>Rejection Reason</Label>
-                  <Textarea value={rejectionDraft} onChange={(event) => setRejectionDraft(event.target.value)} />
-                </div>
-              )}
-
-              <div className="flex justify-end">
-                <Button
-                  onClick={() =>
-                    updateAdmission.mutate({
-                      id: admissionDetails.id,
-                      data: {
-                        status: statusDraft,
-                        notes: notesDraft,
-                        rejectionReason: rejectionDraft,
-                      },
-                    })
-                  }
-                >
-                  Save Changes
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Documents</h3>
-                {admissionDetails.documents && admissionDetails.documents.length > 0 ? (
-                  <ul className="space-y-1 text-sm">
-                    {admissionDetails.documents.map((doc) => (
-                      <li key={doc.id} className="flex items-center gap-2">
-                        <a className="text-primary underline" href={doc.fileUrl || '#'} target="_blank" rel="noreferrer">
-                          {doc.fileName}
-                        </a>
-                        <span className="text-muted-foreground">{doc.documentType}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No documents uploaded.</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Extra Fields</h3>
-                {admissionDetails.fieldValues && admissionDetails.fieldValues.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {admissionDetails.fieldValues.map((value) => (
-                      <div key={value.id} className="border rounded-md p-2">
-                        <p className="font-semibold">{value.field?.label || 'Field'}</p>
-                        {value.fileUrl ? (
-                          <a className="text-primary underline" href={value.fileUrl} target="_blank" rel="noreferrer">
-                            {value.fileName || 'Download'}
-                          </a>
-                        ) : (
-                          <p>{value.valueText || (Array.isArray(value.valueJson) ? value.valueJson.join(', ') : '—')}</p>
-                        )}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Student</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="font-medium">{admissionDetails.fullName}</p>
+                    <p className="text-sm text-muted-foreground">Father: {admissionDetails.fatherName}</p>
+                    <p className="text-sm text-muted-foreground">Applying: {admissionDetails.applyingGrade || '—'}</p>
+                    {(admissionDetails.pictureUrl ?? admissionDetails.picturePath) && (
+                      <div className="mt-2 rounded-lg overflow-hidden border bg-muted/50 w-32 h-32">
+                        <PrivateImage
+                          src={admissionDetails.pictureUrl ?? admissionDetails.picturePath ?? null}
+                          alt={admissionDetails.fullName}
+                          className="h-full w-full object-cover"
+                        />
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No extra fields filled.</p>
-                )}
+                    )}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Guardian</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="font-medium">{admissionDetails.guardianName || '—'}</p>
+                    <p className="text-sm text-muted-foreground">{admissionDetails.guardianPhone || '—'}</p>
+                    {(admissionDetails.guardianPictureUrl ?? admissionDetails.guardianPicturePath) && (
+                      <div className="mt-2 rounded-lg overflow-hidden border bg-muted/50 w-32 h-32">
+                        <PrivateImage
+                          src={admissionDetails.guardianPictureUrl ?? admissionDetails.guardianPicturePath ?? null}
+                          alt={admissionDetails.guardianName || 'Guardian'}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Address</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground space-y-1">
+                    <p>{admissionDetails.homeAddress || '—'}</p>
+                    <p>Origin: {admissionDetails.origProvince || '—'} / {admissionDetails.origDistrict || '—'}</p>
+                    <p>Current: {admissionDetails.currProvince || '—'} / {admissionDetails.currDistrict || '—'}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Previous School</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground space-y-1">
+                    <p>{admissionDetails.previousSchool || '—'}</p>
+                    <p>Grade: {admissionDetails.previousGradeLevel || '—'}</p>
+                    <p>Year: {admissionDetails.previousAcademicYear || '—'}</p>
+                    <p>Notes: {admissionDetails.previousSchoolNotes || '—'}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Status & Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <Select value={statusDraft} onValueChange={(value) => setStatusDraft(value as any)}>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(admissionDetails.status === 'accepted'
+                          ? STATUS_OPTIONS
+                          : STATUS_OPTIONS.filter((option) => option.value !== 'accepted')
+                        ).map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="default"
+                      onClick={() => {
+                        setAcceptDialogOpen(true);
+                        setAcceptAdmissionNo('');
+                        setAcceptAdmissionYear('');
+                      }}
+                      disabled={admissionDetails.status === 'accepted'}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Accept & Create Student
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Internal Notes</Label>
+                    <Textarea value={notesDraft} onChange={(event) => setNotesDraft(event.target.value)} placeholder="Internal notes..." rows={2} />
+                  </div>
+                  {statusDraft === 'rejected' && (
+                    <div className="space-y-2">
+                      <Label>Rejection Reason</Label>
+                      <Textarea value={rejectionDraft} onChange={(event) => setRejectionDraft(event.target.value)} placeholder="Reason for rejection..." rows={2} />
+                    </div>
+                  )}
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={() =>
+                        updateAdmission.mutate({
+                          id: admissionDetails.id,
+                          data: {
+                            status: statusDraft,
+                            notes: notesDraft,
+                            rejectionReason: rejectionDraft,
+                          },
+                        })
+                      }
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Documents</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {admissionDetails.documents && admissionDetails.documents.length > 0 ? (
+                    <ul className="space-y-2">
+                      {admissionDetails.documents.map((doc) => (
+                        <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                          <span className="font-medium truncate flex-1 min-w-0">{doc.fileName}</span>
+                          <span className="text-muted-foreground shrink-0">{doc.documentType}</span>
+                          {doc.fileUrl ? (
+                            <PrivateDocumentLink url={doc.fileUrl} fileName={doc.fileName} />
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No documents uploaded.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Extra Fields</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {admissionDetails.fieldValues && admissionDetails.fieldValues.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      {admissionDetails.fieldValues.map((value) => (
+                        <div key={value.id} className="rounded-md border p-3">
+                          <p className="font-semibold text-muted-foreground mb-1">{value.field?.label || 'Field'}</p>
+                          {value.fileUrl ? (
+                            <PrivateDocumentLink url={value.fileUrl} fileName={value.fileName || 'Download'} />
+                          ) : (
+                            <p>{value.valueText || (Array.isArray(value.valueJson) ? value.valueJson.join(', ') : '—')}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No extra fields filled.</p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
       <Dialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby="accept-admission-desc">
           <DialogHeader>
             <DialogTitle>Accept Admission</DialogTitle>
+            <DialogDescription id="accept-admission-desc">
+              Create a student record from this application. Optionally set admission number and year.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -528,9 +554,12 @@ export function WebsiteAdmissionsPage() {
       </Dialog>
 
       <Dialog open={fieldDialogOpen} onOpenChange={setFieldDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" aria-describedby="field-form-desc">
           <DialogHeader>
             <DialogTitle>{editingField?.id ? 'Edit Field' : 'New Field'}</DialogTitle>
+            <DialogDescription id="field-form-desc">
+              {editingField?.id ? 'Update the admission form field.' : 'Add a new field to the online admission form.'}
+            </DialogDescription>
           </DialogHeader>
           {editingField && (
             <div className="space-y-4">

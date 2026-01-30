@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/utils';
 import type { StudentBasicInfo } from '@/types/domain/studentHistory';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { PrivateImage } from '@/components/PrivateImage';
 
 interface StudentFullDetailsSectionProps {
   student: StudentBasicInfo;
@@ -52,6 +53,24 @@ export function StudentFullDetailsSection({ student }: StudentFullDetailsSection
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="space-y-6 pt-0">
+            {/* Photo (when private URL or path available) */}
+            {(student.picturePath || (student as { pictureUrl?: string | null }).pictureUrl) && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {t('students.photo') || 'Photo'}
+                </h3>
+                <div className="rounded-lg overflow-hidden border bg-muted/50 w-24 h-24 shrink-0">
+                  <PrivateImage
+                    src={(student as { pictureUrl?: string | null }).pictureUrl ?? student.picturePath ?? null}
+                    alt={student.fullName}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <Separator />
+              </div>
+            )}
+
             {/* Personal Information */}
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
