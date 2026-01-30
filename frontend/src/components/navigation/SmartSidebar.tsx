@@ -1508,6 +1508,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: CalendarClock,
           },
           {
+            title: "Online Admissions",
+            url: "/website/admissions",
+            icon: ClipboardList,
+          },
+          {
             title: "Gallery Albums",
             url: "/website/gallery",
             icon: GalleryVerticalEnd,

@@ -4,40 +4,41 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class OrganizationCounter extends Model
+class OnlineAdmissionDocument extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $connection = 'pgsql';
-    protected $table = 'organization_counters';
+    protected $table = 'online_admission_documents';
 
     protected $keyType = 'string';
     public $incrementing = false;
     protected $primaryKey = 'id';
 
-    // Counter type constants
-    const COUNTER_TYPE_STUDENTS = 'students';
-    const COUNTER_TYPE_STAFF = 'staff';
-    const COUNTER_TYPE_ADMISSIONS = 'admissions';
-
     protected $fillable = [
         'id',
+        'online_admission_id',
         'organization_id',
-        'counter_type',
-        'last_value',
+        'school_id',
+        'document_type',
+        'file_name',
+        'file_path',
+        'file_size',
+        'mime_type',
+        'description',
+        'uploaded_by',
     ];
 
     protected $casts = [
-        'last_value' => 'integer',
+        'file_size' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
-    /**
-     * Boot the model
-     */
     protected static function boot()
     {
         parent::boot();
@@ -49,12 +50,23 @@ class OrganizationCounter extends Model
         });
     }
 
-    /**
-     * Get the organization that owns this counter
-     */
+    public function admission()
+    {
+        return $this->belongsTo(OnlineAdmission::class, 'online_admission_id');
+    }
+
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
     }
-}
 
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    public function uploadedBy()
+    {
+        return $this->belongsTo(Profile::class, 'uploaded_by');
+    }
+}

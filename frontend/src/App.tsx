@@ -241,6 +241,8 @@ import WebsiteScholarsPage from "@/website/pages/WebsiteScholarsPage";
 import WebsiteGraduatesPage from "@/website/pages/WebsiteGraduatesPage";
 import WebsiteDonationsPage from "@/website/pages/WebsiteDonationsPage";
 import WebsiteInboxPage from "@/website/pages/WebsiteInboxPage";
+import WebsiteAdmissionsPage from "@/website/pages/WebsiteAdmissionsPage";
+import PublicAdmissionsPage from "@/website/pages/PublicAdmissionsPage";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -484,7 +486,7 @@ const App = () => (
                     {/* Standard Content Pages (Generic Dynamic) */}
                     <Route path="/public-site/about" element={<PublicDynamicPage />} />
                     <Route path="/public-site/academics" element={<PublicDynamicPage />} />
-                    <Route path="/public-site/admissions" element={<PublicDynamicPage />} />
+                    <Route path="/public-site/admissions" element={<PublicAdmissionsPage />} />
 
                     {/* Specialized Pages */}
                     <Route path="/public-site/news" element={<PublicNewsPage />} />
@@ -882,6 +884,11 @@ const App = () => (
                         <EventsManagementPage />
                       </PermissionRoute>
                     } />
+                    <Route path="/website/admissions" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteAdmissionsPage />
+                      </PermissionRoute>
+                    } />
                     <Route path="/website/fatwas" element={
                       <PermissionRoute permission="website_settings.read">
                         <FatwasManagementPage />
@@ -940,7 +947,7 @@ const App = () => (
                     {/* Phase 2: Pages requiring backend work - still use placeholders */}
                     {websiteModulePlaceholders
                       .filter(module =>
-                        !['/website/navigation', '/website/articles', '/website/events', '/website/fatwas', '/website/media', '/website/gallery', '/website/domains', '/website/announcements',
+                        !['/website/navigation', '/website/articles', '/website/events', '/website/admissions', '/website/fatwas', '/website/media', '/website/gallery', '/website/domains', '/website/announcements',
                           '/website/library', '/website/courses', '/website/scholars', '/website/graduates', '/website/donations', '/website/inbox'].includes(module.path)
                       )
                       .map((module) => (

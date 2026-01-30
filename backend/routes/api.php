@@ -68,12 +68,15 @@ use App\Http\Controllers\Website\WebsiteMediaCategoryController;
 use App\Http\Controllers\Website\WebsiteDomainController;
 use App\Http\Controllers\Website\WebsiteMenuController;
 use App\Http\Controllers\Website\PublicWebsiteController;
+use App\Http\Controllers\Website\PublicOnlineAdmissionController;
 use App\Http\Controllers\Website\WebsitePublicBooksController;
 use App\Http\Controllers\Website\WebsiteScholarsController;
 use App\Http\Controllers\Website\WebsiteCoursesController;
 use App\Http\Controllers\Website\WebsiteGraduatesController;
 use App\Http\Controllers\Website\WebsiteDonationsController;
 use App\Http\Controllers\Website\WebsiteInboxController;
+use App\Http\Controllers\Website\WebsiteOnlineAdmissionController;
+use App\Http\Controllers\Website\WebsiteOnlineAdmissionFieldController;
 use App\Http\Controllers\IdCardTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
@@ -170,6 +173,8 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/posts/{slug}', [PublicWebsiteController::class, 'post']);
         Route::get('/announcements', [PublicWebsiteController::class, 'announcements']);
         Route::get('/announcements/{id}', [PublicWebsiteController::class, 'announcement']);
+        Route::get('/admissions/fields', [PublicOnlineAdmissionController::class, 'fields']);
+        Route::post('/admissions', [PublicOnlineAdmissionController::class, 'submit']);
         Route::get('/events', [PublicWebsiteController::class, 'events']);
         Route::get('/media', [PublicWebsiteController::class, 'media']);
         Route::get('/fatwas/categories', [PublicFatwaController::class, 'categories']);
@@ -1353,6 +1358,20 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::middleware(['feature:public_website'])->prefix('website')->group(function () {
             Route::get('/settings', [WebsiteSettingsController::class, 'show']);
             Route::put('/settings', [WebsiteSettingsController::class, 'update']);
+
+            Route::get('/admissions/fields', [WebsiteOnlineAdmissionFieldController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/admissions/fields', [WebsiteOnlineAdmissionFieldController::class, 'store']);
+                Route::put('/admissions/fields/{id}', [WebsiteOnlineAdmissionFieldController::class, 'update']);
+                Route::delete('/admissions/fields/{id}', [WebsiteOnlineAdmissionFieldController::class, 'destroy']);
+            });
+
+            Route::get('/admissions', [WebsiteOnlineAdmissionController::class, 'index']);
+            Route::get('/admissions/{id}', [WebsiteOnlineAdmissionController::class, 'show']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::put('/admissions/{id}', [WebsiteOnlineAdmissionController::class, 'update']);
+                Route::post('/admissions/{id}/accept', [WebsiteOnlineAdmissionController::class, 'accept']);
+            });
 
             Route::get('/pages', [WebsitePageController::class, 'index']);
             Route::get('/pages/{id}', [WebsitePageController::class, 'show']);

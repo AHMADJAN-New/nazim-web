@@ -4801,6 +4801,58 @@ export const websiteMediaCategoriesApi = {
   },
 };
 
+export const websiteAdmissionFieldsApi = {
+  list: async () => {
+    return apiClient.get('/website/admissions/fields');
+  },
+  create: async (data: {
+    key: string;
+    label: string;
+    field_type: string;
+    is_required?: boolean;
+    is_enabled?: boolean;
+    sort_order?: number;
+    placeholder?: string | null;
+    help_text?: string | null;
+    validation_rules?: Record<string, unknown> | null;
+    options?: Array<{ value: string; label: string }> | null;
+  }) => {
+    return apiClient.post('/website/admissions/fields', data);
+  },
+  update: async (id: string, data: {
+    key?: string;
+    label?: string;
+    field_type?: string;
+    is_required?: boolean;
+    is_enabled?: boolean;
+    sort_order?: number;
+    placeholder?: string | null;
+    help_text?: string | null;
+    validation_rules?: Record<string, unknown> | null;
+    options?: Array<{ value: string; label: string }> | null;
+  }) => {
+    return apiClient.put(`/website/admissions/fields/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/admissions/fields/${id}`);
+  },
+};
+
+export const websiteAdmissionsApi = {
+  list: async (params?: { status?: string; search?: string; page?: number; per_page?: number }) => {
+    return apiClient.get('/website/admissions', { params });
+  },
+  get: async (id: string) => {
+    return apiClient.get(`/website/admissions/${id}`);
+  },
+  update: async (id: string, data: { status?: string; notes?: string | null; rejection_reason?: string | null }) => {
+    return apiClient.put(`/website/admissions/${id}`, data);
+  },
+  accept: async (id: string, data?: { admission_no?: string; admission_year?: string }) => {
+    return apiClient.post(`/website/admissions/${id}/accept`, data ?? {});
+  },
+};
+
 export const websiteDomainsApi = {
   list: async () => {
     return apiClient.get('/website/domains');
@@ -4896,6 +4948,12 @@ export const publicWebsiteApi = {
   },
   getAnnouncement: async (id: string) => {
     return apiClient.get(`/public/website/announcements/${id}`);
+  },
+  getAdmissionFields: async () => {
+    return apiClient.get('/public/website/admissions/fields');
+  },
+  submitAdmission: async (data: FormData) => {
+    return apiClient.post('/public/website/admissions', data);
   },
   getEvents: async () => {
     return apiClient.get('/public/website/events');

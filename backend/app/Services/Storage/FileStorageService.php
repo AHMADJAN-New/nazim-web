@@ -38,6 +38,7 @@ class FileStorageService
     private const PATH_EXAMS = 'exams';
     private const PATH_DMS = 'dms';
     private const PATH_EVENTS = 'events';
+    private const PATH_ADMISSIONS = 'admissions';
     private const PATH_TEMPLATES = 'templates';
     private const PATH_REPORTS = 'reports';
     private const PATH_WEBSITE = 'website';
@@ -90,6 +91,114 @@ class FileStorageService
         $this->updateStorageUsage($file, $organizationId);
 
         return $filePath;
+    }
+
+    // ==============================================
+    // ONLINE ADMISSIONS
+    // ==============================================
+
+    /**
+     * Store online admission photo (PRIVATE)
+     */
+    public function storeOnlineAdmissionPhoto(
+        UploadedFile $file,
+        string $organizationId,
+        string $admissionId,
+        string $schoolId,
+        string $category = 'student'
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $path = $this->buildPath(
+            $organizationId,
+            $schoolId,
+            self::PATH_ADMISSIONS,
+            $admissionId,
+            "photos/{$category}"
+        );
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    /**
+     * Store online admission document (PRIVATE)
+     */
+    public function storeOnlineAdmissionDocument(
+        UploadedFile $file,
+        string $organizationId,
+        string $admissionId,
+        string $schoolId,
+        ?string $documentType = null
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $subPath = $documentType ? "documents/{$documentType}" : 'documents';
+        $path = $this->buildPath(
+            $organizationId,
+            $schoolId,
+            self::PATH_ADMISSIONS,
+            $admissionId,
+            $subPath
+        );
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    /**
+     * Copy admission photo to student picture location
+     */
+    public function copyAdmissionFileToStudentPicture(
+        string $sourcePath,
+        string $organizationId,
+        string $studentId,
+        string $schoolId
+    ): string {
+        $filename = basename($sourcePath);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, 'pictures');
+        $destination = "{$path}/{$filename}";
+        $this->copyFile($sourcePath, $destination, self::DISK_PRIVATE, self::DISK_PRIVATE);
+
+        return $destination;
+    }
+
+    /**
+     * Copy admission file to student document location
+     */
+    public function copyAdmissionFileToStudentDocument(
+        string $sourcePath,
+        string $organizationId,
+        string $studentId,
+        string $schoolId,
+        ?string $documentType = null
+    ): string {
+        $filename = basename($sourcePath);
+        $subPath = $documentType ? "documents/{$documentType}" : 'documents';
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, $subPath);
+        $destination = "{$path}/{$filename}";
+        $this->copyFile($sourcePath, $destination, self::DISK_PRIVATE, self::DISK_PRIVATE);
+
+        return $destination;
+    }
+
+    /**
+     * Copy admission file to student guardian picture location
+     */
+    public function copyAdmissionFileToGuardianPicture(
+        string $sourcePath,
+        string $organizationId,
+        string $studentId,
+        string $schoolId
+    ): string {
+        $filename = basename($sourcePath);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, 'guardians');
+        $destination = "{$path}/{$filename}";
+        $this->copyFile($sourcePath, $destination, self::DISK_PRIVATE, self::DISK_PRIVATE);
+
+        return $destination;
     }
 
     // ==============================================

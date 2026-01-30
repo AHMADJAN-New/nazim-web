@@ -129,7 +129,7 @@ export default function PublicWebsitePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 h-12 text-base" asChild>
-              <Link to="/public-site/contact">Apply Now</Link>
+              <Link to="/public-site/admissions">Apply Now</Link>
             </Button>
             <Button size="lg" variant="outline" className="border-emerald-200 text-emerald-100 hover:bg-emerald-800 hover:text-white h-12 text-base" asChild>
               <Link to="/public-site/contact">Contact Us</Link>
@@ -405,7 +405,7 @@ export default function PublicWebsitePage() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-8 h-12" asChild>
-              <Link to="/public-site/contact">Apply for Admission</Link>
+              <Link to="/public-site/admissions">Apply for Admission</Link>
             </Button>
             <Button variant="outline" className="border-emerald-400 text-emerald-100 hover:bg-emerald-800 hover:text-white h-12" asChild>
               <Link to="/public-site/contact">Schedule a Tour</Link>
