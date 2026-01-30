@@ -135,11 +135,11 @@ export default function DomainsManagementPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title="Domains"
-        description="Manage website domains"
+        title={t('websiteAdmin.domains.title')}
+        description={t('websiteAdmin.domains.description')}
         icon={<Globe className="h-5 w-5" />}
         primaryAction={{
-          label: 'Add Domain',
+          label: t('websiteAdmin.domains.new'),
           onClick: () => {
             form.reset();
             setIsCreateOpen(true);
@@ -148,13 +148,13 @@ export default function DomainsManagementPage() {
         }}
       />
 
-      <FilterPanel title="Filters">
+      <FilterPanel title={t('websiteAdmin.common.filters')}>
         <div className="space-y-2">
-          <Label>Search</Label>
+          <Label>{t('websiteAdmin.common.search')}</Label>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search domains..."
+              placeholder={t('websiteAdmin.domains.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
@@ -168,19 +168,19 @@ export default function DomainsManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Domain</TableHead>
-                <TableHead>Primary</TableHead>
-                <TableHead>Verification</TableHead>
-                <TableHead>SSL Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('websiteAdmin.domains.fields.domain')}</TableHead>
+                <TableHead>{t('websiteAdmin.domains.fields.primary')}</TableHead>
+                <TableHead>{t('websiteAdmin.domains.fields.verificationStatus')}</TableHead>
+                <TableHead>{t('websiteAdmin.domains.fields.sslStatus')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.created')}</TableHead>
+                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredDomains.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    No domains found
+                    {t('websiteAdmin.domains.noResults')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -237,13 +237,13 @@ export default function DomainsManagementPage() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Domain</DialogTitle>
-            <DialogDescription>Add a new domain</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.domains.createTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.domains.createDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="domain">Domain *</Label>
-              <Input id="domain" {...form.register('domain')} placeholder="example.com" />
+              <Label htmlFor="domain">{t('websiteAdmin.domains.fields.domain')} *</Label>
+              <Input id="domain" {...form.register('domain')} placeholder={t('websiteAdmin.domains.placeholders.domain')} />
               {form.formState.errors.domain && (
                 <p className="text-sm text-destructive">{form.formState.errors.domain.message}</p>
               )}
@@ -254,48 +254,48 @@ export default function DomainsManagementPage() {
                 checked={form.watch('isPrimary')}
                 onCheckedChange={(checked) => form.setValue('isPrimary', checked)}
               />
-              <Label htmlFor="isPrimary">Primary Domain</Label>
+              <Label htmlFor="isPrimary">{t('websiteAdmin.domains.fields.primary')}</Label>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="verificationStatus">Verification Status</Label>
+              <Label htmlFor="verificationStatus">{t('websiteAdmin.domains.fields.verificationStatus')}</Label>
               <Select
                 value={form.watch('verificationStatus') || ''}
                 onValueChange={(value) => form.setValue('verificationStatus', value || null)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('websiteAdmin.domains.placeholders.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Not Set</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="unverified">Unverified</SelectItem>
+                  <SelectItem value="">{t('websiteAdmin.common.notSet')}</SelectItem>
+                  <SelectItem value="verified">{t('websiteAdmin.statuses.verified')}</SelectItem>
+                  <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
+                  <SelectItem value="unverified">{t('websiteAdmin.statuses.unverified')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sslStatus">SSL Status</Label>
+              <Label htmlFor="sslStatus">{t('websiteAdmin.domains.fields.sslStatus')}</Label>
               <Select
                 value={form.watch('sslStatus') || ''}
                 onValueChange={(value) => form.setValue('sslStatus', value || null)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('websiteAdmin.domains.placeholders.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Not Set</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="">{t('websiteAdmin.common.notSet')}</SelectItem>
+                  <SelectItem value="active">{t('websiteAdmin.statuses.active')}</SelectItem>
+                  <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
+                  <SelectItem value="expired">{t('websiteAdmin.statuses.expired')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createDomain.isPending}>
-                Add
+                {t('common.add')}
               </Button>
             </DialogFooter>
           </form>
@@ -306,12 +306,12 @@ export default function DomainsManagementPage() {
       <Dialog open={!!editDomain} onOpenChange={(open) => !open && setEditDomain(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Domain</DialogTitle>
-            <DialogDescription>Update domain details</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.domains.editTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.domains.editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-domain">Domain *</Label>
+              <Label htmlFor="edit-domain">{t('websiteAdmin.domains.fields.domain')} *</Label>
               <Input id="edit-domain" {...form.register('domain')} />
               {form.formState.errors.domain && (
                 <p className="text-sm text-destructive">{form.formState.errors.domain.message}</p>
@@ -323,48 +323,48 @@ export default function DomainsManagementPage() {
                 checked={form.watch('isPrimary')}
                 onCheckedChange={(checked) => form.setValue('isPrimary', checked)}
               />
-              <Label htmlFor="edit-isPrimary">Primary Domain</Label>
+              <Label htmlFor="edit-isPrimary">{t('websiteAdmin.domains.fields.primary')}</Label>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-verificationStatus">Verification Status</Label>
+              <Label htmlFor="edit-verificationStatus">{t('websiteAdmin.domains.fields.verificationStatus')}</Label>
               <Select
                 value={form.watch('verificationStatus') || ''}
                 onValueChange={(value) => form.setValue('verificationStatus', value || null)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('websiteAdmin.domains.placeholders.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Not Set</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="unverified">Unverified</SelectItem>
+                  <SelectItem value="">{t('websiteAdmin.common.notSet')}</SelectItem>
+                  <SelectItem value="verified">{t('websiteAdmin.statuses.verified')}</SelectItem>
+                  <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
+                  <SelectItem value="unverified">{t('websiteAdmin.statuses.unverified')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-sslStatus">SSL Status</Label>
+              <Label htmlFor="edit-sslStatus">{t('websiteAdmin.domains.fields.sslStatus')}</Label>
               <Select
                 value={form.watch('sslStatus') || ''}
                 onValueChange={(value) => form.setValue('sslStatus', value || null)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('websiteAdmin.domains.placeholders.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Not Set</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="">{t('websiteAdmin.common.notSet')}</SelectItem>
+                  <SelectItem value="active">{t('websiteAdmin.statuses.active')}</SelectItem>
+                  <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
+                  <SelectItem value="expired">{t('websiteAdmin.statuses.expired')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditDomain(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateDomain.isPending}>
-                Update
+                {t('common.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -375,15 +375,15 @@ export default function DomainsManagementPage() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Domain</AlertDialogTitle>
+            <AlertDialogTitle>{t('websiteAdmin.domains.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this domain? This action cannot be undone.
+              {t('websiteAdmin.domains.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteDomain.isPending}>
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

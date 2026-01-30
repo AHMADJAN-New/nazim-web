@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useLanguage } from '@/hooks/useLanguage';
 import {
   useWebsiteMediaCategories,
   useCreateWebsiteMediaCategory,
@@ -63,6 +64,7 @@ const categorySchema = z.object({
 type CategoryFormData = z.infer<typeof categorySchema>;
 
 export default function WebsiteGalleryPage() {
+  const { t } = useLanguage();
   const { data: categories = [], isLoading } = useWebsiteMediaCategories();
   const createCategory = useCreateWebsiteMediaCategory();
   const updateCategory = useUpdateWebsiteMediaCategory();
@@ -169,11 +171,11 @@ export default function WebsiteGalleryPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title="Gallery Albums"
-        description="Manage gallery albums and cover images."
+        title={t('websiteAdmin.gallery.title')}
+        description={t('websiteAdmin.gallery.description')}
         icon={<FolderOpen className="h-5 w-5" />}
         primaryAction={{
-          label: 'New Album',
+          label: t('websiteAdmin.gallery.new'),
           onClick: () => {
             form.reset();
             setPreviewUrl(null);
@@ -183,14 +185,14 @@ export default function WebsiteGalleryPage() {
         }}
       />
 
-      <FilterPanel title="Filters">
+      <FilterPanel title={t('websiteAdmin.common.filters')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Search</Label>
+            <Label>{t('websiteAdmin.common.search')}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search albums..."
+                placeholder={t('websiteAdmin.gallery.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8"
@@ -198,15 +200,15 @@ export default function WebsiteGalleryPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label>{t('websiteAdmin.common.status')}</Label>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'inactive')}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                <SelectItem value="active">{t('websiteAdmin.statuses.active')}</SelectItem>
+                <SelectItem value="inactive">{t('websiteAdmin.statuses.inactive')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -215,7 +217,7 @@ export default function WebsiteGalleryPage() {
 
       {filteredCategories.length === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          No gallery albums found.
+          {t('websiteAdmin.gallery.noResults')}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -235,7 +237,7 @@ export default function WebsiteGalleryPage() {
                 )}
                 <div className="absolute top-3 right-3 flex gap-2">
                   <Badge variant={category.isActive ? 'default' : 'secondary'}>
-                    {category.isActive ? 'Active' : 'Inactive'}
+                    {category.isActive ? t('websiteAdmin.statuses.active') : t('websiteAdmin.statuses.inactive')}
                   </Badge>
                 </div>
               </div>
@@ -243,12 +245,14 @@ export default function WebsiteGalleryPage() {
                 <CardTitle className="text-lg">{category.name}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="text-xs text-muted-foreground">Slug: {category.slug}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t('websiteAdmin.gallery.slugLabel')}: {category.slug}
+                </div>
                 <p className="text-sm text-slate-600 line-clamp-3">
-                  {category.description || 'No description provided.'}
+                  {category.description || t('websiteAdmin.gallery.noDescription')}
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>Sort: {category.sortOrder ?? 0}</span>
+                  <span>{t('websiteAdmin.gallery.sortLabel')}: {category.sortOrder ?? 0}</span>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="ghost" size="sm" onClick={() => openEditDialog(category)}>
@@ -277,27 +281,27 @@ export default function WebsiteGalleryPage() {
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Album</DialogTitle>
-            <DialogDescription>Add a new gallery album</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.gallery.createTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.gallery.createDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input id="name" {...form.register('name')} placeholder="Graduation 2024" />
+              <Label htmlFor="name">{t('websiteAdmin.gallery.fields.name')} *</Label>
+              <Input id="name" {...form.register('name')} placeholder={t('websiteAdmin.gallery.placeholders.name')} />
               {form.formState.errors.name && (
                 <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input id="slug" {...form.register('slug')} placeholder="graduation-2024" />
+              <Label htmlFor="slug">{t('websiteAdmin.common.slug')}</Label>
+              <Input id="slug" {...form.register('slug')} placeholder={t('websiteAdmin.gallery.placeholders.slug')} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('websiteAdmin.common.description')}</Label>
               <Textarea id="description" {...form.register('description')} rows={3} />
             </div>
             <div className="space-y-2">
-              <Label>Cover Image</Label>
+              <Label>{t('websiteAdmin.gallery.fields.coverImage')}</Label>
               <div
                 className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer"
                 onClick={() => document.getElementById('album-cover-upload')?.click()}
@@ -316,40 +320,40 @@ export default function WebsiteGalleryPage() {
                 />
                 <div className="flex flex-col items-center gap-2">
                   <Upload className="h-8 w-8 text-slate-400" />
-                  <p className="text-sm text-slate-600">Click to upload cover</p>
+                  <p className="text-sm text-slate-600">{t('websiteAdmin.gallery.coverUploadCta')}</p>
                 </div>
               </div>
               {previewUrl && (
                 <div className="rounded-md border overflow-hidden">
-                  <img src={previewUrl} alt="Cover preview" className="w-full h-40 object-cover" />
+                  <img src={previewUrl} alt={t('websiteAdmin.gallery.coverPreviewAlt')} className="w-full h-40 object-cover" />
                 </div>
               )}
-              <Input id="coverImagePath" {...form.register('coverImagePath')} placeholder="Storage path or URL" />
+              <Input id="coverImagePath" {...form.register('coverImagePath')} placeholder={t('websiteAdmin.gallery.placeholders.coverPath')} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="sortOrder">Sort Order</Label>
+                <Label htmlFor="sortOrder">{t('websiteAdmin.common.sortOrder')}</Label>
                 <Input id="sortOrder" type="number" {...form.register('sortOrder')} />
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t('websiteAdmin.common.status')}</Label>
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={form.watch('isActive') ?? true}
                     onCheckedChange={(checked) => form.setValue('isActive', checked)}
                   />
                   <span className="text-sm text-slate-600">
-                    {form.watch('isActive') ? 'Active' : 'Inactive'}
+                    {form.watch('isActive') ? t('websiteAdmin.statuses.active') : t('websiteAdmin.statuses.inactive')}
                   </span>
                 </div>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createCategory.isPending}>
-                Create
+                {t('common.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -360,27 +364,27 @@ export default function WebsiteGalleryPage() {
       <Dialog open={!!editCategory} onOpenChange={(open) => !open && setEditCategory(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Album</DialogTitle>
-            <DialogDescription>Update album details</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.gallery.editTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.gallery.editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Name *</Label>
+              <Label htmlFor="edit-name">{t('websiteAdmin.gallery.fields.name')} *</Label>
               <Input id="edit-name" {...form.register('name')} />
               {form.formState.errors.name && (
                 <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-slug">Slug</Label>
+              <Label htmlFor="edit-slug">{t('websiteAdmin.common.slug')}</Label>
               <Input id="edit-slug" {...form.register('slug')} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
+              <Label htmlFor="edit-description">{t('websiteAdmin.common.description')}</Label>
               <Textarea id="edit-description" {...form.register('description')} rows={3} />
             </div>
             <div className="space-y-2">
-              <Label>Cover Image</Label>
+              <Label>{t('websiteAdmin.gallery.fields.coverImage')}</Label>
               <div
                 className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer"
                 onClick={() => document.getElementById('album-cover-upload-edit')?.click()}
@@ -399,40 +403,40 @@ export default function WebsiteGalleryPage() {
                 />
                 <div className="flex flex-col items-center gap-2">
                   <Upload className="h-8 w-8 text-slate-400" />
-                  <p className="text-sm text-slate-600">Click to upload cover</p>
+                  <p className="text-sm text-slate-600">{t('websiteAdmin.gallery.coverUploadCta')}</p>
                 </div>
               </div>
               {previewUrl && (
                 <div className="rounded-md border overflow-hidden">
-                  <img src={previewUrl} alt="Cover preview" className="w-full h-40 object-cover" />
+                  <img src={previewUrl} alt={t('websiteAdmin.gallery.coverPreviewAlt')} className="w-full h-40 object-cover" />
                 </div>
               )}
               <Input id="edit-coverImagePath" {...form.register('coverImagePath')} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-sortOrder">Sort Order</Label>
+                <Label htmlFor="edit-sortOrder">{t('websiteAdmin.common.sortOrder')}</Label>
                 <Input id="edit-sortOrder" type="number" {...form.register('sortOrder')} />
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t('websiteAdmin.common.status')}</Label>
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={form.watch('isActive') ?? true}
                     onCheckedChange={(checked) => form.setValue('isActive', checked)}
                   />
                   <span className="text-sm text-slate-600">
-                    {form.watch('isActive') ? 'Active' : 'Inactive'}
+                    {form.watch('isActive') ? t('websiteAdmin.statuses.active') : t('websiteAdmin.statuses.inactive')}
                   </span>
                 </div>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditCategory(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateCategory.isPending}>
-                Update
+                {t('common.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -443,15 +447,15 @@ export default function WebsiteGalleryPage() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Album</AlertDialogTitle>
+            <AlertDialogTitle>{t('websiteAdmin.gallery.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove the album. Media items inside will be left uncategorized.
+              {t('websiteAdmin.gallery.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -459,4 +463,3 @@ export default function WebsiteGalleryPage() {
     </div>
   );
 }
-

@@ -144,11 +144,11 @@ export default function NavigationManagementPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title="Navigation"
-        description="Manage header and footer menus"
+        title={t('websiteAdmin.navigation.title')}
+        description={t('websiteAdmin.navigation.description')}
         icon={<ListChecks className="h-5 w-5" />}
         primaryAction={{
-          label: 'New Menu Item',
+          label: t('websiteAdmin.navigation.new'),
           onClick: () => {
             form.reset();
             setIsCreateOpen(true);
@@ -157,13 +157,13 @@ export default function NavigationManagementPage() {
         }}
       />
 
-      <FilterPanel title="Filters">
+      <FilterPanel title={t('websiteAdmin.common.filters')}>
         <div className="space-y-2">
-          <Label>Search</Label>
+          <Label>{t('websiteAdmin.common.search')}</Label>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search menu items..."
+              placeholder={t('websiteAdmin.navigation.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
@@ -178,19 +178,19 @@ export default function NavigationManagementPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12"></TableHead>
-                <TableHead>Label</TableHead>
-                <TableHead>URL</TableHead>
-                <TableHead>Parent</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead>Visible</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('websiteAdmin.navigation.fields.label')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.url')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.parent')}</TableHead>
+                <TableHead>{t('websiteAdmin.navigation.fields.order')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.visible')}</TableHead>
+                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredMenus.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    No menu items found
+                    {t('websiteAdmin.navigation.noResults')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -209,9 +209,9 @@ export default function NavigationManagementPage() {
                       <TableCell>{menu.sortOrder ?? 0}</TableCell>
                       <TableCell>
                         {menu.isVisible ? (
-                          <span className="text-green-600">Yes</span>
+                          <span className="text-green-600">{t('websiteAdmin.common.yes')}</span>
                         ) : (
-                          <span className="text-muted-foreground">No</span>
+                          <span className="text-muted-foreground">{t('websiteAdmin.common.no')}</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
@@ -245,12 +245,12 @@ export default function NavigationManagementPage() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Menu Item</DialogTitle>
-            <DialogDescription>Add a new menu item</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.navigation.createTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.navigation.createDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
             <div className="space-y-2">
-              <Label>Link to Page (Optional)</Label>
+              <Label>{t('websiteAdmin.navigation.fields.linkToPage')}</Label>
               <Select onValueChange={(pageId) => {
                 const page = pages.find(p => p.id === pageId);
                 if (page) {
@@ -261,7 +261,7 @@ export default function NavigationManagementPage() {
                 }
               }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a page..." />
+                  <SelectValue placeholder={t('websiteAdmin.navigation.placeholders.selectPage')} />
                 </SelectTrigger>
                 <SelectContent>
                   {pages.map((page) => (
@@ -273,30 +273,30 @@ export default function NavigationManagementPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="label">Label *</Label>
-              <Input id="label" {...form.register('label')} placeholder="Home" />
+              <Label htmlFor="label">{t('websiteAdmin.navigation.fields.label')} *</Label>
+              <Input id="label" {...form.register('label')} placeholder={t('websiteAdmin.navigation.placeholders.label')} />
               {form.formState.errors.label && (
                 <p className="text-sm text-destructive">{form.formState.errors.label.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="url">URL *</Label>
-              <Input id="url" {...form.register('url')} placeholder="/home" />
+              <Label htmlFor="url">{t('websiteAdmin.common.url')} *</Label>
+              <Input id="url" {...form.register('url')} placeholder={t('websiteAdmin.navigation.placeholders.url')} />
               {form.formState.errors.url && (
                 <p className="text-sm text-destructive">{form.formState.errors.url.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="parentId">Parent Menu</Label>
+              <Label htmlFor="parentId">{t('websiteAdmin.navigation.fields.parentMenu')}</Label>
               <Select
                 value={form.watch('parentId') || 'none'}
                 onValueChange={(value) => form.setValue('parentId', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="None (Top Level)" />
+                  <SelectValue placeholder={t('websiteAdmin.navigation.placeholders.parentNone')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None (Top Level)</SelectItem>
+                  <SelectItem value="none">{t('websiteAdmin.navigation.placeholders.parentNone')}</SelectItem>
                   {menus.filter(m => !m.parentId).map((menu) => (
                     <SelectItem key={menu.id} value={menu.id}>
                       {menu.label}
@@ -306,7 +306,7 @@ export default function NavigationManagementPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sortOrder">Sort Order</Label>
+              <Label htmlFor="sortOrder">{t('websiteAdmin.navigation.fields.sortOrder')}</Label>
               <Input
                 id="sortOrder"
                 type="number"
@@ -320,14 +320,14 @@ export default function NavigationManagementPage() {
                 checked={form.watch('isVisible')}
                 onCheckedChange={(checked) => form.setValue('isVisible', checked)}
               />
-              <Label htmlFor="isVisible">Visible</Label>
+              <Label htmlFor="isVisible">{t('websiteAdmin.common.visible')}</Label>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createMenu.isPending}>
-                Create
+                {t('common.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -338,12 +338,12 @@ export default function NavigationManagementPage() {
       <Dialog open={!!editMenu} onOpenChange={(open) => !open && setEditMenu(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Menu Item</DialogTitle>
-            <DialogDescription>Update menu item details</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.navigation.editTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.navigation.editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
             <div className="space-y-2">
-              <Label>Link to Page (Optional)</Label>
+              <Label>{t('websiteAdmin.navigation.fields.linkToPage')}</Label>
               <Select onValueChange={(pageId) => {
                 const page = pages.find(p => p.id === pageId);
                 if (page) {
@@ -354,7 +354,7 @@ export default function NavigationManagementPage() {
                 }
               }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a page..." />
+                  <SelectValue placeholder={t('websiteAdmin.navigation.placeholders.selectPage')} />
                 </SelectTrigger>
                 <SelectContent>
                   {pages.map((page) => (
@@ -366,30 +366,30 @@ export default function NavigationManagementPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-label">Label *</Label>
+              <Label htmlFor="edit-label">{t('websiteAdmin.navigation.fields.label')} *</Label>
               <Input id="edit-label" {...form.register('label')} />
               {form.formState.errors.label && (
                 <p className="text-sm text-destructive">{form.formState.errors.label.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-url">URL *</Label>
+              <Label htmlFor="edit-url">{t('websiteAdmin.common.url')} *</Label>
               <Input id="edit-url" {...form.register('url')} />
               {form.formState.errors.url && (
                 <p className="text-sm text-destructive">{form.formState.errors.url.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-parentId">Parent Menu</Label>
+              <Label htmlFor="edit-parentId">{t('websiteAdmin.navigation.fields.parentMenu')}</Label>
               <Select
                 value={form.watch('parentId') || 'none'}
                 onValueChange={(value) => form.setValue('parentId', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="None (Top Level)" />
+                  <SelectValue placeholder={t('websiteAdmin.navigation.placeholders.parentNone')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None (Top Level)</SelectItem>
+                  <SelectItem value="none">{t('websiteAdmin.navigation.placeholders.parentNone')}</SelectItem>
                   {menus.filter(m => !m.parentId && m.id !== editMenu?.id).map((menu) => (
                     <SelectItem key={menu.id} value={menu.id}>
                       {menu.label}
@@ -399,7 +399,7 @@ export default function NavigationManagementPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-sortOrder">Sort Order</Label>
+              <Label htmlFor="edit-sortOrder">{t('websiteAdmin.navigation.fields.sortOrder')}</Label>
               <Input
                 id="edit-sortOrder"
                 type="number"
@@ -412,14 +412,14 @@ export default function NavigationManagementPage() {
                 checked={form.watch('isVisible')}
                 onCheckedChange={(checked) => form.setValue('isVisible', checked)}
               />
-              <Label htmlFor="edit-isVisible">Visible</Label>
+              <Label htmlFor="edit-isVisible">{t('websiteAdmin.common.visible')}</Label>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditMenu(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateMenu.isPending}>
-                Update
+                {t('common.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -430,15 +430,15 @@ export default function NavigationManagementPage() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Menu Item</AlertDialogTitle>
+            <AlertDialogTitle>{t('websiteAdmin.navigation.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this menu item? This action cannot be undone.
+              {t('websiteAdmin.navigation.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteMenu.isPending}>
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

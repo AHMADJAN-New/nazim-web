@@ -299,19 +299,19 @@ export default function FatwasManagementPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title="Questions & Fatwas"
-        description="Manage fatwas, categories, and questions"
+        title={t('websiteAdmin.fatwas.title')}
+        description={t('websiteAdmin.fatwas.description')}
         icon={<FileQuestion className="h-5 w-5" />}
         primaryAction={
           activeTab === 'fatwas' ? {
-            label: 'New Fatwa',
+            label: t('websiteAdmin.fatwas.newFatwa'),
             onClick: () => {
               fatwaForm.reset();
               setIsCreateFatwaOpen(true);
             },
             icon: <Plus className="h-4 w-4" />,
           } : activeTab === 'categories' ? {
-            label: 'New Category',
+            label: t('websiteAdmin.fatwas.newCategory'),
             onClick: () => {
               categoryForm.reset();
               setIsCreateCategoryOpen(true);
@@ -325,27 +325,27 @@ export default function FatwasManagementPage() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="fatwas" className="flex items-center gap-2">
             <FileQuestion className="h-4 w-4" />
-            <span className="hidden sm:inline">Fatwas</span>
+            <span className="hidden sm:inline">{t('websiteAdmin.fatwas.tabs.fatwas')}</span>
           </TabsTrigger>
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Categories</span>
+            <span className="hidden sm:inline">{t('websiteAdmin.fatwas.tabs.categories')}</span>
           </TabsTrigger>
           <TabsTrigger value="questions" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
-            <span className="hidden sm:inline">Questions</span>
+            <span className="hidden sm:inline">{t('websiteAdmin.fatwas.tabs.questions')}</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="fatwas" className="space-y-4">
-          <FilterPanel title="Filters">
+          <FilterPanel title={t('websiteAdmin.common.filters')}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Search</Label>
+                <Label>{t('websiteAdmin.common.search')}</Label>
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search fatwas..."
+                    placeholder={t('websiteAdmin.fatwas.searchFatwas')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-8"
@@ -353,13 +353,13 @@ export default function FatwasManagementPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Category</Label>
+                <Label>{t('websiteAdmin.common.category')}</Label>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
@@ -369,16 +369,16 @@ export default function FatwasManagementPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t('websiteAdmin.common.status')}</Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                    <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                    <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
+                    <SelectItem value="archived">{t('websiteAdmin.statuses.archived')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -390,19 +390,19 @@ export default function FatwasManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Featured</TableHead>
-                    <TableHead>Published</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('websiteAdmin.fatwas.fields.title')}</TableHead>
+                    <TableHead>{t('websiteAdmin.common.category')}</TableHead>
+                    <TableHead>{t('websiteAdmin.common.status')}</TableHead>
+                    <TableHead>{t('websiteAdmin.fatwas.fields.featured')}</TableHead>
+                    <TableHead>{t('websiteAdmin.common.publishedAt')}</TableHead>
+                    <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredFatwas.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No fatwas found
+                        {t('websiteAdmin.fatwas.noFatwas')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -419,9 +419,9 @@ export default function FatwasManagementPage() {
                           </TableCell>
                           <TableCell>
                             {fatwa.isFeatured ? (
-                              <span className="text-yellow-600">Yes</span>
+                              <span className="text-yellow-600">{t('websiteAdmin.common.yes')}</span>
                             ) : (
-                              <span className="text-muted-foreground">No</span>
+                              <span className="text-muted-foreground">{t('websiteAdmin.common.no')}</span>
                             )}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
@@ -464,18 +464,18 @@ export default function FatwasManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Active</TableHead>
-                    <TableHead>Order</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('websiteAdmin.fatwas.fields.name')}</TableHead>
+                    <TableHead>{t('websiteAdmin.common.slug')}</TableHead>
+                    <TableHead>{t('websiteAdmin.fatwas.fields.active')}</TableHead>
+                    <TableHead>{t('websiteAdmin.fatwas.fields.sortOrder')}</TableHead>
+                    <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {categories.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        No categories found
+                        {t('websiteAdmin.fatwas.noCategories')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -485,9 +485,9 @@ export default function FatwasManagementPage() {
                         <TableCell className="text-muted-foreground">/{category.slug}</TableCell>
                         <TableCell>
                           {category.isActive ? (
-                            <span className="text-green-600">Yes</span>
+                            <span className="text-green-600">{t('websiteAdmin.common.yes')}</span>
                           ) : (
-                            <span className="text-muted-foreground">No</span>
+                            <span className="text-muted-foreground">{t('websiteAdmin.common.no')}</span>
                           )}
                         </TableCell>
                         <TableCell>{category.sortOrder ?? 0}</TableCell>
@@ -522,14 +522,14 @@ export default function FatwasManagementPage() {
         </TabsContent>
 
         <TabsContent value="questions" className="space-y-4">
-          <FilterPanel title="Filters">
+          <FilterPanel title={t('websiteAdmin.common.filters')}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Search</Label>
+                <Label>{t('websiteAdmin.common.search')}</Label>
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search questions..."
+                    placeholder={t('websiteAdmin.fatwas.searchQuestions')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-8"
@@ -537,13 +537,13 @@ export default function FatwasManagementPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Category</Label>
+                <Label>{t('websiteAdmin.common.category')}</Label>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
@@ -553,17 +553,17 @@ export default function FatwasManagementPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t('websiteAdmin.common.status')}</Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="assigned">Assigned</SelectItem>
-                    <SelectItem value="answered">Answered</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                    <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
+                    <SelectItem value="assigned">{t('websiteAdmin.statuses.assigned')}</SelectItem>
+                    <SelectItem value="answered">{t('websiteAdmin.statuses.answered')}</SelectItem>
+                    <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -575,19 +575,19 @@ export default function FatwasManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Question</TableHead>
-                    <TableHead>Submitted By</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('websiteAdmin.fatwas.fields.question')}</TableHead>
+                    <TableHead>{t('websiteAdmin.fatwas.moderation.submittedBy')}</TableHead>
+                    <TableHead>{t('websiteAdmin.common.category')}</TableHead>
+                    <TableHead>{t('websiteAdmin.common.status')}</TableHead>
+                    <TableHead>{t('websiteAdmin.fatwas.fields.assignedTo')}</TableHead>
+                    <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredQuestions.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No questions found
+                        {t('websiteAdmin.fatwas.noQuestions')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -599,7 +599,7 @@ export default function FatwasManagementPage() {
                             {question.questionText}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {question.isAnonymous ? 'Anonymous' : (question.name || '-')}
+                            {question.isAnonymous ? t('websiteAdmin.fatwas.anonymous') : (question.name || '-')}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {category ? category.name : '-'}
@@ -634,37 +634,37 @@ export default function FatwasManagementPage() {
       <Dialog open={isCreateFatwaOpen} onOpenChange={setIsCreateFatwaOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Fatwa</DialogTitle>
-            <DialogDescription>Create a new fatwa</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.fatwas.newFatwa')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.fatwas.description')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={fatwaForm.handleSubmit(handleCreateFatwa)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug *</Label>
-                <Input id="slug" {...fatwaForm.register('slug')} placeholder="fatwa-slug" />
+                <Label htmlFor="slug">{t('websiteAdmin.fatwas.fields.slug')} *</Label>
+                <Input id="slug" {...fatwaForm.register('slug')} placeholder={t('websiteAdmin.fatwas.placeholders.slug')} />
                 {fatwaForm.formState.errors.slug && (
                   <p className="text-sm text-destructive">{fatwaForm.formState.errors.slug.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input id="title" {...fatwaForm.register('title')} placeholder="Fatwa Title" />
+                <Label htmlFor="title">{t('websiteAdmin.fatwas.fields.title')} *</Label>
+                <Input id="title" {...fatwaForm.register('title')} placeholder={t('websiteAdmin.fatwas.placeholders.title')} />
                 {fatwaForm.formState.errors.title && (
                   <p className="text-sm text-destructive">{fatwaForm.formState.errors.title.message}</p>
                 )}
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="categoryId">Category</Label>
+              <Label htmlFor="categoryId">{t('websiteAdmin.fatwas.fields.category')}</Label>
               <Select
                 value={fatwaForm.watch('categoryId') ?? CATEGORY_NONE_VALUE}
                 onValueChange={(value) => fatwaForm.setValue('categoryId', value === CATEGORY_NONE_VALUE ? null : value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t('websiteAdmin.fatwas.placeholders.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={CATEGORY_NONE_VALUE}>None</SelectItem>
+                  <SelectItem value={CATEGORY_NONE_VALUE}>{t('websiteAdmin.common.none')}</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
@@ -674,26 +674,26 @@ export default function FatwasManagementPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="questionText">Question</Label>
+              <Label htmlFor="questionText">{t('websiteAdmin.fatwas.fields.question')}</Label>
               <Textarea
                 id="questionText"
                 {...fatwaForm.register('questionText')}
-                placeholder="The question text..."
+                placeholder={t('websiteAdmin.fatwas.placeholders.question')}
                 rows={3}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="answerText">Answer</Label>
+              <Label htmlFor="answerText">{t('websiteAdmin.fatwas.fields.answer')}</Label>
               <Textarea
                 id="answerText"
                 {...fatwaForm.register('answerText')}
-                placeholder="The fatwa answer..."
+                placeholder={t('websiteAdmin.fatwas.placeholders.answer')}
                 rows={6}
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('websiteAdmin.common.status')}</Label>
                 <Select
                   value={fatwaForm.watch('status')}
                   onValueChange={(value) => fatwaForm.setValue('status', value as 'draft' | 'published' | 'archived')}
@@ -702,14 +702,14 @@ export default function FatwasManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                    <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
+                    <SelectItem value="archived">{t('websiteAdmin.statuses.archived')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="publishedAt">Published At</Label>
+                <Label htmlFor="publishedAt">{t('websiteAdmin.fatwas.fields.publishedAt')}</Label>
                 <Input
                   id="publishedAt"
                   type="datetime-local"
@@ -723,14 +723,14 @@ export default function FatwasManagementPage() {
                 checked={fatwaForm.watch('isFeatured')}
                 onCheckedChange={(checked) => fatwaForm.setValue('isFeatured', checked)}
               />
-              <Label htmlFor="isFeatured">Featured</Label>
+              <Label htmlFor="isFeatured">{t('websiteAdmin.fatwas.fields.featured')}</Label>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateFatwaOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createFatwa.isPending}>
-                Create
+                {t('common.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -741,20 +741,20 @@ export default function FatwasManagementPage() {
       <Dialog open={!!editFatwa} onOpenChange={(open) => !open && setEditFatwa(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Fatwa</DialogTitle>
-            <DialogDescription>Update fatwa details</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.fatwas.editTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.fatwas.editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={fatwaForm.handleSubmit(handleUpdateFatwa)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-slug">Slug *</Label>
+                <Label htmlFor="edit-slug">{t('websiteAdmin.fatwas.fields.slug')} *</Label>
                 <Input id="edit-slug" {...fatwaForm.register('slug')} />
                 {fatwaForm.formState.errors.slug && (
                   <p className="text-sm text-destructive">{fatwaForm.formState.errors.slug.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-title">Title *</Label>
+                <Label htmlFor="edit-title">{t('websiteAdmin.fatwas.fields.title')} *</Label>
                 <Input id="edit-title" {...fatwaForm.register('title')} />
                 {fatwaForm.formState.errors.title && (
                   <p className="text-sm text-destructive">{fatwaForm.formState.errors.title.message}</p>
@@ -762,16 +762,16 @@ export default function FatwasManagementPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-categoryId">Category</Label>
+              <Label htmlFor="edit-categoryId">{t('websiteAdmin.fatwas.fields.category')}</Label>
               <Select
                 value={fatwaForm.watch('categoryId') ?? CATEGORY_NONE_VALUE}
                 onValueChange={(value) => fatwaForm.setValue('categoryId', value === CATEGORY_NONE_VALUE ? null : value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t('websiteAdmin.fatwas.placeholders.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={CATEGORY_NONE_VALUE}>None</SelectItem>
+                  <SelectItem value={CATEGORY_NONE_VALUE}>{t('websiteAdmin.common.none')}</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
@@ -781,7 +781,7 @@ export default function FatwasManagementPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-questionText">Question</Label>
+              <Label htmlFor="edit-questionText">{t('websiteAdmin.fatwas.fields.question')}</Label>
               <Textarea
                 id="edit-questionText"
                 {...fatwaForm.register('questionText')}
@@ -789,7 +789,7 @@ export default function FatwasManagementPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-answerText">Answer</Label>
+              <Label htmlFor="edit-answerText">{t('websiteAdmin.fatwas.fields.answer')}</Label>
               <Textarea
                 id="edit-answerText"
                 {...fatwaForm.register('answerText')}
@@ -798,7 +798,7 @@ export default function FatwasManagementPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-status">Status</Label>
+                <Label htmlFor="edit-status">{t('websiteAdmin.common.status')}</Label>
                 <Select
                   value={fatwaForm.watch('status')}
                   onValueChange={(value) => fatwaForm.setValue('status', value as 'draft' | 'published' | 'archived')}
@@ -807,14 +807,14 @@ export default function FatwasManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                    <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
+                    <SelectItem value="archived">{t('websiteAdmin.statuses.archived')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-publishedAt">Published At</Label>
+                <Label htmlFor="edit-publishedAt">{t('websiteAdmin.fatwas.fields.publishedAt')}</Label>
                 <Input
                   id="edit-publishedAt"
                   type="datetime-local"
@@ -828,14 +828,14 @@ export default function FatwasManagementPage() {
                 checked={fatwaForm.watch('isFeatured')}
                 onCheckedChange={(checked) => fatwaForm.setValue('isFeatured', checked)}
               />
-              <Label htmlFor="edit-isFeatured">Featured</Label>
+              <Label htmlFor="edit-isFeatured">{t('websiteAdmin.fatwas.fields.featured')}</Label>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditFatwa(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateFatwa.isPending}>
-                Update
+                {t('common.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -846,39 +846,39 @@ export default function FatwasManagementPage() {
       <Dialog open={isCreateCategoryOpen} onOpenChange={setIsCreateCategoryOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Category</DialogTitle>
-            <DialogDescription>Create a new fatwa category</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.fatwas.newCategory')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.fatwas.description')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={categoryForm.handleSubmit(handleCreateCategory)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="cat-name">Name *</Label>
-                <Input id="cat-name" {...categoryForm.register('name')} placeholder="Category Name" />
+                <Label htmlFor="cat-name">{t('websiteAdmin.fatwas.fields.name')} *</Label>
+                <Input id="cat-name" {...categoryForm.register('name')} placeholder={t('websiteAdmin.fatwas.placeholders.categoryName')} />
                 {categoryForm.formState.errors.name && (
                   <p className="text-sm text-destructive">{categoryForm.formState.errors.name.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cat-slug">Slug *</Label>
-                <Input id="cat-slug" {...categoryForm.register('slug')} placeholder="category-slug" />
+                <Label htmlFor="cat-slug">{t('websiteAdmin.common.slug')} *</Label>
+                <Input id="cat-slug" {...categoryForm.register('slug')} placeholder={t('websiteAdmin.fatwas.placeholders.categorySlug')} />
                 {categoryForm.formState.errors.slug && (
                   <p className="text-sm text-destructive">{categoryForm.formState.errors.slug.message}</p>
                 )}
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cat-description">Description</Label>
+              <Label htmlFor="cat-description">{t('websiteAdmin.fatwas.fields.description')}</Label>
               <Textarea
                 id="cat-description"
                 {...categoryForm.register('description')}
-                placeholder="Category description..."
+                placeholder={t('websiteAdmin.fatwas.placeholders.categoryDescription')}
                 rows={3}
                 maxLength={500}
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="cat-sortOrder">Sort Order</Label>
+                <Label htmlFor="cat-sortOrder">{t('websiteAdmin.fatwas.fields.sortOrder')}</Label>
                 <Input
                   id="cat-sortOrder"
                   type="number"
@@ -892,15 +892,15 @@ export default function FatwasManagementPage() {
                   checked={categoryForm.watch('isActive')}
                   onCheckedChange={(checked) => categoryForm.setValue('isActive', checked)}
                 />
-                <Label htmlFor="cat-isActive">Active</Label>
+                <Label htmlFor="cat-isActive">{t('websiteAdmin.fatwas.fields.active')}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateCategoryOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createCategory.isPending}>
-                Create
+                {t('common.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -911,20 +911,20 @@ export default function FatwasManagementPage() {
       <Dialog open={!!editCategory} onOpenChange={(open) => !open && setEditCategory(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
-            <DialogDescription>Update category details</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.fatwas.editCategoryTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.fatwas.editCategoryDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={categoryForm.handleSubmit(handleUpdateCategory)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-cat-name">Name *</Label>
+                <Label htmlFor="edit-cat-name">{t('websiteAdmin.fatwas.fields.name')} *</Label>
                 <Input id="edit-cat-name" {...categoryForm.register('name')} />
                 {categoryForm.formState.errors.name && (
                   <p className="text-sm text-destructive">{categoryForm.formState.errors.name.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-cat-slug">Slug *</Label>
+                <Label htmlFor="edit-cat-slug">{t('websiteAdmin.common.slug')} *</Label>
                 <Input id="edit-cat-slug" {...categoryForm.register('slug')} />
                 {categoryForm.formState.errors.slug && (
                   <p className="text-sm text-destructive">{categoryForm.formState.errors.slug.message}</p>
@@ -932,7 +932,7 @@ export default function FatwasManagementPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-cat-description">Description</Label>
+              <Label htmlFor="edit-cat-description">{t('websiteAdmin.fatwas.fields.description')}</Label>
               <Textarea
                 id="edit-cat-description"
                 {...categoryForm.register('description')}
@@ -942,7 +942,7 @@ export default function FatwasManagementPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-cat-sortOrder">Sort Order</Label>
+                <Label htmlFor="edit-cat-sortOrder">{t('websiteAdmin.fatwas.fields.sortOrder')}</Label>
                 <Input
                   id="edit-cat-sortOrder"
                   type="number"
@@ -955,15 +955,15 @@ export default function FatwasManagementPage() {
                   checked={categoryForm.watch('isActive')}
                   onCheckedChange={(checked) => categoryForm.setValue('isActive', checked)}
                 />
-                <Label htmlFor="edit-cat-isActive">Active</Label>
+                <Label htmlFor="edit-cat-isActive">{t('websiteAdmin.fatwas.fields.active')}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditCategory(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateCategory.isPending}>
-                Update
+                {t('common.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -974,70 +974,70 @@ export default function FatwasManagementPage() {
       <Dialog open={!!editQuestion} onOpenChange={(open) => !open && setEditQuestion(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Moderate Question</DialogTitle>
-            <DialogDescription>Update question status and assignment</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.fatwas.moderation.title')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.fatwas.moderation.description')}</DialogDescription>
           </DialogHeader>
           {editQuestion && (
             <div className="space-y-4">
               <div className="rounded-md border p-4 bg-muted/50">
-                <p className="text-sm font-medium mb-2">Question:</p>
+                <p className="text-sm font-medium mb-2">{t('websiteAdmin.fatwas.moderation.questionLabel')}:</p>
                 <p className="text-sm">{editQuestion.questionText}</p>
                 {editQuestion.name && !editQuestion.isAnonymous && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Submitted by: {editQuestion.name} {editQuestion.email && `(${editQuestion.email})`}
+                    {t('websiteAdmin.fatwas.moderation.submittedBy')}: {editQuestion.name} {editQuestion.email && `(${editQuestion.email})`}
                   </p>
                 )}
               </div>
               <form onSubmit={questionForm.handleSubmit(handleUpdateQuestion)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="q-status">Status</Label>
+                  <Label htmlFor="q-status">{t('websiteAdmin.common.status')}</Label>
                   <Select
                     value={questionForm.watch('status') || ''}
                     onValueChange={(value) => questionForm.setValue('status', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder={t('websiteAdmin.common.status')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="assigned">Assigned</SelectItem>
-                      <SelectItem value="answered">Answered</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
+                      <SelectItem value="assigned">{t('websiteAdmin.statuses.assigned')}</SelectItem>
+                      <SelectItem value="answered">{t('websiteAdmin.statuses.answered')}</SelectItem>
+                      <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="q-assignedTo">Assigned To</Label>
+                  <Label htmlFor="q-assignedTo">{t('websiteAdmin.fatwas.fields.assignedTo')}</Label>
                   <Input
                     id="q-assignedTo"
                     {...questionForm.register('assignedTo')}
-                    placeholder="User ID or email"
+                    placeholder={t('websiteAdmin.fatwas.placeholders.assignedTo')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="q-internalNotes">Internal Notes</Label>
+                  <Label htmlFor="q-internalNotes">{t('websiteAdmin.fatwas.fields.internalNotes')}</Label>
                   <Textarea
                     id="q-internalNotes"
                     {...questionForm.register('internalNotes')}
-                    placeholder="Internal notes for moderation..."
+                    placeholder={t('websiteAdmin.fatwas.placeholders.internalNotes')}
                     rows={3}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="q-answerDraft">Answer Draft</Label>
+                  <Label htmlFor="q-answerDraft">{t('websiteAdmin.fatwas.fields.answerDraft')}</Label>
                   <Textarea
                     id="q-answerDraft"
                     {...questionForm.register('answerDraft')}
-                    placeholder="Draft answer..."
+                    placeholder={t('websiteAdmin.fatwas.placeholders.answerDraft')}
                     rows={6}
                   />
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setEditQuestion(null)}>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button type="submit" disabled={updateQuestion.isPending}>
-                    Update
+                    {t('common.update')}
                   </Button>
                 </DialogFooter>
               </form>
@@ -1050,18 +1050,24 @@ export default function FatwasManagementPage() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && (setDeleteId(null), setDeleteType(null))}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {deleteType === 'fatwa' ? 'Fatwa' : 'Category'}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteType === 'fatwa'
+                ? t('websiteAdmin.fatwas.delete.titleFatwa')
+                : t('websiteAdmin.fatwas.delete.titleCategory')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this {deleteType}? This action cannot be undone.
+              {deleteType === 'fatwa'
+                ? t('websiteAdmin.fatwas.delete.descriptionFatwa')
+                : t('websiteAdmin.fatwas.delete.descriptionCategory')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleteType === 'fatwa' ? deleteFatwa.isPending : deleteCategory.isPending}
             >
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1069,4 +1075,3 @@ export default function FatwasManagementPage() {
     </div>
   );
 }
-

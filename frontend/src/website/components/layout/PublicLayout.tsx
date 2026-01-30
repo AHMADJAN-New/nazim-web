@@ -49,7 +49,7 @@ export function PublicLayout() {
     const fontStyle = { fontFamily: `"${fontFamily}", "Noto Sans Arabic", "Inter", sans-serif` };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col" style={fontStyle} data-public-website="true">
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex flex-col" style={fontStyle} data-public-website="true">
             <PublicHeader schoolName={school.name || school.school_name} logo={school.logo} />
             <main className="flex-1" style={fontStyle}>
                 <Outlet context={{ siteData }} />

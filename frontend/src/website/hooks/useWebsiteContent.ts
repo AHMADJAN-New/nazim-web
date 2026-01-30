@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient as api, websitePublicBooksApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
+import { useProfile } from '@/hooks/useProfiles';
 
 // Types
 export interface WebsitePublicBook {
@@ -251,6 +252,48 @@ export const useDeleteWebsiteScholar = () => {
             queryClient.invalidateQueries({ queryKey: ['website-scholars'] });
         },
         onError: () => showToast.error('Failed to delete scholar'),
+    });
+};
+
+export const useUploadWebsiteScholarPhoto = () => {
+    const queryClient = useQueryClient();
+    const { data: profile } = useProfile();
+    return useMutation({
+        mutationFn: async ({ id, file }: { id: string; file: File }) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            const params: Record<string, string> = {};
+            if (profile?.default_school_id) {
+                params.current_school_id = profile.default_school_id;
+            }
+            const result = await api.post<{ photo_path: string; photo_url: string; scholar?: WebsiteScholar }>(
+                `/website/scholars/${id}/photo`,
+                formData,
+                { headers: {} as Record<string, string>, params }
+            );
+            return result;
+        },
+        onSuccess: (data, variables) => {
+            showToast.success('Scholar photo updated');
+            // Update cache so UI shows photo immediately; do NOT invalidate website-scholars
+            // (refetch would overwrite cache and can make the photo disappear)
+            const updatedId = data?.scholar?.id ?? variables.id;
+            const updatedPhotoPath = data?.scholar?.photo_path ?? data?.photo_path ?? null;
+            const updatedPhotoUrl = (data as { photo_url?: string | null })?.photo_url ?? data?.scholar?.photo_url ?? null;
+
+            if (updatedId && updatedPhotoPath) {
+                queryClient.setQueryData<WebsiteScholar[]>(['website-scholars'], (prev) => {
+                    if (!prev) return prev;
+                    return prev.map((s) =>
+                        s.id === updatedId
+                            ? { ...s, photo_path: updatedPhotoPath, photo_url: updatedPhotoUrl ?? s.photo_url }
+                            : s
+                    );
+                });
+            }
+            queryClient.invalidateQueries({ queryKey: ['public-scholars'] });
+        },
+        onError: () => showToast.error('Failed to upload scholar photo'),
     });
 };
 

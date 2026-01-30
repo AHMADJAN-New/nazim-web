@@ -8,6 +8,7 @@ import { ArrowLeft, Calendar, FileText } from 'lucide-react';
 import { renderRichText } from '@/website/lib/renderRichText';
 import { formatDate } from '@/lib/utils';
 import { useLanguage } from '@/hooks/useLanguage';
+import { PublicHeroBackground } from '@/website/components/PublicHeroBackground';
 
 interface WebsitePost {
   id: string;
@@ -33,7 +34,7 @@ interface WebsiteAnnouncement {
 export default function PublicPostDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const isAnnouncement = location.pathname.includes('/announcements/');
 
   const { data, isLoading } = useQuery({
@@ -69,12 +70,12 @@ export default function PublicPostDetailPage() {
               <FileText className="h-8 w-8 text-slate-500" />
             </div>
             <h1 className="mb-3 text-2xl font-semibold text-slate-900 md:text-3xl">
-              {isAnnouncement ? 'Announcement Not Found' : 'Article Not Found'}
+              {isAnnouncement ? t('websitePublic.announcementNotFound') : t('websitePublic.articleNotFound')}
             </h1>
             <p className="mb-8 text-slate-600">
               {isAnnouncement
-                ? 'We could not find the announcement you are looking for.'
-                : 'We could not find the article you are looking for.'}
+                ? t('websitePublic.announcementNotFoundDescription')
+                : t('websitePublic.articleNotFoundDescription')}
             </p>
             <Button variant="outline" size="lg" asChild>
               <Link
@@ -82,7 +83,7 @@ export default function PublicPostDetailPage() {
                 className="inline-flex items-center gap-2"
               >
                 <ArrowLeft className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
-                Back to {isAnnouncement ? 'Announcements' : 'Articles'}
+                {isAnnouncement ? t('websitePublic.backToAnnouncements') : t('websitePublic.backToArticles')}
               </Link>
             </Button>
           </div>
@@ -105,7 +106,7 @@ export default function PublicPostDetailPage() {
             className={`inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-emerald-700 ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <ArrowLeft className={`h-4 w-4 shrink-0 ${isRTL ? 'rotate-180' : ''}`} />
-            <span>{isAnnouncement ? 'All Announcements' : 'All Articles'}</span>
+            <span>{isAnnouncement ? t('websitePublic.allAnnouncements') : t('websitePublic.allArticles')}</span>
           </Link>
         </div>
       </div>
@@ -124,14 +125,7 @@ export default function PublicPostDetailPage() {
             <div className="absolute inset-0 bg-slate-900/60" />
           </>
         )}
-        {!hasHeroImage && (
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-          />
-        )}
+        {!hasHeroImage && <PublicHeroBackground patternOpacity={0.12} />}
         <div className="container relative z-10 mx-auto max-w-4xl px-4 py-12 md:py-16">
           <h1
             className={`text-3xl font-bold tracking-tight text-white drop-shadow-sm md:text-4xl lg:text-5xl ${hasHeroImage ? 'max-w-3xl' : 'text-center'} ${isRTL ? 'text-right' : 'text-left'}`}

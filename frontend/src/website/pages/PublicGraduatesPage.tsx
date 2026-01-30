@@ -1,6 +1,6 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLanguage } from '@/hooks/useLanguage';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { WebsiteGraduate } from '@/website/hooks/useWebsiteContent';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,10 @@ import { GraduationCap, Award, Star, Search, Filter } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PublicHeroBackground } from '@/website/components/PublicHeroBackground';
 
 export default function PublicGraduatesPage() {
+    const { t } = useLanguage();
     const [selectedYear, setSelectedYear] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -35,15 +37,13 @@ export default function PublicGraduatesPage() {
     return (
         <div className="flex-1 bg-slate-50 overflow-x-hidden">
             {/* Hero Section */}
-            <section className="bg-emerald-900 text-white py-20 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                }}></div>
+            <section className="relative text-white py-20 overflow-hidden">
+                <PublicHeroBackground patternOpacity={0.12} />
                 <div className="container mx-auto px-4 relative z-10 text-center">
-                    <Badge variant="outline" className="mb-4 text-emerald-200 border-emerald-400">Our Pride & Legacy</Badge>
-                    <h1 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Alumni Showcase</h1>
+                    <Badge variant="outline" className="mb-4 text-emerald-200 border-emerald-400">{t('websitePublic.graduatesBadge')}</Badge>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">{t('websitePublic.graduatesTitle')}</h1>
                     <p className="text-lg md:text-xl text-emerald-100 max-w-2xl mx-auto leading-relaxed">
-                        Honoring the dedicated students who have completed their journey with us, now serving communities with knowledge and integrity.
+                        {t('websitePublic.graduatesDescription')}
                     </p>
                 </div>
             </section>
@@ -56,7 +56,7 @@ export default function PublicGraduatesPage() {
                             <div className="relative flex-1">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                                 <Input
-                                    placeholder="Search graduates by name..."
+                                    placeholder={t('websitePublic.searchGraduates')}
                                     className="pl-10 h-12 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -70,13 +70,13 @@ export default function PublicGraduatesPage() {
                                     <SelectTrigger className="h-12 bg-slate-50 border-slate-200">
                                         <div className="flex items-center gap-2">
                                             <Filter className="h-4 w-4 text-slate-500" />
-                                            <SelectValue placeholder="All Years" />
+                                            <SelectValue placeholder={t('websitePublic.allYears')} />
                                         </div>
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Graduating Years</SelectItem>
+                                        <SelectItem value="all">{t('websitePublic.allGraduatingYears')}</SelectItem>
                                         {years.map(year => (
-                                            <SelectItem key={year} value={year.toString()}>Class of {year}</SelectItem>
+                                            <SelectItem key={year} value={year.toString()}>{t('websitePublic.classOf')} {year}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -91,7 +91,7 @@ export default function PublicGraduatesPage() {
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <LoadingSpinner size="lg" />
-                        <p className="text-slate-500 font-medium">Loading our graduates...</p>
+                        <p className="text-slate-500 font-medium">{t('websitePublic.loadingGraduates')}</p>
                     </div>
                 ) : filteredGraduates.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

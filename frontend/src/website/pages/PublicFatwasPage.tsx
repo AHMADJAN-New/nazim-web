@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLanguage } from '@/hooks/useLanguage';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { PublicPageHeader } from '@/website/components/PublicPageHeader';
@@ -10,8 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { PublicHeroBackground } from '@/website/components/PublicHeroBackground';
 
 export default function PublicFatwasPage() {
+    const { t } = useLanguage();
     const { category: categoryParam, slug } = useParams();
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -144,14 +147,12 @@ export default function PublicFatwasPage() {
     return (
         <div className="flex-1 overflow-x-hidden">
             {/* Header */}
-            <section className="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                }}></div>
+            <section className="relative text-white py-16 md:py-24 overflow-hidden">
+                <PublicHeroBackground patternOpacity={0.12} />
                 <div className="container mx-auto px-4 relative z-10 text-center">
-                    <h1 className="text-3xl md:text-5xl font-bold mb-4">Fatwas & Islamic Rulings</h1>
+                    <h1 className="text-3xl md:text-5xl font-bold mb-4">{t('websitePublic.fatwasPageTitle')}</h1>
                     <p className="text-emerald-200 max-w-2xl mx-auto mb-8">
-                        Browse our collection of Islamic rulings or ask a question to our scholars.
+                        {t('websitePublic.fatwasPageDescription')}
                     </p>
 
                     {/* Search */}
@@ -160,7 +161,7 @@ export default function PublicFatwasPage() {
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search fatwas by question, answer, or topic..."
+                            placeholder={t('websitePublic.searchFatwasPlaceholder')}
                             className="pl-10 pr-10 h-12 bg-white/95 border-0 text-slate-900 placeholder:text-slate-500 rounded-lg shadow-lg focus:ring-2 focus:ring-emerald-300"
                         />
                         {searchQuery && (
@@ -170,7 +171,7 @@ export default function PublicFatwasPage() {
                                     setDebouncedSearchQuery('');
                                 }}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors z-10"
-                                aria-label="Clear search"
+                                aria-label={t('websitePublic.clearSearch')}
                             >
                                 <span className="text-xl font-bold leading-none">×</span>
                             </button>
@@ -192,7 +193,7 @@ export default function PublicFatwasPage() {
                     <div className="lg:col-span-1 space-y-6">
                         <Card className="border-0 shadow-sm bg-slate-50">
                             <CardHeader className="pb-3 border-b border-slate-100">
-                                <CardTitle className="text-lg text-slate-800">Topics</CardTitle>
+                                <CardTitle className="text-lg text-slate-800">{t('websitePublic.topics')}</CardTitle>
                             </CardHeader>
                             <CardContent className="pt-4">
                                 <div className="space-y-1">
@@ -203,7 +204,7 @@ export default function PublicFatwasPage() {
                                             !categorySlug ? "text-emerald-700" : "text-slate-700"
                                         )}
                                     >
-                                        All Fatwas
+                                        {t('websitePublic.allFatwas')}
                                     </Link>
                                     <div className="pt-2 border-t border-slate-100 mt-2">
                                         {renderCategories(categories)}
@@ -214,12 +215,12 @@ export default function PublicFatwasPage() {
 
                         <div className="bg-emerald-900 rounded-xl p-6 text-white text-center">
                             <MessageCircle className="h-10 w-10 mx-auto mb-4 text-emerald-300" />
-                            <h3 className="text-lg font-bold mb-2">Have a Question?</h3>
+                            <h3 className="text-lg font-bold mb-2">{t('websitePublic.haveAQuestion')}</h3>
                             <p className="text-emerald-200 text-sm mb-6">
-                                Submit your question to our scholars and receive an answer based on authentic Islamic sources.
+                                {t('websitePublic.submitQuestionText')}
                             </p>
                             <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium" asChild>
-                                <Link to="/public-site/fatwas/ask">Ask a Question</Link>
+                                <Link to="/public-site/fatwas/ask">{t('websitePublic.askAQuestion')}</Link>
                             </Button>
                         </div>
                     </div>
@@ -230,20 +231,20 @@ export default function PublicFatwasPage() {
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-900">
                                     {debouncedSearchQuery
-                                        ? `Search Results${categorySlug ? ` in ${allCategories.find((c: any) => c.slug === categorySlug)?.name || 'Category'}` : ''}`
+                                        ? `${t('websitePublic.searchResults')}${categorySlug ? ` ${t('websitePublic.inCategory')} ${allCategories.find((c: any) => c.slug === categorySlug)?.name || t('websitePublic.category')}` : ''}`
                                         : categorySlug
-                                            ? (allCategories.find((c: any) => c.slug === categorySlug)?.name || 'Filtered Results')
-                                            : 'Recent Fatwas'
+                                            ? (allCategories.find((c: any) => c.slug === categorySlug)?.name || t('websitePublic.filteredResults'))
+                                            : t('websitePublic.recentFatwas')
                                     }
                                 </h2>
                                 {debouncedSearchQuery && (
                                     <p className="text-sm text-slate-500 mt-1">
-                                        Searching for: <span className="font-medium">"{debouncedSearchQuery}"</span>
+                                        {t('websitePublic.searchingFor')} <span className="font-medium">"{debouncedSearchQuery}"</span>
                                     </p>
                                 )}
                             </div>
                             <Badge variant="outline" className="text-slate-500 flex-shrink-0">
-                                {filteredFatwas.length} {filteredFatwas.length === 1 ? 'result' : 'results'}
+                                {filteredFatwas.length} {filteredFatwas.length === 1 ? t('websitePublic.result') : t('websitePublic.results')}
                             </Badge>
                         </div>
 
@@ -262,7 +263,7 @@ export default function PublicFatwasPage() {
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-normal">
-                                                                {fatwa.category?.name || 'General'}
+                                                                {fatwa.category?.name || t('websitePublic.general')}
                                                             </Badge>
                                                             <span className="text-xs text-slate-400">
                                                                 {new Date(fatwa.published_at || fatwa.created_at).toLocaleDateString()}
@@ -284,13 +285,13 @@ export default function PublicFatwasPage() {
                         ) : (
                             <div className="bg-slate-50 border border-dashed rounded-xl p-12 text-center">
                                 <HelpCircle className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                                <h3 className="text-lg font-medium text-slate-900 mb-1">No fatwas found</h3>
+                                <h3 className="text-lg font-medium text-slate-900 mb-1">{t('websitePublic.noFatwasFound')}</h3>
                                 <p className="text-slate-500 mb-6">
                                     {debouncedSearchQuery
-                                        ? `No fatwas found matching "${debouncedSearchQuery}". Try adjusting your search terms or browse by category.`
+                                        ? t('websitePublic.noFatwasMatching', { query: debouncedSearchQuery })
                                         : (categorySlug
-                                            ? 'No fatwas found in this category.'
-                                            : 'There are no published fatwas yet.')
+                                            ? t('websitePublic.noFatwasInCategory')
+                                            : t('websitePublic.noPublishedFatwas'))
                                     }
                                 </p>
                                 {debouncedSearchQuery && (
@@ -298,13 +299,13 @@ export default function PublicFatwasPage() {
                                         setSearchQuery('');
                                         setDebouncedSearchQuery('');
                                     }}>
-                                        Clear Search
+                                        {t('websitePublic.clearSearch')}
                                     </Button>
                                 )}
                                 {categorySlug && !debouncedSearchQuery && (
                                     <Button variant="outline" asChild className="ml-2">
                                         <Link to="/public-site/fatwas">
-                                            View All Fatwas
+                                            {t('websitePublic.viewAllFatwas')}
                                         </Link>
                                     </Button>
                                 )}

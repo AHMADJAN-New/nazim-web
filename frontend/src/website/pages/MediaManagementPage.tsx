@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useLanguage } from '@/hooks/useLanguage';
 import {
   useWebsiteMedia,
   useWebsiteMediaCategories,
@@ -58,13 +59,12 @@ const mediaSchema = z.object({
 type MediaFormData = z.infer<typeof mediaSchema>;
 
 export default function MediaManagementPage() {
+  const { t } = useLanguage();
   const { data: media = [], isLoading } = useWebsiteMedia();
   const { data: categories = [] } = useWebsiteMediaCategories();
   const createMedia = useCreateWebsiteMedia();
   const updateMedia = useUpdateWebsiteMedia();
   const deleteMedia = useDeleteWebsiteMedia();
-  const formCategoryId = form.watch('categoryId');
-  const imageUpload = useWebsiteImageUpload(formCategoryId);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -87,6 +87,9 @@ export default function MediaManagementPage() {
       altText: null,
     },
   });
+
+  const formCategoryId = form.watch('categoryId');
+  const imageUpload = useWebsiteImageUpload(formCategoryId);
 
   const filteredMedia = useMemo(() => {
     return media.filter((item) => {
@@ -222,11 +225,11 @@ export default function MediaManagementPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title="Media"
-        description="Manage website media library"
+        title={t('websiteAdmin.media.title')}
+        description={t('websiteAdmin.media.description')}
         icon={<ImageIcon className="h-5 w-5" />}
         primaryAction={{
-          label: 'Upload Media',
+          label: t('websiteAdmin.media.new'),
           onClick: () => {
             form.reset();
             setUploadedMediaId(null);
@@ -237,14 +240,14 @@ export default function MediaManagementPage() {
         }}
       />
 
-      <FilterPanel title="Filters">
+      <FilterPanel title={t('websiteAdmin.common.filters')}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label>Search</Label>
+            <Label>{t('websiteAdmin.common.search')}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search media..."
+                placeholder={t('websiteAdmin.media.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8"
@@ -252,27 +255,27 @@ export default function MediaManagementPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Type</Label>
+            <Label>{t('websiteAdmin.common.type')}</Label>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="image">Image</SelectItem>
-                <SelectItem value="video">Video</SelectItem>
-                <SelectItem value="document">Document</SelectItem>
+                <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                <SelectItem value="image">{t('websiteAdmin.media.types.image')}</SelectItem>
+                <SelectItem value="video">{t('websiteAdmin.media.types.video')}</SelectItem>
+                <SelectItem value="document">{t('websiteAdmin.media.types.document')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Category</Label>
+            <Label>{t('websiteAdmin.common.category')}</Label>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger>
-                <SelectValue placeholder="All categories" />
+                <SelectValue placeholder={t('websiteAdmin.common.category')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -289,20 +292,20 @@ export default function MediaManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Preview</TableHead>
-                <TableHead>File Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Alt Text</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('websiteAdmin.common.preview')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.fileName')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.type')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.category')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.altText')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.created')}</TableHead>
+                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredMedia.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    No media found
+                    {t('websiteAdmin.media.noResults')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -326,7 +329,7 @@ export default function MediaManagementPage() {
                       <span className="capitalize">{item.type}</span>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {item.categoryId ? (categoryLookup.get(item.categoryId) || 'Uncategorized') : 'Uncategorized'}
+                      {item.categoryId ? (categoryLookup.get(item.categoryId) || t('websiteAdmin.media.uncategorized')) : t('websiteAdmin.media.uncategorized')}
                     </TableCell>
                     <TableCell className="text-muted-foreground max-w-xs truncate">
                       {item.altText || '-'}
@@ -375,12 +378,12 @@ export default function MediaManagementPage() {
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Media</DialogTitle>
-            <DialogDescription>Add a new media item to your library</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.media.createTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.media.createDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
+              <Label htmlFor="type">{t('websiteAdmin.media.fields.type')} *</Label>
               <Select
                 value={form.watch('type')}
                 onValueChange={(value) => {
@@ -394,24 +397,24 @@ export default function MediaManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="image">Image</SelectItem>
-                  <SelectItem value="video">Video (YouTube/Link)</SelectItem>
-                  <SelectItem value="document">Document</SelectItem>
+                  <SelectItem value="image">{t('websiteAdmin.media.types.image')}</SelectItem>
+                  <SelectItem value="video">{t('websiteAdmin.media.types.video')}</SelectItem>
+                  <SelectItem value="document">{t('websiteAdmin.media.types.document')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="categoryId">Category</Label>
+              <Label htmlFor="categoryId">{t('websiteAdmin.media.fields.category')}</Label>
               <Select
                 value={form.watch('categoryId') || 'none'}
                 onValueChange={(value) => form.setValue('categoryId', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t('websiteAdmin.media.placeholders.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Uncategorized</SelectItem>
+                  <SelectItem value="none">{t('websiteAdmin.media.uncategorized')}</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
@@ -423,7 +426,7 @@ export default function MediaManagementPage() {
 
             {form.watch('type') === 'image' ? (
               <div className="space-y-3">
-                <Label>Upload or select image</Label>
+                <Label>{t('websiteAdmin.media.helpers.uploadOrSelect')}</Label>
                 <div className="flex flex-wrap gap-2">
                   <div
                     className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors cursor-pointer min-w-[140px]"
@@ -443,7 +446,7 @@ export default function MediaManagementPage() {
                       }}
                     />
                     <Upload className="h-6 w-6 text-slate-400 mx-auto mb-1" />
-                    <p className="text-xs text-slate-600">Upload (1 or many)</p>
+                    <p className="text-xs text-slate-600">{t('websiteAdmin.media.helpers.uploadHint')}</p>
                   </div>
                   <Button
                     type="button"
@@ -451,13 +454,13 @@ export default function MediaManagementPage() {
                     onClick={() => setShowLibraryPicker('create')}
                     className="shrink-0"
                   >
-                    Select from library
+                    {t('websiteAdmin.media.selectFromLibrary')}
                   </Button>
                 </div>
                 {pendingUploads.length > 0 && (
                   <div className="rounded-md border p-2 space-y-1">
                     <p className="text-xs font-medium text-muted-foreground">
-                      {pendingUploads.length} image(s) ready — category/alt below apply to all
+                      {t('websiteAdmin.media.helpers.categoryAppliesToAll', { count: pendingUploads.length })}
                     </p>
                     <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
                       {pendingUploads.map((p, i) => (
@@ -482,12 +485,12 @@ export default function MediaManagementPage() {
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="filePath" className="text-xs text-slate-500">
-                    Image URL or path (or use upload / library above)
+                    {t('websiteAdmin.media.helpers.imageUrlHint')}
                   </Label>
                   <Input
                     id="filePath"
                     {...form.register('filePath')}
-                    placeholder="https://... or path"
+                    placeholder={t('websiteAdmin.media.placeholders.imageUrl')}
                     disabled={!!uploadedMediaId && pendingUploads.length === 0}
                   />
                   {form.formState.errors.filePath && (
@@ -497,22 +500,22 @@ export default function MediaManagementPage() {
               </div>
             ) : form.watch('type') === 'video' ? (
               <div className="space-y-2">
-                <Label htmlFor="filePath">Video Link (YouTube, Vimeo, etc)</Label>
+                <Label htmlFor="filePath">{t('websiteAdmin.media.types.video')}</Label>
                 <div className="flex gap-2">
                   <span className="flex items-center justify-center w-10 bg-slate-100 border rounded-l-md text-slate-500">
                     <Search className="h-4 w-4" />
                   </span>
-                  <Input id="filePath" {...form.register('filePath')} className="rounded-l-none" placeholder="https://www.youtube.com/watch?v=..." />
+                  <Input id="filePath" {...form.register('filePath')} className="rounded-l-none" placeholder={t('websiteAdmin.media.placeholders.videoUrl')} />
                 </div>
-                <p className="text-xs text-slate-500">Supports YouTube, Vimeo, or direct MP4 links.</p>
+                <p className="text-xs text-slate-500">{t('websiteAdmin.media.helpers.videoHint')}</p>
                 {form.formState.errors.filePath && (
                   <p className="text-sm text-destructive">{form.formState.errors.filePath.message}</p>
                 )}
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="filePath">Document URL</Label>
-                <Input id="filePath" {...form.register('filePath')} placeholder="https://..." />
+                <Label htmlFor="filePath">{t('websiteAdmin.media.types.document')}</Label>
+                <Input id="filePath" {...form.register('filePath')} placeholder={t('websiteAdmin.media.placeholders.documentUrl')} />
                 {form.formState.errors.filePath && (
                   <p className="text-sm text-destructive">{form.formState.errors.filePath.message}</p>
                 )}
@@ -520,19 +523,19 @@ export default function MediaManagementPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="fileName">Title / File Name</Label>
-              <Input id="fileName" {...form.register('fileName')} placeholder="My Great Photo" />
+              <Label htmlFor="fileName">{t('websiteAdmin.media.fields.fileName')}</Label>
+              <Input id="fileName" {...form.register('fileName')} placeholder={t('websiteAdmin.media.placeholders.fileName')} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="altText">Alt Text / Description</Label>
-              <Input id="altText" {...form.register('altText')} placeholder="Brief description of the content" />
+              <Label htmlFor="altText">{t('websiteAdmin.media.fields.altText')}</Label>
+              <Input id="altText" {...form.register('altText')} placeholder={t('websiteAdmin.media.placeholders.altText')} />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createMedia.isPending}>
-                Create Media
+                {t('common.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -543,12 +546,12 @@ export default function MediaManagementPage() {
       <Dialog open={!!editMedia} onOpenChange={(open) => !open && setEditMedia(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Media</DialogTitle>
-            <DialogDescription>Update media details</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.media.editTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.media.editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-type">Type *</Label>
+              <Label htmlFor="edit-type">{t('websiteAdmin.media.fields.type')} *</Label>
               <Select
                 value={form.watch('type')}
                 onValueChange={(value) => form.setValue('type', value as 'image' | 'video' | 'document')}
@@ -557,23 +560,23 @@ export default function MediaManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="image">Image</SelectItem>
-                  <SelectItem value="video">Video</SelectItem>
-                  <SelectItem value="document">Document</SelectItem>
+                  <SelectItem value="image">{t('websiteAdmin.media.types.image')}</SelectItem>
+                  <SelectItem value="video">{t('websiteAdmin.media.types.video')}</SelectItem>
+                  <SelectItem value="document">{t('websiteAdmin.media.types.document')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-category">Category</Label>
+              <Label htmlFor="edit-category">{t('websiteAdmin.media.fields.category')}</Label>
               <Select
                 value={form.watch('categoryId') || 'none'}
                 onValueChange={(value) => form.setValue('categoryId', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t('websiteAdmin.media.placeholders.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Uncategorized</SelectItem>
+                  <SelectItem value="none">{t('websiteAdmin.media.uncategorized')}</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
@@ -586,14 +589,14 @@ export default function MediaManagementPage() {
               <div className="rounded-md border overflow-hidden">
                 <img
                   src={resolveMediaUrl(form.watch('filePath'))}
-                  alt={form.watch('altText') || form.watch('fileName') || 'Media preview'}
+                  alt={form.watch('altText') || form.watch('fileName') || t('websiteAdmin.media.previewAlt')}
                   className="w-full h-40 object-cover"
                 />
               </div>
             )}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Label htmlFor="edit-filePath" className="shrink-0">File Path *</Label>
+                <Label htmlFor="edit-filePath" className="shrink-0">{t('websiteAdmin.media.fields.filePath')} *</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -601,7 +604,7 @@ export default function MediaManagementPage() {
                   onClick={() => setShowLibraryPicker('edit')}
                   className="shrink-0"
                 >
-                  Select from library
+                  {t('websiteAdmin.media.selectFromLibrary')}
                 </Button>
               </div>
               <Input id="edit-filePath" {...form.register('filePath')} />
@@ -610,19 +613,19 @@ export default function MediaManagementPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-fileName">File Name</Label>
+              <Label htmlFor="edit-fileName">{t('websiteAdmin.common.fileName')}</Label>
               <Input id="edit-fileName" {...form.register('fileName')} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-altText">Alt Text</Label>
+              <Label htmlFor="edit-altText">{t('websiteAdmin.common.altText')}</Label>
               <Input id="edit-altText" {...form.register('altText')} />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditMedia(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateMedia.isPending}>
-                Update
+                {t('common.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -633,11 +636,11 @@ export default function MediaManagementPage() {
       <Dialog open={!!showLibraryPicker} onOpenChange={(open) => !open && setShowLibraryPicker(null)}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Select from library</DialogTitle>
-            <DialogDescription>Choose an existing image to use</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.media.libraryPickerTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.media.libraryPickerDescription')}</DialogDescription>
           </DialogHeader>
           {filteredMedia.filter((m) => m.type === 'image').length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No images in library. Upload some first.</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">{t('websiteAdmin.media.noLibraryImages')}</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {filteredMedia
@@ -668,15 +671,15 @@ export default function MediaManagementPage() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Media</AlertDialogTitle>
+            <AlertDialogTitle>{t('websiteAdmin.media.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this media item? This action cannot be undone.
+              {t('websiteAdmin.media.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteMedia.isPending}>
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -684,5 +687,4 @@ export default function MediaManagementPage() {
     </div>
   );
 }
-
 

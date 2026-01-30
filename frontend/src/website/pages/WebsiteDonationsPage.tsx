@@ -28,6 +28,7 @@ import {
     useDeleteWebsiteDonation,
     type WebsiteDonation,
 } from '@/website/hooks/useWebsiteContent';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const donationSchema = z.object({
     title: z.string().min(1, 'Title is required').max(200),
@@ -41,6 +42,7 @@ const donationSchema = z.object({
 type DonationFormData = z.infer<typeof donationSchema>;
 
 export default function WebsiteDonationsPage() {
+    const { t } = useLanguage();
     const { data: donations = [], isLoading } = useWebsiteDonations();
     const createDonation = useCreateWebsiteDonation();
     const updateDonation = useUpdateWebsiteDonation();
@@ -108,31 +110,31 @@ export default function WebsiteDonationsPage() {
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <PageHeader
-                title="Donations"
-                description="Manage donation funds and payment information"
+                title={t('websiteAdmin.donations.title')}
+                description={t('websiteAdmin.donations.description')}
                 icon={<Heart className="h-5 w-5" />}
                 primaryAction={{
-                    label: 'New Fund',
+                    label: t('websiteAdmin.donations.new'),
                     onClick: () => { form.reset(); setIsCreateOpen(true); },
                     icon: <Plus className="h-4 w-4" />,
                 }}
             />
 
-            <FilterPanel title="Filters">
+            <FilterPanel title={t('websiteAdmin.common.filters')}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Search</Label>
+                        <Label>{t('websiteAdmin.common.search')}</Label>
                         <div className="relative">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search funds..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
+                            <Input placeholder={t('websiteAdmin.donations.searchPlaceholder')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label>Status</Label>
+                        <Label>{t('websiteAdmin.common.status')}</Label>
                         <div className="flex gap-2">
-                            <Button variant={activeFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('all')}>All</Button>
-                            <Button variant={activeFilter === 'active' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('active')}>Active</Button>
-                            <Button variant={activeFilter === 'inactive' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('inactive')}>Inactive</Button>
+                            <Button variant={activeFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('all')}>{t('websiteAdmin.common.all')}</Button>
+                            <Button variant={activeFilter === 'active' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('active')}>{t('websiteAdmin.statuses.active')}</Button>
+                            <Button variant={activeFilter === 'inactive' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('inactive')}>{t('websiteAdmin.statuses.inactive')}</Button>
                         </div>
                     </div>
                 </div>
@@ -143,18 +145,18 @@ export default function WebsiteDonationsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Fund Name</TableHead>
-                                <TableHead>Progress</TableHead>
-                                <TableHead>Target</TableHead>
-                                <TableHead>Raised</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>{t('websiteAdmin.donations.fields.fundName')}</TableHead>
+                                <TableHead>{t('websiteAdmin.donations.fields.progress')}</TableHead>
+                                <TableHead>{t('websiteAdmin.donations.fields.target')}</TableHead>
+                                <TableHead>{t('websiteAdmin.donations.fields.raised')}</TableHead>
+                                <TableHead>{t('websiteAdmin.common.status')}</TableHead>
+                                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredDonations.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No donation funds found</TableCell>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t('websiteAdmin.donations.noResults')}</TableCell>
                                 </TableRow>
                             ) : (
                                 filteredDonations.map((donation) => {
@@ -178,7 +180,9 @@ export default function WebsiteDonationsPage() {
                                             <TableCell><div className="flex items-center gap-1"><DollarSign className="h-4 w-4" />{formatCurrency(donation.target_amount)}</div></TableCell>
                                             <TableCell><div className="flex items-center gap-1 text-green-600"><DollarSign className="h-4 w-4" />{formatCurrency(donation.current_amount)}</div></TableCell>
                                             <TableCell>
-                                                <Badge variant={donation.is_active ? 'default' : 'secondary'}>{donation.is_active ? 'Active' : 'Inactive'}</Badge>
+                                                <Badge variant={donation.is_active ? 'default' : 'secondary'}>
+                                                    {donation.is_active ? t('websiteAdmin.statuses.active') : t('websiteAdmin.statuses.inactive')}
+                                                </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
@@ -199,36 +203,36 @@ export default function WebsiteDonationsPage() {
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Add Donation Fund</DialogTitle>
-                        <DialogDescription>Create a new donation fund</DialogDescription>
+                        <DialogTitle>{t('websiteAdmin.donations.createTitle')}</DialogTitle>
+                        <DialogDescription>{t('websiteAdmin.donations.createDescription')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
                         <div className="space-y-2">
-                            <Label>Fund Name *</Label>
-                            <Input {...form.register('title')} placeholder="e.g. Mosque Building Fund" />
+                            <Label>{t('websiteAdmin.donations.fields.fundName')} *</Label>
+                            <Input {...form.register('title')} placeholder={t('websiteAdmin.donations.placeholders.fundName')} />
                             {form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label>Description</Label>
-                            <Textarea {...form.register('description')} placeholder="Describe the purpose of this fund..." rows={3} />
+                            <Label>{t('websiteAdmin.common.description')}</Label>
+                            <Textarea {...form.register('description')} placeholder={t('websiteAdmin.donations.placeholders.description')} rows={3} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Target Amount ($)</Label>
-                                <Input {...form.register('target_amount')} type="number" step="0.01" placeholder="10000" />
+                                <Label>{t('websiteAdmin.donations.fields.target')}</Label>
+                                <Input {...form.register('target_amount')} type="number" step="0.01" placeholder={t('websiteAdmin.donations.placeholders.target')} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Current Amount ($)</Label>
-                                <Input {...form.register('current_amount')} type="number" step="0.01" placeholder="0" />
+                                <Label>{t('websiteAdmin.donations.fields.raised')}</Label>
+                                <Input {...form.register('current_amount')} type="number" step="0.01" placeholder={t('websiteAdmin.donations.placeholders.raised')} />
                             </div>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch checked={form.watch('is_active')} onCheckedChange={(c) => form.setValue('is_active', c)} />
-                            <Label>Active (visible on website)</Label>
+                            <Label>{t('websiteAdmin.donations.fields.active')}</Label>
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={createDonation.isPending}>Create</Button>
+                            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>{t('common.cancel')}</Button>
+                            <Button type="submit" disabled={createDonation.isPending}>{t('common.create')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -238,35 +242,35 @@ export default function WebsiteDonationsPage() {
             <Dialog open={!!editDonation} onOpenChange={(o) => !o && setEditDonation(null)}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Edit Donation Fund</DialogTitle>
-                        <DialogDescription>Update fund details</DialogDescription>
+                        <DialogTitle>{t('websiteAdmin.donations.editTitle')}</DialogTitle>
+                        <DialogDescription>{t('websiteAdmin.donations.editDescription')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
                         <div className="space-y-2">
-                            <Label>Fund Name *</Label>
+                            <Label>{t('websiteAdmin.donations.fields.fundName')} *</Label>
                             <Input {...form.register('title')} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Description</Label>
+                            <Label>{t('websiteAdmin.common.description')}</Label>
                             <Textarea {...form.register('description')} rows={3} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Target Amount ($)</Label>
+                                <Label>{t('websiteAdmin.donations.fields.target')}</Label>
                                 <Input {...form.register('target_amount')} type="number" step="0.01" />
                             </div>
                             <div className="space-y-2">
-                                <Label>Current Amount ($)</Label>
+                                <Label>{t('websiteAdmin.donations.fields.raised')}</Label>
                                 <Input {...form.register('current_amount')} type="number" step="0.01" />
                             </div>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch checked={form.watch('is_active')} onCheckedChange={(c) => form.setValue('is_active', c)} />
-                            <Label>Active (visible on website)</Label>
+                            <Label>{t('websiteAdmin.donations.fields.active')}</Label>
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setEditDonation(null)}>Cancel</Button>
-                            <Button type="submit" disabled={updateDonation.isPending}>Update</Button>
+                            <Button type="button" variant="outline" onClick={() => setEditDonation(null)}>{t('common.cancel')}</Button>
+                            <Button type="submit" disabled={updateDonation.isPending}>{t('common.update')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -276,12 +280,12 @@ export default function WebsiteDonationsPage() {
             <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Fund</AlertDialogTitle>
-                        <AlertDialogDescription>Are you sure you want to delete this donation fund?</AlertDialogDescription>
+                        <AlertDialogTitle>{t('websiteAdmin.donations.deleteTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>{t('websiteAdmin.donations.deleteDescription')}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={deleteDonation.isPending}>Delete</AlertDialogAction>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} disabled={deleteDonation.isPending}>{t('common.delete')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

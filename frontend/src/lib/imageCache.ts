@@ -10,7 +10,7 @@ interface CacheEntry {
   timestamp: number; // For LRU eviction
 }
 
-type ImageType = 'student' | 'staff' | 'course-student';
+type ImageType = 'student' | 'staff' | 'course-student' | 'website-scholar';
 
 class ImageCache {
   private cache = new Map<string, CacheEntry>();

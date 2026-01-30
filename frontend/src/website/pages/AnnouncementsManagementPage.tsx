@@ -150,11 +150,11 @@ export default function AnnouncementsManagementPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title="Announcements"
-        description="Manage website announcements"
+        title={t('websiteAdmin.announcements.title')}
+        description={t('websiteAdmin.announcements.description')}
         icon={<Megaphone className="h-5 w-5" />}
         primaryAction={{
-          label: 'New Announcement',
+          label: t('websiteAdmin.announcements.new'),
           onClick: () => {
             form.reset();
             setIsCreateOpen(true);
@@ -163,14 +163,14 @@ export default function AnnouncementsManagementPage() {
         }}
       />
 
-      <FilterPanel title="Filters">
+      <FilterPanel title={t('websiteAdmin.common.filters')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Search</Label>
+            <Label>{t('websiteAdmin.common.search')}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search announcements..."
+                placeholder={t('websiteAdmin.announcements.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8"
@@ -178,17 +178,17 @@ export default function AnnouncementsManagementPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label>{t('websiteAdmin.common.status')}</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                <SelectItem value="scheduled">{t('websiteAdmin.statuses.scheduled')}</SelectItem>
+                <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
+                <SelectItem value="archived">{t('websiteAdmin.statuses.archived')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -200,19 +200,19 @@ export default function AnnouncementsManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Pinned</TableHead>
-                <TableHead>Published</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('websiteAdmin.common.title')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.status')}</TableHead>
+                <TableHead>{t('websiteAdmin.announcements.pinned')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.publishedAt')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.expiresAt')}</TableHead>
+                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAnnouncements.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    No announcements found
+                    {t('websiteAdmin.announcements.noResults')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -264,30 +264,30 @@ export default function AnnouncementsManagementPage() {
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create Announcement</DialogTitle>
-            <DialogDescription>Create a new announcement</DialogDescription>
+            <DialogHeader>
+            <DialogTitle>{t('websiteAdmin.announcements.createTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.announcements.createDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input id="title" {...form.register('title')} placeholder="Announcement Title" />
+              <Label htmlFor="title">{t('websiteAdmin.announcements.fields.title')} *</Label>
+              <Input id="title" {...form.register('title')} placeholder={t('websiteAdmin.announcements.placeholders.title')} />
               {form.formState.errors.title && (
                 <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="content">Content</Label>
+              <Label htmlFor="content">{t('websiteAdmin.announcements.fields.content')}</Label>
               <Textarea
                 id="content"
                 {...form.register('content')}
-                placeholder="Announcement content..."
+                placeholder={t('websiteAdmin.announcements.placeholders.content')}
                 rows={6}
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('websiteAdmin.announcements.fields.status')}</Label>
                 <Select
                   value={form.watch('status')}
                   onValueChange={(value) => form.setValue('status', value as 'draft' | 'scheduled' | 'published' | 'archived')}
@@ -296,15 +296,15 @@ export default function AnnouncementsManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                    <SelectItem value="scheduled">{t('websiteAdmin.statuses.scheduled')}</SelectItem>
+                    <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
+                    <SelectItem value="archived">{t('websiteAdmin.statuses.archived')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="publishedAt">Published At</Label>
+                <Label htmlFor="publishedAt">{t('websiteAdmin.announcements.fields.publishedAt')}</Label>
                 <Input
                   id="publishedAt"
                   type="datetime-local"
@@ -313,7 +313,7 @@ export default function AnnouncementsManagementPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="expiresAt">Expires At</Label>
+              <Label htmlFor="expiresAt">{t('websiteAdmin.announcements.fields.expiresAt')}</Label>
               <Input
                 id="expiresAt"
                 type="datetime-local"
@@ -326,14 +326,14 @@ export default function AnnouncementsManagementPage() {
                 checked={form.watch('isPinned')}
                 onCheckedChange={(checked) => form.setValue('isPinned', checked)}
               />
-              <Label htmlFor="isPinned">Pin to Homepage</Label>
+              <Label htmlFor="isPinned">{t('websiteAdmin.announcements.pinToHomepage')}</Label>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createAnnouncement.isPending}>
-                Create
+                {t('common.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -344,19 +344,19 @@ export default function AnnouncementsManagementPage() {
       <Dialog open={!!editAnnouncement} onOpenChange={(open) => !open && setEditAnnouncement(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Announcement</DialogTitle>
-            <DialogDescription>Update announcement details</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.announcements.editTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.announcements.editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-title">Title *</Label>
+              <Label htmlFor="edit-title">{t('websiteAdmin.announcements.fields.title')} *</Label>
               <Input id="edit-title" {...form.register('title')} />
               {form.formState.errors.title && (
                 <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-content">Content</Label>
+              <Label htmlFor="edit-content">{t('websiteAdmin.announcements.fields.content')}</Label>
               <Textarea
                 id="edit-content"
                 {...form.register('content')}
@@ -365,7 +365,7 @@ export default function AnnouncementsManagementPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-status">Status</Label>
+                <Label htmlFor="edit-status">{t('websiteAdmin.announcements.fields.status')}</Label>
                 <Select
                   value={form.watch('status')}
                   onValueChange={(value) => form.setValue('status', value as 'draft' | 'scheduled' | 'published' | 'archived')}
@@ -374,15 +374,15 @@ export default function AnnouncementsManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                    <SelectItem value="scheduled">{t('websiteAdmin.statuses.scheduled')}</SelectItem>
+                    <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
+                    <SelectItem value="archived">{t('websiteAdmin.statuses.archived')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-publishedAt">Published At</Label>
+                <Label htmlFor="edit-publishedAt">{t('websiteAdmin.announcements.fields.publishedAt')}</Label>
                 <Input
                   id="edit-publishedAt"
                   type="datetime-local"
@@ -391,7 +391,7 @@ export default function AnnouncementsManagementPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-expiresAt">Expires At</Label>
+              <Label htmlFor="edit-expiresAt">{t('websiteAdmin.announcements.fields.expiresAt')}</Label>
               <Input
                 id="edit-expiresAt"
                 type="datetime-local"
@@ -404,14 +404,14 @@ export default function AnnouncementsManagementPage() {
                 checked={form.watch('isPinned')}
                 onCheckedChange={(checked) => form.setValue('isPinned', checked)}
               />
-              <Label htmlFor="edit-isPinned">Pin to Homepage</Label>
+              <Label htmlFor="edit-isPinned">{t('websiteAdmin.announcements.pinToHomepage')}</Label>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditAnnouncement(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateAnnouncement.isPending}>
-                Update
+                {t('common.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -422,15 +422,15 @@ export default function AnnouncementsManagementPage() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Announcement</AlertDialogTitle>
+            <AlertDialogTitle>{t('websiteAdmin.announcements.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this announcement? This action cannot be undone.
+              {t('websiteAdmin.announcements.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteAnnouncement.isPending}>
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

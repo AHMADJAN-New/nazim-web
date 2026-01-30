@@ -8,6 +8,7 @@ import { Calendar, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { PublicPageHeader } from '@/website/components/PublicPageHeader';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface WebsitePost {
     id: string;
@@ -31,6 +32,7 @@ interface WebsiteAnnouncement {
 }
 
 export default function PublicNewsPage({ type }: { type?: 'article' | 'announcement' }) {
+    const { t } = useLanguage();
     const [page, setPage] = useState(1);
     const isAnnouncements = type === 'announcement';
     const { data: postsData, isLoading } = useQuery({
@@ -56,12 +58,12 @@ export default function PublicNewsPage({ type }: { type?: 'article' | 'announcem
     // Filter logic can remain if we eventually support filtering by type on backend.
     // For now we just display what we get.
 
-    const pageTitle = type === 'article' ? 'Articles & Blog' : isAnnouncements ? 'Announcements' : 'News & Updates';
+    const pageTitle = type === 'article' ? t('websitePublic.articlesPageTitle') : isAnnouncements ? t('websitePublic.announcementsPageTitle') : t('websitePublic.newsPageTitle');
     const pageDescription = type === 'article'
-        ? 'Read our latest articles, thoughts, and educational content.'
+        ? t('websitePublic.articlesPageDescription')
         : isAnnouncements
-            ? 'Official announcements from our school community.'
-            : 'Stay updated with the latest happenings, events, and announcements from our school community.';
+            ? t('websitePublic.announcementsPageDescription')
+            : t('websitePublic.newsPageDescription');
 
     if (isLoading) {
         return (
@@ -105,7 +107,7 @@ export default function PublicNewsPage({ type }: { type?: 'article' | 'announcem
                                             </div>
                                             {isAnnouncements && (post as WebsiteAnnouncement).is_pinned && (
                                                 <div className="absolute top-4 right-4 bg-amber-500/90 text-white text-xs px-2 py-1 rounded backdrop-blur border border-amber-400/50 shadow-sm">
-                                                    Pinned
+                                                    {t('websitePublic.pinned')}
                                                 </div>
                                             )}
                                         </div>
@@ -123,7 +125,7 @@ export default function PublicNewsPage({ type }: { type?: 'article' | 'announcem
                                     <CardFooter className="p-6 pt-0 mt-auto">
                                         <Button variant="ghost" className="p-0 h-auto text-emerald-600 hover:text-emerald-700 hover:bg-transparent" asChild>
                                             <Link to={getDetailLink(type, post as WebsitePost, post as WebsiteAnnouncement)} className="flex items-center group/btn">
-                                                Read More
+                                                {t('websitePublic.readMore')}
                                                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
                                             </Link>
                                         </Button>
@@ -160,8 +162,8 @@ export default function PublicNewsPage({ type }: { type?: 'article' | 'announcem
                     </>
                 ) : (
                     <div className="text-center py-20 bg-slate-50 rounded-xl border border-dashed text-slate-500">
-                        <p className="text-lg mb-2">No updates available at the moment.</p>
-                        <p className="text-sm text-slate-400">Please check back later.</p>
+                        <p className="text-lg mb-2">{t('websitePublic.noUpdatesAvailable')}</p>
+                        <p className="text-sm text-slate-400">{t('websitePublic.checkBackLater')}</p>
                     </div>
                 )}
             </section>

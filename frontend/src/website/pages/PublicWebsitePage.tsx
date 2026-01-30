@@ -19,9 +19,11 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { WebsiteCourse } from '@/website/hooks/useWebsiteContent';
+import { PublicHeroBackground } from '@/website/components/PublicHeroBackground';
+import { resolveMediaUrl } from '@/website/lib/mediaUrl';
 
 export default function PublicWebsitePage() {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const siteQuery = useQuery({
     queryKey: ['public-site', language],
@@ -98,7 +100,7 @@ export default function PublicWebsitePage() {
           return {
             id: course.id,
             title: course.title,
-            description: course.description || 'Explore this comprehensive program designed to enrich your Islamic knowledge and practice.',
+            description: course.description || t('websitePublic.programDefaultDescription'),
             icon,
             imageUrl: course.cover_image_url || course.cover_image_path || null,
             link: `/public-site/courses`,
@@ -106,33 +108,66 @@ export default function PublicWebsitePage() {
             isFeatured: course.is_featured,
           };
         });
-      }, [courses]);
+      }, [courses, t]);
+
+  const heroImageUrl = school?.header_image_path ? resolveMediaUrl(school.header_image_path) : null;
+
+  // Fallbacks so we never show [MISSING: key] (Anwar-style copy when keys are missing)
+  const heroWelcome = (() => {
+    const v = t('websitePublic.heroWelcome');
+    return typeof v === 'string' && !v.startsWith('[MISSING') ? v : 'Welcome to';
+  })();
+  const heroTagline = (() => {
+    const v = t('websitePublic.heroTagline');
+    return typeof v === 'string' && !v.startsWith('[MISSING') ? v : 'Nurturing faith, knowledge, and character with an education rooted in Islamic tradition.';
+  })();
+  const heroMotto = (() => {
+    const v = t('websitePublic.heroMotto');
+    return typeof v === 'string' && !v.startsWith('[MISSING') ? v : "Shari'ah • Tariqah • Character";
+  })();
+  const ctaApplyNow = (() => {
+    const v = t('websitePublic.ctaApplyNow');
+    return typeof v === 'string' && !v.startsWith('[MISSING') ? v : 'Apply Now';
+  })();
+  const ctaContact = (() => {
+    const v = t('websitePublic.ctaContact');
+    return typeof v === 'string' && !v.startsWith('[MISSING') ? v : 'Contact Us';
+  })();
 
   return (
     <div className="flex-1 overflow-x-hidden">
-      {/* Hero Section */}
-      <section className="relative bg-emerald-900 text-white overflow-hidden">
-        {/* Abstract pattern overlay */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
-
-        <div className="container relative mx-auto px-4 py-24 md:py-32 flex flex-col items-center text-center">
-          <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm font-medium bg-emerald-800 text-emerald-100 hover:bg-emerald-700 border-none">
-            Welcome to {schoolName}
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 max-w-4xl leading-tight">
+      {/* Hero: Anwar ul-Uloom style – motto line, large title, tagline, CTAs */}
+      <section className="relative text-white overflow-hidden min-h-[420px] md:min-h-[540px] flex flex-col items-center justify-center">
+        <PublicHeroBackground
+          imageUrl={heroImageUrl || undefined}
+          useDefaultImage={!heroImageUrl}
+          patternOpacity={heroImageUrl ? 0.06 : 0.1}
+        />
+        <div className="container relative z-10 mx-auto px-4 py-20 md:py-28 flex flex-col items-center text-center">
+          {/* Decorative motto line (Anwar-style) */}
+          <p className="mb-4 text-sm md:text-base tracking-[0.2em] uppercase text-amber-200/95 font-medium drop-shadow-sm">
+            {heroMotto}
+          </p>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4 max-w-4xl leading-tight drop-shadow-md">
             {schoolName}
           </h1>
-          <p className="text-lg md:text-xl text-emerald-100 mb-10 max-w-2xl leading-relaxed">
-            Nurturing faith, knowledge, and character with an education rooted in Islamic tradition.
+          <p className="text-base md:text-lg text-emerald-100/95 mb-8 max-w-2xl leading-relaxed drop-shadow-sm">
+            {heroTagline}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 h-12 text-base" asChild>
-              <Link to="/public-site/admissions">Apply Now</Link>
+          <p className="text-sm text-white/70 mb-8 max-w-xl">
+            {heroWelcome} {schoolName}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-8 h-12 text-base shadow-lg border-0" asChild>
+              <Link to="/public-site/admissions">{ctaApplyNow}</Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-emerald-200 text-emerald-100 hover:bg-emerald-800 hover:text-white h-12 text-base" asChild>
-              <Link to="/public-site/contact">Contact Us</Link>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 text-base font-semibold px-8 bg-white/15 text-white border-2 border-white/60 hover:bg-white/25 hover:border-white/80 hover:text-white shadow-md backdrop-blur-md transition-all duration-200"
+              asChild
+            >
+              <Link to="/public-site/contact">{ctaContact}</Link>
             </Button>
           </div>
         </div>
@@ -146,8 +181,8 @@ export default function PublicWebsitePage() {
               <MapPin className="h-6 w-6" />
             </div>
             <div>
-              <h4 className="font-semibold text-slate-900">Visit Us</h4>
-              <p className="text-sm text-slate-500">{school?.school_address || 'Address coming soon'}</p>
+              <h4 className="font-semibold text-slate-900">{t('websitePublic.visitUs')}</h4>
+              <p className="text-sm text-slate-500">{school?.school_address || t('websitePublic.addressComingSoon')}</p>
             </div>
           </div>
           <div className="flex items-center gap-4 py-2 px-4">
@@ -155,9 +190,9 @@ export default function PublicWebsitePage() {
               <Clock className="h-6 w-6" />
             </div>
             <div>
-              <h4 className="font-semibold text-slate-900">Contact</h4>
+              <h4 className="font-semibold text-slate-900">{t('websitePublic.contact')}</h4>
               <p className="text-sm text-slate-500">
-                {school?.school_phone || school?.school_email || 'Contact details coming soon'}
+                {school?.school_phone || school?.school_email || t('websitePublic.contactDetailsComingSoon')}
               </p>
             </div>
           </div>
@@ -166,10 +201,10 @@ export default function PublicWebsitePage() {
               <Heart className="h-6 w-6" />
             </div>
             <div>
-              <h4 className="font-semibold text-slate-900">Support Us</h4>
+              <h4 className="font-semibold text-slate-900">{t('websitePublic.supportUs')}</h4>
               <p className="text-sm text-slate-500">
                 <Link to="/public-site/donations" className="text-emerald-700 hover:underline">
-                  Donate to build our future
+                  {t('websitePublic.donateCta')}
                 </Link>
               </p>
             </div>
@@ -182,7 +217,7 @@ export default function PublicWebsitePage() {
           <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-start">
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-4">
-                {homePage?.title || 'About Our School'}
+                {homePage?.title || t('websitePublic.aboutOurSchool')}
               </h2>
               <div
                 className="prose prose-emerald max-w-none"
@@ -191,13 +226,13 @@ export default function PublicWebsitePage() {
             </div>
             <Card className="border-emerald-100 shadow-sm">
               <CardHeader>
-                <CardTitle>Discover more</CardTitle>
+                <CardTitle>{t('websitePublic.discoverMore')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-slate-600">
-                <p>Explore our programs, community initiatives, and campus life.</p>
+                <p>{t('websitePublic.explorePrograms')}</p>
                 <Button variant="outline" className="w-full" asChild>
                   <Link to={`/public-site/pages/${homePage?.slug || 'home'}`}>
-                    Read the full story
+                    {t('websitePublic.readFullStory')}
                   </Link>
                 </Button>
               </CardContent>
@@ -209,9 +244,9 @@ export default function PublicWebsitePage() {
       {/* Programs Section */}
       <section className="container mx-auto px-4 py-20">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Our Educational Programs</h2>
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">{t('websitePublic.ourEducationalPrograms')}</h2>
           <p className="text-slate-600 max-w-2xl mx-auto">
-            We offer a range of programs designed to cater to different age groups and learning needs, all rooted in authentic Islamic tradition.
+            {t('websitePublic.programsIntro')}
           </p>
         </div>
 
@@ -232,7 +267,7 @@ export default function PublicWebsitePage() {
                     />
                     {program.isFeatured && (
                       <Badge variant="secondary" className="absolute top-3 right-3 bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
-                        Featured
+                        {t('websitePublic.featured')}
                       </Badge>
                     )}
                   </div>
@@ -243,7 +278,7 @@ export default function PublicWebsitePage() {
                     </div>
                     {program.isFeatured && (
                       <Badge variant="secondary" className="absolute top-3 right-3 bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
-                        Featured
+                        {t('websitePublic.featured')}
                       </Badge>
                     )}
                   </div>
@@ -261,7 +296,7 @@ export default function PublicWebsitePage() {
                 </CardContent>
                 <CardFooter>
                   <Link to={program.link} className="text-emerald-600 font-medium hover:text-emerald-700 flex items-center gap-2 group">
-                    Learn more <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    {t('websitePublic.learnMore')} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </CardFooter>
               </Card>
@@ -270,9 +305,9 @@ export default function PublicWebsitePage() {
         ) : (
           <div className="text-center py-12 bg-slate-50 rounded-lg">
             <GraduationCap className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500">Programs will be displayed here once they are published.</p>
+            <p className="text-slate-500">{t('websitePublic.programsEmpty')}</p>
             <Link to="/public-site/courses" className="text-emerald-600 font-medium hover:text-emerald-700 mt-4 inline-block">
-              View all courses →
+              {t('websitePublic.viewAllCourses')} →
             </Link>
           </div>
         )}
@@ -281,7 +316,7 @@ export default function PublicWebsitePage() {
           <div className="text-center mt-12">
             <Link to="/public-site/courses">
               <Button variant="outline" className="text-emerald-700 border-emerald-200 hover:bg-emerald-50">
-                View All Programs
+                {t('websitePublic.viewAllPrograms')}
               </Button>
             </Link>
           </div>
@@ -293,11 +328,11 @@ export default function PublicWebsitePage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
             <div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">Latest Updates</h2>
-              <p className="text-slate-600">Stay connected with our community news and upcoming events.</p>
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">{t('websitePublic.latestUpdates')}</h2>
+              <p className="text-slate-600">{t('websitePublic.stayConnected')}</p>
             </div>
             <Button variant="outline" className="text-emerald-700 border-emerald-200 hover:bg-emerald-50" asChild>
-              <Link to="/public-site/news">View All Updates</Link>
+              <Link to="/public-site/news">{t('websitePublic.viewAllUpdates')}</Link>
             </Button>
           </div>
 
@@ -321,7 +356,7 @@ export default function PublicWebsitePage() {
                           )}
                         </div>
                         <CardHeader>
-                          <Badge variant="secondary" className="w-fit mb-2">Article</Badge>
+                          <Badge variant="secondary" className="w-fit mb-2">{t('websitePublic.article')}</Badge>
                           <Link to={`/public-site/articles/${post.slug || post.id}`}>
                             <CardTitle className="line-clamp-2 hover:text-emerald-600 transition-colors cursor-pointer">
                               {post.title}
@@ -330,7 +365,7 @@ export default function PublicWebsitePage() {
                         </CardHeader>
                         <CardContent>
                           <p className="text-slate-500 text-sm line-clamp-3">
-                            {post.excerpt || 'Read the latest update from our community.'}
+                            {post.excerpt || t('websitePublic.readLatestUpdate')}
                           </p>
                         </CardContent>
                         <CardFooter className="text-xs text-slate-400">
@@ -340,7 +375,7 @@ export default function PublicWebsitePage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-slate-500 italic">No recent news available.</p>
+                  <p className="text-slate-500 italic">{t('websitePublic.noRecentNews')}</p>
                 )}
               </div>
 
@@ -350,7 +385,7 @@ export default function PublicWebsitePage() {
                   <div className="bg-white p-6 rounded-xl shadow-sm border">
                     <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
                       <Calendar className="h-5 w-5 text-emerald-600" />
-                      Upcoming Events
+                      {t('websitePublic.upcomingEvents')}
                     </h3>
                     <div className="space-y-6">
                       {events.map((event: any) => (
@@ -380,7 +415,7 @@ export default function PublicWebsitePage() {
                       ))}
                     </div>
                     <Button variant="link" className="w-full mt-6 text-emerald-600" asChild>
-                      <Link to="/public-site/events">Full Calendar</Link>
+                      <Link to="/public-site/events">{t('websitePublic.fullCalendar')}</Link>
                     </Button>
                   </div>
                 )}
@@ -390,7 +425,7 @@ export default function PublicWebsitePage() {
 
           {posts.length === 0 && events.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-slate-500">More updates coming soon.</p>
+              <p className="text-slate-500">{t('websitePublic.moreUpdatesComingSoon')}</p>
             </div>
           )}
         </div>
@@ -399,16 +434,16 @@ export default function PublicWebsitePage() {
       {/* CTA Section */}
       <section className="bg-emerald-900 py-16">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-white mb-6">Ready to Join Our Community?</h2>
+          <h2 className="text-3xl font-bold text-white mb-6">{t('websitePublic.ctaReadyToJoin')}</h2>
           <p className="text-emerald-100 max-w-2xl mx-auto mb-10 text-lg">
-            Admissions for the upcoming academic year are now open. Secure your child's future with an education that matters.
+            {t('websitePublic.ctaAdmissionsIntro')}
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-8 h-12" asChild>
-              <Link to="/public-site/admissions">Apply for Admission</Link>
+              <Link to="/public-site/admissions">{t('websitePublic.applyForAdmission')}</Link>
             </Button>
             <Button variant="outline" className="border-emerald-400 text-emerald-100 hover:bg-emerald-800 hover:text-white h-12" asChild>
-              <Link to="/public-site/contact">Schedule a Tour</Link>
+              <Link to="/public-site/contact">{t('websitePublic.scheduleTour')}</Link>
             </Button>
           </div>
         </div>

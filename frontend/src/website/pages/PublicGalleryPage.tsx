@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Play, Music, Image as ImageIcon, Volume2, ArrowLeft, FolderOpen } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface MediaItem {
     id: string;
@@ -30,6 +31,7 @@ interface MediaCategory {
 }
 
 export default function PublicGalleryPage() {
+    const { t } = useLanguage();
     const [selectedCategory, setSelectedCategory] = useState<MediaCategory | null>(null);
     const [page, setPage] = useState(1);
     const [activeTab, setActiveTab] = useState('all');
@@ -75,7 +77,7 @@ export default function PublicGalleryPage() {
             id: item.id,
             type: item.type === 'document' ? 'audio' : item.type,
             url: item.file_url || item.file_path,
-            title: item.file_name || 'Untitled',
+            title: item.file_name || t('websitePublic.untitled'),
             description: item.alt_text || '',
         }));
     }, [mediaData]);
@@ -117,8 +119,8 @@ export default function PublicGalleryPage() {
         <div className="flex-1 min-h-screen bg-gradient-to-b from-slate-50 to-white overflow-x-hidden">
             {/* Header */}
             <PublicPageHeader
-                title={selectedCategory ? selectedCategory.name : 'ګالري او البومونه'}
-                description={selectedCategory ? selectedCategory.description : 'زموږ د انځورونو، ویډیوګانو، او آډیو ریکارډینګونو ټولګه وګورئ.'}
+                title={selectedCategory ? selectedCategory.name : t('websitePublic.galleryTitle')}
+                description={selectedCategory ? selectedCategory.description : t('websitePublic.galleryDescription')}
             >
                 {selectedCategory && (
                     <Button
@@ -126,7 +128,7 @@ export default function PublicGalleryPage() {
                         className="gap-2"
                         onClick={handleBackToAlbums}
                     >
-                        <ArrowLeft className="w-4 h-4" /> ټول البومونه
+                        <ArrowLeft className="w-4 h-4" /> {t('websitePublic.allAlbums')}
                     </Button>
                 )}
             </PublicPageHeader>
@@ -137,7 +139,7 @@ export default function PublicGalleryPage() {
                     <div className="space-y-8">
                         <div className="flex items-center gap-2 mb-6 border-b pb-4">
                             <FolderOpen className="w-6 h-6 text-emerald-600" />
-                            <h2 className="text-2xl font-bold text-slate-800">البومونه</h2>
+                            <h2 className="text-2xl font-bold text-slate-800">{t('websitePublic.albums')}</h2>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -163,7 +165,7 @@ export default function PublicGalleryPage() {
                                         <div className="absolute bottom-4 right-4 text-white">
                                             <h3 className="text-xl font-bold">{category.name}</h3>
                                             <span className="text-sm text-slate-200 inline-flex items-center gap-1">
-                                                وګورئ <ArrowLeft className="w-3 h-3" />
+                                                {t('websitePublic.viewAlbum')} <ArrowLeft className="w-3 h-3" />
                                             </span>
                                         </div>
                                     </div>
@@ -173,7 +175,7 @@ export default function PublicGalleryPage() {
 
                         {/* Also show a "Recent Uploads" section below albums? Optional. */}
                         <div className="mt-16 pt-8 border-t">
-                            <h2 className="text-2xl font-bold text-slate-800 mb-6">وروستي اپلوډونه</h2>
+                            <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('websitePublic.recentUploads')}</h2>
                             {/* We can re-use the Media Grid here just passing no category to publicWebsiteApi.getMedia which defaults to all */}
                             <MediaGrid
                                 items={mediaItems}
@@ -181,6 +183,7 @@ export default function PublicGalleryPage() {
                                 page={page}
                                 totalPages={mediaData?.last_page || 1}
                                 onPageChange={setPage}
+                                noMediaText={t('websitePublic.noMedia')}
                             />
                         </div>
                     </div>
@@ -191,10 +194,10 @@ export default function PublicGalleryPage() {
                     <div className="space-y-6">
                         <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
                             <TabsList className="bg-white border p-1 rounded-xl">
-                                <TabsTrigger value="all">ټول</TabsTrigger>
-                                <TabsTrigger value="photos">انځورونه</TabsTrigger>
-                                <TabsTrigger value="videos">ویډیوګانې</TabsTrigger>
-                                <TabsTrigger value="audio">آډیو</TabsTrigger>
+                                <TabsTrigger value="all">{t('websitePublic.all')}</TabsTrigger>
+                                <TabsTrigger value="photos">{t('websitePublic.photos')}</TabsTrigger>
+                                <TabsTrigger value="videos">{t('websitePublic.videos')}</TabsTrigger>
+                                <TabsTrigger value="audio">{t('websitePublic.audio')}</TabsTrigger>
                             </TabsList>
                         </Tabs>
 
@@ -204,6 +207,7 @@ export default function PublicGalleryPage() {
                             page={page}
                             totalPages={mediaData?.last_page || 1}
                             onPageChange={setPage}
+                            noMediaText={t('websitePublic.noMedia')}
                         />
                     </div>
                 )}
@@ -212,16 +216,17 @@ export default function PublicGalleryPage() {
     );
 }
 
-function MediaGrid({ items, isLoading, page, totalPages, onPageChange }: {
+function MediaGrid({ items, isLoading, page, totalPages, onPageChange, noMediaText }: {
     items: any[],
     isLoading: boolean,
     page: number,
     totalPages: number,
-    onPageChange: (p: number) => void
+    onPageChange: (p: number) => void,
+    noMediaText?: string
 }) {
     if (isLoading) return <LoadingSpinner />;
 
-    if (items.length === 0) return <div className="text-center py-20 text-slate-500">هیڅ معلومات شتون نلري</div>;
+    if (items.length === 0) return <div className="text-center py-20 text-slate-500">{noMediaText ?? 'No media available.'}</div>;
 
     return (
         <>

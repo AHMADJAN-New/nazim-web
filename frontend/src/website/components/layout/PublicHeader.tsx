@@ -2,8 +2,14 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useWebsiteSite } from '@/website/hooks/useWebsiteSite';
 import { publicWebsiteApi } from '@/lib/api/client';
-import { Menu, X, ChevronDown, GraduationCap, BookOpen, Users, Calendar, Phone, FileQuestion } from 'lucide-react';
+import { Menu, X, ChevronDown, GraduationCap, Calendar, Phone, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/hooks/useLanguage';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
@@ -49,8 +55,15 @@ const defaultNavItems: WebsiteMenu[] = [
     { id: 'donate', label: 'مرسته', url: '/public-site/donate', parentId: null, sortOrder: 10, isVisible: true },
 ];
 
+const PUBLIC_LANGUAGES = [
+    { code: 'en' as const, name: 'English' },
+    { code: 'ps' as const, name: 'پښتو' },
+    { code: 'fa' as const, name: 'فارسی' },
+    { code: 'ar' as const, name: 'العربية' },
+];
+
 export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: PublicHeaderProps) {
-    const { t } = useLanguage();
+    const { t, language, setLanguage } = useLanguage();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -380,6 +393,25 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                 </nav>
 
                 <div className="hidden lg:flex items-center gap-3">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 gap-1.5">
+                                <Languages className="h-4 w-4" />
+                                <span>{PUBLIC_LANGUAGES.find(l => l.code === language)?.name ?? t('common.selectLanguage')}</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[140px]">
+                            {PUBLIC_LANGUAGES.map((lang) => (
+                                <DropdownMenuItem
+                                    key={lang.code}
+                                    onClick={() => setLanguage(lang.code)}
+                                    className={language === lang.code ? 'bg-accent' : ''}
+                                >
+                                    {lang.name}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50" asChild>
                         <Link to="/auth">ننوتل</Link>
                     </Button>
@@ -441,16 +473,35 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                                 </div>
                             );
                         })}
-                        <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
-                            <Button variant="outline" className="w-full border-emerald-200 text-emerald-700" asChild>
-                                <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>ننوتل</Link>
-                            </Button>
-                            <Button
-                                className="w-full bg-emerald-600 hover:bg-emerald-700"
-                                style={secondaryColorStyle}
-                            >
-                                اوس غوښتنه وکړئ
-                            </Button>
+                        <div className="pt-4 border-t border-slate-100 space-y-3">
+                            <div className="flex items-center gap-2 px-4 py-2">
+                                <Languages className="h-4 w-4 text-slate-500" />
+                                <span className="text-sm font-medium text-slate-600">{t('common.selectLanguage')}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2 px-4">
+                                {PUBLIC_LANGUAGES.map((lang) => (
+                                    <Button
+                                        key={lang.code}
+                                        variant={language === lang.code ? 'default' : 'outline'}
+                                        size="sm"
+                                        className={language === lang.code ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'border-emerald-200 text-emerald-700'}
+                                        onClick={() => { setLanguage(lang.code); setIsMobileMenuOpen(false); }}
+                                    >
+                                        {lang.name}
+                                    </Button>
+                                ))}
+                            </div>
+                            <div className="flex flex-col gap-2 pt-2">
+                                <Button variant="outline" className="w-full border-emerald-200 text-emerald-700" asChild>
+                                    <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>ننوتل</Link>
+                                </Button>
+                                <Button
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                                    style={secondaryColorStyle}
+                                >
+                                    اوس غوښتنه وکړئ
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

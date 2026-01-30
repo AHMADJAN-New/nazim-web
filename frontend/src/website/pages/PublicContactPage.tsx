@@ -62,8 +62,8 @@ export default function PublicContactPage() {
         return (
             <div className="flex-1 overflow-x-hidden">
                 <PublicPageHeader
-                    title="Message Sent!"
-                    description="Thank you for reaching out to us. A member of our team has received your message and will respond as soon as possible."
+                    title={t('websitePublic.messageSentTitle')}
+                    description={t('websitePublic.messageSentDescription')}
                 >
                     <div className="flex justify-center gap-4">
                         <Button
@@ -71,10 +71,10 @@ export default function PublicContactPage() {
                             onClick={() => setIsSuccess(false)}
                             className="mr-0"
                         >
-                            Send Another Message
+                            {t('websitePublic.sendAnotherMessage')}
                         </Button>
                         <Button variant="outline" className="text-white border-white hover:bg-white/10" asChild>
-                            <a href="/public-site">Back to Home</a>
+                            <a href="/public-site">{t('websitePublic.backToHome')}</a>
                         </Button>
                     </div>
                 </PublicPageHeader>
@@ -86,8 +86,8 @@ export default function PublicContactPage() {
         <div className="flex-1 bg-slate-50 overflow-x-hidden">
             {/* Header */}
             <PublicPageHeader
-                title="Contact Us"
-                description="Have questions about admissions, programs, or events? We're here to help."
+                title={t('websitePublic.ctaContact')}
+                description={t('websitePublic.contactPageDescription')}
             />
 
             <section className="container mx-auto px-4 py-12 -mt-10 relative z-20">
@@ -96,14 +96,14 @@ export default function PublicContactPage() {
                     <Card className="shadow-lg border-0 lg:col-span-1 h-full">
                         <CardContent className="p-8 space-y-8">
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-6 pb-2 border-b">Get in Touch</h3>
+                                <h3 className="text-lg font-bold text-slate-900 mb-6 pb-2 border-b">{t('websitePublic.getInTouch')}</h3>
                                 <div className="space-y-6">
                                     <div className="flex items-start gap-4">
                                         <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-600">
                                             <MapPin className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h4 className="font-medium text-slate-900">Visit Us</h4>
+                                            <h4 className="font-medium text-slate-900">{t('websitePublic.visitUs')}</h4>
                                             <p className="text-sm text-slate-600 mt-1">
                                                 {contactInfo.address && <span dangerouslySetInnerHTML={{ __html: contactInfo.address.replace(/\n/g, '<br />') }} />}
                                             </p>
@@ -115,11 +115,11 @@ export default function PublicContactPage() {
                                             <Phone className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h4 className="font-medium text-slate-900">Call Us</h4>
+                                            <h4 className="font-medium text-slate-900">{t('websitePublic.callUs')}</h4>
                                             <p className="text-sm text-slate-600 mt-1">
                                                 {contactInfo.phone}
                                             </p>
-                                            <p className="text-xs text-slate-500 mt-0.5">Mon-Fri from 8am to 5pm</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">{t('websitePublic.phoneHours')}</p>
                                         </div>
                                     </div>
 
@@ -128,34 +128,34 @@ export default function PublicContactPage() {
                                             <Mail className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h4 className="font-medium text-slate-900">Email Us</h4>
+                                            <h4 className="font-medium text-slate-900">{t('websitePublic.emailUs')}</h4>
                                             <p className="text-sm text-slate-600 mt-1">
                                                 {contactInfo.email}
                                             </p>
-                                            <p className="text-xs text-slate-500 mt-0.5">We usually reply within 24 hours</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">{t('websitePublic.replyWithin24Hours')}</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-4 pb-2 border-b">Office Hours</h3>
+                                <h3 className="text-lg font-bold text-slate-900 mb-4 pb-2 border-b">{t('websitePublic.officeHours')}</h3>
                                 <div className="flex items-start gap-4">
                                     <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-600">
                                         <Clock className="h-5 w-5" />
                                     </div>
                                     <div className="text-sm text-slate-600 space-y-1 mt-1">
                                         <div className="flex justify-between gap-8">
-                                            <span>Monday - Friday</span>
-                                            <span className="font-medium text-slate-900">8:00 AM - 5:00 PM</span>
+                                            <span>{t('websitePublic.mondayFriday')}</span>
+                                            <span className="font-medium text-slate-900">{t('websitePublic.mondayFridayHours')}</span>
                                         </div>
                                         <div className="flex justify-between gap-8">
-                                            <span>Saturday</span>
-                                            <span className="font-medium text-slate-900">9:00 AM - 1:00 PM</span>
+                                            <span>{t('websitePublic.saturday')}</span>
+                                            <span className="font-medium text-slate-900">{t('websitePublic.saturdayHours')}</span>
                                         </div>
                                         <div className="flex justify-between gap-8">
-                                            <span>Sunday</span>
-                                            <span className="text-rose-500 font-medium">Closed</span>
+                                            <span>{t('websitePublic.sunday')}</span>
+                                            <span className="text-rose-500 font-medium">{t('websitePublic.closed')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -166,44 +166,44 @@ export default function PublicContactPage() {
                     {/* Contact Form */}
                     <Card className="shadow-lg border-0 lg:col-span-2">
                         <CardContent className="p-8">
-                            <h3 className="text-2xl font-bold text-slate-900 mb-2">Send us a Message</h3>
-                            <p className="text-slate-500 mb-8">We'd love to hear from you. Please fill out this form we'll get in touch shortly.</p>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-2">{t('websitePublic.sendMessageTitle')}</h3>
+                            <p className="text-slate-500 mb-8">{t('websitePublic.sendMessageDescription')}</p>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label htmlFor="first_name" className="text-sm font-medium text-slate-700">First Name</label>
-                                        <Input id="first_name" name="first_name" required placeholder="Ali" />
+                                        <label htmlFor="first_name" className="text-sm font-medium text-slate-700">{t('websitePublic.contactFirstName')}</label>
+                                        <Input id="first_name" name="first_name" required placeholder={t('websitePublic.placeholderFirstName')} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="last_name" className="text-sm font-medium text-slate-700">Last Name</label>
-                                        <Input id="last_name" name="last_name" required placeholder="Khan" />
+                                        <label htmlFor="last_name" className="text-sm font-medium text-slate-700">{t('websitePublic.contactLastName')}</label>
+                                        <Input id="last_name" name="last_name" required placeholder={t('websitePublic.placeholderLastName')} />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label htmlFor="email" className="text-sm font-medium text-slate-700">Email Address</label>
-                                        <Input id="email" name="email" type="email" required placeholder="ali@example.com" />
+                                        <label htmlFor="email" className="text-sm font-medium text-slate-700">{t('websitePublic.contactEmailAddress')}</label>
+                                        <Input id="email" name="email" type="email" required placeholder={t('websitePublic.placeholderEmail')} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="phone" className="text-sm font-medium text-slate-700">Phone Number</label>
-                                        <Input id="phone" name="phone" type="tel" placeholder="+1 (555) 000-0000" />
+                                        <label htmlFor="phone" className="text-sm font-medium text-slate-700">{t('websitePublic.contactPhoneNumber')}</label>
+                                        <Input id="phone" name="phone" type="tel" placeholder={t('websitePublic.placeholderPhone')} />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="subject" className="text-sm font-medium text-slate-700">Subject</label>
-                                    <Input id="subject" name="subject" required placeholder="Admissions Inquiry" />
+                                    <label htmlFor="subject" className="text-sm font-medium text-slate-700">{t('websitePublic.contactSubject')}</label>
+                                    <Input id="subject" name="subject" required placeholder={t('websitePublic.placeholderSubject')} />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="message" className="text-sm font-medium text-slate-700">Message</label>
+                                    <label htmlFor="message" className="text-sm font-medium text-slate-700">{t('websitePublic.contactMessage')}</label>
                                     <Textarea
                                         id="message"
                                         name="message"
                                         required
-                                        placeholder="How can we help you today?"
+                                        placeholder={t('websitePublic.placeholderMessage')}
                                         className="min-h-[150px]"
                                     />
                                 </div>
@@ -216,11 +216,11 @@ export default function PublicContactPage() {
                                     {isSubmitting ? (
                                         <>
                                             <LoadingSpinner size="sm" />
-                                            <span className="ml-2">Sending...</span>
+                                            <span className="ml-2">{t('websitePublic.sending')}</span>
                                         </>
                                     ) : (
                                         <>
-                                            Send Message
+                                            {t('websitePublic.sendMessageButton')}
                                             <Send className="ml-2 h-4 w-4" />
                                         </>
                                     )}
@@ -242,7 +242,7 @@ export default function PublicContactPage() {
                     allowFullScreen={false}
                     aria-hidden="false"
                     tabIndex={0}
-                    title="School Location"
+                    title={t('websitePublic.schoolLocation')}
                 ></iframe>
                 <div className="absolute inset-0 bg-emerald-900/10 pointer-events-none"></div>
             </section>

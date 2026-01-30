@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useLanguage } from '@/hooks/useLanguage';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { WebsitePublicBook } from '@/website/hooks/useWebsiteContent';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Search, FileText, BookOpen, ArrowRight } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 export default function PublicLibraryPage() {
+    const { t } = useLanguage();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -30,9 +32,9 @@ export default function PublicLibraryPage() {
     return (
         <div className="container mx-auto px-4 py-12 max-w-7xl overflow-x-hidden">
             <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold text-slate-900 mb-4">Digital Library</h1>
+                <h1 className="text-4xl font-bold text-slate-900 mb-4">{t('websitePublic.libraryPageTitle')}</h1>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                    Access our collection of Islamic books, research papers, and educational resources.
+                    {t('websitePublic.libraryPageDescription')}
                 </p>
             </div>
 
@@ -40,7 +42,7 @@ export default function PublicLibraryPage() {
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
-                        placeholder="Search by title, author, or description..."
+                        placeholder={t('websitePublic.searchLibrary')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10"
@@ -52,7 +54,7 @@ export default function PublicLibraryPage() {
                         onClick={() => setSelectedCategory(null)}
                         size="sm"
                     >
-                        All
+                        {t('websitePublic.all')}
                     </Button>
                     {categories.map(cat => (
                         <Button
@@ -90,13 +92,13 @@ export default function PublicLibraryPage() {
                                     )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-end p-4">
                                         <span className="inline-flex items-center gap-1.5 text-sm font-medium text-white">
-                                            View details <ArrowRight className="h-4 w-4" />
+                                            {t('websitePublic.viewDetails')} <ArrowRight className="h-4 w-4" />
                                         </span>
                                     </div>
                                 </div>
                                 <CardHeader className="flex-grow">
                                     <div className="flex justify-between items-start gap-2">
-                                        <Badge variant="outline" className="text-xs shrink-0">{book.category || 'General'}</Badge>
+                                        <Badge variant="outline" className="text-xs shrink-0">{book.category || t('websitePublic.general')}</Badge>
                                         {book.file_size != null && book.file_size > 0 && (
                                             <span className="text-xs text-slate-500 uppercase shrink-0">
                                                 {(book.file_size / 1024 / 1024).toFixed(1)} MB
@@ -107,17 +109,17 @@ export default function PublicLibraryPage() {
                                         {book.title}
                                     </CardTitle>
                                     <div className="text-sm text-slate-500 font-medium">
-                                        {book.author || 'Unknown Author'}
+                                        {book.author || t('websitePublic.unknownAuthor')}
                                     </div>
                                 </CardHeader>
                                 <CardContent className="pt-0">
                                     <p className="text-sm text-slate-600 line-clamp-3">
-                                        {book.description || 'No description.'}
+                                        {book.description || t('websitePublic.noDescription')}
                                     </p>
                                 </CardContent>
                                 <CardFooter className="pt-0 flex items-center justify-between border-t border-slate-100 pt-4">
                                     <span className="text-sm font-medium text-emerald-600">
-                                        {(book.file_url || book.file_path) ? 'PDF available' : 'View details'}
+                                        {(book.file_url || book.file_path) ? t('websitePublic.pdfAvailable') : t('websitePublic.viewDetails')}
                                     </span>
                                     <ArrowRight className="h-4 w-4 text-emerald-600 shrink-0" />
                                 </CardFooter>
@@ -128,8 +130,8 @@ export default function PublicLibraryPage() {
             ) : (
                 <div className="text-center py-20 bg-slate-50 rounded-lg border border-dashed">
                     <FileText className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-900">No books found</h3>
-                    <p className="text-slate-500">Try adjusting your search query or category filter.</p>
+                    <h3 className="text-lg font-medium text-slate-900">{t('websitePublic.noBooksFound')}</h3>
+                    <p className="text-slate-500">{t('websitePublic.tryAdjustingSearch')}</p>
                 </div>
             )}
         </div>

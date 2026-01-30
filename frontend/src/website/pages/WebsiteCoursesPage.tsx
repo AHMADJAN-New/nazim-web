@@ -22,6 +22,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/website/components/StatusBadge';
 import { useWebsiteImageUpload } from '@/website/hooks/useWebsiteImageUpload';
+import { useLanguage } from '@/hooks/useLanguage';
 import {
     useWebsiteCourses,
     useCreateWebsiteCourse,
@@ -47,6 +48,7 @@ const courseSchema = z.object({
 type CourseFormData = z.infer<typeof courseSchema>;
 
 export default function WebsiteCoursesPage() {
+    const { t } = useLanguage();
     const { data: courses = [], isLoading } = useWebsiteCourses();
     const createCourse = useCreateWebsiteCourse();
     const updateCourse = useUpdateWebsiteCourse();
@@ -154,33 +156,33 @@ export default function WebsiteCoursesPage() {
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <PageHeader
-                title="Courses & Programs"
-                description="Manage public course catalog"
+                title={t('websiteAdmin.courses.title')}
+                description={t('websiteAdmin.courses.description')}
                 icon={<GraduationCap className="h-5 w-5" />}
                 primaryAction={{
-                    label: 'New Course',
+                    label: t('websiteAdmin.courses.new'),
                     onClick: () => { form.reset(); setIsCreateOpen(true); },
                     icon: <Plus className="h-4 w-4" />,
                 }}
             />
 
-            <FilterPanel title="Filters">
+            <FilterPanel title={t('websiteAdmin.common.filters')}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Search</Label>
+                        <Label>{t('websiteAdmin.common.search')}</Label>
                         <div className="relative">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search courses..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
+                            <Input placeholder={t('websiteAdmin.courses.searchPlaceholder')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label>Status</Label>
+                        <Label>{t('websiteAdmin.common.status')}</Label>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="draft">Draft</SelectItem>
-                                <SelectItem value="published">Published</SelectItem>
+                                <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                                <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                                <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -192,18 +194,18 @@ export default function WebsiteCoursesPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Title</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Level</TableHead>
-                                <TableHead>Instructor</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>{t('websiteAdmin.common.title')}</TableHead>
+                                <TableHead>{t('websiteAdmin.common.category')}</TableHead>
+                                <TableHead>{t('websiteAdmin.courses.fields.level')}</TableHead>
+                                <TableHead>{t('websiteAdmin.courses.fields.instructor')}</TableHead>
+                                <TableHead>{t('websiteAdmin.common.status')}</TableHead>
+                                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredCourses.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No courses found</TableCell>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t('websiteAdmin.courses.noResults')}</TableCell>
                                 </TableRow>
                             ) : (
                                 filteredCourses.map((course) => (
@@ -245,62 +247,62 @@ export default function WebsiteCoursesPage() {
             }}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Add Course</DialogTitle>
-                        <DialogDescription>Add a new course to the public catalog</DialogDescription>
+                        <DialogTitle>{t('websiteAdmin.courses.createTitle')}</DialogTitle>
+                        <DialogDescription>{t('websiteAdmin.courses.createDescription')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Title *</Label>
-                                <Input {...form.register('title')} placeholder="Course Title" />
+                                <Label>{t('websiteAdmin.courses.fields.title')} *</Label>
+                                <Input {...form.register('title')} placeholder={t('websiteAdmin.courses.placeholders.title')} />
                                 {form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label>Category</Label>
-                                <Input {...form.register('category')} placeholder="e.g. Islamic Studies" />
+                                <Label>{t('websiteAdmin.common.category')}</Label>
+                                <Input {...form.register('category')} placeholder={t('websiteAdmin.courses.placeholders.category')} />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <Label>Duration</Label>
-                                <Input {...form.register('duration')} placeholder="e.g. 6 months" />
+                                <Label>{t('websiteAdmin.courses.fields.duration')}</Label>
+                                <Input {...form.register('duration')} placeholder={t('websiteAdmin.courses.placeholders.duration')} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Level</Label>
+                                <Label>{t('websiteAdmin.courses.fields.level')}</Label>
                                 <Select value={form.watch('level') || ''} onValueChange={(v) => form.setValue('level', v)}>
-                                    <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('websiteAdmin.courses.placeholders.level')} /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="beginner">Beginner</SelectItem>
-                                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                                        <SelectItem value="advanced">Advanced</SelectItem>
+                                        <SelectItem value="beginner">{t('websiteAdmin.courses.levels.beginner')}</SelectItem>
+                                        <SelectItem value="intermediate">{t('websiteAdmin.courses.levels.intermediate')}</SelectItem>
+                                        <SelectItem value="advanced">{t('websiteAdmin.courses.levels.advanced')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label>Status</Label>
+                                <Label>{t('websiteAdmin.common.status')}</Label>
                                 <Select value={form.watch('status')} onValueChange={(v) => form.setValue('status', v as 'draft' | 'published')}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="draft">Draft</SelectItem>
-                                        <SelectItem value="published">Published</SelectItem>
+                                        <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                                        <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>Instructor Name</Label>
-                            <Input {...form.register('instructor_name')} placeholder="Instructor Name" />
+                            <Label>{t('websiteAdmin.courses.fields.instructor')}</Label>
+                            <Input {...form.register('instructor_name')} placeholder={t('websiteAdmin.courses.placeholders.instructor')} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Description</Label>
-                            <Textarea {...form.register('description')} placeholder="Course description..." rows={3} />
+                            <Label>{t('websiteAdmin.common.description')}</Label>
+                            <Textarea {...form.register('description')} placeholder={t('websiteAdmin.courses.placeholders.description')} rows={3} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Cover Image</Label>
+                            <Label>{t('websiteAdmin.courses.fields.coverImage')}</Label>
                             <div className="space-y-2">
                                 {imagePreview ? (
                                     <div className="relative w-full h-48 border rounded-lg overflow-hidden">
-                                        <img src={imagePreview} alt="Course cover" className="w-full h-full object-cover" />
+                                        <img src={imagePreview} alt={t('websiteAdmin.courses.coverPreviewAlt')} className="w-full h-full object-cover" />
                                         <Button
                                             type="button"
                                             variant="destructive"
@@ -314,7 +316,7 @@ export default function WebsiteCoursesPage() {
                                 ) : (
                                     <div className="border-2 border-dashed rounded-lg p-8 text-center">
                                         <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                                        <p className="text-sm text-muted-foreground mb-2">No image uploaded</p>
+                                        <p className="text-sm text-muted-foreground mb-2">{t('websiteAdmin.courses.noImage')}</p>
                                         <Button
                                             type="button"
                                             variant="outline"
@@ -323,7 +325,7 @@ export default function WebsiteCoursesPage() {
                                             disabled={isUploadingImage}
                                         >
                                             <Upload className="h-4 w-4 mr-2" />
-                                            {isUploadingImage ? 'Uploading...' : 'Upload Image'}
+                                            {isUploadingImage ? t('websiteAdmin.common.uploading') : t('websiteAdmin.courses.uploadImage')}
                                         </Button>
                                     </div>
                                 )}
@@ -337,22 +339,22 @@ export default function WebsiteCoursesPage() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>Enrollment Link (Optional)</Label>
+                            <Label>{t('websiteAdmin.courses.fields.enrollmentLink')}</Label>
                             <Input
                                 {...form.register('enrollment_cta')}
-                                placeholder="e.g. /contact or https://example.com/enroll"
+                                placeholder={t('websiteAdmin.courses.placeholders.enrollmentLink')}
                             />
                             <p className="text-xs text-muted-foreground">
-                                Link to enrollment page or contact form. Leave empty to use default contact link.
+                                {t('websiteAdmin.courses.enrollmentHelp')}
                             </p>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch checked={form.watch('is_featured')} onCheckedChange={(c) => form.setValue('is_featured', c)} />
-                            <Label>Featured on homepage</Label>
+                            <Label>{t('websiteAdmin.courses.featured')}</Label>
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={createCourse.isPending}>Create</Button>
+                            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>{t('common.cancel')}</Button>
+                            <Button type="submit" disabled={createCourse.isPending}>{t('common.create')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -362,61 +364,61 @@ export default function WebsiteCoursesPage() {
             <Dialog open={!!editCourse} onOpenChange={(o) => !o && setEditCourse(null)}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Edit Course</DialogTitle>
-                        <DialogDescription>Update course details</DialogDescription>
+                        <DialogTitle>{t('websiteAdmin.courses.editTitle')}</DialogTitle>
+                        <DialogDescription>{t('websiteAdmin.courses.editDescription')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Title *</Label>
+                                <Label>{t('websiteAdmin.courses.fields.title')} *</Label>
                                 <Input {...form.register('title')} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Category</Label>
+                                <Label>{t('websiteAdmin.common.category')}</Label>
                                 <Input {...form.register('category')} />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <Label>Duration</Label>
+                                <Label>{t('websiteAdmin.courses.fields.duration')}</Label>
                                 <Input {...form.register('duration')} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Level</Label>
+                                <Label>{t('websiteAdmin.courses.fields.level')}</Label>
                                 <Select value={form.watch('level') || ''} onValueChange={(v) => form.setValue('level', v)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="beginner">Beginner</SelectItem>
-                                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                                        <SelectItem value="advanced">Advanced</SelectItem>
+                                        <SelectItem value="beginner">{t('websiteAdmin.courses.levels.beginner')}</SelectItem>
+                                        <SelectItem value="intermediate">{t('websiteAdmin.courses.levels.intermediate')}</SelectItem>
+                                        <SelectItem value="advanced">{t('websiteAdmin.courses.levels.advanced')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label>Status</Label>
+                                <Label>{t('websiteAdmin.common.status')}</Label>
                                 <Select value={form.watch('status')} onValueChange={(v) => form.setValue('status', v as 'draft' | 'published')}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="draft">Draft</SelectItem>
-                                        <SelectItem value="published">Published</SelectItem>
+                                        <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                                        <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>Instructor Name</Label>
+                            <Label>{t('websiteAdmin.courses.fields.instructor')}</Label>
                             <Input {...form.register('instructor_name')} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Description</Label>
+                            <Label>{t('websiteAdmin.common.description')}</Label>
                             <Textarea {...form.register('description')} rows={3} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Cover Image</Label>
+                            <Label>{t('websiteAdmin.courses.fields.coverImage')}</Label>
                             <div className="space-y-2">
                                 {imagePreview ? (
                                     <div className="relative w-full h-48 border rounded-lg overflow-hidden">
-                                        <img src={imagePreview} alt="Course cover" className="w-full h-full object-cover" />
+                                        <img src={imagePreview} alt={t('websiteAdmin.courses.coverPreviewAlt')} className="w-full h-full object-cover" />
                                         <Button
                                             type="button"
                                             variant="destructive"
@@ -430,7 +432,7 @@ export default function WebsiteCoursesPage() {
                                 ) : (
                                     <div className="border-2 border-dashed rounded-lg p-8 text-center">
                                         <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                                        <p className="text-sm text-muted-foreground mb-2">No image uploaded</p>
+                                        <p className="text-sm text-muted-foreground mb-2">{t('websiteAdmin.courses.noImage')}</p>
                                         <Button
                                             type="button"
                                             variant="outline"
@@ -439,7 +441,7 @@ export default function WebsiteCoursesPage() {
                                             disabled={isUploadingImage}
                                         >
                                             <Upload className="h-4 w-4 mr-2" />
-                                            {isUploadingImage ? 'Uploading...' : 'Upload Image'}
+                                            {isUploadingImage ? t('websiteAdmin.common.uploading') : t('websiteAdmin.courses.uploadImage')}
                                         </Button>
                                     </div>
                                 )}
@@ -453,22 +455,22 @@ export default function WebsiteCoursesPage() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>Enrollment Link (Optional)</Label>
+                            <Label>{t('websiteAdmin.courses.fields.enrollmentLink')}</Label>
                             <Input
                                 {...form.register('enrollment_cta')}
-                                placeholder="e.g. /contact or https://example.com/enroll"
+                                placeholder={t('websiteAdmin.courses.placeholders.enrollmentLink')}
                             />
                             <p className="text-xs text-muted-foreground">
-                                Link to enrollment page or contact form. Leave empty to use default contact link.
+                                {t('websiteAdmin.courses.enrollmentHelp')}
                             </p>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch checked={form.watch('is_featured')} onCheckedChange={(c) => form.setValue('is_featured', c)} />
-                            <Label>Featured on homepage</Label>
+                            <Label>{t('websiteAdmin.courses.featured')}</Label>
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setEditCourse(null)}>Cancel</Button>
-                            <Button type="submit" disabled={updateCourse.isPending}>Update</Button>
+                            <Button type="button" variant="outline" onClick={() => setEditCourse(null)}>{t('common.cancel')}</Button>
+                            <Button type="submit" disabled={updateCourse.isPending}>{t('common.update')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -478,12 +480,12 @@ export default function WebsiteCoursesPage() {
             <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Course</AlertDialogTitle>
-                        <AlertDialogDescription>Are you sure you want to delete this course?</AlertDialogDescription>
+                        <AlertDialogTitle>{t('websiteAdmin.courses.deleteTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>{t('websiteAdmin.courses.deleteDescription')}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={deleteCourse.isPending}>Delete</AlertDialogAction>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} disabled={deleteCourse.isPending}>{t('common.delete')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

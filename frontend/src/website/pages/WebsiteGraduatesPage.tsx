@@ -28,6 +28,7 @@ import {
     useDeleteWebsiteGraduate,
     type WebsiteGraduate,
 } from '@/website/hooks/useWebsiteContent';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const graduateSchema = z.object({
     name: z.string().min(1, 'Name is required').max(200),
@@ -43,6 +44,7 @@ const graduateSchema = z.object({
 type GraduateFormData = z.infer<typeof graduateSchema>;
 
 export default function WebsiteGraduatesPage() {
+    const { t } = useLanguage();
     const { data: graduates = [], isLoading } = useWebsiteGraduates();
     const createGraduate = useCreateWebsiteGraduate();
     const updateGraduate = useUpdateWebsiteGraduate();
@@ -105,33 +107,38 @@ export default function WebsiteGraduatesPage() {
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <PageHeader
-                title="Graduates & Alumni"
-                description="Showcase graduation cohorts and alumni"
+                title={t('websiteAdmin.graduates.title')}
+                description={t('websiteAdmin.graduates.description')}
                 icon={<Award className="h-5 w-5" />}
                 primaryAction={{
-                    label: 'New Graduate',
+                    label: t('websiteAdmin.graduates.new'),
                     onClick: () => { form.reset(); setIsCreateOpen(true); },
                     icon: <Plus className="h-4 w-4" />,
                 }}
             />
 
-            <FilterPanel title="Filters">
+            <FilterPanel title={t('websiteAdmin.common.filters')}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Search</Label>
+                        <Label>{t('websiteAdmin.common.search')}</Label>
                         <div className="relative">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search graduates..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
+                            <Input
+                                placeholder={t('websiteAdmin.graduates.searchPlaceholder')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-8"
+                            />
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label>Status</Label>
+                        <Label>{t('websiteAdmin.common.status')}</Label>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="draft">Draft</SelectItem>
-                                <SelectItem value="published">Published</SelectItem>
+                                <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                                <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                                <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -143,17 +150,19 @@ export default function WebsiteGraduatesPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Program</TableHead>
-                                <TableHead>Year</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>{t('websiteAdmin.graduates.fields.name')}</TableHead>
+                                <TableHead>{t('websiteAdmin.graduates.fields.program')}</TableHead>
+                                <TableHead>{t('websiteAdmin.graduates.fields.year')}</TableHead>
+                                <TableHead>{t('websiteAdmin.common.status')}</TableHead>
+                                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredGraduates.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No graduates found</TableCell>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                        {t('websiteAdmin.graduates.noResults')}
+                                    </TableCell>
                                 </TableRow>
                             ) : (
                                 filteredGraduates.map((graduate) => (
@@ -185,48 +194,48 @@ export default function WebsiteGraduatesPage() {
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Add Graduate</DialogTitle>
-                        <DialogDescription>Add a new graduate to the alumni showcase</DialogDescription>
+                        <DialogTitle>{t('websiteAdmin.graduates.createTitle')}</DialogTitle>
+                        <DialogDescription>{t('websiteAdmin.graduates.createDescription')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Name *</Label>
-                                <Input {...form.register('name')} placeholder="Full Name" />
+                                <Label>{t('websiteAdmin.graduates.fields.name')} *</Label>
+                                <Input {...form.register('name')} placeholder={t('websiteAdmin.graduates.placeholders.name')} />
                                 {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label>Graduation Year</Label>
-                                <Input {...form.register('graduation_year')} type="number" placeholder="2024" />
+                                <Label>{t('websiteAdmin.graduates.fields.year')}</Label>
+                                <Input {...form.register('graduation_year')} type="number" placeholder={t('websiteAdmin.graduates.placeholders.year')} />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Program / Degree</Label>
-                                <Input {...form.register('program')} placeholder="e.g. Islamic Studies" />
+                                <Label>{t('websiteAdmin.graduates.fields.program')}</Label>
+                                <Input {...form.register('program')} placeholder={t('websiteAdmin.graduates.placeholders.program')} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Status</Label>
+                                <Label>{t('websiteAdmin.common.status')}</Label>
                                 <Select value={form.watch('status')} onValueChange={(v) => form.setValue('status', v as 'draft' | 'published')}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="draft">Draft</SelectItem>
-                                        <SelectItem value="published">Published</SelectItem>
+                                        <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                                        <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>Biography</Label>
-                            <Textarea {...form.register('bio')} placeholder="Brief biography..." rows={3} />
+                            <Label>{t('websiteAdmin.graduates.fields.bio')}</Label>
+                            <Textarea {...form.register('bio')} placeholder={t('websiteAdmin.graduates.placeholders.bio')} rows={3} />
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch checked={form.watch('is_featured')} onCheckedChange={(c) => form.setValue('is_featured', c)} />
-                            <Label>Featured on homepage</Label>
+                            <Label>{t('websiteAdmin.graduates.featured')}</Label>
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={createGraduate.isPending}>Create</Button>
+                            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>{t('common.cancel')}</Button>
+                            <Button type="submit" disabled={createGraduate.isPending}>{t('common.create')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -236,47 +245,47 @@ export default function WebsiteGraduatesPage() {
             <Dialog open={!!editGraduate} onOpenChange={(o) => !o && setEditGraduate(null)}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Edit Graduate</DialogTitle>
-                        <DialogDescription>Update graduate details</DialogDescription>
+                        <DialogTitle>{t('websiteAdmin.graduates.editTitle')}</DialogTitle>
+                        <DialogDescription>{t('websiteAdmin.graduates.editDescription')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Name *</Label>
+                                <Label>{t('websiteAdmin.graduates.fields.name')} *</Label>
                                 <Input {...form.register('name')} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Graduation Year</Label>
+                                <Label>{t('websiteAdmin.graduates.fields.year')}</Label>
                                 <Input {...form.register('graduation_year')} type="number" />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Program / Degree</Label>
+                                <Label>{t('websiteAdmin.graduates.fields.program')}</Label>
                                 <Input {...form.register('program')} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Status</Label>
+                                <Label>{t('websiteAdmin.common.status')}</Label>
                                 <Select value={form.watch('status')} onValueChange={(v) => form.setValue('status', v as 'draft' | 'published')}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="draft">Draft</SelectItem>
-                                        <SelectItem value="published">Published</SelectItem>
+                                        <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                                        <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>Biography</Label>
+                            <Label>{t('websiteAdmin.graduates.fields.bio')}</Label>
                             <Textarea {...form.register('bio')} rows={3} />
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch checked={form.watch('is_featured')} onCheckedChange={(c) => form.setValue('is_featured', c)} />
-                            <Label>Featured on homepage</Label>
+                            <Label>{t('websiteAdmin.graduates.featured')}</Label>
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setEditGraduate(null)}>Cancel</Button>
-                            <Button type="submit" disabled={updateGraduate.isPending}>Update</Button>
+                            <Button type="button" variant="outline" onClick={() => setEditGraduate(null)}>{t('common.cancel')}</Button>
+                            <Button type="submit" disabled={updateGraduate.isPending}>{t('common.update')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -286,12 +295,12 @@ export default function WebsiteGraduatesPage() {
             <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Graduate</AlertDialogTitle>
-                        <AlertDialogDescription>Are you sure you want to delete this graduate?</AlertDialogDescription>
+                        <AlertDialogTitle>{t('websiteAdmin.graduates.deleteTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>{t('websiteAdmin.graduates.deleteDescription')}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={deleteGraduate.isPending}>Delete</AlertDialogAction>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} disabled={deleteGraduate.isPending}>{t('common.delete')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

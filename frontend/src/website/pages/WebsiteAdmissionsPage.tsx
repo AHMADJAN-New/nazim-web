@@ -29,30 +29,6 @@ import {
 import type { OnlineAdmission, OnlineAdmissionField, OnlineAdmissionFieldType } from '@/types/domain/onlineAdmission';
 import { PrivateImage, PrivateDocumentLink } from '@/components/PrivateImage';
 
-const STATUS_OPTIONS = [
-  { value: 'submitted', label: 'Submitted' },
-  { value: 'under_review', label: 'Under Review' },
-  { value: 'accepted', label: 'Accepted' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'archived', label: 'Archived' },
-];
-
-const FIELD_TYPES: { value: OnlineAdmissionFieldType; label: string }[] = [
-  { value: 'text', label: 'Text' },
-  { value: 'textarea', label: 'Textarea' },
-  { value: 'phone', label: 'Phone' },
-  { value: 'number', label: 'Number' },
-  { value: 'select', label: 'Select' },
-  { value: 'multiselect', label: 'Multi-select' },
-  { value: 'date', label: 'Date' },
-  { value: 'toggle', label: 'Toggle' },
-  { value: 'email', label: 'Email' },
-  { value: 'id_number', label: 'ID Number' },
-  { value: 'address', label: 'Address' },
-  { value: 'photo', label: 'Photo' },
-  { value: 'file', label: 'File' },
-];
-
 const optionsToString = (options?: Array<{ value: string; label: string }> | null) =>
   (options || []).map((opt) => opt.value).join(', ');
 
@@ -65,6 +41,28 @@ const stringToOptions = (value: string) =>
 
 export default function WebsiteAdmissionsPage() {
   const { t } = useLanguage();
+  const statusOptions = [
+    { value: 'submitted', label: t('websiteAdmin.admissions.statuses.submitted') },
+    { value: 'under_review', label: t('websiteAdmin.admissions.statuses.underReview') },
+    { value: 'accepted', label: t('websiteAdmin.admissions.statuses.accepted') },
+    { value: 'rejected', label: t('websiteAdmin.admissions.statuses.rejected') },
+    { value: 'archived', label: t('websiteAdmin.admissions.statuses.archived') },
+  ];
+  const fieldTypes: { value: OnlineAdmissionFieldType; label: string }[] = [
+    { value: 'text', label: t('websiteAdmin.admissions.fieldTypes.text') },
+    { value: 'textarea', label: t('websiteAdmin.admissions.fieldTypes.textarea') },
+    { value: 'phone', label: t('websiteAdmin.admissions.fieldTypes.phone') },
+    { value: 'number', label: t('websiteAdmin.admissions.fieldTypes.number') },
+    { value: 'select', label: t('websiteAdmin.admissions.fieldTypes.select') },
+    { value: 'multiselect', label: t('websiteAdmin.admissions.fieldTypes.multiselect') },
+    { value: 'date', label: t('websiteAdmin.admissions.fieldTypes.date') },
+    { value: 'toggle', label: t('websiteAdmin.admissions.fieldTypes.toggle') },
+    { value: 'email', label: t('websiteAdmin.admissions.fieldTypes.email') },
+    { value: 'id_number', label: t('websiteAdmin.admissions.fieldTypes.idNumber') },
+    { value: 'address', label: t('websiteAdmin.admissions.fieldTypes.address') },
+    { value: 'photo', label: t('websiteAdmin.admissions.fieldTypes.photo') },
+    { value: 'file', label: t('websiteAdmin.admissions.fieldTypes.file') },
+  ];
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [selectedAdmissionId, setSelectedAdmissionId] = useState<string | null>(null);
@@ -167,29 +165,29 @@ export default function WebsiteAdmissionsPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title="Online Admissions"
-        description="Review and manage online admission submissions."
+        title={t('websiteAdmin.admissions.title')}
+        description={t('websiteAdmin.admissions.description')}
         icon={<Eye className="h-5 w-5" />}
       />
 
       <Tabs defaultValue="applications" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="applications">Applications</TabsTrigger>
-          <TabsTrigger value="fields">Form Fields</TabsTrigger>
+          <TabsTrigger value="applications">{t('websiteAdmin.admissions.tabs.applications')}</TabsTrigger>
+          <TabsTrigger value="fields">{t('websiteAdmin.admissions.tabs.fields')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="applications" className="space-y-6">
-          <FilterPanel title="Filters" defaultOpenDesktop defaultOpenMobile={false}>
+          <FilterPanel title={t('websiteAdmin.common.filters')} defaultOpenDesktop defaultOpenMobile={false}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t('websiteAdmin.common.status')}</Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="All statuses" />
+                    <SelectValue placeholder={t('websiteAdmin.admissions.allStatuses')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    {STATUS_OPTIONS.map((option) => (
+                    <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                    {statusOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -198,11 +196,11 @@ export default function WebsiteAdmissionsPage() {
                 </Select>
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label>Search</Label>
+                <Label>{t('websiteAdmin.common.search')}</Label>
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by name, guardian phone, or application number"
+                  placeholder={t('websiteAdmin.admissions.searchPlaceholder')}
                 />
               </div>
             </div>
@@ -210,42 +208,42 @@ export default function WebsiteAdmissionsPage() {
 
           <Card className="overflow-hidden">
             <CardHeader>
-              <CardTitle>Applications</CardTitle>
+              <CardTitle>{t('websiteAdmin.admissions.applicationsTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Application No</TableHead>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Guardian Phone</TableHead>
-                      <TableHead>Applying Grade</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.columns.applicationNo')}</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.columns.student')}</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.columns.guardianPhone')}</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.columns.applyingGrade')}</TableHead>
+                      <TableHead>{t('websiteAdmin.common.status')}</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.columns.submitted')}</TableHead>
+                      <TableHead>{t('websiteAdmin.common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
                       <TableRow>
-                        <TableCell colSpan={7}>Loading admissions...</TableCell>
+                        <TableCell colSpan={7}>{t('websiteAdmin.admissions.loading')}</TableCell>
                       </TableRow>
                     )}
                     {!isLoading && admissions.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7}>No admissions found.</TableCell>
+                        <TableCell colSpan={7}>{t('websiteAdmin.admissions.noResults')}</TableCell>
                       </TableRow>
                     )}
                     {admissions.map((admission) => (
                       <TableRow key={admission.id}>
                         <TableCell className="font-medium">{admission.applicationNo}</TableCell>
                         <TableCell>{admission.fullName}</TableCell>
-                        <TableCell>{admission.guardianPhone || '—'}</TableCell>
-                        <TableCell>{admission.applyingGrade || '—'}</TableCell>
+                        <TableCell>{admission.guardianPhone || t('websiteAdmin.common.notSet')}</TableCell>
+                        <TableCell>{admission.applyingGrade || t('websiteAdmin.common.notSet')}</TableCell>
                         <TableCell>
                           <Badge variant={statusBadgeVariant(admission.status)}>
-                            {STATUS_OPTIONS.find((opt) => opt.value === admission.status)?.label || admission.status}
+                            {statusOptions.find((opt) => opt.value === admission.status)?.label || admission.status}
                           </Badge>
                         </TableCell>
                         <TableCell>{formatDate(admission.submittedAt)}</TableCell>
@@ -254,9 +252,7 @@ export default function WebsiteAdmissionsPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => setSelectedAdmissionId(admission.id)}
-                          >
-                            View
-                          </Button>
+                          >{t('websiteAdmin.admissions.actions.view')}</Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -270,10 +266,10 @@ export default function WebsiteAdmissionsPage() {
         <TabsContent value="fields" className="space-y-6">
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Form Fields</CardTitle>
+              <CardTitle>{t('websiteAdmin.admissions.fieldsTitle')}</CardTitle>
               <Button size="sm" onClick={() => openFieldDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Field
+                {t('websiteAdmin.admissions.actions.addField')}
               </Button>
             </CardHeader>
             <CardContent>
@@ -281,19 +277,19 @@ export default function WebsiteAdmissionsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Key</TableHead>
-                      <TableHead>Label</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Required</TableHead>
-                      <TableHead>Enabled</TableHead>
-                      <TableHead>Sort</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.fieldColumns.key')}</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.fieldColumns.label')}</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.fieldColumns.type')}</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.fieldColumns.required')}</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.fieldColumns.enabled')}</TableHead>
+                      <TableHead>{t('websiteAdmin.admissions.fieldColumns.sort')}</TableHead>
+                      <TableHead>{t('websiteAdmin.common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {fields.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7}>No custom fields configured.</TableCell>
+                        <TableCell colSpan={7}>{t('websiteAdmin.admissions.noFields')}</TableCell>
                       </TableRow>
                     )}
                     {fields.map((field) => (
@@ -301,14 +297,14 @@ export default function WebsiteAdmissionsPage() {
                         <TableCell>{field.key}</TableCell>
                         <TableCell>{field.label}</TableCell>
                         <TableCell>
-                          {FIELD_TYPES.find((opt) => opt.value === field.fieldType)?.label || field.fieldType}
+                          {fieldTypes.find((opt) => opt.value === field.fieldType)?.label || field.fieldType}
                         </TableCell>
-                        <TableCell>{field.isRequired ? 'Yes' : 'No'}</TableCell>
-                        <TableCell>{field.isEnabled ? 'Yes' : 'No'}</TableCell>
+                        <TableCell>{field.isRequired ? t('websiteAdmin.common.yes') : t('websiteAdmin.common.no')}</TableCell>
+                        <TableCell>{field.isEnabled ? t('websiteAdmin.common.yes') : t('websiteAdmin.common.no')}</TableCell>
                         <TableCell>{field.sortOrder}</TableCell>
                         <TableCell className="flex items-center gap-2">
                           <Button size="sm" variant="outline" onClick={() => openFieldDialog(field)}>
-                            Edit
+                            {t('common.edit')}
                           </Button>
                           <Button
                             size="sm"
@@ -331,24 +327,24 @@ export default function WebsiteAdmissionsPage() {
       <Dialog open={!!selectedAdmissionId} onOpenChange={(open) => !open && setSelectedAdmissionId(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="admission-details-desc">
           <DialogHeader>
-            <DialogTitle>Admission Details</DialogTitle>
+            <DialogTitle>{t('websiteAdmin.admissions.detailsTitle')}</DialogTitle>
             <DialogDescription id="admission-details-desc">
-              View and manage this online admission application.
+              {t('websiteAdmin.admissions.detailsDescription')}
             </DialogDescription>
           </DialogHeader>
-          {!admissionDetails && <p className="text-muted-foreground py-4">Loading admission...</p>}
+          {!admissionDetails && <p className="text-muted-foreground py-4">{t('websiteAdmin.admissions.loadingSingle')}</p>}
           {admissionDetails && (
             <div className="space-y-6">
               {/* Student & Guardian cards with photos */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Student</CardTitle>
+                    <CardTitle className="text-base">{t('websiteAdmin.admissions.sections.student')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <p className="font-medium">{admissionDetails.fullName}</p>
-                    <p className="text-sm text-muted-foreground">Father: {admissionDetails.fatherName}</p>
-                    <p className="text-sm text-muted-foreground">Applying: {admissionDetails.applyingGrade || '—'}</p>
+                    <p className="text-sm text-muted-foreground">{t('websiteAdmin.admissions.labels.father')}: {admissionDetails.fatherName}</p>
+                    <p className="text-sm text-muted-foreground">{t('websiteAdmin.admissions.labels.applying')}: {admissionDetails.applyingGrade || t('websiteAdmin.common.notSet')}</p>
                     {(admissionDetails.pictureUrl ?? admissionDetails.picturePath) && (
                       <div className="mt-2 rounded-lg overflow-hidden border bg-muted/50 w-32 h-32">
                         <PrivateImage
@@ -362,16 +358,16 @@ export default function WebsiteAdmissionsPage() {
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Guardian</CardTitle>
+                    <CardTitle className="text-base">{t('websiteAdmin.admissions.sections.guardian')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <p className="font-medium">{admissionDetails.guardianName || '—'}</p>
-                    <p className="text-sm text-muted-foreground">{admissionDetails.guardianPhone || '—'}</p>
+                    <p className="font-medium">{admissionDetails.guardianName || t('websiteAdmin.admissions.labels.guardian')}</p>
+                    <p className="text-sm text-muted-foreground">{admissionDetails.guardianPhone || t('websiteAdmin.common.notSet')}</p>
                     {(admissionDetails.guardianPictureUrl ?? admissionDetails.guardianPicturePath) && (
                       <div className="mt-2 rounded-lg overflow-hidden border bg-muted/50 w-32 h-32">
                         <PrivateImage
                           src={admissionDetails.guardianPictureUrl ?? admissionDetails.guardianPicturePath ?? null}
-                          alt={admissionDetails.guardianName || 'Guardian'}
+                          alt={admissionDetails.guardianName || t('websiteAdmin.admissions.labels.guardian')}
                           className="h-full w-full object-cover"
                         />
                       </div>
@@ -383,41 +379,41 @@ export default function WebsiteAdmissionsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Address</CardTitle>
+                    <CardTitle className="text-base">{t('websiteAdmin.admissions.sections.address')}</CardTitle>
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground space-y-1">
-                    <p>{admissionDetails.homeAddress || '—'}</p>
-                    <p>Origin: {admissionDetails.origProvince || '—'} / {admissionDetails.origDistrict || '—'}</p>
-                    <p>Current: {admissionDetails.currProvince || '—'} / {admissionDetails.currDistrict || '—'}</p>
+                    <p>{admissionDetails.homeAddress || t('websiteAdmin.common.notSet')}</p>
+                    <p>{t('websiteAdmin.admissions.labels.origin')}: {admissionDetails.origProvince || t('websiteAdmin.common.notSet')} / {admissionDetails.origDistrict || t('websiteAdmin.common.notSet')}</p>
+                    <p>{t('websiteAdmin.admissions.labels.current')}: {admissionDetails.currProvince || t('websiteAdmin.common.notSet')} / {admissionDetails.currDistrict || t('websiteAdmin.common.notSet')}</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Previous School</CardTitle>
+                    <CardTitle className="text-base">{t('websiteAdmin.admissions.sections.previousSchool')}</CardTitle>
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground space-y-1">
-                    <p>{admissionDetails.previousSchool || '—'}</p>
-                    <p>Grade: {admissionDetails.previousGradeLevel || '—'}</p>
-                    <p>Year: {admissionDetails.previousAcademicYear || '—'}</p>
-                    <p>Notes: {admissionDetails.previousSchoolNotes || '—'}</p>
+                    <p>{admissionDetails.previousSchool || t('websiteAdmin.common.notSet')}</p>
+                    <p>{t('websiteAdmin.admissions.labels.grade')}: {admissionDetails.previousGradeLevel || t('websiteAdmin.common.notSet')}</p>
+                    <p>{t('websiteAdmin.admissions.labels.year')}: {admissionDetails.previousAcademicYear || t('websiteAdmin.common.notSet')}</p>
+                    <p>{t('websiteAdmin.admissions.labels.notes')}: {admissionDetails.previousSchoolNotes || t('websiteAdmin.common.notSet')}</p>
                   </CardContent>
                 </Card>
               </div>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Status & Actions</CardTitle>
+                  <CardTitle className="text-base">{t('websiteAdmin.admissions.sections.statusActions')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     <Select value={statusDraft} onValueChange={(value) => setStatusDraft(value as any)}>
                       <SelectTrigger className="w-full sm:w-48">
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder={t('websiteAdmin.admissions.selectStatus')} />
                       </SelectTrigger>
                       <SelectContent>
                         {(admissionDetails.status === 'accepted'
-                          ? STATUS_OPTIONS
-                          : STATUS_OPTIONS.filter((option) => option.value !== 'accepted')
+                          ? statusOptions
+                          : statusOptions.filter((option) => option.value !== 'accepted')
                         ).map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -435,17 +431,17 @@ export default function WebsiteAdmissionsPage() {
                       disabled={admissionDetails.status === 'accepted'}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Accept & Create Student
+                      {t('websiteAdmin.admissions.actions.accept')}
                     </Button>
                   </div>
                   <div className="space-y-2">
-                    <Label>Internal Notes</Label>
-                    <Textarea value={notesDraft} onChange={(event) => setNotesDraft(event.target.value)} placeholder="Internal notes..." rows={2} />
+                    <Label>{t('websiteAdmin.admissions.labels.internalNotes')}</Label>
+                    <Textarea value={notesDraft} onChange={(event) => setNotesDraft(event.target.value)} placeholder={t('websiteAdmin.admissions.placeholders.internalNotes')} rows={2} />
                   </div>
                   {statusDraft === 'rejected' && (
                     <div className="space-y-2">
-                      <Label>Rejection Reason</Label>
-                      <Textarea value={rejectionDraft} onChange={(event) => setRejectionDraft(event.target.value)} placeholder="Reason for rejection..." rows={2} />
+                      <Label>{t('websiteAdmin.admissions.labels.rejectionReason')}</Label>
+                      <Textarea value={rejectionDraft} onChange={(event) => setRejectionDraft(event.target.value)} placeholder={t('websiteAdmin.admissions.placeholders.rejectionReason')} rows={2} />
                     </div>
                   )}
                   <div className="flex justify-end">
@@ -461,7 +457,7 @@ export default function WebsiteAdmissionsPage() {
                         })
                       }
                     >
-                      Save Changes
+                      {t('websiteAdmin.admissions.actions.saveChanges')}
                     </Button>
                   </div>
                 </CardContent>
@@ -469,7 +465,7 @@ export default function WebsiteAdmissionsPage() {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Documents</CardTitle>
+                  <CardTitle className="text-base">{t('websiteAdmin.admissions.sections.documents')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {admissionDetails.documents && admissionDetails.documents.length > 0 ? (
@@ -485,31 +481,31 @@ export default function WebsiteAdmissionsPage() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No documents uploaded.</p>
+                    <p className="text-sm text-muted-foreground">{t('websiteAdmin.admissions.noDocuments')}</p>
                   )}
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Extra Fields</CardTitle>
+                  <CardTitle className="text-base">{t('websiteAdmin.admissions.sections.extraFields')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {admissionDetails.fieldValues && admissionDetails.fieldValues.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {admissionDetails.fieldValues.map((value) => (
                         <div key={value.id} className="rounded-md border p-3">
-                          <p className="font-semibold text-muted-foreground mb-1">{value.field?.label || 'Field'}</p>
+                          <p className="font-semibold text-muted-foreground mb-1">{value.field?.label || t('websiteAdmin.admissions.labels.field')}</p>
                           {value.fileUrl ? (
-                            <PrivateDocumentLink url={value.fileUrl} fileName={value.fileName || 'Download'} />
+                            <PrivateDocumentLink url={value.fileUrl} fileName={value.fileName || t('websiteAdmin.admissions.labels.download')} />
                           ) : (
-                            <p>{value.valueText || (Array.isArray(value.valueJson) ? value.valueJson.join(', ') : '—')}</p>
+                            <p>{value.valueText || (Array.isArray(value.valueJson) ? value.valueJson.join(', ') : t('websiteAdmin.common.notSet'))}</p>
                           )}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No extra fields filled.</p>
+                    <p className="text-sm text-muted-foreground">{t('websiteAdmin.admissions.noExtraFields')}</p>
                   )}
                 </CardContent>
               </Card>
@@ -521,18 +517,18 @@ export default function WebsiteAdmissionsPage() {
       <Dialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
         <DialogContent className="max-w-md" aria-describedby="accept-admission-desc">
           <DialogHeader>
-            <DialogTitle>Accept Admission</DialogTitle>
+            <DialogTitle>{t('websiteAdmin.admissions.acceptTitle')}</DialogTitle>
             <DialogDescription id="accept-admission-desc">
-              Create a student record from this application. Optionally set admission number and year.
+              {t('websiteAdmin.admissions.acceptDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Admission Number (optional)</Label>
+              <Label>{t('websiteAdmin.admissions.labels.admissionNoOptional')}</Label>
               <Input value={acceptAdmissionNo} onChange={(event) => setAcceptAdmissionNo(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Admission Year (optional)</Label>
+              <Label>{t('websiteAdmin.admissions.labels.admissionYearOptional')}</Label>
               <Input value={acceptAdmissionYear} onChange={(event) => setAcceptAdmissionYear(event.target.value)} />
             </div>
             <Button
@@ -547,7 +543,7 @@ export default function WebsiteAdmissionsPage() {
               }}
             >
               <CheckCircle2 className="h-4 w-4 mr-2" />
-              Confirm Acceptance
+              {t('websiteAdmin.admissions.actions.confirmAcceptance')}
             </Button>
           </div>
         </DialogContent>
@@ -556,29 +552,29 @@ export default function WebsiteAdmissionsPage() {
       <Dialog open={fieldDialogOpen} onOpenChange={setFieldDialogOpen}>
         <DialogContent className="max-w-lg" aria-describedby="field-form-desc">
           <DialogHeader>
-            <DialogTitle>{editingField?.id ? 'Edit Field' : 'New Field'}</DialogTitle>
+            <DialogTitle>{editingField?.id ? t('websiteAdmin.admissions.actions.editField') : t('websiteAdmin.admissions.actions.newField')}</DialogTitle>
             <DialogDescription id="field-form-desc">
-              {editingField?.id ? 'Update the admission form field.' : 'Add a new field to the online admission form.'}
+              {editingField?.id ? t('websiteAdmin.admissions.fieldDialog.editDescription') : t('websiteAdmin.admissions.fieldDialog.newDescription')}
             </DialogDescription>
           </DialogHeader>
           {editingField && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Key</Label>
+                <Label>{t('websiteAdmin.admissions.fieldForm.key')}</Label>
                 <Input
                   value={editingField.key}
                   onChange={(event) => setEditingField({ ...editingField, key: event.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Label</Label>
+                <Label>{t('websiteAdmin.admissions.fieldForm.label')}</Label>
                 <Input
                   value={editingField.label}
                   onChange={(event) => setEditingField({ ...editingField, label: event.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Field Type</Label>
+                <Label>{t('websiteAdmin.admissions.fieldForm.type')}</Label>
                 <Select
                   value={editingField.fieldType}
                   onValueChange={(value) =>
@@ -586,10 +582,10 @@ export default function WebsiteAdmissionsPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t('websiteAdmin.admissions.fieldForm.selectType')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {FIELD_TYPES.map((type) => (
+                    {fieldTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
                       </SelectItem>
@@ -598,7 +594,7 @@ export default function WebsiteAdmissionsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Sort Order</Label>
+                <Label>{t('websiteAdmin.admissions.fieldForm.sortOrder')}</Label>
                 <Input
                   type="number"
                   value={editingField.sortOrder}
@@ -609,19 +605,19 @@ export default function WebsiteAdmissionsPage() {
               </div>
               {(editingField.fieldType === 'select' || editingField.fieldType === 'multiselect') && (
                 <div className="space-y-2">
-                  <Label>Options (comma separated)</Label>
+                  <Label>{t('websiteAdmin.admissions.fieldForm.options')}</Label>
                   <Input value={fieldOptionsInput} onChange={(event) => setFieldOptionsInput(event.target.value)} />
                 </div>
               )}
               <div className="space-y-2">
-                <Label>Placeholder</Label>
+                <Label>{t('websiteAdmin.admissions.fieldForm.placeholder')}</Label>
                 <Input
                   value={editingField.placeholder || ''}
                   onChange={(event) => setEditingField({ ...editingField, placeholder: event.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Help Text</Label>
+                <Label>{t('websiteAdmin.admissions.fieldForm.helpText')}</Label>
                 <Input
                   value={editingField.helpText || ''}
                   onChange={(event) => setEditingField({ ...editingField, helpText: event.target.value })}
@@ -634,7 +630,7 @@ export default function WebsiteAdmissionsPage() {
                     checked={editingField.isRequired}
                     onChange={(event) => setEditingField({ ...editingField, isRequired: event.target.checked })}
                   />
-                  Required
+                  {t('websiteAdmin.admissions.fieldForm.required')}
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <input
@@ -642,12 +638,12 @@ export default function WebsiteAdmissionsPage() {
                     checked={editingField.isEnabled}
                     onChange={(event) => setEditingField({ ...editingField, isEnabled: event.target.checked })}
                   />
-                  Enabled
+                  {t('websiteAdmin.admissions.fieldForm.enabled')}
                 </label>
               </div>
               <Button onClick={handleSaveField} className="w-full">
                 <Save className="h-4 w-4 mr-2" />
-                Save Field
+                {t('websiteAdmin.admissions.actions.saveField')}
               </Button>
             </div>
           )}
@@ -656,3 +652,7 @@ export default function WebsiteAdmissionsPage() {
     </div>
   );
 }
+
+
+
+

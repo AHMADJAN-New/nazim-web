@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusBadge } from '@/website/components/StatusBadge';
 import { MediaPicker } from '@/website/components/MediaPicker';
 import { resolveMediaUrl } from '@/website/lib/mediaUrl';
+import { useLanguage } from '@/hooks/useLanguage';
 import {
     useWebsitePublicBooks,
     useCreateWebsitePublicBook,
@@ -54,6 +55,7 @@ function fileNameFromPath(path: string | null | undefined): string {
 }
 
 export default function WebsiteLibraryPage() {
+    const { t } = useLanguage();
     const { data: books = [], isLoading } = useWebsitePublicBooks();
     const createBook = useCreateWebsitePublicBook();
     const updateBook = useUpdateWebsitePublicBook();
@@ -162,24 +164,24 @@ export default function WebsiteLibraryPage() {
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
             <PageHeader
-                title="Library & Books"
-                description="Manage public books, PDFs, and downloadable resources"
+                title={t('websiteAdmin.library.title')}
+                description={t('websiteAdmin.library.description')}
                 icon={<BookOpen className="h-5 w-5" />}
                 primaryAction={{
-                    label: 'New Book',
+                    label: t('websiteAdmin.library.new'),
                     onClick: () => { form.reset(); setIsCreateOpen(true); },
                     icon: <Plus className="h-4 w-4" />,
                 }}
             />
 
-            <FilterPanel title="Filters">
+            <FilterPanel title={t('websiteAdmin.common.filters')}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Search</Label>
+                        <Label>{t('websiteAdmin.common.search')}</Label>
                         <div className="relative">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search books..."
+                                placeholder={t('websiteAdmin.library.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-8"
@@ -187,13 +189,13 @@ export default function WebsiteLibraryPage() {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label>Status</Label>
+                        <Label>{t('websiteAdmin.common.status')}</Label>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="draft">Draft</SelectItem>
-                                <SelectItem value="published">Published</SelectItem>
+                                <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                                <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                                <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -205,19 +207,19 @@ export default function WebsiteLibraryPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Title</TableHead>
-                                <TableHead>Author</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Downloads</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>{t('websiteAdmin.common.title')}</TableHead>
+                                <TableHead>{t('websiteAdmin.library.fields.author')}</TableHead>
+                                <TableHead>{t('websiteAdmin.common.category')}</TableHead>
+                                <TableHead>{t('websiteAdmin.common.status')}</TableHead>
+                                <TableHead>{t('websiteAdmin.library.fields.downloads')}</TableHead>
+                                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredBooks.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                        No books found
+                                        {t('websiteAdmin.library.noResults')}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -260,53 +262,53 @@ export default function WebsiteLibraryPage() {
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Add Book</DialogTitle>
-                        <DialogDescription>Add a new book or PDF to the public library</DialogDescription>
+                        <DialogTitle>{t('websiteAdmin.library.createTitle')}</DialogTitle>
+                        <DialogDescription>{t('websiteAdmin.library.createDescription')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="title">Title *</Label>
-                                <Input id="title" {...form.register('title')} placeholder="Book Title" />
+                                <Label htmlFor="title">{t('websiteAdmin.library.fields.title')} *</Label>
+                                <Input id="title" {...form.register('title')} placeholder={t('websiteAdmin.library.placeholders.title')} />
                                 {form.formState.errors.title && (
                                     <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="author">Author</Label>
-                                <Input id="author" {...form.register('author')} placeholder="Author Name" />
+                                <Label htmlFor="author">{t('websiteAdmin.library.fields.author')}</Label>
+                                <Input id="author" {...form.register('author')} placeholder={t('websiteAdmin.library.placeholders.author')} />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="category">Category</Label>
-                                <Input id="category" {...form.register('category')} placeholder="e.g. Fiqh, Hadith" />
+                                <Label htmlFor="category">{t('websiteAdmin.common.category')}</Label>
+                                <Input id="category" {...form.register('category')} placeholder={t('websiteAdmin.library.placeholders.category')} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="status">Status</Label>
+                                <Label htmlFor="status">{t('websiteAdmin.common.status')}</Label>
                                 <Select
                                     value={form.watch('status')}
                                     onValueChange={(value) => form.setValue('status', value as 'draft' | 'published')}
                                 >
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="draft">Draft</SelectItem>
-                                        <SelectItem value="published">Published</SelectItem>
+                                        <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                                        <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea id="description" {...form.register('description')} placeholder="Book description..." rows={3} />
+                            <Label htmlFor="description">{t('websiteAdmin.common.description')}</Label>
+                            <Textarea id="description" {...form.register('description')} placeholder={t('websiteAdmin.library.placeholders.description')} rows={3} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Cover image</Label>
+                            <Label>{t('websiteAdmin.library.fields.coverImage')}</Label>
                             {form.watch('cover_image_path') && (
                                 <div className="relative w-24 h-24 rounded-md border overflow-hidden bg-muted shrink-0">
                                     <img
                                         src={resolveMediaUrl(form.watch('cover_image_path'))}
-                                        alt="Cover"
+                                        alt={t('websiteAdmin.library.coverPreviewAlt')}
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
@@ -327,19 +329,19 @@ export default function WebsiteLibraryPage() {
                                     onClick={() => coverInputRef.current?.click()}
                                 >
                                     <Upload className="h-4 w-4 mr-2" />
-                                    {coverUpload.isPending ? 'Uploading…' : 'Upload image'}
+                                    {coverUpload.isPending ? t('websiteAdmin.common.uploading') : t('websiteAdmin.library.uploadCover')}
                                 </Button>
                                 <MediaPicker
                                     type="image"
                                     value={form.watch('cover_image_path')}
                                     onChange={(path) => form.setValue('cover_image_path', path ?? null, { shouldValidate: true })}
                                     buttonOnly
-                                    triggerLabel="Select from library"
+                                    triggerLabel={t('websiteAdmin.media.selectFromLibrary')}
                                 />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>PDF / File</Label>
+                            <Label>{t('websiteAdmin.library.fields.file')}</Label>
                             {form.watch('file_path') && (
                                 <div className="flex items-center gap-2 rounded-md border px-3 py-2 bg-muted/50">
                                     <FileText className="h-8 w-8 text-muted-foreground shrink-0" />
@@ -362,19 +364,19 @@ export default function WebsiteLibraryPage() {
                                     onClick={() => pdfInputRef.current?.click()}
                                 >
                                     <Upload className="h-4 w-4 mr-2" />
-                                    {fileUpload.isPending ? 'Uploading…' : 'Upload PDF'}
+                                    {fileUpload.isPending ? t('websiteAdmin.common.uploading') : t('websiteAdmin.library.uploadFile')}
                                 </Button>
                                 <MediaPicker
                                     type="document"
                                     value={form.watch('file_path')}
                                     onChange={(path) => form.setValue('file_path', path ?? null, { shouldValidate: true })}
                                     buttonOnly
-                                    triggerLabel="Select from library"
+                                    triggerLabel={t('websiteAdmin.media.selectFromLibrary')}
                                 />
                             </div>
                             <Input
                                 {...form.register('file_path')}
-                                placeholder="Or paste file URL (e.g. https://...)"
+                                placeholder={t('websiteAdmin.library.placeholders.fileUrl')}
                                 className="mt-2"
                             />
                         </div>
@@ -384,11 +386,11 @@ export default function WebsiteLibraryPage() {
                                 checked={form.watch('is_featured')}
                                 onCheckedChange={(checked) => form.setValue('is_featured', checked)}
                             />
-                            <Label htmlFor="is_featured">Featured on homepage</Label>
+                            <Label htmlFor="is_featured">{t('websiteAdmin.library.featured')}</Label>
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={createBook.isPending}>Create</Button>
+                            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>{t('common.cancel')}</Button>
+                            <Button type="submit" disabled={createBook.isPending}>{t('common.create')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -398,53 +400,53 @@ export default function WebsiteLibraryPage() {
             <Dialog open={!!editBook} onOpenChange={(open) => !open && setEditBook(null)}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Edit Book</DialogTitle>
-                        <DialogDescription>Update book details</DialogDescription>
+                        <DialogTitle>{t('websiteAdmin.library.editTitle')}</DialogTitle>
+                        <DialogDescription>{t('websiteAdmin.library.editDescription')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="edit-title">Title *</Label>
+                                <Label htmlFor="edit-title">{t('websiteAdmin.library.fields.title')} *</Label>
                                 <Input id="edit-title" {...form.register('title')} />
                                 {form.formState.errors.title && (
                                     <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-author">Author</Label>
+                                <Label htmlFor="edit-author">{t('websiteAdmin.library.fields.author')}</Label>
                                 <Input id="edit-author" {...form.register('author')} />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="edit-category">Category</Label>
+                                <Label htmlFor="edit-category">{t('websiteAdmin.common.category')}</Label>
                                 <Input id="edit-category" {...form.register('category')} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-status">Status</Label>
+                                <Label htmlFor="edit-status">{t('websiteAdmin.common.status')}</Label>
                                 <Select
                                     value={form.watch('status')}
                                     onValueChange={(value) => form.setValue('status', value as 'draft' | 'published')}
                                 >
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="draft">Draft</SelectItem>
-                                        <SelectItem value="published">Published</SelectItem>
+                                        <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                                        <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="edit-description">Description</Label>
+                            <Label htmlFor="edit-description">{t('websiteAdmin.common.description')}</Label>
                             <Textarea id="edit-description" {...form.register('description')} rows={3} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Cover image</Label>
+                            <Label>{t('websiteAdmin.library.fields.coverImage')}</Label>
                             {form.watch('cover_image_path') && (
                                 <div className="relative w-24 h-24 rounded-md border overflow-hidden bg-muted shrink-0">
                                     <img
                                         src={resolveMediaUrl(form.watch('cover_image_path'))}
-                                        alt="Cover"
+                                        alt={t('websiteAdmin.library.coverPreviewAlt')}
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
@@ -465,19 +467,19 @@ export default function WebsiteLibraryPage() {
                                     onClick={() => coverInputRef.current?.click()}
                                 >
                                     <Upload className="h-4 w-4 mr-2" />
-                                    {coverUpload.isPending ? 'Uploading…' : 'Upload image'}
+                                    {coverUpload.isPending ? t('websiteAdmin.common.uploading') : t('websiteAdmin.library.uploadCover')}
                                 </Button>
                                 <MediaPicker
                                     type="image"
                                     value={form.watch('cover_image_path')}
                                     onChange={(path) => form.setValue('cover_image_path', path ?? null, { shouldValidate: true })}
                                     buttonOnly
-                                    triggerLabel="Select from library"
+                                    triggerLabel={t('websiteAdmin.media.selectFromLibrary')}
                                 />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label>PDF / File</Label>
+                            <Label>{t('websiteAdmin.library.fields.file')}</Label>
                             {form.watch('file_path') && (
                                 <div className="flex items-center gap-2 rounded-md border px-3 py-2 bg-muted/50">
                                     <FileText className="h-8 w-8 text-muted-foreground shrink-0" />
@@ -500,20 +502,20 @@ export default function WebsiteLibraryPage() {
                                     onClick={() => pdfInputRef.current?.click()}
                                 >
                                     <Upload className="h-4 w-4 mr-2" />
-                                    {fileUpload.isPending ? 'Uploading…' : 'Upload PDF'}
+                                    {fileUpload.isPending ? t('websiteAdmin.common.uploading') : t('websiteAdmin.library.uploadFile')}
                                 </Button>
                                 <MediaPicker
                                     type="document"
                                     value={form.watch('file_path')}
                                     onChange={(path) => form.setValue('file_path', path ?? null, { shouldValidate: true })}
                                     buttonOnly
-                                    triggerLabel="Select from library"
+                                    triggerLabel={t('websiteAdmin.media.selectFromLibrary')}
                                 />
                             </div>
                             <Input
                                 id="edit-file_path"
                                 {...form.register('file_path')}
-                                placeholder="Or paste file URL (e.g. https://...)"
+                                placeholder={t('websiteAdmin.library.placeholders.fileUrl')}
                                 className="mt-2"
                             />
                         </div>
@@ -523,11 +525,11 @@ export default function WebsiteLibraryPage() {
                                 checked={form.watch('is_featured')}
                                 onCheckedChange={(checked) => form.setValue('is_featured', checked)}
                             />
-                            <Label htmlFor="edit-is_featured">Featured on homepage</Label>
+                            <Label htmlFor="edit-is_featured">{t('websiteAdmin.library.featured')}</Label>
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setEditBook(null)}>Cancel</Button>
-                            <Button type="submit" disabled={updateBook.isPending}>Update</Button>
+                            <Button type="button" variant="outline" onClick={() => setEditBook(null)}>{t('common.cancel')}</Button>
+                            <Button type="submit" disabled={updateBook.isPending}>{t('common.update')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -537,17 +539,20 @@ export default function WebsiteLibraryPage() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Book</AlertDialogTitle>
+                        <AlertDialogTitle>{t('websiteAdmin.library.deleteTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this book? This action cannot be undone.
+                            {t('websiteAdmin.library.deleteDescription')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={deleteBook.isPending}>Delete</AlertDialogAction>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} disabled={deleteBook.isPending}>{t('common.delete')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </div>
     );
 }
+
+
+

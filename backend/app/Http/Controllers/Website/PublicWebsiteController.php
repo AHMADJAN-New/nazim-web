@@ -687,4 +687,42 @@ class PublicWebsiteController extends Controller
             ->header('ETag', $etag)
             ->header('Cache-Control', $cacheControl);
     }
+
+    /**
+     * Serve scholar photo for public website (no auth).
+     * School context from request attributes or query.
+     */
+    public function scholarPhoto(Request $request, string $id)
+    {
+        $schoolId = $request->attributes->get('school_id') ?? $request->query('school_id');
+        if (!$schoolId) {
+            return response()->json(['error' => 'School context required'], 400);
+        }
+
+        $scholar = WebsiteScholar::where('school_id', $schoolId)
+            ->where('id', $id)
+            ->where('status', 'published')
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$scholar || !$scholar->photo_path) {
+            abort(404);
+        }
+
+        $disk = $this->fileStorageService->getPublicDisk();
+        if (!$this->fileStorageService->fileExists($scholar->photo_path, $disk)) {
+            abort(404);
+        }
+
+        $file = $this->fileStorageService->getFile($scholar->photo_path, $disk);
+        if (!$file || empty($file)) {
+            abort(404);
+        }
+
+        $mimeType = $this->fileStorageService->getMimeTypeFromExtension($scholar->photo_path);
+        return response($file, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Disposition', 'inline; filename="scholar-' . $id . '"')
+            ->header('Cache-Control', 'public, max-age=86400');
+    }
 }

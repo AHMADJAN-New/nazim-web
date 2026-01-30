@@ -140,11 +140,11 @@ export default function EventsManagementPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title="Events"
-        description="Manage website events calendar"
+        title={t('websiteAdmin.events.title')}
+        description={t('websiteAdmin.events.description')}
         icon={<CalendarClock className="h-5 w-5" />}
         primaryAction={{
-          label: 'New Event',
+          label: t('websiteAdmin.events.new'),
           onClick: () => {
             form.reset();
             setIsCreateOpen(true);
@@ -153,13 +153,13 @@ export default function EventsManagementPage() {
         }}
       />
 
-      <FilterPanel title="Filters">
+      <FilterPanel title={t('websiteAdmin.common.filters')}>
         <div className="space-y-2">
-          <Label>Search</Label>
+          <Label>{t('websiteAdmin.common.search')}</Label>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search events..."
+              placeholder={t('websiteAdmin.events.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
@@ -173,19 +173,19 @@ export default function EventsManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Starts At</TableHead>
-                <TableHead>Ends At</TableHead>
-                <TableHead>Public</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('websiteAdmin.common.title')}</TableHead>
+                <TableHead>{t('websiteAdmin.events.fields.location')}</TableHead>
+                <TableHead>{t('websiteAdmin.events.fields.startsAt')}</TableHead>
+                <TableHead>{t('websiteAdmin.events.fields.endsAt')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.public')}</TableHead>
+                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEvents.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    No events found
+                    {t('websiteAdmin.events.noResults')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -230,24 +230,24 @@ export default function EventsManagementPage() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Event</DialogTitle>
-            <DialogDescription>Create a new event</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.events.createTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.events.createDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input id="title" {...form.register('title')} placeholder="Event Title" />
+              <Label htmlFor="title">{t('websiteAdmin.events.fields.title')} *</Label>
+              <Input id="title" {...form.register('title')} placeholder={t('websiteAdmin.events.placeholders.title')} />
               {form.formState.errors.title && (
                 <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input id="location" {...form.register('location')} placeholder="Event Location" />
+              <Label htmlFor="location">{t('websiteAdmin.events.fields.location')}</Label>
+              <Input id="location" {...form.register('location')} placeholder={t('websiteAdmin.events.placeholders.location')} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startsAt">Starts At *</Label>
+                <Label htmlFor="startsAt">{t('websiteAdmin.events.fields.startsAt')} *</Label>
                 <Input
                   id="startsAt"
                   type="datetime-local"
@@ -258,7 +258,7 @@ export default function EventsManagementPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endsAt">Ends At</Label>
+                <Label htmlFor="endsAt">{t('websiteAdmin.events.fields.endsAt')}</Label>
                 <Input
                   id="endsAt"
                   type="datetime-local"
@@ -267,11 +267,11 @@ export default function EventsManagementPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="summary">Summary</Label>
+              <Label htmlFor="summary">{t('websiteAdmin.events.fields.summary')}</Label>
               <Textarea
                 id="summary"
                 {...form.register('summary')}
-                placeholder="Brief event summary..."
+                placeholder={t('websiteAdmin.events.placeholders.summary')}
                 rows={3}
                 maxLength={500}
               />
@@ -282,14 +282,14 @@ export default function EventsManagementPage() {
                 checked={form.watch('isPublic')}
                 onCheckedChange={(checked) => form.setValue('isPublic', checked)}
               />
-              <Label htmlFor="isPublic">Public Event</Label>
+              <Label htmlFor="isPublic">{t('websiteAdmin.events.fields.publicEvent')}</Label>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createEvent.isPending}>
-                Create
+                {t('common.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -300,24 +300,24 @@ export default function EventsManagementPage() {
       <Dialog open={!!editEvent} onOpenChange={(open) => !open && setEditEvent(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Event</DialogTitle>
-            <DialogDescription>Update event details</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.events.editTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.events.editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-title">Title *</Label>
+              <Label htmlFor="edit-title">{t('websiteAdmin.events.fields.title')} *</Label>
               <Input id="edit-title" {...form.register('title')} />
               {form.formState.errors.title && (
                 <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-location">Location</Label>
+              <Label htmlFor="edit-location">{t('websiteAdmin.events.fields.location')}</Label>
               <Input id="edit-location" {...form.register('location')} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-startsAt">Starts At *</Label>
+                <Label htmlFor="edit-startsAt">{t('websiteAdmin.events.fields.startsAt')} *</Label>
                 <Input
                   id="edit-startsAt"
                   type="datetime-local"
@@ -328,7 +328,7 @@ export default function EventsManagementPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-endsAt">Ends At</Label>
+                <Label htmlFor="edit-endsAt">{t('websiteAdmin.events.fields.endsAt')}</Label>
                 <Input
                   id="edit-endsAt"
                   type="datetime-local"
@@ -337,7 +337,7 @@ export default function EventsManagementPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-summary">Summary</Label>
+              <Label htmlFor="edit-summary">{t('websiteAdmin.events.fields.summary')}</Label>
               <Textarea
                 id="edit-summary"
                 {...form.register('summary')}
@@ -351,14 +351,14 @@ export default function EventsManagementPage() {
                 checked={form.watch('isPublic')}
                 onCheckedChange={(checked) => form.setValue('isPublic', checked)}
               />
-              <Label htmlFor="edit-isPublic">Public Event</Label>
+              <Label htmlFor="edit-isPublic">{t('websiteAdmin.events.fields.publicEvent')}</Label>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditEvent(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateEvent.isPending}>
-                Update
+                {t('common.update')}
               </Button>
             </DialogFooter>
           </form>
@@ -369,15 +369,15 @@ export default function EventsManagementPage() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+            <AlertDialogTitle>{t('websiteAdmin.events.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this event? This action cannot be undone.
+              {t('websiteAdmin.events.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteEvent.isPending}>
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

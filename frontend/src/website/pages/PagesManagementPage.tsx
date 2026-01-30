@@ -168,11 +168,11 @@ export default function PagesManagementPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
-        title="Pages"
-        description="Manage website pages"
+        title={t('websiteAdmin.pages.title')}
+        description={t('websiteAdmin.pages.description')}
         icon={<FileText className="h-5 w-5" />}
         primaryAction={{
-          label: 'New Page',
+          label: t('websiteAdmin.pages.new'),
           onClick: () => {
             form.reset();
             setIsCreateOpen(true);
@@ -181,14 +181,14 @@ export default function PagesManagementPage() {
         }}
       />
 
-      <FilterPanel title="Filters">
+      <FilterPanel title={t('websiteAdmin.common.filters')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Search</Label>
+            <Label>{t('websiteAdmin.common.search')}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search pages..."
+                placeholder={t('websiteAdmin.pages.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8"
@@ -196,16 +196,16 @@ export default function PagesManagementPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label>{t('websiteAdmin.common.status')}</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="all">{t('websiteAdmin.common.all')}</SelectItem>
+                <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
+                <SelectItem value="archived">{t('websiteAdmin.statuses.archived')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -217,18 +217,18 @@ export default function PagesManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Slug</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Published</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('websiteAdmin.common.title')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.slug')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.status')}</TableHead>
+                <TableHead>{t('websiteAdmin.common.publishedAt')}</TableHead>
+                <TableHead className="text-right">{t('websiteAdmin.common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPages.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No pages found
+                    {t('websiteAdmin.pages.noResults')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -272,29 +272,29 @@ export default function PagesManagementPage() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Page</DialogTitle>
-            <DialogDescription>Create a new website page</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.pages.createTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.pages.createDescription')}</DialogDescription>
           </DialogHeader>
           <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug *</Label>
-                <Input id="slug" {...form.register('slug')} placeholder="about-us" />
+                <Label htmlFor="slug">{t('websiteAdmin.pages.fields.slug')} *</Label>
+                <Input id="slug" {...form.register('slug')} placeholder={t('websiteAdmin.pages.placeholders.slug')} />
                 {form.formState.errors.slug && (
                   <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input id="title" {...form.register('title')} placeholder="About Us" />
+                <Label htmlFor="title">{t('websiteAdmin.pages.fields.title')} *</Label>
+                <Input id="title" {...form.register('title')} placeholder={t('websiteAdmin.pages.placeholders.title')} />
                 {form.formState.errors.title && (
                   <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
                 )}
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('websiteAdmin.pages.fields.status')}</Label>
               <Select
                 value={form.watch('status')}
                 onValueChange={(value) => form.setValue('status', value as 'draft' | 'published' | 'archived')}
@@ -303,14 +303,14 @@ export default function PagesManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
+                  <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                  <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
+                  <SelectItem value="archived">{t('websiteAdmin.statuses.archived')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="publishedAt">Published At</Label>
+              <Label htmlFor="publishedAt">{t('websiteAdmin.pages.fields.publishedAt')}</Label>
               <Input
                 id="publishedAt"
                 type="datetime-local"
@@ -319,16 +319,16 @@ export default function PagesManagementPage() {
             </div>
             <ContentEditor 
               name="content_json" 
-              label="Content" 
+              label={t('websiteAdmin.pages.fields.content')}
               onImageUpload={handleImageUpload}
             />
             <SeoFields />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createPage.isPending}>
-                Create
+                {t('common.create')}
               </Button>
             </DialogFooter>
             </form>
@@ -340,21 +340,21 @@ export default function PagesManagementPage() {
       <Dialog open={!!editPage} onOpenChange={(open) => !open && setEditPage(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Page</DialogTitle>
-            <DialogDescription>Update page details</DialogDescription>
+            <DialogTitle>{t('websiteAdmin.pages.editTitle')}</DialogTitle>
+            <DialogDescription>{t('websiteAdmin.pages.editDescription')}</DialogDescription>
           </DialogHeader>
           <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-slug">Slug *</Label>
+                <Label htmlFor="edit-slug">{t('websiteAdmin.pages.fields.slug')} *</Label>
                 <Input id="edit-slug" {...form.register('slug')} />
                 {form.formState.errors.slug && (
                   <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-title">Title *</Label>
+                <Label htmlFor="edit-title">{t('websiteAdmin.pages.fields.title')} *</Label>
                 <Input id="edit-title" {...form.register('title')} />
                 {form.formState.errors.title && (
                   <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
@@ -362,7 +362,7 @@ export default function PagesManagementPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-status">Status</Label>
+              <Label htmlFor="edit-status">{t('websiteAdmin.pages.fields.status')}</Label>
               <Select
                 value={form.watch('status')}
                 onValueChange={(value) => form.setValue('status', value as 'draft' | 'published' | 'archived')}
@@ -371,14 +371,14 @@ export default function PagesManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
+                  <SelectItem value="draft">{t('websiteAdmin.statuses.draft')}</SelectItem>
+                  <SelectItem value="published">{t('websiteAdmin.statuses.published')}</SelectItem>
+                  <SelectItem value="archived">{t('websiteAdmin.statuses.archived')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-publishedAt">Published At</Label>
+              <Label htmlFor="edit-publishedAt">{t('websiteAdmin.pages.fields.publishedAt')}</Label>
               <Input
                 id="edit-publishedAt"
                 type="datetime-local"
@@ -387,16 +387,16 @@ export default function PagesManagementPage() {
             </div>
             <ContentEditor 
               name="content_json" 
-              label="Content" 
+              label={t('websiteAdmin.pages.fields.content')}
               onImageUpload={handleImageUpload}
             />
             <SeoFields />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditPage(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updatePage.isPending}>
-                Update
+                {t('common.update')}
               </Button>
             </DialogFooter>
             </form>
@@ -408,15 +408,15 @@ export default function PagesManagementPage() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Page</AlertDialogTitle>
+            <AlertDialogTitle>{t('websiteAdmin.pages.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this page? This action cannot be undone.
+              {t('websiteAdmin.pages.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deletePage.isPending}>
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

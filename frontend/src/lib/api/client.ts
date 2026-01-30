@@ -507,6 +507,7 @@ class ApiClient {
         method: 'POST',
         body: data,
         headers: options?.headers || {},
+        params: options?.params,
       });
     }
 

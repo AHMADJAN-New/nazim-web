@@ -30,7 +30,7 @@ export function PublicFooter({ schoolName: propSchoolName, contact }: PublicFoot
                             <span style={primaryTextStyle}>{schoolName}</span>
                         </h3>
                         <p className="text-slate-400 text-sm leading-relaxed">
-                            {school?.footer_text || "Empowering the next generation with knowledge, faith, and excellence."}
+                            {school?.footer_text || t('websitePublic.footerTagline')}
                         </p>
                         {/* Social Links - Hidden until data is available in backend */}
                         {/* 
@@ -45,30 +45,30 @@ export function PublicFooter({ schoolName: propSchoolName, contact }: PublicFoot
 
                     {/* Quick Links */}
                     <div className="space-y-4">
-                        <h4 className="text-lg font-semibold text-white">Quick Links</h4>
+                        <h4 className="text-lg font-semibold text-white">{t('websitePublic.quickLinks')}</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><Link to="/public-site/about" className="hover:text-emerald-400 transition-colors">About Us</Link></li>
-                            <li><Link to="/public-site/programs" className="hover:text-emerald-400 transition-colors">Academics</Link></li>
-                            <li><Link to="/public-site/contact" className="hover:text-emerald-400 transition-colors">Contact</Link></li>
-                            <li><Link to="/auth" className="hover:text-emerald-400 transition-colors">Portal Login</Link></li>
+                            <li><Link to="/public-site/about" className="hover:text-emerald-400 transition-colors">{t('websitePublic.aboutUs')}</Link></li>
+                            <li><Link to="/public-site/programs" className="hover:text-emerald-400 transition-colors">{t('websitePublic.academics')}</Link></li>
+                            <li><Link to="/public-site/contact" className="hover:text-emerald-400 transition-colors">{t('websitePublic.contact')}</Link></li>
+                            <li><Link to="/auth" className="hover:text-emerald-400 transition-colors">{t('websitePublic.portalLogin')}</Link></li>
                         </ul>
                     </div>
 
                     {/* Programs */}
                     <div className="space-y-4">
-                        <h4 className="text-lg font-semibold text-white">Resources</h4>
+                        <h4 className="text-lg font-semibold text-white">{t('websitePublic.resources')}</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><Link to="/public-site/library" className="hover:text-emerald-400 transition-colors">Library</Link></li>
-                            <li><Link to="/public-site/scholars" className="hover:text-emerald-400 transition-colors">Scholars</Link></li>
-                            <li><Link to="/public-site/fatwas" className="hover:text-emerald-400 transition-colors">Fatwas</Link></li>
-                            <li><Link to="/public-site/donate" className="hover:text-emerald-400 transition-colors">Donate</Link></li>
+                            <li><Link to="/public-site/library" className="hover:text-emerald-400 transition-colors">{t('websitePublic.library')}</Link></li>
+                            <li><Link to="/public-site/scholars" className="hover:text-emerald-400 transition-colors">{t('websitePublic.scholars')}</Link></li>
+                            <li><Link to="/public-site/fatwas" className="hover:text-emerald-400 transition-colors">{t('websitePublic.fatwas')}</Link></li>
+                            <li><Link to="/public-site/donate" className="hover:text-emerald-400 transition-colors">{t('websitePublic.donate')}</Link></li>
                         </ul>
                     </div>
 
                     {/* Contact Info */}
                     {(school?.school_address || school?.school_phone || school?.school_email) && (
                         <div className="space-y-4">
-                            <h4 className="text-lg font-semibold text-white">Contact Us</h4>
+                            <h4 className="text-lg font-semibold text-white">{t('websitePublic.ctaContact')}</h4>
                             <ul className="space-y-3 text-sm">
                                 {school?.school_address && (
                                     <li className="flex items-start gap-3">
@@ -99,8 +99,8 @@ export function PublicFooter({ schoolName: propSchoolName, contact }: PublicFoot
                 <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
                     <p>&copy; {currentYear} {schoolName}. All rights reserved.</p>
                     <div className="flex gap-6">
-                        <Link to="#" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
-                        <Link to="#" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
+                        <Link to="#" className="hover:text-emerald-400 transition-colors">{t('websitePublic.privacyPolicy')}</Link>
+                        <Link to="#" className="hover:text-emerald-400 transition-colors">{t('websitePublic.termsOfService')}</Link>
                     </div>
                 </div>
             </div>

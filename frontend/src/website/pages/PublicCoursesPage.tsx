@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useLanguage } from '@/hooks/useLanguage';
 import { publicWebsiteApi } from '@/lib/api/client';
 import { WebsiteCourse } from '@/website/hooks/useWebsiteContent';
 import { Input } from '@/components/ui/input';
@@ -11,16 +12,17 @@ import { Search, GraduationCap, Clock, User, BookOpen } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 /** Build enrollment/admission link: use admissions page (no 404) or custom CTA if it's an in-app path */
-function enrollmentTo(course: WebsiteCourse): { to: string; label: string } {
+function enrollmentTo(course: WebsiteCourse, enrollLabel: string): { to: string; label: string } {
   const cta = (course.enrollment_cta || '').trim();
   if (cta && cta.startsWith('/') && !cta.startsWith('//')) {
-    return { to: cta, label: 'Enroll Now' };
+    return { to: cta, label: enrollLabel };
   }
   const params = course.id ? `?course=${course.id}` : '';
-  return { to: `/public-site/admissions${params}`, label: 'Enroll Now' };
+  return { to: `/public-site/admissions${params}`, label: enrollLabel };
 }
 
 export default function PublicCoursesPage() {
+    const { t } = useLanguage();
     const [searchParams] = useSearchParams();
     const schoolIdFromUrl = searchParams.get('school_id');
     const [searchQuery, setSearchQuery] = useState('');
@@ -49,9 +51,9 @@ export default function PublicCoursesPage() {
     return (
         <div className="container mx-auto px-4 py-12 max-w-7xl overflow-x-hidden">
             <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold text-slate-900 mb-4">Academic Programs</h1>
+                <h1 className="text-4xl font-bold text-slate-900 mb-4">{t('websitePublic.coursesPageTitle')}</h1>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                    Explore our range of comprehensive Islamic educational courses designed for all levels.
+                    {t('websitePublic.coursesPageDescription')}
                 </p>
             </div>
 
@@ -59,7 +61,7 @@ export default function PublicCoursesPage() {
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
-                        placeholder="Search courses..."
+                        placeholder={t('websitePublic.searchCourses')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10"
@@ -71,7 +73,7 @@ export default function PublicCoursesPage() {
                         onClick={() => setSelectedCategory(null)}
                         size="sm"
                     >
-                        All
+                        {t('websitePublic.all')}
                     </Button>
                     {categories.map(cat => (
                         <Button
@@ -105,12 +107,12 @@ export default function PublicCoursesPage() {
                                     <GraduationCap className="h-20 w-20 text-emerald-800" />
                                 )}
                                 <div className="absolute top-4 right-4 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-emerald-900 shadow-sm uppercase tracking-wide">
-                                    {course.level || 'Course'}
+                                    {course.level || t('websitePublic.course')}
                                 </div>
                             </div>
                             <CardHeader>
                                 <div className="flex justify-between items-center mb-2">
-                                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100">{course.category || 'General'}</Badge>
+                                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100">{course.category || t('websitePublic.general')}</Badge>
                                 </div>
                                 <CardTitle className="text-xl mb-1">{course.title}</CardTitle>
                                 <div className="flex items-center gap-4 text-sm text-slate-500 mt-2">
@@ -133,7 +135,7 @@ export default function PublicCoursesPage() {
                             </CardContent>
                             <CardFooter className="pt-0 border-t bg-slate-50/50 p-6 flex flex-col gap-2">
                                 {(() => {
-                                    const { to, label } = enrollmentTo(course);
+                                    const { to, label } = enrollmentTo(course, t('websitePublic.enrollNow'));
                                     const detailTo = `/public-site/courses/${course.id}`;
                                     return (
                                         <>
@@ -146,7 +148,7 @@ export default function PublicCoursesPage() {
                                                 to={detailTo}
                                                 className="text-center text-sm text-emerald-600 hover:text-emerald-700 hover:underline"
                                             >
-                                                View details
+                                                {t('websitePublic.viewDetails')}
                                             </Link>
                                         </>
                                     );
@@ -158,7 +160,7 @@ export default function PublicCoursesPage() {
             ) : (
                 <div className="text-center py-20 bg-slate-50 rounded-lg">
                     <BookOpen className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-900">No courses found</h3>
+                    <h3 className="text-lg font-medium text-slate-900">{t('websitePublic.noCoursesFound')}</h3>
                 </div>
             )}
         </div>

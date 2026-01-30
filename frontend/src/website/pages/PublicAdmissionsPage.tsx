@@ -19,13 +19,13 @@ import { publicWebsiteApi } from '@/lib/api/client';
 import { onlineAdmissionSchema, type OnlineAdmissionFormData } from '@/lib/validations/onlineAdmissions';
 import { usePublicAdmissionFields } from '@/website/hooks/useWebsiteAdmissions';
 
-const DOCUMENT_TYPE_OPTIONS = [
-  { value: 'passport', label: 'Passport' },
-  { value: 'tazkira', label: 'Tazkira / National ID' },
-  { value: 'birth_certificate', label: 'Birth Certificate' },
-  { value: 'transcript', label: 'Transcript' },
-  { value: 'photo', label: 'Photo' },
-  { value: 'other', label: 'Other' },
+const DOCUMENT_TYPE_KEYS: { value: string; key: string }[] = [
+  { value: 'passport', key: 'documentTypePassport' },
+  { value: 'tazkira', key: 'documentTypeTazkira' },
+  { value: 'birth_certificate', key: 'documentTypeBirthCertificate' },
+  { value: 'transcript', key: 'documentTypeTranscript' },
+  { value: 'photo', key: 'documentTypePhoto' },
+  { value: 'other', key: 'documentTypeOther' },
 ];
 
 export default function PublicAdmissionsPage() {
@@ -191,7 +191,7 @@ export default function PublicAdmissionsPage() {
             onValueChange={(val) => handleExtraValueChange(field.id, val)}
           >
             <SelectTrigger>
-              <SelectValue placeholder={field.placeholder || 'Select'} />
+              <SelectValue placeholder={field.placeholder || t('websitePublic.selectType')} />
             </SelectTrigger>
             <SelectContent>
               {options.map((opt) => (
@@ -302,20 +302,20 @@ export default function PublicAdmissionsPage() {
           <CardContent className="py-4 flex flex-wrap items-center gap-3">
             <GraduationCap className="h-8 w-8 text-emerald-600 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-emerald-800">Applying in connection with</p>
+              <p className="text-sm font-medium text-emerald-800">{t('websitePublic.applyingInConnectionWith')}</p>
               <p className="text-lg font-semibold text-emerald-900 truncate">{courseForBanner.title}</p>
             </div>
             <Button variant="outline" size="sm" className="border-emerald-300 text-emerald-800 hover:bg-emerald-100" asChild>
-              <Link to={courseDetailLink}>View program details</Link>
+              <Link to={courseDetailLink}>{t('websitePublic.viewProgramDetails')}</Link>
             </Button>
           </CardContent>
         </Card>
       )}
       <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-2xl">Online Admissions</CardTitle>
+          <CardTitle className="text-2xl">{t('websitePublic.onlineAdmissions')}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Submit your application with student details, guardians, and documents.
+            {t('websitePublic.submitApplicationIntro')}
           </p>
         </CardHeader>
       </Card>
@@ -324,40 +324,40 @@ export default function PublicAdmissionsPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-lg">Student Information</CardTitle>
+            <CardTitle className="text-lg">{t('websitePublic.studentInformation')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Full Name</Label>
+              <Label>{t('websitePublic.fullName')}</Label>
               <Input {...register('full_name')} />
               {errors.full_name && <p className="text-sm text-destructive">{errors.full_name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Father Name</Label>
+              <Label>{t('websitePublic.fatherName')}</Label>
               <Input {...register('father_name')} />
               {errors.father_name && <p className="text-sm text-destructive">{errors.father_name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Grandfather Name</Label>
+              <Label>{t('websitePublic.grandfatherName')}</Label>
               <Input {...register('grandfather_name')} />
             </div>
             <div className="space-y-2">
-              <Label>Mother Name</Label>
+              <Label>{t('websitePublic.motherName')}</Label>
               <Input {...register('mother_name')} />
             </div>
             <div className="space-y-2">
-              <Label>Gender</Label>
+              <Label>{t('websitePublic.gender')}</Label>
               <Controller
                 control={control}
                 name="gender"
                 render={({ field }) => (
                   <Select value={field.value || ''} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
+                      <SelectValue placeholder={t('websitePublic.selectGender')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="male">{t('websitePublic.male')}</SelectItem>
+                      <SelectItem value="female">{t('websitePublic.female')}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -365,35 +365,35 @@ export default function PublicAdmissionsPage() {
               {errors.gender && <p className="text-sm text-destructive">{errors.gender.message}</p>}
             </div>
             <div className="space-y-2">
-              <CalendarFormField control={control} name="birth_date" label="Birth Date" />
+              <CalendarFormField control={control} name="birth_date" label={t('websitePublic.birthDate')} />
             </div>
             <div className="space-y-2">
-              <Label>Birth Year</Label>
+              <Label>{t('websitePublic.birthYear')}</Label>
               <Input {...register('birth_year')} />
             </div>
             <div className="space-y-2">
-              <Label>Age</Label>
+              <Label>{t('websitePublic.age')}</Label>
               <Input type="number" {...register('age', { valueAsNumber: true })} />
             </div>
             <div className="space-y-2">
-              <Label>Applying Grade</Label>
+              <Label>{t('websitePublic.applyingGrade')}</Label>
               <Input {...register('applying_grade')} />
               {errors.applying_grade && <p className="text-sm text-destructive">{errors.applying_grade.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Admission Year</Label>
+              <Label>{t('websitePublic.admissionYear')}</Label>
               <Input {...register('admission_year')} />
             </div>
             <div className="space-y-2">
-              <Label>Nationality</Label>
+              <Label>{t('websitePublic.nationality')}</Label>
               <Input {...register('nationality')} />
             </div>
             <div className="space-y-2">
-              <Label>Preferred Language</Label>
+              <Label>{t('websitePublic.preferredLanguage')}</Label>
               <Input {...register('preferred_language')} />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Student Photo</Label>
+              <Label>{t('websitePublic.studentPhoto')}</Label>
               <Controller
                 control={control}
                 name="picture"
@@ -411,29 +411,29 @@ export default function PublicAdmissionsPage() {
 
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-lg">Guardian Information</CardTitle>
+            <CardTitle className="text-lg">{t('websitePublic.guardianInformation')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Guardian Name</Label>
+              <Label>{t('websitePublic.guardianName')}</Label>
               <Input {...register('guardian_name')} />
               {errors.guardian_name && <p className="text-sm text-destructive">{errors.guardian_name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Guardian Relation</Label>
+              <Label>{t('websitePublic.guardianRelation')}</Label>
               <Input {...register('guardian_relation')} />
             </div>
             <div className="space-y-2">
-              <Label>Guardian Phone</Label>
+              <Label>{t('websitePublic.guardianPhone')}</Label>
               <Input {...register('guardian_phone')} />
               {errors.guardian_phone && <p className="text-sm text-destructive">{errors.guardian_phone.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Guardian Tazkira</Label>
+              <Label>{t('websitePublic.guardianTazkira')}</Label>
               <Input {...register('guardian_tazkira')} />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Guardian Photo</Label>
+              <Label>{t('websitePublic.guardianPhoto')}</Label>
               <Controller
                 control={control}
                 name="guardian_picture"
@@ -451,35 +451,35 @@ export default function PublicAdmissionsPage() {
 
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-lg">Address Information</CardTitle>
+            <CardTitle className="text-lg">{t('websitePublic.addressInformation')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Home Address</Label>
+              <Label>{t('websitePublic.homeAddress')}</Label>
               <Textarea {...register('home_address')} />
             </div>
             <div className="space-y-2">
-              <Label>Origin Province</Label>
+              <Label>{t('websitePublic.originProvince')}</Label>
               <Input {...register('orig_province')} />
             </div>
             <div className="space-y-2">
-              <Label>Origin District</Label>
+              <Label>{t('websitePublic.originDistrict')}</Label>
               <Input {...register('orig_district')} />
             </div>
             <div className="space-y-2">
-              <Label>Origin Village</Label>
+              <Label>{t('websitePublic.originVillage')}</Label>
               <Input {...register('orig_village')} />
             </div>
             <div className="space-y-2">
-              <Label>Current Province</Label>
+              <Label>{t('websitePublic.currentProvince')}</Label>
               <Input {...register('curr_province')} />
             </div>
             <div className="space-y-2">
-              <Label>Current District</Label>
+              <Label>{t('websitePublic.currentDistrict')}</Label>
               <Input {...register('curr_district')} />
             </div>
             <div className="space-y-2">
-              <Label>Current Village</Label>
+              <Label>{t('websitePublic.currentVillage')}</Label>
               <Input {...register('curr_village')} />
             </div>
           </CardContent>
@@ -487,23 +487,23 @@ export default function PublicAdmissionsPage() {
 
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-lg">Previous School</CardTitle>
+            <CardTitle className="text-lg">{t('websitePublic.previousSchoolSection')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Previous School</Label>
+              <Label>{t('websitePublic.previousSchool')}</Label>
               <Input {...register('previous_school')} />
             </div>
             <div className="space-y-2">
-              <Label>Previous Grade Level</Label>
+              <Label>{t('websitePublic.previousGradeLevel')}</Label>
               <Input {...register('previous_grade_level')} />
             </div>
             <div className="space-y-2">
-              <Label>Previous Academic Year</Label>
+              <Label>{t('websitePublic.previousAcademicYear')}</Label>
               <Input {...register('previous_academic_year')} />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Previous School Notes</Label>
+              <Label>{t('websitePublic.previousSchoolNotes')}</Label>
               <Textarea {...register('previous_school_notes')} />
             </div>
           </CardContent>
@@ -511,24 +511,24 @@ export default function PublicAdmissionsPage() {
 
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-lg">Additional Details</CardTitle>
+            <CardTitle className="text-lg">{t('websitePublic.additionalDetails')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Emergency Contact Name</Label>
+              <Label>{t('websitePublic.emergencyContactName')}</Label>
               <Input {...register('emergency_contact_name')} />
             </div>
             <div className="space-y-2">
-              <Label>Emergency Contact Phone</Label>
+              <Label>{t('websitePublic.emergencyContactPhone')}</Label>
               <Input {...register('emergency_contact_phone')} />
             </div>
             <div className="space-y-2">
-              <Label>Family Income</Label>
+              <Label>{t('websitePublic.familyIncome')}</Label>
               <Input {...register('family_income')} />
             </div>
             <div className="space-y-2 flex items-center justify-between border rounded-lg px-3 py-2">
               <div>
-                <Label className="text-sm">Is Orphan</Label>
+                <Label className="text-sm">{t('websitePublic.isOrphan')}</Label>
               </div>
               <Controller
                 control={control}
@@ -539,7 +539,7 @@ export default function PublicAdmissionsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Disability Status</Label>
+              <Label>{t('websitePublic.disabilityStatus')}</Label>
               <Input {...register('disability_status')} />
             </div>
           </CardContent>
@@ -547,23 +547,23 @@ export default function PublicAdmissionsPage() {
 
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-lg">Guarantor (Zamin) Information</CardTitle>
+            <CardTitle className="text-lg">{t('websitePublic.guarantorInformation')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Guarantor Name</Label>
+              <Label>{t('websitePublic.guarantorName')}</Label>
               <Input {...register('zamin_name')} />
             </div>
             <div className="space-y-2">
-              <Label>Guarantor Phone</Label>
+              <Label>{t('websitePublic.guarantorPhone')}</Label>
               <Input {...register('zamin_phone')} />
             </div>
             <div className="space-y-2">
-              <Label>Guarantor Tazkira</Label>
+              <Label>{t('websitePublic.guarantorTazkira')}</Label>
               <Input {...register('zamin_tazkira')} />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Guarantor Address</Label>
+              <Label>{t('websitePublic.guarantorAddress')}</Label>
               <Textarea {...register('zamin_address')} />
             </div>
           </CardContent>
@@ -571,7 +571,7 @@ export default function PublicAdmissionsPage() {
 
         <Card className="overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Documents</CardTitle>
+            <CardTitle className="text-lg">{t('websitePublic.documentsSection')}</CardTitle>
             <Button
               type="button"
               variant="outline"
@@ -579,29 +579,29 @@ export default function PublicAdmissionsPage() {
               onClick={() => append({ documentType: 'other', file: null })}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Document
+              {t('websitePublic.addDocument')}
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
             {documents.length === 0 && (
-              <p className="text-sm text-muted-foreground">No documents added.</p>
+              <p className="text-sm text-muted-foreground">{t('websitePublic.noDocumentsAdded')}</p>
             )}
             {documents.map((doc, index) => (
               <div key={doc.id} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                 <div className="space-y-2">
-                  <Label>Document Type</Label>
+                  <Label>{t('websitePublic.documentType')}</Label>
                   <Controller
                     control={control}
                     name={`documents.${index}.documentType`}
                     render={({ field }) => (
                       <Select value={field.value || ''} onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
+                          <SelectValue placeholder={t('websitePublic.selectType')} />
                         </SelectTrigger>
                         <SelectContent>
-                          {DOCUMENT_TYPE_OPTIONS.map((option) => (
+                          {DOCUMENT_TYPE_KEYS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                              {t(`websitePublic.${option.key}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -610,7 +610,7 @@ export default function PublicAdmissionsPage() {
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label>File</Label>
+                  <Label>{t('websitePublic.file')}</Label>
                   <div className="flex items-center gap-2">
                     <Controller
                       control={control}
@@ -635,7 +635,7 @@ export default function PublicAdmissionsPage() {
         {enabledFields.length > 0 && (
           <Card className="overflow-hidden">
             <CardHeader>
-              <CardTitle className="text-lg">Additional Fields</CardTitle>
+              <CardTitle className="text-lg">{t('websitePublic.additionalFields')}</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {enabledFields.map((field) => (
@@ -654,7 +654,7 @@ export default function PublicAdmissionsPage() {
 
           <div className="flex justify-end gap-3">
             <Button type="submit" disabled={isSubmitting} className="min-w-[160px]">
-              {isSubmitting ? 'Submitting...' : 'Submit Admission'}
+              {isSubmitting ? t('websitePublic.submitting') : t('websitePublic.submitAdmission')}
             </Button>
           </div>
         </form>

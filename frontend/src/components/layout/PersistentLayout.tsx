@@ -58,12 +58,12 @@ export function PersistentLayout() {
   }, []);
 
   return (
-    <div className="min-h-screen flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="relative z-50 flex-shrink-0 isolate bg-sidebar flex" style={{ contain: 'layout style paint' }}>
+    <div className="h-screen overflow-hidden flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
+      <aside className="relative z-50 flex-shrink-0 isolate bg-sidebar flex h-full self-stretch" style={{ contain: 'layout style paint' }} aria-label="Sidebar">
         <SmartSidebar />
-      </div>
+      </aside>
       
-      <div className="flex-1 min-w-0 min-h-0 flex flex-col relative z-10">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col relative z-10 overflow-hidden">
         <AppHeader 
           title={pageTitle}
           showBreadcrumb={false}

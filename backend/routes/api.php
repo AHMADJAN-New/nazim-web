@@ -189,6 +189,7 @@ Route::middleware(['public.website.resolve', 'public.website.feature'])
         Route::get('/courses', [PublicWebsiteController::class, 'courses']);
         Route::get('/courses/{id}', [PublicWebsiteController::class, 'course']);
         Route::get('/scholars', [PublicWebsiteController::class, 'scholars']);
+        Route::get('/scholars/{id}/photo', [PublicWebsiteController::class, 'scholarPhoto']);
         Route::get('/graduates', [PublicWebsiteController::class, 'graduates']);
         Route::get('/donations', [PublicWebsiteController::class, 'donations']);
         Route::post('/contact', [PublicWebsiteController::class, 'contact']);
@@ -1458,9 +1459,11 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
 
             // Scholars
             Route::get('/scholars', [WebsiteScholarsController::class, 'index']);
+            Route::get('/scholars/{id}/photo', [WebsiteScholarsController::class, 'getPhoto']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/scholars', [WebsiteScholarsController::class, 'store']);
                 Route::put('/scholars/{id}', [WebsiteScholarsController::class, 'update']);
+                Route::post('/scholars/{id}/photo', [WebsiteScholarsController::class, 'uploadPhoto']);
                 Route::delete('/scholars/{id}', [WebsiteScholarsController::class, 'destroy']);
             });
 

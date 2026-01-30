@@ -712,6 +712,23 @@ class FileStorageService
     }
 
     /**
+     * Store website scholar photo (PUBLIC - for display on public scholars page)
+     * Path: website/scholars/{scholarId}/
+     */
+    public function storeWebsiteScholarPhoto(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId,
+        string $scholarId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'scholars', $scholarId);
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $this->updateStorageUsage($file, $organizationId);
+        return $filePath;
+    }
+
+    /**
      * Store website general form document (PUBLIC)
      * Path: website/forms/
      */
