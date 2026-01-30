@@ -77,6 +77,8 @@ use App\Http\Controllers\Website\WebsiteInboxController;
 use App\Http\Controllers\Website\WebsiteOnlineAdmissionController;
 use App\Http\Controllers\Website\WebsiteOnlineAdmissionFieldController;
 use App\Http\Controllers\PlatformWebsiteDomainController;
+use App\Http\Controllers\PlatformWebsiteConfigController;
+use App\Http\Controllers\PlatformWebsiteSettingsController;
 use App\Http\Controllers\IdCardTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
@@ -1622,7 +1624,12 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::get('/organizations/{id}', [OrganizationController::class, 'showPlatformAdmin']);
     Route::put('/organizations/{id}', [OrganizationController::class, 'updatePlatformAdmin']);
     Route::delete('/organizations/{id}', [OrganizationController::class, 'destroyPlatformAdmin']);
+
+    // Public website configuration (platform-wide)
+    Route::get('/website/config', [PlatformWebsiteConfigController::class, 'show']);
+
     Route::get('/organizations/{id}/website', [OrganizationController::class, 'websiteData']);
+    Route::put('/organizations/{organizationId}/website/settings/{schoolId}', [PlatformWebsiteSettingsController::class, 'upsert']);
     Route::get('/organizations/{organizationId}/domains', [PlatformWebsiteDomainController::class, 'index']);
     Route::post('/organizations/{organizationId}/domains', [PlatformWebsiteDomainController::class, 'store']);
     Route::put('/organizations/{organizationId}/domains/{id}', [PlatformWebsiteDomainController::class, 'update']);

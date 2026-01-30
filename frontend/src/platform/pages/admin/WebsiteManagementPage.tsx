@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, Fragment } from 'react';
 import { Globe, Search, ExternalLink, ChevronDown, ChevronRight, Settings, Lock, CheckCircle, XCircle, AlertCircle, Plus, Trash2, Pencil } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -40,6 +40,22 @@ export default function WebsiteManagementPage() {
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [domainDialogOpen, setDomainDialogOpen] = useState(false);
   const [domainDeleteId, setDomainDeleteId] = useState<string | null>(null);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [settingsForm, setSettingsForm] = useState<{
+    schoolId: string;
+    schoolName: string;
+    schoolSlug: string;
+    isPublic: boolean;
+    defaultLanguage: string;
+    enabledLanguages: string[];
+  }>({
+    schoolId: '',
+    schoolName: '',
+    schoolSlug: '',
+    isPublic: true,
+    defaultLanguage: 'en',
+    enabledLanguages: ['en', 'ar'],
+  });
   const [domainForm, setDomainForm] = useState({
     id: '',
     schoolId: '',
@@ -51,6 +67,14 @@ export default function WebsiteManagementPage() {
   const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
   const hasAdminPermission = Array.isArray(permissions) && permissions.includes('subscription.admin');
   const { data: organizations = [], isLoading: organizationsLoading } = usePlatformOrganizations();
+
+  const { data: websiteConfig } = useQuery({
+    queryKey: ['platform-website-config'],
+    queryFn: () => platformApi.websites.getConfig(),
+    enabled: !permissionsLoading && hasAdminPermission,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   // Fetch website data for selected organization
   const { data: websiteData, isLoading: websiteDataLoading, error: websiteDataError } = useQuery({
@@ -68,6 +92,29 @@ export default function WebsiteManagementPage() {
     },
     enabled: !!selectedOrg,
     staleTime: 5 * 60 * 1000,
+  });
+
+  const upsertWebsiteSettings = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrg || !settingsForm.schoolId) throw new Error('School not selected');
+      const enabledLanguages = settingsForm.enabledLanguages.includes(settingsForm.defaultLanguage)
+        ? settingsForm.enabledLanguages
+        : [...settingsForm.enabledLanguages, settingsForm.defaultLanguage];
+      return platformApi.websites.upsertWebsiteSettings(selectedOrg, settingsForm.schoolId, {
+        school_slug: settingsForm.schoolSlug,
+        is_public: settingsForm.isPublic,
+        default_language: settingsForm.defaultLanguage,
+        enabled_languages: enabledLanguages,
+      });
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.websiteSettingsUpdated'));
+      void queryClient.invalidateQueries({ queryKey: ['platform-organization-website', selectedOrg] });
+      setSettingsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.websiteSettingsUpdateFailed'));
+    },
   });
 
   const createDomain = useMutation({
@@ -179,6 +226,39 @@ export default function WebsiteManagementPage() {
     setDomainDialogOpen(true);
   };
 
+  const baseDomain = (websiteConfig as any)?.base_domain ? String((websiteConfig as any).base_domain) : '';
+
+  const getSubdomainUrl = (schoolSlug?: string | null) => {
+    if (!baseDomain || !schoolSlug) return null;
+    return `https://${schoolSlug}.${baseDomain}`;
+  };
+
+  const openEditSettings = (school: any) => {
+    const setting = websiteData?.settings?.find((s: any) => s.school_id === school.id);
+    const schoolSlug = setting?.school_slug ?? school.school_slug ?? '';
+    setSettingsForm({
+      schoolId: school.id,
+      schoolName: school.school_name || 'Unnamed School',
+      schoolSlug: schoolSlug || '',
+      isPublic: setting?.is_public ?? true,
+      defaultLanguage: setting?.default_language || 'en',
+      enabledLanguages: Array.isArray(setting?.enabled_languages) ? setting.enabled_languages : ['en', 'ar'],
+    });
+    setSettingsDialogOpen(true);
+  };
+
+  const toggleEnabledLanguage = (lang: string, checked: boolean) => {
+    setSettingsForm((prev) => {
+      const next = new Set(prev.enabledLanguages);
+      if (checked) {
+        next.add(lang);
+      } else {
+        next.delete(lang);
+      }
+      return { ...prev, enabledLanguages: Array.from(next) };
+    });
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-6xl overflow-x-hidden">
       <div className="flex flex-col gap-2">
@@ -220,8 +300,8 @@ export default function WebsiteManagementPage() {
                 {filteredOrganizations.map((organization) => {
                   const isExpanded = expandedOrg === organization.id;
                   return (
-                    <>
-                      <TableRow key={organization.id} className="cursor-pointer hover:bg-muted/50" onClick={() => {
+                    <Fragment key={organization.id}>
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => {
                         if (isExpanded) {
                           setExpandedOrg(null);
                           setSelectedOrg(null);
@@ -339,8 +419,17 @@ export default function WebsiteManagementPage() {
                                   </TabsList>
                                   <TabsContent value="domains" className="mt-4">
                                     <div className="flex items-center justify-between mb-4">
-                                      <div className="text-sm text-muted-foreground">
-                                        Manage domains and verification status.
+                                      <div className="text-sm text-muted-foreground space-y-1">
+                                        <div>Manage domains and verification status.</div>
+                                        <div className="text-xs">
+                                          {baseDomain
+                                            ? <>Default subdomains: <span className="font-mono">{`*.${baseDomain}`}</span></>
+                                            : <>Default subdomains: <span className="font-mono">NAZIM_PUBLIC_SITE_DOMAIN</span> not configured</>
+                                          }
+                                        </div>
+                                        <div className="text-xs">
+                                          Custom domains: point your A record to your load balancer IP, then set Verification to <span className="font-medium">Verified</span>.
+                                        </div>
                                       </div>
                                       <Button size="sm" onClick={openCreateDomain}>
                                         <Plus className="h-4 w-4 mr-2" />
@@ -412,48 +501,73 @@ export default function WebsiteManagementPage() {
                                     )}
                                   </TabsContent>
                                   <TabsContent value="settings" className="mt-4">
-                                    {websiteData.settings && websiteData.settings.length > 0 ? (
+                                    {websiteData.schools && websiteData.schools.length > 0 ? (
                                       <div className="space-y-2">
-                                        {websiteData.settings.map((setting) => {
-                                          const school = websiteData.schools.find(s => s.id === setting.school_id);
+                                        {websiteData.schools.map((school) => {
+                                          const setting = websiteData.settings?.find((s) => s.school_id === school.id);
+                                          const schoolSlug = setting?.school_slug ?? school.school_slug ?? null;
+                                          const subdomainUrl = getSubdomainUrl(schoolSlug);
+
                                           return (
-                                            <Card key={setting.id}>
+                                            <Card key={school.id}>
                                               <CardContent className="p-4">
                                                 <div className="space-y-2">
-                                                  <div className="flex items-center justify-between">
+                                                  <div className="flex items-start justify-between gap-3">
                                                     <div>
                                                       <div className="font-medium">
-                                                        {school?.school_name || 'Default Settings'}
+                                                        {school.school_name || 'Unnamed School'}
                                                       </div>
-                                                      {school?.school_slug && (
-                                                        <div className="text-sm text-muted-foreground">
-                                                          Slug: {school.school_slug}
+                                                      <div className="text-sm text-muted-foreground">
+                                                        Slug: <span className="font-mono">{schoolSlug || 'Not set'}</span>
+                                                      </div>
+                                                      {subdomainUrl && (
+                                                        <div className="text-xs text-muted-foreground mt-1">
+                                                          Subdomain: <span className="font-mono">{subdomainUrl}</span>
                                                         </div>
                                                       )}
                                                     </div>
-                                                    {setting.is_public ? (
-                                                      <Badge variant="default" className="gap-1">
-                                                        <CheckCircle className="h-3 w-3" />
-                                                        Public
-                                                      </Badge>
-                                                    ) : (
-                                                      <Badge variant="secondary" className="gap-1">
-                                                        <Lock className="h-3 w-3" />
-                                                        Private
-                                                      </Badge>
-                                                    )}
+
+                                                    <div className="flex items-center gap-2">
+                                                      {setting?.is_public ?? true ? (
+                                                        <Badge variant="default" className="gap-1">
+                                                          <CheckCircle className="h-3 w-3" />
+                                                          Public
+                                                        </Badge>
+                                                      ) : (
+                                                        <Badge variant="secondary" className="gap-1">
+                                                          <Lock className="h-3 w-3" />
+                                                          Private
+                                                        </Badge>
+                                                      )}
+                                                      {subdomainUrl && (
+                                                        <Button variant="outline" size="sm" asChild>
+                                                          <a href={subdomainUrl} target="_blank" rel="noreferrer">
+                                                            <ExternalLink className="h-3 w-3 mr-1" />
+                                                            Visit
+                                                          </a>
+                                                        </Button>
+                                                      )}
+                                                    </div>
                                                   </div>
+
                                                   <div className="grid grid-cols-2 gap-4 text-sm">
                                                     <div>
                                                       <span className="text-muted-foreground">Default Language: </span>
-                                                      <span className="font-medium">{setting.default_language || 'Not set'}</span>
+                                                      <span className="font-medium">{setting?.default_language || 'Not set'}</span>
                                                     </div>
                                                     <div>
                                                       <span className="text-muted-foreground">Enabled Languages: </span>
                                                       <span className="font-medium">
-                                                        {setting.enabled_languages?.join(', ') || 'None'}
+                                                        {Array.isArray(setting?.enabled_languages) ? setting.enabled_languages.join(', ') : 'None'}
                                                       </span>
                                                     </div>
+                                                  </div>
+
+                                                  <div className="mt-3 flex items-center gap-2">
+                                                    <Button variant="outline" size="sm" onClick={() => openEditSettings(school)}>
+                                                      <Pencil className="h-3 w-3 mr-1" />
+                                                      {setting ? 'Edit Settings' : 'Configure'}
+                                                    </Button>
                                                   </div>
                                                 </div>
                                               </CardContent>
@@ -463,25 +577,49 @@ export default function WebsiteManagementPage() {
                                       </div>
                                     ) : (
                                       <div className="text-center py-8 text-muted-foreground">
-                                        No website settings configured
+                                        No schools found
                                       </div>
                                     )}
                                   </TabsContent>
                                   <TabsContent value="schools" className="mt-4">
                                     {websiteData.schools && websiteData.schools.length > 0 ? (
                                       <div className="space-y-2">
-                                        {websiteData.schools.map((school) => (
-                                          <Card key={school.id}>
-                                            <CardContent className="p-4">
-                                              <div className="font-medium">{school.school_name || 'Unnamed School'}</div>
-                                              {school.school_slug && (
-                                                <div className="text-sm text-muted-foreground">
-                                                  Slug: {school.school_slug}
+                                        {websiteData.schools.map((school) => {
+                                          const subdomainUrl = getSubdomainUrl(school.school_slug);
+                                          return (
+                                            <Card key={school.id}>
+                                              <CardContent className="p-4">
+                                                <div className="flex items-start justify-between gap-3">
+                                                  <div>
+                                                    <div className="font-medium">{school.school_name || 'Unnamed School'}</div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                      Slug: <span className="font-mono">{school.school_slug || 'Not set'}</span>
+                                                    </div>
+                                                    {subdomainUrl && (
+                                                      <div className="text-xs text-muted-foreground mt-1">
+                                                        Subdomain: <span className="font-mono">{subdomainUrl}</span>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                    {subdomainUrl && (
+                                                      <Button variant="outline" size="sm" asChild>
+                                                        <a href={subdomainUrl} target="_blank" rel="noreferrer">
+                                                          <ExternalLink className="h-3 w-3 mr-1" />
+                                                          Visit
+                                                        </a>
+                                                      </Button>
+                                                    )}
+                                                    <Button variant="outline" size="sm" onClick={() => openEditSettings(school)}>
+                                                      <Pencil className="h-3 w-3 mr-1" />
+                                                      Configure
+                                                    </Button>
+                                                  </div>
                                                 </div>
-                                              )}
-                                            </CardContent>
-                                          </Card>
-                                        ))}
+                                              </CardContent>
+                                            </Card>
+                                          );
+                                        })}
                                       </div>
                                     ) : (
                                       <div className="text-center py-8 text-muted-foreground">
@@ -499,7 +637,7 @@ export default function WebsiteManagementPage() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
                 {!organizationsLoading && filteredOrganizations.length === 0 && (
@@ -611,6 +749,95 @@ export default function WebsiteManagementPage() {
               }}
             >
               {domainForm.id ? 'Save Changes' : 'Create Domain'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Website Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm">
+              <span className="text-muted-foreground">School: </span>
+              <span className="font-medium">{settingsForm.schoolName}</span>
+            </div>
+
+            <div className="space-y-2">
+              <Label>School Slug (subdomain)</Label>
+              <Input
+                value={settingsForm.schoolSlug}
+                onChange={(event) => setSettingsForm((prev) => ({ ...prev, schoolSlug: event.target.value }))}
+                placeholder="al-huda"
+              />
+              {baseDomain && settingsForm.schoolSlug.trim() && (
+                <div className="text-xs text-muted-foreground">
+                  Subdomain URL: <span className="font-mono">{getSubdomainUrl(settingsForm.schoolSlug.trim())}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-sm">Public website</span>
+              <Switch
+                checked={settingsForm.isPublic}
+                onCheckedChange={(checked) => setSettingsForm((prev) => ({ ...prev, isPublic: checked }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Default Language</Label>
+              <Select
+                value={settingsForm.defaultLanguage}
+                onValueChange={(value) => setSettingsForm((prev) => ({ ...prev, defaultLanguage: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">English (en)</SelectItem>
+                  <SelectItem value="ps">Pashto (ps)</SelectItem>
+                  <SelectItem value="fa">Farsi (fa)</SelectItem>
+                  <SelectItem value="ar">Arabic (ar)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Enabled Languages</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {(['en', 'ps', 'fa', 'ar'] as const).map((lang) => {
+                  const checked = settingsForm.enabledLanguages.includes(lang);
+                  return (
+                    <div key={lang} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                      <span className="text-sm">{lang.toUpperCase()}</span>
+                      <Switch checked={checked} onCheckedChange={(v) => toggleEnabledLanguage(lang, v)} />
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Default language will be forced enabled.
+              </div>
+            </div>
+
+            <Button
+              onClick={() => {
+                if (!settingsForm.schoolId || !settingsForm.schoolSlug.trim()) {
+                  showToast.error(t('toast.websiteSettingsMissingFields'));
+                  return;
+                }
+                if (settingsForm.enabledLanguages.length === 0) {
+                  showToast.error(t('toast.websiteSettingsMissingFields'));
+                  return;
+                }
+                upsertWebsiteSettings.mutate();
+              }}
+              disabled={upsertWebsiteSettings.isPending}
+            >
+              Save Settings
             </Button>
           </div>
         </DialogContent>

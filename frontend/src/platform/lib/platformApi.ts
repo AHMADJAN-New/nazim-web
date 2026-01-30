@@ -579,6 +579,11 @@ export const platformApi = {
 
   // Website management
   websites: {
+    getConfig: async () => {
+      return apiClient.get<{
+        base_domain: string;
+      }>('/platform/website/config');
+    },
     getOrganizationWebsite: async (organizationId: string) => {
       return apiClient.get<{
         organization: {
@@ -616,6 +621,19 @@ export const platformApi = {
           school_slug: string | null;
         }>;
       }>(`/platform/organizations/${organizationId}/website`);
+    },
+    upsertWebsiteSettings: async (
+      organizationId: string,
+      schoolId: string,
+      data: {
+        school_slug: string;
+        is_public: boolean;
+        default_language?: string | null;
+        enabled_languages?: string[] | null;
+        theme?: Record<string, any> | null;
+      }
+    ) => {
+      return apiClient.put(`/platform/organizations/${organizationId}/website/settings/${schoolId}`, data);
     },
     listDomains: async (organizationId: string, params?: { school_id?: string }) => {
       return apiClient.get(`/platform/organizations/${organizationId}/domains`, params);

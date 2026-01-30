@@ -154,6 +154,21 @@ class ApiClient {
       }
     }
 
+    // Public website: help the backend resolve school when behind proxies or split-frontends.
+    // This is safe because the backend still validates host/domain/slug mappings.
+    if (typeof window !== 'undefined' && endpoint.startsWith('/public/website/')) {
+      const publicHost = window.location.host;
+      if (publicHost) {
+        if (!options.headers) {
+          options.headers = {};
+        }
+        const headers = options.headers as Record<string, string>;
+        if (!headers['X-Public-Website-Host']) {
+          options.headers = { ...headers, 'X-Public-Website-Host': publicHost };
+        }
+      }
+    }
+
     // CRITICAL: Extract params BEFORE destructuring to ensure it's a plain object
     const params = options.params ? { ...options.params } : undefined;
     const { params: _, ...fetchOptions } = options;
