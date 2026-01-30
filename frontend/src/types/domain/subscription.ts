@@ -41,9 +41,28 @@ export interface SubscriptionPlan {
   sortOrder: number;
   features: string[];
   limits: Record<string, number>;
+  landingOffer?: LandingOffer | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+}
+
+export interface LandingOffer {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  maxDiscountAmount: number | null;
+  currency: 'AFN' | 'USD' | null;
+  validFrom: Date | null;
+  validUntil: Date | null;
+  metadata?: Record<string, unknown> | null;
+  discountAmountAfn: number;
+  discountAmountUsd: number;
+  discountedTotalFeeAfn: number;
+  discountedTotalFeeUsd: number;
 }
 
 export type SubscriptionStatus = 

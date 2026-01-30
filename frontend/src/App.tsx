@@ -204,6 +204,7 @@ import {
   OrganizationRevenueHistory,
   PlanRequestsPage,
   ContactMessagesManagement,
+  LandingOffersPage,
   PlatformSettings,
   TranslationsManagement,
   HelpCenterManagement,
@@ -653,6 +654,11 @@ const App = () => (
                     <Route path="discount-codes" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <DiscountCodesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="landing-offers" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <LandingOffersPage />
                       </Suspense>
                     } />
                     <Route path="maintenance-fees" element={

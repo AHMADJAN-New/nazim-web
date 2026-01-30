@@ -6869,6 +6869,44 @@ export const en = {
     buildingDeleted: 'building Deleted',
     viewAll: 'View All'
   },
+  platformLandingOffers: {
+    title: 'Landing Page Offers',
+    subtitle: 'Highlight discount codes on the public pricing page and control offer countdowns.',
+    columns: {
+      code: 'Code',
+      plan: 'Plan',
+      discount: 'Discount',
+      validity: 'Validity',
+      landing: 'Landing',
+      actions: 'Actions'
+    },
+    live: 'Live',
+    allPlans: 'All Plans',
+    specificPlan: 'Specific Plan',
+    ends: 'Ends',
+    noExpiry: 'No expiry',
+    visible: 'Visible',
+    hidden: 'Hidden',
+    configure: 'Configure',
+    empty: 'No discount codes found.',
+    loading: 'Loading discount codes...',
+    expired: 'Expired',
+    saveSettings: 'Save Settings',
+    dialog: {
+      title: 'Landing Offer Settings',
+      description: 'Control how this discount appears on the public pricing cards.',
+      showTitle: 'Show on landing page',
+      showDescription: 'Enables the badge, discounted price, and countdown timer.',
+      badgeLabel: 'Landing Badge Label',
+      badgePlaceholder: 'Limited Offer',
+      messageLabel: 'Landing Message',
+      messagePlaceholder: 'Short highlight for the offer',
+      validFrom: 'Valid From',
+      validUntil: 'Valid Until',
+      noStartDate: 'No start date',
+      noExpiryDate: 'No expiry date'
+    }
+  },
   '': {
     '': {
       '': {

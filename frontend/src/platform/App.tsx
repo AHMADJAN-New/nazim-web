@@ -19,6 +19,7 @@ import LicenseFeesManagement from './pages/admin/LicenseFeesManagement';
 import DesktopLicenseGeneration from './pages/admin/DesktopLicenseGeneration';
 import ContactMessagesManagement from './pages/admin/ContactMessagesManagement';
 import WebsiteManagementPage from './pages/admin/WebsiteManagementPage';
+import LandingOffersPage from './pages/admin/LandingOffersPage';
 import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
 import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
@@ -176,6 +177,7 @@ export function PlatformAdminApp() {
               <Route path="plans" element={<PlansManagement />} />
               <Route path="plan-requests" element={<PlanRequestsPage />} />
               <Route path="discount-codes" element={<DiscountCodesManagement />} />
+              <Route path="landing-offers" element={<LandingOffersPage />} />
               <Route path="renewals/:renewalId" element={<RenewalReviewPage />} />
               <Route path="pending" element={<SubscriptionAdminDashboard />} />
               <Route path="admins" element={<PlatformAdminDashboard />} />

@@ -6,6 +6,7 @@ import { useLanguage } from './useLanguage';
 import { useHasPermission } from './usePermissions';
 
 import { apiClient } from '@/lib/api/client';
+import { mapSubscriptionPlanApiToDomain } from '@/mappers/subscriptionMapper';
 import { showToast } from '@/lib/toast';
 import type * as SubscriptionApi from '@/types/api/subscription';
 import type {
@@ -150,7 +151,8 @@ export const useSubscriptionPlans = () => {
         '/subscription/plans',
         { method: 'GET' }
       );
-      return response.data.map(mapPlanApiToDomain);
+      // Use shared mapper so plans include landingOffer and fee fields (for index PricingSection)
+      return response.data.map(mapSubscriptionPlanApiToDomain);
     },
     staleTime: 60 * 60 * 1000, // 1 hour
     refetchOnWindowFocus: false,

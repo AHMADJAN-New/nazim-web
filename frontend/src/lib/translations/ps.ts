@@ -6880,6 +6880,44 @@ export const ps: TranslationKeys = {
     contactEmail: 'ایمیل: info@nazim.school',
     contactAddress: 'پته: کابل، افغانستان'
   },
+  platformLandingOffers: {
+    title: 'د لینډینګ پاڼې تخفیفونه',
+    subtitle: 'د عامه قیمت پاڼې لپاره تخفیفي کوډونه وښایئ او د وړاندیز وخت تنظیم کړئ.',
+    columns: {
+      code: 'کوډ',
+      plan: 'پلان',
+      discount: 'تخفیف',
+      validity: 'اعتبار',
+      landing: 'لینډینګ',
+      actions: 'کړنې'
+    },
+    live: 'فعاله',
+    allPlans: 'ټول پلانونه',
+    specificPlan: 'ځانګړی پلان',
+    ends: 'پای ته رسېږي',
+    noExpiry: 'پای نېټه نشته',
+    visible: 'ښکاره',
+    hidden: 'پټ',
+    configure: 'تنظیم',
+    empty: 'هیڅ تخفیفي کوډ ونه موندل شو.',
+    loading: 'تخفیفي کوډونه پورته کېږي...',
+    expired: 'پای ته رسېدلی',
+    saveSettings: 'تنظیمات خوندي کړئ',
+    dialog: {
+      title: 'د لینډینګ وړاندیز تنظیمات',
+      description: 'دا تخفیف څنګه په عامه قیمت کارتونو کې ښکاري تنظیم کړئ.',
+      showTitle: 'په لینډینګ پاڼه کې ښکاره کړئ',
+      showDescription: 'بېج، تخفیفي قیمت او شمېرونکی فعالوي.',
+      badgeLabel: 'د بېج لیبل',
+      badgePlaceholder: 'ځانګړې تخفیف',
+      messageLabel: 'د وړاندیز پیغام',
+      messagePlaceholder: 'لنډ وضاحت د وړاندیز لپاره',
+      validFrom: 'اعتبار له',
+      validUntil: 'اعتبار تر',
+      noStartDate: 'د پیل نېټه نشته',
+      noExpiryDate: 'د پای نېټه نشته'
+    }
+  },
   classes: {
     noClasses: 'هیڅ ټولګي نشته',
     viewAll: 'ټول کتل'

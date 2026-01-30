@@ -6889,5 +6889,43 @@ export const ar: TranslationKeys = {
     contactPhone: 'الهاتف: +93 700 000 000',
     contactEmail: 'البريد: info@nazim.school',
     contactAddress: 'العنوان: كابول، أفغانستان'
+  },
+  platformLandingOffers: {
+    title: 'عروض صفحة الهبوط',
+    subtitle: 'اعرض أكواد الخصم في صفحة التسعير العامة وتحكم بمدة العرض.',
+    columns: {
+      code: 'الرمز',
+      plan: 'الخطة',
+      discount: 'الخصم',
+      validity: 'الصلاحية',
+      landing: 'صفحة الهبوط',
+      actions: 'الإجراءات'
+    },
+    live: 'نشط',
+    allPlans: 'كل الخطط',
+    specificPlan: 'خطة محددة',
+    ends: 'ينتهي',
+    noExpiry: 'بدون تاريخ انتهاء',
+    visible: 'ظاهر',
+    hidden: 'مخفي',
+    configure: 'إعداد',
+    empty: 'لا توجد أكواد خصم.',
+    loading: 'جارٍ تحميل أكواد الخصم...',
+    expired: 'منتهي',
+    saveSettings: 'حفظ الإعدادات',
+    dialog: {
+      title: 'إعدادات عرض الهبوط',
+      description: 'تحكم في كيفية ظهور هذا الخصم في بطاقات التسعير العامة.',
+      showTitle: 'إظهار في صفحة الهبوط',
+      showDescription: 'يُفعّل الشارة والسعر المخفّض والعد التنازلي.',
+      badgeLabel: 'نص الشارة',
+      badgePlaceholder: 'عرض محدود',
+      messageLabel: 'رسالة العرض',
+      messagePlaceholder: 'وصف قصير للعرض',
+      validFrom: 'صالح من',
+      validUntil: 'صالح حتى',
+      noStartDate: 'بدون تاريخ بدء',
+      noExpiryDate: 'بدون تاريخ انتهاء'
+    }
   }
 };

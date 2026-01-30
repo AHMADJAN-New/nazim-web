@@ -6892,5 +6892,43 @@ export const fa: TranslationKeys = {
     contactPhone: 'تلفن: +93 700 000 000',
     contactEmail: 'ایمیل: info@nazim.school',
     contactAddress: 'آدرس: کابل، افغانستان'
+  },
+  platformLandingOffers: {
+    title: 'تخفیف‌های صفحه لندینگ',
+    subtitle: 'کدهای تخفیف را در صفحه قیمت عمومی نمایش دهید و زمان‌بندی پیشنهاد را مدیریت کنید.',
+    columns: {
+      code: 'کد',
+      plan: 'پلان',
+      discount: 'تخفیف',
+      validity: 'اعتبار',
+      landing: 'لندینگ',
+      actions: 'عملیات'
+    },
+    live: 'فعال',
+    allPlans: 'همه پلان‌ها',
+    specificPlan: 'پلان مشخص',
+    ends: 'پایان',
+    noExpiry: 'بدون تاریخ پایان',
+    visible: 'نمایان',
+    hidden: 'مخفی',
+    configure: 'تنظیم',
+    empty: 'هیچ کد تخفیفی یافت نشد.',
+    loading: 'در حال بارگذاری کدهای تخفیف...',
+    expired: 'منقضی شده',
+    saveSettings: 'ذخیره تنظیمات',
+    dialog: {
+      title: 'تنظیمات پیشنهاد لندینگ',
+      description: 'نمایش این تخفیف در کارت‌های قیمت عمومی را تنظیم کنید.',
+      showTitle: 'نمایش در صفحه لندینگ',
+      showDescription: 'نشان، قیمت تخفیفی و شمارنده را فعال می‌کند.',
+      badgeLabel: 'برچسب نشان',
+      badgePlaceholder: 'تخفیف ویژه',
+      messageLabel: 'پیام پیشنهاد',
+      messagePlaceholder: 'توضیح کوتاه برای پیشنهاد',
+      validFrom: 'اعتبار از',
+      validUntil: 'اعتبار تا',
+      noStartDate: 'بدون تاریخ شروع',
+      noExpiryDate: 'بدون تاریخ پایان'
+    }
   }
 };
