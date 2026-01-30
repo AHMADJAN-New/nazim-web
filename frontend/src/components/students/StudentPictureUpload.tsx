@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { CameraCaptureDialog, ImageCropDialog } from '@/components/image-capture';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
+import { Camera } from 'lucide-react';
 
 interface StudentPictureUploadProps {
     studentId?: string;
@@ -26,6 +27,9 @@ export function StudentPictureUpload({
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [imageError, setImageError] = useState(false);
+    const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+    const [cropDialogOpen, setCropDialogOpen] = useState(false);
+    const [pendingCropImageUrl, setPendingCropImageUrl] = useState<string | null>(null);
     const upload = useStudentPictureUpload();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -124,53 +128,49 @@ export function StudentPictureUpload({
         return null;
     }, [previewUrl, imageUrl, imageError]);
 
+    const applyCroppedFile = async (f: File) => {
+        setFile(f);
+        const reader = new FileReader();
+        reader.onload = () => setPreviewUrl(reader.result as string);
+        reader.readAsDataURL(f);
+        if (studentId && organizationId) {
+            await handleAutoUpload(f);
+        } else {
+            onFileSelected?.(f);
+        }
+    };
+
     const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0] || null;
-        
+        e.target.value = '';
+
         if (f) {
-            // Validate file size (max 5MB = 5120 KB, matching backend validation)
-            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+            const MAX_FILE_SIZE = 5 * 1024 * 1024;
             if (f.size > MAX_FILE_SIZE) {
                 const { showToast } = await import('@/lib/toast');
                 const fileSizeMB = (f.size / (1024 * 1024)).toFixed(2);
                 showToast.error(`File size exceeds maximum allowed size of 5MB. Selected file is ${fileSizeMB}MB.`);
-                e.target.value = ''; // Clear the input
                 setFile(null);
                 setPreviewUrl(null);
                 onFileSelected?.(null);
                 return;
             }
-            
-            // Validate file type
             const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
             if (!allowedTypes.includes(f.type)) {
                 const { showToast } = await import('@/lib/toast');
                 showToast.error('The file must be an image (jpg, jpeg, png, gif, or webp).');
-                e.target.value = ''; // Clear the input
                 setFile(null);
                 setPreviewUrl(null);
                 onFileSelected?.(null);
                 return;
             }
+            const url = URL.createObjectURL(f);
+            setPendingCropImageUrl(url);
+            setCropDialogOpen(true);
+            return;
         }
-        
-        setFile(f);
-        if (f) {
-            const reader = new FileReader();
-            reader.onload = () => setPreviewUrl(reader.result as string);
-            reader.readAsDataURL(f);
-            
-            // Auto-upload if studentId exists (edit mode)
-            if (studentId && organizationId) {
-                await handleAutoUpload(f);
-            } else {
-                // For create mode, just notify parent
-                onFileSelected?.(f);
-            }
-        } else {
-            setPreviewUrl(null);
-            onFileSelected?.(null);
-        }
+        setPreviewUrl(null);
+        onFileSelected?.(null);
     };
 
     const handleAutoUpload = async (fileToUpload: File) => {
@@ -236,15 +236,45 @@ export function StudentPictureUpload({
     };
 
     const handleSelectClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        // Prevent form submission
         e.preventDefault();
         e.stopPropagation();
-        
-        // Trigger file input click to open file dialog/camera
         if (fileInputRef.current) {
             fileInputRef.current.click();
         }
     };
+
+    const handleTakePhotoClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setCameraDialogOpen(true);
+    };
+
+    const handleCameraCapture = useCallback((blob: Blob) => {
+        const url = URL.createObjectURL(blob);
+        setPendingCropImageUrl(url);
+        setCameraDialogOpen(false);
+        setCropDialogOpen(true);
+    }, []);
+
+    const handleCropComplete = useCallback(
+        (croppedFile: File) => {
+            if (pendingCropImageUrl && pendingCropImageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(pendingCropImageUrl);
+            }
+            setPendingCropImageUrl(null);
+            setCropDialogOpen(false);
+            void applyCroppedFile(croppedFile);
+        },
+        [pendingCropImageUrl, applyCroppedFile]
+    );
+
+    const handleCropDialogOpenChange = useCallback((open: boolean) => {
+        setCropDialogOpen(open);
+        if (!open && pendingCropImageUrl && pendingCropImageUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(pendingCropImageUrl);
+            setPendingCropImageUrl(null);
+        }
+    }, [pendingCropImageUrl]);
 
     // Determine if button should be disabled
     // For create mode: allow file selection if organizationId exists
@@ -281,26 +311,44 @@ export function StudentPictureUpload({
                     style={{ display: 'none' }}
                 />
                 
-                {/* Single Select Picture button */}
-                <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleSelectClick}
-                    disabled={disabled}
-                    className="w-full sm:w-auto"
-                    form="" // Explicitly detach from any form
-                >
-                    {upload.isPending ? (
-                        <>
-                            <span className="mr-2">{t('events.uploading') || 'Uploading...'}</span>
-                        </>
-                    ) : (
-                        <>
-                            {t('students.selectPicture') || 'Select Picture'}
-                        </>
-                    )}
-                </Button>
-                
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleSelectClick}
+                        disabled={disabled}
+                        className="w-full sm:w-auto"
+                        form=""
+                    >
+                        {upload.isPending
+                            ? (t('events.uploading') || 'Uploading...')
+                            : (t('students.selectPicture') || 'Select Picture')}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleTakePhotoClick}
+                        disabled={disabled}
+                        className="w-full sm:w-auto"
+                        form=""
+                        aria-label={t('imageCapture.takePhoto') || 'Take photo'}
+                    >
+                        <Camera className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">{t('imageCapture.takePhoto') || 'Take photo'}</span>
+                    </Button>
+                </div>
+                <CameraCaptureDialog
+                    open={cameraDialogOpen}
+                    onOpenChange={setCameraDialogOpen}
+                    onCapture={handleCameraCapture}
+                />
+                <ImageCropDialog
+                    open={cropDialogOpen}
+                    onOpenChange={handleCropDialogOpenChange}
+                    imageUrl={pendingCropImageUrl}
+                    aspectRatio={1}
+                    onCropComplete={handleCropComplete}
+                />
                 {/* Show file name or upload status */}
                 {upload.isPending && (
                     <p className="text-xs text-muted-foreground mt-1">

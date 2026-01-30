@@ -3329,6 +3329,21 @@ export const fa: TranslationKeys = {
     startSchoolSetupTour: 'شروع راهنمای تنظیم مکتب',
     schoolSetupTourDescription: 'راهنمای کامل برای تنظیم مکتب شما: جزئیات مکتب، سال‌های تحصیلی، کلاس‌ها و مضامین'
   },
+  imageCapture: {
+    takePhoto: 'عکس بگیرید',
+    capturePhoto: 'ثبت',
+    cropImage: 'برش تصویر',
+    cropDescription: 'ناحیه برش را تنظیم کنید، سپس انجام دهید را بزنید.',
+    done: 'انجام شد',
+    cameraAccessDenied: 'دسترسی به دوربین لازم است. لطفاً اجازه دسترسی به دوربین را بدهید.',
+    noCameraFound: 'دوربینی در این دستگاه یافت نشد.',
+    cameraInUse: 'دوربین در حال استفاده است. برنامه‌های دیگر را ببندید و دوباره امتحان کنید.',
+    cameraError: 'راه‌اندازی دوربین ناموفق بود.',
+    cameraHint: 'برای انتخاب فایل از «انتخاب تصویر» استفاده کنید.',
+    cameraPreview: 'پیش‌نمایش دوربین',
+    fileTooLarge: 'تصویر از حداکثر ۵ مگابایت بیشتر است. لطفاً ناحیه کوچکتری برش دهید یا تصویر با وضوح کمتر استفاده کنید.',
+    cropFailed: 'برش تصویر ناموفق بود. لطفاً دوباره امتحان کنید.'
+  },
   hostel: {
     boarders: 'لیلیه‌نشینان',
     boardersLabel: 'لیلیه‌نشینان',
@@ -5907,6 +5922,8 @@ export const fa: TranslationKeys = {
     fileDownloadFailed: 'دانلود فایل ناموفق بود',
     fileUploaded: 'فایل با موفقیت آپلود شد',
     fileUploadFailed: 'آپلود فایل ناموفق بود',
+    fileMustBeImage: 'لطفاً یک فایل تصویر انتخاب کنید (JPEG, PNG, GIF, WebP, BMP یا SVG).',
+    imageUploadFailed: 'آپلود تصویر ناموفق بود',
     finance: {
       accounts: {
         account: 'حساب مالی'

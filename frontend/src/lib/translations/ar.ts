@@ -3338,6 +3338,21 @@ export const ar: TranslationKeys = {
     "startSchoolSetupTour": "بدء جولة إعداد المدرسة",
     "schoolSetupTourDescription": "دليل كامل لإعداد مدرستك: تفاصيل المدرسة، السنوات الأكاديمية، الفصول والمواد"
   },
+  "imageCapture": {
+    "takePhoto": "التقاط صورة",
+    "capturePhoto": "التقاط",
+    "cropImage": "قص الصورة",
+    "cropDescription": "اضبط منطقة القص، ثم انقر تم.",
+    "done": "تم",
+    "cameraAccessDenied": "إذن الكاميرا مطلوب. يرجى السماح بالوصول إلى الكاميرا.",
+    "noCameraFound": "لم يتم العثور على كاميرا في هذا الجهاز.",
+    "cameraInUse": "الكاميرا قيد الاستخدام. أغلق التطبيقات الأخرى وحاول مرة أخرى.",
+    "cameraError": "فشل تشغيل الكاميرا.",
+    "cameraHint": "استخدم «اختيار صورة» لاختيار ملف بدلاً من ذلك.",
+    "cameraPreview": "معاينة الكاميرا",
+    "fileTooLarge": "تتجاوز الصورة الحد الأقصى 5 ميجابايت. يرجى قص منطقة أصغر أو استخدام صورة بدقة أقل.",
+    "cropFailed": "فشل قص الصورة. يرجى المحاولة مرة أخرى."
+  },
   "hostel": {
     "boarders": "Boarders",
     "boardersLabel": "boarders",
@@ -6027,6 +6042,8 @@ export const ar: TranslationKeys = {
     "fileDownloadFailed": "فشل تنزيل الملف",
     "fileUploaded": "تم رفع الملف بنجاح",
     "fileUploadFailed": "فشل رفع الملف",
+    "fileMustBeImage": "يرجى اختيار ملف صورة (JPEG أو PNG أو GIF أو WebP أو BMP أو SVG).",
+    "imageUploadFailed": "فشل رفع الصورة",
     "fillAllFields": null,
     "finance": {
       "accounts": {

@@ -3332,6 +3332,21 @@ export const en = {
     startSchoolSetupTour: 'Start School Setup Tour',
     schoolSetupTourDescription: 'Complete guide to setting up your school: school details, academic years, classes, and subjects'
   },
+  imageCapture: {
+    takePhoto: 'Take photo',
+    capturePhoto: 'Capture',
+    cropImage: 'Crop image',
+    cropDescription: 'Adjust the crop area, then click Done.',
+    done: 'Done',
+    cameraAccessDenied: 'Camera permission is required. Please allow camera access.',
+    noCameraFound: 'No camera found on this device.',
+    cameraInUse: 'Camera is already in use. Close other apps and try again.',
+    cameraError: 'Failed to start camera.',
+    cameraHint: 'Use "Select Picture" to choose a file instead.',
+    cameraPreview: 'Camera preview',
+    fileTooLarge: 'Image exceeds maximum size of 5MB. Please crop to a smaller area or use a lower resolution image.',
+    cropFailed: 'Failed to crop image. Please try again.'
+  },
   hostel: {
     boarders: 'Boarders',
     boardersLabel: 'boarders',
@@ -6067,6 +6082,8 @@ export const en = {
     fileDownloadFailed: 'Failed to download file',
     fileUploaded: 'File uploaded successfully',
     fileUploadFailed: 'Failed to upload file',
+    fileMustBeImage: 'Please select an image file (JPEG, PNG, GIF, WebP, BMP, or SVG).',
+    imageUploadFailed: 'Failed to upload image',
     finance: {
       accounts: {
         account: 'Finance Account'

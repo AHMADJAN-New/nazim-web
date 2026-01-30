@@ -3358,6 +3358,21 @@ export const ps: TranslationKeys = {
     startSchoolSetupTour: 'د ښوونځي د ترتیب لارښود پیل کړئ',
     schoolSetupTourDescription: 'د خپل ښوونځي د تنظیمولو بشپړ لارښود: د ښوونځي جزئیات، اکاډمیک کلونه، ټولګي، او موضوعات'
   },
+  imageCapture: {
+    takePhoto: 'انځور واخلئ',
+    capturePhoto: 'ثبت',
+    cropImage: 'انځور پرې کړئ',
+    cropDescription: 'د پرې کولو سیمه سم کړئ، بیا «ترسره شو» کلیک وکړئ.',
+    done: 'ترسره شو',
+    cameraAccessDenied: 'د کېمرې لاسرسی اړین دی. مهرباني وکړئ د کېمرې لاسرسی ورکړئ.',
+    noCameraFound: 'په دې وسیله کې کېمره ونه موندل شوه.',
+    cameraInUse: 'کېمره اوس کارول کېږي. نورې اپلیکیشنونه بند کړئ او بیا هڅه وکړئ.',
+    cameraError: 'د کېمرې پیل ناکام شو.',
+    cameraHint: 'د فایل غوره کولو لپاره «انځور وټاکئ» وکاروئ.',
+    cameraPreview: 'د کېمرې مخکې ښکاره',
+    fileTooLarge: 'انځور له ۵ میګابایت څخه زیات دی. مهرباني وکړئ کوچنۍ سیمه پرې کړئ یا ټیټ ریزولوشن انځور وکاروئ.',
+    cropFailed: 'د انځور پرې کول ناکام شول. مهرباني وکړئ بیا هڅه وکړئ.'
+  },
   hostel: {
     boarders: 'لیلیه وال',
     boardersLabel: 'لیلیه وال',
@@ -6023,6 +6038,8 @@ export const ps: TranslationKeys = {
     fileDownloadFailed: 'د فایل ډاونلوډ ناکام شو',
     fileUploaded: 'فایل په بریالیتوب سره اپلوډ شو',
     fileUploadFailed: 'د فایل اپلوډ ناکام شو',
+    fileMustBeImage: 'مهرباني وکړئ د انځور فایل وټاکئ (JPEG, PNG, GIF, WebP, BMP، یا SVG).',
+    imageUploadFailed: 'د انځور اپلوډ ناکام شو',
     finance: {
       accounts: {
         account: 'مالي حساب'
