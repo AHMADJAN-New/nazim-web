@@ -85,7 +85,7 @@ export default function PublicFatwasPage() {
 
     if (isLoadingCategories || isLoadingFatwas) {
         return (
-            <div className="flex-1 flex items-center justify-center py-20">
+            <div className="flex-1 flex items-center justify-center py-20 overflow-x-hidden">
                 <LoadingSpinner />
             </div>
         );
@@ -142,7 +142,7 @@ export default function PublicFatwasPage() {
     };
 
     return (
-        <div className="flex-1">
+        <div className="flex-1 overflow-x-hidden">
             {/* Header */}
             <section className="bg-emerald-900 text-white py-16 md:py-24 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{

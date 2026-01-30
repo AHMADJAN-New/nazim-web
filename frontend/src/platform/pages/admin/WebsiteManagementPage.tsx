@@ -1,22 +1,53 @@
 import { useMemo, useState } from 'react';
-import { Globe, Search, ExternalLink, ChevronDown, ChevronRight, Settings, Lock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Globe, Search, ExternalLink, ChevronDown, ChevronRight, Settings, Lock, CheckCircle, XCircle, AlertCircle, Plus, Trash2, Pencil } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { showToast } from '@/lib/toast';
+import { useLanguage } from '@/hooks/useLanguage';
 import { usePlatformOrganizations } from '@/platform/hooks/usePlatformAdmin';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
 import { platformApi } from '@/platform/lib/platformApi';
 
+const VERIFICATION_STATUSES = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'verified', label: 'Verified' },
+  { value: 'failed', label: 'Failed' },
+];
+
+const SSL_STATUSES = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'active', label: 'Active' },
+  { value: 'failed', label: 'Failed' },
+];
+
 export default function WebsiteManagementPage() {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedOrg, setExpandedOrg] = useState<string | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
+  const [domainDialogOpen, setDomainDialogOpen] = useState(false);
+  const [domainDeleteId, setDomainDeleteId] = useState<string | null>(null);
+  const [domainForm, setDomainForm] = useState({
+    id: '',
+    schoolId: '',
+    domain: '',
+    isPrimary: false,
+    verificationStatus: 'pending',
+    sslStatus: 'pending',
+  });
   const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
   const hasAdminPermission = Array.isArray(permissions) && permissions.includes('subscription.admin');
   const { data: organizations = [], isLoading: organizationsLoading } = usePlatformOrganizations();
@@ -37,6 +68,64 @@ export default function WebsiteManagementPage() {
     },
     enabled: !!selectedOrg,
     staleTime: 5 * 60 * 1000,
+  });
+
+  const createDomain = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrg) throw new Error('Organization not selected');
+      return platformApi.websites.createDomain(selectedOrg, {
+        school_id: domainForm.schoolId,
+        domain: domainForm.domain,
+        is_primary: domainForm.isPrimary,
+        verification_status: domainForm.verificationStatus,
+        ssl_status: domainForm.sslStatus,
+      });
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.domainCreated'));
+      void queryClient.invalidateQueries({ queryKey: ['platform-organization-website', selectedOrg] });
+      setDomainDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.domainCreateFailed'));
+    },
+  });
+
+  const updateDomain = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrg || !domainForm.id) throw new Error('Domain not selected');
+      return platformApi.websites.updateDomain(selectedOrg, domainForm.id, {
+        school_id: domainForm.schoolId,
+        domain: domainForm.domain,
+        is_primary: domainForm.isPrimary,
+        verification_status: domainForm.verificationStatus,
+        ssl_status: domainForm.sslStatus,
+      });
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.domainUpdated'));
+      void queryClient.invalidateQueries({ queryKey: ['platform-organization-website', selectedOrg] });
+      setDomainDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.domainUpdateFailed'));
+    },
+  });
+
+  const deleteDomain = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrg || !domainDeleteId) throw new Error('Domain not selected');
+      return platformApi.websites.deleteDomain(selectedOrg, domainDeleteId);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.domainDeleted'));
+      await queryClient.invalidateQueries({ queryKey: ['platform-organization-website', selectedOrg] });
+      await queryClient.refetchQueries({ queryKey: ['platform-organization-website', selectedOrg] });
+      setDomainDeleteId(null);
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.domainDeleteFailed'));
+    },
   });
 
   if (permissionsLoading) {
@@ -62,6 +151,34 @@ export default function WebsiteManagementPage() {
     );
   }, [organizations, searchQuery]);
 
+  const openCreateDomain = () => {
+    if (!websiteData?.schools?.length) {
+      showToast.error(t('toast.domainMissingSchool'));
+      return;
+    }
+    setDomainForm({
+      id: '',
+      schoolId: websiteData.schools[0]?.id || '',
+      domain: '',
+      isPrimary: false,
+      verificationStatus: 'pending',
+      sslStatus: 'pending',
+    });
+    setDomainDialogOpen(true);
+  };
+
+  const openEditDomain = (domain: any) => {
+    setDomainForm({
+      id: domain.id,
+      schoolId: domain.school_id || '',
+      domain: domain.domain,
+      isPrimary: domain.is_primary,
+      verificationStatus: domain.verification_status || 'pending',
+      sslStatus: domain.ssl_status || 'pending',
+    });
+    setDomainDialogOpen(true);
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-6xl overflow-x-hidden">
       <div className="flex flex-col gap-2">
@@ -86,7 +203,7 @@ export default function WebsiteManagementPage() {
             />
           </div>
 
-          <div className="rounded-lg border">
+          <div className="rounded-lg border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -221,6 +338,15 @@ export default function WebsiteManagementPage() {
                                     <TabsTrigger value="schools">Schools ({websiteData.schools?.length || 0})</TabsTrigger>
                                   </TabsList>
                                   <TabsContent value="domains" className="mt-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                      <div className="text-sm text-muted-foreground">
+                                        Manage domains and verification status.
+                                      </div>
+                                      <Button size="sm" onClick={openCreateDomain}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Domain
+                                      </Button>
+                                    </div>
                                     {websiteData.domains && websiteData.domains.length > 0 ? (
                                       <div className="space-y-2">
                                         {websiteData.domains.map((domain) => (
@@ -233,6 +359,9 @@ export default function WebsiteManagementPage() {
                                                     {domain.is_primary && (
                                                       <Badge variant="default">Primary</Badge>
                                                     )}
+                                                  </div>
+                                                  <div className="text-xs text-muted-foreground">
+                                                    School: {websiteData.schools.find(s => s.id === domain.school_id)?.school_name || 'Unknown'}
                                                   </div>
                                                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                                     <div className="flex items-center gap-1">
@@ -260,6 +389,16 @@ export default function WebsiteManagementPage() {
                                                     <ExternalLink className="h-3 w-3 mr-1" />
                                                     Visit
                                                   </a>
+                                                </Button>
+                                              </div>
+                                              <div className="mt-3 flex items-center gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => openEditDomain(domain)}>
+                                                  <Pencil className="h-3 w-3 mr-1" />
+                                                  Edit
+                                                </Button>
+                                                <Button variant="ghost" size="sm" onClick={() => setDomainDeleteId(domain.id)}>
+                                                  <Trash2 className="h-3 w-3 text-destructive mr-1" />
+                                                  Delete
                                                 </Button>
                                               </div>
                                             </CardContent>
@@ -382,6 +521,117 @@ export default function WebsiteManagementPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={domainDialogOpen} onOpenChange={setDomainDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{domainForm.id ? 'Edit Domain' : 'Add Domain'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>School</Label>
+              <Select
+                value={domainForm.schoolId}
+                onValueChange={(value) => setDomainForm((prev) => ({ ...prev, schoolId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select school" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(websiteData?.schools || []).map((school) => (
+                    <SelectItem key={school.id} value={school.id}>
+                      {school.school_name || 'Unnamed School'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Domain</Label>
+              <Input
+                value={domainForm.domain}
+                onChange={(event) => setDomainForm((prev) => ({ ...prev, domain: event.target.value }))}
+                placeholder="school.example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Verification Status</Label>
+              <Select
+                value={domainForm.verificationStatus}
+                onValueChange={(value) => setDomainForm((prev) => ({ ...prev, verificationStatus: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VERIFICATION_STATUSES.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>SSL Status</Label>
+              <Select
+                value={domainForm.sslStatus}
+                onValueChange={(value) => setDomainForm((prev) => ({ ...prev, sslStatus: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SSL_STATUSES.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-sm">Primary domain</span>
+              <Switch
+                checked={domainForm.isPrimary}
+                onCheckedChange={(checked) => setDomainForm((prev) => ({ ...prev, isPrimary: checked }))}
+              />
+            </div>
+            <Button
+              onClick={() => {
+                if (!domainForm.schoolId || !domainForm.domain.trim()) {
+                  showToast.error(t('toast.domainMissingFields'));
+                  return;
+                }
+                if (domainForm.id) {
+                  updateDomain.mutate();
+                } else {
+                  createDomain.mutate();
+                }
+              }}
+            >
+              {domainForm.id ? 'Save Changes' : 'Create Domain'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!domainDeleteId} onOpenChange={() => setDomainDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete domain?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the domain from the public website mapping.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteDomain.mutate()}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

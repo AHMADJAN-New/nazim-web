@@ -18,7 +18,6 @@ import {
   useWebsitePosts,
   useWebsiteEvents,
   useWebsiteMedia,
-  useWebsiteDomains,
 } from '@/website/hooks/useWebsiteManager';
 
 const settingsSchema = z.object({
@@ -41,7 +40,6 @@ export default function WebsiteManagerPage() {
   const postsQuery = useWebsitePosts();
   const eventsQuery = useWebsiteEvents();
   const mediaQuery = useWebsiteMedia();
-  const domainsQuery = useWebsiteDomains();
 
   const settings = settingsQuery.data || {};
   const theme = settings?.theme || {};
@@ -85,7 +83,7 @@ export default function WebsiteManagerPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">{t('websiteManager.title')}</h1>
@@ -113,13 +111,12 @@ export default function WebsiteManagerPage() {
       </div>
 
       <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
           <TabsTrigger value="settings">{t('websiteManager.settings')}</TabsTrigger>
           <TabsTrigger value="pages">{t('websiteManager.pages')}</TabsTrigger>
           <TabsTrigger value="posts">{t('websiteManager.posts')}</TabsTrigger>
           <TabsTrigger value="events">{t('websiteManager.events')}</TabsTrigger>
           <TabsTrigger value="media">{t('websiteManager.media')}</TabsTrigger>
-          <TabsTrigger value="domains">{t('websiteManager.domains')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="mt-4">
@@ -269,31 +266,6 @@ export default function WebsiteManagerPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="domains" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('websiteManager.domains')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3">
-                {(domainsQuery.data || []).map((domain: any) => (
-                  <div key={domain.id} className="flex items-center justify-between rounded-md border p-3">
-                    <div>
-                      <p className="font-medium">{domain.domain}</p>
-                      <p className="text-sm text-muted-foreground">{domain.ssl_status}</p>
-                    </div>
-                    <Badge variant={domain.verification_status === 'verified' ? 'default' : 'secondary'}>
-                      {domain.verification_status}
-                    </Badge>
-                  </div>
-                ))}
-                {!domainsQuery.data?.length && (
-                  <p className="text-sm text-muted-foreground">{t('websiteManager.noDomains')}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );

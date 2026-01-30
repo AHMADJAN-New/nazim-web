@@ -21,7 +21,7 @@ export default function PublicDonationsPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-12 max-w-7xl">
+        <div className="container mx-auto px-4 py-12 max-w-7xl overflow-x-hidden">
             <div className="text-center mb-16">
                 <h1 className="text-4xl font-bold text-slate-900 mb-4">Support Our Cause</h1>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto">

@@ -232,7 +232,6 @@ import EventsManagementPage from "@/website/pages/EventsManagementPage";
 import NavigationManagementPage from "@/website/pages/NavigationManagementPage";
 import MediaManagementPage from "@/website/pages/MediaManagementPage";
 import WebsiteGalleryPage from "@/website/pages/WebsiteGalleryPage";
-import DomainsManagementPage from "@/website/pages/DomainsManagementPage";
 import FatwasManagementPage from "@/website/pages/FatwasManagementPage";
 import AnnouncementsManagementPage from "@/website/pages/AnnouncementsManagementPage";
 import WebsiteLibraryPage from "@/website/pages/WebsiteLibraryPage";
@@ -904,11 +903,6 @@ const App = () => (
                         <WebsiteGalleryPage />
                       </PermissionRoute>
                     } />
-                    <Route path="/website/domains" element={
-                      <PermissionRoute permission="website_settings.read">
-                        <DomainsManagementPage />
-                      </PermissionRoute>
-                    } />
                     <Route path="/website/announcements" element={
                       <PermissionRoute permission="website_settings.read">
                         <AnnouncementsManagementPage />
@@ -947,7 +941,7 @@ const App = () => (
                     {/* Phase 2: Pages requiring backend work - still use placeholders */}
                     {websiteModulePlaceholders
                       .filter(module =>
-                        !['/website/navigation', '/website/articles', '/website/events', '/website/admissions', '/website/fatwas', '/website/media', '/website/gallery', '/website/domains', '/website/announcements',
+                        !['/website/navigation', '/website/articles', '/website/events', '/website/admissions', '/website/fatwas', '/website/media', '/website/gallery', '/website/announcements',
                           '/website/library', '/website/courses', '/website/scholars', '/website/graduates', '/website/donations', '/website/inbox'].includes(module.path)
                       )
                       .map((module) => (

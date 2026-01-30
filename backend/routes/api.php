@@ -65,7 +65,6 @@ use App\Http\Controllers\Website\WebsiteEventController;
 use App\Http\Controllers\Website\WebsiteAnnouncementController;
 use App\Http\Controllers\Website\WebsiteMediaController;
 use App\Http\Controllers\Website\WebsiteMediaCategoryController;
-use App\Http\Controllers\Website\WebsiteDomainController;
 use App\Http\Controllers\Website\WebsiteMenuController;
 use App\Http\Controllers\Website\PublicWebsiteController;
 use App\Http\Controllers\Website\PublicOnlineAdmissionController;
@@ -77,6 +76,7 @@ use App\Http\Controllers\Website\WebsiteDonationsController;
 use App\Http\Controllers\Website\WebsiteInboxController;
 use App\Http\Controllers\Website\WebsiteOnlineAdmissionController;
 use App\Http\Controllers\Website\WebsiteOnlineAdmissionFieldController;
+use App\Http\Controllers\PlatformWebsiteDomainController;
 use App\Http\Controllers\IdCardTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
@@ -1417,13 +1417,6 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::delete('/media/{id}', [WebsiteMediaController::class, 'destroy']);
             });
 
-            Route::get('/domains', [WebsiteDomainController::class, 'index']);
-            Route::middleware(['subscription:write'])->group(function () {
-                Route::post('/domains', [WebsiteDomainController::class, 'store']);
-                Route::put('/domains/{id}', [WebsiteDomainController::class, 'update']);
-                Route::delete('/domains/{id}', [WebsiteDomainController::class, 'destroy']);
-            });
-
             Route::get('/menus', [WebsiteMenuController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/menus', [WebsiteMenuController::class, 'store']);
@@ -1621,6 +1614,10 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::put('/organizations/{id}', [OrganizationController::class, 'updatePlatformAdmin']);
     Route::delete('/organizations/{id}', [OrganizationController::class, 'destroyPlatformAdmin']);
     Route::get('/organizations/{id}/website', [OrganizationController::class, 'websiteData']);
+    Route::get('/organizations/{organizationId}/domains', [PlatformWebsiteDomainController::class, 'index']);
+    Route::post('/organizations/{organizationId}/domains', [PlatformWebsiteDomainController::class, 'store']);
+    Route::put('/organizations/{organizationId}/domains/{id}', [PlatformWebsiteDomainController::class, 'update']);
+    Route::delete('/organizations/{organizationId}/domains/{id}', [PlatformWebsiteDomainController::class, 'destroy']);
     Route::post('/organizations/{organizationId}/features/{featureKey}/toggle', [SubscriptionAdminController::class, 'toggleFeature']);
 
     // Discount codes

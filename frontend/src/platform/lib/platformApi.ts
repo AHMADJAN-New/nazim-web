@@ -617,6 +617,30 @@ export const platformApi = {
         }>;
       }>(`/platform/organizations/${organizationId}/website`);
     },
+    listDomains: async (organizationId: string, params?: { school_id?: string }) => {
+      return apiClient.get(`/platform/organizations/${organizationId}/domains`, params);
+    },
+    createDomain: async (organizationId: string, data: {
+      school_id: string;
+      domain: string;
+      is_primary?: boolean;
+      verification_status?: string | null;
+      ssl_status?: string | null;
+    }) => {
+      return apiClient.post(`/platform/organizations/${organizationId}/domains`, data);
+    },
+    updateDomain: async (organizationId: string, domainId: string, data: {
+      school_id?: string;
+      domain?: string;
+      is_primary?: boolean;
+      verification_status?: string | null;
+      ssl_status?: string | null;
+    }) => {
+      return apiClient.put(`/platform/organizations/${organizationId}/domains/${domainId}`, data);
+    },
+    deleteDomain: async (organizationId: string, domainId: string) => {
+      return apiClient.delete(`/platform/organizations/${organizationId}/domains/${domainId}`);
+    },
   },
 
   // Generic request method for custom endpoints
