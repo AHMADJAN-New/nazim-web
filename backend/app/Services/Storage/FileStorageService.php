@@ -38,8 +38,10 @@ class FileStorageService
     private const PATH_EXAMS = 'exams';
     private const PATH_DMS = 'dms';
     private const PATH_EVENTS = 'events';
+    private const PATH_ADMISSIONS = 'admissions';
     private const PATH_TEMPLATES = 'templates';
     private const PATH_REPORTS = 'reports';
+    private const PATH_WEBSITE = 'website';
 
     // ==============================================
     // STUDENT FILES
@@ -89,6 +91,114 @@ class FileStorageService
         $this->updateStorageUsage($file, $organizationId);
 
         return $filePath;
+    }
+
+    // ==============================================
+    // ONLINE ADMISSIONS
+    // ==============================================
+
+    /**
+     * Store online admission photo (PRIVATE)
+     */
+    public function storeOnlineAdmissionPhoto(
+        UploadedFile $file,
+        string $organizationId,
+        string $admissionId,
+        string $schoolId,
+        string $category = 'student'
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $path = $this->buildPath(
+            $organizationId,
+            $schoolId,
+            self::PATH_ADMISSIONS,
+            $admissionId,
+            "photos/{$category}"
+        );
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    /**
+     * Store online admission document (PRIVATE)
+     */
+    public function storeOnlineAdmissionDocument(
+        UploadedFile $file,
+        string $organizationId,
+        string $admissionId,
+        string $schoolId,
+        ?string $documentType = null
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $subPath = $documentType ? "documents/{$documentType}" : 'documents';
+        $path = $this->buildPath(
+            $organizationId,
+            $schoolId,
+            self::PATH_ADMISSIONS,
+            $admissionId,
+            $subPath
+        );
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    /**
+     * Copy admission photo to student picture location
+     */
+    public function copyAdmissionFileToStudentPicture(
+        string $sourcePath,
+        string $organizationId,
+        string $studentId,
+        string $schoolId
+    ): string {
+        $filename = basename($sourcePath);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, 'pictures');
+        $destination = "{$path}/{$filename}";
+        $this->copyFile($sourcePath, $destination, self::DISK_PRIVATE, self::DISK_PRIVATE);
+
+        return $destination;
+    }
+
+    /**
+     * Copy admission file to student document location
+     */
+    public function copyAdmissionFileToStudentDocument(
+        string $sourcePath,
+        string $organizationId,
+        string $studentId,
+        string $schoolId,
+        ?string $documentType = null
+    ): string {
+        $filename = basename($sourcePath);
+        $subPath = $documentType ? "documents/{$documentType}" : 'documents';
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, $subPath);
+        $destination = "{$path}/{$filename}";
+        $this->copyFile($sourcePath, $destination, self::DISK_PRIVATE, self::DISK_PRIVATE);
+
+        return $destination;
+    }
+
+    /**
+     * Copy admission file to student guardian picture location
+     */
+    public function copyAdmissionFileToGuardianPicture(
+        string $sourcePath,
+        string $organizationId,
+        string $studentId,
+        string $schoolId
+    ): string {
+        $filename = basename($sourcePath);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, 'guardians');
+        $destination = "{$path}/{$filename}";
+        $this->copyFile($sourcePath, $destination, self::DISK_PRIVATE, self::DISK_PRIVATE);
+
+        return $destination;
     }
 
     // ==============================================
@@ -446,6 +556,191 @@ class FileStorageService
         // Update storage usage after successful storage
         $this->updateStorageUsage($file, $organizationId);
 
+        return $filePath;
+    }
+
+    // ==============================================
+    // WEBSITE FILES
+    // ==============================================
+
+    /**
+     * Store website image (PUBLIC - for display on public website)
+     * CRITICAL: Website files are school-scoped and MUST include schoolId
+     * @deprecated Use storeWebsiteLibraryCover, storeWebsiteMediaItem, storeWebsiteCourseCover, etc. for new uploads
+     */
+    public function storeWebsiteImage(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId
+    ): string {
+        // Check storage limit before storing
+        $this->checkStorageLimit($file, $organizationId);
+
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'images');
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+
+        // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    /**
+     * Store website document (PUBLIC - e.g. PDF for library)
+     * CRITICAL: Website files are school-scoped and MUST include schoolId
+     * @deprecated Use storeWebsiteLibraryPdf, storeWebsiteForm, etc. for new uploads
+     */
+    public function storeWebsiteDocument(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'documents');
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    /**
+     * Store website library book cover image (PUBLIC)
+     * Path: website/library/covers/
+     */
+    public function storeWebsiteLibraryCover(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'library', 'covers');
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $this->updateStorageUsage($file, $organizationId);
+        return $filePath;
+    }
+
+    /**
+     * Store website library book PDF (PUBLIC)
+     * Path: website/library/pdfs/
+     */
+    public function storeWebsiteLibraryPdf(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'library', 'pdfs');
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $this->updateStorageUsage($file, $organizationId);
+        return $filePath;
+    }
+
+    /**
+     * Store website media category cover image (PUBLIC)
+     * Path: website/media/categories/{categoryId}/
+     */
+    public function storeWebsiteMediaCategoryCover(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId,
+        string $categoryId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'media', 'categories', $categoryId);
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $this->updateStorageUsage($file, $organizationId);
+        return $filePath;
+    }
+
+    /**
+     * Store website media item (image/video) (PUBLIC)
+     * If categoryId: website/media/categories/{categoryId}/items/
+     * Else: website/media/items/
+     */
+    public function storeWebsiteMediaItem(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId,
+        ?string $categoryId = null,
+        ?string $mediaId = null
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+        if ($categoryId) {
+            $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'media', 'categories', $categoryId, 'items');
+        } else {
+            $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'media', 'items');
+        }
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $this->updateStorageUsage($file, $organizationId);
+        return $filePath;
+    }
+
+    /**
+     * Store website course cover image (PUBLIC)
+     * Path: website/courses/{courseId}/
+     */
+    public function storeWebsiteCourseCover(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId,
+        string $courseId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'courses', $courseId);
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $this->updateStorageUsage($file, $organizationId);
+        return $filePath;
+    }
+
+    /**
+     * Store website page image e.g. SEO image (PUBLIC)
+     * Path: website/pages/{pageId}/
+     */
+    public function storeWebsitePageImage(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId,
+        string $pageId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'pages', $pageId);
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $this->updateStorageUsage($file, $organizationId);
+        return $filePath;
+    }
+
+    /**
+     * Store website scholar photo (PUBLIC - for display on public scholars page)
+     * Path: website/scholars/{scholarId}/
+     */
+    public function storeWebsiteScholarPhoto(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId,
+        string $scholarId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'scholars', $scholarId);
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $this->updateStorageUsage($file, $organizationId);
+        return $filePath;
+    }
+
+    /**
+     * Store website general form document (PUBLIC)
+     * Path: website/forms/
+     */
+    public function storeWebsiteForm(
+        UploadedFile $file,
+        string $organizationId,
+        string $schoolId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'forms');
+        $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
+        $this->updateStorageUsage($file, $organizationId);
         return $filePath;
     }
 

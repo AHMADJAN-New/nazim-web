@@ -145,6 +145,14 @@ class PermissionSeeder extends Seeder
             'subscription' => ['admin', 'read'],
             // Help Center permissions
             'help_center' => ['read', 'create', 'update', 'delete', 'read_staff'],
+            // Website Manager
+            'website_pages' => ['read', 'create', 'update', 'delete'],
+            'website_posts' => ['read', 'create', 'update', 'delete'],
+            'website_events' => ['read', 'create', 'update', 'delete'],
+            'website_media' => ['read', 'create', 'update', 'delete'],
+            'website_domains' => ['read', 'create', 'update', 'delete'],
+            'website_menus' => ['read', 'create', 'update', 'delete'],
+            'website_settings' => ['read', 'update'],
         ];
     }
 
@@ -324,6 +332,25 @@ class PermissionSeeder extends Seeder
                 'dms.settings.read',
                 // Subscription - all roles can read their own subscription
                 'subscription.read',
+            ],
+            'website_admin' => [
+                'website_pages.read', 'website_pages.create', 'website_pages.update', 'website_pages.delete',
+                'website_posts.read', 'website_posts.create', 'website_posts.update', 'website_posts.delete',
+                'website_events.read', 'website_events.create', 'website_events.update', 'website_events.delete',
+                'website_media.read', 'website_media.create', 'website_media.update', 'website_media.delete',
+                'website_domains.read', 'website_domains.create', 'website_domains.update', 'website_domains.delete',
+                'website_menus.read', 'website_menus.create', 'website_menus.update', 'website_menus.delete',
+                'website_settings.read', 'website_settings.update',
+            ],
+            'website_editor' => [
+                'website_pages.read', 'website_pages.create', 'website_pages.update',
+                'website_posts.read', 'website_posts.create', 'website_posts.update',
+                'website_events.read', 'website_events.create', 'website_events.update',
+                'website_menus.read', 'website_menus.create', 'website_menus.update',
+                'website_settings.read',
+            ],
+            'website_media' => [
+                'website_media.read', 'website_media.create', 'website_media.update', 'website_media.delete',
             ],
         ];
     }

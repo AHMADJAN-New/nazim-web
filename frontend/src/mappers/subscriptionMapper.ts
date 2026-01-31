@@ -14,6 +14,7 @@ import type {
   LicenseFeeStatus,
   BillingPeriod,
   PaymentType,
+  LandingOffer,
 } from '@/types/domain/subscription';
 
 // Helper to convert billing period
@@ -53,12 +54,38 @@ function getBillingPeriodDays(period: SubscriptionApi.BillingPeriod, customDays?
 /**
  * Map API SubscriptionPlan to Domain SubscriptionPlan
  */
+function toNum(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function mapSubscriptionPlanApiToDomain(api: SubscriptionApi.SubscriptionPlan): SubscriptionPlan {
   const billingPeriod = api.billing_period || 'yearly';
-  const licenseFeeAfn = api.license_fee_afn || 0;
-  const licenseFeeUsd = api.license_fee_usd || 0;
-  const maintenanceFeeAfn = api.maintenance_fee_afn || api.price_yearly_afn;
-  const maintenanceFeeUsd = api.maintenance_fee_usd || api.price_yearly_usd;
+  const licenseFeeAfn = toNum(api.license_fee_afn);
+  const licenseFeeUsd = toNum(api.license_fee_usd);
+  const maintenanceFeeAfn = toNum(api.maintenance_fee_afn ?? api.price_yearly_afn);
+  const maintenanceFeeUsd = toNum(api.maintenance_fee_usd ?? api.price_yearly_usd);
+  const totalFeeAfn = licenseFeeAfn + maintenanceFeeAfn;
+  const totalFeeUsd = licenseFeeUsd + maintenanceFeeUsd;
+  const landingOffer: LandingOffer | null = api.landing_offer
+    ? {
+        id: api.landing_offer.id,
+        code: api.landing_offer.code,
+        name: api.landing_offer.name,
+        description: api.landing_offer.description,
+        discountType: api.landing_offer.discount_type,
+        discountValue: toNum(api.landing_offer.discount_value),
+        maxDiscountAmount: api.landing_offer.max_discount_amount != null ? toNum(api.landing_offer.max_discount_amount) : null,
+        currency: api.landing_offer.currency,
+        validFrom: api.landing_offer.valid_from ? new Date(api.landing_offer.valid_from) : null,
+        validUntil: api.landing_offer.valid_until ? new Date(api.landing_offer.valid_until) : null,
+        metadata: api.landing_offer.metadata,
+        discountAmountAfn: toNum(api.landing_offer.discount_amount_afn),
+        discountAmountUsd: toNum(api.landing_offer.discount_amount_usd),
+        discountedTotalFeeAfn: toNum(api.landing_offer.discounted_total_fee_afn),
+        discountedTotalFeeUsd: toNum(api.landing_offer.discounted_total_fee_usd),
+      }
+    : null;
   
   return {
     id: api.id,
@@ -79,9 +106,9 @@ export function mapSubscriptionPlanApiToDomain(api: SubscriptionApi.Subscription
     maintenanceFeeUsd,
     hasLicenseFee: licenseFeeAfn > 0 || licenseFeeUsd > 0,
     hasMaintenanceFee: maintenanceFeeAfn > 0 || maintenanceFeeUsd > 0,
-    // Total fees (for display convenience)
-    totalFeeAfn: licenseFeeAfn + maintenanceFeeAfn,
-    totalFeeUsd: licenseFeeUsd + maintenanceFeeUsd,
+    // Total fees (for display convenience; always numbers, never NaN)
+    totalFeeAfn,
+    totalFeeUsd,
     // Other plan fields
     isActive: api.is_active,
     isDefault: api.is_default,
@@ -95,6 +122,7 @@ export function mapSubscriptionPlanApiToDomain(api: SubscriptionApi.Subscription
     sortOrder: api.sort_order,
     features: api.features || [],
     limits: api.limits || {},
+    landingOffer,
     createdAt: new Date(api.created_at),
     updatedAt: new Date(api.updated_at),
     deletedAt: api.deleted_at ? new Date(api.deleted_at) : null,
@@ -329,4 +357,3 @@ export function mapLicensePaymentToApi(
     notes: data.notes,
   };
 }
-

@@ -108,7 +108,6 @@ export const useFinanceAccounts = (params?: { schoolId?: string; type?: string; 
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -125,6 +124,11 @@ export const useCreateFinanceAccount = () => {
         onSuccess: () => {
             showToast.success(t('toast.financeAccountCreated') || 'Account created successfully');
             void queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
+            void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['account-balances-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            void queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || t('toast.financeAccountCreateFailed') || 'Failed to create account');
@@ -145,6 +149,11 @@ export const useUpdateFinanceAccount = () => {
         onSuccess: () => {
             showToast.success(t('toast.financeAccountUpdated') || 'Account updated successfully');
             void queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
+            void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['account-balances-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            void queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || t('toast.financeAccountUpdateFailed') || 'Failed to update account');
@@ -163,6 +172,11 @@ export const useDeleteFinanceAccount = () => {
         onSuccess: async () => {
             showToast.success(t('toast.financeAccountDeleted') || 'Account deleted successfully');
             await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
+            await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['account-balances-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            await queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
+            await queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
             await queryClient.refetchQueries({ queryKey: ['finance-accounts'] });
         },
         onError: (error: Error) => {
@@ -189,7 +203,6 @@ export const useIncomeCategories = (params?: { schoolId?: string; isActive?: boo
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -206,6 +219,10 @@ export const useCreateIncomeCategory = () => {
         onSuccess: () => {
             showToast.success(t('toast.incomeCategoryCreated') || 'Income category created successfully');
             void queryClient.invalidateQueries({ queryKey: ['income-categories'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to create income category');
@@ -226,6 +243,10 @@ export const useUpdateIncomeCategory = () => {
         onSuccess: () => {
             showToast.success(t('toast.incomeCategoryUpdated') || 'Income category updated successfully');
             void queryClient.invalidateQueries({ queryKey: ['income-categories'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to update income category');
@@ -244,6 +265,10 @@ export const useDeleteIncomeCategory = () => {
         onSuccess: async () => {
             showToast.success(t('toast.incomeCategoryDeleted') || 'Income category deleted successfully');
             await queryClient.invalidateQueries({ queryKey: ['income-categories'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
             await queryClient.refetchQueries({ queryKey: ['income-categories'] });
         },
         onError: (error: Error) => {
@@ -270,7 +295,6 @@ export const useExpenseCategories = (params?: { schoolId?: string; isActive?: bo
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -287,6 +311,10 @@ export const useCreateExpenseCategory = () => {
         onSuccess: () => {
             showToast.success(t('toast.expenseCategoryCreated') || 'Expense category created successfully');
             void queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
+            void queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
+            void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to create expense category');
@@ -307,6 +335,10 @@ export const useUpdateExpenseCategory = () => {
         onSuccess: () => {
             showToast.success(t('toast.expenseCategoryUpdated') || 'Expense category updated successfully');
             void queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
+            void queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
+            void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to update expense category');
@@ -325,6 +357,10 @@ export const useDeleteExpenseCategory = () => {
         onSuccess: async () => {
             showToast.success(t('toast.expenseCategoryDeleted') || 'Expense category deleted successfully');
             await queryClient.invalidateQueries({ queryKey: ['expense-categories'] });
+            await queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
+            await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
             await queryClient.refetchQueries({ queryKey: ['expense-categories'] });
         },
         onError: (error: Error) => {
@@ -352,7 +388,6 @@ export const useFinanceProjects = (params?: { schoolId?: string; status?: string
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 30 * 1000, // 30 seconds - shorter for more frequent updates
-        refetchOnWindowFocus: true, // Refetch when window regains focus
         refetchInterval: 60 * 1000, // Auto-refetch every 60 seconds
     });
 };
@@ -370,6 +405,10 @@ export const useCreateFinanceProject = () => {
         onSuccess: async () => {
             showToast.success(t('toast.financeProjectCreated') || 'Project created successfully');
             await queryClient.invalidateQueries({ queryKey: ['finance-projects'] });
+            await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['project-summary-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            await queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
             await queryClient.refetchQueries({ queryKey: ['finance-projects'] });
         },
         onError: (error: Error) => {
@@ -391,6 +430,10 @@ export const useUpdateFinanceProject = () => {
         onSuccess: async () => {
             showToast.success(t('toast.financeProjectUpdated') || 'Project updated successfully');
             await queryClient.invalidateQueries({ queryKey: ['finance-projects'] });
+            await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['project-summary-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            await queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
             await queryClient.refetchQueries({ queryKey: ['finance-projects'] });
         },
         onError: (error: Error) => {
@@ -410,6 +453,10 @@ export const useDeleteFinanceProject = () => {
         onSuccess: async () => {
             showToast.success(t('toast.financeProjectDeleted') || 'Project deleted successfully');
             await queryClient.invalidateQueries({ queryKey: ['finance-projects'] });
+            await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['project-summary-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            await queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
             await queryClient.refetchQueries({ queryKey: ['finance-projects'] });
         },
         onError: (error: Error) => {
@@ -438,7 +485,6 @@ export const useDonors = (params?: { type?: string; isActive?: boolean; search?:
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -455,6 +501,9 @@ export const useCreateDonor = () => {
         onSuccess: () => {
             showToast.success(t('toast.donorCreated') || 'Donor created successfully');
             void queryClient.invalidateQueries({ queryKey: ['donors'] });
+            void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['donor-summary-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to create donor');
@@ -475,6 +524,9 @@ export const useUpdateDonor = () => {
         onSuccess: () => {
             showToast.success(t('toast.donorUpdated') || 'Donor updated successfully');
             void queryClient.invalidateQueries({ queryKey: ['donors'] });
+            void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['donor-summary-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to update donor');
@@ -493,6 +545,9 @@ export const useDeleteDonor = () => {
         onSuccess: async () => {
             showToast.success(t('toast.donorDeleted') || 'Donor deleted successfully');
             await queryClient.invalidateQueries({ queryKey: ['donors'] });
+            await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['donor-summary-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
             await queryClient.refetchQueries({ queryKey: ['donors'] });
         },
         onError: (error: Error) => {
@@ -540,7 +595,6 @@ export const useIncomeEntries = (params?: {
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 2 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -559,6 +613,12 @@ export const useCreateIncomeEntry = () => {
             void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
             void queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
             void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['project-summary-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['donor-summary-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['account-balances-report'] });
+            void queryClient.refetchQueries({ queryKey: ['finance-dashboard'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to create income entry');
@@ -581,6 +641,12 @@ export const useUpdateIncomeEntry = () => {
             void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
             void queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
             void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['project-summary-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['donor-summary-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['account-balances-report'] });
+            void queryClient.refetchQueries({ queryKey: ['finance-dashboard'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to update income entry');
@@ -601,7 +667,13 @@ export const useDeleteIncomeEntry = () => {
             await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
             await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
             await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['project-summary-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['donor-summary-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['account-balances-report'] });
             await queryClient.refetchQueries({ queryKey: ['income-entries'] });
+            await queryClient.refetchQueries({ queryKey: ['finance-dashboard'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to delete income entry');
@@ -648,7 +720,6 @@ export const useExpenseEntries = (params?: {
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 2 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -667,6 +738,11 @@ export const useCreateExpenseEntry = () => {
             void queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
             void queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
             void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['project-summary-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['account-balances-report'] });
+            void queryClient.refetchQueries({ queryKey: ['finance-dashboard'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to create expense entry');
@@ -689,6 +765,11 @@ export const useUpdateExpenseEntry = () => {
             void queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
             void queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
             void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            void queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
+            void queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['project-summary-report'] });
+            void queryClient.invalidateQueries({ queryKey: ['account-balances-report'] });
+            void queryClient.refetchQueries({ queryKey: ['finance-dashboard'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to update expense entry');
@@ -709,7 +790,12 @@ export const useDeleteExpenseEntry = () => {
             await queryClient.invalidateQueries({ queryKey: ['expense-entries'] });
             await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
             await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['daily-cashbook'] });
+            await queryClient.invalidateQueries({ queryKey: ['income-vs-expense-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['project-summary-report'] });
+            await queryClient.invalidateQueries({ queryKey: ['account-balances-report'] });
             await queryClient.refetchQueries({ queryKey: ['expense-entries'] });
+            await queryClient.refetchQueries({ queryKey: ['finance-dashboard'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to delete expense entry');
@@ -833,7 +919,6 @@ export const useFinanceDashboard = () => {
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 2 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -849,7 +934,6 @@ export const useDailyCashbook = (date: string, accountId?: string) => {
         },
         enabled: !!user && !!profile?.organization_id && !!date,
         staleTime: 2 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -868,7 +952,6 @@ export const useIncomeVsExpenseReport = (startDate: string, endDate: string, sch
         },
         enabled: !!user && !!profile?.organization_id && !!startDate && !!endDate,
         staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -884,7 +967,6 @@ export const useProjectSummaryReport = (status?: string) => {
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -903,7 +985,6 @@ export const useDonorSummaryReport = (startDate?: string, endDate?: string) => {
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };
 
@@ -919,6 +1000,5 @@ export const useAccountBalancesReport = () => {
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 2 * 60 * 1000,
-        refetchOnWindowFocus: false,
     });
 };

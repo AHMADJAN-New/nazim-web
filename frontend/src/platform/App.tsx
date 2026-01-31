@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { createQueryClient } from '@/lib/queryClient';
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 
@@ -18,6 +19,8 @@ import MaintenanceFeesManagement from './pages/admin/MaintenanceFeesManagement';
 import LicenseFeesManagement from './pages/admin/LicenseFeesManagement';
 import DesktopLicenseGeneration from './pages/admin/DesktopLicenseGeneration';
 import ContactMessagesManagement from './pages/admin/ContactMessagesManagement';
+import WebsiteManagementPage from './pages/admin/WebsiteManagementPage';
+import LandingOffersPage from './pages/admin/LandingOffersPage';
 import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
 import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
@@ -29,14 +32,8 @@ import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { LanguageProvider } from '@/hooks/useLanguage';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+// Same centralized defaults as main app (refetch on focus, etc.)
+const queryClient = createQueryClient();
 
 function ProtectedPlatformLayout() {
   const { user, loading } = useAuth();
@@ -170,10 +167,12 @@ export function PlatformAdminApp() {
               />
 
               <Route path="organizations" element={<PlatformAdminDashboard />} />
+              <Route path="websites" element={<WebsiteManagementPage />} />
               <Route path="subscriptions" element={<SubscriptionAdminDashboard />} />
               <Route path="plans" element={<PlansManagement />} />
               <Route path="plan-requests" element={<PlanRequestsPage />} />
               <Route path="discount-codes" element={<DiscountCodesManagement />} />
+              <Route path="landing-offers" element={<LandingOffersPage />} />
               <Route path="renewals/:renewalId" element={<RenewalReviewPage />} />
               <Route path="pending" element={<SubscriptionAdminDashboard />} />
               <Route path="admins" element={<PlatformAdminDashboard />} />
@@ -219,4 +218,3 @@ export function PlatformAdminApp() {
     </QueryClientProvider>
   );
 }
-

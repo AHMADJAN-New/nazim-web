@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // CRITICAL: Do NOT expose private storage via Laravel's built-in /storage/{path} serving.
+            // Public assets (e.g. website images) are served via a dedicated controller route.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

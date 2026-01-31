@@ -1,54 +1,8 @@
+import { websitePublicEn } from './website/public-en';
+import { websiteAdminEn } from './website/admin-en';
+
 export const en = {
-  aboutUs: {
-    cta: {
-      button: 'Contact Us',
-      text: 'Want to learn more about how we can help your school?'
-    },
-    mission: {
-      content: 'Our mission is to provide comprehensive, user-friendly, and affordable school management solutions that help educational institutions streamline their operations, enhance learning outcomes, and strengthen community connections. We believe that every school, regardless of size, deserves access to modern technology that can transform the way they manage their institution.',
-      title: 'Our Mission'
-    },
-    subtitle: 'Empowering educational institutions with modern technology solutions for better learning outcomes.',
-    title: 'About Nazim School Management System',
-    values: {
-      community: {
-        content: 'We are committed to building strong relationships with our customers and supporting the educational community.',
-        title: 'Community'
-      },
-      excellence: {
-        content: 'We strive for excellence in every aspect of our service, from product development to customer support.',
-        title: 'Excellence'
-      },
-      innovation: {
-        content: 'We continuously innovate to provide cutting-edge solutions that meet the evolving needs of educational institutions.',
-        title: 'Innovation'
-      },
-      integrity: {
-        content: 'We operate with honesty, transparency, and ethical practices in all our business dealings.',
-        title: 'Integrity'
-      },
-      title: 'Our Values'
-    },
-    vision: {
-      content: 'We envision a future where all educational institutions, especially Islamic schools and madrasas, have access to powerful, intuitive, and culturally-aware management systems that support their unique needs. We aim to be the leading provider of school management solutions in the region, helping thousands of schools digitize their operations and focus on what matters most: education.',
-      title: 'Our Vision'
-    },
-    whatWeOffer: {
-      affordable: {
-        content: 'We offer flexible pricing plans that fit schools of all sizes, from small madrasas to large institutions.',
-        title: 'Affordable Pricing'
-      },
-      comprehensive: {
-        content: 'From student management to finance, attendance to exams, we cover all aspects of school administration.',
-        title: 'Comprehensive Solutions'
-      },
-      support: {
-        content: 'Our team is always ready to help with training, technical support, and ongoing assistance.',
-        title: 'Dedicated Support'
-      },
-      title: 'What We Offer'
-    }
-  },
+  ...websitePublicEn,
   academic: {
     academicInformation: 'Academic information',
     academicYears: {
@@ -1081,7 +1035,6 @@ export const en = {
     phone: 'Phone',
     birthYear: 'Birth Year',
     age: 'Age',
-    registered: 'Registered',
     statusLabel: 'Status',
     courseLabel: 'Course',
     markStudentsCompleted: 'Mark Students as Completed',
@@ -1155,35 +1108,6 @@ export const en = {
       cancel: 'Cancel',
       registerStudent: 'Register Student',
       updateStudent: 'Update Student'
-    },
-    enrollFromMainDialog: {
-      title: 'Enroll Students from Main Database',
-      description: 'Select students from the main database to enroll in {courseName}.',
-      descriptionNoCourse: 'Select a course and students from the main database to enroll.',
-      selectCourse: 'Select Course',
-      selectCoursePlaceholder: 'Select a course to enroll students',
-      fee: 'Fee:',
-      courseNotFound: 'Selected course not found. Please select a valid course.',
-      noOpenCourses: 'No open courses available. Please create a course first.',
-      registrationDate: 'Registration Date',
-      markFeeAsPaid: 'Mark fee as paid',
-      searchPlaceholder: 'Search by name or admission number...',
-      studentsSelected: '{count} student(s) selected',
-      selectAll: 'Select All',
-      deselectAll: 'Deselect All',
-      noStudentsMatchSearch: 'No students match your search',
-      noStudentsAvailable: 'No students available',
-      ensureStudentsInMainTable: 'Make sure you have students in the main students table.',
-      tryDifferentSearch: 'Try a different search term. Found {count} student(s) total.',
-      sonOf: 'S/O',
-      grandsonOf: 'G/S',
-      daughterOf: 'D/O',
-      guardian: 'Guardian:',
-      nationality: 'Nationality:',
-      born: 'Born:',
-      cancel: 'Cancel',
-      enrolling: 'Enrolling...',
-      selectStudents: 'Select Students'
     },
     attendance: {
       noSessionsYet: 'No sessions yet',
@@ -2395,6 +2319,7 @@ export const en = {
     invigilator: 'Invigilator',
     list: 'Exams List',
     listDescription: 'View and manage all exams',
+    title: 'Exams',
     locked: 'Locked',
     management: 'Create and manage exams for academic years',
     marks: 'Marks Entry',
@@ -3376,6 +3301,21 @@ export const en = {
     startSchoolSetupTour: 'Start School Setup Tour',
     schoolSetupTourDescription: 'Complete guide to setting up your school: school details, academic years, classes, and subjects'
   },
+  imageCapture: {
+    takePhoto: 'Take photo',
+    capturePhoto: 'Capture',
+    cropImage: 'Crop image',
+    cropDescription: 'Adjust the crop area, then click Done.',
+    done: 'Done',
+    cameraAccessDenied: 'Camera permission is required. Please allow camera access.',
+    noCameraFound: 'No camera found on this device.',
+    cameraInUse: 'Camera is already in use. Close other apps and try again.',
+    cameraError: 'Failed to start camera.',
+    cameraHint: 'Use "Select Picture" to choose a file instead.',
+    cameraPreview: 'Camera preview',
+    fileTooLarge: 'Image exceeds maximum size of 5MB. Please crop to a smaller area or use a lower resolution image.',
+    cropFailed: 'Failed to crop image. Please try again.'
+  },
   hostel: {
     boarders: 'Boarders',
     boardersLabel: 'boarders',
@@ -3650,264 +3590,6 @@ export const en = {
     useGlobalFont: 'Use global font',
     width: 'Width (%)',
     unprinted: 'unprinted'
-  },
-  landing: {
-    benefits: {
-      cloudBased: {
-        description: 'Access your data anywhere, anytime from any device',
-        title: 'Cloud-Based'
-      },
-      lightningFast: {
-        description: 'Optimized performance for instant access to all features',
-        title: 'Lightning Fast'
-      },
-      mobileReady: {
-        description: 'Responsive design works perfectly on all devices',
-        title: 'Mobile Ready'
-      },
-      multiLanguage: {
-        description: 'Support for English, Urdu, Arabic, and Pashto languages',
-        title: 'Multi-Language'
-      },
-      secureReliable: {
-        description: 'Enterprise-grade security with 99.9% uptime guarantee',
-        title: 'Secure & Reliable'
-      },
-      support24x7: {
-        description: 'Round-the-clock customer support and training assistance',
-        title: '24/7 Support'
-      }
-    },
-    contact: {
-      messageFailed: 'Failed to send message',
-      messageFailedDescription: 'Please try again later.',
-      messageSent: 'Message sent',
-      messageSentDescription: 'We\'ll get back to you soon.'
-    },
-    features: {
-      assets: {
-        description: 'Track and manage school assets, equipment, and inventory',
-        title: 'Asset Management'
-      },
-      attendance: {
-        description: 'Real-time attendance management with automated reporting and notifications',
-        title: 'Attendance Tracking'
-      },
-      classes: {
-        description: 'Manage classes, academic years, and class assignments',
-        title: 'Class Management'
-      },
-      dms: {
-        description: 'Centralized document management system for all school documents',
-        title: 'Document Management (DMS)'
-      },
-      events: {
-        description: 'Plan and manage school events, activities, and announcements',
-        title: 'Event Management'
-      },
-      exams: {
-        description: 'Create and manage exams, schedules, and exam results',
-        title: 'Exam Management'
-      },
-      fees: {
-        description: 'Track fee collection, payment schedules, and outstanding balances',
-        title: 'Fee Management'
-      },
-      finance: {
-        description: 'Comprehensive financial management with income, expenses, and reporting',
-        title: 'Finance Module'
-      },
-      grades: {
-        description: 'Track and manage student grades, transcripts, and academic performance',
-        title: 'Grade Management'
-      },
-      graduation: {
-        description: 'Manage graduations and generate certificates for students',
-        title: 'Graduation & Certificates'
-      },
-      hostel: {
-        description: 'Complete hostel administration with room allocation and student management',
-        title: 'Hostel Management'
-      },
-      library: {
-        description: 'Digital library management with book tracking and student borrowing records',
-        title: 'Library Management'
-      },
-      studentManagement: {
-        description: 'Complete student information system with admission, records, and progress tracking',
-        title: 'Student Management'
-      },
-      students: {
-        description: 'Complete student information system with admission, records, and progress tracking',
-        title: 'Student Management'
-      },
-      subjects: {
-        description: 'Manage subjects, assign to classes, and track subject offerings',
-        title: 'Subject Management'
-      },
-      timetables: {
-        description: 'Create and manage class timetables with automatic scheduling',
-        title: 'Timetable Generation'
-      }
-    },
-    footer: {
-      careers: 'Careers',
-      company: 'Company',
-      copyright: '© 2026 Nazim School Management System. All rights reserved.',
-      features: 'Features',
-      pricing: 'Pricing',
-      product: 'Product',
-      security: 'Security',
-      support: 'Support',
-      tagline: 'Empowering educational institutions with modern technology solutions for better learning outcomes.'
-    },
-    hero: {
-      badge: 'Trusted by many schools',
-      description: 'For school principals, administrators, and teachers: registration, attendance, exams, and reports in one system — without confusion.',
-      startFreeTrial: 'Start Free Trial',
-      subtitle: 'Streamline operations, enhance learning outcomes, and strengthen community connections with our comprehensive Islamic school management platform.',
-      title: 'Transform Your',
-      titleHighlight: 'School Management',
-      watchDemo: 'Watch Demo'
-    },
-    nav: {
-      contact: 'Contact',
-      features: 'Features',
-      finance: 'Finance',
-      getStarted: 'Get Started',
-      pricing: 'Pricing',
-      reviews: 'Reviews',
-      signIn: 'Sign In'
-    },
-    planRequest: {
-      failed: 'Plan request failed',
-      failedDescription: 'Please try again later.',
-      sent: 'Plan request submitted',
-      sentDescription: 'Our team will reach out with the best option for you.'
-    },
-    pricing: {
-      defaultDescription: 'Flexible plan designed for modern schools.',
-      enterprise: {
-        description: 'For large institutions with unlimited students',
-        name: 'Enterprise'
-      },
-      feature: 'Feature',
-      free: 'Free',
-      period: '/month',
-      periodYear: '/year',
-      professional: {
-        description: 'Ideal for medium schools up to 1000 students',
-        name: 'Professional'
-      },
-      starter: {
-        description: 'Perfect for small schools up to 200 students',
-        name: 'Starter'
-      }
-    },
-    sections: {
-      benefits: {
-        badge: 'Why Choose Us',
-        subtitle: 'Experience the difference with our cutting-edge technology and dedicated support.',
-        title: 'Built for Modern Educational Institutions'
-      },
-      contact: {
-        badge: 'Contact Us',
-        businessHours: 'Business Hours',
-        conversationDescription: 'Our education technology experts are ready to discuss your school\'s unique needs and show you how our platform can make a difference.',
-        emailAddress: 'Email Address',
-        emailSupport: 'Email Support',
-        firstName: 'First Name',
-        formDescription: 'Fill out the form below and we\'ll get back to you within 24 hours.',
-        lastName: 'Last Name',
-        letsStartConversation: 'Let\'s Start a Conversation',
-        message: 'Message',
-        messageFailed: 'Failed to send message',
-        messageFailedDescription: 'Please try again later.',
-        messageSent: 'Message sent',
-        messageSentDescription: 'We\'ll get back to you soon.',
-        numberOfStudents: 'Number of Students',
-        officeAddress: 'Office Address',
-        phoneNumber: 'Phone Number',
-        phoneSupport: 'Phone Support',
-        schoolName: 'School Name',
-        sending: 'Sending...',
-        sendMessage: 'Send us a Message',
-        sendMessageButton: 'Send Message',
-        subtitle: 'Ready to transform your school management? Our team is here to help you get started.',
-        title: 'Get in Touch',
-        whatsappSupport: 'WhatsApp Support'
-      },
-      cta: {
-        note: '✓ 30-day free trial • ✓ No credit card required • ✓ Setup assistance included',
-        scheduleDemo: 'Schedule Demo',
-        startFreeTrial: 'Start Your Free Trial',
-        subtitle: 'Join thousands of schools that have already digitized their operations with our comprehensive management system.',
-        title: 'Ready to Transform Your School Management?'
-      },
-      features: {
-        badge: 'Features',
-        subtitle: 'From student admissions to graduation, our comprehensive platform covers every aspect of school management.',
-        title: 'Everything You Need to Manage Your School'
-      },
-      pricing: {
-        allPlansNote: 'All plans include 30-day free trial • No setup fees • Cancel anytime',
-        badge: 'Pricing',
-        comparisonSubtitle: 'See which features are included in each plan',
-        comparisonTitle: 'Compare Plans & Features',
-        customPlanLink: 'Need a custom plan? Contact our sales team →',
-        feature: 'Feature',
-        mostPopular: 'Most Popular',
-        subtitle: 'Choose the perfect plan for your institution. All plans include core features with no hidden fees.',
-        title: 'Simple, Transparent Pricing'
-      },
-      testimonials: {
-        badge: 'Testimonials',
-        subtitle: 'See what school administrators and teachers say about our platform.',
-        title: 'Loved by Educators Worldwide'
-      }
-    },
-    stats: {
-      staffMembers: 'Staff Members',
-      studentsManaged: 'Students Managed',
-      supportAvailable: 'Support Available',
-      uptimeGuarantee: 'Uptime Guarantee'
-    },
-    index: {
-      heroBadges: {
-        fullySecure: 'Fully Secure',
-        multiLanguage: 'Multi-Language',
-        strongSecurity: 'Strong Security',
-        permissionControl: 'Permission Control',
-        standardDesign: 'Standard Design'
-      },
-      valueBadges: {
-        savesTime: 'Saves Your Time',
-        transparentReports: 'Transparent & Accurate Reports',
-        allInOne: 'Manages All School Operations in One Place'
-      },
-      stats: {
-        activeFeatures: {
-          value: '100+',
-          label: 'Active Features'
-        },
-        fastAttendance: {
-          value: 'Fast Attendance',
-          label: '3 People in One Second'
-        },
-        accurate: {
-          value: 'Accurate',
-          label: 'Accurate & Precise Reports'
-        },
-        trusted: {
-          value: 'Trusted',
-          label: 'Used in Various Schools'
-        }
-      },
-      contactSection: {
-        contactInfo: 'Contact Information',
-        tagline: 'Nazim – Complete School Management in Just a Few Clicks!'
-      }
-    }
   },
   leave: {
     academicYearNotLoaded: 'Academic year not loaded. Please wait...',
@@ -4332,6 +4014,7 @@ export const en = {
     'events.types': 'Event Types',
     'events.users': 'Event Users',
     'events.export': 'Export ID Cards',
+    ...websiteAdminEn.navWebsite,
     'students.management': 'Management',
     assets: 'Assets',
     'assets.dashboard': 'Assets Dashboard',
@@ -5877,6 +5560,47 @@ export const en = {
     articleDeleteFailed: 'Failed to delete article',
     articleUpdated: 'Article updated successfully',
     articleUpdateFailed: 'Failed to update article',
+    mediaCreated: 'Media created successfully',
+    mediaCreateFailed: 'Failed to create media',
+    mediaUpdated: 'Media updated successfully',
+    mediaUpdateFailed: 'Failed to update media',
+    mediaDeleted: 'Media deleted successfully',
+    mediaDeleteFailed: 'Failed to delete media',
+    mediaCategoryCreated: 'Media category created successfully',
+    mediaCategoryCreateFailed: 'Failed to create media category',
+    mediaCategoryUpdated: 'Media category updated successfully',
+    mediaCategoryUpdateFailed: 'Failed to update media category',
+    mediaCategoryDeleted: 'Media category deleted successfully',
+    mediaCategoryDeleteFailed: 'Failed to delete media category',
+    domainCreated: 'Domain created successfully',
+    domainCreateFailed: 'Failed to create domain',
+    domainUpdated: 'Domain updated successfully',
+    domainUpdateFailed: 'Failed to update domain',
+    domainDeleted: 'Domain deleted successfully',
+    domainDeleteFailed: 'Failed to delete domain',
+    domainMissingFields: 'Please select a school and enter a domain',
+    domainMissingSchool: 'Please select a school before adding a domain',
+    websiteSettingsUpdated: 'Website settings updated successfully',
+    websiteSettingsUpdateFailed: 'Failed to update website settings',
+    websiteSettingsMissingFields: 'Please enter a valid school slug and select languages',
+    contactMessageSent: 'Message sent successfully',
+    contactMessageFailed: 'Failed to send message',
+    fatwaQuestionSubmitted: 'Question submitted successfully',
+    fatwaQuestionSubmitFailed: 'Failed to submit question',
+    onlineAdmissionSubmitted: 'Admission submitted successfully',
+    onlineAdmissionSubmitFailed: 'Failed to submit admission',
+    onlineAdmissionMissingFields: 'Please complete the required extra fields',
+    onlineAdmissionUpdated: 'Admission updated successfully',
+    onlineAdmissionUpdateFailed: 'Failed to update admission',
+    onlineAdmissionAccepted: 'Admission accepted and student created',
+    onlineAdmissionAcceptFailed: 'Failed to accept admission',
+    onlineAdmissionFieldCreated: 'Admission field created successfully',
+    onlineAdmissionFieldCreateFailed: 'Failed to create admission field',
+    onlineAdmissionFieldUpdated: 'Admission field updated successfully',
+    onlineAdmissionFieldUpdateFailed: 'Failed to update admission field',
+    onlineAdmissionFieldDeleted: 'Admission field deleted successfully',
+    onlineAdmissionFieldDeleteFailed: 'Failed to delete admission field',
+    onlineAdmissionFieldMissing: 'Field key and label are required',
     assetCategories: {
       created: 'Asset category created successfully',
       deleted: 'Asset category deleted successfully',
@@ -6070,6 +5794,8 @@ export const en = {
     fileDownloadFailed: 'Failed to download file',
     fileUploaded: 'File uploaded successfully',
     fileUploadFailed: 'Failed to upload file',
+    fileMustBeImage: 'Please select an image file (JPEG, PNG, GIF, WebP, BMP, or SVG).',
+    imageUploadFailed: 'Failed to upload image',
     finance: {
       accounts: {
         account: 'Finance Account'
@@ -6749,6 +6475,815 @@ export const en = {
       upcomingGraduations: 'upcoming Graduations'
     }
   },
+  websiteAdmin: {
+    common: {
+      filters: 'Filters',
+      search: 'Search',
+      status: 'Status',
+      publishedAt: 'Published At',
+      expiresAt: 'Expires At',
+      actions: 'Actions',
+      title: 'Title',
+      slug: 'Slug',
+      excerpt: 'Excerpt',
+      content: 'Content',
+      description: 'Description',
+      category: 'Category',
+      type: 'Type',
+      visible: 'Visible',
+      order: 'Order',
+      url: 'URL',
+      parent: 'Parent',
+      created: 'Created',
+      preview: 'Preview',
+      fileName: 'File Name',
+      altText: 'Alt Text',
+      public: 'Public',
+      yes: 'Yes',
+      no: 'No',
+      all: 'All',
+      none: 'None',
+      notSet: 'Not Set',
+      sortOrder: 'Sort Order',
+      uploading: 'Uploading...'
+    },
+    statuses: {
+      draft: 'Draft',
+      scheduled: 'Scheduled',
+      published: 'Published',
+      archived: 'Archived',
+      assigned: 'Assigned',
+      answered: 'Answered',
+      active: 'Active',
+      inactive: 'Inactive',
+      pending: 'Pending',
+      verified: 'Verified',
+      unverified: 'Unverified',
+      expired: 'Expired'
+    },
+    announcements: {
+      title: 'Announcements',
+      description: 'Manage website announcements',
+      new: 'New Announcement',
+      searchPlaceholder: 'Search announcements...',
+      pinned: 'Pinned',
+      pinToHomepage: 'Pin to Homepage',
+      noResults: 'No announcements found',
+      createTitle: 'Create Announcement',
+      createDescription: 'Create a new announcement',
+      editTitle: 'Edit Announcement',
+      editDescription: 'Update announcement details',
+      deleteTitle: 'Delete Announcement',
+      deleteDescription: 'Are you sure you want to delete this announcement? This action cannot be undone.',
+      fields: {
+        title: 'Title',
+        content: 'Content',
+        status: 'Status',
+        publishedAt: 'Published At',
+        expiresAt: 'Expires At'
+      },
+      placeholders: {
+        title: 'Announcement title',
+        content: 'Announcement content...'
+      }
+    },
+    articles: {
+      title: 'Articles & Blog',
+      description: 'Manage blog posts and articles',
+      new: 'New Article',
+      searchPlaceholder: 'Search articles...',
+      noResults: 'No articles found',
+      createTitle: 'Create Article',
+      createDescription: 'Create a new blog post or article',
+      editTitle: 'Edit Article',
+      editDescription: 'Update article details',
+      deleteTitle: 'Delete Article',
+      deleteDescription: 'Are you sure you want to delete this article? This action cannot be undone.',
+      fields: {
+        slug: 'Slug',
+        title: 'Title',
+        excerpt: 'Excerpt',
+        content: 'Article Content',
+        status: 'Status',
+        publishedAt: 'Published At'
+      },
+      placeholders: {
+        slug: 'my-article',
+        title: 'Article title',
+        excerpt: 'Brief summary of the article...',
+        content: 'Write your article...'
+      }
+    },
+    pages: {
+      title: 'Pages',
+      description: 'Manage website pages',
+      new: 'New Page',
+      searchPlaceholder: 'Search pages...',
+      noResults: 'No pages found',
+      createTitle: 'Create Page',
+      createDescription: 'Create a new website page',
+      editTitle: 'Edit Page',
+      editDescription: 'Update page details',
+      deleteTitle: 'Delete Page',
+      deleteDescription: 'Are you sure you want to delete this page? This action cannot be undone.',
+      fields: {
+        slug: 'Slug',
+        title: 'Title',
+        status: 'Status',
+        publishedAt: 'Published At',
+        content: 'Content'
+      },
+      placeholders: {
+        slug: 'about-us',
+        title: 'About Us'
+      }
+    },
+    navigation: {
+      title: 'Navigation',
+      description: 'Manage header and footer menus',
+      new: 'New Menu Item',
+      searchPlaceholder: 'Search menu items...',
+      noResults: 'No menu items found',
+      createTitle: 'Create Menu Item',
+      createDescription: 'Add a new menu item',
+      editTitle: 'Edit Menu Item',
+      editDescription: 'Update menu item details',
+      deleteTitle: 'Delete Menu Item',
+      deleteDescription: 'Are you sure you want to delete this menu item? This action cannot be undone.',
+      fields: {
+        label: 'Label',
+        url: 'URL',
+        parentMenu: 'Parent Menu',
+        sortOrder: 'Sort Order',
+        visible: 'Visible',
+        linkToPage: 'Link to Page (Optional)',
+        order: 'Order'
+      },
+      placeholders: {
+        selectPage: 'Select a page...',
+        label: 'Home',
+        url: '/home',
+        parentNone: 'None (Top Level)'
+      }
+    },
+    events: {
+      title: 'Events',
+      description: 'Manage website events calendar',
+      new: 'New Event',
+      searchPlaceholder: 'Search events...',
+      noResults: 'No events found',
+      createTitle: 'Create Event',
+      createDescription: 'Create a new event',
+      editTitle: 'Edit Event',
+      editDescription: 'Update event details',
+      deleteTitle: 'Delete Event',
+      deleteDescription: 'Are you sure you want to delete this event? This action cannot be undone.',
+      fields: {
+        title: 'Title',
+        location: 'Location',
+        startsAt: 'Starts At',
+        endsAt: 'Ends At',
+        summary: 'Summary',
+        publicEvent: 'Public Event'
+      },
+      placeholders: {
+        title: 'Event title',
+        location: 'Event location',
+        summary: 'Brief event summary...'
+      }
+    },
+    domains: {
+      title: 'Domains',
+      description: 'Manage website domains',
+      new: 'Add Domain',
+      searchPlaceholder: 'Search domains...',
+      noResults: 'No domains found',
+      createTitle: 'Add Domain',
+      createDescription: 'Add a new domain',
+      editTitle: 'Edit Domain',
+      editDescription: 'Update domain details',
+      deleteTitle: 'Delete Domain',
+      deleteDescription: 'Are you sure you want to delete this domain? This action cannot be undone.',
+      fields: {
+        domain: 'Domain',
+        primary: 'Primary Domain',
+        verificationStatus: 'Verification Status',
+        sslStatus: 'SSL Status'
+      },
+      placeholders: {
+        domain: 'example.com',
+        selectStatus: 'Select status'
+      }
+    },
+    media: {
+      title: 'Media',
+      description: 'Manage website media library',
+      new: 'Upload Media',
+      searchPlaceholder: 'Search media...',
+      noResults: 'No media found',
+      createTitle: 'Add Media',
+      createDescription: 'Add a new media item to your library',
+      editTitle: 'Edit Media',
+      editDescription: 'Update media details',
+      deleteTitle: 'Delete Media',
+      deleteDescription: 'Are you sure you want to delete this media item? This action cannot be undone.',
+      previewAlt: 'Media preview',
+      libraryPickerTitle: 'Select from library',
+      libraryPickerDescription: 'Choose an existing image to use',
+      noLibraryImages: 'No images in library. Upload some first.',
+      fields: {
+        type: 'Type',
+        category: 'Category',
+        filePath: 'File Path',
+        fileName: 'Title / File Name',
+        altText: 'Alt Text / Description'
+      },
+      placeholders: {
+        search: 'Search media...',
+        selectCategory: 'Select category',
+        imageUrl: 'https://... or path',
+        videoUrl: 'https://www.youtube.com/watch?v=...',
+        documentUrl: 'https://...',
+        fileName: 'My Great Photo',
+        altText: 'Brief description of the content'
+      },
+      helpers: {
+        uploadOrSelect: 'Upload or select image',
+        uploadHint: 'Upload (1 or many)',
+        imageUrlHint: 'Image URL or path (or use upload / library above)',
+        videoHint: 'Supports YouTube, Vimeo, or direct MP4 links.',
+        categoryAppliesToAll: '{count} image(s) ready — category/alt below apply to all'
+      },
+      types: {
+        image: 'Image',
+        video: 'Video (YouTube/Link)',
+        document: 'Document'
+      },
+      uncategorized: 'Uncategorized',
+      selectFromLibrary: 'Select from library',
+      addFromLibrary: 'Select from library'
+    },
+    fatwas: {
+      title: 'Questions & Fatwas',
+      description: 'Manage fatwas, categories, and questions',
+      editTitle: 'Edit Fatwa',
+      editDescription: 'Update fatwa details',
+      editCategoryTitle: 'Edit Category',
+      editCategoryDescription: 'Update category details',
+      tabs: {
+        fatwas: 'Fatwas',
+        categories: 'Categories',
+        questions: 'Questions'
+      },
+      newFatwa: 'New Fatwa',
+      newCategory: 'New Category',
+      anonymous: 'Anonymous',
+      noFatwas: 'No fatwas found',
+      noCategories: 'No categories found',
+      noQuestions: 'No questions found',
+      searchFatwas: 'Search fatwas...',
+      searchQuestions: 'Search questions...',
+      fields: {
+        slug: 'Slug',
+        title: 'Title',
+        category: 'Category',
+        question: 'Question',
+        answer: 'Answer',
+        status: 'Status',
+        featured: 'Featured',
+        publishedAt: 'Published At',
+        name: 'Name',
+        description: 'Description',
+        sortOrder: 'Sort Order',
+        active: 'Active',
+        assignedTo: 'Assigned To',
+        internalNotes: 'Internal Notes',
+        answerDraft: 'Answer Draft'
+      },
+      placeholders: {
+        slug: 'fatwa-slug',
+        title: 'Fatwa title',
+        question: 'The question text...',
+        answer: 'The fatwa answer...',
+        categorySlug: 'category-slug',
+        categoryName: 'Category name',
+        categoryDescription: 'Category description...',
+        assignedTo: 'User ID or email',
+        internalNotes: 'Internal notes for moderation...',
+        answerDraft: 'Draft answer...',
+        selectCategory: 'Select category'
+      },
+      moderation: {
+        title: 'Moderate Question',
+        description: 'Update question status and assignment',
+        submittedBy: 'Submitted by',
+        questionLabel: 'Question'
+      },
+      delete: {
+        titleFatwa: 'Delete Fatwa',
+        titleCategory: 'Delete Category',
+        descriptionFatwa: 'Are you sure you want to delete this fatwa? This action cannot be undone.',
+        descriptionCategory: 'Are you sure you want to delete this category? This action cannot be undone.'
+      }
+    },
+    gallery: {
+      title: 'Gallery Categories',
+      description: 'Manage gallery categories and albums',
+      new: 'New Category',
+      searchPlaceholder: 'Search categories...',
+      noResults: 'No categories found',
+      slugLabel: 'Slug',
+      sortLabel: 'Sort Order',
+      noDescription: 'No description',
+      createTitle: 'Create Gallery Category',
+      createDescription: 'Add a new gallery category',
+      editTitle: 'Edit Gallery Category',
+      editDescription: 'Update gallery category details',
+      deleteTitle: 'Delete Gallery Category',
+      deleteDescription: 'Are you sure you want to delete this category? This action cannot be undone.',
+      fields: {
+        name: 'Name',
+        coverImage: 'Cover Image'
+      },
+      placeholders: {
+        name: 'Category name',
+        slug: 'gallery-category',
+        coverPath: 'Image path or URL'
+      },
+      coverUploadCta: 'Upload a cover image or choose from the library',
+      coverPreviewAlt: 'Gallery cover preview'
+    },
+    courses: {
+      title: 'Courses',
+      description: 'Manage public courses',
+      new: 'New Course',
+      searchPlaceholder: 'Search courses...',
+      noResults: 'No courses found',
+      createTitle: 'Create Course',
+      createDescription: 'Add a new course',
+      editTitle: 'Edit Course',
+      editDescription: 'Update course details',
+      deleteTitle: 'Delete Course',
+      deleteDescription: 'Are you sure you want to delete this course? This action cannot be undone.',
+      fields: {
+        title: 'Title',
+        instructor: 'Instructor',
+        duration: 'Duration',
+        level: 'Level',
+        enrollmentLink: 'Enrollment Link',
+        coverImage: 'Cover Image'
+      },
+      placeholders: {
+        title: 'Course title',
+        instructor: 'Instructor name',
+        duration: 'e.g. 8 weeks',
+        level: 'Select level',
+        enrollmentLink: 'https://...',
+        description: 'Course description...',
+        category: 'Category'
+      },
+      levels: {
+        beginner: 'Beginner',
+        intermediate: 'Intermediate',
+        advanced: 'Advanced'
+      },
+      featured: 'Featured',
+      uploadImage: 'Upload Cover',
+      coverPreviewAlt: 'Course cover preview',
+      noImage: 'No cover image',
+      enrollmentHelp: 'Paste the enrollment link or leave blank to hide button'
+    },
+    library: {
+      title: 'Library',
+      description: 'Manage public library books',
+      new: 'New Book',
+      searchPlaceholder: 'Search books...',
+      noResults: 'No books found',
+      createTitle: 'Add Book',
+      createDescription: 'Add a new book to the library',
+      editTitle: 'Edit Book',
+      editDescription: 'Update book details',
+      deleteTitle: 'Delete Book',
+      deleteDescription: 'Are you sure you want to delete this book? This action cannot be undone.',
+      fields: {
+        title: 'Title',
+        author: 'Author',
+        coverImage: 'Cover Image',
+        file: 'PDF File',
+        downloads: 'Downloads'
+      },
+      placeholders: {
+        title: 'Book title',
+        author: 'Author name',
+        category: 'Category',
+        description: 'Book summary...',
+        fileUrl: 'https://...pdf'
+      },
+      uploadCover: 'Upload Cover',
+      uploadFile: 'Upload File',
+      featured: 'Featured on homepage',
+      coverPreviewAlt: 'Book cover preview'
+    },
+    donations: {
+      title: 'Donations',
+      description: 'Manage public donation campaigns',
+      new: 'New Campaign',
+      searchPlaceholder: 'Search campaigns...',
+      noResults: 'No campaigns found',
+      createTitle: 'Create Campaign',
+      createDescription: 'Create a new donation campaign',
+      editTitle: 'Edit Campaign',
+      editDescription: 'Update campaign details',
+      deleteTitle: 'Delete Campaign',
+      deleteDescription: 'Are you sure you want to delete this campaign? This action cannot be undone.',
+      fields: {
+        fundName: 'Fund Name',
+        target: 'Target Amount',
+        raised: 'Raised Amount',
+        progress: 'Progress',
+        active: 'Active'
+      },
+      placeholders: {
+        fundName: 'Fund name',
+        target: '10000',
+        raised: '2500',
+        description: 'Campaign description...'
+      }
+    },
+    scholars: {
+      title: 'Scholars',
+      description: 'Manage public scholars directory',
+      new: 'New Scholar',
+      searchPlaceholder: 'Search scholars...',
+      noResults: 'No scholars found',
+      createTitle: 'Add Scholar',
+      createDescription: 'Add a scholar profile',
+      editTitle: 'Edit Scholar',
+      editDescription: 'Update scholar profile',
+      deleteTitle: 'Delete Scholar',
+      deleteDescription: 'Are you sure you want to delete this scholar? This action cannot be undone.',
+      fields: {
+        name: 'Name',
+        title: 'Title',
+        email: 'Email',
+        bio: 'Bio',
+        photo: 'Photo'
+      },
+      placeholders: {
+        name: 'Full name',
+        title: 'Title or role',
+        email: 'name@example.com',
+        bio: 'Short biography...'
+      },
+      featured: 'Featured on homepage',
+      photoAfterCreate: 'Photo will be uploaded after scholar is created.',
+      uploadPhoto: 'Upload photo'
+    },
+    graduates: {
+      title: 'Graduates & Alumni',
+      description: 'Showcase graduation cohorts and alumni',
+      new: 'New Graduate',
+      searchPlaceholder: 'Search graduates...',
+      noResults: 'No graduates found',
+      createTitle: 'Add Graduate',
+      createDescription: 'Add a new graduate to the alumni showcase',
+      editTitle: 'Edit Graduate',
+      editDescription: 'Update graduate details',
+      deleteTitle: 'Delete Graduate',
+      deleteDescription: 'Are you sure you want to delete this graduate?',
+      fields: {
+        name: 'Name',
+        program: 'Program / Degree',
+        year: 'Graduation Year',
+        bio: 'Biography'
+      },
+      placeholders: {
+        name: 'Full name',
+        program: 'e.g. Islamic Studies',
+        year: '2024',
+        bio: 'Brief biography...'
+      },
+      featured: 'Featured on homepage'
+    },
+    admissions: {
+      title: 'Online Admissions',
+      description: 'Review and manage online admission submissions.',
+      tabs: {
+        applications: 'Applications',
+        fields: 'Form Fields'
+      },
+      allStatuses: 'All statuses',
+      searchPlaceholder: 'Search by name, guardian phone, or application number',
+      applicationsTitle: 'Applications',
+      fieldsTitle: 'Form Fields',
+      columns: {
+        applicationNo: 'Application No',
+        student: 'Student',
+        guardianPhone: 'Guardian Phone',
+        applyingGrade: 'Applying Grade',
+        submitted: 'Submitted'
+      },
+      fieldColumns: {
+        key: 'Key',
+        label: 'Label',
+        type: 'Type',
+        required: 'Required',
+        enabled: 'Enabled',
+        sort: 'Sort'
+      },
+      loading: 'Loading admissions...',
+      noResults: 'No admissions found.',
+      actions: {
+        view: 'View',
+        addField: 'Add Field',
+        accept: 'Accept & Create Student',
+        saveChanges: 'Save Changes',
+        confirmAcceptance: 'Confirm Acceptance',
+        editField: 'Edit Field',
+        newField: 'New Field',
+        saveField: 'Save Field'
+      },
+      noFields: 'No custom fields configured.',
+      detailsTitle: 'Admission Details',
+      detailsDescription: 'View and manage this online admission application.',
+      loadingSingle: 'Loading admission...',
+      sections: {
+        student: 'Student',
+        guardian: 'Guardian',
+        address: 'Address',
+        previousSchool: 'Previous School',
+        statusActions: 'Status & Actions',
+        documents: 'Documents',
+        extraFields: 'Extra Fields'
+      },
+      labels: {
+        father: 'Father',
+        applying: 'Applying',
+        guardian: 'Guardian',
+        origin: 'Origin',
+        current: 'Current',
+        grade: 'Grade',
+        year: 'Year',
+        notes: 'Notes',
+        internalNotes: 'Internal Notes',
+        rejectionReason: 'Rejection Reason',
+        field: 'Field',
+        download: 'Download',
+        admissionNoOptional: 'Admission Number (optional)',
+        admissionYearOptional: 'Admission Year (optional)'
+      },
+      selectStatus: 'Select status',
+      placeholders: {
+        internalNotes: 'Internal notes...',
+        rejectionReason: 'Reason for rejection...'
+      },
+      noDocuments: 'No documents uploaded.',
+      noExtraFields: 'No extra fields filled.',
+      acceptTitle: 'Accept Admission',
+      acceptDescription: 'Create a student record from this application. Optionally set admission number and year.',
+      fieldDialog: {
+        editDescription: 'Update the admission form field.',
+        newDescription: 'Add a new field to the online admission form.'
+      },
+      fieldForm: {
+        key: 'Key',
+        label: 'Label',
+        type: 'Field Type',
+        selectType: 'Select type',
+        sortOrder: 'Sort Order',
+        options: 'Options (comma separated)',
+        placeholder: 'Placeholder',
+        helpText: 'Help Text',
+        required: 'Required',
+        enabled: 'Enabled'
+      },
+      fieldTypes: {
+        text: 'Text',
+        textarea: 'Textarea',
+        phone: 'Phone',
+        number: 'Number',
+        select: 'Select',
+        multiselect: 'Multi-select',
+        date: 'Date',
+        toggle: 'Toggle',
+        email: 'Email',
+        idNumber: 'ID Number',
+        address: 'Address',
+        photo: 'Photo',
+        file: 'File'
+      },
+      statuses: {
+        submitted: 'Submitted',
+        underReview: 'Under Review',
+        accepted: 'Accepted',
+        rejected: 'Rejected',
+        archived: 'Archived'
+      }
+    },
+    inbox: {
+      title: 'Inbox',
+      description: 'Contact form messages and inquiries',
+      searchPlaceholder: 'Search messages...',
+      noResults: 'No messages found',
+      noSubject: '(No subject)',
+      received: 'Received',
+      stats: {
+        new: 'New',
+        read: 'Read',
+        replied: 'Replied',
+        total: 'Total'
+      },
+      statuses: {
+        new: 'New',
+        read: 'Read',
+        replied: 'Replied',
+        archived: 'Archived'
+      },
+      actions: {
+        markRead: 'Mark as Read',
+        markReplied: 'Mark as Replied',
+        archive: 'Archive',
+        delete: 'Delete'
+      },
+      deleteTitle: 'Delete Message',
+      deleteDescription: 'Are you sure you want to delete this message? This cannot be undone.'
+    },
+    users: {
+      title: 'Website Users',
+      description: 'Invite and manage accounts that can access only the website tools.',
+      helperTitle: 'Website-only access',
+      helperDescription: 'Users with website roles see only the Website Manager menu unless other permissions are granted.',
+      stats: {
+        total: 'Total users',
+        active: 'Active',
+        inactive: 'Inactive',
+        roles: 'Roles in use'
+      },
+      filters: {
+        searchPlaceholder: 'Search by name or email...',
+        role: 'Role',
+        status: 'Status',
+        allRoles: 'All roles',
+        allStatuses: 'All statuses'
+      },
+      table: {
+        name: 'Name',
+        email: 'Email',
+        role: 'Role',
+        status: 'Status',
+        actions: 'Actions'
+      },
+      empty: {
+        title: 'No website users yet',
+        description: 'Invite a website team member to get started.'
+      },
+      dialogs: {
+        createTitle: 'Invite website user',
+        createDescription: 'Create a new account with website-only access.',
+        editTitle: 'Edit website user',
+        editDescription: 'Update contact details and access status.',
+        deleteTitle: 'Delete website user',
+        deleteDescription: 'This removes the account and revokes website access.',
+        resetTitle: 'Reset password',
+        resetDescription: 'Set a new password for this user.'
+      },
+      form: {
+        fullName: 'Full name',
+        email: 'Email',
+        password: 'Temporary password',
+        role: 'Website role',
+        phone: 'Phone',
+        defaultSchool: 'Default school',
+        selectSchool: 'Select a school',
+        noDefaultSchool: 'No default school',
+        active: 'Active',
+        activeHint: 'Inactive users cannot sign in to manage the website.'
+      },
+      status: {
+        active: 'Active',
+        inactive: 'Inactive'
+      },
+      actions: {
+        invite: 'Invite user',
+        edit: 'Edit',
+        delete: 'Delete',
+        resetPassword: 'Reset password'
+      },
+      roles: {
+        website_admin: 'Website Admin',
+        website_editor: 'Website Editor',
+        website_media: 'Media Manager'
+      },
+      noPermissionTitle: 'Access denied',
+      noPermissionDescription: 'You do not have permission to manage users.',
+      roleLocked: 'Role changes are managed by administrators.'
+    },
+    seo: {
+      title: 'SEO Tools',
+      description: 'Track metadata coverage, missing SEO fields, and content health.',
+      tabs: {
+        overview: 'Overview',
+        content: 'Content health'
+      },
+      stats: {
+        coverage: 'SEO coverage',
+        coverageHint: 'Items with complete metadata',
+        needsAttention: 'Needs attention',
+        needsAttentionHint: 'Pages/posts missing SEO fields',
+        total: 'Total items',
+        totalHint: 'Pages and posts tracked'
+      },
+      checklist: {
+        title: 'SEO checklist',
+        description: 'Complete these essentials for stronger search visibility.',
+        metaTitles: 'Add unique SEO titles for every page and post.',
+        metaDescriptions: 'Write short descriptions that summarize each page.',
+        socialImages: 'Attach social images for share cards.',
+        cleanUrls: 'Keep slugs short, readable, and keyword-focused.'
+      },
+      filters: {
+        searchPlaceholder: 'Search pages and posts...',
+        type: 'Content type',
+        status: 'Status',
+        allTypes: 'All types',
+        pages: 'Pages',
+        posts: 'Posts',
+        allStatuses: 'All statuses',
+        needsAttention: 'Needs attention',
+        complete: 'Complete'
+      },
+      table: {
+        title: 'Title',
+        type: 'Type',
+        missing: 'Missing',
+        status: 'Status',
+        publishedAt: 'Published At'
+      },
+      empty: 'No SEO issues found for the selected filters.',
+      missing: {
+        title: 'SEO title',
+        description: 'SEO description',
+        image: 'SEO image'
+      },
+      complete: 'Complete',
+      types: {
+        page: 'Page',
+        post: 'Post'
+      },
+      actions: {
+        openManager: 'Open manager'
+      }
+    },
+    audit: {
+      title: 'Audit Logs',
+      description: 'See who created or edited website content.',
+      searchPlaceholder: 'Search by title or user...',
+      noResults: 'No audit entries found.',
+      systemUser: 'System',
+      untitled: 'Untitled',
+      export: 'Export CSV',
+      refresh: 'Refresh',
+      summary: {
+        total: 'Total activity',
+        created: 'Created',
+        updated: 'Updated',
+        uniqueUsers: 'Active editors'
+      },
+      filters: {
+        action: 'Action',
+        type: 'Content type'
+      },
+      actions: {
+        created: 'Created',
+        updated: 'Updated'
+      },
+      columns: {
+        activity: 'Activity',
+        action: 'Action',
+        user: 'User',
+        occurredAt: 'Date',
+        status: 'Status'
+      },
+      types: {
+        page: 'Page',
+        post: 'Post',
+        announcement: 'Announcement',
+        event: 'Event',
+        media: 'Media',
+        mediaCategory: 'Media Category',
+        menuLink: 'Menu Link',
+        domain: 'Domain',
+        fatwa: 'Fatwa',
+        publicBook: 'Library Book',
+        scholar: 'Scholar',
+        course: 'Course',
+        graduate: 'Graduate',
+        donation: 'Donation'
+      }
+    }
+  },
+  websiteManager: websiteAdminEn.websiteManager,
+  website: websiteAdminEn.website,
   status: {
     issued: 'issued',
     approved: 'approved',
@@ -6762,6 +7297,44 @@ export const en = {
     buildingUpdated: 'building Updated',
     buildingDeleted: 'building Deleted',
     viewAll: 'View All'
+  },
+  platformLandingOffers: {
+    title: 'Landing Page Offers',
+    subtitle: 'Highlight discount codes on the public pricing page and control offer countdowns.',
+    columns: {
+      code: 'Code',
+      plan: 'Plan',
+      discount: 'Discount',
+      validity: 'Validity',
+      landing: 'Landing',
+      actions: 'Actions'
+    },
+    live: 'Live',
+    allPlans: 'All Plans',
+    specificPlan: 'Specific Plan',
+    ends: 'Ends',
+    noExpiry: 'No expiry',
+    visible: 'Visible',
+    hidden: 'Hidden',
+    configure: 'Configure',
+    empty: 'No discount codes found.',
+    loading: 'Loading discount codes...',
+    expired: 'Expired',
+    saveSettings: 'Save Settings',
+    dialog: {
+      title: 'Landing Offer Settings',
+      description: 'Control how this discount appears on the public pricing cards.',
+      showTitle: 'Show on landing page',
+      showDescription: 'Enables the badge, discounted price, and countdown timer.',
+      badgeLabel: 'Landing Badge Label',
+      badgePlaceholder: 'Limited Offer',
+      messageLabel: 'Landing Message',
+      messagePlaceholder: 'Short highlight for the offer',
+      validFrom: 'Valid From',
+      validUntil: 'Valid Until',
+      noStartDate: 'No start date',
+      noExpiryDate: 'No expiry date'
+    }
   },
   '': {
     '': {

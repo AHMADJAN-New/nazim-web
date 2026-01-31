@@ -100,7 +100,7 @@ class OrganizationService
      */
     protected function createDefaultSchool(Organization $organization): SchoolBranding
     {
-        return SchoolBranding::create([
+        $school = SchoolBranding::create([
             'id' => (string) Str::uuid(),
             'organization_id' => $organization->id,
             'school_name' => $organization->name . ' - Main School',
@@ -119,6 +119,55 @@ class OrganizationService
             'show_generation_date' => true,
             'calendar_preference' => 'gregorian',
         ]);
+
+        // Create WebsiteSetting for public website resolution
+        try {
+            \App\Models\WebsiteSetting::firstOrCreate(
+                [
+                    'organization_id' => $organization->id,
+                    'school_id' => $school->id,
+                ],
+                [
+                    'school_slug' => 'school-' . substr($school->id, 0, 8),
+                    'default_language' => 'ps',
+                    'enabled_languages' => ['ps', 'en', 'ar', 'fa'],
+                    'theme' => [
+                        'primary_color' => '#1e40af',
+                        'secondary_color' => '#64748b',
+                        'accent_color' => '#0ea5e9',
+                        'font_family' => 'Bahij Nassim',
+                    ],
+                    'is_public' => true,
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to create WebsiteSetting for new school', [
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // Seed website pages and navigation for new school (in Pashto)
+        try {
+            $seeder = new \Database\Seeders\WebsitePagesAndNavigationSeeder();
+            $seeder->seedForSchool($organization->id, $school->id, 'ps');
+            
+            Log::info('Website pages and navigation seeded for new school', [
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+            ]);
+        } catch (\Exception $e) {
+            // Log error but don't fail organization creation
+            Log::warning('Failed to seed website pages and navigation for new school', [
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+
+        return $school;
     }
 
     /**

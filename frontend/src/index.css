@@ -277,6 +277,25 @@ body,
 
   /* shadcn defaults text-sm/text-xs feel too small -> normalize INSIDE content only */
   [dir="rtl"] .container.max-w-7xl .text-sm { font-size: 1rem !important; }
+
+  /* =========================================================
+     PUBLIC WEBSITE FONT (Bahij Nassim for all public pages)
+     ========================================================= */
+  /* Apply Bahij Nassim to all public website routes */
+  [data-public-website="true"],
+  body:has([data-public-website="true"]),
+  #root:has([data-public-website="true"]) {
+    font-family: "Bahij Nassim", "Noto Sans Arabic", "Inter", sans-serif !important;
+  }
+
+  /* Ensure public website header, nav, and content use Bahij Nassim */
+  [data-public-website="true"] header,
+  [data-public-website="true"] nav,
+  [data-public-website="true"] main,
+  [data-public-website="true"] footer,
+  [data-public-website="true"] * {
+    font-family: "Bahij Nassim", "Noto Sans Arabic", "Inter", sans-serif !important;
+  }
   [dir="rtl"] .container.max-w-7xl .text-xs { font-size: 0.95rem !important; }
 
   /* Tables: keep readable */

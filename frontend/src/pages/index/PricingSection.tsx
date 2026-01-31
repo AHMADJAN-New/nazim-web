@@ -1,5 +1,6 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useSubscriptionPlans } from '@/hooks/useSubscription';
 import { useIndexTranslations } from './translations/useIndexTranslations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +14,15 @@ import {
 } from '@/components/ui/table';
 
 export const PricingSection = memo(function PricingSection() {
-  const { isRTL } = useLanguage();
-  const { t, translations, get } = useIndexTranslations();
+  const { isRTL, language } = useLanguage();
+  const { t, get } = useIndexTranslations();
+  const { data: subscriptionPlans = [], isLoading: plansLoading } = useSubscriptionPlans();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
   
   const renderFeatureValue = (value: boolean | string) => {
     if (value === true) {
@@ -26,39 +34,80 @@ export const PricingSection = memo(function PricingSection() {
     return <span className="text-emerald-600 font-semibold">{value}</span>;
   };
   
-  // Build pricing plans from translations
+  // Build pricing plans: API is source of truth for names and prices; translations only for labels/fallbacks
   const pricingPlans = useMemo(() => {
     const plans = get('pricing.plans');
     if (!plans) return [];
-    
+
+    const planLookup = new Map(subscriptionPlans.map((plan) => [plan.slug, plan]));
+    const localeMap: Record<string, string> = {
+      en: 'en-US',
+      fa: 'fa-IR',
+      ps: 'ps-AF',
+      ar: 'ar',
+    };
+    const locale = localeMap[language] || 'en-US';
+    const currencyLabel = t('pricing.currencyAfn');
+    const formatPrice = (value: number) =>
+      `${new Intl.NumberFormat(locale).format(value)} ${currencyLabel}`;
+    const formatCountdown = (validUntil?: Date | null) => {
+      if (!validUntil) return null;
+      const diffMs = validUntil.getTime() - now;
+      if (diffMs <= 0) return t('pricing.offer.ended');
+      const totalSeconds = Math.floor(diffMs / 1000);
+      const days = Math.floor(totalSeconds / (60 * 60 * 24));
+      const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+      const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+      const seconds = totalSeconds % 60;
+      const pad = (n: number) => String(n).padStart(2, '0');
+      if (days > 0) return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+      if (hours > 0) return `${hours}h ${pad(minutes)}m ${pad(seconds)}s`;
+      if (minutes > 0) return `${minutes}m ${pad(seconds)}s`;
+      return `${seconds}s`;
+    };
+
+    const customPriceLabel = plans.enterprise?.price ?? 'Custom';
+
     return [
       {
         id: 'starter',
-        name: plans.starter?.name || 'Starter',
+        nameFallback: plans.starter?.name || 'Starter',
         nameEn: 'Starter',
-        price: plans.starter?.price || '12,000 AFN',
+        customPriceLabel,
+        planData: planLookup.get('starter'),
+        formatPrice,
+        formatCountdown,
       },
       {
         id: 'pro',
-        name: plans.pro?.name || 'Pro',
+        nameFallback: plans.pro?.name || 'Pro',
         nameEn: 'Pro',
-        price: plans.pro?.price || '25,000 AFN',
+        customPriceLabel,
         isPopular: true,
+        planData: planLookup.get('pro'),
+        formatPrice,
+        formatCountdown,
       },
       {
         id: 'complete',
-        name: plans.complete?.name || 'Complete',
+        nameFallback: plans.complete?.name || 'Complete',
         nameEn: 'Complete',
-        price: plans.complete?.price || '35,000 AFN',
+        customPriceLabel,
+        planData: planLookup.get('complete'),
+        formatPrice,
+        formatCountdown,
       },
       {
         id: 'enterprise',
-        name: plans.enterprise?.name || 'Enterprise',
+        nameFallback: plans.enterprise?.name || 'Enterprise',
         nameEn: 'Enterprise',
-        price: plans.enterprise?.price || 'Custom',
+        customPriceLabel,
+        planData: planLookup.get('enterprise'),
+        formatPrice,
+        formatCountdown,
       },
     ];
-  }, [get]);
+  }, [get, language, now, subscriptionPlans, t]);
 
   // Build feature comparisons from translations
   const featureComparisons = useMemo(() => {
@@ -144,26 +193,76 @@ export const PricingSection = memo(function PricingSection() {
 
         {/* Pricing Plans */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 max-w-6xl mx-auto">
-        {pricingPlans.map((plan) => (
-          <Card
-            key={plan.id}
-            className="text-center relative hover:shadow-md transition-shadow"
-          >
-            {plan.isPopular && (
-              <Badge className="absolute -top-2 -right-2 bg-[#c9a44d] text-white text-xs px-2 py-1 rounded-full">
-                {t('pricing.plans.pro.popular')}
-              </Badge>
-            )}
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-[#0b0b56]" dir={isRTL ? "rtl" : "ltr"}>
-                {plan.name} ({plan.nameEn})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-[#0b0b56]">{plan.price}</div>
-            </CardContent>
-          </Card>
-        ))}
+        {pricingPlans.map((plan) => {
+          const planData = plan.planData;
+          const totalFee = Number(planData?.totalFeeAfn) || 0;
+          const isCustomPlan = planData?.isCustom ?? plan.id === 'enterprise';
+          const offer = planData?.landingOffer ?? null;
+          const discountedFee = Number(offer?.discountedTotalFeeAfn) || 0;
+          const hasDiscount = !!offer && discountedFee > 0 && discountedFee < totalFee;
+          const offerLabel =
+            (offer?.metadata?.landing_label as string | undefined) || t('pricing.offer.label');
+          const offerMessage =
+            (offer?.metadata?.landing_message as string | undefined) || '';
+          const offerCountdown = offer?.validUntil ? plan.formatCountdown(offer.validUntil) : null;
+
+          // Price from API only; ensure we never format NaN
+          const displayPrice = plansLoading || !planData
+            ? t('pricing.priceLoading')
+            : isCustomPlan || totalFee <= 0
+              ? plan.customPriceLabel
+              : plan.formatPrice(totalFee);
+          const discountedPrice =
+            hasDiscount && discountedFee > 0
+              ? plan.formatPrice(discountedFee)
+              : displayPrice;
+
+          const displayName = planData?.name ?? plan.nameFallback;
+
+          return (
+            <Card
+              key={plan.id}
+              className="text-center relative hover:shadow-md transition-shadow"
+            >
+              {plan.isPopular && (
+                <Badge className="absolute -top-2 -right-2 bg-[#c9a44d] text-white text-xs px-2 py-1 rounded-full">
+                  {t('pricing.plans.pro.popular')}
+                </Badge>
+              )}
+              {hasDiscount && (
+                <Badge className="absolute -top-2 -left-2 bg-rose-500 text-white text-xs px-2 py-1 rounded-full">
+                  {offerLabel}
+                </Badge>
+              )}
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-[#0b0b56]" dir={isRTL ? "rtl" : "ltr"}>
+                  {displayName === plan.nameEn ? displayName : `${displayName} (${plan.nameEn})`}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {hasDiscount ? (
+                  <div className="space-y-1">
+                    <div className="text-sm text-slate-500 line-through">{displayPrice}</div>
+                    <div className="text-2xl font-bold text-[#0b0b56]">{discountedPrice}</div>
+                    <div className="text-xs font-semibold text-emerald-600">
+                      {t('pricing.offer.save')} {plan.formatPrice(Number(offer.discountAmountAfn) || 0)}
+                    </div>
+                    {offerCountdown && (
+                      <div className="text-xs font-medium text-orange-600">
+                        {t('pricing.offer.endsIn')} {offerCountdown}
+                      </div>
+                    )}
+                    {offerMessage && (
+                      <div className="text-xs text-slate-500">{offerMessage}</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-2xl font-bold text-[#0b0b56]">{displayPrice}</div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Feature Comparison Table */}

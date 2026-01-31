@@ -79,6 +79,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 5: Creating schools...');
         $this->call(SchoolBrandingSeeder::class);
 
+        // Step 5b: Seed website pages and navigation for all schools
+        $this->command->info('Step 5b: Seeding website pages and navigation for all schools...');
+        $this->seedWebsitePagesForAllSchools();
+
         // Step 5a: Seed staff types (must run AFTER schools are created)
         $this->command->info('Step 5a: Seeding staff types...');
         $this->call(StaffTypeSeeder::class);
@@ -199,6 +203,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 28b: Seeding help center articles...');
         $this->call(HelpCenterArticleSeeder::class);
 
+        // Step 29: Seed Pashto website content for platform admin organization
+        $this->command->info('Step 29: Seeding Pashto website content...');
+        $this->call(PashtoWebsiteSeeder::class);
+
   
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
@@ -277,6 +285,9 @@ class DatabaseSeeder extends Seeder
             ['name' => 'admin', 'description' => 'Administrator with full access to all features'],
             ['name' => 'staff', 'description' => 'Staff member with limited access for operational tasks'],
             ['name' => 'teacher', 'description' => 'Teacher with access to academic content and student information'],
+            ['name' => 'website_admin', 'description' => 'Website admin with full control over public site content'],
+            ['name' => 'website_editor', 'description' => 'Website editor with content publishing access'],
+            ['name' => 'website_media', 'description' => 'Website media manager for uploads and galleries'],
         ];
 
         foreach ($roles as $roleData) {
@@ -623,5 +634,38 @@ class DatabaseSeeder extends Seeder
             $this->command->error("  ❌ Error processing user {$userData['email']}: " . $e->getMessage());
             $this->command->error("     Stack trace: " . $e->getTraceAsString());
         }
+    }
+
+    /**
+     * Seed website pages and navigation for all schools
+     */
+    protected function seedWebsitePagesForAllSchools(): void
+    {
+        $schools = DB::table('school_branding')
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($schools->isEmpty()) {
+            $this->command->info('  ⚠ No schools found. Skipping website pages seeding.');
+            return;
+        }
+
+        $seeder = new WebsitePagesAndNavigationSeeder();
+        $seededCount = 0;
+        $failedCount = 0;
+
+        foreach ($schools as $school) {
+            try {
+                // Seed in Pashto by default (can be changed to 'en' if needed)
+                $seeder->seedForSchool($school->organization_id, $school->id, 'ps');
+                $this->command->info("  ✓ Seeded website pages for school: {$school->school_name} (ID: {$school->id})");
+                $seededCount++;
+            } catch (\Exception $e) {
+                $this->command->warn("  ⚠ Failed to seed website pages for school {$school->school_name} (ID: {$school->id}): " . $e->getMessage());
+                $failedCount++;
+            }
+        }
+
+        $this->command->info("  ✓ Website pages seeding completed: {$seededCount} succeeded, {$failedCount} failed");
     }
 }

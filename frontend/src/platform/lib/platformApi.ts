@@ -580,6 +580,90 @@ export const platformApi = {
     },
   },
 
+  // Website management
+  websites: {
+    getConfig: async () => {
+      return apiClient.get<{
+        base_domain: string;
+      }>('/platform/website/config');
+    },
+    getOrganizationWebsite: async (organizationId: string) => {
+      return apiClient.get<{
+        organization: {
+          id: string;
+          name: string;
+          slug: string;
+          website: string | null;
+        };
+        domains: Array<{
+          id: string;
+          organization_id: string;
+          school_id: string | null;
+          domain: string;
+          is_primary: boolean;
+          verification_status: string | null;
+          ssl_status: string | null;
+          created_at: string;
+          updated_at: string;
+        }>;
+        settings: Array<{
+          id: string;
+          organization_id: string;
+          school_id: string | null;
+          school_slug: string | null;
+          default_language: string | null;
+          enabled_languages: string[] | null;
+          theme: Record<string, any> | null;
+          is_public: boolean;
+          created_at: string;
+          updated_at: string;
+        }>;
+        schools: Array<{
+          id: string;
+          school_name: string | null;
+          school_slug: string | null;
+        }>;
+      }>(`/platform/organizations/${organizationId}/website`);
+    },
+    upsertWebsiteSettings: async (
+      organizationId: string,
+      schoolId: string,
+      data: {
+        school_slug: string;
+        is_public: boolean;
+        default_language?: string | null;
+        enabled_languages?: string[] | null;
+        theme?: Record<string, any> | null;
+      }
+    ) => {
+      return apiClient.put(`/platform/organizations/${organizationId}/website/settings/${schoolId}`, data);
+    },
+    listDomains: async (organizationId: string, params?: { school_id?: string }) => {
+      return apiClient.get(`/platform/organizations/${organizationId}/domains`, params);
+    },
+    createDomain: async (organizationId: string, data: {
+      school_id: string;
+      domain: string;
+      is_primary?: boolean;
+      verification_status?: string | null;
+      ssl_status?: string | null;
+    }) => {
+      return apiClient.post(`/platform/organizations/${organizationId}/domains`, data);
+    },
+    updateDomain: async (organizationId: string, domainId: string, data: {
+      school_id?: string;
+      domain?: string;
+      is_primary?: boolean;
+      verification_status?: string | null;
+      ssl_status?: string | null;
+    }) => {
+      return apiClient.put(`/platform/organizations/${organizationId}/domains/${domainId}`, data);
+    },
+    deleteDomain: async (organizationId: string, domainId: string) => {
+      return apiClient.delete(`/platform/organizations/${organizationId}/domains/${domainId}`);
+    },
+  },
+
   // Generic request method for custom endpoints
   request: async function<T = any>(endpoint: string, options?: { method?: string; body?: string | object; params?: Record<string, string> }) {
     const method = options?.method || 'GET';
@@ -831,6 +915,9 @@ export const platformApi = {
       },
       generate: async (data: DesktopLicenseApi.GenerateKeyPairRequest) => {
         return apiClient.post<{ data: DesktopLicenseApi.LicenseKey }>('/platform/desktop-licenses/keys', data);
+      },
+      import: async (data: DesktopLicenseApi.ImportKeysRequest) => {
+        return apiClient.post<{ data: DesktopLicenseApi.ImportKeysResponse }>('/platform/desktop-licenses/keys/import', data);
       },
       get: async (id: string) => {
         return apiClient.get<{ data: DesktopLicenseApi.LicenseKey }>(`/platform/desktop-licenses/keys/${id}`);

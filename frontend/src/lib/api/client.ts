@@ -116,7 +116,7 @@ class ApiClient {
       // Check if user has schools_access_all permission (stored in localStorage by SchoolContext)
       const hasSchoolsAccessAll = localStorage.getItem('has_schools_access_all') === 'true';
       const selectedSchoolId = localStorage.getItem('selected_school_id');
-      
+
       // Only add school_id if user has schools_access_all permission
       // For other users, the backend middleware will use their default_school_id
       if (hasSchoolsAccessAll && selectedSchoolId) {
@@ -129,7 +129,7 @@ class ApiClient {
         }
       }
     }
-    
+
     // Automatically add language parameter for help center endpoints
     // This ensures articles are filtered by user's language preference
     if (typeof window !== 'undefined' && endpoint.includes('/help-center/')) {
@@ -141,11 +141,38 @@ class ApiClient {
         options.params.lang = userLanguage;
       }
     }
-    
+
+    // Public website: in dev/testing, backend resolves school from query param.
+    // Pass school_id when visiting public site with ?school_id= (stored in sessionStorage by PublicLayout).
+    if (typeof window !== 'undefined' && endpoint.startsWith('/public/website/') && !options.params?.school_id) {
+      const publicSchoolId = sessionStorage.getItem('public_website_school_id');
+      if (publicSchoolId) {
+        if (!options.params) {
+          options.params = {};
+        }
+        options.params = { ...options.params, school_id: publicSchoolId };
+      }
+    }
+
+    // Public website: help the backend resolve school when behind proxies or split-frontends.
+    // This is safe because the backend still validates host/domain/slug mappings.
+    if (typeof window !== 'undefined' && endpoint.startsWith('/public/website/')) {
+      const publicHost = window.location.host;
+      if (publicHost) {
+        if (!options.headers) {
+          options.headers = {};
+        }
+        const headers = options.headers as Record<string, string>;
+        if (!headers['X-Public-Website-Host']) {
+          options.headers = { ...headers, 'X-Public-Website-Host': publicHost };
+        }
+      }
+    }
+
     // CRITICAL: Extract params BEFORE destructuring to ensure it's a plain object
     const params = options.params ? { ...options.params } : undefined;
     const { params: _, ...fetchOptions } = options;
-    
+
     const url = this.buildUrl(endpoint, params);
 
     const headers: HeadersInit = {
@@ -174,7 +201,7 @@ class ApiClient {
         // Check content type before parsing
         const contentType = response.headers.get('content-type') || '';
         let error: any = { message: response.statusText };
-        
+
         if (contentType.includes('application/json')) {
           // Try to parse as JSON
           try {
@@ -254,19 +281,19 @@ class ApiClient {
           (subscriptionError as any).current = error.current;
           (subscriptionError as any).limit = error.limit;
           (subscriptionError as any).availableAddons = error.available_addons;
-          
+
           // Dispatch custom event for global subscription error handling (with debouncing)
           if (typeof window !== 'undefined') {
             // Use a debounced event dispatch to prevent multiple events for the same error
             const eventKey = `${error.code}-${error.feature_key || error.resource_key || 'unknown'}`;
             const lastEventTime = (window as any).__lastSubscriptionErrorTime || {};
             const now = Date.now();
-            
+
             // Only dispatch if we haven't dispatched the same error in the last 2 seconds
             if (!lastEventTime[eventKey] || now - lastEventTime[eventKey] > 2000) {
               lastEventTime[eventKey] = now;
               (window as any).__lastSubscriptionErrorTime = lastEventTime;
-              
+
               window.dispatchEvent(new CustomEvent('subscription-error', {
                 detail: {
                   code: error.code,
@@ -283,7 +310,7 @@ class ApiClient {
               }));
             }
           }
-          
+
           throw subscriptionError;
         }
 
@@ -294,22 +321,22 @@ class ApiClient {
           const maintenanceMessage = error.message || error.error || 'We are performing scheduled maintenance. We\'ll be back soon!';
           const retryAfter = error.retry_after || error.retry || null;
           const scheduledEnd = error.scheduled_end || error.scheduled_end_at || null;
-          
+
           // Check if this is a platform admin route or login - backend should allow these through
           // But if we still get 503, it means backend didn't allow it, so we should still handle it
           const isPlatformAdminRoute = endpoint.includes('/platform/');
           const isLoginRoute = endpoint.includes('/auth/login');
-          
+
           // Dispatch maintenance mode event (for showing maintenance message)
           if (typeof window !== 'undefined') {
             // Use a debounced event dispatch to prevent multiple events
             const lastEventTime = (window as any).__lastMaintenanceErrorTime || 0;
             const now = Date.now();
-            
+
             // Only dispatch if we haven't dispatched in the last 2 seconds
             if (!lastEventTime || now - lastEventTime > 2000) {
               (window as any).__lastMaintenanceErrorTime = now;
-              
+
               window.dispatchEvent(new CustomEvent('maintenance-mode', {
                 detail: {
                   message: maintenanceMessage,
@@ -319,7 +346,7 @@ class ApiClient {
               }));
             }
           }
-          
+
           // For platform admin routes, don't throw error - let them see the maintenance message but continue
           // The backend should allow platform admin routes through, but if it doesn't, we still show the message
           if (isPlatformAdminRoute) {
@@ -333,7 +360,7 @@ class ApiClient {
             (maintenanceError as any).scheduledEnd = scheduledEnd;
             throw maintenanceError;
           }
-          
+
           // For login routes, backend should allow them through, but if we get 503, throw error
           // This allows login to fail gracefully and show maintenance message
           if (isLoginRoute) {
@@ -344,7 +371,7 @@ class ApiClient {
             (maintenanceError as any).scheduledEnd = scheduledEnd;
             throw maintenanceError;
           }
-          
+
           // For all other routes, throw maintenance error
           const maintenanceError = new Error(maintenanceMessage);
           (maintenanceError as any).isMaintenanceMode = true;
@@ -473,6 +500,17 @@ class ApiClient {
     return { blob, filename };
   }
 
+  /**
+   * Fetch a private storage URL (e.g. /api/storage/download/xxx) with auth and return blob.
+   * Use for <img> or file download when the URL requires Bearer token.
+   */
+  async getBlobForPrivateUrl(fullOrRelativeUrl: string): Promise<Blob> {
+    const pathMatch = fullOrRelativeUrl.match(/\/api(\/storage\/download\/[^?#]+)/);
+    const endpoint = pathMatch ? pathMatch[1] : fullOrRelativeUrl.replace(/^.*\/api/, '') || '/storage/download/';
+    const { blob } = await this.requestFile(endpoint);
+    return blob;
+  }
+
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET', params });
   }
@@ -486,6 +524,7 @@ class ApiClient {
         method: 'POST',
         body: data,
         headers: options?.headers || {},
+        params: options?.params,
       });
     }
 
@@ -2908,7 +2947,7 @@ export const idCardTemplatesApi = {
 
   setDefault: async (id: string) => apiClient.post(`/id-card-templates/${id}/set-default`),
 
-  getBackgroundUrl: (id: string, side: 'front' | 'back') => 
+  getBackgroundUrl: (id: string, side: 'front' | 'back') =>
     `${API_URL}/id-card-templates/${id}/background/${side}`,
 
   getBackgroundImage: async (id: string, side: 'front' | 'back') => {
@@ -2932,10 +2971,10 @@ export const translationsApi = {
     ar: Record<string, unknown>;
   }) => apiClient.post<{ message: string; languages: string[] }>('/translations', { translations }),
 
-  saveChanges: async (changes: Array<{ key: string; lang: string; value: string }>) => 
-    apiClient.post<{ 
-      message: string; 
-      updated_files: string[]; 
+  saveChanges: async (changes: Array<{ key: string; lang: string; value: string }>) =>
+    apiClient.post<{
+      message: string;
+      updated_files: string[];
       updated_keys_count: number;
       file_changes: Record<string, {
         file_name: string;
@@ -2945,7 +2984,7 @@ export const translationsApi = {
       }>;
     }>('/translations/changes', { changes }),
 
-  getChangedFiles: async () => 
+  getChangedFiles: async () =>
     apiClient.get<{
       changed_files: Array<{
         file_name: string;
@@ -4056,7 +4095,7 @@ export const graduationBatchesApi = {
     class_id?: string;
     exam_id?: string;
   }) => apiClient.get('/graduation/batches', params),
-  get: async (id: string, params?: { school_id?: string }) => 
+  get: async (id: string, params?: { school_id?: string }) =>
     apiClient.get(`/graduation/batches/${id}`, params),
   create: async (data: {
     school_id: string;
@@ -4097,8 +4136,8 @@ export const graduationBatchesApi = {
     apiClient.post(`/graduation/batches/${id}/generate-students`, params),
   approve: async (id: string, params?: { school_id?: string }) =>
     apiClient.post(`/graduation/batches/${id}/approve`, params),
-  issueCertificates: async (id: string, data: { 
-    template_id: string; 
+  issueCertificates: async (id: string, data: {
+    template_id: string;
     school_id?: string;
     starting_number?: number;
     prefix?: string;
@@ -4214,15 +4253,15 @@ export const issuedCertificatesApi = {
     type?: string;
   }) => apiClient.get('/certificates/issued', params),
   get: async (id: string) => apiClient.get(`/certificates/issued/${id}`),
-  getCertificateData: async (id: string, schoolId?: string) => 
+  getCertificateData: async (id: string, schoolId?: string) =>
     apiClient.get(`/certificates/issued/${id}/data`, schoolId ? { school_id: schoolId } : undefined),
   revoke: async (id: string, reason: string, schoolId?: string) =>
-    apiClient.post(`/certificates/issued/${id}/revoke`, { 
+    apiClient.post(`/certificates/issued/${id}/revoke`, {
       reason,
       ...(schoolId && { school_id: schoolId }),
     }),
   downloadPdf: async (id: string, schoolId?: string) =>
-    apiClient.requestFile(`/certificates/issued/${id}/pdf`, { 
+    apiClient.requestFile(`/certificates/issued/${id}/pdf`, {
       method: 'GET',
       params: schoolId ? { school_id: schoolId } : undefined,
     }),
@@ -4247,9 +4286,9 @@ export const studentIdCardsApi = {
     page?: number;
     per_page?: number;
   }) => apiClient.get('/student-id-cards', params),
-  
+
   get: async (id: string) => apiClient.get(`/student-id-cards/${id}`),
-  
+
   assign: async (data: {
     academic_year_id: string;
     id_card_template_id: string;
@@ -4265,7 +4304,7 @@ export const studentIdCardsApi = {
     card_number?: string | null;
     notes?: string | null;
   }) => apiClient.post('/student-id-cards/assign', data),
-  
+
   update: async (id: string, data: {
     card_number?: string | null;
     card_fee?: number;
@@ -4276,17 +4315,17 @@ export const studentIdCardsApi = {
     printed_by?: string | null;
     notes?: string | null;
   }) => apiClient.put(`/student-id-cards/${id}`, data),
-  
-  markPrinted: async (id: string) => 
+
+  markPrinted: async (id: string) =>
     apiClient.post(`/student-id-cards/${id}/mark-printed`),
-  
+
   markFeePaid: async (id: string, data: {
     card_fee_paid: boolean;
     card_fee_paid_date?: string;
     account_id?: string | null;
     income_category_id?: string | null;
   }) => apiClient.post(`/student-id-cards/${id}/mark-fee-paid`, data),
-  
+
   delete: async (id: string) => apiClient.delete(`/student-id-cards/${id}`),
 };
 
@@ -4388,12 +4427,12 @@ export const eventGuestsApi = {
     const formData = new FormData();
     // Explicitly append file with name to ensure Android Chrome compatibility
     formData.append('photo', file, file.name);
-    
+
     try {
       const result = await apiClient.post<{ photo_url: string; photo_thumb_url: string }>(`/guests/${guestId}/photo`, formData, {
         headers: {}, // Let browser set Content-Type with boundary (important for Android Chrome)
       });
-      
+
       return result;
     } catch (error: any) {
       throw error;
@@ -4592,19 +4631,550 @@ export const helpCenterArticlesApi = {
     return apiClient.post(`/help-center/articles/${id}/helpful`);
   },
 
-    markNotHelpful: async (id: string) => {
-        return apiClient.post(`/help-center/articles/${id}/not-helpful`);
-    },
+  markNotHelpful: async (id: string) => {
+    return apiClient.post(`/help-center/articles/${id}/not-helpful`);
+  },
 
-    publish: async (id: string) => {
-        return apiClient.post(`/help-center/articles/${id}/publish`);
-    },
+  publish: async (id: string) => {
+    return apiClient.post(`/help-center/articles/${id}/publish`);
+  },
 
-    unpublish: async (id: string) => {
-        return apiClient.post(`/help-center/articles/${id}/unpublish`);
-    },
+  unpublish: async (id: string) => {
+    return apiClient.post(`/help-center/articles/${id}/unpublish`);
+  },
 
-    archive: async (id: string) => {
-        return apiClient.post(`/help-center/articles/${id}/archive`);
-    },
+  archive: async (id: string) => {
+    return apiClient.post(`/help-center/articles/${id}/archive`);
+  },
+};
+
+export const websiteSettingsApi = {
+  get: async () => {
+    return apiClient.get('/website/settings');
+  },
+  update: async (data: {
+    school_slug: string;
+    default_language: string;
+    enabled_languages: string[];
+    theme?: Record<string, any>;
+    is_public?: boolean;
+  }) => {
+    return apiClient.put('/website/settings', data);
+  },
+};
+
+export const websiteAuditLogsApi = {
+  list: async (params?: { limit?: number; page?: number; per_page?: number }) => {
+    return apiClient.get('/website/audit-logs', params);
+  },
+};
+
+export const websitePagesApi = {
+  list: async () => {
+    return apiClient.get('/website/pages');
+  },
+  get: async (id: string) => {
+    return apiClient.get(`/website/pages/${id}`);
+  },
+  create: async (data: {
+    slug: string;
+    title: string;
+    status: string;
+    content_json?: any[];
+    seo_title?: string | null;
+    seo_description?: string | null;
+    seo_image_path?: string | null;
+    published_at?: string | null;
+  }) => {
+    return apiClient.post('/website/pages', data);
+  },
+  update: async (id: string, data: {
+    slug?: string;
+    title?: string;
+    status?: string;
+    content_json?: any[];
+    seo_title?: string | null;
+    seo_description?: string | null;
+    seo_image_path?: string | null;
+    published_at?: string | null;
+  }) => {
+    return apiClient.put(`/website/pages/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/pages/${id}`);
+  },
+};
+
+export const websitePostsApi = {
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/posts', params);
+  },
+  create: async (data: {
+    slug: string;
+    title: string;
+    status: string;
+    excerpt?: string | null;
+    content_json?: any[];
+    seo_title?: string | null;
+    seo_description?: string | null;
+    seo_image_path?: string | null;
+    published_at?: string | null;
+  }) => {
+    return apiClient.post('/website/posts', data);
+  },
+  update: async (id: string, data: {
+    slug?: string;
+    title?: string;
+    status?: string;
+    excerpt?: string | null;
+    content_json?: any[];
+    seo_title?: string | null;
+    seo_description?: string | null;
+    seo_image_path?: string | null;
+    published_at?: string | null;
+  }) => {
+    return apiClient.put(`/website/posts/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/posts/${id}`);
+  },
+};
+
+export const websiteEventsApi = {
+  list: async () => {
+    return apiClient.get('/website/events');
+  },
+  create: async (data: {
+    title: string;
+    location?: string | null;
+    starts_at: string;
+    ends_at?: string | null;
+    is_public?: boolean;
+    summary?: string | null;
+    content_json?: any[];
+  }) => {
+    return apiClient.post('/website/events', data);
+  },
+  update: async (id: string, data: {
+    title?: string;
+    location?: string | null;
+    starts_at?: string;
+    ends_at?: string | null;
+    is_public?: boolean;
+    summary?: string | null;
+    content_json?: any[];
+  }) => {
+    return apiClient.put(`/website/events/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/events/${id}`);
+  },
+};
+
+export const websiteAnnouncementsApi = {
+  list: async () => {
+    return apiClient.get('/website/announcements');
+  },
+  create: async (data: {
+    title: string;
+    content?: string | null;
+    status: string;
+    published_at?: string | null;
+    expires_at?: string | null;
+    is_pinned?: boolean;
+  }) => {
+    return apiClient.post('/website/announcements', data);
+  },
+  update: async (id: string, data: {
+    title?: string;
+    content?: string | null;
+    status?: string;
+    published_at?: string | null;
+    expires_at?: string | null;
+    is_pinned?: boolean;
+  }) => {
+    return apiClient.put(`/website/announcements/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/announcements/${id}`);
+  },
+};
+
+export const websitePublicBooksApi = {
+  uploadFile: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post<{ path: string; file_size?: number }>('/website/public-books/upload-file', formData);
+  },
+  uploadCover: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post<{ path: string }>('/website/public-books/upload-cover', formData);
+  },
+};
+
+export const websiteMediaApi = {
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/media', params);
+  },
+  create: async (data: {
+    category_id?: string | null;
+    type: string;
+    file_path: string;
+    file_name?: string | null;
+    alt_text?: string | null;
+    metadata?: Record<string, any>;
+  }) => {
+    return apiClient.post('/website/media', data);
+  },
+  uploadImage: async (file: File, categoryId?: string | null) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (categoryId) {
+      formData.append('category_id', categoryId);
+    }
+    return apiClient.post<{ url: string; path: string; media_id: string }>('/website/media/upload-image', formData);
+  },
+  update: async (id: string, data: {
+    category_id?: string | null;
+    type?: string;
+    file_path?: string;
+    file_name?: string | null;
+    alt_text?: string | null;
+    metadata?: Record<string, any>;
+  }) => {
+    return apiClient.put(`/website/media/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/media/${id}`);
+  },
+};
+
+export const websiteMediaCategoriesApi = {
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/media-categories', params);
+  },
+  create: async (data: {
+    name: string;
+    slug?: string | null;
+    description?: string | null;
+    cover_image_path?: string | null;
+    sort_order?: number | null;
+    is_active?: boolean;
+  }) => {
+    return apiClient.post('/website/media-categories', data);
+  },
+  update: async (id: string, data: {
+    name?: string;
+    slug?: string | null;
+    description?: string | null;
+    cover_image_path?: string | null;
+    sort_order?: number | null;
+    is_active?: boolean;
+  }) => {
+    return apiClient.put(`/website/media-categories/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/media-categories/${id}`);
+  },
+};
+
+export const websiteAdmissionFieldsApi = {
+  list: async () => {
+    return apiClient.get('/website/admissions/fields');
+  },
+  create: async (data: {
+    key: string;
+    label: string;
+    field_type: string;
+    is_required?: boolean;
+    is_enabled?: boolean;
+    sort_order?: number;
+    placeholder?: string | null;
+    help_text?: string | null;
+    validation_rules?: Record<string, unknown> | null;
+    options?: Array<{ value: string; label: string }> | null;
+  }) => {
+    return apiClient.post('/website/admissions/fields', data);
+  },
+  update: async (id: string, data: {
+    key?: string;
+    label?: string;
+    field_type?: string;
+    is_required?: boolean;
+    is_enabled?: boolean;
+    sort_order?: number;
+    placeholder?: string | null;
+    help_text?: string | null;
+    validation_rules?: Record<string, unknown> | null;
+    options?: Array<{ value: string; label: string }> | null;
+  }) => {
+    return apiClient.put(`/website/admissions/fields/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/admissions/fields/${id}`);
+  },
+};
+
+export const websiteAdmissionsApi = {
+  list: async (params?: { status?: string; search?: string; page?: number; per_page?: number }) => {
+    return apiClient.get('/website/admissions', { params });
+  },
+  get: async (id: string) => {
+    return apiClient.get(`/website/admissions/${id}`);
+  },
+  update: async (id: string, data: { status?: string; notes?: string | null; rejection_reason?: string | null }) => {
+    return apiClient.put(`/website/admissions/${id}`, data);
+  },
+  accept: async (id: string, data?: { admission_no?: string; admission_year?: string }) => {
+    return apiClient.post(`/website/admissions/${id}/accept`, data ?? {});
+  },
+};
+
+export const websiteDomainsApi = {
+  list: async () => {
+    return apiClient.get('/website/domains');
+  },
+  create: async (data: {
+    domain: string;
+    is_primary?: boolean;
+    verification_status?: string | null;
+    ssl_status?: string | null;
+  }) => {
+    return apiClient.post('/website/domains', data);
+  },
+  update: async (id: string, data: {
+    domain?: string;
+    is_primary?: boolean;
+    verification_status?: string | null;
+    ssl_status?: string | null;
+  }) => {
+    return apiClient.put(`/website/domains/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/domains/${id}`);
+  },
+};
+
+export const websiteMenusApi = {
+  list: async () => {
+    return apiClient.get('/website/menus');
+  },
+  create: async (data: {
+    parent_id?: string | null;
+    label: string;
+    url: string;
+    sort_order?: number;
+    is_visible?: boolean;
+  }) => {
+    return apiClient.post('/website/menus', data);
+  },
+  update: async (id: string, data: {
+    parent_id?: string | null;
+    label?: string;
+    url?: string;
+    sort_order?: number;
+    is_visible?: boolean;
+  }) => {
+    return apiClient.put(`/website/menus/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/menus/${id}`);
+  },
+};
+
+
+// Pagination Interface
+export interface PaginatedResponse<T> {
+  current_page: number;
+  data: T[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: {
+    url: string | null;
+    label: string;
+    active: boolean;
+  }[];
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
+}
+
+export const publicWebsiteApi = {
+  getSite: async (params?: { locale?: string; school_id?: string }) => {
+    return apiClient.get('/public/website/site', params);
+  },
+  getMenus: async () => {
+    return apiClient.get('/public/website/menus');
+  },
+  getPage: async (slug: string) => {
+    return apiClient.get(`/public/website/pages/${slug}`);
+  },
+  getPosts: async (page = 1) => {
+    return apiClient.get('/public/website/posts', { params: { page } });
+  },
+  getPost: async (slug: string) => {
+    return apiClient.get(`/public/website/posts/${slug}`);
+  },
+  getAnnouncements: async (page = 1) => {
+    return apiClient.get('/public/website/announcements', { params: { page } });
+  },
+  getAnnouncement: async (id: string) => {
+    return apiClient.get(`/public/website/announcements/${id}`);
+  },
+  getAdmissionFields: async () => {
+    return apiClient.get('/public/website/admissions/fields');
+  },
+  submitAdmission: async (data: FormData) => {
+    return apiClient.post('/public/website/admissions', data);
+  },
+  getEvents: async () => {
+    return apiClient.get('/public/website/events');
+  },
+  getMedia: async (params?: { category?: string; page?: number }) => {
+    return apiClient.get('/public/website/media', { params });
+  },
+  getMediaCategories: async () => {
+    return apiClient.get('/public/website/media', { params: { get_categories: true } });
+  },
+  getFatwaCategories: async () => {
+    return apiClient.get('/public/website/fatwas/categories');
+  },
+  getFatwas: async (params?: { category?: string; search?: string; page?: number }) => {
+    return apiClient.get('/public/website/fatwas', { params });
+  },
+  getFatwa: async (slug: string) => {
+    return apiClient.get(`/public/website/fatwas/${slug}`);
+  },
+  submitFatwaQuestion: async (data: {
+    category_id?: string | null;
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    question_text: string;
+    is_anonymous?: boolean;
+  }) => {
+    return apiClient.post('/public/website/fatwas/questions', data);
+  },
+  getLibrary: async (params?: { query?: string; category?: string }) => {
+    return apiClient.get('/public/website/library', params);
+  },
+  getLibraryBook: async (id: string) => {
+    return apiClient.get(`/public/website/library/${id}`);
+  },
+  /** URL path for viewing or downloading a public library book file (use with same origin). */
+  getLibraryBookFileUrl: (id: string, disposition: 'inline' | 'attachment' = 'inline') => {
+    return `/api/public/website/library/${id}/file?disposition=${disposition}`;
+  },
+  getCourses: async (params?: { category?: string; level?: string; school_id?: string }) => {
+    return apiClient.get('/public/website/courses', params);
+  },
+  getCourse: async (id: string, params?: { school_id?: string }) => {
+    return apiClient.get(`/public/website/courses/${id}`, params);
+  },
+  getScholars: async () => {
+    return apiClient.get('/public/website/scholars');
+  },
+  getGraduates: async (params?: { year?: number }) => {
+    return apiClient.get('/public/website/graduates', params);
+  },
+  getDonations: async () => {
+    return apiClient.get('/public/website/donations');
+  },
+  submitContact: async (data: any) => {
+    return apiClient.post('/public/website/contact', data);
+  },
+  getPublicExamOptions: async () => {
+    return apiClient.get('/public/website/exams/options');
+  },
+  searchPublicExamResults: async (params: { page?: number; exam_id: string; search_term: string }) => {
+    return apiClient.post('/public/website/exams/results/search?page=' + (params.page || 1), {
+      exam_id: params.exam_id,
+      search_term: params.search_term,
+    });
+  },
+};
+
+export const websiteFatwaCategoriesApi = {
+  list: async () => {
+    return apiClient.get('/website/fatwa-categories');
+  },
+  create: async (data: {
+    name: string;
+    slug: string;
+    description?: string | null;
+    is_active?: boolean;
+    sort_order?: number;
+  }) => {
+    return apiClient.post('/website/fatwa-categories', data);
+  },
+  update: async (id: string, data: {
+    name?: string;
+    slug?: string;
+    description?: string | null;
+    is_active?: boolean;
+    sort_order?: number;
+  }) => {
+    return apiClient.put(`/website/fatwa-categories/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/fatwa-categories/${id}`);
+  },
+};
+
+export const websiteFatwaQuestionsApi = {
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/fatwa-questions', params);
+  },
+  get: async (id: string) => {
+    return apiClient.get(`/website/fatwa-questions/${id}`);
+  },
+  update: async (id: string, data: {
+    status?: string;
+    assigned_to?: string | null;
+    internal_notes?: string | null;
+    answer_draft?: string | null;
+  }) => {
+    return apiClient.put(`/website/fatwa-questions/${id}`, data);
+  },
+};
+
+export const websiteFatwasApi = {
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/fatwas', params);
+  },
+  create: async (data: {
+    category_id?: string | null;
+    slug: string;
+    title: string;
+    question_text?: string | null;
+    answer_text?: string | null;
+    references_json?: any[] | null;
+    status: string;
+    published_at?: string | null;
+    is_featured?: boolean;
+  }) => {
+    return apiClient.post('/website/fatwas', data);
+  },
+  update: async (id: string, data: {
+    category_id?: string | null;
+    slug?: string;
+    title?: string;
+    question_text?: string | null;
+    answer_text?: string | null;
+    references_json?: any[] | null;
+    status?: string;
+    published_at?: string | null;
+    is_featured?: boolean;
+  }) => {
+    return apiClient.put(`/website/fatwas/${id}`, data);
+  },
+  delete: async (id: string) => {
+    return apiClient.delete(`/website/fatwas/${id}`);
+  },
 };

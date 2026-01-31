@@ -285,26 +285,31 @@ export const indexTranslations = {
     },
   },
 
-  // Pricing Section
+  // Pricing Section (prices come from API; these are labels and fallbacks only)
   pricing: {
     title: 'Nazim System Packages',
     subtitle: 'Tailored solutions for every institution size. Higher tiers unlock advanced modules.',
+    currencyAfn: 'AFN',
+    priceLoading: '—',
+    offer: {
+      label: 'Limited Offer',
+      save: 'Save',
+      endsIn: 'Ends in',
+      ended: 'Offer ended',
+    },
     plans: {
       starter: {
         name: 'Starter',
         nameEn: 'Starter',
-        price: '12,000 AFN',
       },
       pro: {
         name: 'Pro',
         nameEn: 'Pro',
-        price: '25,000 AFN',
         popular: 'Most Popular',
       },
       complete: {
         name: 'Complete',
         nameEn: 'Complete',
-        price: '35,000 AFN',
       },
       enterprise: {
         name: 'Enterprise',

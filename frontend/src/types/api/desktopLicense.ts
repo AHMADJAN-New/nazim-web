@@ -56,6 +56,30 @@ export interface VerifyLicenseRequest {
 
 export interface UpdateKeyRequest {
   notes?: string | null;
+  kid?: string; // Allow updating kid (useful for fixing imported keys)
+}
+
+export interface ImportKeyItem {
+  kid: string;
+  public_key_b64: string;
+  private_key?: string; // Optional plain text private key (will be encrypted)
+  notes?: string | null;
+}
+
+export interface ImportKeysRequest {
+  keys: ImportKeyItem[];
+}
+
+export interface ImportKeysResponse {
+  imported: number;
+  updated: number;
+  skipped: number;
+  total: number;
+  errors: Array<{
+    index: number;
+    kid: string;
+    error: string;
+  }>;
 }
 
 // Response types

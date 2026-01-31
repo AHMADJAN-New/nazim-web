@@ -63,11 +63,52 @@ class SubscriptionController extends Controller
                 ->orderBy('sort_order')
                 ->get();
 
-            return $plans->map(function ($plan) {
+            $landingDiscounts = DiscountCode::valid()
+                ->where('metadata->show_on_landing', true)
+                ->get();
+
+            return $plans->map(function ($plan) use ($landingDiscounts) {
                 $enabledFeatures = $plan->features
                     ->where('is_enabled', true)
                     ->pluck('feature_key')
                     ->values();
+
+                $totalFeeAfn = ($plan->license_fee_afn ?? 0) + ($plan->maintenance_fee_afn ?? $plan->price_yearly_afn ?? 0);
+                $totalFeeUsd = ($plan->license_fee_usd ?? 0) + ($plan->maintenance_fee_usd ?? $plan->price_yearly_usd ?? 0);
+
+                $landingOffer = null;
+                $matchingDiscounts = $landingDiscounts->filter(function ($discount) use ($plan) {
+                    return $discount->appliesToPlan($plan->id);
+                });
+
+                if ($matchingDiscounts->isNotEmpty()) {
+                    $bestOffer = $matchingDiscounts
+                        ->sortByDesc(function ($discount) use ($totalFeeAfn) {
+                            return $discount->calculateDiscount($totalFeeAfn, 'AFN');
+                        })
+                        ->first();
+
+                    $discountAfn = $bestOffer->calculateDiscount($totalFeeAfn, 'AFN');
+                    $discountUsd = $bestOffer->calculateDiscount($totalFeeUsd, 'USD');
+
+                    $landingOffer = [
+                        'id' => $bestOffer->id,
+                        'code' => $bestOffer->code,
+                        'name' => $bestOffer->name,
+                        'description' => $bestOffer->description,
+                        'discount_type' => $bestOffer->discount_type,
+                        'discount_value' => (float) $bestOffer->discount_value,
+                        'max_discount_amount' => $bestOffer->max_discount_amount !== null ? (float) $bestOffer->max_discount_amount : null,
+                        'currency' => $bestOffer->currency,
+                        'valid_from' => $bestOffer->valid_from?->toISOString(),
+                        'valid_until' => $bestOffer->valid_until?->toISOString(),
+                        'metadata' => $bestOffer->metadata,
+                        'discount_amount_afn' => $discountAfn,
+                        'discount_amount_usd' => $discountUsd,
+                        'discounted_total_fee_afn' => max(0, $totalFeeAfn - $discountAfn),
+                        'discounted_total_fee_usd' => max(0, $totalFeeUsd - $discountUsd),
+                    ];
+                }
 
                 return [
                     'id' => $plan->id,
@@ -89,8 +130,8 @@ class SubscriptionController extends Controller
                     'has_license_fee' => $plan->hasLicenseFee(),
                     'has_maintenance_fee' => $plan->hasMaintenanceFee(),
                     // Total fees (for display convenience)
-                    'total_fee_afn' => ($plan->license_fee_afn ?? 0) + ($plan->maintenance_fee_afn ?? $plan->price_yearly_afn ?? 0),
-                    'total_fee_usd' => ($plan->license_fee_usd ?? 0) + ($plan->maintenance_fee_usd ?? $plan->price_yearly_usd ?? 0),
+                    'total_fee_afn' => $totalFeeAfn,
+                    'total_fee_usd' => $totalFeeUsd,
                     // Other plan fields
                     'is_active' => $plan->is_active,
                     'is_default' => $plan->is_default,
@@ -110,6 +151,7 @@ class SubscriptionController extends Controller
                     'export_level' => $plan->metadata['export_level'] ?? null,
                     'backup_mode' => $plan->metadata['backup_mode'] ?? null,
                     'permissions_level' => $plan->metadata['permissions_level'] ?? null,
+                    'landing_offer' => $landingOffer,
                     'created_at' => $plan->created_at?->toISOString(),
                     'updated_at' => $plan->updated_at?->toISOString(),
                     'deleted_at' => $plan->deleted_at?->toISOString(),

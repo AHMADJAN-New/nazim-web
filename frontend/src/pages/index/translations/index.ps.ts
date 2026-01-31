@@ -286,26 +286,31 @@ export const indexTranslations = {
     },
   },
 
-  // Pricing Section
+  // Pricing Section (بیې له API څخه راځي؛ دلته یوازې نومونه او fallback)
   pricing: {
     title: 'د ناظم سیستم پکېجونه او بیې',
     subtitle: 'هر پکېج ستاسو د اړتیا مطابق ټاکل کېږي، په لوړو پکېجونو کې پرمختللي امکانات فعال دي.',
+    currencyAfn: 'افغاني',
+    priceLoading: '—',
+    offer: {
+      label: 'ځانګړې تخفیف',
+      save: 'سپما',
+      endsIn: 'پای ته رسېږي په',
+      ended: 'تخفیف پای ته رسېدلی',
+    },
     plans: {
       starter: {
         name: 'اساسي',
         nameEn: 'Starter',
-        price: '12,000 افغاني',
       },
       pro: {
         name: 'پرو',
         nameEn: 'Pro',
-        price: '25,000 افغاني',
         popular: 'مشهور',
       },
       complete: {
         name: 'مکمل',
         nameEn: 'Complete',
-        price: '35,000 افغاني',
       },
       enterprise: {
         name: 'انټرپرایز',

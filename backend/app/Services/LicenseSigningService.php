@@ -117,6 +117,47 @@ class LicenseSigningService
     }
 
     /**
+     * Convert a 32-byte Ed25519 seed to a 64-byte secret key
+     * 
+     * Ed25519 keys can be stored as:
+     * - 32-byte seed (needs conversion)
+     * - 64-byte secret key (seed + public key, ready to use)
+     * 
+     * @param string $seed 32-byte seed
+     * @param string $publicKey 32-byte public key (required to construct full secret key)
+     * @return string 64-byte secret key
+     * @throws \RuntimeException If sodium extension is not available or conversion fails
+     */
+    public function seedToSecretKey(string $seed, string $publicKey): string
+    {
+        if (!$this->isSodiumAvailable()) {
+            throw new \RuntimeException('PHP sodium extension is required for Ed25519 operations');
+        }
+
+        if (strlen($seed) !== SODIUM_CRYPTO_SIGN_SEEDBYTES) {
+            throw new \InvalidArgumentException('Seed must be exactly ' . SODIUM_CRYPTO_SIGN_SEEDBYTES . ' bytes');
+        }
+
+        if (strlen($publicKey) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
+            throw new \InvalidArgumentException('Public key must be exactly ' . SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES . ' bytes');
+        }
+
+        // Derive keypair from seed
+        $keyPair = sodium_crypto_sign_seed_keypair($seed);
+        
+        // Extract the 64-byte secret key
+        $secretKey = sodium_crypto_sign_secretkey($keyPair);
+        
+        // Verify the public key matches
+        $derivedPublicKey = sodium_crypto_sign_publickey($keyPair);
+        if ($derivedPublicKey !== $publicKey) {
+            throw new \RuntimeException('Public key does not match the seed');
+        }
+
+        return $secretKey;
+    }
+
+    /**
      * Validate fingerprint format
      *
      * @param string $fingerprintId Fingerprint ID to validate

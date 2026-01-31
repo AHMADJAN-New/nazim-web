@@ -89,6 +89,14 @@ class AcademicYear extends Model
     }
 
     /**
+     * Get all exams for this academic year
+     */
+    public function exams()
+    {
+        return $this->hasMany(Exam::class, 'academic_year_id');
+    }
+
+    /**
      * Scope to filter by organization.
      * Note: Academic years are strictly school-scoped (no global rows).
      */

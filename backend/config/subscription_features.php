@@ -51,6 +51,7 @@ return [
         'hostel' => ['dependencies' => ['students']],
         'multi_school' => ['dependencies' => []],
         'api_access' => ['dependencies' => []],
+        'public_website' => ['dependencies' => []],
     ],
 
     // Map usage limits to the feature(s) that enable them.

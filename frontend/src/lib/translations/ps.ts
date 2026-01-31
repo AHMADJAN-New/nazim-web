@@ -1,56 +1,9 @@
 import type { TranslationKeys } from './types';
+import { websitePublicPs } from './website/public-ps';
+import { websiteAdminPs } from './website/admin-ps';
 
 export const ps: TranslationKeys = {
-  aboutUs: {
-    cta: {
-      button: 'موږ سره اړیکه ونیسئ',
-      text: 'غواړئ پوه شئ چې "ناظم" ستاسو له ښوونځي سره څه مرسته کولی شي؟'
-    },
-    mission: {
-      content: 'زموږ ارزو تعلیمي ادارو ته د هراړخیزو، ساده او ارزانه ډیجیټل حلونو وړاندې کول دي، ترڅو د اداري چارو په تنظیم، د تدریس د کیفیت په لوړولو او له کورنیو سره د اړیکو په پیاوړتیا کې ورسره مرسته وکړو. موږ باور لرو چې هر ښوونځی، که کوچنی وي که لوی، حق لري چې له عصري ټیکنالوژۍ څخه ګټه پورته کړي.',
-      title: 'زموږ لرلید'
-    },
-    subtitle: 'د غوره زده کړې لپاره د عصري ټیکنالوژۍ له لارې د مدارسو او تعلیمي ادارو پیاوړتیا.',
-    title: 'د ناظم سیستم په اړه',
-    values: {
-      community: {
-        content: 'موږ د خپلو پیرودونکو سره د پیاوړو اړیکو جوړولو او د تعلیمي ټولنې ملاتړ ته ژمن یو.',
-        title: 'ټولنه'
-      },
-      excellence: {
-        content: 'موږ د خدمت په هر اړخ کې، له محصول جوړولو څخه نیولې تر پیرودونکي ملاتړ پورې، د غوره والي لپاره هڅه کوو.',
-        title: 'غوره والی'
-      },
-      innovation: {
-        content: 'موږ په دوامداره توګه د نويو حلونو په لټه کې یو ترڅو د تعلیمي ادارو بدلیدونکي اړتیاوې پوره کړو.',
-        title: 'نوښت'
-      },
-      integrity: {
-        content: 'موږ په خپلو ټولو معاملو کې په صداقت، روڼتیا او اخلاقي اصولو ولاړ یو.',
-        title: 'امانتداري'
-      },
-      title: 'زموږ ارزښتونه'
-    },
-    vision: {
-      content: 'زموږ لید دا دی چې ټولې تعلیمي ادارې، په ځانګړي ډول اسلامي ښوونځي او مدرسې، پیاوړو او اسانه مدیریت سیسټمونو ته لاسرسی ولري. موږ غواړو په سیمه کې د ښوونځي مدیریت حلونو مخکښ وړاندې کوونکی واوسو.',
-      title: 'زموږ لید لوری'
-    },
-    whatWeOffer: {
-      affordable: {
-        content: 'موږ د بیو مناسب پلانونه لرو چې له کوچنیو مدرسو څخه نیولې تر لویو ادارو پورې د ټولو لپاره مناسب دي.',
-        title: 'مناسب قیمتونه'
-      },
-      comprehensive: {
-        content: 'د زده کونکو مدیریت څخه نیولې تر مالي چارو، حاضري او ازموینو پورې، موږ د ښوونځي ټولې اداري برخې پوښو.',
-        title: 'هراړخیز حلونه'
-      },
-      support: {
-        content: 'زموږ ټیم تل د روزنې، تخنیکي ملاتړ او دوامداره مرستې لپاره چمتو دی.',
-        title: 'ځانګړی ملاتړ'
-      },
-      title: 'موږ څه وړاندې کوو؟'
-    }
-  },
+  ...websitePublicPs,
   academic: {
     academicInformation: 'تعليمي معلومات',
     academicYears: {
@@ -962,10 +915,10 @@ export const ps: TranslationKeys = {
     },
     draft: 'مسوده',
     dropped: 'پرېښودل شوی',
-    dropRate: 'د نرخ انفکاک',
+    dropRate: 'د دورې/ کورس  پرېښودونکي کچه',
     edit: 'سمون',
     editCourse: 'دوره/ کورس تغیر کړئ',
-    enrolled: 'نوم لیکنه شوی',
+    enrolled: 'داخل شوي ',
     enrollFromMain: 'د اصلي زده کوونکو څخه نوم لیکنه',
     enrollment: 'نوم لیکنه',
     errorLoadingStudents: 'د زده کوونکو د پورته کولو کې ستونزه',
@@ -999,7 +952,7 @@ export const ps: TranslationKeys = {
     noDocuments: 'سندونه ونه موندل شول',
     noOpenCoursesMessage: 'هیڅ خلاص دوره/ کورس نشته. لطفاً لومړی دوره/ کورس جوړ کړئ.',
     noStudentsEnrolled: 'هیڅ زده کوونکی نوم لیکنه شوی نه دی',
-    noStudentsEnrolledMessage: 'دا دوره/ کورس اوس مهال هیڅ نوم لیکنه شوي زده کوونکي نلري. د پیل کولو لپاره زده کوونکي اضافه کړئ.',
+    noStudentsEnrolledMessage: 'دا دوره/ کورس اوس مهال هیڅ داخل شوي  زده کوونکي نلري. د پیل کولو لپاره زده کوونکي اضافه کړئ.',
     noStudentsFound: 'هیڅ زده کوونکی ونه موندل شو',
     noStudentsMatchFilters: 'هیڅ زده کوونکی د اوسني فلټرونو سره سمون نه لري. خپل لټون یا فلټرونه تنظیم کړئ.',
     open: 'خلاص',
@@ -1054,11 +1007,11 @@ export const ps: TranslationKeys = {
     reportsDescription: 'د دوره/ کورس زده کونکو د لیدو، فیلتر کولو او د ډله‌ایز عملیاتو سره مدیریت.',
     shortTermCourseStudentsReport: 'د لنډمهاله دوره/ کورس زده کونکو راپور',
     enrolledLabel: 'نوم لیکنه شوی',
-    enrolledStudents: 'نوم لیکنه شوي زده کونکي',
+    enrolledStudents: 'داخل شوي  زده کونکي',
     live: 'ژوندی',
-    completedStudents: 'بشپړ شوي زده کونکي',
+    completedStudents: 'د دورې پشپړونکي زده کونکي ',
     droppedFailed: 'پرېښودل/ناکام',
-    droppedStudents: 'پرېښودل شوي زده کونکي',
+    droppedStudents: 'د دورې/ کورس  پرېښودونکي زده کونکي ',
     totalStudents: 'ټول زده کونکي',
     studentReports: 'د زده کونکو راپورونه',
     filterAndManageStudents: 'د دوره/ کورس زده کونکي فیلتر او مدیریت کړئ.',
@@ -1070,7 +1023,7 @@ export const ps: TranslationKeys = {
     studentsSelected: 'زده کوونکی/زده کونکي غوره شوي',
     bulkActions: 'ډله‌ایز عملیات',
     markAsCompleted: 'د بشپړ شوي په توګه نښه کړئ',
-    markAsDropped: 'د پرېښودل شوي په توګه نښه کړئ',
+    markAsDropped: 'د د دورې/ کورس  پرېښودونکي   په توګه نښه کړئ',
     clearSelection: 'د غوره کولو پاکول',
     name: 'نوم',
     fatherName: 'د پلار نوم',
@@ -1084,8 +1037,8 @@ export const ps: TranslationKeys = {
     courseLabel: 'دوره/ کورس',
     markStudentsCompleted: 'زده کونکي د بشپړ شوي په توګه نښه کړئ',
     markStudentsCompletedConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ {count} زده کوونکی/زده کونکي د بشپړ شوي په توګه نښه کړئ؟ دا عمل بیرته نشي اخیستل کیدی.',
-    markStudentsDropped: 'زده کونکي د پرېښودل شوي په توګه نښه کړئ',
-    markStudentsDroppedConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ {count} زده کوونکی/زده کونکي د پرېښودل شوي په توګه نښه کړئ؟ دا عمل بیرته نشي اخیستل کیدی.',
+    markStudentsDropped: 'زده کونکي د د دورې/ کورس  پرېښودونکي   په توګه نښه کړئ',
+    markStudentsDroppedConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ {count} زده کوونکی/زده کونکي د د دورې/ کورس  پرېښودونکي   په توګه نښه کړئ؟ دا عمل بیرته نشي اخیستل کیدی.',
     completing: 'بشپړیږي...',
     dropping: 'پرېښودل کیږي...',
     selectAll: 'ټول غوره کړئ',
@@ -1163,13 +1116,13 @@ export const ps: TranslationKeys = {
       sessionClosed: 'دا غونډه/ سیشن بند شوی دی',
       manual: 'لاسي',
       barcode: 'بارکوډ',
-      markAllPresent: 'ټول حاضره نښه کړئ',
-      markAllAbsent: 'ټول غیر حاضره نښه کړئ',
+      markAllPresent: 'ټول حاضر نښه کړئ',
+      markAllAbsent: 'ټول غیر حاضر نښه کړئ',
       student: 'زده کوونکی',
       cardNumber: 'د کارت شمیره',
       status: 'حالت',
       loadingStudents: 'زده کوونکي لوډ کېږي...',
-      noEnrolledStudents: 'د دې دوره/ کورس لپاره هیڅ نوم لیکنه شوي زده کوونکي ونه موندل شول',
+      noEnrolledStudents: 'د دې دوره/ کورس لپاره هیڅ داخل شوي  زده کوونکي ونه موندل شول',
       saving: 'خوندي کېږي...',
       saveAttendance: 'حاضري خوندي کړئ',
       scanBarcodeOrCard: 'بارکوډ سکین کړئ یا د کارت شمیره ولیکئ',
@@ -1186,8 +1139,8 @@ export const ps: TranslationKeys = {
       deleteSession: 'غونډه/ سیشن ړنګ کړئ',
       deleteSessionConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا د حاضري غونډه/ سیشن ړنګ کړئ؟ ټول د حاضري ریکارډونه به د تل لپاره ړنګ شي.',
       delete: 'ړنګ کړئ',
-      present: 'حاضره',
-      absent: 'غیر حاضره',
+      present: 'حاضر',
+      absent: 'غیر حاضر',
       late: 'ناوخته',
       excused: 'معذور',
       sick: 'ناروغ',
@@ -2568,7 +2521,7 @@ export const ps: TranslationKeys = {
       errorLoading: 'د خلاصې راپور په پورته کولو کې تېروتنه. مهرباني وکړئ بیا هڅه وکړئ.',
       filterSummaryExam: 'ازموینه',
       filterSummaryAcademicYear: 'تعلیمي کال',
-      filterSummaryTotalEnrolled: 'ټول نوم لیکنه شوي',
+      filterSummaryTotalEnrolled: 'ټول داخل شوي ',
       filterSummaryOverallProgress: 'ټولیز پرمختګ'
     },
     totalClasses: 'ټول ټولګي',
@@ -2609,7 +2562,7 @@ export const ps: TranslationKeys = {
     allStudentsEnrolled: 'د نوم لیکنې لپاره هیڅ زده کونکی شتون نلري',
     possibleReasons: 'ممکنه لاملونه:',
     noStudentsHint1: 'د ټاکل شوي تعلیمي کال لپاره دې ټولګي ته هیڅ زده کونکی نه دی منسوب شوی',
-    noStudentsHint2: 'په دې ټولګي کې ټول زده کونکي دمخه نوم لیکنه شوي دي',
+    noStudentsHint2: 'په دې ټولګي کې ټول زده کونکي دمخه داخل شوي  دي',
     noStudentsHint3: 'ممکن زده کونکي د فعال نوم لیکنې حالت ونلري',
     invalidTimeRange: 'د پای وخت باید د پیل وخت څخه وروسته وي',
     noExamsAvailable: 'هیڅ ازموینه شتون نلري',
@@ -3403,6 +3356,21 @@ export const ps: TranslationKeys = {
     startSchoolSetupTour: 'د ښوونځي د ترتیب لارښود پیل کړئ',
     schoolSetupTourDescription: 'د خپل ښوونځي د تنظیمولو بشپړ لارښود: د ښوونځي جزئیات، اکاډمیک کلونه، ټولګي، او موضوعات'
   },
+  imageCapture: {
+    takePhoto: 'انځور واخلئ',
+    capturePhoto: 'ثبت',
+    cropImage: 'انځور پرې کړئ',
+    cropDescription: 'د پرې کولو سیمه سم کړئ، بیا «ترسره شو» کلیک وکړئ.',
+    done: 'ترسره شو',
+    cameraAccessDenied: 'د کېمرې لاسرسی اړین دی. مهرباني وکړئ د کېمرې لاسرسی ورکړئ.',
+    noCameraFound: 'په دې وسیله کې کېمره ونه موندل شوه.',
+    cameraInUse: 'کېمره اوس کارول کېږي. نورې اپلیکیشنونه بند کړئ او بیا هڅه وکړئ.',
+    cameraError: 'د کېمرې پیل ناکام شو.',
+    cameraHint: 'د فایل غوره کولو لپاره «انځور وټاکئ» وکاروئ.',
+    cameraPreview: 'د کېمرې مخکې ښکاره',
+    fileTooLarge: 'انځور له ۵ میګابایت څخه زیات دی. مهرباني وکړئ کوچنۍ سیمه پرې کړئ یا ټیټ ریزولوشن انځور وکاروئ.',
+    cropFailed: 'د انځور پرې کول ناکام شول. مهرباني وکړئ بیا هڅه وکړئ.'
+  },
   hostel: {
     boarders: 'لیلیه وال',
     boardersLabel: 'لیلیه وال',
@@ -3667,264 +3635,6 @@ export const ps: TranslationKeys = {
     useGlobalFont: 'عمومي فونټ وکاروئ',
     width: 'سور (%)',
     unprinted: 'چاپ نه شوی'
-  },
-  landing: {
-    benefits: {
-      cloudBased: {
-        description: 'خپلو معلوماتو ته له هر ځای، هر وخت او هرې وسیلې څخه لاسرسی ومومئ',
-        title: 'آنلاین (Cloud-Based)'
-      },
-      lightningFast: {
-        description: 'د ټولو ځانګړتیاوو د فوري لاسرسي لپاره چټک شوی فعالیت',
-        title: 'ډېر چټک'
-      },
-      mobileReady: {
-        description: 'په ټولو موبایل وسیلو کې په بشپړ ډول کار کوي',
-        title: 'موبایل لپاره چمتو'
-      },
-      multiLanguage: {
-        description: 'د انګلیسي، اردو، عربي او پښتو ژبو ملاتړ',
-        title: 'څو ژبنی'
-      },
-      secureReliable: {
-        description: 'د ۹۹.۹٪ کاري تضمین سره د لوړې کچې امنیت',
-        title: 'خوندي او باوري'
-      },
-      support24x7: {
-        description: 'شپه او ورځ د پیرودونکو ملاتړ او روزنیزه مرسته',
-        title: '۲۴/۷ ملاتړ'
-      }
-    },
-    contact: {
-      messageFailed: 'د پیغام لیږل ناکام شول',
-      messageFailedDescription: 'مهرباني وکړئ وروسته بیا هڅه وکړئ.',
-      messageSent: 'پیغام واستول شو',
-      messageSentDescription: 'موږ به ژر تاسو سره اړیکه ونیسو.'
-    },
-    features: {
-      assets: {
-        description: 'د ښوونځي د شتمنیو، تجهیزاتو او ګدام تعقیب او مدیریت',
-        title: 'د شتمنیو مدیریت'
-      },
-      attendance: {
-        description: 'د اتوماتیک راپور ورکولو او خبرتیاوو سره د حاضري وخت پر وخت مدیریت',
-        title: 'د حاضري تعقیب'
-      },
-      classes: {
-        description: 'د ټولګیو، تعلیمي کلونو او د صنفونو د ویش مدیریت',
-        title: 'د ټولګیو مدیریت'
-      },
-      dms: {
-        description: 'د ښوونځي د ټولو اسنادو لپاره مرکزي مدیریت سیسټم',
-        title: 'د اسنادو مدیریت (DMS)'
-      },
-      events: {
-        description: 'د ښوونځي د پروګرامونو، فعالیتونو او اعلانونو تنظیم او مدیریت',
-        title: 'د پیښو مدیریت'
-      },
-      exams: {
-        description: 'د ازموینو، مهالویش او پایلو جوړول او مدیریت',
-        title: 'د ازموینو مدیریت'
-      },
-      fees: {
-        description: 'د فیس راټولول، مهالویش او د پاتې حسابونو تعقیب',
-        title: 'د فیسونو مدیریت'
-      },
-      finance: {
-        description: 'د عوایدو، لګښتونو او راپور ورکولو سره بشپړ مالي مدیریت',
-        title: 'مالي څانګه'
-      },
-      grades: {
-        description: 'د زده کوونکو د نمرو، ترانسکرپټونو او اکاډمیک فعالیت تعقیب',
-        title: 'د درجو مدیریت'
-      },
-      graduation: {
-        description: 'د فراغت مراسم او زده کوونکو ته د سندونو ورکول مدیریت کړئ',
-        title: 'فراغت او سندونه'
-      },
-      hostel: {
-        description: 'د اتاقونو ویش او د زده کوونکو مدیریت سره د لیلیې بشپړ اداره',
-        title: 'د لیلیې مدیریت'
-      },
-      library: {
-        description: 'د کتابونو تعقیب او زده کوونکو ته د امانت ورکولو ریکارډ سره ډیجیټل کتابتون',
-        title: 'د کتابتون مدیریت'
-      },
-      studentManagement: {
-        description: 'د شمولیت، ریکارډونو او پرمختګ تعقیب سره د زده کوونکو بشپړ معلوماتي سیسټم',
-        title: 'د زده کوونکو مدیریت'
-      },
-      students: {
-        description: 'د شمولیت، ریکارډونو او پرمختګ تعقیب سره د زده کوونکو بشپړ معلوماتي سیسټم',
-        title: 'د زده کوونکو مدیریت'
-      },
-      subjects: {
-        description: 'مضامین مدیریت کړئ، ټولګیو ته یې وټاکئ او تعقیب یې کړئ',
-        title: 'د مضامینو مدیریت'
-      },
-      timetables: {
-        description: 'د اتوماتیک مهالویش سره د ټولګیو تقسیم اوقات جوړ او مدیریت کړئ',
-        title: 'د تقسیم اوقات جوړول'
-      }
-    },
-    footer: {
-      careers: 'دندې',
-      company: 'شرکت',
-      copyright: '© 2026 ناظم سیسټم. ټول حقونه خوندي دي.',
-      features: 'ځانګړتیاوې',
-      pricing: 'بیې',
-      product: 'محصول',
-      security: 'امنیت',
-      support: 'ملاتړ',
-      tagline: 'د غوره زده کړې پایلو لپاره تعلیمي ادارې په عصري ټیکنالوژۍ سمبالول.'
-    },
-    hero: {
-      badge: 'په مختلفو مدارسو کې استفاده شوی',
-      description: 'د مدرسې مهتمم، ناظم، او استاد ته: ثبت نام، حاضري، امتحانات، او راپورونه په یو سیستم کې — پرته له ګډوډۍ.',
-      startFreeTrial: 'وړیا ازمایښت پیل کړئ',
-      subtitle: 'زموږ د هراړخیز اسلامي ښوونځي مدیریت پلیټفارم سره عملیات ساده کړئ، د زده کړې پایلې ښه کړئ او د ټولنې اړیکې پیاوړې کړئ.',
-      title: 'خپل',
-      titleHighlight: 'د د خپلې جامعې/ مدرسې مدیریت بدل کړئ',
-      watchDemo: 'ډیمو وګورئ'
-    },
-    nav: {
-      contact: 'اړیکه',
-      features: 'ځانګړتیاوې',
-      finance: 'مالي',
-      getStarted: 'پیل کړئ',
-      pricing: 'بیې',
-      reviews: 'کتنې',
-      signIn: 'ننوتل'
-    },
-    planRequest: {
-      failed: 'د پلان غوښتنه ناکامه شوه',
-      failedDescription: 'مهرباني وکړئ وروسته بیا هڅه وکړئ.',
-      sent: 'د پلان غوښتنه واستول شوه',
-      sentDescription: 'زموږ ټیم به ژر تر ژره تاسو سره اړیکه ونیسي.'
-    },
-    pricing: {
-      defaultDescription: 'د عصري مدارسو او مکاتبو لپاره ډیزاین شوی انعطاف منونکی پلان.',
-      enterprise: {
-        description: 'د لویو ادارو لپاره د نامحدود زده کوونکو سره',
-        name: 'سوداګریز (Enterprise)'
-      },
-      feature: 'ځانګړتیا',
-      free: 'وړیا',
-      period: '/ میاشت',
-      periodYear: '/ کال',
-      professional: {
-        description: 'د منځنیو ښوونځیو لپاره تر ۱۰۰۰ زده کوونکو پورې مناسب',
-        name: 'مسلکي (Professional)'
-      },
-      starter: {
-        description: 'د کوچنیو ښوونځیو لپاره تر ۲۰۰ زده کوونکو پورې مناسب',
-        name: 'پیلونکی (Starter)'
-      }
-    },
-    sections: {
-      benefits: {
-        badge: 'ولې موږ غوره کړئ',
-        subtitle: 'زموږ د پرمختللي ټیکنالوژۍ او وقف شوي ملاتړ سره توپیر تجربه کړئ.',
-        title: 'د عصري تعلیمي ادارو لپاره جوړ شوی'
-      },
-      contact: {
-        badge: 'موږ سره اړیکه',
-        businessHours: 'کاري ساعتونه',
-        conversationDescription: 'زموږ د تعلیمي ټیکنالوژۍ متخصصین چمتو دي چې ستاسو د ښوونځي په ځانګړو اړتیاوو بحث وکړي.',
-        emailAddress: 'بریښنالیک پته',
-        emailSupport: 'د بریښنالیک ملاتړ',
-        firstName: 'لومړی نوم',
-        formDescription: 'لاندې فورمه ډکه کړئ او موږ به په ۲۴ ساعتونو کې تاسو سره اړیکه ونیسو.',
-        lastName: 'تخلص',
-        letsStartConversation: 'راځئ خبرې پیل کړو',
-        message: 'پیغام',
-        messageFailed: 'د پیغام لیږل ناکام شول',
-        messageFailedDescription: 'مهرباني وکړئ وروسته بیا هڅه وکړئ.',
-        messageSent: 'پیغام واستول شو',
-        messageSentDescription: 'موږ به ژر تاسو سره اړیکه ونیسو.',
-        numberOfStudents: 'د زده کوونکو شمېر',
-        officeAddress: 'د دفتر پته',
-        phoneNumber: 'د تلیفون شمېره',
-        phoneSupport: 'د تلیفون ملاتړ',
-        schoolName: 'د ښوونځي نوم',
-        sending: 'لیږل کیږي...',
-        sendMessage: 'موږ ته پیغام واستوئ',
-        sendMessageButton: 'پیغام واستوئ',
-        subtitle: 'چمتو یاست چې د خپل ښوونځي مدیریت بدل کړئ؟ زموږ ټیم دلته ستاسو د مرستې لپاره دی.',
-        title: 'اړیکه ونیسئ',
-        whatsappSupport: 'د واټساپ ملاتړ'
-      },
-      cta: {
-        note: '✓ ۳۰ ورځې وړیا ازمایښت • ✓ کریډیټ کارت ته اړتیا نشته • ✓ د تنظیم مرسته شامله ده',
-        scheduleDemo: 'د ډیمو مهالویش',
-        startFreeTrial: 'خپل وړیا ازمایښت پیل کړئ',
-        subtitle: 'د هغو زرو ښوونځیو سره یوځای شئ چې دمخه یې خپل عملیات زموږ د سیسټم سره ډیجیټل کړي دي.',
-        title: 'چمتو یاست چې د خپل ښوونځي مدیریت بدل کړئ؟'
-      },
-      features: {
-        badge: 'ځانګړتیاوې',
-        subtitle: 'د زده کوونکو له شمولیت څخه تر فراغت پورې، زموږ پلیټفارم هر اړخ پوښي.',
-        title: 'هر هغه څه چې تاسو د جامعې/ مدرسې مدیریت لپاره اړتیا لرئ'
-      },
-      pricing: {
-        allPlansNote: 'ټول پلانونه ۳۰ ورځې وړیا ازمایښت لري • د تنظیم فیس نشته • هر وخت لغوه کیدی شي',
-        badge: 'بیې',
-        comparisonSubtitle: 'وګورئ چې کومې ځانګړتیاوې په هر پلان کې شاملې دي',
-        comparisonTitle: 'پلانونه او ځانګړتیاوې پرتله کړئ',
-        customPlanLink: 'ځانګړي پلان ته اړتیا لرئ؟ زموږ د پلور ټیم سره اړیکه ونیسئ →',
-        feature: 'ځانګړتیا',
-        mostPopular: 'ډېر مشهور',
-        subtitle: 'خپلې ادارې لپاره مناسب پلان وټاکئ. په ټولو پلانونو کې اصلي ځانګړتیاوې شاملې دي.',
-        title: 'ساده، روڼ بیې'
-      },
-      testimonials: {
-        badge: 'کتنې',
-        subtitle: 'وګورئ چې د ښوونځیو مدیران او ښوونکي زموږ په اړه څه وايي.',
-        title: 'د نړۍ په کچه د ښوونکو لخوا خوښ شوی'
-      }
-    },
-    stats: {
-      staffMembers: 'کارکوونکي',
-      studentsManaged: 'مدیریت شوي زده کوونکي',
-      supportAvailable: 'ملاتړ شتون لري',
-      uptimeGuarantee: 'د فعالیت تضمین'
-    },
-    index: {
-      heroBadges: {
-        fullySecure: 'مکمل محفوظ',
-        multiLanguage: 'په دریو ژبو',
-        strongSecurity: 'قوي امنیت',
-        permissionControl: 'د صلاحیتونو کنترول',
-        standardDesign: 'معیاري ډیزاین'
-      },
-      valueBadges: {
-        savesTime: 'ستاسو وخت بچت کوي',
-        transparentReports: 'شفاف او کره راپورونه برابروي',
-        allInOne: 'د مدرسې ټولې چارې په یوه ځای کې مدیریتوي'
-      },
-      stats: {
-        activeFeatures: {
-          value: '۱۰۰+',
-          label: 'فعالې برخې'
-        },
-        fastAttendance: {
-          value: 'چټکه حاضري',
-          label: 'په یوه ثانیه کې ۳ نفر'
-        },
-        accurate: {
-          value: 'کره',
-          label: 'کره او دقیق راپورونه'
-        },
-        trusted: {
-          value: 'د باور وړ',
-          label: 'په مختلفو مدارسو کې استفاده شوی'
-        }
-      },
-      contactSection: {
-        contactInfo: 'د اړیکو معلومات',
-        tagline: 'ناظم – د مدرسې بشپړ مدیریت په څو کلیکونو کې!'
-      }
-    }
   },
   leave: {
     academicYearNotLoaded: 'تعلیمي کال نه دی تر لاسه  شوی. مهرباني وکړئ انتظار وکړئ...',
@@ -4321,7 +4031,7 @@ export const ps: TranslationKeys = {
     },
     settings: 'تنظیمات',
     schoolsManagement: 'د ښوونځیو مدیریت',
-    shortTermCourses: 'لنډمهاله کورسونه',
+    shortTermCourses: 'لنډمهاله دورې/ کورسونه',
     staff: 'کارکوونکي',
     profileManagement: 'د پروفایل مدیریت',
     permissionsManagement: 'د اجازو مدیریت',
@@ -4349,6 +4059,7 @@ export const ps: TranslationKeys = {
     'events.types': 'د جلسې/ غونډې ډولونه',
     'events.users': 'د جلسې/ غونډې کارونکي',
     'events.export': 'د پېژندنې کارت  ID صادرول',
+    ...websiteAdminPs.navWebsite,
     'students.management': 'مدیریت',
     assets: 'شتمنۍ',
     'assets.dashboard': 'د شتمنیو ډشبورډ',
@@ -5834,6 +5545,47 @@ export const ps: TranslationKeys = {
     articleDeleteFailed: 'د مقالې ړنګول ناکام شول',
     articleUpdated: 'مقاله په بریالیتوب سره تازه شوه',
     articleUpdateFailed: 'د مقالې تازه کول ناکام شول',
+    mediaCreated: 'ميډيا په بریالیتوب سره جوړه شوه',
+    mediaCreateFailed: 'د ميډيا جوړول ناکام شول',
+    mediaUpdated: 'ميډيا په بریالیتوب سره تازه شوه',
+    mediaUpdateFailed: 'د ميډيا تازه کول ناکام شول',
+    mediaDeleted: 'ميډيا په بریالیتوب سره ړنګه شوه',
+    mediaDeleteFailed: 'د ميډيا ړنګول ناکام شول',
+    mediaCategoryCreated: 'د ميډيا کټګوري په بریالیتوب سره جوړه شوه',
+    mediaCategoryCreateFailed: 'د ميډيا کټګوري جوړول ناکام شول',
+    mediaCategoryUpdated: 'د ميډيا کټګوري تازه شوه',
+    mediaCategoryUpdateFailed: 'د ميډيا کټګوري تازه کول ناکام شول',
+    mediaCategoryDeleted: 'د ميډيا کټګوري ړنګه شوه',
+    mediaCategoryDeleteFailed: 'د ميډيا کټګوري ړنګول ناکام شول',
+    domainCreated: 'ډومېن په برياليتوب جوړ شو',
+    domainCreateFailed: 'ډومېن جوړول ناکام شول',
+    domainUpdated: 'ډومېن تازه شو',
+    domainUpdateFailed: 'ډومېن تازه کول ناکام شول',
+    domainDeleted: 'ډومېن ړنګ شو',
+    domainDeleteFailed: 'ډومېن ړنګول ناکام شول',
+    domainMissingFields: 'مهرباني وکړئ مکتب وټاکئ او ډومېن وليکئ',
+    domainMissingSchool: 'مهرباني وکړئ د ډومېن لپاره مکتب وټاکئ',
+    websiteSettingsUpdated: 'د وېبسايټ تنظیمات په بریالیتوب سره تازه شول',
+    websiteSettingsUpdateFailed: 'د وېبسايټ تنظیمات تازه کول ناکام شول',
+    websiteSettingsMissingFields: 'مهرباني وکړئ د مکتب سلاګ او ژبې سمې وټاکئ',
+    contactMessageSent: 'ستاسو پيغام په برياليتوب ولېږل شو',
+    contactMessageFailed: 'پيغام لېږل ناکام شول',
+    fatwaQuestionSubmitted: 'ستاسو پوښتنه په برياليتوب وسپارل شوه',
+    fatwaQuestionSubmitFailed: 'پوښتنه لېږل ناکام شول',
+    onlineAdmissionSubmitted: 'د داخلې غوښتنه په برياليتوب وليږل شوه',
+    onlineAdmissionSubmitFailed: 'د داخلې غوښتنه لېږل ناکام شول',
+    onlineAdmissionMissingFields: 'مهرباني وکړئ اړين اضافي برخې بشپړې کړئ',
+    onlineAdmissionUpdated: 'د داخلې غوښتنه تازه شوه',
+    onlineAdmissionUpdateFailed: 'د داخلې غوښتنه تازه کول ناکام شول',
+    onlineAdmissionAccepted: 'درخواست ومنل شو او زده کوونکی جوړ شو',
+    onlineAdmissionAcceptFailed: 'درخواست منل ناکام شول',
+    onlineAdmissionFieldCreated: 'د داخلې فورم برخه جوړه شوه',
+    onlineAdmissionFieldCreateFailed: 'د داخلې فورم برخه جوړول ناکام شول',
+    onlineAdmissionFieldUpdated: 'د داخلې فورم برخه تازه شوه',
+    onlineAdmissionFieldUpdateFailed: 'د داخلې فورم برخه تازه کول ناکام شول',
+    onlineAdmissionFieldDeleted: 'د داخلې فورم برخه ړنګه شوه',
+    onlineAdmissionFieldDeleteFailed: 'د داخلې فورم برخه ړنګول ناکام شول',
+    onlineAdmissionFieldMissing: 'د برخې کليد او سرليک اړين دي',
     assetCategories: {
       created: 'د شتمنۍ کټګورۍ په بریالیتوب سره جوړه شوه',
       deleted: 'د شتمنۍ کټګورۍ په بریالیتوب سره ړنګه شوه',
@@ -6027,6 +5779,8 @@ export const ps: TranslationKeys = {
     fileDownloadFailed: 'د فایل ډاونلوډ ناکام شو',
     fileUploaded: 'فایل په بریالیتوب سره اپلوډ شو',
     fileUploadFailed: 'د فایل اپلوډ ناکام شو',
+    fileMustBeImage: 'مهرباني وکړئ د انځور فایل وټاکئ (JPEG, PNG, GIF, WebP, BMP، یا SVG).',
+    imageUploadFailed: 'د انځور اپلوډ ناکام شو',
     finance: {
       accounts: {
         account: 'مالي حساب'
@@ -6775,8 +6529,817 @@ export const ps: TranslationKeys = {
       '': 'د ژباړې په واردولو کې تېروتنه. مهرباني وکړئ د فایل بڼه وګورئ'
     }
   },
+  websiteAdmin: {
+    common: {
+      filters: 'فلټرونه',
+      search: 'لټون',
+      status: 'حالت',
+      publishedAt: 'د خپرېدو نېټه',
+      expiresAt: 'د ختمېدو نېټه',
+      actions: 'اقدامات',
+      title: 'سرلیک',
+      slug: 'سلګ',
+      excerpt: 'لنډیز',
+      content: 'منځپانګه',
+      description: 'تشریح',
+      category: 'کټګوري',
+      type: 'ډول',
+      visible: 'ښکاره',
+      order: 'ترتیب',
+      url: 'URL',
+      parent: 'والد',
+      created: 'جوړ شوی',
+      preview: 'مخکینی لید',
+      fileName: 'د فایل نوم',
+      altText: 'بدیل متن',
+      public: 'عامه',
+      yes: 'هو',
+      no: 'نه',
+      all: 'ټول',
+      none: 'هیڅ',
+      notSet: 'نه دی ټاکل شوی',
+      sortOrder: 'د ترتیب شمېره',
+      uploading: 'پورته کېږي...'
+    },
+    statuses: {
+      draft: 'مسوده',
+      scheduled: 'مهالویش شوی',
+      published: 'خپور شوی',
+      archived: 'آرشیف شوی',
+      assigned: 'سپارل شوی',
+      answered: 'ځواب شوی',
+      active: 'فعال',
+      inactive: 'غیرفعال',
+      pending: 'تر څار لاندې',
+      verified: 'تایید شوی',
+      unverified: 'نا تایید',
+      expired: 'منقضي'
+    },
+    announcements: {
+      title: 'اعلانونه',
+      description: 'د وېبپاڼې اعلانونه مدیریت کړئ',
+      new: 'نوی اعلان',
+      searchPlaceholder: 'اعلانونه ولټوئ...',
+      pinned: 'پن شوی',
+      pinToHomepage: 'په مخپاڼه کې پن کړئ',
+      noResults: 'اعلانونه ونه موندل شول',
+      createTitle: 'اعلان جوړ کړئ',
+      createDescription: 'نوی اعلان جوړ کړئ',
+      editTitle: 'اعلان سمول',
+      editDescription: 'د اعلان جزئیات تازه کړئ',
+      deleteTitle: 'اعلان ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا اعلان ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        title: 'سرلیک',
+        content: 'منځپانګه',
+        status: 'حالت',
+        publishedAt: 'د خپرېدو نېټه',
+        expiresAt: 'د ختمېدو نېټه'
+      },
+      placeholders: {
+        title: 'د اعلان سرلیک',
+        content: 'د اعلان منځپانګه...'
+      }
+    },
+    articles: {
+      title: 'مقالې او بلاګ',
+      description: 'د بلاګ پوسټونه او مقالې مدیریت کړئ',
+      new: 'نوی مقاله',
+      searchPlaceholder: 'مقالې ولټوئ...',
+      noResults: 'مقالې ونه موندل شوې',
+      createTitle: 'مقاله جوړول',
+      createDescription: 'نوی بلاګ پوسټ یا مقاله جوړ کړئ',
+      editTitle: 'مقاله سمول',
+      editDescription: 'د مقالې جزئیات تازه کړئ',
+      deleteTitle: 'مقاله ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا مقاله ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        slug: 'سلګ',
+        title: 'سرلیک',
+        excerpt: 'لنډیز',
+        content: 'د مقالې منځپانګه',
+        status: 'حالت',
+        publishedAt: 'د خپرېدو نېټه'
+      },
+      placeholders: {
+        slug: 'my-article',
+        title: 'د مقالې سرلیک',
+        excerpt: 'د مقالې لنډیز...',
+        content: 'خپل مقاله ولیکئ...'
+      }
+    },
+    pages: {
+      title: 'پاڼې',
+      description: 'د وېبپاڼې پاڼې مدیریت کړئ',
+      new: 'نوې پاڼه',
+      searchPlaceholder: 'پاڼې ولټوئ...',
+      noResults: 'پاڼې ونه موندل شوې',
+      createTitle: 'پاڼه جوړول',
+      createDescription: 'نوې وېبپاڼه پاڼه جوړ کړئ',
+      editTitle: 'پاڼه سمول',
+      editDescription: 'د پاڼې جزئیات تازه کړئ',
+      deleteTitle: 'پاڼه ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا پاڼه ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        slug: 'سلګ',
+        title: 'سرلیک',
+        status: 'حالت',
+        publishedAt: 'د خپرېدو نېټه',
+        content: 'منځپانګه'
+      },
+      placeholders: {
+        slug: 'about-us',
+        title: 'زموږ په اړه'
+      }
+    },
+    navigation: {
+      title: 'ناوبري',
+      description: 'د سر او پښو مېنوګانې مدیریت کړئ',
+      new: 'نوې مېنو توکی',
+      searchPlaceholder: 'مېنو توکي ولټوئ...',
+      noResults: 'مېنو توکي ونه موندل شول',
+      createTitle: 'مېنو توکی جوړول',
+      createDescription: 'نوی مېنو توکی اضافه کړئ',
+      editTitle: 'مېنو توکی سمول',
+      editDescription: 'د مېنو توکي جزئیات تازه کړئ',
+      deleteTitle: 'مېنو توکی ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا مېنو توکی ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        label: 'لیبل',
+        url: 'URL',
+        parentMenu: 'اصلي مېنو',
+        sortOrder: 'د ترتیب شمېره',
+        visible: 'ښکاره',
+        linkToPage: 'پاڼې ته لینک (اختیاري)',
+        order: 'ترتیب'
+      },
+      placeholders: {
+        selectPage: 'یوه پاڼه وټاکئ...',
+        label: 'کور',
+        url: '/home',
+        parentNone: 'هیڅ (لوړ کچه)'
+      }
+    },
+    events: {
+      title: 'پیښې',
+      description: 'د وېبپاڼې د پیښو مهالوېش مدیریت کړئ',
+      new: 'نوې پیښه',
+      searchPlaceholder: 'پیښې ولټوئ...',
+      noResults: 'پیښې ونه موندل شوې',
+      createTitle: 'پیښه جوړول',
+      createDescription: 'نوې پیښه جوړ کړئ',
+      editTitle: 'پیښه سمول',
+      editDescription: 'د پیښې جزئیات تازه کړئ',
+      deleteTitle: 'پیښه ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا پیښه ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        title: 'سرلیک',
+        location: 'ځای',
+        startsAt: 'پیل نېټه',
+        endsAt: 'پای نېټه',
+        summary: 'لنډیز',
+        publicEvent: 'عامه پیښه'
+      },
+      placeholders: {
+        title: 'د پیښې سرلیک',
+        location: 'د پیښې ځای',
+        summary: 'د پیښې لنډیز...'
+      }
+    },
+    domains: {
+      title: 'ډومېنونه',
+      description: 'د وېبپاڼې ډومېنونه مدیریت کړئ',
+      new: 'ډومېن اضافه کړئ',
+      searchPlaceholder: 'ډومېنونه ولټوئ...',
+      noResults: 'ډومېنونه ونه موندل شول',
+      createTitle: 'ډومېن اضافه کول',
+      createDescription: 'نوی ډومېن اضافه کړئ',
+      editTitle: 'ډومېن سمول',
+      editDescription: 'د ډومېن جزئیات تازه کړئ',
+      deleteTitle: 'ډومېن ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا ډومېن ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        domain: 'ډومېن',
+        primary: 'اصلي ډومېن',
+        verificationStatus: 'د تایید حالت',
+        sslStatus: 'د SSL حالت'
+      },
+      placeholders: {
+        domain: 'example.com',
+        selectStatus: 'حالت وټاکئ'
+      }
+    },
+    media: {
+      title: 'رسنۍ',
+      description: 'د وېبپاڼې د رسنیو کتابتون مدیریت کړئ',
+      new: 'رسنۍ پورته کول',
+      searchPlaceholder: 'رسنۍ ولټوئ...',
+      noResults: 'رسنۍ ونه موندل شوې',
+      createTitle: 'رسنۍ اضافه کول',
+      createDescription: 'نوی رسنۍ توکی کتابتون ته اضافه کړئ',
+      editTitle: 'رسنۍ سمول',
+      editDescription: 'د رسنیو جزئیات تازه کړئ',
+      deleteTitle: 'رسنۍ ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا رسنۍ توکی ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      previewAlt: 'د رسنۍ مخکینی لید',
+      libraryPickerTitle: 'له کتابتون څخه وټاکئ',
+      libraryPickerDescription: 'یوه شته انځور وټاکئ',
+      noLibraryImages: 'په کتابتون کې انځور نشته. لومړی پورته یې کړئ.',
+      fields: {
+        type: 'ډول',
+        category: 'کټګوري',
+        filePath: 'د فایل لاره',
+        fileName: 'سرلیک / د فایل نوم',
+        altText: 'بدیل متن / تشریح'
+      },
+      placeholders: {
+        search: 'رسنۍ ولټوئ...',
+        selectCategory: 'کټګوري وټاکئ',
+        imageUrl: 'https://... یا لاره',
+        videoUrl: 'https://www.youtube.com/watch?v=...',
+        documentUrl: 'https://...',
+        fileName: 'زما ښکلی انځور',
+        altText: 'د منځپانګې لنډه تشریح'
+      },
+      helpers: {
+        uploadOrSelect: 'انځور پورته یا وټاکئ',
+        uploadHint: 'پورته کول (یو یا څو)',
+        imageUrlHint: 'د انځور URL یا لاره (یا پورته/کتابتون وکاروئ)',
+        videoHint: 'YouTube، Vimeo یا مستقیم MP4 لینکونه ملاتړ کوي.',
+        categoryAppliesToAll: '{count} انځورونه چمتو دي — لاندې کټګوري/بدیل متن په ټولو پلي کېږي'
+      },
+      types: {
+        image: 'انځور',
+        video: 'ویډیو (YouTube/لینک)',
+        document: 'سند'
+      },
+      uncategorized: 'بې کټګورۍ',
+      selectFromLibrary: 'له کتابتون څخه وټاکئ',
+      addFromLibrary: 'له کتابتون څخه وټاکئ'
+    },
+    fatwas: {
+      title: 'پوښتنې او فتوې',
+      description: 'فتوې، کټګورۍ او پوښتنې مدیریت کړئ',
+      editTitle: 'فتوه سمول',
+      editDescription: 'د فتوا جزئیات تازه کړئ',
+      editCategoryTitle: 'کټګوري سمول',
+      editCategoryDescription: 'د کټګورۍ جزئیات تازه کړئ',
+      tabs: {
+        fatwas: 'فتوې',
+        categories: 'کټګورۍ',
+        questions: 'پوښتنې'
+      },
+      newFatwa: 'نوې فتوه',
+      newCategory: 'نوې کټګوري',
+      anonymous: 'بې نومه',
+      noFatwas: 'فتوې ونه موندل شوې',
+      noCategories: 'کټګورۍ ونه موندل شوې',
+      noQuestions: 'پوښتنې ونه موندل شوې',
+      searchFatwas: 'فتوې ولټوئ...',
+      searchQuestions: 'پوښتنې ولټوئ...',
+      fields: {
+        slug: 'سلګ',
+        title: 'سرلیک',
+        category: 'کټګوري',
+        question: 'پوښتنه',
+        answer: 'ځواب',
+        status: 'حالت',
+        featured: 'ځانګړی',
+        publishedAt: 'د خپرېدو نېټه',
+        name: 'نوم',
+        description: 'تشریح',
+        sortOrder: 'د ترتیب شمېره',
+        active: 'فعال',
+        assignedTo: 'ته سپارل شوی',
+        internalNotes: 'داخلي یادښتونه',
+        answerDraft: 'د ځواب مسوده'
+      },
+      placeholders: {
+        slug: 'fatwa-slug',
+        title: 'د فتوا سرلیک',
+        question: 'د پوښتنې متن...',
+        answer: 'د فتوا ځواب...',
+        categorySlug: 'category-slug',
+        categoryName: 'د کټګورۍ نوم',
+        categoryDescription: 'د کټګورۍ تشریح...',
+        assignedTo: 'د کاروونکي ID یا ایمیل',
+        internalNotes: 'د څار لپاره داخلي یادښتونه...',
+        answerDraft: 'د ځواب مسوده...',
+        selectCategory: 'کټګوري وټاکئ'
+      },
+      moderation: {
+        title: 'پوښتنه څارل',
+        description: 'د پوښتنې حالت او ټاکنه تازه کړئ',
+        submittedBy: 'لېږدونکی',
+        questionLabel: 'پوښتنه'
+      },
+      delete: {
+        titleFatwa: 'فتوه ړنګول',
+        titleCategory: 'کټګوري ړنګول',
+        descriptionFatwa: 'ایا ډاډه یاست چې دا فتوه ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+        descriptionCategory: 'ایا ډاډه یاست چې دا کټګوري ړنګوئ؟ دا عمل بېرته نه شي کېدای.'
+      }
+    },
+    gallery: {
+      title: 'د ګالري کټګورۍ',
+      description: 'د ګالري کټګورۍ او البومونه مدیریت کړئ',
+      new: 'نوې کټګوري',
+      searchPlaceholder: 'کټګورۍ ولټوئ...',
+      noResults: 'کټګورۍ ونه موندل شوې',
+      slugLabel: 'سلګ',
+      sortLabel: 'د ترتیب شمېره',
+      noDescription: 'تشریح نشته',
+      createTitle: 'د ګالري کټګوري جوړول',
+      createDescription: 'نوې د ګالري کټګوري اضافه کړئ',
+      editTitle: 'د ګالري کټګوري سمول',
+      editDescription: 'د ګالري کټګورۍ جزئیات تازه کړئ',
+      deleteTitle: 'د ګالري کټګوري ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا کټګوري ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        name: 'نوم',
+        coverImage: 'پوښ انځور'
+      },
+      placeholders: {
+        name: 'د کټګورۍ نوم',
+        slug: 'gallery-category',
+        coverPath: 'د انځور لاره یا URL'
+      },
+      coverUploadCta: 'پوښ انځور پورته یا له کتابتون څخه وټاکئ',
+      coverPreviewAlt: 'د ګالري پوښ مخکینی لید'
+    },
+    courses: {
+      title: 'کورسونه',
+      description: 'عامه کورسونه مدیریت کړئ',
+      new: 'نوی کورس',
+      searchPlaceholder: 'کورسونه ولټوئ...',
+      noResults: 'کورسونه ونه موندل شول',
+      createTitle: 'کورس جوړول',
+      createDescription: 'نوی کورس اضافه کړئ',
+      editTitle: 'کورس سمول',
+      editDescription: 'د کورس جزئیات تازه کړئ',
+      deleteTitle: 'کورس ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا کورس ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        title: 'سرلیک',
+        instructor: 'ښوونکی',
+        duration: 'موده',
+        level: 'کچه',
+        enrollmentLink: 'د نوم لیکنې لینک',
+        coverImage: 'پوښ انځور'
+      },
+      placeholders: {
+        title: 'د کورس سرلیک',
+        instructor: 'د ښوونکي نوم',
+        duration: 'لکه ۸ اونۍ',
+        level: 'کچه وټاکئ',
+        enrollmentLink: 'https://...',
+        description: 'د کورس تشریح...',
+        category: 'کټګوري'
+      },
+      levels: {
+        beginner: 'پیل',
+        intermediate: 'منځنۍ',
+        advanced: 'پرمختللې'
+      },
+      featured: 'ځانګړی',
+      uploadImage: 'پوښ پورته کول',
+      coverPreviewAlt: 'د کورس پوښ مخکینی لید',
+      noImage: 'پوښ انځور نشته',
+      enrollmentHelp: 'د نوم لیکنې لینک ورکړئ یا تش پرېږدئ چې تڼۍ پټه شي'
+    },
+    library: {
+      title: 'کتابتون',
+      description: 'د عامه کتابتون کتابونه مدیریت کړئ',
+      new: 'نوی کتاب',
+      searchPlaceholder: 'کتابونه ولټوئ...',
+      noResults: 'کتابونه ونه موندل شول',
+      createTitle: 'کتاب اضافه کول',
+      createDescription: 'کتابتون ته نوی کتاب اضافه کړئ',
+      editTitle: 'کتاب سمول',
+      editDescription: 'د کتاب جزئیات تازه کړئ',
+      deleteTitle: 'کتاب ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا کتاب ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        title: 'سرلیک',
+        author: 'لیکوال',
+        coverImage: 'پوښ انځور',
+        file: 'PDF فایل',
+        downloads: 'ډاونلوډونه'
+      },
+      placeholders: {
+        title: 'د کتاب سرلیک',
+        author: 'د لیکوال نوم',
+        category: 'کټګوري',
+        description: 'د کتاب لنډیز...',
+        fileUrl: 'https://...pdf'
+      },
+      uploadCover: 'پوښ پورته کول',
+      uploadFile: 'فایل پورته کول',
+      featured: 'په مخپاڼه کې ځانګړی',
+      coverPreviewAlt: 'د کتاب پوښ مخکینی لید'
+    },
+    donations: {
+      title: 'مرستې',
+      description: 'د عامه مرستو کمپاینونه مدیریت کړئ',
+      new: 'نوی کمپاین',
+      searchPlaceholder: 'کمپاینونه ولټوئ...',
+      noResults: 'کمپاینونه ونه موندل شول',
+      createTitle: 'کمپاین جوړول',
+      createDescription: 'نوی د مرستو کمپاین جوړ کړئ',
+      editTitle: 'کمپاین سمول',
+      editDescription: 'د کمپاین جزئیات تازه کړئ',
+      deleteTitle: 'کمپاین ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا کمپاین ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        fundName: 'د صندوق نوم',
+        target: 'هدف اندازه',
+        raised: 'راټول شوی',
+        progress: 'پرمختګ',
+        active: 'فعال'
+      },
+      placeholders: {
+        fundName: 'د صندوق نوم',
+        target: '10000',
+        raised: '2500',
+        description: 'د کمپاین تشریح...'
+      }
+    },
+    scholars: {
+      title: 'علما',
+      description: 'د علماوو عامه لېست مدیریت کړئ',
+      new: 'نوی عالم',
+      searchPlaceholder: 'علما ولټوئ...',
+      noResults: 'علما ونه موندل شول',
+      createTitle: 'عالم اضافه کول',
+      createDescription: 'د عالم پروفایل اضافه کړئ',
+      editTitle: 'عالم سمول',
+      editDescription: 'د عالم پروفایل تازه کړئ',
+      deleteTitle: 'عالم ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا عالم ړنګوئ؟ دا عمل بېرته نه شي کېدای.',
+      fields: {
+        name: 'نوم',
+        title: 'عنوان',
+        email: 'ایمیل',
+        bio: 'پیژندنه',
+        photo: 'انځور'
+      },
+      placeholders: {
+        name: 'بشپړ نوم',
+        title: 'عنوان یا رول',
+        email: 'name@example.com',
+        bio: 'لنډه پېژندنه...'
+      },
+      featured: 'په مخپاڼه کې ځانګړی',
+      photoAfterCreate: 'انځور به د عالم له جوړېدو وروسته پورته شي.',
+      uploadPhoto: 'انځور پورته کول'
+    },
+    graduates: {
+      title: 'فارغان او پخواني زده کوونکي',
+      description: 'د فراغت دورې او پخواني زده کوونکي وښایئ',
+      new: 'نوی فارغ',
+      searchPlaceholder: 'فارغان ولټوئ...',
+      noResults: 'فارغان ونه موندل شول',
+      createTitle: 'فارغ اضافه کول',
+      createDescription: 'د پخوانیو زده کوونکو لپاره نوی فارغ اضافه کړئ',
+      editTitle: 'فارغ سمول',
+      editDescription: 'د فارغ جزئیات تازه کړئ',
+      deleteTitle: 'فارغ ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا فارغ ړنګوئ؟',
+      fields: {
+        name: 'نوم',
+        program: 'پروګرام / درجه',
+        year: 'د فراغت کال',
+        bio: 'ژوندلیک'
+      },
+      placeholders: {
+        name: 'بشپړ نوم',
+        program: 'لکه اسلامي زده کړې',
+        year: '2024',
+        bio: 'لنډه پېژندنه...'
+      },
+      featured: 'په مخپاڼه کې ځانګړی'
+    },
+    admissions: {
+      title: 'آنلاین داخلې',
+      description: 'د آنلاین داخلې غوښتنلیکونه وڅېړئ او مدیریت یې کړئ.',
+      tabs: {
+        applications: 'غوښتنلیکونه',
+        fields: 'د فورم ساحې'
+      },
+      allStatuses: 'ټول حالتونه',
+      searchPlaceholder: 'د نوم، د سرپرست تلیفون، یا د غوښتنلیک شمېره لټون',
+      applicationsTitle: 'غوښتنلیکونه',
+      fieldsTitle: 'د فورم ساحې',
+      columns: {
+        applicationNo: 'د غوښتنلیک شمېره',
+        student: 'زده کوونکی',
+        guardianPhone: 'د سرپرست تلیفون',
+        applyingGrade: 'د غوښتنې ټولګی',
+        submitted: 'سپارل شوی'
+      },
+      fieldColumns: {
+        key: 'کلي',
+        label: 'لیبل',
+        type: 'ډول',
+        required: 'اړین',
+        enabled: 'فعال',
+        sort: 'ترتیب'
+      },
+      loading: 'داخلې لېکل کېږي...',
+      noResults: 'داخلې ونه موندل شوې.',
+      actions: {
+        view: 'لیدل',
+        addField: 'ساحه اضافه کړئ',
+        accept: 'قبول او زده کوونکی جوړول',
+        saveChanges: 'بدلونونه خوندي کړئ',
+        confirmAcceptance: 'قبول تایید کړئ',
+        editField: 'ساحه سمول',
+        newField: 'نوې ساحه',
+        saveField: 'ساحه خوندي کړئ'
+      },
+      noFields: 'هیڅ دودیزه ساحه نه ده تنظیم شوې.',
+      detailsTitle: 'د داخلې جزئیات',
+      detailsDescription: 'دا آنلاین د داخلې غوښتنلیک وګورئ او مدیریت یې کړئ.',
+      loadingSingle: 'داخلې لېکل کېږي...',
+      sections: {
+        student: 'زده کوونکی',
+        guardian: 'سرپرست',
+        address: 'پته',
+        previousSchool: 'پخوانی ښوونځی',
+        statusActions: 'حالت او اقدامات',
+        documents: 'اسناد',
+        extraFields: 'اضافي ساحې'
+      },
+      labels: {
+        father: 'پلار',
+        applying: 'غوښتنه',
+        guardian: 'سرپرست',
+        origin: 'اصلي استوګنځای',
+        current: 'اوسنی',
+        grade: 'ټولګی',
+        year: 'کال',
+        notes: 'یادښتونه',
+        internalNotes: 'داخلي یادښتونه',
+        rejectionReason: 'د رد دلیل',
+        field: 'ساحه',
+        download: 'ډاونلوډ',
+        admissionNoOptional: 'د داخلې نمبر (اختیاري)',
+        admissionYearOptional: 'د داخلې کال (اختیاري)'
+      },
+      selectStatus: 'حالت وټاکئ',
+      placeholders: {
+        internalNotes: 'داخلي یادښتونه...',
+        rejectionReason: 'د رد دلیل...'
+      },
+      noDocuments: 'هیڅ اسناد نه دي پورته شوي.',
+      noExtraFields: 'هیڅ اضافي ساحې نه دي ډکې شوي.',
+      acceptTitle: 'داخله ومنئ',
+      acceptDescription: 'له دې غوښتنلیک څخه زده کوونکی جوړ کړئ. د داخلې نمبر او کال اختیاري دي.',
+      fieldDialog: {
+        editDescription: 'د داخلې فورم ساحه تازه کړئ.',
+        newDescription: 'آنلاین د داخلې فورم ته نوې ساحه اضافه کړئ.'
+      },
+      fieldForm: {
+        key: 'کلي',
+        label: 'لیبل',
+        type: 'د ساحې ډول',
+        selectType: 'ډول وټاکئ',
+        sortOrder: 'د ترتیب شمېره',
+        options: 'غوراوي (په کامه جلا)',
+        placeholder: 'ځای نښه',
+        helpText: 'مرستندویه متن',
+        required: 'اړین',
+        enabled: 'فعال'
+      },
+      fieldTypes: {
+        text: 'متن',
+        textarea: 'د متن بکس',
+        phone: 'تلیفون',
+        number: 'شمېره',
+        select: 'انتخاب',
+        multiselect: 'څو انتخابونه',
+        date: 'نېټه',
+        toggle: 'بدلول',
+        email: 'ایمیل',
+        idNumber: 'د پېژندنې شمېره',
+        address: 'پته',
+        photo: 'انځور',
+        file: 'فایل'
+      },
+      statuses: {
+        submitted: 'سپارل شوی',
+        underReview: 'تر کتنې لاندې',
+        accepted: 'منل شوی',
+        rejected: 'رد شوی',
+        archived: 'آرشیف شوی'
+      }
+    },
+    inbox: {
+      title: 'ان باکس',
+      description: 'د اړیکې فورم پیغامونه او پوښتنې',
+      searchPlaceholder: 'پیغامونه ولټوئ...',
+      noResults: 'پیغامونه ونه موندل شول',
+      noSubject: '(بې موضوع)',
+      received: 'ترلاسه شوی',
+      stats: {
+        new: 'نوی',
+        read: 'لوستل شوی',
+        replied: 'ځواب شوی',
+        total: 'ټول'
+      },
+      statuses: {
+        new: 'نوی',
+        read: 'لوستل شوی',
+        replied: 'ځواب شوی',
+        archived: 'آرشیف شوی'
+      },
+      actions: {
+        markRead: 'لوستل شوی وټاکئ',
+        markReplied: 'ځواب شوی وټاکئ',
+        archive: 'آرشیف',
+        delete: 'ړنګول'
+      },
+      deleteTitle: 'پیغام ړنګول',
+      deleteDescription: 'ایا ډاډه یاست چې دا پیغام ړنګوئ؟ دا عمل بېرته نه شي کېدای.'
+    },
+    users: {
+      title: 'د ویبپاڼې کاروونکي',
+      description: 'هغه حسابونه دعوت او اداره کړئ چې یوازې د ویبپاڼې وسایلو ته لاسرسی لري.',
+      helperTitle: 'یوازې د ویبپاڼې لاسرسی',
+      helperDescription: 'د ویبپاڼې رول لرونکي کاروونکي یوازې د ویبپاڼې مدیر مېنو ویني، پرته له دې چې نورې اجازې ولري.',
+      stats: {
+        total: 'ټول کاروونکي',
+        active: 'فعال',
+        inactive: 'غیرفعال',
+        roles: 'کارېدلي رولونه'
+      },
+      filters: {
+        searchPlaceholder: 'په نوم یا ایمیل کې لټون...',
+        role: 'رول',
+        status: 'حالت',
+        allRoles: 'ټول رولونه',
+        allStatuses: 'ټول حالتونه'
+      },
+      table: {
+        name: 'نوم',
+        email: 'ایمیل',
+        role: 'رول',
+        status: 'حالت',
+        actions: 'عملونه'
+      },
+      empty: {
+        title: 'لا تر اوسه د ویبپاڼې کاروونکي نشته',
+        description: 'د پیل لپاره د ویبپاڼې ټیم یو غړی دعوت کړئ.'
+      },
+      dialogs: {
+        createTitle: 'د ویبپاڼې کاروونکی دعوت',
+        createDescription: 'نوی حساب د یوازې ویبپاڼې لاسرسي سره جوړ کړئ.',
+        editTitle: 'د ویبپاڼې کاروونکی سمول',
+        editDescription: 'د اړیکې معلومات او لاسرسي حالت تازه کړئ.',
+        deleteTitle: 'د ویبپاڼې کاروونکی ړنګول',
+        deleteDescription: 'دا حساب ړنګوي او د ویبپاڼې لاسرسی لغوه کوي.',
+        resetTitle: 'پټ نوم بیا ټاکل',
+        resetDescription: 'د دې کاروونکي لپاره نوی پټ نوم وټاکئ.'
+      },
+      form: {
+        fullName: 'بشپړ نوم',
+        email: 'ایمیل',
+        password: 'لنډمهاله پټ نوم',
+        role: 'د ویبپاڼې رول',
+        phone: 'تلیفون',
+        defaultSchool: 'اصلي ښوونځی',
+        selectSchool: 'ښوونځی وټاکئ',
+        noDefaultSchool: 'هیڅ اصلي ښوونځی نشته',
+        active: 'فعال',
+        activeHint: 'غیرفعال کاروونکي د ویبپاڼې د مدیریت لپاره ننوتلی نشي.'
+      },
+      status: {
+        active: 'فعال',
+        inactive: 'غیرفعال'
+      },
+      actions: {
+        invite: 'کاروونکی دعوت',
+        edit: 'سمول',
+        delete: 'ړنګول',
+        resetPassword: 'پټ نوم بیا ټاکل'
+      },
+      roles: {
+        website_admin: 'د ویبپاڼې مدیر',
+        website_editor: 'د ویبپاڼې سمونګر',
+        website_media: 'د رسنیو مدیر'
+      },
+      noPermissionTitle: 'اجازه نشته',
+      noPermissionDescription: 'تاسو د کاروونکو د مدیریت اجازه نه لرئ.',
+      roleLocked: 'د رول بدلونونه یوازې د مدیرانو لخوا کیږي.'
+    },
+    seo: {
+      title: 'د SEO وسایل',
+      description: 'د میټاډېټا پوښښ، د SEO نيمګړتياوې او د محتوا روغتيا تعقيبول.',
+      tabs: {
+        overview: 'لنډه کتنه',
+        content: 'د محتوا روغتيا'
+      },
+      stats: {
+        coverage: 'د SEO پوښښ',
+        coverageHint: 'هغه توکي چې بشپړ میټاډېټا لري',
+        needsAttention: 'پام ته اړتيا',
+        needsAttentionHint: 'صفحه/پوسټونه چې د SEO برخې يې نيمګړې دي',
+        total: 'ټول توکي',
+        totalHint: 'څارل کېدونکې پاڼې او پوسټونه'
+      },
+      checklist: {
+        title: 'د SEO چک ليست',
+        description: 'دا مهم ټکي بشپړ کړئ چې په لټون کې ښه ښکاره شئ.',
+        metaTitles: 'د هرې پاڼې او پوسټ لپاره ځانګړی SEO سرليک وليکئ.',
+        metaDescriptions: 'لنډ تشريح وليکئ چې د هرې پاڼې لنډيز وي.',
+        socialImages: 'د شريکولو لپاره ټولنيزې انځورونه ورزيات کړئ.',
+        cleanUrls: 'سلاګونه لنډ، لوستېدونکي او د کليدي ټکو پر بنسټ وساتئ.'
+      },
+      filters: {
+        searchPlaceholder: 'پاڼې او پوسټونه ولټوئ...',
+        type: 'د محتوا ډول',
+        status: 'حالت',
+        allTypes: 'ټول ډولونه',
+        pages: 'پاڼې',
+        posts: 'پوسټونه',
+        allStatuses: 'ټول حالتونه',
+        needsAttention: 'پام ته اړتيا',
+        complete: 'بشپړ'
+      },
+      table: {
+        title: 'سرليک',
+        type: 'ډول',
+        missing: 'نيمګړې برخې',
+        status: 'حالت',
+        publishedAt: 'د خپرېدو نېټه'
+      },
+      empty: 'د ټاکل شوو فلټرونو لپاره د SEO ستونزه ونه موندل شوه.',
+      missing: {
+        title: 'SEO سرليک',
+        description: 'SEO تشريح',
+        image: 'SEO انځور'
+      },
+      complete: 'بشپړ',
+      types: {
+        page: 'پاڼه',
+        post: 'پوسټ'
+      },
+      actions: {
+        openManager: 'مديريت ته تلل'
+      }
+    },
+    audit: {
+      title: 'د حسابرسی راپورونه',
+      description: 'وګورئ چې د ویب پاڼې محتوا یو چا جوړ کړی یا سمون ورکړی.',
+      searchPlaceholder: 'د سرلیک یا کارن له مخې لټون...',
+      noResults: 'د حسابرسی ننوتونو موندل نشول.',
+      systemUser: 'سیستم',
+      untitled: 'بې سرلیکه',
+      export: 'CSV صادرول',
+      refresh: 'تازه کول',
+      summary: {
+        total: 'ټول فعالیت',
+        created: 'جوړ شوی',
+        updated: 'تازه شوی',
+        uniqueUsers: 'فعال سمونکاري'
+      },
+      filters: {
+        action: 'کړنه',
+        type: 'د محتوا ډول'
+      },
+      actions: {
+        created: 'جوړ شوی',
+        updated: 'تازه شوی'
+      },
+      columns: {
+        activity: 'فعالیت',
+        action: 'کړنه',
+        user: 'کارن',
+        occurredAt: 'نیټه',
+        status: 'حالت'
+      },
+      types: {
+        page: 'پاڼه',
+        post: 'پوسټ',
+        announcement: 'اعلان',
+        event: 'پیښه',
+        media: 'رسنۍ',
+        mediaCategory: 'د رسنیو کټګوري',
+        menuLink: 'د مینو لینک',
+        domain: 'ډومین',
+        fatwa: 'فتوا',
+        publicBook: 'د کتابتون کتاب',
+        scholar: 'عالم',
+        course: 'کورس',
+        graduate: 'فارغ',
+        donation: 'خیریه'
+      }
+    }
+  },
+  websiteManager: websiteAdminPs.websiteManager,
+  website: websiteAdminPs.website,
   classes: {
-    noClasses: 'هیڅ ټولګي نشته',
+    noClasses: 'ټولګي نشته',
     viewAll: 'ټول کتل'
   },
   platform: {

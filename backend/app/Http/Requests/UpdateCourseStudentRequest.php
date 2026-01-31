@@ -11,6 +11,46 @@ class UpdateCourseStudentRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Prepare data for validation so string fields get strings and integer fields get int|null.
+     */
+    protected function prepareForValidation(): void
+    {
+        $stringKeys = [
+            'admission_no', 'card_number', 'full_name', 'father_name', 'grandfather_name', 'mother_name',
+            'gender', 'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village',
+            'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation',
+            'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address', 'zamin_name',
+            'zamin_phone', 'zamin_tazkira', 'zamin_address', 'emergency_contact_name', 'emergency_contact_phone',
+            'family_income', 'picture_path', 'disability_status', 'completion_status', 'grade',
+        ];
+        $data = $this->all();
+        foreach ($stringKeys as $key) {
+            if (array_key_exists($key, $data) && $data[$key] !== null && $data[$key] !== '' && !is_string($data[$key])) {
+                $data[$key] = (string) $data[$key];
+            }
+        }
+        foreach (['birth_year', 'age'] as $key) {
+            if (array_key_exists($key, $data)) {
+                $v = $data[$key];
+                if ($v === null || $v === '') {
+                    $data[$key] = null;
+                } elseif (is_numeric($v)) {
+                    $data[$key] = (int) $v;
+                }
+            }
+        }
+        if (array_key_exists('fee_amount', $data)) {
+            $v = $data['fee_amount'];
+            if ($v === null || $v === '') {
+                $data['fee_amount'] = null;
+            } elseif (is_numeric($v)) {
+                $data['fee_amount'] = (float) $v;
+            }
+        }
+        $this->merge($data);
+    }
+
     public function rules(): array
     {
         return [

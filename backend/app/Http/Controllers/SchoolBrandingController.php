@@ -298,6 +298,53 @@ class SchoolBrandingController extends Controller
             }
         }
 
+        // Create WebsiteSetting for public website resolution
+        try {
+            \App\Models\WebsiteSetting::firstOrCreate(
+                [
+                    'organization_id' => $school->organization_id,
+                    'school_id' => $school->id,
+                ],
+                [
+                    'school_slug' => 'school-' . substr($school->id, 0, 8),
+                    'default_language' => 'ps',
+                    'enabled_languages' => ['ps', 'en', 'ar', 'fa'],
+                    'theme' => [
+                        'primary_color' => $school->primary_color ?? '#1e40af',
+                        'secondary_color' => $school->secondary_color ?? '#64748b',
+                        'accent_color' => $school->accent_color ?? '#0ea5e9',
+                        'font_family' => $school->font_family ?? 'Bahij Nassim',
+                    ],
+                    'is_public' => true,
+                ]
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to create WebsiteSetting for new school', [
+                'organization_id' => $school->organization_id,
+                'school_id' => $school->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // Seed website pages and navigation for new school (in Pashto)
+        try {
+            $seeder = new \Database\Seeders\WebsitePagesAndNavigationSeeder();
+            $seeder->seedForSchool($school->organization_id, $school->id, 'ps');
+            
+            \Log::info('Website pages and navigation seeded for new school', [
+                'organization_id' => $school->organization_id,
+                'school_id' => $school->id,
+            ]);
+        } catch (\Exception $e) {
+            // Log error but don't fail school creation
+            \Log::warning('Failed to seed website pages and navigation for new school', [
+                'organization_id' => $school->organization_id,
+                'school_id' => $school->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+
         return response()->json($school, 201);
     }
 

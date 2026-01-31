@@ -54,6 +54,7 @@ export interface VerifyLicenseRequest {
 }
 
 export interface UpdateKeyRequest {
+  kid?: string;
   notes?: string | null;
 }
 

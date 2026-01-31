@@ -32,9 +32,28 @@ export interface SubscriptionPlan {
   sort_order: number;
   features?: string[];
   limits?: Record<string, number>;
+  landing_offer?: LandingOffer | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+}
+
+export interface LandingOffer {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  max_discount_amount: number | null;
+  currency: 'AFN' | 'USD' | null;
+  valid_from: string | null;
+  valid_until: string | null;
+  metadata?: Record<string, unknown> | null;
+  discount_amount_afn: number;
+  discount_amount_usd: number;
+  discounted_total_fee_afn: number;
+  discounted_total_fee_usd: number;
 }
 
 export interface OrganizationSubscription {
@@ -269,6 +288,7 @@ export interface DiscountCode {
   valid_from: string | null;
   valid_until: string | null;
   is_active: boolean;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -400,6 +420,7 @@ export interface CreateDiscountCodeData {
   max_uses_per_org?: number;
   valid_from?: string;
   valid_until?: string;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface CreatePlanData {

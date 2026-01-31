@@ -48,6 +48,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'feature' => \App\Http\Middleware\EnsureFeatureAccess::class,
             'limit' => \App\Http\Middleware\EnforceUsageLimit::class,
             'token.from.query' => \App\Http\Middleware\AcceptTokenFromQuery::class,
+            'public.website.resolve' => \App\Http\Middleware\ResolvePublicWebsiteSchool::class,
+            'public.website.feature' => \App\Http\Middleware\EnsurePublicWebsiteFeature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

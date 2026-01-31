@@ -23,6 +23,7 @@ import {
   MessageSquare,
   Key,
   AlertCircle,
+  Globe,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -163,6 +164,15 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       badge: null,
     },
     { 
+      name: 'Websites', 
+      href: '/platform/websites', 
+      icon: Globe,
+      iconColor: 'text-sky-500',
+      iconBg: 'bg-sky-500/10',
+      description: 'Review organization website links',
+      badge: null,
+    },
+    { 
       name: 'Organization Admins', 
       href: '/platform/admins', 
       icon: Users,
@@ -236,6 +246,15 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       iconColor: 'text-teal-500',
       iconBg: 'bg-teal-500/10',
       description: 'Manage discount codes',
+      badge: null,
+    },
+    { 
+      name: 'Landing Offers', 
+      href: '/platform/landing-offers', 
+      icon: Ticket,
+      iconColor: 'text-rose-500',
+      iconBg: 'bg-rose-500/10',
+      description: 'Control pricing offers on the public site',
       badge: null,
     },
     { 

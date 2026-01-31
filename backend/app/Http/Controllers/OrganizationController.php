@@ -1357,5 +1357,107 @@ class OrganizationController extends Controller
 
         return response()->noContent();
     }
+
+    /**
+     * Get website data (domains and settings) for an organization (Platform Admin)
+     * Note: Permission check is handled by platform.admin middleware
+     */
+    public function websiteData(Request $request, string $id)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Middleware already checks subscription.admin permission, but add defensive check
+        try {
+            $platformOrgId = '00000000-0000-0000-0000-000000000000';
+            setPermissionsTeamId($platformOrgId);
+            // Try to check permission, but don't fail if method doesn't exist
+            if (method_exists($user, 'hasPermissionTo')) {
+                if (!$user->hasPermissionTo('subscription.admin')) {
+                    return response()->json([
+                        'error' => 'Access Denied',
+                        'message' => 'This endpoint is only accessible to platform administrators.',
+                    ], 403);
+                }
+            }
+        } catch (\Exception $e) {
+            // If permission check fails, log but continue (middleware should have caught it)
+            Log::debug("Permission check in websiteData (non-blocking): " . $e->getMessage());
+        }
+
+        try {
+            $organization = Organization::whereNull('deleted_at')->findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Organization not found'], 404);
+        }
+
+        // Get all domains for this organization (across all schools)
+        $domains = [];
+        try {
+            $domains = DB::connection('pgsql')
+                ->table('website_domains')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->orderBy('is_primary', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->toArray();
+        } catch (\Exception $e) {
+            // Table might not exist yet, return empty array
+            Log::debug("website_domains table query failed: " . $e->getMessage());
+        }
+
+        // Get all website settings for this organization (across all schools)
+        $settings = [];
+        try {
+            $settings = DB::connection('pgsql')
+                ->table('website_settings')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get()
+                ->toArray();
+        } catch (\Exception $e) {
+            // Table might not exist yet, return empty array
+            Log::debug("website_settings table query failed: " . $e->getMessage());
+        }
+
+        // Get schools for this organization
+        $schools = [];
+        try {
+            $schools = DB::connection('pgsql')
+                ->table('school_branding as s')
+                ->leftJoin('website_settings as ws', function ($join) {
+                    $join->on('ws.school_id', '=', 's.id')
+                        ->whereNull('ws.deleted_at');
+                })
+                ->where('s.organization_id', $organization->id)
+                ->whereNull('s.deleted_at')
+                ->select(
+                    's.id',
+                    's.school_name',
+                    DB::raw('ws.school_slug as school_slug')
+                )
+                ->get()
+                ->toArray();
+        } catch (\Exception $e) {
+            // Table might not exist yet, return empty array
+            Log::debug("school_branding table query failed: " . $e->getMessage());
+        }
+
+        return response()->json([
+            'organization' => [
+                'id' => $organization->id,
+                'name' => $organization->name,
+                'slug' => $organization->slug,
+                'website' => $organization->website,
+            ],
+            'domains' => $domains,
+            'settings' => $settings,
+            'schools' => $schools,
+        ]);
+    }
 }
 

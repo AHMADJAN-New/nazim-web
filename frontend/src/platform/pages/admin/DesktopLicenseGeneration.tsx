@@ -54,11 +54,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { showToast } from '@/lib/toast';
 import {
   useLicenseKeys,
   useGenerateKeyPair,
   useUpdateKey,
   useDeleteKey,
+  useImportKeys,
   useSignLicense,
   useVerifyLicense,
   useDesktopLicenses,
@@ -75,6 +77,7 @@ export default function DesktopLicenseGeneration() {
   const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null);
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [editingKeyNotes, setEditingKeyNotes] = useState('');
+  const [editingKeyKid, setEditingKeyKid] = useState('');
   const [viewingLicenseId, setViewingLicenseId] = useState<string | null>(null);
   const [licenseJson, setLicenseJson] = useState('');
   const [signedLicenseJson, setSignedLicenseJson] = useState('');
@@ -103,6 +106,7 @@ export default function DesktopLicenseGeneration() {
   const generateKeyPair = useGenerateKeyPair();
   const updateKey = useUpdateKey();
   const deleteKey = useDeleteKey();
+  const importKeys = useImportKeys();
   const signLicense = useSignLicense();
   const verifyLicense = useVerifyLicense();
   const downloadLicense = useDownloadLicense();
@@ -130,15 +134,123 @@ export default function DesktopLicenseGeneration() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    if (!file.name.endsWith('.json')) {
+      showToast.error('Please select a JSON file');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file size (max 1MB)
+    if (file.size > 1024 * 1024) {
+      showToast.error('File size must be less than 1MB');
+      e.target.value = '';
+      return;
+    }
+
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      let data: any;
       
-      // TODO: Implement loading keys from JSON file
-      // This would require a backend endpoint to import keys
-      alert('Loading keys from file is not yet implemented. Please use the generate button to create new keys.');
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        showToast.error('Invalid JSON file. Please check the file format.');
+        e.target.value = '';
+        return;
+      }
+
+      // Normalize data to array format
+      let keysArray: any[] = [];
+
+      // Check if it's a single key object (Ed25519 format with algorithm, private_key, public_key)
+      if (data.algorithm && (data.public_key || data.private_key)) {
+        // Single key object format (Ed25519 export format)
+        // Generate kid from timestamp or use a unique identifier
+        let kid = data.kid;
+        if (!kid) {
+          if (data.generated_at) {
+            // Use timestamp from generated_at
+            const timestamp = new Date(data.generated_at).getTime();
+            kid = `imported-${timestamp}`;
+          } else {
+            // Use current timestamp with random suffix to ensure uniqueness
+            kid = `imported-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+          }
+        }
+        keysArray = [{
+          kid,
+          public_key_b64: data.public_key || data.public_key_b64,
+          private_key: data.private_key,
+          notes: data.notes || (data.generated_at ? `Imported Ed25519 key from ${new Date(data.generated_at).toLocaleString()}` : 'Imported Ed25519 key'),
+        }];
+      } else if (Array.isArray(data)) {
+        // Array of keys format
+        keysArray = data;
+      } else if (data.keys && Array.isArray(data.keys)) {
+        // Object with keys array
+        keysArray = data.keys;
+      } else if (data.kid || data.public_key_b64 || data.public_key) {
+        // Single key object (legacy format)
+        keysArray = [data];
+      } else {
+        showToast.error('Invalid file format. Expected:\n- An array of keys\n- An object with "keys" array\n- A single key object with "public_key" or "public_key_b64"\n- An Ed25519 key object with "algorithm", "public_key", and "private_key"');
+        e.target.value = '';
+        return;
+      }
+
+      if (keysArray.length === 0) {
+        showToast.error('No keys found in file. Please ensure the file contains at least one key.');
+        e.target.value = '';
+        return;
+      }
+
+      // Normalize and validate each key
+      const normalizedKeys = keysArray.map((key: any, index: number) => {
+        // Generate kid if missing
+        let kid = key.kid;
+        if (!kid) {
+          // Try to generate from timestamp or use index with random suffix
+          if (key.generated_at) {
+            const timestamp = new Date(key.generated_at).getTime();
+            kid = `imported-${timestamp}-${index}`;
+          } else {
+            // Use current timestamp with index and random suffix to ensure uniqueness
+            kid = `imported-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 9)}`;
+          }
+        }
+
+        // Normalize public key (support both public_key and public_key_b64)
+        const publicKeyB64 = key.public_key_b64 || key.public_key;
+        if (!publicKeyB64) {
+          throw new Error(`Key at index ${index} is missing public_key or public_key_b64`);
+        }
+
+        // Normalize private key (support both private_key and private_key_encrypted)
+        const privateKey = key.private_key || key.private_key_encrypted;
+
+        return {
+          kid,
+          public_key_b64: publicKeyB64,
+          private_key: privateKey || undefined,
+          notes: key.notes || (key.generated_at ? `Imported from ${new Date(key.generated_at).toLocaleString()}` : null),
+        };
+      });
+
+      // Validate all keys have required fields
+      const invalidKeys = normalizedKeys.filter((key: any) => !key.kid || !key.public_key_b64);
+      if (invalidKeys.length > 0) {
+        showToast.error(`Invalid keys found: ${invalidKeys.length} key(s) are missing required fields (kid or public_key_b64).`);
+        e.target.value = '';
+        return;
+      }
+
+      // Import keys
+      await importKeys.mutateAsync({
+        keys: normalizedKeys,
+      });
     } catch (error) {
-      alert('Failed to load keys file: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      showToast.error('Failed to load keys file: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
 
     // Reset file input
@@ -169,14 +281,16 @@ export default function DesktopLicenseGeneration() {
     document.body.removeChild(a);
   };
 
-  // Update key notes
+  // Update key (kid and notes)
   const handleUpdateKey = async (keyId: string) => {
     await updateKey.mutateAsync({
       id: keyId,
+      kid: editingKeyKid || undefined,
       notes: editingKeyNotes || null,
     });
     setEditingKeyId(null);
     setEditingKeyNotes('');
+    setEditingKeyKid('');
   };
 
   // Delete key
@@ -416,9 +530,22 @@ export default function DesktopLicenseGeneration() {
                   <Plus className="h-4 w-4 mr-2" />
                   Generate New Key Pair
                 </Button>
-                <Button variant="outline" onClick={handleLoadKeysFromFile}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Load Keys from JSON
+                <Button 
+                  variant="outline" 
+                  onClick={handleLoadKeysFromFile}
+                  disabled={importKeys.isPending}
+                >
+                  {importKeys.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Load Keys from JSON
+                    </>
+                  )}
                 </Button>
                 <Button variant="outline" onClick={handleSaveKeysToFile} disabled={!keys || keys.length === 0}>
                   <Download className="h-4 w-4 mr-2" />
@@ -478,6 +605,7 @@ export default function DesktopLicenseGeneration() {
                                 onClick={() => {
                                   setEditingKeyId(key.id);
                                   setEditingKeyNotes(key.notes || '');
+                                  setEditingKeyKid(key.kid);
                                 }}
                               >
                                 <Edit className="h-4 w-4" />
@@ -509,13 +637,27 @@ export default function DesktopLicenseGeneration() {
           <Dialog open={editingKeyId !== null} onOpenChange={(open) => !open && setEditingKeyId(null)}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Edit Key Notes</DialogTitle>
-                <DialogDescription>Update the notes for this key</DialogDescription>
+                <DialogTitle>Edit Key</DialogTitle>
+                <DialogDescription>Update the key identifier (KID) and notes. The KID must match what your desktop app expects (e.g., "root-v1").</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label>Notes</Label>
+                  <Label htmlFor="edit-kid">Key Identifier (KID) *</Label>
+                  <Input
+                    id="edit-kid"
+                    value={editingKeyKid}
+                    onChange={(e) => setEditingKeyKid(e.target.value)}
+                    placeholder="e.g., root-v1"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This must match the key identifier expected by your desktop application
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="edit-notes">Notes</Label>
                   <Textarea
+                    id="edit-notes"
                     value={editingKeyNotes}
                     onChange={(e) => setEditingKeyNotes(e.target.value)}
                     placeholder="Optional notes about this key"
@@ -523,12 +665,16 @@ export default function DesktopLicenseGeneration() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setEditingKeyId(null)}>
+                <Button variant="outline" onClick={() => {
+                  setEditingKeyId(null);
+                  setEditingKeyNotes('');
+                  setEditingKeyKid('');
+                }}>
                   Cancel
                 </Button>
                 <Button
                   onClick={() => editingKeyId && handleUpdateKey(editingKeyId)}
-                  disabled={updateKey.isPending}
+                  disabled={updateKey.isPending || !editingKeyKid.trim()}
                 >
                   {updateKey.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Save

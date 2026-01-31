@@ -40,6 +40,22 @@ class CodeGenerator
     }
 
     /**
+     * Generate an admission number for the given organization
+     * Format: AD-{YY}-{000000}
+     *
+     * @param string $organizationId
+     * @return string
+     */
+    public static function generateAdmissionNumber(string $organizationId): string
+    {
+        return self::generateCode(
+            $organizationId,
+            OrganizationCounter::COUNTER_TYPE_ADMISSIONS,
+            'AD'
+        );
+    }
+
+    /**
      * Generate a code for the given organization and counter type
      * Uses database transaction with lockForUpdate() for concurrency safety
      * 

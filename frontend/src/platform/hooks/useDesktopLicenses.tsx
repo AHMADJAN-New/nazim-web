@@ -100,9 +100,10 @@ export const useUpdateKey = () => {
       const response = await platformApi.desktopLicenses.keys.update(id, apiData);
       return mapLicenseKeyApiToDomain(response.data as DesktopLicenseApi.LicenseKey);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success(t('toast.keyUpdated') || 'Key updated successfully');
-      void queryClient.invalidateQueries({ queryKey: ['platform-desktop-license-keys'] });
+      await queryClient.invalidateQueries({ queryKey: ['platform-desktop-license-keys'] });
+      await queryClient.refetchQueries({ queryKey: ['platform-desktop-license-keys'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || (t('toast.keyUpdateFailed') || 'Failed to update key'));
@@ -128,6 +129,53 @@ export const useDeleteKey = () => {
     },
     onError: (error: Error) => {
       showToast.error(error.message || (t('toast.keyDeleteFailed') || 'Failed to delete key'));
+    },
+  });
+};
+
+/**
+ * Import keys from JSON file
+ */
+export const useImportKeys = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (data: DesktopLicenseApi.ImportKeysRequest) => {
+      const response = await platformApi.desktopLicenses.keys.import(data);
+      return response.data as DesktopLicenseApi.ImportKeysResponse;
+    },
+    onSuccess: (result) => {
+      const { imported, updated, skipped, total, errors } = result;
+      
+      // Build success message
+      const messages: string[] = [];
+      if (imported > 0) {
+        messages.push(`${imported} key(s) imported`);
+      }
+      if (updated > 0) {
+        messages.push(`${updated} key(s) updated`);
+      }
+      if (skipped > 0) {
+        messages.push(`${skipped} key(s) skipped`);
+      }
+      
+      if (messages.length > 0) {
+        showToast.success(messages.join(', '));
+      }
+      
+      // Show errors if any
+      if (errors.length > 0) {
+        const errorMessages = errors.map(e => `${e.kid}: ${e.error}`).join('; ');
+        showToast.error(`Some keys failed to import: ${errorMessages}`);
+      }
+      
+      // Refresh keys list
+      void queryClient.invalidateQueries({ queryKey: ['platform-desktop-license-keys'] });
+      void queryClient.refetchQueries({ queryKey: ['platform-desktop-license-keys'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || (t('toast.keyImportFailed') || 'Failed to import keys'));
     },
   });
 };

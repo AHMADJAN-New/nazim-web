@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, Shield, Play } from "lucide-react";
+import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, Shield, Play, Globe } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -32,6 +32,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useNotificationCount } from "@/hooks/useNotifications";
 import { useSchools } from "@/hooks/useSchools";
+import { useFeatures } from "@/hooks/useSubscription";
 import { authApi, apiClient } from "@/lib/api/client";
 import { showToast } from "@/lib/toast";
 import { useTour } from "@/onboarding";
@@ -64,7 +65,15 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const queryClient = useQueryClient();
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
   const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
-  
+  const { data: features } = useFeatures();
+
+  // Check if website feature is enabled
+  const hasWebsiteFeature = features?.some(f => f.featureKey === 'public_website') ?? false;
+
+  // Debug logging
+  console.log('[AppHeader DEBUG] Features:', features);
+  console.log('[AppHeader DEBUG] hasWebsiteFeature:', hasWebsiteFeature);
+
   // Tour system
   const { startTour, isTourCompleted } = useTour();
 
@@ -110,8 +119,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   // Only show school switcher if:
   // 1. User has schools_access_all AND multiple schools, OR
   // 2. User has a default school (to show current school even if they can't switch)
-  const showSchoolSwitcher = (hasSchoolsAccessAll && schools.length > 1) || 
-                             (authProfile?.default_school_id && schools.length > 0);
+  const showSchoolSwitcher = (hasSchoolsAccessAll && schools.length > 1) ||
+    (authProfile?.default_school_id && schools.length > 0);
 
   // For users with schools_access_all: just update context (temporary switch)
   // For other users: update default_school_id permanently (only if they have permission)
@@ -125,13 +134,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
       // Temporary switch - update context and do hard reload
       // Update localStorage synchronously first
       setSelectedSchoolId(schoolId);
-      
+
       // Clear all React Query cache to ensure fresh data
       queryClient.clear();
-      
+
       // Show success message briefly before reload
       showToast.success(t("events.schoolSwitched"));
-      
+
       // Hard reload after a short delay to ensure localStorage is updated and toast is visible
       // This ensures all data is refreshed with the new school context
       setTimeout(() => {
@@ -152,13 +161,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
     onSuccess: (_data, schoolId) => {
       // Clear all React Query cache to ensure fresh data
       queryClient.clear();
-      
+
       // Update selected school in context to match new default
       setSelectedSchoolId(schoolId);
-      
+
       // Show success message briefly before reload
       showToast.success(t("toast.profileUpdated"));
-      
+
       // Hard reload to ensure all data is refreshed with new school context
       // This ensures all components re-initialize with the new default_school_id
       // No need to call refreshAuth() since hard reload will fetch fresh profile
@@ -170,7 +179,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
       showToast.error(error?.message || t("toast.profileUpdateFailed"));
     },
   });
-  
+
   // Map auth profile to UserProfile format
   const profile: UserProfile | null = authProfile ? {
     full_name: authProfile.full_name,
@@ -204,7 +213,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
       if ((event.ctrlKey || event.metaKey) && (event.key === 'k' || event.key === 'K')) {
         const target = event.target as HTMLElement;
         const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
-        
+
         // Always allow Ctrl+K / Cmd+K to work, even in input fields
         // This is the standard behavior for command palettes
         event.preventDefault();
@@ -233,7 +242,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
     const value = e.target.value;
     // Ensure we update the search query state - no restrictions on length
     setSearchQuery(value);
-    
+
     // Show dropdown if query is 2+ characters, hide if less
     if (value.trim().length >= 2) {
       setIsInlineDropdownOpen(true);
@@ -250,7 +259,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
       relatedTarget.closest('[cmdk-list]') !== null ||
       relatedTarget.closest('[cmdk-item]') !== null
     );
-    
+
     // Only close if not moving to dropdown
     if (!isMovingToDropdown) {
       // Delay closing to allow clicks on dropdown items
@@ -276,7 +285,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         {/* Left Section - Sidebar trigger + Title/Breadcrumb */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
           <SidebarTrigger className="relative z-50" />
-          
+
           <div className="hidden lg:block">
             {showBreadcrumb && breadcrumbItems.length > 0 ? (
               <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -308,44 +317,44 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
         {/* Center Section - Search (Desktop only) */}
         <div className="hidden sm:flex sm:justify-center flex-1 max-w-xl mx-4" ref={searchContainerRef} data-tour="search-container">
           <div className="relative w-full sm:max-w-xl">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              ref={searchInputRef}
-              type="text"
-              placeholder={t('search.placeholder')}
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onFocus={handleSearchFocus}
-              onBlur={handleSearchBlur}
-              onClick={handleSearchClick}
-              data-tour="search-input"
-              onKeyDown={(e) => {
-                // Allow Ctrl+K / Cmd+K to work in search input
-                if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsCommandPaletteOpen(true);
-                  setIsInlineDropdownOpen(false);
-                  // Keep search query so user can continue searching in command palette
-                }
-                // Don't prevent other keys - allow normal typing
-                // Allow all other keys to work normally
-              }}
-              className="pl-10 pr-16 bg-muted/50 border-0 focus:bg-background w-full"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-              <span className="text-xs">{typeof window !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? '⌘' : 'Ctrl'}</span>K
-            </kbd>
-            <InlineSearchDropdown
-              open={isInlineDropdownOpen}
-              onOpenChange={setIsInlineDropdownOpen}
-              searchQuery={searchQuery}
-              anchorEl={searchInputRef.current}
-            />
-          </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder={t('search.placeholder')}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onFocus={handleSearchFocus}
+                onBlur={handleSearchBlur}
+                onClick={handleSearchClick}
+                data-tour="search-input"
+                onKeyDown={(e) => {
+                  // Allow Ctrl+K / Cmd+K to work in search input
+                  if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsCommandPaletteOpen(true);
+                    setIsInlineDropdownOpen(false);
+                    // Keep search query so user can continue searching in command palette
+                  }
+                  // Don't prevent other keys - allow normal typing
+                  // Allow all other keys to work normally
+                }}
+                className="pl-10 pr-16 bg-muted/50 border-0 focus:bg-background w-full"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                <span className="text-xs">{typeof window !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? '⌘' : 'Ctrl'}</span>K
+              </kbd>
+              <InlineSearchDropdown
+                open={isInlineDropdownOpen}
+                onOpenChange={setIsInlineDropdownOpen}
+                searchQuery={searchQuery}
+                anchorEl={searchInputRef.current}
+              />
+            </div>
           </div>
         </div>
 
@@ -470,6 +479,22 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             </Button>
           )}
 
+          {/* Desktop: Open Website Button */}
+          {(() => {
+            console.log('[AppHeader DEBUG] Rendering website button section, hasWebsiteFeature:', hasWebsiteFeature);
+            return hasWebsiteFeature && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/public-site', '_blank')}
+                className="hidden md:flex items-center gap-2"
+              >
+                <Globe className="h-4 w-4" />
+                <span className="text-sm">Open Website</span>
+              </Button>
+            );
+          })()}
+
           {/* Desktop: Theme Toggle */}
           <Button
             variant="ghost"
@@ -562,11 +587,21 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               {/* Mobile: Platform Admin Button */}
               {isPlatformAdmin && (
                 <>
-                  <DropdownMenuItem onClick={() => navigate('/platform/dashboard')} className="sm:hidden">
+                  <DropdownMenuItem onClick={() => navigate('/platform/dashboard')} className="md:hidden">
                     <Shield className="mr-2 h-4 w-4" />
                     <span>Platform Admin</span>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="sm:hidden" />
+                  <DropdownMenuSeparator className="md:hidden" />
+                </>
+              )}
+              {/* Mobile: Open Website Button */}
+              {hasWebsiteFeature && (
+                <>
+                  <DropdownMenuItem onClick={() => window.open('/public-site', '_blank')} className="md:hidden">
+                    <Globe className="mr-2 h-4 w-4" />
+                    <span>Open Website</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="md:hidden" />
                 </>
               )}
               {/* Mobile: Theme Toggle */}
