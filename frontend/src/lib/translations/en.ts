@@ -5430,64 +5430,85 @@ export const en = {
     updateAssignmentDetails: 'Update Assignment Details'
   },
   termsOfService: {
-    acceptance: {
-      content: 'By accessing or using our platform, you acknowledge that you have read, understood, and agree to be bound by these Terms. If you do not agree to these Terms, you may not use our services.',
-      title: 'Acceptance of Terms'
-    },
-    account: {
-      accurate: 'Provide accurate and complete information',
-      intro: 'To use our services, you must:',
-      maintain: 'Maintain the security of your account credentials',
-      notify: 'Notify us immediately of any unauthorized access',
-      responsible: 'Be responsible for all activities under your account',
-      title: 'Account Registration'
-    },
-    changes: {
-      content: 'We may modify these Terms at any time. We will notify you of any material changes by email or through the platform. Your continued use of the platform after such changes constitutes acceptance of the modified Terms.',
-      title: 'Changes to Terms'
-    },
-    contact: {
-      content: 'If you have any questions about these Terms of Service, please contact us at support@nazimapp.com or through our contact form.',
-      title: 'Contact Us'
-    },
-    intellectualProperty: {
-      content: 'All content, features, and functionality of the platform are owned by Nazim School Management System and are protected by copyright, trademark, and other intellectual property laws. You may not copy, modify, or distribute any part of the platform without our written permission.',
-      title: 'Intellectual Property'
-    },
-    introduction: {
-      content: 'These Terms of Service ("Terms") govern your access to and use of the Nazim School Management System platform. By using our services, you agree to be bound by these Terms. Please read them carefully.',
-      title: 'Introduction'
-    },
-    lastUpdated: 'Last Updated: January 2026',
-    liability: {
-      content: 'To the maximum extent permitted by law, Nazim School Management System shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount you paid for the services in the 12 months preceding the claim.',
-      title: 'Limitation of Liability'
-    },
-    subscription: {
-      cancellation: 'You may cancel your subscription at any time. Cancellation will take effect at the end of your current billing period.',
-      content: 'Subscription fees are billed in advance on a monthly or annual basis. All fees are non-refundable except as required by law. We reserve the right to change our pricing with 30 days notice.',
-      title: 'Subscription and Payment'
-    },
-    termination: {
-      content: 'We reserve the right to suspend or terminate your account at any time for violation of these Terms or for any other reason. Upon termination, your right to use the platform will immediately cease.',
-      title: 'Termination'
-    },
     title: 'Terms of Service',
+    lastUpdated: 'Last Updated: January 2026',
+  
+    introduction: {
+      title: 'Introduction',
+      content:
+        'These Terms explain how you may use Nazim Web (the “Platform”). By using the Platform, you agree to these Terms. If you do not agree, do not use the Platform.'
+    },
+  
+    acceptance: {
+      title: 'Acceptance of Terms',
+      content:
+        'By accessing or using the Platform, you confirm you understand and accept these Terms. If you are using the Platform for a school or organization, you confirm you have authority to accept these Terms on its behalf.'
+    },
+  
+    account: {
+      title: 'Account & Access',
+      intro: 'To use the Platform, you agree to:',
+      accurate: 'Provide correct and up-to-date account and school information',
+      maintain: 'Keep your login details safe and not share them publicly',
+      notify: 'Tell us quickly if you suspect unauthorized access',
+      responsible: 'Accept responsibility for actions taken from your account (including by staff users)'
+    },
+  
     use: {
+      title: 'Using the Platform',
       permitted: {
-        content: 'You may use our services for lawful educational and administrative purposes only. You agree to use the platform in accordance with all applicable laws and regulations.',
-        title: 'Permitted Use'
+        title: 'Permitted Use',
+        content:
+          'You may use the Platform only for lawful school, madrassa, educational, and administrative operations. You must follow applicable laws, school policies, and student privacy rules.'
       },
       prohibited: {
-        interfere: 'Interference with the platform\'s operation',
-        malicious: 'Introduction of viruses, malware, or harmful code',
-        title: 'Prohibited Activities',
-        unauthorized: 'Unauthorized access to other accounts or systems',
-        violate: 'Violation of any applicable laws or regulations'
-      },
-      title: 'Use of Services'
+        title: 'Not Allowed',
+        unauthorized: 'Trying to access other schools’ data or restricted areas',
+        malicious: 'Uploading malware, harmful code, or doing security attacks',
+        interfere: 'Disrupting the Platform, servers, or network performance',
+        violate: 'Using the Platform for illegal activity, harassment, or abuse'
+      }
+    },
+  
+    subscription: {
+      title: 'Subscription, Billing & Cancellation',
+      content:
+        'Subscriptions are billed in advance (monthly or yearly). You will see pricing and limits inside the Platform or your invoice. If we change prices, we will provide notice before the change takes effect.',
+      cancellation:
+        'You can cancel anytime. Your access continues until the end of the current billing period. We do not provide refunds for unused time, except where required by law.'
+    },
+  
+    intellectualProperty: {
+      title: 'Intellectual Property',
+      content:
+        'We own the Platform, its design, and its software. You receive a limited right to use it during your subscription. You may not copy, resell, reverse engineer, or distribute the Platform without written permission.'
+    },
+  
+    liability: {
+      title: 'Limitations of Liability',
+      content:
+        'We work hard to keep the Platform reliable, but no online service is perfect. To the maximum extent allowed by law, we are not liable for indirect or consequential losses (such as lost profit, lost data, or business interruption). Our total liability is limited to the amount you paid to us in the 12 months before the claim.'
+    },
+  
+    termination: {
+      title: 'Suspension & Termination',
+      content:
+        'We may suspend or terminate access if you seriously violate these Terms, misuse the Platform, or do not pay overdue invoices. If access is terminated, your right to use the Platform ends immediately.'
+    },
+  
+    changes: {
+      title: 'Changes to Terms',
+      content:
+        'We may update these Terms as the Platform grows. If changes are important, we will notify you by email or inside the Platform. Continuing to use the Platform after the effective date means you accept the updated Terms.'
+    },
+  
+    contact: {
+      title: 'Contact Us',
+      content:
+        'Questions about these Terms? Contact us at support@nazimapp.com or through our contact form.'
     }
   },
+  
   timetable: {
     academicYearLabel: 'Academic Year',
     allYear: 'All Year',

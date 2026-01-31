@@ -349,7 +349,7 @@ export const websitePublicPs: WebsitePublicTranslations = {
   },
   websitePublic: {
     badge: 'اسلامي ښوونځی',
-    defaultSchoolName: 'ناظم ښوونځی',
+    defaultSchoolName: 'د ناظم د دیني مدارسو لپاره بشپړ د مدیریت سیسټم',
     heroMotto: 'شریعت • طریقت • سیاست',
     heroWelcome: 'ښه راغلاست',
     heroSubtitle:

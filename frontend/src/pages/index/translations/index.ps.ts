@@ -443,4 +443,26 @@ export const indexTranslations = {
       error: 'د اړیکو فورمه ناکامه شوه. مهرباني وکړئ بیا هڅه وکړئ.',
     },
   },
+
+  // Footer & landing nav
+  footer: {
+    tagline: 'د دیني مدارسو  لپاره بشپړ د مدیریت سیسټم',
+    product: 'محصول',
+    company: 'شرکت',
+    legal: 'قانوني',
+    aboutUs: 'زموږ په اړه',
+    privacyPolicy: 'د محرمیت تګلاره',
+    termsOfService: 'د خدمت شرایط',
+    copyright: 'ټول حقونه خوندي دي.',
+    privacy: 'د محرمیت تګلاره',
+    terms: 'د خدمت شرایط',
+  },
+  landing: {
+    nav: {
+      features: 'ځانګړتیاوې',
+      pricing: 'بیې',
+      reviews: 'کتنې',
+      contact: 'اړیکه',
+    },
+  },
 };

@@ -245,30 +245,34 @@ const Index = () => {
           </div>
 
           {/* Features Grid - Lazy loaded */}
-          <Suspense
-            fallback={
-              <div className="px-6 py-6">
-                <div className="flex items-center justify-center min-h-[400px]">
-                  <LoadingSpinner />
+          <div id="features" className="scroll-mt-20">
+            <Suspense
+              fallback={
+                <div className="px-6 py-6">
+                  <div className="flex items-center justify-center min-h-[400px]">
+                    <LoadingSpinner />
+                  </div>
                 </div>
-              </div>
-            }
-          >
-            <LazyFeaturesGrid />
-          </Suspense>
+              }
+            >
+              <LazyFeaturesGrid />
+            </Suspense>
+          </div>
 
           {/* Pricing Section - Lazy loaded */}
-          <Suspense
-            fallback={
-              <div className="px-6 py-6">
-                <div className="flex items-center justify-center min-h-[400px]">
-                  <LoadingSpinner />
+          <div id="pricing" className="scroll-mt-20">
+            <Suspense
+              fallback={
+                <div className="px-6 py-6">
+                  <div className="flex items-center justify-center min-h-[400px]">
+                    <LoadingSpinner />
+                  </div>
                 </div>
-              </div>
-            }
-          >
-            <LazyPricingSection />
-          </Suspense>
+              }
+            >
+              <LazyPricingSection />
+            </Suspense>
+          </div>
 
           {/* Contact Section */}
           <ContactSection onContactClick={() => setContactInfoModalOpen(true)} />
@@ -285,7 +289,7 @@ const Index = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-[#c9a44d] to-[#f0e6b3] rounded-lg flex items-center justify-center">
                   <Rocket className="h-5 w-5 text-slate-900" />
                 </div>
-                <span className="text-xl font-bold text-white">Nazim SMS</span>
+                <span className="text-xl font-bold text-white">Nazim </span>
               </div>
               <p className="text-slate-400 text-sm leading-relaxed">
                 {t('footer.tagline') || tCommon('landing.footer.tagline') || 'Comprehensive Islamic School Management System'}
@@ -297,12 +301,26 @@ const Index = () => {
               <h4 className="text-lg font-semibold text-white">{t('footer.product') || tCommon('landing.footer.product') || 'Product'}</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="/#features" className="hover:text-[#c9a44d] transition-colors">
+                  <a
+                    href="/#features"
+                    className="hover:text-[#c9a44d] transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
                     {t('landing.nav.features') || 'Features'}
                   </a>
                 </li>
                 <li>
-                  <a href="/#pricing" className="hover:text-[#c9a44d] transition-colors">
+                  <a
+                    href="/#pricing"
+                    className="hover:text-[#c9a44d] transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
                     {t('landing.nav.pricing') || 'Pricing'}
                   </a>
                 </li>
@@ -324,9 +342,13 @@ const Index = () => {
                   </Link>
                 </li>
                 <li>
-                  <a href="/#contact" className="hover:text-[#c9a44d] transition-colors">
+                  <button
+                    type="button"
+                    className="hover:text-[#c9a44d] transition-colors cursor-pointer text-left text-sm bg-transparent border-0 p-0 font-inherit"
+                    onClick={() => setContactDialogOpen(true)}
+                  >
                     {t('landing.nav.contact') || 'Contact'}
-                  </a>
+                  </button>
                 </li>
                 <li>
                   <Link to="/privacy" className="hover:text-[#c9a44d] transition-colors">

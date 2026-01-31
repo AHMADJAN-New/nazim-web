@@ -1,4 +1,4 @@
-import { GraduationCap, Users, Target, Heart, Award, Globe, Languages, Rocket, LogIn, UserPlus } from 'lucide-react';
+import { Award, GraduationCap, Users, Target, Heart, Globe, Languages, Rocket, LogIn, UserPlus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -232,15 +232,6 @@ export default function AboutUs() {
                   <h4 className="font-semibold mb-1">{t('aboutUs.whatWeOffer.affordable.title') || 'Attendance Tracking'}</h4>
                   <p className="text-sm text-slate-600">
                     {t('aboutUs.whatWeOffer.affordable.content') || 'Real-time attendance tracking and reporting.'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Award className="h-5 w-5 text-[#c9a44d] mt-1 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold mb-1">Finance Management</h4>
-                  <p className="text-sm text-slate-600">
-                    Fee management, payments, and financial reporting.
                   </p>
                 </div>
               </div>

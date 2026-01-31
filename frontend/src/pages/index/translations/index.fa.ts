@@ -443,4 +443,26 @@ export const indexTranslations = {
       error: 'ارسال فورمه ناموفق بود. لطفاً دوباره تلاش کنید.',
     },
   },
+
+  // Footer & landing nav
+  footer: {
+    tagline: 'سیستم جامع مدیریت مکاتب اسلامی',
+    product: 'محصول',
+    company: 'شرکت',
+    legal: 'قانونی',
+    aboutUs: 'درباره ما',
+    privacyPolicy: 'سیاست حفظ حریم خصوصی',
+    termsOfService: 'شرایط خدمات',
+    copyright: 'تمامی حقوق محفوظ است.',
+    privacy: 'سیاست حفظ حریم خصوصی',
+    terms: 'شرایط خدمات',
+  },
+  landing: {
+    nav: {
+      features: 'امکانات',
+      pricing: 'قیمت',
+      reviews: 'نظرات',
+      contact: 'تماس',
+    },
+  },
 };

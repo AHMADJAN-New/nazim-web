@@ -442,4 +442,26 @@ export const indexTranslations = {
       error: 'Submission failed. Please check your connection and try again.',
     },
   },
+
+  // Footer & landing nav (used by Index, Terms, Privacy, About)
+  footer: {
+    tagline: 'Comprehensive Islamic School Management System',
+    product: 'Product',
+    company: 'Company',
+    legal: 'Legal',
+    aboutUs: 'About Us',
+    privacyPolicy: 'Privacy Policy',
+    termsOfService: 'Terms of Service',
+    copyright: 'All rights reserved.',
+    privacy: 'Privacy Policy',
+    terms: 'Terms of Service',
+  },
+  landing: {
+    nav: {
+      features: 'Features',
+      pricing: 'Pricing',
+      reviews: 'Reviews',
+      contact: 'Contact',
+    },
+  },
 };
