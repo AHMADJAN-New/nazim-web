@@ -13,12 +13,15 @@ import type { UserProfile, CreateUserData, UpdateUserData } from '@/types/domain
 // Re-export domain types for convenience
 export type { UserProfile, CreateUserData, UpdateUserData } from '@/types/domain/user';
 
-export const useUsers = (filters?: {
+export const useUsers = (
+  filters?: {
   role?: string;
   organization_id?: string | null;
   is_active?: boolean;
   search?: string;
-}) => {
+  },
+  options?: { enabled?: boolean }
+) => {
   const { profile: currentProfile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
@@ -54,7 +57,7 @@ export const useUsers = (filters?: {
       
       return mappedUsers;
     },
-    enabled: !!currentProfile && !orgsLoading,
+    enabled: !!currentProfile && !orgsLoading && (options?.enabled ?? true),
   });
 };
 

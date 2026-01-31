@@ -7062,6 +7062,179 @@ export const en = {
       },
       deleteTitle: 'Delete Message',
       deleteDescription: 'Are you sure you want to delete this message? This cannot be undone.'
+    },
+    users: {
+      title: 'Website Users',
+      description: 'Invite and manage accounts that can access only the website tools.',
+      helperTitle: 'Website-only access',
+      helperDescription: 'Users with website roles see only the Website Manager menu unless other permissions are granted.',
+      stats: {
+        total: 'Total users',
+        active: 'Active',
+        inactive: 'Inactive',
+        roles: 'Roles in use'
+      },
+      filters: {
+        searchPlaceholder: 'Search by name or email...',
+        role: 'Role',
+        status: 'Status',
+        allRoles: 'All roles',
+        allStatuses: 'All statuses'
+      },
+      table: {
+        name: 'Name',
+        email: 'Email',
+        role: 'Role',
+        status: 'Status',
+        actions: 'Actions'
+      },
+      empty: {
+        title: 'No website users yet',
+        description: 'Invite a website team member to get started.'
+      },
+      dialogs: {
+        createTitle: 'Invite website user',
+        createDescription: 'Create a new account with website-only access.',
+        editTitle: 'Edit website user',
+        editDescription: 'Update contact details and access status.',
+        deleteTitle: 'Delete website user',
+        deleteDescription: 'This removes the account and revokes website access.',
+        resetTitle: 'Reset password',
+        resetDescription: 'Set a new password for this user.'
+      },
+      form: {
+        fullName: 'Full name',
+        email: 'Email',
+        password: 'Temporary password',
+        role: 'Website role',
+        phone: 'Phone',
+        defaultSchool: 'Default school',
+        selectSchool: 'Select a school',
+        noDefaultSchool: 'No default school',
+        active: 'Active',
+        activeHint: 'Inactive users cannot sign in to manage the website.'
+      },
+      status: {
+        active: 'Active',
+        inactive: 'Inactive'
+      },
+      actions: {
+        invite: 'Invite user',
+        edit: 'Edit',
+        delete: 'Delete',
+        resetPassword: 'Reset password'
+      },
+      roles: {
+        website_admin: 'Website Admin',
+        website_editor: 'Website Editor',
+        website_media: 'Media Manager'
+      },
+      noPermissionTitle: 'Access denied',
+      noPermissionDescription: 'You do not have permission to manage users.',
+      roleLocked: 'Role changes are managed by administrators.'
+    },
+    seo: {
+      title: 'SEO Tools',
+      description: 'Track metadata coverage, missing SEO fields, and content health.',
+      tabs: {
+        overview: 'Overview',
+        content: 'Content health'
+      },
+      stats: {
+        coverage: 'SEO coverage',
+        coverageHint: 'Items with complete metadata',
+        needsAttention: 'Needs attention',
+        needsAttentionHint: 'Pages/posts missing SEO fields',
+        total: 'Total items',
+        totalHint: 'Pages and posts tracked'
+      },
+      checklist: {
+        title: 'SEO checklist',
+        description: 'Complete these essentials for stronger search visibility.',
+        metaTitles: 'Add unique SEO titles for every page and post.',
+        metaDescriptions: 'Write short descriptions that summarize each page.',
+        socialImages: 'Attach social images for share cards.',
+        cleanUrls: 'Keep slugs short, readable, and keyword-focused.'
+      },
+      filters: {
+        searchPlaceholder: 'Search pages and posts...',
+        type: 'Content type',
+        status: 'Status',
+        allTypes: 'All types',
+        pages: 'Pages',
+        posts: 'Posts',
+        allStatuses: 'All statuses',
+        needsAttention: 'Needs attention',
+        complete: 'Complete'
+      },
+      table: {
+        title: 'Title',
+        type: 'Type',
+        missing: 'Missing',
+        status: 'Status',
+        publishedAt: 'Published At'
+      },
+      empty: 'No SEO issues found for the selected filters.',
+      missing: {
+        title: 'SEO title',
+        description: 'SEO description',
+        image: 'SEO image'
+      },
+      complete: 'Complete',
+      types: {
+        page: 'Page',
+        post: 'Post'
+      },
+      actions: {
+        openManager: 'Open manager'
+      }
+    },
+    audit: {
+      title: 'Audit Logs',
+      description: 'See who created or edited website content.',
+      searchPlaceholder: 'Search by title or user...',
+      noResults: 'No audit entries found.',
+      systemUser: 'System',
+      untitled: 'Untitled',
+      export: 'Export CSV',
+      refresh: 'Refresh',
+      summary: {
+        total: 'Total activity',
+        created: 'Created',
+        updated: 'Updated',
+        uniqueUsers: 'Active editors'
+      },
+      filters: {
+        action: 'Action',
+        type: 'Content type'
+      },
+      actions: {
+        created: 'Created',
+        updated: 'Updated'
+      },
+      columns: {
+        activity: 'Activity',
+        action: 'Action',
+        user: 'User',
+        occurredAt: 'Date',
+        status: 'Status'
+      },
+      types: {
+        page: 'Page',
+        post: 'Post',
+        announcement: 'Announcement',
+        event: 'Event',
+        media: 'Media',
+        mediaCategory: 'Media Category',
+        menuLink: 'Menu Link',
+        domain: 'Domain',
+        fatwa: 'Fatwa',
+        publicBook: 'Library Book',
+        scholar: 'Scholar',
+        course: 'Course',
+        graduate: 'Graduate',
+        donation: 'Donation'
+      }
     }
   },
   websiteManager: websiteAdminEn.websiteManager,

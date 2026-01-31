@@ -511,6 +511,7 @@ class PublicWebsiteController extends Controller
     public function contact(Request $request)
     {
         $schoolId = $request->attributes->get('school_id');
+        $organizationId = $request->attributes->get('organization_id');
 
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
@@ -522,13 +523,13 @@ class PublicWebsiteController extends Controller
         ]);
 
         $inbox = new WebsiteInbox();
+        $inbox->organization_id = $organizationId;
         $inbox->school_id = $schoolId;
         $inbox->name = $validated['first_name'] . ' ' . $validated['last_name'];
         $inbox->email = $validated['email'];
         $inbox->phone = $validated['phone'];
         $inbox->subject = $validated['subject'];
         $inbox->message = $validated['message'];
-        $inbox->type = 'contact';
         $inbox->status = 'new';
         $inbox->save();
 

@@ -99,8 +99,8 @@ export function PublicFooter({ schoolName: propSchoolName, contact }: PublicFoot
                 <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
                     <p>&copy; {currentYear} {schoolName}. All rights reserved.</p>
                     <div className="flex gap-6">
-                        <Link to="#" className="hover:text-emerald-400 transition-colors">{t('websitePublic.privacyPolicy')}</Link>
-                        <Link to="#" className="hover:text-emerald-400 transition-colors">{t('websitePublic.termsOfService')}</Link>
+                        <Link to="/public-site/privacy" className="hover:text-emerald-400 transition-colors">{t('websitePublic.privacyPolicy')}</Link>
+                        <Link to="/public-site/terms" className="hover:text-emerald-400 transition-colors">{t('websitePublic.termsOfService')}</Link>
                     </div>
                 </div>
             </div>

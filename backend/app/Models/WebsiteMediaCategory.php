@@ -25,6 +25,8 @@ class WebsiteMediaCategory extends Model
         'cover_image_path',
         'sort_order',
         'is_active',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

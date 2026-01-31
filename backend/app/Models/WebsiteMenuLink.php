@@ -26,6 +26,8 @@ class WebsiteMenuLink extends Model
         'url',
         'sort_order',
         'is_visible',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

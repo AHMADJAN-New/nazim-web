@@ -13,6 +13,10 @@ import { Switch } from '@/components/ui/switch';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePagination } from '@/hooks/usePagination';
+import { PAGE_SIZE_OPTIONS } from '@/types/pagination';
 import {
   Dialog,
   DialogContent,
@@ -31,13 +35,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useLanguage } from '@/hooks/useLanguage';
 import {
   useWebsiteFatwas,
@@ -91,10 +88,16 @@ type CategoryFormData = z.infer<typeof categorySchema>;
 type QuestionUpdateFormData = z.infer<typeof questionUpdateSchema>;
 
 export default function FatwasManagementPage() {
-  const { t } = useLanguage();
-  const { data: fatwas = [], isLoading: fatwasLoading } = useWebsiteFatwas();
-  const { data: categories = [], isLoading: categoriesLoading } = useWebsiteFatwaCategories();
-  const { data: questions = [], isLoading: questionsLoading } = useWebsiteFatwaQuestions();
+  const { t, isRTL } = useLanguage();
+  const { page: fatwasPage, pageSize: fatwasPageSize, setPage: setFatwasPage, setPageSize: setFatwasPageSize } = usePagination({ initialPageSize: 25 });
+  const { page: questionsPage, pageSize: questionsPageSize, setPage: setQuestionsPage, setPageSize: setQuestionsPageSize } = usePagination({ initialPageSize: 25 });
+  const { data: fatwasData, isLoading: fatwasLoading } = useWebsiteFatwas(true);
+  const fatwas = fatwasData?.data || [];
+  const fatwasPagination = fatwasData?.pagination;
+  const { data: categories = [], isLoading: categoriesLoading } = useWebsiteFatwaCategories(false);
+  const { data: questionsData, isLoading: questionsLoading } = useWebsiteFatwaQuestions(true);
+  const questions = questionsData?.data || [];
+  const questionsPagination = questionsData?.pagination;
   const createFatwa = useCreateWebsiteFatwa();
   const updateFatwa = useUpdateWebsiteFatwa();
   const deleteFatwa = useDeleteWebsiteFatwa();
@@ -456,6 +459,116 @@ export default function FatwasManagementPage() {
               </Table>
             </div>
           </div>
+
+          {/* Pagination for Fatwas */}
+          {fatwasPagination && fatwasPagination.last_page > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm whitespace-nowrap">{t('pagination.rowsPerPage') || 'Rows per page:'}</Label>
+                <Select
+                  value={fatwasPageSize.toString()}
+                  onValueChange={(value) => {
+                    setFatwasPageSize(Number(value));
+                    setFatwasPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fatwasPagination.total > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {t('pagination.showing') || 'Showing'} {fatwasPagination.from ?? 0} {t('pagination.to') || 'to'} {fatwasPagination.to ?? 0} {t('pagination.of') || 'of'} {fatwasPagination.total} {t('pagination.entries') || 'entries'}
+                  </span>
+                )}
+              </div>
+              <div className={isRTL ? 'dir-rtl' : 'dir-ltr'}>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setFatwasPage(Math.max(1, fatwasPage - 1))}
+                        className={fatwasPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {(() => {
+                      const pages: (number | 'ellipsis')[] = [];
+                      const maxVisible = 7;
+                      const totalPages = fatwasPagination.last_page;
+
+                      if (totalPages <= maxVisible) {
+                        for (let i = 1; i <= totalPages; i++) {
+                          pages.push(i);
+                        }
+                      } else {
+                        pages.push(1);
+                        let start = Math.max(2, fatwasPage - 1);
+                        let end = Math.min(totalPages - 1, fatwasPage + 1);
+
+                        if (fatwasPage <= 3) {
+                          start = 2;
+                          end = 4;
+                        }
+
+                        if (fatwasPage >= totalPages - 2) {
+                          start = totalPages - 3;
+                          end = totalPages - 1;
+                        }
+
+                        if (start > 2) {
+                          pages.push('ellipsis');
+                        }
+
+                        for (let i = start; i <= end; i++) {
+                          pages.push(i);
+                        }
+
+                        if (end < totalPages - 1) {
+                          pages.push('ellipsis');
+                        }
+
+                        pages.push(totalPages);
+                      }
+
+                      return pages.map((p, idx) => {
+                        if (p === 'ellipsis') {
+                          return (
+                            <PaginationItem key={`ellipsis-${idx}`}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          );
+                        }
+                        return (
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              isActive={fatwasPage === p}
+                              onClick={() => setFatwasPage(p)}
+                              className="cursor-pointer"
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      });
+                    })()}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setFatwasPage(Math.min(fatwasPagination.last_page, fatwasPage + 1))}
+                        className={fatwasPage >= fatwasPagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="categories" className="space-y-4">
@@ -627,6 +740,116 @@ export default function FatwasManagementPage() {
               </Table>
             </div>
           </div>
+
+          {/* Pagination for Questions */}
+          {questionsPagination && questionsPagination.last_page > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm whitespace-nowrap">{t('pagination.rowsPerPage') || 'Rows per page:'}</Label>
+                <Select
+                  value={questionsPageSize.toString()}
+                  onValueChange={(value) => {
+                    setQuestionsPageSize(Number(value));
+                    setQuestionsPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {questionsPagination.total > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {t('pagination.showing') || 'Showing'} {questionsPagination.from ?? 0} {t('pagination.to') || 'to'} {questionsPagination.to ?? 0} {t('pagination.of') || 'of'} {questionsPagination.total} {t('pagination.entries') || 'entries'}
+                  </span>
+                )}
+              </div>
+              <div className={isRTL ? 'dir-rtl' : 'dir-ltr'}>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setQuestionsPage(Math.max(1, questionsPage - 1))}
+                        className={questionsPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {(() => {
+                      const pages: (number | 'ellipsis')[] = [];
+                      const maxVisible = 7;
+                      const totalPages = questionsPagination.last_page;
+
+                      if (totalPages <= maxVisible) {
+                        for (let i = 1; i <= totalPages; i++) {
+                          pages.push(i);
+                        }
+                      } else {
+                        pages.push(1);
+                        let start = Math.max(2, questionsPage - 1);
+                        let end = Math.min(totalPages - 1, questionsPage + 1);
+
+                        if (questionsPage <= 3) {
+                          start = 2;
+                          end = 4;
+                        }
+
+                        if (questionsPage >= totalPages - 2) {
+                          start = totalPages - 3;
+                          end = totalPages - 1;
+                        }
+
+                        if (start > 2) {
+                          pages.push('ellipsis');
+                        }
+
+                        for (let i = start; i <= end; i++) {
+                          pages.push(i);
+                        }
+
+                        if (end < totalPages - 1) {
+                          pages.push('ellipsis');
+                        }
+
+                        pages.push(totalPages);
+                      }
+
+                      return pages.map((p, idx) => {
+                        if (p === 'ellipsis') {
+                          return (
+                            <PaginationItem key={`ellipsis-${idx}`}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          );
+                        }
+                        return (
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              isActive={questionsPage === p}
+                              onClick={() => setQuestionsPage(p)}
+                              className="cursor-pointer"
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      });
+                    })()}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setQuestionsPage(Math.min(questionsPagination.last_page, questionsPage + 1))}
+                        className={questionsPage >= questionsPagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 

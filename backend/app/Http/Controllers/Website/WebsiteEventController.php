@@ -55,6 +55,8 @@ class WebsiteEventController extends Controller
         $event = WebsiteEvent::create(array_merge($data, [
             'organization_id' => $profile->organization_id,
             'school_id' => $schoolId,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
         ]));
 
         $this->clearPublicCaches($profile->organization_id, $schoolId);
@@ -89,6 +91,7 @@ class WebsiteEventController extends Controller
         ]);
 
         $event->fill($data);
+        $event->updated_by = $user->id;
         $event->save();
 
         $this->clearPublicCaches($profile->organization_id, $schoolId);

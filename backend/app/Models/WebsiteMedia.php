@@ -28,6 +28,8 @@ class WebsiteMedia extends Model
         'alt_text',
         'metadata',
         'created_at',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

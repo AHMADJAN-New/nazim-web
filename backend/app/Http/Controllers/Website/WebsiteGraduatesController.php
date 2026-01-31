@@ -23,6 +23,15 @@ class WebsiteGraduatesController extends Controller
 
         $schoolId = $this->getCurrentSchoolId($request);
 
+        $page = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('per_page', 25);
+        if ($perPage < 1) {
+            $perPage = 1;
+        }
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
+
         // 1. Fetch manual graduates (CMS)
         $manualGraduates = WebsiteGraduate::where('organization_id', $profile->organization_id)
             ->where('school_id', $schoolId)
@@ -86,7 +95,21 @@ class WebsiteGraduatesController extends Controller
             ])
             ->values();
 
-        return response()->json($allGraduates);
+        // 4. Apply pagination
+        $total = $allGraduates->count();
+        $lastPage = ceil($total / $perPage);
+        $offset = ($page - 1) * $perPage;
+        $paginatedGraduates = $allGraduates->slice($offset, $perPage)->values();
+
+        return response()->json([
+            'data' => $paginatedGraduates,
+            'current_page' => $page,
+            'from' => $offset + 1,
+            'last_page' => (int) $lastPage,
+            'per_page' => $perPage,
+            'to' => $offset + $paginatedGraduates->count(),
+            'total' => $total,
+        ]);
     }
 
     public function store(Request $request)

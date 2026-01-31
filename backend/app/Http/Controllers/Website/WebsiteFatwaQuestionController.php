@@ -20,10 +20,19 @@ class WebsiteFatwaQuestionController extends Controller
 
         $schoolId = $this->getCurrentSchoolId($request);
 
+        $page = (int) $request->query('page', 1);
+        $perPage = (int) $request->query('per_page', 25);
+        if ($perPage < 1) {
+            $perPage = 1;
+        }
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
+
         $questions = WebsiteFatwaQuestion::where('organization_id', $profile->organization_id)
             ->where('school_id', $schoolId)
             ->orderBy('submitted_at', 'desc')
-            ->get();
+            ->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json($questions);
     }

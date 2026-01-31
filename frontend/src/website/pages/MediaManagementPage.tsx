@@ -10,6 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePagination } from '@/hooks/usePagination';
+import { PAGE_SIZE_OPTIONS } from '@/types/pagination';
 import {
   Dialog,
   DialogContent,
@@ -28,13 +32,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useLanguage } from '@/hooks/useLanguage';
 import {
   useWebsiteMedia,
@@ -59,9 +56,13 @@ const mediaSchema = z.object({
 type MediaFormData = z.infer<typeof mediaSchema>;
 
 export default function MediaManagementPage() {
-  const { t } = useLanguage();
-  const { data: media = [], isLoading } = useWebsiteMedia();
-  const { data: categories = [] } = useWebsiteMediaCategories();
+  const { t, isRTL } = useLanguage();
+  const { page, pageSize, setPage, setPageSize } = usePagination({ initialPageSize: 25 });
+  const { data: mediaData, isLoading } = useWebsiteMedia(true);
+  const media = mediaData?.data || [];
+  const pagination = mediaData?.pagination;
+  const { data: categoriesData } = useWebsiteMediaCategories(false);
+  const categories = categoriesData?.data || [];
   const createMedia = useCreateWebsiteMedia();
   const updateMedia = useUpdateWebsiteMedia();
   const deleteMedia = useDeleteWebsiteMedia();
@@ -362,6 +363,116 @@ export default function MediaManagementPage() {
           </Table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {pagination && pagination.last_page > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm whitespace-nowrap">{t('pagination.rowsPerPage') || 'Rows per page:'}</Label>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => {
+                setPageSize(Number(value));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {pagination.total > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {t('pagination.showing') || 'Showing'} {pagination.from ?? 0} {t('pagination.to') || 'to'} {pagination.to ?? 0} {t('pagination.of') || 'of'} {pagination.total} {t('pagination.entries') || 'entries'}
+              </span>
+            )}
+          </div>
+          <div className={isRTL ? 'dir-rtl' : 'dir-ltr'}>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    className={page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                {(() => {
+                  const pages: (number | 'ellipsis')[] = [];
+                  const maxVisible = 7;
+                  const totalPages = pagination.last_page;
+
+                  if (totalPages <= maxVisible) {
+                    for (let i = 1; i <= totalPages; i++) {
+                      pages.push(i);
+                    }
+                  } else {
+                    pages.push(1);
+                    let start = Math.max(2, page - 1);
+                    let end = Math.min(totalPages - 1, page + 1);
+
+                    if (page <= 3) {
+                      start = 2;
+                      end = 4;
+                    }
+
+                    if (page >= totalPages - 2) {
+                      start = totalPages - 3;
+                      end = totalPages - 1;
+                    }
+
+                    if (start > 2) {
+                      pages.push('ellipsis');
+                    }
+
+                    for (let i = start; i <= end; i++) {
+                      pages.push(i);
+                    }
+
+                    if (end < totalPages - 1) {
+                      pages.push('ellipsis');
+                    }
+
+                    pages.push(totalPages);
+                  }
+
+                  return pages.map((p, idx) => {
+                    if (p === 'ellipsis') {
+                      return (
+                        <PaginationItem key={`ellipsis-${idx}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          isActive={page === p}
+                          onClick={() => setPage(p)}
+                          className="cursor-pointer"
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  });
+                })()}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setPage(Math.min(pagination.last_page, page + 1))}
+                    className={page >= pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </div>
+      )}
 
       {/* Create Dialog */}
       <Dialog

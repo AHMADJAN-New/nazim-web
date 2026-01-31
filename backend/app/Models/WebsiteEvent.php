@@ -28,6 +28,8 @@ class WebsiteEvent extends Model
         'is_public',
         'summary',
         'content_json',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

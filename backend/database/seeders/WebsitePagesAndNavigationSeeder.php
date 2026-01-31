@@ -315,6 +315,28 @@ class WebsitePagesAndNavigationSeeder extends Seeder
                 'seo_description' => $translations['results']['seo_description'],
                 'status' => 'published',
             ],
+            [
+                'slug' => 'privacy',
+                'title' => $translations['privacy']['title'],
+                'content_json' => $this->createTipTapContent([
+                    ['type' => 'heading', 'level' => 1, 'text' => $translations['privacy']['heading']],
+                    ['type' => 'paragraph', 'text' => $translations['privacy']['description']],
+                ]),
+                'seo_title' => $translations['privacy']['seo_title'],
+                'seo_description' => $translations['privacy']['seo_description'],
+                'status' => 'published',
+            ],
+            [
+                'slug' => 'terms',
+                'title' => $translations['terms']['title'],
+                'content_json' => $this->createTipTapContent([
+                    ['type' => 'heading', 'level' => 1, 'text' => $translations['terms']['heading']],
+                    ['type' => 'paragraph', 'text' => $translations['terms']['description']],
+                ]),
+                'seo_title' => $translations['terms']['seo_title'],
+                'seo_description' => $translations['terms']['seo_description'],
+                'status' => 'published',
+            ],
         ];
     }
 
@@ -572,6 +594,20 @@ class WebsitePagesAndNavigationSeeder extends Seeder
                     'seo_title' => 'Exam Results - View Your Results',
                     'seo_description' => 'View and search for exam results',
                 ],
+                'privacy' => [
+                    'title' => 'Privacy Policy',
+                    'heading' => 'Privacy Policy',
+                    'description' => 'We are committed to protecting your privacy. This policy explains how we collect, use, and safeguard your personal information when you use our website and services.',
+                    'seo_title' => 'Privacy Policy - Data Protection',
+                    'seo_description' => 'Learn how we protect your privacy and personal information',
+                ],
+                'terms' => [
+                    'title' => 'Terms of Service',
+                    'heading' => 'Terms of Service',
+                    'description' => 'Please read these terms of service carefully before using our website. By accessing or using our services, you agree to be bound by these terms and conditions.',
+                    'seo_title' => 'Terms of Service - Usage Terms',
+                    'seo_description' => 'Read our terms of service and usage conditions',
+                ],
             ],
             'ps' => [
                 'home' => [
@@ -657,6 +693,20 @@ class WebsitePagesAndNavigationSeeder extends Seeder
                     'description' => 'د ازموینې پایلې وګورئ او پلټل. د خپلو ازموینې تفصیلات وړاندې کړئ ترڅو خپلو پایلو ته لاسرسی ومومئ.',
                     'seo_title' => 'د ازموینې پایلې - خپلې پایلې وګورئ',
                     'seo_description' => 'د ازموینې پایلې وګورئ او پلټل',
+                ],
+                'privacy' => [
+                    'title' => 'د محرمیت پالیسي',
+                    'heading' => 'د محرمیت پالیسي',
+                    'description' => 'موږ د ستاسو د محرمیت د ساتنې لپاره ژمن یو. دا پالیسي تشریح کوي چې موږ د خپل ویب پاڼې او خدماتو کارولو پر مهال ستاسو شخصي معلومات څنګه راټولوو، کاروو او ساتو.',
+                    'seo_title' => 'د محرمیت پالیسي - د معلوماتو ساتنه',
+                    'seo_description' => 'زده کړئ چې موږ ستاسو محرمیت او شخصي معلومات څنګه ساتو',
+                ],
+                'terms' => [
+                    'title' => 'د کارونې شرطونه',
+                    'heading' => 'د کارونې شرطونه',
+                    'description' => 'مهرباني وکړئ د خپل ویب پاڼې کارولو دمخه د کارونې دا شرطونه په دقت سره ولوستئ. زموږ خدماتو ته د لاسرسي یا کارونې له لارې، تاسو د دې شرطونو او شرایطو سره موافقه کوئ.',
+                    'seo_title' => 'د کارونې شرطونه - د کارونې شرایط',
+                    'seo_description' => 'زموږ د کارونې شرطونه او شرایط ولوستئ',
                 ],
             ],
         ];

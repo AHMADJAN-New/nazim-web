@@ -52,6 +52,8 @@ class WebsiteDomainController extends Controller
         $domain = WebsiteDomain::create(array_merge($data, [
             'organization_id' => $profile->organization_id,
             'school_id' => $schoolId,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
         ]));
 
         $this->clearPublicCaches($profile->organization_id, $schoolId);
@@ -83,6 +85,7 @@ class WebsiteDomainController extends Controller
         ]);
 
         $domain->fill($data);
+        $domain->updated_by = $user->id;
         $domain->save();
 
         $this->clearPublicCaches($profile->organization_id, $schoolId);

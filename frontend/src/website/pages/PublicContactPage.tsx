@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PublicPageHeader } from '@/website/components/PublicPageHeader';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 export default function PublicContactPage() {
     const { t } = useLanguage();

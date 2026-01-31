@@ -259,14 +259,14 @@ export default function DomainsManagementPage() {
             <div className="space-y-2">
               <Label htmlFor="verificationStatus">{t('websiteAdmin.domains.fields.verificationStatus')}</Label>
               <Select
-                value={form.watch('verificationStatus') || ''}
-                onValueChange={(value) => form.setValue('verificationStatus', value || null)}
+                value={form.watch('verificationStatus') || 'none'}
+                onValueChange={(value) => form.setValue('verificationStatus', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('websiteAdmin.domains.placeholders.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('websiteAdmin.common.notSet')}</SelectItem>
+                  <SelectItem value="none">{t('websiteAdmin.common.notSet')}</SelectItem>
                   <SelectItem value="verified">{t('websiteAdmin.statuses.verified')}</SelectItem>
                   <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
                   <SelectItem value="unverified">{t('websiteAdmin.statuses.unverified')}</SelectItem>
@@ -276,14 +276,14 @@ export default function DomainsManagementPage() {
             <div className="space-y-2">
               <Label htmlFor="sslStatus">{t('websiteAdmin.domains.fields.sslStatus')}</Label>
               <Select
-                value={form.watch('sslStatus') || ''}
-                onValueChange={(value) => form.setValue('sslStatus', value || null)}
+                value={form.watch('sslStatus') || 'none'}
+                onValueChange={(value) => form.setValue('sslStatus', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('websiteAdmin.domains.placeholders.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('websiteAdmin.common.notSet')}</SelectItem>
+                  <SelectItem value="none">{t('websiteAdmin.common.notSet')}</SelectItem>
                   <SelectItem value="active">{t('websiteAdmin.statuses.active')}</SelectItem>
                   <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
                   <SelectItem value="expired">{t('websiteAdmin.statuses.expired')}</SelectItem>
@@ -328,14 +328,14 @@ export default function DomainsManagementPage() {
             <div className="space-y-2">
               <Label htmlFor="edit-verificationStatus">{t('websiteAdmin.domains.fields.verificationStatus')}</Label>
               <Select
-                value={form.watch('verificationStatus') || ''}
-                onValueChange={(value) => form.setValue('verificationStatus', value || null)}
+                value={form.watch('verificationStatus') || 'none'}
+                onValueChange={(value) => form.setValue('verificationStatus', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('websiteAdmin.domains.placeholders.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('websiteAdmin.common.notSet')}</SelectItem>
+                  <SelectItem value="none">{t('websiteAdmin.common.notSet')}</SelectItem>
                   <SelectItem value="verified">{t('websiteAdmin.statuses.verified')}</SelectItem>
                   <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
                   <SelectItem value="unverified">{t('websiteAdmin.statuses.unverified')}</SelectItem>
@@ -345,14 +345,14 @@ export default function DomainsManagementPage() {
             <div className="space-y-2">
               <Label htmlFor="edit-sslStatus">{t('websiteAdmin.domains.fields.sslStatus')}</Label>
               <Select
-                value={form.watch('sslStatus') || ''}
-                onValueChange={(value) => form.setValue('sslStatus', value || null)}
+                value={form.watch('sslStatus') || 'none'}
+                onValueChange={(value) => form.setValue('sslStatus', value === 'none' ? null : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('websiteAdmin.domains.placeholders.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('websiteAdmin.common.notSet')}</SelectItem>
+                  <SelectItem value="none">{t('websiteAdmin.common.notSet')}</SelectItem>
                   <SelectItem value="active">{t('websiteAdmin.statuses.active')}</SelectItem>
                   <SelectItem value="pending">{t('websiteAdmin.statuses.pending')}</SelectItem>
                   <SelectItem value="expired">{t('websiteAdmin.statuses.expired')}</SelectItem>

@@ -219,6 +219,8 @@ export interface NavigationItem {
   iconColor?: string;
 }
 
+type NavigationItemWithCount = NavigationItem & { visibleChildrenCount: number };
+
 interface NavigationContext {
   currentModule: string;
   recentTasks: Array<{
@@ -257,10 +259,21 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const role = roleFromAuth || roleFromHook;
   const { data: currentOrg } = useCurrentOrganization();
   const { data: permissions, isLoading: permissionsLoading } = useUserPermissions();
+  const hasWebsiteAccess = useMemo(() => {
+    if (!permissions || permissions.length === 0) return false;
+    return permissions.some((permission) => permission.startsWith('website_'));
+  }, [permissions]);
+  const websiteOnlyUser = useMemo(() => {
+    if (!permissions || permissions.length === 0) return false;
+    const hasWebsitePermission = permissions.some((permission) => permission.startsWith('website_'));
+    if (!hasWebsitePermission) return false;
+    return permissions.every((permission) => permission.startsWith('website_'));
+  }, [permissions]);
   // CRITICAL: Use the lite gate status hook (no permission required) for access gating
   const { data: gateStatus, isLoading: gateStatusLoading } = useSubscriptionGateStatus();
   const location = useLocation();
   const flyoutCloseTimerRef = useRef<number | null>(null);
+  const websiteSidebarAutoOpenRef = useRef(false);
   const [openFlyoutKey, setOpenFlyoutKey] = useState<string | null>(null);
 
   // CRITICAL: Check if subscription is blocked (expired, suspended, trial ended, etc.)
@@ -277,6 +290,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasOrganizationsPermission = useHasPermissionAndFeature('organizations.read');
   const hasProfilesPermission = useHasPermissionAndFeature('profiles.read');
   const hasUsersPermission = useHasPermissionAndFeature('users.read');
+  const hasWebsiteSettingsPermission = useHasPermissionAndFeature('website_settings.read');
+  const hasWebsitePagesPermission = useHasPermissionAndFeature('website_pages.read');
+  const hasWebsitePostsPermission = useHasPermissionAndFeature('website_posts.read');
+  const hasWebsiteEventsPermission = useHasPermissionAndFeature('website_events.read');
+  const hasWebsiteMediaPermission = useHasPermissionAndFeature('website_media.read');
+  const hasWebsiteMenusPermission = useHasPermissionAndFeature('website_menus.read');
   const hasAuthMonitoringPermission = useHasPermissionAndFeature('auth_monitoring.read');
   const hasSecurityMonitoringPermission = useHasPermissionAndFeature('security_monitoring.read');
   const hasBrandingPermission = useHasPermissionAndFeature('school_branding.read');
@@ -378,7 +397,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasEventCheckinsCreatePermission = useHasPermissionAndFeature('event_checkins.create');
   const hasEventCheckinsReadPermission = useHasPermissionAndFeature('event_checkins.read');
   const hasEventUpdatePermission = useHasPermissionAndFeature('events.update');
-  const hasWebsiteSettingsPermission = useHasPermissionAndFeature('website_settings.read');
   // Show events navigation if user has ANY event-related permission
   const hasEventsNavigation = hasEventsPermission || hasEventTypesPermission || hasEventGuestsPermission || hasEventGuestsCreatePermission || hasEventCheckinsCreatePermission || hasEventCheckinsReadPermission || hasEventUpdatePermission;
 
@@ -616,6 +634,147 @@ export const SmartSidebar = memo(function SmartSidebar() {
         ...item,
         visibleChildrenCount: item.children?.length || 0
       }));
+    }
+
+    const websiteChildren: NavigationChild[] = [
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Website Manager",
+        titleKey: "websiteManager.settings",
+        url: "/website",
+        icon: Settings2,
+      }] : []),
+      ...(hasWebsiteMenusPermission ? [{
+        title: "Navigation",
+        titleKey: "websiteManager.navigation",
+        url: "/website/navigation",
+        icon: ListChecks,
+      }] : []),
+      ...(hasWebsitePagesPermission ? [{
+        title: "Pages",
+        titleKey: "websiteManager.pages",
+        url: "/website/pages",
+        icon: FileText,
+      }] : []),
+      ...(hasWebsitePostsPermission ? [{
+        title: "Announcements",
+        titleKey: "websiteManager.announcements",
+        url: "/website/announcements",
+        icon: PartyPopper,
+      }] : []),
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Courses & Programs",
+        titleKey: "websiteManager.courses",
+        url: "/website/courses",
+        icon: BookOpen,
+      }] : []),
+      ...(hasWebsitePostsPermission ? [{
+        title: "Articles & Blog",
+        titleKey: "websiteManager.articles",
+        url: "/website/articles",
+        icon: BookText,
+      }] : []),
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Library & Books",
+        titleKey: "websiteManager.library",
+        url: "/website/library",
+        icon: Library,
+      }] : []),
+      ...(hasWebsiteEventsPermission ? [{
+        title: "Events",
+        titleKey: "websiteManager.events",
+        url: "/website/events",
+        icon: CalendarClock,
+      }] : []),
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Online Admissions",
+        titleKey: "websiteManager.admissions",
+        url: "/website/admissions",
+        icon: ClipboardList,
+      }] : []),
+      ...(hasWebsiteMediaPermission ? [{
+        title: "Gallery Albums",
+        titleKey: "websiteManager.gallery",
+        url: "/website/gallery",
+        icon: GalleryVerticalEnd,
+      }] : []),
+      ...(hasWebsiteMediaPermission ? [{
+        title: "Media Library",
+        titleKey: "websiteManager.media",
+        url: "/website/media",
+        icon: FileImage,
+      }] : []),
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Scholars & Staff",
+        titleKey: "websiteManager.scholars",
+        url: "/website/scholars",
+        icon: UserRound,
+      }] : []),
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Graduates",
+        titleKey: "websiteManager.graduates",
+        url: "/website/graduates",
+        icon: GraduationCap,
+      }] : []),
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Donations",
+        titleKey: "websiteManager.donations",
+        url: "/website/donations",
+        icon: HeartHandshake,
+      }] : []),
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Questions & Fatwas",
+        titleKey: "websiteManager.fatwas",
+        url: "/website/fatwas",
+        icon: FileQuestion,
+      }] : []),
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Inbox",
+        titleKey: "websiteManager.inbox",
+        url: "/website/inbox",
+        icon: Inbox,
+      }] : []),
+      ...((hasWebsitePagesPermission || hasWebsitePostsPermission) ? [{
+        title: "SEO Tools",
+        titleKey: "websiteManager.seo",
+        url: "/website/seo",
+        icon: Search,
+      }] : []),
+      ...(hasUsersPermission ? [{
+        title: "Users & Roles",
+        titleKey: "websiteManager.users",
+        url: "/website/users",
+        icon: UsersRound,
+      }] : []),
+      ...(hasWebsiteSettingsPermission ? [{
+        title: "Audit Logs",
+        titleKey: "websiteManager.audit",
+        url: "/website/audit",
+        icon: ClipboardList,
+      }] : []),
+      ...(hasWebsiteAccess ? [{
+        title: "Open public site",
+        titleKey: "websiteManager.openPublicSite",
+        url: "/public-site",
+        icon: LucideIcons.ExternalLink,
+      }] : []),
+    ];
+
+    const websiteNavItem = hasWebsiteAccess && websiteChildren.length > 0 ? asNavItem({
+      titleKey: "websiteManager",
+      icon: LucideIcons.Globe,
+      badge: null,
+      priority: 10.2,
+      category: 'admin' as NavigationCategory,
+      iconColor: categoryColors.admin,
+      children: websiteChildren,
+    }) : null;
+
+    if (websiteOnlyUser) {
+      if (!websiteNavItem) return [];
+      return [{
+        ...websiteNavItem,
+        visibleChildrenCount: websiteNavItem.children?.length || 0
+      }];
     }
 
     const allItems: NavigationItem[] = [
@@ -1458,136 +1617,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       },
-      ...(hasWebsiteSettingsPermission ? [asNavItem({
-        titleKey: "websiteManager",
-        icon: LucideIcons.Globe,
-        badge: null,
-        priority: 10.2,
-        category: 'admin' as NavigationCategory,
-        iconColor: categoryColors.admin,
-        children: [
-          {
-            title: "Website Manager",
-            titleKey: "websiteManager.settings",
-            url: "/website",
-            icon: Settings2,
-          },
-          {
-            title: "Navigation",
-            titleKey: "websiteManager.navigation",
-            url: "/website/navigation",
-            icon: ListChecks,
-          },
-          {
-            title: "Pages",
-            titleKey: "websiteManager.pages",
-            url: "/website/pages",
-            icon: FileText,
-          },
-          {
-            title: "Announcements",
-            titleKey: "websiteManager.announcements",
-            url: "/website/announcements",
-            icon: PartyPopper,
-          },
-          {
-            title: "Courses & Programs",
-            titleKey: "websiteManager.courses",
-            url: "/website/courses",
-            icon: BookOpen,
-          },
-          {
-            title: "Articles & Blog",
-            titleKey: "websiteManager.articles",
-            url: "/website/articles",
-            icon: BookText,
-          },
-          {
-            title: "Library & Books",
-            titleKey: "websiteManager.library",
-            url: "/website/library",
-            icon: Library,
-          },
-          {
-            title: "Events",
-            titleKey: "websiteManager.events",
-            url: "/website/events",
-            icon: CalendarClock,
-          },
-          {
-            title: "Online Admissions",
-            titleKey: "websiteManager.admissions",
-            url: "/website/admissions",
-            icon: ClipboardList,
-          },
-          {
-            title: "Gallery Albums",
-            titleKey: "websiteManager.gallery",
-            url: "/website/gallery",
-            icon: GalleryVerticalEnd,
-          },
-          {
-            title: "Media Library",
-            titleKey: "websiteManager.media",
-            url: "/website/media",
-            icon: FileImage,
-          },
-          {
-            title: "Scholars & Staff",
-            titleKey: "websiteManager.scholars",
-            url: "/website/scholars",
-            icon: UserRound,
-          },
-          {
-            title: "Graduates",
-            titleKey: "websiteManager.graduates",
-            url: "/website/graduates",
-            icon: GraduationCap,
-          },
-          {
-            title: "Donations",
-            titleKey: "websiteManager.donations",
-            url: "/website/donations",
-            icon: HeartHandshake,
-          },
-          {
-            title: "Questions & Fatwas",
-            titleKey: "websiteManager.fatwas",
-            url: "/website/fatwas",
-            icon: FileQuestion,
-          },
-          {
-            title: "Inbox",
-            titleKey: "websiteManager.inbox",
-            url: "/website/inbox",
-            icon: Inbox,
-          },
-          {
-            title: "SEO Tools",
-            titleKey: "websiteManager.seo",
-            url: "/website/seo",
-            icon: Search,
-          },
-          {
-            title: "Users & Roles",
-            titleKey: "websiteManager.users",
-            url: "/website/users",
-            icon: UsersRound,
-          },
-          {
-            title: "Audit Logs",
-            titleKey: "websiteManager.audit",
-            url: "/website/audit",
-            icon: ClipboardList,
-          },
-          {
-            title: "Open public site",
-            titleKey: "websiteManager.openPublicSite",
-            url: "/public-site",
-            icon: LucideIcons.ExternalLink,
-          },
-        ],
-      })] : []),
+      ...(websiteNavItem ? [websiteNavItem] : []),
       ...(hasHelpCenterPermission ? [asNavItem({
         titleKey: "helpCenter",
         url: "/help-center",
@@ -1653,7 +1683,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
     ];
 
     // Filter children and calculate visible children count
-    const itemsWithFilteredChildren = allItems.map(item => {
+    const itemsWithFilteredChildren: NavigationItemWithCount[] = allItems.map(item => {
       if (!item.children) return { ...item, visibleChildrenCount: 0 };
 
       // Children are already filtered by permission checks above
@@ -1677,8 +1707,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       // For menus with children, only show if there are visible children
       if (item.children && item.children.length > 0) {
-        const visibleCount = (item as any).visibleChildrenCount || item.children.length;
-        return visibleCount > 0;
+        return item.visibleChildrenCount > 0;
       }
 
       // For menus without children, show based on parent permission
@@ -1733,7 +1762,25 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [subscriptionBlocked, isOnSubscriptionPage, hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasExamDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
+  }, [subscriptionBlocked, isOnSubscriptionPage, hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasExamDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission, hasWebsiteSettingsPermission, hasWebsitePagesPermission, hasWebsitePostsPermission, hasWebsiteEventsPermission, hasWebsiteMediaPermission, hasWebsiteMenusPermission, hasWebsiteAccess, websiteOnlyUser]);
+
+  const websiteNavItem = useMemo(() => {
+    return allNavigationItems.find((item) => item.titleKey === 'websiteManager') ?? null;
+  }, [allNavigationItems]);
+
+  useEffect(() => {
+    if (!websiteOnlyUser || !websiteNavItem) {
+      websiteSidebarAutoOpenRef.current = false;
+      return;
+    }
+
+    if (websiteSidebarAutoOpenRef.current) return;
+
+    setSecondarySidebarItem(websiteNavItem);
+    setSecondarySidebarOpen(true);
+    setOpen(false);
+    websiteSidebarAutoOpenRef.current = true;
+  }, [websiteOnlyUser, websiteNavItem, setOpen, setSecondarySidebarItem, setSecondarySidebarOpen]);
 
   // NOTE: allNavigationItems already handles subscription blocking via subscriptionBlocked check
   // No additional filtering needed here - the logic is centralized in allNavigationItems useMemo

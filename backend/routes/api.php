@@ -63,6 +63,7 @@ use App\Http\Controllers\Website\WebsitePageController;
 use App\Http\Controllers\Website\WebsitePostController;
 use App\Http\Controllers\Website\WebsiteEventController;
 use App\Http\Controllers\Website\WebsiteAnnouncementController;
+use App\Http\Controllers\Website\WebsiteAuditLogController;
 use App\Http\Controllers\Website\WebsiteMediaController;
 use App\Http\Controllers\Website\WebsiteMediaCategoryController;
 use App\Http\Controllers\Website\WebsiteMenuController;
@@ -1365,6 +1366,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/settings', [WebsiteSettingsController::class, 'show']);
             Route::put('/settings', [WebsiteSettingsController::class, 'update']);
             Route::post('/forms/upload', [WebsiteSettingsController::class, 'uploadForm']);
+
+            Route::get('/audit-logs', [WebsiteAuditLogController::class, 'index']);
 
             Route::get('/admissions/fields', [WebsiteOnlineAdmissionFieldController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {

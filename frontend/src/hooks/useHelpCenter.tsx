@@ -47,9 +47,10 @@ export type { HelpCenterCategory, HelpCenterArticle } from '@/types/api/helpCent
 // Hook to fetch all help center categories
 export const useHelpCenterCategories = (params?: { is_active?: boolean; parent_id?: string | null }) => {
   const { user, profile } = useAuth();
+  const { language } = useLanguage();
 
   return useQuery<HelpCenterCategoryWithRecursive[]>({
-    queryKey: ['help-center-categories', profile?.organization_id, params?.is_active, params?.parent_id],
+    queryKey: ['help-center-categories', profile?.organization_id, language, params?.is_active, params?.parent_id],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 
@@ -66,9 +67,10 @@ export const useHelpCenterCategories = (params?: { is_active?: boolean; parent_i
 // Hook to fetch a single category
 export const useHelpCenterCategory = (id: string | null) => {
   const { user, profile } = useAuth();
+  const { language } = useLanguage();
 
   return useQuery<HelpCenterApi.HelpCenterCategory | null>({
-    queryKey: ['help-center-category', id, profile?.organization_id],
+    queryKey: ['help-center-category', id, profile?.organization_id, language],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id || !id) return null;
 
@@ -94,11 +96,13 @@ export const useHelpCenterArticles = (params?: {
   limit?: number;
 }) => {
   const { user, profile } = useAuth();
+  const { language } = useLanguage();
 
   return useQuery<HelpCenterApi.HelpCenterArticle[]>({
     queryKey: [
       'help-center-articles',
       profile?.organization_id,
+      language,
       params?.is_published,
       params?.category_id,
       params?.is_featured,
@@ -125,9 +129,10 @@ export const useHelpCenterArticles = (params?: {
 // Hook to fetch a single article
 export const useHelpCenterArticle = (id: string | null) => {
   const { user, profile } = useAuth();
+  const { language } = useLanguage();
 
   return useQuery<HelpCenterApi.HelpCenterArticle | null>({
-    queryKey: ['help-center-article', id, profile?.organization_id],
+    queryKey: ['help-center-article', id, profile?.organization_id, language],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id || !id) return null;
 
@@ -142,9 +147,10 @@ export const useHelpCenterArticle = (id: string | null) => {
 // Hook to fetch featured articles
 export const useFeaturedArticles = (limit?: number) => {
   const { user, profile } = useAuth();
+  const { language } = useLanguage();
 
   return useQuery<HelpCenterApi.HelpCenterArticle[]>({
-    queryKey: ['help-center-featured-articles', profile?.organization_id, limit],
+    queryKey: ['help-center-featured-articles', profile?.organization_id, language, limit],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 
@@ -160,9 +166,10 @@ export const useFeaturedArticles = (limit?: number) => {
 // Hook to fetch popular articles
 export const usePopularArticles = (limit?: number) => {
   const { user, profile } = useAuth();
+  const { language } = useLanguage();
 
   return useQuery<HelpCenterApi.HelpCenterArticle[]>({
-    queryKey: ['help-center-popular-articles', profile?.organization_id, limit],
+    queryKey: ['help-center-popular-articles', profile?.organization_id, language, limit],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 

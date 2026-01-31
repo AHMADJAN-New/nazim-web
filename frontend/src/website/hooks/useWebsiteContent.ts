@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient as api, websitePublicBooksApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import { useProfile } from '@/hooks/useProfiles';
+import { usePagination } from '@/hooks/usePagination';
+import type { PaginationMeta } from '@/types/pagination';
 
 // Types
 export interface WebsitePublicBook {
@@ -108,13 +110,44 @@ export interface WebsiteInboxStats {
 }
 
 // Public Books Hooks
-export const useWebsitePublicBooks = () => {
-    return useQuery<WebsitePublicBook[]>({
-        queryKey: ['website-public-books'],
+export const useWebsitePublicBooks = (usePaginated: boolean = true) => {
+    const { page, pageSize } = usePagination();
+
+    return useQuery<{ data: WebsitePublicBook[]; pagination: PaginationMeta | null }>({
+        queryKey: ['website-public-books', usePaginated ? page : null, usePaginated ? pageSize : null],
         queryFn: async () => {
-            const response = await api.get<WebsitePublicBook[]>('/website/public-books');
-            return response;
+            if (usePaginated) {
+                const response = await api.get<{
+                    data: WebsitePublicBook[];
+                    current_page: number;
+                    from: number;
+                    last_page: number;
+                    per_page: number;
+                    to: number;
+                    total: number;
+                }>('/website/public-books', { page, per_page: pageSize });
+                
+                if (response && typeof response === 'object' && 'data' in response && 'total' in response) {
+                    return {
+                        data: response.data || [],
+                        pagination: {
+                            current_page: response.current_page,
+                            per_page: response.per_page,
+                            total: response.total,
+                            last_page: response.last_page,
+                            from: response.from,
+                            to: response.to,
+                        },
+                    };
+                }
+                
+                return { data: response as WebsitePublicBook[], pagination: null };
+            } else {
+                const response = await api.get<WebsitePublicBook[]>('/website/public-books');
+                return { data: response, pagination: null };
+            }
         },
+        placeholderData: { data: [], pagination: null },
     });
 };
 
@@ -353,13 +386,44 @@ export const useDeleteWebsiteCourse = () => {
 };
 
 // Graduates Hooks
-export const useWebsiteGraduates = () => {
-    return useQuery<WebsiteGraduate[]>({
-        queryKey: ['website-graduates'],
+export const useWebsiteGraduates = (usePaginated: boolean = true) => {
+    const { page, pageSize } = usePagination();
+
+    return useQuery<{ data: WebsiteGraduate[]; pagination: PaginationMeta | null }>({
+        queryKey: ['website-graduates', usePaginated ? page : null, usePaginated ? pageSize : null],
         queryFn: async () => {
-            const response = await api.get<WebsiteGraduate[]>('/website/graduates');
-            return response;
+            if (usePaginated) {
+                const response = await api.get<{
+                    data: WebsiteGraduate[];
+                    current_page: number;
+                    from: number;
+                    last_page: number;
+                    per_page: number;
+                    to: number;
+                    total: number;
+                }>('/website/graduates', { page, per_page: pageSize });
+                
+                if (response && typeof response === 'object' && 'data' in response && 'total' in response) {
+                    return {
+                        data: response.data || [],
+                        pagination: {
+                            current_page: response.current_page,
+                            per_page: response.per_page,
+                            total: response.total,
+                            last_page: response.last_page,
+                            from: response.from,
+                            to: response.to,
+                        },
+                    };
+                }
+                
+                return { data: response as WebsiteGraduate[], pagination: null };
+            } else {
+                const response = await api.get<WebsiteGraduate[]>('/website/graduates');
+                return { data: response, pagination: null };
+            }
         },
+        placeholderData: { data: [], pagination: null },
     });
 };
 

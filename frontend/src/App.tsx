@@ -245,7 +245,10 @@ import WebsiteGraduatesPage from "@/website/pages/WebsiteGraduatesPage";
 import WebsiteDonationsPage from "@/website/pages/WebsiteDonationsPage";
 import WebsiteInboxPage from "@/website/pages/WebsiteInboxPage";
 import WebsiteAdmissionsPage from "@/website/pages/WebsiteAdmissionsPage";
+import WebsiteUsersPage from "@/website/pages/WebsiteUsersPage";
 import PublicAdmissionsPage from "@/website/pages/PublicAdmissionsPage";
+import WebsiteAuditLogsPage from "@/website/pages/WebsiteAuditLogsPage";
+import WebsiteSeoPage from "@/website/pages/WebsiteSeoPage";
 
 // Centralized QueryClient – defaults (e.g. refetch on focus) live in @/lib/queryClient
 const queryClient = createQueryClient();
@@ -408,18 +411,6 @@ const websiteModulePlaceholders = [
     ],
   },
   {
-    path: "/website/users",
-    title: "Users & Roles",
-    description: "Invite website staff and manage roles.",
-    actionLabel: "Invite user",
-    features: [
-      "Role assignments",
-      "Access review",
-      "Activity summaries",
-      "Invitation tracking",
-    ],
-  },
-  {
     path: "/website/audit",
     title: "Audit Logs",
     description: "Track content changes and approvals.",
@@ -432,8 +423,6 @@ const websiteModulePlaceholders = [
     ],
   },
 ];
-
-
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -468,6 +457,8 @@ const App = () => (
 
                     {/* Standard Content Pages (Generic Dynamic) */}
                     <Route path="/public-site/about" element={<PublicDynamicPage />} />
+                    <Route path="/public-site/privacy" element={<PublicDynamicPage />} />
+                    <Route path="/public-site/terms" element={<PublicDynamicPage />} />
                     <Route path="/public-site/academics" element={<PublicDynamicPage />} />
                     <Route path="/public-site/admissions" element={<PublicAdmissionsPage />} />
 
@@ -854,24 +845,24 @@ const App = () => (
                     } />
                     {/* Phase 1: Pages with backend APIs */}
                     <Route path="/website/navigation" element={
-                      <PermissionRoute permission="website_settings.read">
+                      <PermissionRoute permission="website_menus.read">
                         <NavigationManagementPage />
                       </PermissionRoute>
                     } />
                     <Route path="/website/pages" element={
-                      <PermissionRoute permission="website_settings.read">
+                      <PermissionRoute permission="website_pages.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <PagesManagementPage />
                         </Suspense>
                       </PermissionRoute>
                     } />
                     <Route path="/website/articles" element={
-                      <PermissionRoute permission="website_settings.read">
+                      <PermissionRoute permission="website_posts.read">
                         <ArticlesManagementPage />
                       </PermissionRoute>
                     } />
                     <Route path="/website/events" element={
-                      <PermissionRoute permission="website_settings.read">
+                      <PermissionRoute permission="website_events.read">
                         <EventsManagementPage />
                       </PermissionRoute>
                     } />
@@ -886,17 +877,17 @@ const App = () => (
                       </PermissionRoute>
                     } />
                     <Route path="/website/media" element={
-                      <PermissionRoute permission="website_settings.read">
+                      <PermissionRoute permission="website_media.read">
                         <MediaManagementPage />
                       </PermissionRoute>
                     } />
                     <Route path="/website/gallery" element={
-                      <PermissionRoute permission="website_settings.read">
+                      <PermissionRoute permission="website_media.read">
                         <WebsiteGalleryPage />
                       </PermissionRoute>
                     } />
                     <Route path="/website/announcements" element={
-                      <PermissionRoute permission="website_settings.read">
+                      <PermissionRoute permission="website_posts.read">
                         <AnnouncementsManagementPage />
                       </PermissionRoute>
                     } />
@@ -930,18 +921,33 @@ const App = () => (
                         <WebsiteInboxPage />
                       </PermissionRoute>
                     } />
+                    <Route path="/website/users" element={
+                      <PermissionRoute permission="users.read">
+                        <WebsiteUsersPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/audit" element={
+                      <PermissionRoute permission="website_settings.read">
+                        <WebsiteAuditLogsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="/website/seo" element={
+                      <AnyPermissionRoute permissions={['website_pages.read', 'website_posts.read']}>
+                        <WebsiteSeoPage />
+                      </AnyPermissionRoute>
+                    } />
                     {/* Phase 2: Pages requiring backend work - still use placeholders */}
                     {websiteModulePlaceholders
                       .filter(module =>
                         !['/website/navigation', '/website/articles', '/website/events', '/website/admissions', '/website/fatwas', '/website/media', '/website/gallery', '/website/announcements',
-                          '/website/library', '/website/courses', '/website/scholars', '/website/graduates', '/website/donations', '/website/inbox'].includes(module.path)
+                          '/website/library', '/website/courses', '/website/scholars', '/website/graduates', '/website/donations', '/website/inbox', '/website/users', '/website/audit', '/website/seo'].includes(module.path)
                       )
                       .map((module) => (
                         <Route
                           key={module.path}
                           path={module.path}
                           element={
-                            <PermissionRoute permission="website_settings.read">
+                            <PermissionRoute permission={module.path === '/website/seo' ? 'website_domains.read' : 'website_settings.read'}>
                               <WebsiteModulePlaceholderPage
                                 title={module.title}
                                 description={module.description}

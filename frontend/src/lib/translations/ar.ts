@@ -7152,6 +7152,179 @@ export const ar: TranslationKeys = {
       },
       deleteTitle: 'Delete Message',
       deleteDescription: 'Are you sure you want to delete this message? This cannot be undone.'
+    },
+    users: {
+      title: 'مستخدمو الموقع',
+      description: 'دعوة وإدارة الحسابات التي تملك وصولاً إلى أدوات الموقع فقط.',
+      helperTitle: 'وصول الموقع فقط',
+      helperDescription: 'المستخدمون الذين لديهم أدوار الموقع يرون قائمة إدارة الموقع فقط ما لم يحصلوا على أذونات أخرى.',
+      stats: {
+        total: 'إجمالي المستخدمين',
+        active: 'نشط',
+        inactive: 'غير نشط',
+        roles: 'الأدوار المستخدمة'
+      },
+      filters: {
+        searchPlaceholder: 'ابحث بالاسم أو البريد الإلكتروني...',
+        role: 'الدور',
+        status: 'الحالة',
+        allRoles: 'كل الأدوار',
+        allStatuses: 'كل الحالات'
+      },
+      table: {
+        name: 'الاسم',
+        email: 'البريد الإلكتروني',
+        role: 'الدور',
+        status: 'الحالة',
+        actions: 'الإجراءات'
+      },
+      empty: {
+        title: 'لا يوجد مستخدمو موقع بعد',
+        description: 'ادعُ عضوًا من فريق الموقع للبدء.'
+      },
+      dialogs: {
+        createTitle: 'دعوة مستخدم موقع',
+        createDescription: 'أنشئ حسابًا جديدًا بصلاحيات الموقع فقط.',
+        editTitle: 'تعديل مستخدم موقع',
+        editDescription: 'تحديث بيانات الاتصال وحالة الوصول.',
+        deleteTitle: 'حذف مستخدم الموقع',
+        deleteDescription: 'سيؤدي هذا إلى حذف الحساب وإلغاء وصول الموقع.',
+        resetTitle: 'إعادة تعيين كلمة المرور',
+        resetDescription: 'عيّن كلمة مرور جديدة لهذا المستخدم.'
+      },
+      form: {
+        fullName: 'الاسم الكامل',
+        email: 'البريد الإلكتروني',
+        password: 'كلمة مرور مؤقتة',
+        role: 'دور الموقع',
+        phone: 'الهاتف',
+        defaultSchool: 'المدرسة الافتراضية',
+        selectSchool: 'اختر مدرسة',
+        noDefaultSchool: 'بدون مدرسة افتراضية',
+        active: 'نشط',
+        activeHint: 'المستخدمون غير النشطين لا يمكنهم تسجيل الدخول لإدارة الموقع.'
+      },
+      status: {
+        active: 'نشط',
+        inactive: 'غير نشط'
+      },
+      actions: {
+        invite: 'دعوة مستخدم',
+        edit: 'تعديل',
+        delete: 'حذف',
+        resetPassword: 'إعادة تعيين كلمة المرور'
+      },
+      roles: {
+        website_admin: 'مدير الموقع',
+        website_editor: 'محرر الموقع',
+        website_media: 'مسؤول الوسائط'
+      },
+      noPermissionTitle: 'تم رفض الوصول',
+      noPermissionDescription: 'ليس لديك إذن لإدارة المستخدمين.',
+      roleLocked: 'تغييرات الدور تتم بواسطة المسؤولين.'
+    },
+    seo: {
+      title: 'أدوات تحسين محركات البحث',
+      description: 'متابعة تغطية البيانات الوصفية وحقول SEO المفقودة وصحة المحتوى.',
+      tabs: {
+        overview: 'نظرة عامة',
+        content: 'صحة المحتوى'
+      },
+      stats: {
+        coverage: 'تغطية SEO',
+        coverageHint: 'العناصر ذات البيانات الوصفية المكتملة',
+        needsAttention: 'بحاجة إلى انتباه',
+        needsAttentionHint: 'صفحات/مقالات تفتقد حقول SEO',
+        total: 'إجمالي العناصر',
+        totalHint: 'الصفحات والمقالات المتابعة'
+      },
+      checklist: {
+        title: 'قائمة فحص SEO',
+        description: 'أكمل هذه الأساسيات لتحسين الظهور في البحث.',
+        metaTitles: 'أضف عناوين SEO فريدة لكل صفحة ومقال.',
+        metaDescriptions: 'اكتب وصفًا قصيرًا يلخص كل صفحة.',
+        socialImages: 'أرفق صورًا للمشاركة الاجتماعية.',
+        cleanUrls: 'اجعل الروابط قصيرة وواضحة وتركز على الكلمات المفتاحية.'
+      },
+      filters: {
+        searchPlaceholder: 'ابحث في الصفحات والمقالات...',
+        type: 'نوع المحتوى',
+        status: 'الحالة',
+        allTypes: 'كل الأنواع',
+        pages: 'الصفحات',
+        posts: 'المقالات',
+        allStatuses: 'كل الحالات',
+        needsAttention: 'بحاجة إلى انتباه',
+        complete: 'مكتمل'
+      },
+      table: {
+        title: 'العنوان',
+        type: 'النوع',
+        missing: 'النواقص',
+        status: 'الحالة',
+        publishedAt: 'تاريخ النشر'
+      },
+      empty: 'لا توجد مشاكل SEO مطابقة للفلاتر المختارة.',
+      missing: {
+        title: 'عنوان SEO',
+        description: 'وصف SEO',
+        image: 'صورة SEO'
+      },
+      complete: 'مكتمل',
+      types: {
+        page: 'صفحة',
+        post: 'مقال'
+      },
+      actions: {
+        openManager: 'فتح الإدارة'
+      }
+    },
+    audit: {
+      title: 'سجل التدقيق',
+      description: 'شاهد من قام بإنشاء أو تعديل محتوى الموقع.',
+      searchPlaceholder: 'البحث بالعنوان أو المستخدم...',
+      noResults: 'لم يتم العثور على إدخالات التدقيق.',
+      systemUser: 'النظام',
+      untitled: 'بدون عنوان',
+      export: 'تصدير CSV',
+      refresh: 'تحديث',
+      summary: {
+        total: 'إجمالي النشاط',
+        created: 'تم الإنشاء',
+        updated: 'تم التحديث',
+        uniqueUsers: 'المحررون النشطون'
+      },
+      filters: {
+        action: 'الإجراء',
+        type: 'نوع المحتوى'
+      },
+      actions: {
+        created: 'تم الإنشاء',
+        updated: 'تم التحديث'
+      },
+      columns: {
+        activity: 'النشاط',
+        action: 'الإجراء',
+        user: 'المستخدم',
+        occurredAt: 'التاريخ',
+        status: 'الحالة'
+      },
+      types: {
+        page: 'صفحة',
+        post: 'منشور',
+        announcement: 'إعلان',
+        event: 'حدث',
+        media: 'وسائط',
+        mediaCategory: 'فئة الوسائط',
+        menuLink: 'رابط القائمة',
+        domain: 'نطاق',
+        fatwa: 'فتوى',
+        publicBook: 'كتاب المكتبة',
+        scholar: 'عالم',
+        course: 'دورة',
+        graduate: 'خريج',
+        donation: 'تبرع'
+      }
     }
   },
   websiteManager: websiteAdminAr.websiteManager,

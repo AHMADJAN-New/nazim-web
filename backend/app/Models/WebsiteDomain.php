@@ -25,6 +25,8 @@ class WebsiteDomain extends Model
         'is_primary',
         'verification_status',
         'ssl_status',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

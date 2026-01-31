@@ -55,6 +55,8 @@ class WebsiteAnnouncementController extends Controller
         $announcement = WebsiteAnnouncement::create(array_merge($data, [
             'organization_id' => $profile->organization_id,
             'school_id' => $schoolId,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
         ]));
 
         $this->clearPublicCaches($profile->organization_id, $schoolId, $announcement->id);
@@ -88,6 +90,7 @@ class WebsiteAnnouncementController extends Controller
         ]);
 
         $announcement->fill($data);
+        $announcement->updated_by = $user->id;
         $announcement->save();
 
         $this->clearPublicCaches($profile->organization_id, $schoolId, $announcement->id);

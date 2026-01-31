@@ -16,6 +16,8 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfiles';
 import { useLanguage } from '@/hooks/useLanguage';
+import { usePagination } from '@/hooks/usePagination';
+import type { PaginationMeta } from '@/types/pagination';
 import { showToast } from '@/lib/toast';
 import type * as WebsitePageApi from '@/types/api/websitePage';
 import type * as WebsitePostApi from '@/types/api/websitePost';
@@ -79,7 +81,7 @@ export const useUpdateWebsiteSettings = () => {
   });
 };
 
-export const useWebsitePages = () => {
+export const useWebsitePages = (options?: { enabled?: boolean }) => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
@@ -90,7 +92,7 @@ export const useWebsitePages = () => {
       const apiPages = await websitePagesApi.list();
       return (apiPages as WebsitePageApi.WebsitePage[]).map(mapWebsitePageApiToDomain);
     },
-    enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id,
+    enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id && (options?.enabled ?? true),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -158,20 +160,59 @@ export const useDeleteWebsitePage = () => {
   });
 };
 
-export const useWebsitePosts = () => {
+export const useWebsitePosts = (usePaginated: boolean = true, options?: { enabled?: boolean }) => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const { page, pageSize } = usePagination();
 
-  return useQuery<WebsitePost[]>({
-    queryKey: ['website-posts', profile?.organization_id, profile?.default_school_id ?? null],
+  return useQuery<{ data: WebsitePost[]; pagination: PaginationMeta | null }>({
+    queryKey: ['website-posts', profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : null, usePaginated ? pageSize : null],
     queryFn: async () => {
-      if (!user || !profile?.organization_id || !profile?.default_school_id) return [];
-      const apiPosts = await websitePostsApi.list();
-      return (apiPosts as WebsitePostApi.WebsitePost[]).map(mapWebsitePostApiToDomain);
+      if (!user || !profile?.organization_id || !profile?.default_school_id) return { data: [], pagination: null };
+
+      const mapResponse = (response: unknown, includePagination: boolean) => {
+        if (response && typeof response === 'object' && 'data' in response && 'total' in response) {
+          const paginatedResponse = response as {
+            data: WebsitePostApi.WebsitePost[];
+            current_page: number;
+            from: number;
+            last_page: number;
+            per_page: number;
+            to: number;
+            total: number;
+          };
+          return {
+            data: (paginatedResponse.data || []).map(mapWebsitePostApiToDomain),
+            pagination: includePagination ? {
+              current_page: paginatedResponse.current_page,
+              per_page: paginatedResponse.per_page,
+              total: paginatedResponse.total,
+              last_page: paginatedResponse.last_page,
+              from: paginatedResponse.from,
+              to: paginatedResponse.to,
+            } : null,
+          };
+        }
+
+        if (Array.isArray(response)) {
+          return { data: response.map((item) => mapWebsitePostApiToDomain(item as WebsitePostApi.WebsitePost)), pagination: null };
+        }
+
+        return { data: [], pagination: null };
+      };
+
+      if (usePaginated) {
+        const response = await websitePostsApi.list({ page, per_page: pageSize });
+        return mapResponse(response, true);
+      }
+
+      const response = await websitePostsApi.list();
+      return mapResponse(response, false);
     },
-    enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id,
+    enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id && (options?.enabled ?? true),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    placeholderData: { data: [], pagination: null },
   });
 };
 
@@ -316,20 +357,53 @@ export const useDeleteWebsiteEvent = () => {
   });
 };
 
-export const useWebsiteMediaCategories = () => {
+export const useWebsiteMediaCategories = (usePaginated: boolean = true) => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const { page, pageSize } = usePagination();
 
-  return useQuery<WebsiteMediaCategory[]>({
-    queryKey: ['website-media-categories', profile?.organization_id, profile?.default_school_id ?? null],
+  return useQuery<{ data: WebsiteMediaCategory[]; pagination: PaginationMeta | null }>({
+    queryKey: ['website-media-categories', profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : null, usePaginated ? pageSize : null],
     queryFn: async () => {
-      if (!user || !profile?.organization_id || !profile?.default_school_id) return [];
-      const apiCategories = await websiteMediaCategoriesApi.list();
-      return (apiCategories as WebsiteMediaCategoryApi.WebsiteMediaCategory[]).map(mapWebsiteMediaCategoryApiToDomain);
+      if (!user || !profile?.organization_id || !profile?.default_school_id) return { data: [], pagination: null };
+      
+      if (usePaginated) {
+        const response = await websiteMediaCategoriesApi.list({ page, per_page: pageSize });
+        
+        // Handle Laravel-style paginated response
+        if (response && typeof response === 'object' && 'data' in response && 'total' in response) {
+          const paginatedResponse = response as {
+            data: WebsiteMediaCategoryApi.WebsiteMediaCategory[];
+            current_page: number;
+            from: number;
+            last_page: number;
+            per_page: number;
+            to: number;
+            total: number;
+          };
+          return {
+            data: (paginatedResponse.data || []).map(mapWebsiteMediaCategoryApiToDomain),
+            pagination: {
+              current_page: paginatedResponse.current_page,
+              per_page: paginatedResponse.per_page,
+              total: paginatedResponse.total,
+              last_page: paginatedResponse.last_page,
+              from: paginatedResponse.from,
+              to: paginatedResponse.to,
+            },
+          };
+        }
+        
+        return { data: (response as WebsiteMediaCategoryApi.WebsiteMediaCategory[]).map(mapWebsiteMediaCategoryApiToDomain), pagination: null };
+      } else {
+        const categories = await websiteMediaCategoriesApi.list();
+        return { data: (categories as WebsiteMediaCategoryApi.WebsiteMediaCategory[]).map(mapWebsiteMediaCategoryApiToDomain), pagination: null };
+      }
     },
     enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    placeholderData: { data: [], pagination: null },
   });
 };
 
@@ -392,20 +466,53 @@ export const useDeleteWebsiteMediaCategory = () => {
   });
 };
 
-export const useWebsiteMedia = () => {
+export const useWebsiteMedia = (usePaginated: boolean = true) => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const { page, pageSize } = usePagination();
 
-  return useQuery<WebsiteMedia[]>({
-    queryKey: ['website-media', profile?.organization_id, profile?.default_school_id ?? null],
+  return useQuery<{ data: WebsiteMedia[]; pagination: PaginationMeta | null }>({
+    queryKey: ['website-media', profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : null, usePaginated ? pageSize : null],
     queryFn: async () => {
-      if (!user || !profile?.organization_id || !profile?.default_school_id) return [];
-      const apiMedia = await websiteMediaApi.list();
-      return (apiMedia as WebsiteMediaApi.WebsiteMedia[]).map(mapWebsiteMediaApiToDomain);
+      if (!user || !profile?.organization_id || !profile?.default_school_id) return { data: [], pagination: null };
+      
+      if (usePaginated) {
+        const response = await websiteMediaApi.list({ page, per_page: pageSize });
+        
+        // Handle Laravel-style paginated response
+        if (response && typeof response === 'object' && 'data' in response && 'total' in response) {
+          const paginatedResponse = response as {
+            data: WebsiteMediaApi.WebsiteMedia[];
+            current_page: number;
+            from: number;
+            last_page: number;
+            per_page: number;
+            to: number;
+            total: number;
+          };
+          return {
+            data: (paginatedResponse.data || []).map(mapWebsiteMediaApiToDomain),
+            pagination: {
+              current_page: paginatedResponse.current_page,
+              per_page: paginatedResponse.per_page,
+              total: paginatedResponse.total,
+              last_page: paginatedResponse.last_page,
+              from: paginatedResponse.from,
+              to: paginatedResponse.to,
+            },
+          };
+        }
+        
+        return { data: (response as WebsiteMediaApi.WebsiteMedia[]).map(mapWebsiteMediaApiToDomain), pagination: null };
+      } else {
+        const media = await websiteMediaApi.list();
+        return { data: (media as WebsiteMediaApi.WebsiteMedia[]).map(mapWebsiteMediaApiToDomain), pagination: null };
+      }
     },
     enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    placeholderData: { data: [], pagination: null },
   });
 };
 
@@ -630,20 +737,53 @@ export const useDeleteWebsiteMenu = () => {
 };
 
 // Fatwa Hooks
-export const useWebsiteFatwas = () => {
+export const useWebsiteFatwas = (usePaginated: boolean = true) => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const { page, pageSize } = usePagination();
 
-  return useQuery<WebsiteFatwa[]>({
-    queryKey: ['website-fatwas', profile?.organization_id, profile?.default_school_id ?? null],
+  return useQuery<{ data: WebsiteFatwa[]; pagination: PaginationMeta | null }>({
+    queryKey: ['website-fatwas', profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : null, usePaginated ? pageSize : null],
     queryFn: async () => {
-      if (!user || !profile?.organization_id || !profile?.default_school_id) return [];
-      const apiFatwas = await websiteFatwasApi.list();
-      return (apiFatwas as WebsiteFatwaApi.WebsiteFatwa[]).map(mapWebsiteFatwaApiToDomain);
+      if (!user || !profile?.organization_id || !profile?.default_school_id) return { data: [], pagination: null };
+      
+      if (usePaginated) {
+        const response = await websiteFatwasApi.list({ page, per_page: pageSize });
+        
+        // Handle Laravel-style paginated response
+        if (response && typeof response === 'object' && 'data' in response && 'total' in response) {
+          const paginatedResponse = response as {
+            data: WebsiteFatwaApi.WebsiteFatwa[];
+            current_page: number;
+            from: number;
+            last_page: number;
+            per_page: number;
+            to: number;
+            total: number;
+          };
+          return {
+            data: (paginatedResponse.data || []).map(mapWebsiteFatwaApiToDomain),
+            pagination: {
+              current_page: paginatedResponse.current_page,
+              per_page: paginatedResponse.per_page,
+              total: paginatedResponse.total,
+              last_page: paginatedResponse.last_page,
+              from: paginatedResponse.from,
+              to: paginatedResponse.to,
+            },
+          };
+        }
+        
+        return { data: (response as WebsiteFatwaApi.WebsiteFatwa[]).map(mapWebsiteFatwaApiToDomain), pagination: null };
+      } else {
+        const fatwas = await websiteFatwasApi.list();
+        return { data: (fatwas as WebsiteFatwaApi.WebsiteFatwa[]).map(mapWebsiteFatwaApiToDomain), pagination: null };
+      }
     },
     enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    placeholderData: { data: [], pagination: null },
   });
 };
 
@@ -790,20 +930,53 @@ export const useDeleteWebsiteFatwaCategory = () => {
 };
 
 // Fatwa Question Hooks
-export const useWebsiteFatwaQuestions = () => {
+export const useWebsiteFatwaQuestions = (usePaginated: boolean = true) => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const { page, pageSize } = usePagination();
 
-  return useQuery<WebsiteFatwaQuestion[]>({
-    queryKey: ['website-fatwa-questions', profile?.organization_id, profile?.default_school_id ?? null],
+  return useQuery<{ data: WebsiteFatwaQuestion[]; pagination: PaginationMeta | null }>({
+    queryKey: ['website-fatwa-questions', profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : null, usePaginated ? pageSize : null],
     queryFn: async () => {
-      if (!user || !profile?.organization_id || !profile?.default_school_id) return [];
-      const apiQuestions = await websiteFatwaQuestionsApi.list();
-      return (apiQuestions as WebsiteFatwaApi.WebsiteFatwaQuestion[]).map(mapWebsiteFatwaQuestionApiToDomain);
+      if (!user || !profile?.organization_id || !profile?.default_school_id) return { data: [], pagination: null };
+      
+      if (usePaginated) {
+        const response = await websiteFatwaQuestionsApi.list({ page, per_page: pageSize });
+        
+        // Handle Laravel-style paginated response
+        if (response && typeof response === 'object' && 'data' in response && 'total' in response) {
+          const paginatedResponse = response as {
+            data: WebsiteFatwaApi.WebsiteFatwaQuestion[];
+            current_page: number;
+            from: number;
+            last_page: number;
+            per_page: number;
+            to: number;
+            total: number;
+          };
+          return {
+            data: (paginatedResponse.data || []).map(mapWebsiteFatwaQuestionApiToDomain),
+            pagination: {
+              current_page: paginatedResponse.current_page,
+              per_page: paginatedResponse.per_page,
+              total: paginatedResponse.total,
+              last_page: paginatedResponse.last_page,
+              from: paginatedResponse.from,
+              to: paginatedResponse.to,
+            },
+          };
+        }
+        
+        return { data: (response as WebsiteFatwaApi.WebsiteFatwaQuestion[]).map(mapWebsiteFatwaQuestionApiToDomain), pagination: null };
+      } else {
+        const questions = await websiteFatwaQuestionsApi.list();
+        return { data: (questions as WebsiteFatwaApi.WebsiteFatwaQuestion[]).map(mapWebsiteFatwaQuestionApiToDomain), pagination: null };
+      }
     },
     enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    placeholderData: { data: [], pagination: null },
   });
 };
 

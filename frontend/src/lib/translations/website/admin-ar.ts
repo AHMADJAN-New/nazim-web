@@ -71,6 +71,7 @@ export const websiteAdminAr: WebsiteAdminTranslations = {
   navWebsite: {
     websiteManager: 'إدارة موقع المدرسة',
     'websiteManager.settings': 'الإعدادات',
-    'websiteManager.openPublicSite': 'فتح الموقع العام'
+    'websiteManager.openPublicSite': 'فتح الموقع العام',
+    'websiteManager.audit': 'تدقيق النشاط'
   }
 };

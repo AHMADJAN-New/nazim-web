@@ -915,10 +915,10 @@ export const ps: TranslationKeys = {
     },
     draft: 'مسوده',
     dropped: 'پرېښودل شوی',
-    dropRate: 'د نرخ انفکاک',
+    dropRate: 'د دورې/ کورس  پرېښودونکي کچه',
     edit: 'سمون',
     editCourse: 'دوره/ کورس تغیر کړئ',
-    enrolled: 'نوم لیکنه شوی',
+    enrolled: 'داخل شوي ',
     enrollFromMain: 'د اصلي زده کوونکو څخه نوم لیکنه',
     enrollment: 'نوم لیکنه',
     errorLoadingStudents: 'د زده کوونکو د پورته کولو کې ستونزه',
@@ -952,7 +952,7 @@ export const ps: TranslationKeys = {
     noDocuments: 'سندونه ونه موندل شول',
     noOpenCoursesMessage: 'هیڅ خلاص دوره/ کورس نشته. لطفاً لومړی دوره/ کورس جوړ کړئ.',
     noStudentsEnrolled: 'هیڅ زده کوونکی نوم لیکنه شوی نه دی',
-    noStudentsEnrolledMessage: 'دا دوره/ کورس اوس مهال هیڅ نوم لیکنه شوي زده کوونکي نلري. د پیل کولو لپاره زده کوونکي اضافه کړئ.',
+    noStudentsEnrolledMessage: 'دا دوره/ کورس اوس مهال هیڅ داخل شوي  زده کوونکي نلري. د پیل کولو لپاره زده کوونکي اضافه کړئ.',
     noStudentsFound: 'هیڅ زده کوونکی ونه موندل شو',
     noStudentsMatchFilters: 'هیڅ زده کوونکی د اوسني فلټرونو سره سمون نه لري. خپل لټون یا فلټرونه تنظیم کړئ.',
     open: 'خلاص',
@@ -1007,11 +1007,11 @@ export const ps: TranslationKeys = {
     reportsDescription: 'د دوره/ کورس زده کونکو د لیدو، فیلتر کولو او د ډله‌ایز عملیاتو سره مدیریت.',
     shortTermCourseStudentsReport: 'د لنډمهاله دوره/ کورس زده کونکو راپور',
     enrolledLabel: 'نوم لیکنه شوی',
-    enrolledStudents: 'نوم لیکنه شوي زده کونکي',
+    enrolledStudents: 'داخل شوي  زده کونکي',
     live: 'ژوندی',
-    completedStudents: 'بشپړ شوي زده کونکي',
+    completedStudents: 'د دورې پشپړونکي زده کونکي ',
     droppedFailed: 'پرېښودل/ناکام',
-    droppedStudents: 'پرېښودل شوي زده کونکي',
+    droppedStudents: 'د دورې/ کورس  پرېښودونکي زده کونکي ',
     totalStudents: 'ټول زده کونکي',
     studentReports: 'د زده کونکو راپورونه',
     filterAndManageStudents: 'د دوره/ کورس زده کونکي فیلتر او مدیریت کړئ.',
@@ -1023,7 +1023,7 @@ export const ps: TranslationKeys = {
     studentsSelected: 'زده کوونکی/زده کونکي غوره شوي',
     bulkActions: 'ډله‌ایز عملیات',
     markAsCompleted: 'د بشپړ شوي په توګه نښه کړئ',
-    markAsDropped: 'د پرېښودل شوي په توګه نښه کړئ',
+    markAsDropped: 'د د دورې/ کورس  پرېښودونکي   په توګه نښه کړئ',
     clearSelection: 'د غوره کولو پاکول',
     name: 'نوم',
     fatherName: 'د پلار نوم',
@@ -1037,8 +1037,8 @@ export const ps: TranslationKeys = {
     courseLabel: 'دوره/ کورس',
     markStudentsCompleted: 'زده کونکي د بشپړ شوي په توګه نښه کړئ',
     markStudentsCompletedConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ {count} زده کوونکی/زده کونکي د بشپړ شوي په توګه نښه کړئ؟ دا عمل بیرته نشي اخیستل کیدی.',
-    markStudentsDropped: 'زده کونکي د پرېښودل شوي په توګه نښه کړئ',
-    markStudentsDroppedConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ {count} زده کوونکی/زده کونکي د پرېښودل شوي په توګه نښه کړئ؟ دا عمل بیرته نشي اخیستل کیدی.',
+    markStudentsDropped: 'زده کونکي د د دورې/ کورس  پرېښودونکي   په توګه نښه کړئ',
+    markStudentsDroppedConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ {count} زده کوونکی/زده کونکي د د دورې/ کورس  پرېښودونکي   په توګه نښه کړئ؟ دا عمل بیرته نشي اخیستل کیدی.',
     completing: 'بشپړیږي...',
     dropping: 'پرېښودل کیږي...',
     selectAll: 'ټول غوره کړئ',
@@ -1116,13 +1116,13 @@ export const ps: TranslationKeys = {
       sessionClosed: 'دا غونډه/ سیشن بند شوی دی',
       manual: 'لاسي',
       barcode: 'بارکوډ',
-      markAllPresent: 'ټول حاضره نښه کړئ',
-      markAllAbsent: 'ټول غیر حاضره نښه کړئ',
+      markAllPresent: 'ټول حاضر نښه کړئ',
+      markAllAbsent: 'ټول غیر حاضر نښه کړئ',
       student: 'زده کوونکی',
       cardNumber: 'د کارت شمیره',
       status: 'حالت',
       loadingStudents: 'زده کوونکي لوډ کېږي...',
-      noEnrolledStudents: 'د دې دوره/ کورس لپاره هیڅ نوم لیکنه شوي زده کوونکي ونه موندل شول',
+      noEnrolledStudents: 'د دې دوره/ کورس لپاره هیڅ داخل شوي  زده کوونکي ونه موندل شول',
       saving: 'خوندي کېږي...',
       saveAttendance: 'حاضري خوندي کړئ',
       scanBarcodeOrCard: 'بارکوډ سکین کړئ یا د کارت شمیره ولیکئ',
@@ -1139,8 +1139,8 @@ export const ps: TranslationKeys = {
       deleteSession: 'غونډه/ سیشن ړنګ کړئ',
       deleteSessionConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا د حاضري غونډه/ سیشن ړنګ کړئ؟ ټول د حاضري ریکارډونه به د تل لپاره ړنګ شي.',
       delete: 'ړنګ کړئ',
-      present: 'حاضره',
-      absent: 'غیر حاضره',
+      present: 'حاضر',
+      absent: 'غیر حاضر',
       late: 'ناوخته',
       excused: 'معذور',
       sick: 'ناروغ',
@@ -2476,7 +2476,7 @@ export const ps: TranslationKeys = {
       errorLoading: 'د خلاصې راپور په پورته کولو کې تېروتنه. مهرباني وکړئ بیا هڅه وکړئ.',
       filterSummaryExam: 'ازموینه',
       filterSummaryAcademicYear: 'تعلیمي کال',
-      filterSummaryTotalEnrolled: 'ټول نوم لیکنه شوي',
+      filterSummaryTotalEnrolled: 'ټول داخل شوي ',
       filterSummaryOverallProgress: 'ټولیز پرمختګ'
     },
     totalClasses: 'ټول ټولګي',
@@ -2517,7 +2517,7 @@ export const ps: TranslationKeys = {
     allStudentsEnrolled: 'د نوم لیکنې لپاره هیڅ زده کونکی شتون نلري',
     possibleReasons: 'ممکنه لاملونه:',
     noStudentsHint1: 'د ټاکل شوي تعلیمي کال لپاره دې ټولګي ته هیڅ زده کونکی نه دی منسوب شوی',
-    noStudentsHint2: 'په دې ټولګي کې ټول زده کونکي دمخه نوم لیکنه شوي دي',
+    noStudentsHint2: 'په دې ټولګي کې ټول زده کونکي دمخه داخل شوي  دي',
     noStudentsHint3: 'ممکن زده کونکي د فعال نوم لیکنې حالت ونلري',
     invalidTimeRange: 'د پای وخت باید د پیل وخت څخه وروسته وي',
     noExamsAvailable: 'هیڅ ازموینه شتون نلري',
@@ -3986,7 +3986,7 @@ export const ps: TranslationKeys = {
     },
     settings: 'تنظیمات',
     schoolsManagement: 'د ښوونځیو مدیریت',
-    shortTermCourses: 'لنډمهاله کورسونه',
+    shortTermCourses: 'لنډمهاله دورې/ کورسونه',
     staff: 'کارکوونکي',
     profileManagement: 'د پروفایل مدیریت',
     permissionsManagement: 'د اجازو مدیریت',
@@ -7116,6 +7116,179 @@ export const ps: TranslationKeys = {
       },
       deleteTitle: 'پیغام ړنګول',
       deleteDescription: 'ایا ډاډه یاست چې دا پیغام ړنګوئ؟ دا عمل بېرته نه شي کېدای.'
+    },
+    users: {
+      title: 'د ویبپاڼې کاروونکي',
+      description: 'هغه حسابونه دعوت او اداره کړئ چې یوازې د ویبپاڼې وسایلو ته لاسرسی لري.',
+      helperTitle: 'یوازې د ویبپاڼې لاسرسی',
+      helperDescription: 'د ویبپاڼې رول لرونکي کاروونکي یوازې د ویبپاڼې مدیر مېنو ویني، پرته له دې چې نورې اجازې ولري.',
+      stats: {
+        total: 'ټول کاروونکي',
+        active: 'فعال',
+        inactive: 'غیرفعال',
+        roles: 'کارېدلي رولونه'
+      },
+      filters: {
+        searchPlaceholder: 'په نوم یا ایمیل کې لټون...',
+        role: 'رول',
+        status: 'حالت',
+        allRoles: 'ټول رولونه',
+        allStatuses: 'ټول حالتونه'
+      },
+      table: {
+        name: 'نوم',
+        email: 'ایمیل',
+        role: 'رول',
+        status: 'حالت',
+        actions: 'عملونه'
+      },
+      empty: {
+        title: 'لا تر اوسه د ویبپاڼې کاروونکي نشته',
+        description: 'د پیل لپاره د ویبپاڼې ټیم یو غړی دعوت کړئ.'
+      },
+      dialogs: {
+        createTitle: 'د ویبپاڼې کاروونکی دعوت',
+        createDescription: 'نوی حساب د یوازې ویبپاڼې لاسرسي سره جوړ کړئ.',
+        editTitle: 'د ویبپاڼې کاروونکی سمول',
+        editDescription: 'د اړیکې معلومات او لاسرسي حالت تازه کړئ.',
+        deleteTitle: 'د ویبپاڼې کاروونکی ړنګول',
+        deleteDescription: 'دا حساب ړنګوي او د ویبپاڼې لاسرسی لغوه کوي.',
+        resetTitle: 'پټ نوم بیا ټاکل',
+        resetDescription: 'د دې کاروونکي لپاره نوی پټ نوم وټاکئ.'
+      },
+      form: {
+        fullName: 'بشپړ نوم',
+        email: 'ایمیل',
+        password: 'لنډمهاله پټ نوم',
+        role: 'د ویبپاڼې رول',
+        phone: 'تلیفون',
+        defaultSchool: 'اصلي ښوونځی',
+        selectSchool: 'ښوونځی وټاکئ',
+        noDefaultSchool: 'هیڅ اصلي ښوونځی نشته',
+        active: 'فعال',
+        activeHint: 'غیرفعال کاروونکي د ویبپاڼې د مدیریت لپاره ننوتلی نشي.'
+      },
+      status: {
+        active: 'فعال',
+        inactive: 'غیرفعال'
+      },
+      actions: {
+        invite: 'کاروونکی دعوت',
+        edit: 'سمول',
+        delete: 'ړنګول',
+        resetPassword: 'پټ نوم بیا ټاکل'
+      },
+      roles: {
+        website_admin: 'د ویبپاڼې مدیر',
+        website_editor: 'د ویبپاڼې سمونګر',
+        website_media: 'د رسنیو مدیر'
+      },
+      noPermissionTitle: 'اجازه نشته',
+      noPermissionDescription: 'تاسو د کاروونکو د مدیریت اجازه نه لرئ.',
+      roleLocked: 'د رول بدلونونه یوازې د مدیرانو لخوا کیږي.'
+    },
+    seo: {
+      title: 'د SEO وسایل',
+      description: 'د میټاډېټا پوښښ، د SEO نيمګړتياوې او د محتوا روغتيا تعقيبول.',
+      tabs: {
+        overview: 'لنډه کتنه',
+        content: 'د محتوا روغتيا'
+      },
+      stats: {
+        coverage: 'د SEO پوښښ',
+        coverageHint: 'هغه توکي چې بشپړ میټاډېټا لري',
+        needsAttention: 'پام ته اړتيا',
+        needsAttentionHint: 'صفحه/پوسټونه چې د SEO برخې يې نيمګړې دي',
+        total: 'ټول توکي',
+        totalHint: 'څارل کېدونکې پاڼې او پوسټونه'
+      },
+      checklist: {
+        title: 'د SEO چک ليست',
+        description: 'دا مهم ټکي بشپړ کړئ چې په لټون کې ښه ښکاره شئ.',
+        metaTitles: 'د هرې پاڼې او پوسټ لپاره ځانګړی SEO سرليک وليکئ.',
+        metaDescriptions: 'لنډ تشريح وليکئ چې د هرې پاڼې لنډيز وي.',
+        socialImages: 'د شريکولو لپاره ټولنيزې انځورونه ورزيات کړئ.',
+        cleanUrls: 'سلاګونه لنډ، لوستېدونکي او د کليدي ټکو پر بنسټ وساتئ.'
+      },
+      filters: {
+        searchPlaceholder: 'پاڼې او پوسټونه ولټوئ...',
+        type: 'د محتوا ډول',
+        status: 'حالت',
+        allTypes: 'ټول ډولونه',
+        pages: 'پاڼې',
+        posts: 'پوسټونه',
+        allStatuses: 'ټول حالتونه',
+        needsAttention: 'پام ته اړتيا',
+        complete: 'بشپړ'
+      },
+      table: {
+        title: 'سرليک',
+        type: 'ډول',
+        missing: 'نيمګړې برخې',
+        status: 'حالت',
+        publishedAt: 'د خپرېدو نېټه'
+      },
+      empty: 'د ټاکل شوو فلټرونو لپاره د SEO ستونزه ونه موندل شوه.',
+      missing: {
+        title: 'SEO سرليک',
+        description: 'SEO تشريح',
+        image: 'SEO انځور'
+      },
+      complete: 'بشپړ',
+      types: {
+        page: 'پاڼه',
+        post: 'پوسټ'
+      },
+      actions: {
+        openManager: 'مديريت ته تلل'
+      }
+    },
+    audit: {
+      title: 'د حسابرسی راپورونه',
+      description: 'وګورئ چې د ویب پاڼې محتوا یو چا جوړ کړی یا سمون ورکړی.',
+      searchPlaceholder: 'د سرلیک یا کارن له مخې لټون...',
+      noResults: 'د حسابرسی ننوتونو موندل نشول.',
+      systemUser: 'سیستم',
+      untitled: 'بې سرلیکه',
+      export: 'CSV صادرول',
+      refresh: 'تازه کول',
+      summary: {
+        total: 'ټول فعالیت',
+        created: 'جوړ شوی',
+        updated: 'تازه شوی',
+        uniqueUsers: 'فعال سمونکاري'
+      },
+      filters: {
+        action: 'کړنه',
+        type: 'د محتوا ډول'
+      },
+      actions: {
+        created: 'جوړ شوی',
+        updated: 'تازه شوی'
+      },
+      columns: {
+        activity: 'فعالیت',
+        action: 'کړنه',
+        user: 'کارن',
+        occurredAt: 'نیټه',
+        status: 'حالت'
+      },
+      types: {
+        page: 'پاڼه',
+        post: 'پوسټ',
+        announcement: 'اعلان',
+        event: 'پیښه',
+        media: 'رسنۍ',
+        mediaCategory: 'د رسنیو کټګوري',
+        menuLink: 'د مینو لینک',
+        domain: 'ډومین',
+        fatwa: 'فتوا',
+        publicBook: 'د کتابتون کتاب',
+        scholar: 'عالم',
+        course: 'کورس',
+        graduate: 'فارغ',
+        donation: 'خیریه'
+      }
     }
   },
   websiteManager: websiteAdminPs.websiteManager,

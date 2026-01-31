@@ -53,6 +53,8 @@ class WebsiteMenuController extends Controller
         $link = WebsiteMenuLink::create(array_merge($data, [
             'organization_id' => $profile->organization_id,
             'school_id' => $schoolId,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
         ]));
 
         $this->clearPublicCaches($profile->organization_id, $schoolId);
@@ -85,6 +87,7 @@ class WebsiteMenuController extends Controller
         ]);
 
         $link->fill($data);
+        $link->updated_by = $user->id;
         $link->save();
 
         $this->clearPublicCaches($profile->organization_id, $schoolId);

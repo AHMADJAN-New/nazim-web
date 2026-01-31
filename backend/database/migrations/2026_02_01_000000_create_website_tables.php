@@ -99,6 +99,7 @@ return new class extends Migration
             $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
             $table->uuid('organization_id');
             $table->uuid('school_id');
+            $table->uuid('category_id')->nullable();
             $table->string('type', 30)->default('image');
             $table->text('file_path');
             $table->string('file_name', 255)->nullable();
@@ -109,6 +110,7 @@ return new class extends Migration
 
             $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
             $table->foreign('school_id')->references('id')->on('school_branding')->onDelete('cascade');
+            $table->foreign('category_id')->references('id')->on('website_media_categories')->onDelete('set null');
             $table->index(['school_id', 'type']);
         });
 

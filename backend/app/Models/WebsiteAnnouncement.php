@@ -27,6 +27,8 @@ class WebsiteAnnouncement extends Model
         'published_at',
         'expires_at',
         'is_pinned',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

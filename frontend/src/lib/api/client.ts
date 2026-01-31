@@ -4646,6 +4646,12 @@ export const websiteSettingsApi = {
   },
 };
 
+export const websiteAuditLogsApi = {
+  list: async (params?: { limit?: number; page?: number; per_page?: number }) => {
+    return apiClient.get('/website/audit-logs', params);
+  },
+};
+
 export const websitePagesApi = {
   list: async () => {
     return apiClient.get('/website/pages');
@@ -4683,8 +4689,8 @@ export const websitePagesApi = {
 };
 
 export const websitePostsApi = {
-  list: async () => {
-    return apiClient.get('/website/posts');
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/posts', params);
   },
   create: async (data: {
     slug: string;
@@ -4791,8 +4797,8 @@ export const websitePublicBooksApi = {
 };
 
 export const websiteMediaApi = {
-  list: async () => {
-    return apiClient.get('/website/media');
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/media', params);
   },
   create: async (data: {
     category_id?: string | null;
@@ -4828,8 +4834,8 @@ export const websiteMediaApi = {
 };
 
 export const websiteMediaCategoriesApi = {
-  list: async () => {
-    return apiClient.get('/website/media-categories');
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/media-categories', params);
   },
   create: async (data: {
     name: string;
@@ -5105,8 +5111,8 @@ export const websiteFatwaCategoriesApi = {
 };
 
 export const websiteFatwaQuestionsApi = {
-  list: async () => {
-    return apiClient.get('/website/fatwa-questions');
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/fatwa-questions', params);
   },
   get: async (id: string) => {
     return apiClient.get(`/website/fatwa-questions/${id}`);
@@ -5122,8 +5128,8 @@ export const websiteFatwaQuestionsApi = {
 };
 
 export const websiteFatwasApi = {
-  list: async () => {
-    return apiClient.get('/website/fatwas');
+  list: async (params?: { page?: number; per_page?: number }) => {
+    return apiClient.get('/website/fatwas', params);
   },
   create: async (data: {
     category_id?: string | null;

@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -274,6 +274,107 @@ const Index = () => {
           <ContactSection onContactClick={() => setContactInfoModalOpen(true)} />
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-gradient-to-b from-slate-900 to-slate-950 text-slate-200 border-t-2 border-[#c9a44d]/20">
+        <div className="container mx-auto px-4 py-8 md:py-12 max-w-7xl">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* Brand Column */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-[#c9a44d] to-[#f0e6b3] rounded-lg flex items-center justify-center">
+                  <Rocket className="h-5 w-5 text-slate-900" />
+                </div>
+                <span className="text-xl font-bold text-white">Nazim SMS</span>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                {t('footer.tagline') || tCommon('landing.footer.tagline') || 'Comprehensive Islamic School Management System'}
+              </p>
+            </div>
+
+            {/* Product Links */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-white">{t('footer.product') || tCommon('landing.footer.product') || 'Product'}</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a href="/#features" className="hover:text-[#c9a44d] transition-colors">
+                    {t('landing.nav.features') || 'Features'}
+                  </a>
+                </li>
+                <li>
+                  <a href="/#pricing" className="hover:text-[#c9a44d] transition-colors">
+                    {t('landing.nav.pricing') || 'Pricing'}
+                  </a>
+                </li>
+                <li>
+                  <a href="/#testimonials" className="hover:text-[#c9a44d] transition-colors">
+                    {t('landing.nav.reviews') || 'Reviews'}
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company Links */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-white">{t('footer.company') || tCommon('landing.footer.company') || 'Company'}</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link to="/about" className="hover:text-[#c9a44d] transition-colors">
+                    {tCommon('footer.aboutUs') || 'About Us'}
+                  </Link>
+                </li>
+                <li>
+                  <a href="/#contact" className="hover:text-[#c9a44d] transition-colors">
+                    {t('landing.nav.contact') || 'Contact'}
+                  </a>
+                </li>
+                <li>
+                  <Link to="/privacy" className="hover:text-[#c9a44d] transition-colors">
+                    {tCommon('footer.privacyPolicy') || 'Privacy Policy'}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal Links */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-white">{t('footer.legal') || 'Legal'}</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link to="/privacy" className="hover:text-[#c9a44d] transition-colors">
+                    {tCommon('footer.privacyPolicy') || 'Privacy Policy'}
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="hover:text-[#c9a44d] transition-colors">
+                    {tCommon('footer.termsOfService') || 'Terms of Service'}
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="hover:text-[#c9a44d] transition-colors">
+                    {tCommon('footer.aboutUs') || 'About Us'}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="border-t border-slate-800/50 mt-8 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+              <p>&copy; {new Date().getFullYear()} Nazim SMS. {t('footer.copyright') || tCommon('landing.footer.copyright') || 'All rights reserved.'}</p>
+              <div className="flex gap-6">
+                <Link to="/privacy" className="hover:text-[#c9a44d] transition-colors">
+                  {tCommon('footer.privacyPolicy') || 'Privacy Policy'}
+                </Link>
+                <Link to="/terms" className="hover:text-[#c9a44d] transition-colors">
+                  {tCommon('footer.termsOfService') || 'Terms of Service'}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Contact Info Modal */}
       <ContactModal open={contactInfoModalOpen} onOpenChange={setContactInfoModalOpen} />

@@ -29,10 +29,8 @@ return new class extends Migration {
             $table->index(['school_id', 'slug']);
         });
 
-        Schema::table('website_media', function (Blueprint $table) {
-            $table->uuid('category_id')->nullable()->after('school_id');
-            $table->foreign('category_id')->references('id')->on('website_media_categories')->onDelete('set null');
-        });
+        // Note: category_id column will be added to website_media in a later migration
+        // after the website_media table is created (2026_02_01_000000_create_website_tables.php)
     }
 
     /**
@@ -40,10 +38,13 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('website_media', function (Blueprint $table) {
-            $table->dropForeign(['category_id']);
-            $table->dropColumn('category_id');
-        });
+        // Only drop category_id from website_media if the table exists and column exists
+        if (Schema::hasTable('website_media') && Schema::hasColumn('website_media', 'category_id')) {
+            Schema::table('website_media', function (Blueprint $table) {
+                $table->dropForeign(['category_id']);
+                $table->dropColumn('category_id');
+            });
+        }
 
         Schema::dropIfExists('website_media_categories');
     }

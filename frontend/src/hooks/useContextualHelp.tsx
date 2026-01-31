@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 
 import { helpCenterArticlesApi } from '@/lib/api/client';
+import { useLanguage } from '@/hooks/useLanguage';
 import type * as HelpCenterApi from '@/types/api/helpCenter';
 
 interface ContextualHelpResult {
@@ -16,9 +17,10 @@ interface ContextualHelpResult {
 export const useContextualHelp = (contextKey?: string) => {
   const location = useLocation();
   const route = location.pathname;
+  const { language } = useLanguage();
 
   return useQuery<ContextualHelpResult>({
-    queryKey: ['contextual-help', route, contextKey],
+    queryKey: ['contextual-help', route, contextKey, language],
     queryFn: async () => {
       try {
         const result = await helpCenterArticlesApi.getByContext({
