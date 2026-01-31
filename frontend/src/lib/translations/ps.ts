@@ -6653,7 +6653,7 @@ export const ps: TranslationKeys = {
       }
     },
     navigation: {
-      title: 'ناوبري',
+      title: 'ناوبار',
       description: 'د سر او پښو مېنوګانې مدیریت کړئ',
       new: 'نوې مېنو توکی',
       searchPlaceholder: 'مېنو توکي ولټوئ...',

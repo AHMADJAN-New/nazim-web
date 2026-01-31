@@ -133,7 +133,8 @@ class ApiClient {
     // Automatically add language parameter for help center endpoints
     // This ensures articles are filtered by user's language preference
     if (typeof window !== 'undefined' && endpoint.includes('/help-center/')) {
-      const userLanguage = localStorage.getItem('nazim-language') || 'en';
+      // App default language is Pashto (ps)
+      const userLanguage = localStorage.getItem('nazim-language') || 'ps';
       if (!options.params) {
         options.params = {};
       }

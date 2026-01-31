@@ -12,11 +12,12 @@ const LANGUAGE_STORAGE_KEY = 'nazim-language';
  * Get current language from localStorage
  */
 export function getLanguage(): Language {
-  if (typeof window === 'undefined') return 'en';
+  // App default language is Pashto (ps)
+  if (typeof window === 'undefined') return 'ps';
   const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  const lang = (saved as Language) || 'en';
+  const lang = (saved as Language) || 'ps';
   // Validate language - only allow supported languages
-  return ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'en';
+  return ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'ps';
 }
 
 /**

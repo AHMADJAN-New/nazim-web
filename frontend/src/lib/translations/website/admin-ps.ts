@@ -71,7 +71,7 @@ export const websiteAdminPs: WebsiteAdminTranslations = {
   navWebsite: {
     websiteManager: 'د وېبپاڼې مدیر',
     'websiteManager.settings': 'تنظیمات',
-    'websiteManager.navigation': 'ناوبري',
+    'websiteManager.navigation': 'ناوبار',
     'websiteManager.pages': 'پاڼې',
     'websiteManager.announcements': 'اعلانونه',
     'websiteManager.courses': 'کورسونه او پروګرامونه',

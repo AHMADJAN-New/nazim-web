@@ -420,8 +420,7 @@ export default function PendingActionsPage() {
                       <div className="space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-base truncate">
-                              <h3 className="font-medium text-base line-clamp-2 break-words">
+                            <h3 className="font-medium text-base line-clamp-2 break-words">
                               {renewal.organization?.name || 'Unknown Organization'}
                             </h3>
                             <div className="flex items-center gap-2 mt-1.5">

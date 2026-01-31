@@ -3797,8 +3797,6 @@ export const fa: TranslationKeys = {
       databaseAndFilesDescription: 'این تمام داده‌های فعلی در پایگاه داده و ذخیره‌سازی شما را با داده‌های این بکاپ جایگزین می‌کند.',
     },
   },
-  }
-  ,
   websiteAdmin: {
     common: {
       filters: 'فیلترها',

@@ -38,9 +38,10 @@ export function isRTL(): boolean {
  */
 export function getCurrentLanguage(): string {
   try {
-    return localStorage.getItem('nazim-language') || 'en';
+    // App default language is Pashto (ps)
+    return localStorage.getItem('nazim-language') || 'ps';
   } catch {
-    return 'en';
+    return 'ps';
   }
 }
 

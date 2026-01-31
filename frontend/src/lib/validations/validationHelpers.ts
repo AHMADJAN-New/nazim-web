@@ -6,13 +6,14 @@
 import { t, type Language } from '@/lib/i18n';
 
 /**
- * Get current language from localStorage or default to 'en'
+ * Get current language from localStorage or default to 'ps'
  */
 function getCurrentLanguage(): Language {
-  if (typeof window === 'undefined') return 'en';
+  // App default language is Pashto (ps)
+  if (typeof window === 'undefined') return 'ps';
   const saved = localStorage.getItem('nazim-language');
-  const lang = (saved as Language) || 'en';
-  return ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'en';
+  const lang = (saved as Language) || 'ps';
+  return ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'ps';
 }
 
 /**

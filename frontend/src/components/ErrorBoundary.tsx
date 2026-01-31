@@ -9,7 +9,8 @@ import { logger } from "@/lib/logger";
 
 const getLanguage = (): Language => {
   const saved = localStorage.getItem('nazim-language');
-  return (['en', 'ps', 'fa', 'ar'].includes(saved as string) ? saved as Language : 'en');
+  // App default language is Pashto (ps)
+  return (['en', 'ps', 'fa', 'ar'].includes(saved as string) ? saved as Language : 'ps');
 };
 
 interface Props {

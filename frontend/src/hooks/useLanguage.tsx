@@ -31,10 +31,20 @@ interface LanguageProviderProps {
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const [language, setLanguageState] = useState<Language>(() => {
     // Get from localStorage or default to Pashto
+    // IMPORTANT: Ensure localStorage is set on first load so the rest of the app
+    // (toasts positioning, API client language param, etc.) is "system-aware" immediately.
+    if (typeof window === 'undefined') return 'ps';
+
     const saved = localStorage.getItem('nazim-language');
-    const lang = (saved as Language) || 'ps';
-    // Validate language - only allow supported languages
-    return ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'ps';
+    const candidate = (saved as Language) || 'ps';
+    const lang: Language = ['en', 'ps', 'fa', 'ar'].includes(candidate) ? candidate : 'ps';
+
+    // Persist resolved language immediately (especially important when saved is null/invalid)
+    if (!saved || saved !== lang) {
+      localStorage.setItem('nazim-language', lang);
+    }
+
+    return lang;
   });
 
   const setLanguage = (lang: Language) => {

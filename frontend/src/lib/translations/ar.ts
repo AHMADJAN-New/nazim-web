@@ -6584,9 +6584,6 @@ export const ar: TranslationKeys = {
       databaseAndFilesDescription: "سيستبدل هذا جميع البيانات الحالية في قاعدة البيانات والتخزين بالبيانات من هذا النسخ الاحتياطي.",
     },
   },
-};
-  }
-  ,
   websiteAdmin: {
     common: {
       filters: 'Filters',
@@ -7384,5 +7381,5 @@ export const ar: TranslationKeys = {
     }
   },
   websiteManager: websiteAdminAr.websiteManager,
-  website: websiteAdminAr.website,
-
+  website: websiteAdminAr.website
+};
