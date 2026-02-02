@@ -415,6 +415,8 @@ export const websitePublicEn: WebsitePublicTranslations = {
     aboutUs: 'About Us',
     academics: 'Academics',
     portalLogin: 'Portal Login',
+    noWebsiteAccess: 'This school does not have public website access. Please contact the school administrator or visit the main portal to sign in.',
+    upgradeRequired: 'Upgrade required',
     resources: 'Resources',
     library: 'Library',
     scholars: 'Scholars',

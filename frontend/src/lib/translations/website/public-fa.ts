@@ -396,6 +396,8 @@ export const websitePublicFa: WebsitePublicTranslations = {
     aboutUs: 'درباره ما',
     academics: 'آموزشی',
     portalLogin: 'ورود به پورتال',
+    noWebsiteAccess: 'این مدرسه به وب‌سایت عمومی دسترسی ندارد. لطفاً با مدیر مدرسه تماس بگیرید یا برای ورود به پورتال اصلی مراجعه کنید.',
+    upgradeRequired: 'ارتقا لازم',
     resources: 'منابع',
     library: 'کتابخانه',
     scholars: 'عالمان',

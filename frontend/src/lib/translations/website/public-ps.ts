@@ -410,6 +410,8 @@ export const websitePublicPs: WebsitePublicTranslations = {
     aboutUs: 'زموږ په اړه',
     academics: 'تعلیمي',
     portalLogin: 'پورټل ننوتل',
+    noWebsiteAccess: 'دا ښوونځی د عام ویب پاڼې لاسرسی نلري. مهرباني وکړئ د ښوونځي مدیر سره اړیکه ونیسئ یا د ننوتلو لپاره اصلي پورټل ته لاړشئ.',
+    upgradeRequired: 'ارتقا اړینه',
     resources: 'سرچینې',
     library: 'کتابتون',
     scholars: 'علماء',

@@ -363,21 +363,30 @@ export default function WebsiteManagementPage() {
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={!organization.website}
-                              asChild
-                            >
-                              <a
-                                href={organization.website || '#'}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <ExternalLink className="h-3 w-3 mr-1" />
-                                Open
-                              </a>
-                            </Button>
+                            {(() => {
+                              const openUrl =
+                                selectedOrg === organization.id && websiteData?.schools?.length
+                                  ? (() => {
+                                      const first = websiteData.schools[0];
+                                      const setting = websiteData.settings?.find((s: any) => s.school_id === first.id);
+                                      const slug = setting?.school_slug ?? first.school_slug ?? null;
+                                      return getSubdomainUrl(slug);
+                                    })()
+                                  : organization.website;
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={!openUrl}
+                                  asChild
+                                >
+                                  <a href={openUrl || '#'} target="_blank" rel="noreferrer">
+                                    <ExternalLink className="h-3 w-3 mr-1" />
+                                    Open
+                                  </a>
+                                </Button>
+                              );
+                            })()}
                             <Button
                               variant="ghost"
                               size="sm"

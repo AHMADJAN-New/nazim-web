@@ -391,6 +391,8 @@ export const websitePublicAr: WebsitePublicTranslations = {
     aboutUs: 'من نحن',
     academics: 'الأكاديمية',
     portalLogin: 'تسجيل الدخول',
+    noWebsiteAccess: 'هذه المدرسة لا تملك صلاحية الوصول إلى الموقع العام. يرجى التواصل مع إدارة المدرسة أو زيارة البوابة الرئيسية لتسجيل الدخول.',
+    upgradeRequired: 'ترقية مطلوبة',
     resources: 'الموارد',
     library: 'المكتبة',
     scholars: 'العلماء',

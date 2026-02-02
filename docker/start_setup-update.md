@@ -39,7 +39,9 @@ docker/scripts/prod/bootstrap.sh
 ```
 
 ---
-
+ebuild the frontend (and Nginx image) so the new env vars are baked in:
+   docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml build 
+Or run your usual deploy/update script.
 ## What Happens Automatically
 
 When you run the above commands, the system will automatically:

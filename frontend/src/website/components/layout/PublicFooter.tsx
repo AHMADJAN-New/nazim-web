@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/hooks/useLanguage';
+import { isPublicWebsiteHost, getMainAppLoginUrl } from '@/lib/publicWebsiteHost';
 import { useWebsiteSite } from '@/website/hooks/useWebsiteSite';
 import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 
@@ -50,7 +51,13 @@ export function PublicFooter({ schoolName: propSchoolName, contact }: PublicFoot
                             <li><Link to="/public-site/about" className="hover:text-emerald-400 transition-colors">{t('websitePublic.aboutUs')}</Link></li>
                             <li><Link to="/public-site/programs" className="hover:text-emerald-400 transition-colors">{t('websitePublic.academics')}</Link></li>
                             <li><Link to="/public-site/contact" className="hover:text-emerald-400 transition-colors">{t('websitePublic.contact')}</Link></li>
-                            <li><Link to="/auth" className="hover:text-emerald-400 transition-colors">{t('websitePublic.portalLogin')}</Link></li>
+                            <li>
+                                {isPublicWebsiteHost() ? (
+                                    <a href={getMainAppLoginUrl()} className="hover:text-emerald-400 transition-colors">{t('websitePublic.portalLogin')}</a>
+                                ) : (
+                                    <Link to="/auth" className="hover:text-emerald-400 transition-colors">{t('websitePublic.portalLogin')}</Link>
+                                )}
+                            </li>
                         </ul>
                     </div>
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DiscountCode;
 use App\Models\FeatureDefinition;
 use App\Models\LimitDefinition;
+use App\Models\MaintenanceInvoice;
 use App\Models\Organization;
 use App\Models\OrganizationFeatureAddon;
 use App\Models\OrganizationSubscription;
@@ -2170,6 +2171,106 @@ class SubscriptionAdminController extends Controller
         }
     }
 
+    /**
+     * Record a maintenance fee payment for an organization (by platform admin)
+     */
+    public function recordMaintenancePayment(Request $request, string $organizationId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $validator = Validator::make(array_merge($request->all(), ['organization_id' => $organizationId]), [
+            'organization_id' => 'required|uuid|exists:organizations,id',
+            'subscription_id' => 'nullable|uuid|exists:organization_subscriptions,id',
+            'invoice_id' => 'nullable|uuid|exists:maintenance_invoices,id',
+            'amount' => 'required|numeric|min:0',
+            'currency' => 'required|in:AFN,USD',
+            'payment_method' => 'required|in:bank_transfer,cash,check,mobile_money,other',
+            'payment_reference' => 'nullable|string|max:255',
+            'payment_date' => 'required|date',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            $subscription = null;
+            if ($request->subscription_id) {
+                $subscription = OrganizationSubscription::where('id', $request->subscription_id)
+                    ->where('organization_id', $organizationId)
+                    ->first();
+                if (! $subscription) {
+                    return response()->json(['error' => 'Subscription not found for this organization'], 404);
+                }
+            } else {
+                $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
+            }
+
+            if (! $subscription) {
+                return response()->json(['error' => 'No active subscription found for this organization'], 400);
+            }
+
+            $invoiceId = null;
+            if ($request->invoice_id) {
+                $invoice = MaintenanceInvoice::where('id', $request->invoice_id)
+                    ->where('organization_id', $organizationId)
+                    ->first();
+                if (! $invoice) {
+                    return response()->json(['error' => 'Invoice not found'], 404);
+                }
+                if (! $invoice->isPending()) {
+                    return response()->json(['error' => 'Invoice is not pending payment'], 400);
+                }
+                $invoiceId = $invoice->id;
+            }
+
+            $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
+            $payment = $maintenanceFeeService->recordMaintenancePayment(
+                $subscription,
+                (float) $request->amount,
+                $request->currency,
+                $request->payment_method,
+                $request->payment_reference,
+                $invoiceId,
+                null,
+                0,
+                $request->notes
+            );
+
+            if ($request->payment_date && $request->payment_date !== now()->toDateString()) {
+                $payment->update(['payment_date' => $request->payment_date]);
+                $payment->refresh();
+            }
+
+            return response()->json([
+                'data' => [
+                    'id' => $payment->id,
+                    'amount' => $payment->amount,
+                    'currency' => $payment->currency,
+                    'payment_method' => $payment->payment_method,
+                    'payment_reference' => $payment->payment_reference,
+                    'payment_date' => $payment->payment_date?->toDateString(),
+                    'period_start' => $payment->period_start?->toDateString(),
+                    'period_end' => $payment->period_end?->toDateString(),
+                    'status' => $payment->status,
+                    'payment_type' => $payment->payment_type,
+                    'billing_period' => $payment->billing_period,
+                    'is_recurring' => $payment->is_recurring,
+                    'invoice_number' => $payment->invoice_number,
+                ],
+                'message' => 'Maintenance fee payment recorded successfully. Awaiting confirmation.',
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Failed to record maintenance payment: '.$e->getMessage(), [
+                'organization_id' => $organizationId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json(['error' => 'Failed to record payment: '.$e->getMessage()], 500);
+        }
+    }
+
     // =====================================================
     // LICENSE FEES (PLATFORM ADMIN)
     // =====================================================
@@ -2193,6 +2294,100 @@ class SubscriptionAdminController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
             return response()->json(['error' => 'Failed to list unpaid license fees'], 500);
+        }
+    }
+
+    /**
+     * Record a license fee payment for an organization (by platform admin)
+     */
+    public function recordLicensePayment(Request $request, string $organizationId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $validator = Validator::make(array_merge($request->all(), ['organization_id' => $organizationId]), [
+            'organization_id' => 'required|uuid|exists:organizations,id',
+            'subscription_id' => 'nullable|uuid|exists:organization_subscriptions,id',
+            'amount' => 'required|numeric|min:0',
+            'currency' => 'required|in:AFN,USD',
+            'payment_method' => 'required|in:bank_transfer,cash,check,mobile_money,other',
+            'payment_reference' => 'nullable|string|max:255',
+            'payment_date' => 'required|date',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            $subscription = null;
+            if ($request->subscription_id) {
+                $subscription = OrganizationSubscription::where('id', $request->subscription_id)
+                    ->where('organization_id', $organizationId)
+                    ->first();
+                if (! $subscription) {
+                    return response()->json(['error' => 'Subscription not found for this organization'], 404);
+                }
+            } else {
+                $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
+            }
+
+            if (! $subscription) {
+                return response()->json(['error' => 'No active subscription found for this organization'], 400);
+            }
+
+            $licenseFeeService = app(\App\Services\Subscription\LicenseFeeService::class);
+
+            if ($subscription->hasLicensePaid()) {
+                return response()->json(['error' => 'License fee has already been paid'], 400);
+            }
+
+            $pendingPayments = $licenseFeeService->getPendingLicensePayments($organizationId);
+            if ($pendingPayments->isNotEmpty()) {
+                return response()->json([
+                    'error' => 'There is already a pending license fee payment awaiting confirmation',
+                    'pending_payment_id' => $pendingPayments->first()->id,
+                ], 400);
+            }
+
+            $payment = $licenseFeeService->recordLicensePayment(
+                $subscription,
+                (float) $request->amount,
+                $request->currency,
+                $request->payment_method,
+                $request->payment_reference,
+                null,
+                0,
+                $request->notes
+            );
+
+            if ($request->payment_date && $request->payment_date !== now()->toDateString()) {
+                $payment->update(['payment_date' => $request->payment_date]);
+                $payment->refresh();
+            }
+
+            return response()->json([
+                'data' => [
+                    'id' => $payment->id,
+                    'amount' => $payment->amount,
+                    'currency' => $payment->currency,
+                    'payment_method' => $payment->payment_method,
+                    'payment_reference' => $payment->payment_reference,
+                    'payment_date' => $payment->payment_date?->toDateString(),
+                    'status' => $payment->status,
+                    'payment_type' => $payment->payment_type,
+                    'billing_period' => $payment->billing_period,
+                    'is_recurring' => $payment->is_recurring,
+                ],
+                'message' => 'License fee payment recorded successfully. Awaiting confirmation.',
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Failed to record license payment: '.$e->getMessage(), [
+                'organization_id' => $organizationId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json(['error' => 'Failed to record payment: '.$e->getMessage()], 500);
         }
     }
 

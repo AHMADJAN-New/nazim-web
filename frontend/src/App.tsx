@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { PlatformAdminRoute } from "@/components/PlatformAdminRoute";
+import { HostAwareRoot } from "@/components/HostAwareRoot";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
@@ -441,6 +442,7 @@ const App = () => (
             <ErrorBoundary>
               <MaintenanceModeHandler>
                 <Routes>
+                  <Route element={<HostAwareRoot />}>
                   <Route path="/" element={<Index />} />
                   <Route path="/about" element={<AboutUs />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -1923,6 +1925,7 @@ const App = () => (
 
                     {/* Catch-all route */}
                     <Route path="*" element={<NotFound />} />
+                  </Route>
                   </Route>
                 </Routes>
               </MaintenanceModeHandler>

@@ -45,15 +45,16 @@ sleep 2
 # Renew certificates if they exist, otherwise skip silently
 if compose exec -T nginx test -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" 2>/dev/null; then
   echo "[update] Renewing certificates for ${DOMAIN}..."
-  if compose run --rm certbot renew --webroot -w /var/www/certbot --non-interactive --quiet; then
+  # Use renewal configs (no --webroot). Wildcard certs (manual DNS-01) cannot auto-renew here.
+  if compose run --rm certbot renew --non-interactive --quiet 2>/dev/null; then
     echo "[update] ✓ Certificates renewed (or already up to date)"
-    echo "[update] Refreshing cert symlinks + reloading nginx..."
-    compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload' || true
   else
-    echo "[update] ⚠️  Certificate renewal failed (this is OK if certs don't exist yet)"
+    echo "[update] ⚠️  Certificate renewal skipped or failed (OK if using wildcard cert; renew manually with docker/scripts/prod/https_init_wildcard.sh before expiry)"
   fi
+  echo "[update] Reloading nginx..."
+  compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload' || true
 else
-  echo "[update] ℹ️  No certificates found, skipping renewal (run docker/scripts/prod/https_init.sh to initialize)"
+  echo "[update] ℹ️  No certificates found, skipping renewal (run docker/scripts/prod/https_init.sh or https_init_wildcard.sh to initialize)"
 fi
 
 echo "[update] Done."

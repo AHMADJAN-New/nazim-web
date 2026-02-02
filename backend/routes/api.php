@@ -1594,6 +1594,8 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/organizations/{organizationId}/feature-addon', [SubscriptionAdminController::class, 'addFeatureAddon']);
     Route::get('/organizations/{organizationId}/usage-snapshots', [SubscriptionAdminController::class, 'getUsageSnapshots']);
     Route::post('/organizations/{organizationId}/recalculate-usage', [SubscriptionAdminController::class, 'recalculateUsage']);
+    Route::post('/organizations/{organizationId}/maintenance-payment', [SubscriptionAdminController::class, 'recordMaintenancePayment']);
+    Route::post('/organizations/{organizationId}/license-payment', [SubscriptionAdminController::class, 'recordLicensePayment']);
 
     // Payments & renewals
     Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);

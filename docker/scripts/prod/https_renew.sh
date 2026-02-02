@@ -15,7 +15,12 @@ compose() {
 }
 
 echo "[https_renew] Renewing certificates (if needed)..."
-compose run --rm certbot renew --webroot -w /var/www/certbot --non-interactive --quiet
+# Use renewal configs only (no --webroot). Webroot-issued certs renew automatically.
+# Manual DNS-01 wildcard certs (*.domain) cannot renew here; run https_init_wildcard.sh before expiry.
+if ! compose run --rm certbot renew --non-interactive --quiet 2>/dev/null; then
+  echo "[https_renew] ⚠️  Some certs could not be renewed (e.g. wildcard certs need manual renewal)."
+  echo "[https_renew]    To renew a wildcard cert, run: bash docker/scripts/prod/https_init_wildcard.sh"
+fi
 
 echo "[https_renew] Refreshing cert symlinks + reloading nginx..."
 compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload'

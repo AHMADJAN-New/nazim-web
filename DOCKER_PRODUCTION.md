@@ -71,6 +71,8 @@ Renew (run via host cron, recommended daily):
 bash docker/scripts/prod/https_renew.sh
 ```
 
+If you use a **wildcard** cert for subdomains (e.g. `*.nazim.cloud`), it was issued with `https_init_wildcard.sh` and does not auto-renew. Renew it manually before expiry by running `bash docker/scripts/prod/https_init_wildcard.sh` again and adding the TXT record when prompted. See WEBSITE_PORTAL_SETUP.md for details.
+
 ### 4) Update (future deploys)
 
 ```bash

@@ -13,6 +13,7 @@ import {
 import { useLanguage } from '@/hooks/useLanguage';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { isPublicWebsiteHost, getMainAppLoginUrl } from '@/lib/publicWebsiteHost';
 
 interface WebsiteMenu {
     id: string;
@@ -285,9 +286,19 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                         </span>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Link to="/auth" className="hover:text-white transition-colors">د والدینو پورټل</Link>
-                        <span className="text-emerald-400 opacity-50">|</span>
-                        <Link to="/auth" className="hover:text-white transition-colors">د کارکوونکو ننوتل</Link>
+                        {isPublicWebsiteHost() ? (
+                            <>
+                                <a href={getMainAppLoginUrl()} className="hover:text-white transition-colors">د والدینو پورټل</a>
+                                <span className="text-emerald-400 opacity-50">|</span>
+                                <a href={getMainAppLoginUrl()} className="hover:text-white transition-colors">د کارکوونکو ننوتل</a>
+                            </>
+                        ) : (
+                            <>
+                                <Link to="/auth" className="hover:text-white transition-colors">د والدینو پورټل</Link>
+                                <span className="text-emerald-400 opacity-50">|</span>
+                                <Link to="/auth" className="hover:text-white transition-colors">د کارکوونکو ننوتل</Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -413,7 +424,11 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                         </DropdownMenuContent>
                     </DropdownMenu>
                     <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50" asChild>
-                        <Link to="/auth">ننوتل</Link>
+                        {isPublicWebsiteHost() ? (
+                            <a href={getMainAppLoginUrl()}>ننوتل</a>
+                        ) : (
+                            <Link to="/auth">ننوتل</Link>
+                        )}
                     </Button>
                     <Button
                         size="sm"
@@ -493,7 +508,11 @@ export function PublicHeader({ schoolName: propSchoolName, logo: propLogo }: Pub
                             </div>
                             <div className="flex flex-col gap-2 pt-2">
                                 <Button variant="outline" className="w-full border-emerald-200 text-emerald-700" asChild>
-                                    <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>ننوتل</Link>
+                                    {isPublicWebsiteHost() ? (
+                                        <a href={getMainAppLoginUrl()} onClick={() => setIsMobileMenuOpen(false)}>ننوتل</a>
+                                    ) : (
+                                        <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>ننوتل</Link>
+                                    )}
                                 </Button>
                                 <Button
                                     className="w-full bg-emerald-600 hover:bg-emerald-700"

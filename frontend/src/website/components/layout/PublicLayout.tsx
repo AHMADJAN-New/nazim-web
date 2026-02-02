@@ -5,6 +5,7 @@ import { publicWebsiteApi } from '@/lib/api/client';
 import { PublicHeader } from '@/website/components/layout/PublicHeader';
 import { PublicFooter } from '@/website/components/layout/PublicFooter';
 import { LoadingSpinner } from '@/components/ui/loading';
+import PublicWebsiteNoAccess from '@/website/pages/PublicWebsiteNoAccess';
 
 const PUBLIC_SCHOOL_ID_KEY = 'public_website_school_id';
 
@@ -41,6 +42,18 @@ export function PublicLayout() {
             <div className="h-screen w-full bg-slate-50">
                 <LoadingSpinner fullScreen />
             </div>
+        );
+    }
+
+    // 402 = no public website access: show friendly page with school name and domain
+    const err = siteQuery.error as { featureKey?: string; schoolName?: string; domain?: string; requiredPlan?: string } | undefined;
+    if (siteQuery.isError && err?.featureKey === 'public_website') {
+        return (
+            <PublicWebsiteNoAccess
+                schoolName={err.schoolName}
+                domain={err.domain}
+                requiredPlan={err.requiredPlan}
+            />
         );
     }
 

@@ -282,6 +282,8 @@ class ApiClient {
           (subscriptionError as any).current = error.current;
           (subscriptionError as any).limit = error.limit;
           (subscriptionError as any).availableAddons = error.available_addons;
+          (subscriptionError as any).schoolName = error.school_name;
+          (subscriptionError as any).domain = error.domain;
 
           // Dispatch custom event for global subscription error handling (with debouncing)
           if (typeof window !== 'undefined') {
