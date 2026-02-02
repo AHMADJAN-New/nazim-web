@@ -16,12 +16,16 @@ class ActionRequiredMail extends Mailable implements ShouldQueue
     public function __construct(
         public ?Notification $notification,
         public ?NotificationEvent $event
-    ) {
-    }
+    ) {}
 
     public function build(): self
     {
-        return $this->subject($this->notification?->title ?? 'Nazim Notification')
+        $from = config('mail.from');
+        $address = $from['address'] ?? 'noreply@nazim.local';
+        $name = $from['name'] ?? config('app.name', 'Nazim');
+
+        return $this->from($address, $name)
+            ->subject($this->notification?->title ?? 'Nazim Notification')
             ->view('emails.action_required')
             ->with([
                 'notification' => $this->notification,

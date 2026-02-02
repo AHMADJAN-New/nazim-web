@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 use ZipArchive;
-use Carbon\Carbon;
 
 class BackupController extends Controller
 {
@@ -19,7 +18,7 @@ class BackupController extends Controller
     private function checkSubscriptionAdminPermission(Request $request): bool
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -29,7 +28,8 @@ class BackupController extends Controller
 
             return $user->hasPermissionTo('subscription.admin');
         } catch (\Exception $e) {
-            \Log::warning("Permission check failed for subscription.admin: " . $e->getMessage());
+            \Log::warning('Permission check failed for subscription.admin: '.$e->getMessage());
+
             return false;
         }
     }
@@ -39,7 +39,7 @@ class BackupController extends Controller
      */
     private function enforceSubscriptionAdmin(Request $request): void
     {
-        if (!$this->checkSubscriptionAdminPermission($request)) {
+        if (! $this->checkSubscriptionAdminPermission($request)) {
             abort(403, 'You do not have permission to access backup administration');
         }
     }
@@ -53,13 +53,13 @@ class BackupController extends Controller
 
         try {
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
-            
+
             // CRITICAL: Use storage/app/backups for Docker compatibility
             // This ensures backups are stored within the storage volume where www-data has write permissions
             $backupBaseDir = storage_path('app/backups');
-            
+
             // Ensure backup base directory exists with correct permissions
-            if (!is_dir($backupBaseDir)) {
+            if (! is_dir($backupBaseDir)) {
                 try {
                     File::makeDirectory($backupBaseDir, 0775, true);
                     // Ensure www-data owns the directory (important for Docker)
@@ -68,19 +68,19 @@ class BackupController extends Controller
                         @chgrp($backupBaseDir, 'www-data');
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Failed to create backup base directory: ' . $e->getMessage());
+                    \Log::error('Failed to create backup base directory: '.$e->getMessage());
                     throw new \Exception('Failed to create backup directory. Please ensure storage/app/backups is writable.');
                 }
             }
-            
+
             // Create timestamped backup directory
-            $backupDir = $backupBaseDir . DIRECTORY_SEPARATOR . $timestamp;
-            if (!File::exists($backupDir)) {
+            $backupDir = $backupBaseDir.DIRECTORY_SEPARATOR.$timestamp;
+            if (! File::exists($backupDir)) {
                 try {
                     File::makeDirectory($backupDir, 0775, true);
                 } catch (\Exception $e) {
-                    \Log::error('Failed to create backup directory: ' . $e->getMessage());
-                    throw new \Exception('Failed to create backup directory: ' . $e->getMessage());
+                    \Log::error('Failed to create backup directory: '.$e->getMessage());
+                    throw new \Exception('Failed to create backup directory: '.$e->getMessage());
                 }
             }
 
@@ -92,7 +92,7 @@ class BackupController extends Controller
 
             // 3. Create ZIP archive
             // Normalize ZIP path for Windows (use same base directory)
-            $zipPath = $backupBaseDir . DIRECTORY_SEPARATOR . 'nazim_backup_' . $timestamp . '.zip';
+            $zipPath = $backupBaseDir.DIRECTORY_SEPARATOR.'nazim_backup_'.$timestamp.'.zip';
             $this->createZipArchive($backupDir, $zipPath);
 
             // 4. Clean up temporary directory
@@ -108,19 +108,19 @@ class BackupController extends Controller
                 'backup' => [
                     'filename' => basename($zipPath),
                     'path' => $zipPath,
-                    'size' => $fileSizeMB . ' MB',
+                    'size' => $fileSizeMB.' MB',
                     'timestamp' => $timestamp,
                     'created_at' => Carbon::now()->toDateTimeString(),
                 ],
             ]);
         } catch (\Exception $e) {
-            \Log::error('Backup creation failed: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            \Log::error('Backup creation failed: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Backup creation failed: ' . $e->getMessage(),
+                'message' => 'Backup creation failed: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -133,9 +133,9 @@ class BackupController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         try {
-            $backupPath = storage_path('app/backups/' . $filename);
+            $backupPath = storage_path('app/backups/'.$filename);
 
-            if (!File::exists($backupPath)) {
+            if (! File::exists($backupPath)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Backup file not found',
@@ -144,14 +144,14 @@ class BackupController extends Controller
 
             return response()->download($backupPath, $filename, [
                 'Content-Type' => 'application/zip',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Backup download failed: ' . $e->getMessage());
+            \Log::error('Backup download failed: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Backup download failed: ' . $e->getMessage(),
+                'message' => 'Backup download failed: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -167,7 +167,7 @@ class BackupController extends Controller
             $backupsDir = storage_path('app/backups');
 
             // Ensure backup directory exists with correct permissions
-            if (!File::exists($backupsDir)) {
+            if (! File::exists($backupsDir)) {
                 try {
                     File::makeDirectory($backupsDir, 0775, true);
                     // Ensure www-data owns the directory (important for Docker)
@@ -176,7 +176,8 @@ class BackupController extends Controller
                         @chgrp($backupsDir, 'www-data');
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Failed to create backups directory in listBackups: ' . $e->getMessage());
+                    \Log::error('Failed to create backups directory in listBackups: '.$e->getMessage());
+
                     // Don't throw - return empty list instead
                     return response()->json([
                         'success' => true,
@@ -192,7 +193,7 @@ class BackupController extends Controller
                 if (pathinfo($file, PATHINFO_EXTENSION) === 'zip') {
                     $backups[] = [
                         'filename' => $file->getFilename(),
-                        'size' => round($file->getSize() / 1024 / 1024, 2) . ' MB',
+                        'size' => round($file->getSize() / 1024 / 1024, 2).' MB',
                         'created_at' => Carbon::createFromTimestamp($file->getMTime())->toDateTimeString(),
                         'path' => $file->getPathname(),
                     ];
@@ -209,11 +210,11 @@ class BackupController extends Controller
                 'backups' => $backups,
             ]);
         } catch (\Exception $e) {
-            \Log::error('List backups failed: ' . $e->getMessage());
+            \Log::error('List backups failed: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to list backups: ' . $e->getMessage(),
+                'message' => 'Failed to list backups: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -226,9 +227,9 @@ class BackupController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         try {
-            $backupPath = storage_path('app/backups/' . $filename);
+            $backupPath = storage_path('app/backups/'.$filename);
 
-            if (!File::exists($backupPath)) {
+            if (! File::exists($backupPath)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Backup file not found',
@@ -242,11 +243,11 @@ class BackupController extends Controller
                 'message' => 'Backup deleted successfully',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Backup deletion failed: ' . $e->getMessage());
+            \Log::error('Backup deletion failed: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Backup deletion failed: ' . $e->getMessage(),
+                'message' => 'Backup deletion failed: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -259,9 +260,9 @@ class BackupController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         try {
-            $backupPath = storage_path('app/backups/' . $filename);
+            $backupPath = storage_path('app/backups/'.$filename);
 
-            if (!File::exists($backupPath)) {
+            if (! File::exists($backupPath)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Backup file not found',
@@ -271,7 +272,7 @@ class BackupController extends Controller
             // Get restore type from request (default: 'all' for backward compatibility)
             $restoreType = $request->input('restore_type', 'all');
             // Validate restore type - only allow 'database' or 'all'
-            if (!in_array($restoreType, ['database', 'all'], true)) {
+            if (! in_array($restoreType, ['database', 'all'], true)) {
                 $restoreType = 'all'; // Default to 'all' for invalid values
             }
             $restoreStorage = $restoreType !== 'database';
@@ -283,13 +284,13 @@ class BackupController extends Controller
                 'message' => 'Backup restored successfully',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Backup restore failed: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            \Log::error('Backup restore failed: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Backup restore failed: ' . $e->getMessage(),
+                'message' => 'Backup restore failed: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -308,12 +309,12 @@ class BackupController extends Controller
 
             $file = $request->file('backup_file');
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
-            $filename = 'uploaded_backup_' . $timestamp . '.zip';
-            $backupPath = storage_path('app/backups/' . $filename);
+            $filename = 'uploaded_backup_'.$timestamp.'.zip';
+            $backupPath = storage_path('app/backups/'.$filename);
 
             // Ensure backup directory exists with correct permissions
             $backupsDir = storage_path('app/backups');
-            if (!File::exists($backupsDir)) {
+            if (! File::exists($backupsDir)) {
                 try {
                     File::makeDirectory($backupsDir, 0775, true);
                     // Ensure www-data owns the directory (important for Docker)
@@ -322,7 +323,7 @@ class BackupController extends Controller
                         @chgrp($backupsDir, 'www-data');
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Failed to create backups directory: ' . $e->getMessage());
+                    \Log::error('Failed to create backups directory: '.$e->getMessage());
                     throw new \Exception('Failed to create backups directory. Please ensure storage/app/backups is writable.');
                 }
             }
@@ -333,7 +334,7 @@ class BackupController extends Controller
             // Get restore type from request (default: 'all' for backward compatibility)
             $restoreType = $request->input('restore_type', 'all');
             // Validate restore type - only allow 'database' or 'all'
-            if (!in_array($restoreType, ['database', 'all'], true)) {
+            if (! in_array($restoreType, ['database', 'all'], true)) {
                 $restoreType = 'all'; // Default to 'all' for invalid values
             }
             $restoreStorage = $restoreType !== 'database';
@@ -346,13 +347,13 @@ class BackupController extends Controller
                 'message' => 'Backup uploaded and restored successfully',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Upload and restore failed: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            \Log::error('Upload and restore failed: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Upload and restore failed: ' . $e->getMessage(),
+                'message' => 'Upload and restore failed: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -367,12 +368,12 @@ class BackupController extends Controller
         // Do NOT extract under storage/app because restoreStorage() clears storage/app,
         // which would delete the extracted files mid-restore.
         // Use storage/restore_temp (outside storage/app) to keep extraction stable.
-        $extractDir = storage_path('restore_temp/' . $timestamp);
+        $extractDir = storage_path('restore_temp/'.$timestamp);
 
         try {
             // Ensure restore_temp base directory exists
             $restoreTempBase = storage_path('restore_temp');
-            if (!File::exists($restoreTempBase)) {
+            if (! File::exists($restoreTempBase)) {
                 try {
                     File::makeDirectory($restoreTempBase, 0775, true);
                     // Ensure www-data owns the directory (important for Docker)
@@ -381,23 +382,23 @@ class BackupController extends Controller
                         @chgrp($restoreTempBase, 'www-data');
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Failed to create restore_temp base directory: ' . $e->getMessage());
+                    \Log::error('Failed to create restore_temp base directory: '.$e->getMessage());
                     throw new \Exception('Failed to create restore temporary directory. Please ensure storage/restore_temp is writable.');
                 }
             }
-            
+
             // Create temporary extraction directory
-            if (!File::exists($extractDir)) {
+            if (! File::exists($extractDir)) {
                 try {
                     File::makeDirectory($extractDir, 0775, true);
                 } catch (\Exception $e) {
-                    \Log::error('Failed to create extract directory: ' . $e->getMessage());
-                    throw new \Exception('Failed to create extract directory: ' . $e->getMessage());
+                    \Log::error('Failed to create extract directory: '.$e->getMessage());
+                    throw new \Exception('Failed to create extract directory: '.$e->getMessage());
                 }
             }
 
             // Extract ZIP archive
-            $zip = new ZipArchive();
+            $zip = new ZipArchive;
             if ($zip->open($backupPath) !== true) {
                 throw new \Exception('Failed to open backup archive');
             }
@@ -408,17 +409,17 @@ class BackupController extends Controller
             // Restore database - check for .sql file (preferred, most compatible), .tar file, .dump file, or custom format directory
             // Plain SQL format (.sql) is preferred for maximum compatibility across PostgreSQL versions
             // Normalize paths for cross-platform compatibility
-            $dbFile = $extractDir . DIRECTORY_SEPARATOR . 'database.sql';
-            $dbTarFile = $extractDir . DIRECTORY_SEPARATOR . 'database.tar';
-            $dbDumpFile = $extractDir . DIRECTORY_SEPARATOR . 'database.dump';
-            $dbDumpDir = $extractDir . DIRECTORY_SEPARATOR . 'database_dump'; // Custom format creates a directory
-            
+            $dbFile = $extractDir.DIRECTORY_SEPARATOR.'database.sql';
+            $dbTarFile = $extractDir.DIRECTORY_SEPARATOR.'database.tar';
+            $dbDumpFile = $extractDir.DIRECTORY_SEPARATOR.'database.dump';
+            $dbDumpDir = $extractDir.DIRECTORY_SEPARATOR.'database_dump'; // Custom format creates a directory
+
             // Normalize all paths
             $dbFile = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbFile);
             $dbTarFile = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbTarFile);
             $dbDumpFile = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbDumpFile);
             $dbDumpDir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbDumpDir);
-            
+
             \Log::info('Looking for database backup file', [
                 'extract_dir' => $extractDir,
                 'db_file_exists' => File::exists($dbFile),
@@ -426,7 +427,7 @@ class BackupController extends Controller
                 'db_dump_file_exists' => File::exists($dbDumpFile),
                 'db_dump_dir_exists' => is_dir($dbDumpDir),
             ]);
-            
+
             if (File::exists($dbFile)) {
                 \Log::info('Found database.sql file, starting restore', [
                     'file_size' => File::size($dbFile),
@@ -471,43 +472,43 @@ class BackupController extends Controller
                             $foundFiles[] = $file->getRelativePathname();
                         }
                     } catch (\Exception $e) {
-                        \Log::warning('Failed to list files in extract directory: ' . $e->getMessage());
+                        \Log::warning('Failed to list files in extract directory: '.$e->getMessage());
                     }
                 }
                 $foundFilesList = empty($foundFiles) ? 'none' : implode(', ', array_slice($foundFiles, 0, 10));
                 if (count($foundFiles) > 10) {
-                    $foundFilesList .= ' (and ' . (count($foundFiles) - 10) . ' more)';
+                    $foundFilesList .= ' (and '.(count($foundFiles) - 10).' more)';
                 }
                 throw new \Exception(
-                    'Database backup file not found in archive. ' .
-                    'Expected: database.sql, database.tar, database.dump, or database_dump directory. ' .
-                    'Found files: ' . $foundFilesList
+                    'Database backup file not found in archive. '.
+                    'Expected: database.sql, database.tar, database.dump, or database_dump directory. '.
+                    'Found files: '.$foundFilesList
                 );
             }
 
             // Restore storage - only if restoreStorage is true
             if ($restoreStorage) {
                 $storageDir = null;
-                
+
                 // Try standard structure: storage/app
-                $storageDir1 = $extractDir . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app';
+                $storageDir1 = $extractDir.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app';
                 $storageDir1 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir1);
-                
+
                 // Try alternative structure: app (directly in extract dir)
-                $storageDir2 = $extractDir . DIRECTORY_SEPARATOR . 'app';
+                $storageDir2 = $extractDir.DIRECTORY_SEPARATOR.'app';
                 $storageDir2 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir2);
-                
+
                 // Try another alternative: storage (if app is inside)
-                $storageDir3 = $extractDir . DIRECTORY_SEPARATOR . 'storage';
+                $storageDir3 = $extractDir.DIRECTORY_SEPARATOR.'storage';
                 $storageDir3 = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $storageDir3);
-                
+
                 if (File::exists($storageDir1) && is_dir($storageDir1)) {
                     $storageDir = $storageDir1;
                 } elseif (File::exists($storageDir2) && is_dir($storageDir2)) {
                     $storageDir = $storageDir2;
                 } elseif (File::exists($storageDir3) && is_dir($storageDir3)) {
                     // Check if app directory exists inside storage
-                    $appInsideStorage = $storageDir3 . DIRECTORY_SEPARATOR . 'app';
+                    $appInsideStorage = $storageDir3.DIRECTORY_SEPARATOR.'app';
                     if (File::exists($appInsideStorage) && is_dir($appInsideStorage)) {
                         $storageDir = $appInsideStorage;
                     } else {
@@ -515,7 +516,7 @@ class BackupController extends Controller
                         $storageDir = $storageDir3;
                     }
                 }
-                
+
                 if ($storageDir && File::exists($storageDir)) {
                     \Log::info('Found storage backup directory, starting restore', [
                         'storage_dir' => $storageDir,
@@ -558,36 +559,36 @@ class BackupController extends Controller
     {
         // Normalize path for cross-platform compatibility
         $normalizedDbFile = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dbFile);
-        
+
         // Validate file exists and is readable
-        if (!File::exists($normalizedDbFile)) {
+        if (! File::exists($normalizedDbFile)) {
             throw new \Exception("Database backup file not found: {$normalizedDbFile}");
         }
-        
-        if (!is_readable($normalizedDbFile)) {
+
+        if (! is_readable($normalizedDbFile)) {
             throw new \Exception("Database backup file is not readable: {$normalizedDbFile}");
         }
-        
+
         // Check file size (if it's a file, not a directory)
-        if (!is_dir($normalizedDbFile)) {
+        if (! is_dir($normalizedDbFile)) {
             $fileSize = File::size($normalizedDbFile);
             if ($fileSize === 0) {
                 throw new \Exception("Database backup file is empty: {$normalizedDbFile}");
             }
-            
+
             // Pre-process SQL file to fix common restore issues
             // This prevents "function already exists" and "role does not exist" errors during restore
             if (str_ends_with($normalizedDbFile, '.sql')) {
                 try {
                     $originalFileSize = File::size($normalizedDbFile);
                     $sqlContent = File::get($normalizedDbFile);
-                    
+
                     \Log::info('Starting SQL file preprocessing', [
                         'file_path' => $normalizedDbFile,
                         'file_size' => $originalFileSize,
                         'content_length' => strlen($sqlContent),
                     ]);
-                    
+
                     // 1. Replace CREATE FUNCTION with CREATE OR REPLACE FUNCTION
                     // Use regex to match CREATE FUNCTION statements while preserving the function definition
                     // Pattern: CREATE FUNCTION (possibly with OR REPLACE already) -> ensure OR REPLACE is present
@@ -596,16 +597,16 @@ class BackupController extends Controller
                         'CREATE OR REPLACE FUNCTION ',
                         $sqlContent
                     );
-                    
+
                     // 2. Remove ALTER ... OWNER TO statements (roles may not exist in target database)
                     // These statements cause "role does not exist" errors during restore
                     // Match multi-line ALTER statements that may span multiple lines
                     // Pattern: ALTER <object_type> <object_name> OWNER TO <role>;
-                    
+
                     // Count original OWNER TO statements for logging (before removal)
                     preg_match_all('/ALTER\s+[A-Z_]+\s+[^;]*?OWNER\s+TO\s+[^;]+;/is', $sqlContent, $matches);
                     $originalOwnerToCount = count($matches[0] ?? []);
-                    
+
                     // Remove ALTER FUNCTION ... OWNER TO ... (handles multi-line and function names with parentheses)
                     // Example: ALTER FUNCTION public.auto_set_staff_document_organization_id() OWNER TO nazim;
                     // Use [^;]+ to match everything up to semicolon (non-greedy with ?)
@@ -614,56 +615,56 @@ class BackupController extends Controller
                         '-- Removed ALTER FUNCTION OWNER TO (role may not exist)',
                         $sqlContent
                     );
-                    
+
                     // Remove ALTER TABLE ... OWNER TO ...
                     $sqlContent = preg_replace(
                         '/ALTER\s+TABLE\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
                         '-- Removed ALTER TABLE OWNER TO (role may not exist)',
                         $sqlContent
                     );
-                    
+
                     // Remove ALTER SEQUENCE ... OWNER TO ...
                     $sqlContent = preg_replace(
                         '/ALTER\s+SEQUENCE\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
                         '-- Removed ALTER SEQUENCE OWNER TO (role may not exist)',
                         $sqlContent
                     );
-                    
+
                     // Remove ALTER VIEW ... OWNER TO ...
                     $sqlContent = preg_replace(
                         '/ALTER\s+VIEW\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
                         '-- Removed ALTER VIEW OWNER TO (role may not exist)',
                         $sqlContent
                     );
-                    
+
                     // Remove ALTER TYPE ... OWNER TO ...
                     $sqlContent = preg_replace(
                         '/ALTER\s+TYPE\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
                         '-- Removed ALTER TYPE OWNER TO (role may not exist)',
                         $sqlContent
                     );
-                    
+
                     // Remove ALTER SCHEMA ... OWNER TO ...
                     $sqlContent = preg_replace(
                         '/ALTER\s+SCHEMA\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
                         '-- Removed ALTER SCHEMA OWNER TO (role may not exist)',
                         $sqlContent
                     );
-                    
+
                     // Generic catch-all for any other ALTER ... OWNER TO statements
                     $sqlContent = preg_replace(
                         '/ALTER\s+[A-Z_]+\s+[^;]*?OWNER\s+TO\s+[^;]+;/is',
                         '-- Removed ALTER ... OWNER TO (role may not exist)',
                         $sqlContent
                     );
-                    
+
                     // Count how many were actually removed (by counting comments)
                     $removedCount = substr_count($sqlContent, '-- Removed ALTER');
-                    
+
                     // Write the processed SQL back to the file
                     File::put($normalizedDbFile, $sqlContent);
-                    
-                    \Log::info("Pre-processed SQL file", [
+
+                    \Log::info('Pre-processed SQL file', [
                         'replaced_create_function' => true,
                         'original_owner_to_statements' => $originalOwnerToCount,
                         'removed_owner_to_statements' => $removedCount,
@@ -671,12 +672,12 @@ class BackupController extends Controller
                         'file_size_after' => File::size($normalizedDbFile),
                     ]);
                 } catch (\Exception $e) {
-                    \Log::warning('Failed to pre-process SQL file (continuing anyway): ' . $e->getMessage());
+                    \Log::warning('Failed to pre-process SQL file (continuing anyway): '.$e->getMessage());
                     // Don't throw - continue with restore even if preprocessing fails
                 }
             }
         }
-        
+
         $dbConnection = config('database.default');
         $dbConfig = config("database.connections.{$dbConnection}");
 
@@ -697,12 +698,12 @@ class BackupController extends Controller
             // Check if it's a tar/custom format (tar file, .dump file, or directory)
             // Plain SQL files (.sql) are handled by psql for maximum compatibility
             $isCustomFormat = str_ends_with($normalizedDbFile, '.tar') || str_ends_with($normalizedDbFile, '.dump') || is_dir($normalizedDbFile);
-            
+
             if ($isCustomFormat) {
                 // Use pg_restore for custom format (.dump) files
                 $pgRestorePath = $this->findPgRestorePath();
-                
-                if (!$pgRestorePath) {
+
+                if (! $pgRestorePath) {
                     $errorMessage = 'pg_restore executable not found. ';
                     if (PHP_OS_FAMILY === 'Windows') {
                         $errorMessage .= 'Please ensure PostgreSQL is installed and pg_restore.exe is available. ';
@@ -713,10 +714,10 @@ class BackupController extends Controller
                     }
                     throw new \Exception($errorMessage);
                 }
-                
+
                 // Get pg_restore version for better error messages
                 $pgRestoreVersion = $this->getPgRestoreVersion($pgRestorePath);
-                
+
                 // Use pg_restore for custom format
                 // Add verbose flag to get more detailed error information
                 // Add --no-owner flag to ignore ownership issues (roles that don't exist in target database)
@@ -724,19 +725,19 @@ class BackupController extends Controller
                 if (PHP_OS_FAMILY === 'Windows') {
                     // Create temporary batch file for better error capture on Windows
                     $tempDir = str_replace('/', '\\', sys_get_temp_dir());
-                    $batchFile = $tempDir . '\\pg_restore_backup_' . uniqid() . '.bat';
-                    
+                    $batchFile = $tempDir.'\\pg_restore_backup_'.uniqid().'.bat';
+
                     // Escape password for batch file
                     $escapedPassword = str_replace(['"', '%', '!', '^', '&'], ['""', '%%', '!!', '^^', '^&'], $dbPassword);
-                    
+
                     // Normalize paths for Windows
                     $normalizedPgRestorePath = str_replace('/', '\\', $pgRestorePath);
                     $normalizedDbFile = str_replace('/', '\\', $normalizedDbFile);
-                    
+
                     // Escape backslashes and quotes in paths for batch file
                     $escapedPgRestorePath = str_replace(['\\', '"'], ['\\\\', '\\"'], $normalizedPgRestorePath);
                     $escapedDbFile = str_replace(['\\', '"'], ['\\\\', '\\"'], $normalizedDbFile);
-                    
+
                     // Create batch file that redirects stderr to stdout
                     // --no-owner: ignore ownership issues (don't try to set ownership to roles that don't exist)
                     $batchContent = sprintf(
@@ -750,10 +751,10 @@ class BackupController extends Controller
                         $escapedDbFile
                     );
                     file_put_contents($batchFile, $batchContent);
-                    
+
                     // Execute batch file
                     $normalizedBatchFile = str_replace('/', '\\', $batchFile);
-                    $command = 'cmd /c "' . $normalizedBatchFile . '"';
+                    $command = 'cmd /c "'.$normalizedBatchFile.'"';
                     $commandForLogging = sprintf(
                         '%s -h %s -p %s -U %s -d %s --clean --if-exists --no-owner -v %s',
                         $pgRestorePath,
@@ -763,58 +764,70 @@ class BackupController extends Controller
                         $dbName,
                         $normalizedDbFile
                     );
-                    
+
                     $output = [];
                     $returnVar = 0;
-                    exec($command . ' 2>&1', $output, $returnVar);
+                    exec($command.' 2>&1', $output, $returnVar);
                     $combinedOutput = implode("\n", $output);
-                    
+
                     // Clean up batch file
                     if (file_exists($batchFile)) {
                         @unlink($batchFile);
                     }
-                    
+
                     // Create a mock Process object for compatibility
                     // The command has already been executed via exec(), so this is just a wrapper
-                    $process = new class($returnVar, $combinedOutput) {
+                    $process = new class($returnVar, $combinedOutput)
+                    {
                         private $exitCode;
+
                         private $output;
+
                         private $errorOutput;
+
                         private $hasRun = false;
-                        
-                        public function __construct($exitCode, $output) {
+
+                        public function __construct($exitCode, $output)
+                        {
                             $this->exitCode = $exitCode;
                             // On Windows with 2>&1, both stdout and stderr are in output
                             $this->output = $output;
                             $this->errorOutput = $output; // Same output for both on Windows
                         }
-                        
-                        public function run($callback = null) {
+
+                        public function run($callback = null)
+                        {
                             // Already executed via exec(), so this is a no-op
                             $this->hasRun = true;
                         }
-                        
-                        public function isSuccessful() {
+
+                        public function isSuccessful()
+                        {
                             return $this->exitCode === 0;
                         }
-                        
-                        public function getExitCode() {
+
+                        public function getExitCode()
+                        {
                             return $this->exitCode;
                         }
-                        
-                        public function getOutput() {
+
+                        public function getOutput()
+                        {
                             return $this->output;
                         }
-                        
-                        public function getErrorOutput() {
+
+                        public function getErrorOutput()
+                        {
                             return $this->errorOutput;
                         }
-                        
-                        public function setTimeout($timeout) {
+
+                        public function setTimeout($timeout)
+                        {
                             return $this;
                         }
-                        
-                        public function setEnv(array $env) {
+
+                        public function setEnv(array $env)
+                        {
                             return $this;
                         }
                     };
@@ -831,20 +844,20 @@ class BackupController extends Controller
                         '--if-exists',
                         '--no-owner',
                         '-v',
-                        $normalizedDbFile
+                        $normalizedDbFile,
                     ];
-                    
+
                     // Build command string for logging
                     $commandForLogging = implode(' ', array_map('escapeshellarg', $commandArray));
-                    
+
                     $process = new Process($commandArray, null, ['PGPASSWORD' => $dbPassword]);
                     $process->setTimeout(600);
                 }
             } else {
                 // Use psql for plain SQL files
                 $psqlPath = $this->findPsqlPath();
-                
-                if (!$psqlPath) {
+
+                if (! $psqlPath) {
                     $errorMessage = 'psql executable not found. ';
                     if (PHP_OS_FAMILY === 'Windows') {
                         $errorMessage .= 'Please ensure PostgreSQL is installed and psql.exe is available. ';
@@ -878,7 +891,7 @@ class BackupController extends Controller
                 // Also enable ON_ERROR_STOP so psql exits on the first SQL error with a clear message.
                 if (PHP_OS_FAMILY === 'Windows') {
                     $tempDir = str_replace('/', '\\', sys_get_temp_dir());
-                    $batchFile = $tempDir . '\\psql_restore_' . uniqid() . '.bat';
+                    $batchFile = $tempDir.'\\psql_restore_'.uniqid().'.bat';
 
                     // Escape password for batch file (do NOT log the password)
                     $escapedPassword = str_replace(['"', '%', '!', '^', '&'], ['""', '%%', '!!', '^^', '^&'], $dbPassword);
@@ -904,7 +917,7 @@ class BackupController extends Controller
                     file_put_contents($batchFile, $batchContent);
 
                     $normalizedBatchFile = str_replace('/', '\\', $batchFile);
-                    $command = 'cmd /c "' . $normalizedBatchFile . '"';
+                    $command = 'cmd /c "'.$normalizedBatchFile.'"';
                     $commandForLogging = sprintf(
                         '"%s" -h "%s" -p "%s" -U "%s" -d "%s" --set ON_ERROR_STOP=on --echo-errors -f "%s"',
                         $normalizedPsqlPath,
@@ -917,7 +930,7 @@ class BackupController extends Controller
 
                     $output = [];
                     $returnVar = 0;
-                    exec($command . ' 2>&1', $output, $returnVar);
+                    exec($command.' 2>&1', $output, $returnVar);
                     $combinedOutput = implode("\n", $output);
 
                     if (file_exists($batchFile)) {
@@ -925,12 +938,16 @@ class BackupController extends Controller
                     }
 
                     // Create a mock Process object for compatibility with the shared error handling below
-                    $process = new class($returnVar, $combinedOutput) {
+                    $process = new class($returnVar, $combinedOutput)
+                    {
                         private int $exitCode;
+
                         private string $output;
+
                         private string $errorOutput;
 
-                        public function __construct(int $exitCode, string $output) {
+                        public function __construct(int $exitCode, string $output)
+                        {
                             $this->exitCode = $exitCode;
                             $this->output = $output;
                             // On Windows with 2>&1, both stdout and stderr are in output
@@ -997,7 +1014,7 @@ class BackupController extends Controller
                 escapeshellarg($normalizedDbFile)
             );
             $commandForLogging = $command;
-            
+
             $process = Process::fromShellCommandline($command);
         } else {
             throw new \Exception("Unsupported database connection: {$dbConnection}");
@@ -1005,26 +1022,26 @@ class BackupController extends Controller
 
         // Execute the command
         $process->setTimeout(600); // 10 minutes timeout
-        
+
         \Log::info('Starting database restore', [
             'db_file' => $normalizedDbFile,
-            'file_size' => File::exists($normalizedDbFile) && !is_dir($normalizedDbFile) ? File::size($normalizedDbFile) : 0,
+            'file_size' => File::exists($normalizedDbFile) && ! is_dir($normalizedDbFile) ? File::size($normalizedDbFile) : 0,
             'db_name' => $dbName,
             'db_host' => $dbHost,
         ]);
-        
+
         $process->run();
-        
+
         $output = $process->getOutput();
         $errorOutput = $process->getErrorOutput();
         $exitCode = $process->getExitCode();
 
-        if (!$process->isSuccessful()) {
+        if (! $process->isSuccessful()) {
             // Capture full error output
             $errorOutput = $process->getErrorOutput();
             $output = $process->getOutput();
             $exitCode = $process->getExitCode();
-            
+
             // On Windows, stderr might be in stdout when using 2>&1
             // Combine error output and standard output
             $fullError = '';
@@ -1034,12 +1051,12 @@ class BackupController extends Controller
             if ($output) {
                 $outputTrimmed = trim($output);
                 if ($fullError && $outputTrimmed) {
-                    $fullError = $fullError . "\n" . $outputTrimmed;
+                    $fullError = $fullError."\n".$outputTrimmed;
                 } elseif ($outputTrimmed) {
                     $fullError = $outputTrimmed;
                 }
             }
-            
+
             // If we still don't have an error message, try to get it from the process
             if (empty($fullError)) {
                 // Try to get any available output
@@ -1050,7 +1067,7 @@ class BackupController extends Controller
                     $fullError = $output;
                 }
             }
-            
+
             // Log the full error for debugging
             \Log::error('Database restore command failed', [
                 'command' => $commandForLogging ?? $command ?? 'N/A',
@@ -1059,40 +1076,40 @@ class BackupController extends Controller
                 'output' => $output,
                 'db_file' => $normalizedDbFile,
                 'file_exists' => File::exists($normalizedDbFile),
-                'file_size' => File::exists($normalizedDbFile) && !is_dir($normalizedDbFile) ? File::size($normalizedDbFile) : 0,
+                'file_size' => File::exists($normalizedDbFile) && ! is_dir($normalizedDbFile) ? File::size($normalizedDbFile) : 0,
                 'is_directory' => is_dir($normalizedDbFile),
             ]);
-            
+
             // Create detailed error message
             // Show the actual error first, then context
             $errorMessage = 'Database restore failed.';
-            
+
             // Add the actual error message if available
             if ($fullError && trim($fullError) !== '') {
-                $errorMessage .= "\n\nError details:\n" . $fullError;
+                $errorMessage .= "\n\nError details:\n".$fullError;
             } else {
                 $errorMessage .= "\n\nExit code: {$exitCode}";
                 if ($errorOutput) {
-                    $errorMessage .= "\nError output: " . $errorOutput;
+                    $errorMessage .= "\nError output: ".$errorOutput;
                 }
                 if ($output) {
-                    $errorMessage .= "\nOutput: " . $output;
+                    $errorMessage .= "\nOutput: ".$output;
                 }
             }
-            
+
             // Add context about the file (on a new line)
             $errorMessage .= "\n\nFile information:";
             if (File::exists($normalizedDbFile)) {
-                if (!is_dir($normalizedDbFile)) {
+                if (! is_dir($normalizedDbFile)) {
                     $fileSize = File::size($normalizedDbFile);
-                    $errorMessage .= " File exists, size: " . round($fileSize / 1024 / 1024, 2) . " MB";
+                    $errorMessage .= ' File exists, size: '.round($fileSize / 1024 / 1024, 2).' MB';
                 } else {
-                    $errorMessage .= " Directory exists";
+                    $errorMessage .= ' Directory exists';
                 }
             } else {
                 $errorMessage .= " File not found: {$normalizedDbFile}";
             }
-            
+
             // Add common error explanations
             if (str_contains($fullError, 'unsupported version') || (str_contains($fullError, 'version') && str_contains($fullError, 'in file header'))) {
                 $errorMessage .= "\n\nThe backup file was created with a newer version of PostgreSQL.";
@@ -1105,20 +1122,20 @@ class BackupController extends Controller
                     $errorMessage .= " The backup uses format version {$backupFormatVersion}.";
                 }
                 $errorMessage .= "\n\nFormat version 1.16 requires PostgreSQL 17.6+ or pg_restore 17.6+.";
-                
+
                 // Add detected pg_restore version if available
                 if (isset($pgRestoreVersion) && $pgRestoreVersion) {
                     $errorMessage .= "\n\nDetected pg_restore version: {$pgRestoreVersion}";
                     // Try to extract version number
                     if (preg_match('/(\d+)\.(\d+)/', $pgRestoreVersion, $versionMatches)) {
-                        $majorVersion = (int)$versionMatches[1];
-                        $minorVersion = (int)$versionMatches[2];
+                        $majorVersion = (int) $versionMatches[1];
+                        $minorVersion = (int) $versionMatches[2];
                         if ($majorVersion < 17 || ($majorVersion === 17 && $minorVersion < 6)) {
-                            $errorMessage .= " (This version is too old. You need PostgreSQL 17.6 or higher.)";
+                            $errorMessage .= ' (This version is too old. You need PostgreSQL 17.6 or higher.)';
                         }
                     }
                 }
-                
+
                 $errorMessage .= "\n\nSolutions:";
                 $errorMessage .= "\n1. Upgrade your PostgreSQL client tools to version 17.6 or higher";
                 $errorMessage .= "\n2. Or recreate the backup using an older pg_dump version that's compatible with your pg_restore";
@@ -1132,7 +1149,7 @@ class BackupController extends Controller
                 $errorMessage .= ' A database role referenced in the backup does not exist in the target database.';
                 $errorMessage .= ' The SQL file has been pre-processed to remove OWNER TO statements, but some may remain.';
                 $errorMessage .= ' Please ensure all required database roles exist, or restore with a user that has sufficient privileges.';
-            } elseif (str_contains($fullError, 'does not exist') && str_contains($fullError, 'database') && !str_contains($fullError, 'role')) {
+            } elseif (str_contains($fullError, 'does not exist') && str_contains($fullError, 'database') && ! str_contains($fullError, 'role')) {
                 $errorMessage .= ' The database does not exist. Please create it first.';
             } elseif (str_contains($fullError, 'permission denied') || str_contains($fullError, 'access denied')) {
                 $errorMessage .= ' Database permission denied. Please check user permissions.';
@@ -1141,10 +1158,10 @@ class BackupController extends Controller
             } elseif (str_contains($fullError, 'version mismatch') || str_contains($fullError, 'incompatible version')) {
                 $errorMessage .= ' The backup file version is incompatible with your PostgreSQL version.';
             }
-            
+
             throw new \Exception($errorMessage);
         }
-        
+
         // Log successful restore
         \Log::info('Database restore completed successfully', [
             'db_file' => $normalizedDbFile,
@@ -1153,12 +1170,12 @@ class BackupController extends Controller
             'output_length' => strlen($output),
             'error_output_length' => strlen($errorOutput),
         ]);
-        
+
         // Verify restore by checking if we can query the database and count tables
         try {
             $tableCount = DB::select("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'public'");
             $tableCountValue = $tableCount[0]->count ?? 0;
-            
+
             // Also check for some common tables to verify data was restored
             $commonTables = ['organizations', 'users', 'profiles', 'students', 'staff'];
             $existingTables = [];
@@ -1169,23 +1186,23 @@ class BackupController extends Controller
                         // Also check if table has data
                         try {
                             $rowCount = DB::table($table)->count();
-                            $existingTables[] = $table . " ({$rowCount} rows)";
+                            $existingTables[] = $table." ({$rowCount} rows)";
                         } catch (\Exception $e) {
-                            $existingTables[] = $table . " (exists)";
+                            $existingTables[] = $table.' (exists)';
                         }
                     }
                 } catch (\Exception $e) {
                     // Ignore individual table check errors
                 }
             }
-            
+
             \Log::info('Database restore verification', [
                 'tables_in_public_schema' => $tableCountValue,
                 'common_tables_found' => $existingTables,
                 'verification_status' => $tableCountValue > 0 ? 'success' : 'warning_no_tables',
             ]);
         } catch (\Exception $e) {
-            \Log::warning('Could not verify database restore (non-critical): ' . $e->getMessage());
+            \Log::warning('Could not verify database restore (non-critical): '.$e->getMessage());
         }
     }
 
@@ -1216,7 +1233,7 @@ class BackupController extends Controller
             DB::purge();
         } catch (\Exception $e) {
             // Non-fatal; continue
-            \Log::warning('Failed to disconnect Laravel DB before recreate (continuing): ' . $e->getMessage());
+            \Log::warning('Failed to disconnect Laravel DB before recreate (continuing): '.$e->getMessage());
         }
 
         $maintenanceDb = env('DB_MAINTENANCE_DATABASE', 'postgres');
@@ -1231,11 +1248,11 @@ class BackupController extends Controller
         //
         // So we run THREE separate `psql -c` commands.
         $terminateSql = sprintf(
-            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s AND pid <> pg_backend_pid();",
+            'SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s AND pid <> pg_backend_pid();',
             $this->pgQuoteLiteral($targetDbName),
         );
         $dropSql = sprintf(
-            "DROP DATABASE IF EXISTS %s;",
+            'DROP DATABASE IF EXISTS %s;',
             $this->pgQuoteIdentifier($targetDbName)
         );
         $createSql = sprintf(
@@ -1254,7 +1271,7 @@ class BackupController extends Controller
 
         if (PHP_OS_FAMILY === 'Windows') {
             $tempDir = str_replace('/', '\\', sys_get_temp_dir());
-            $batchFile = $tempDir . '\\psql_recreate_db_' . uniqid() . '.bat';
+            $batchFile = $tempDir.'\\psql_recreate_db_'.uniqid().'.bat';
 
             $escapedPassword = str_replace(['"', '%', '!', '^', '&'], ['""', '%%', '!!', '^^', '^&'], $dbPassword);
             $normalizedPsqlPath = str_replace('/', '\\', $psqlPath);
@@ -1296,11 +1313,11 @@ class BackupController extends Controller
             );
 
             file_put_contents($batchFile, $batchContent);
-            $command = 'cmd /c "' . str_replace('/', '\\', $batchFile) . '"';
+            $command = 'cmd /c "'.str_replace('/', '\\', $batchFile).'"';
 
             $output = [];
             $returnVar = 0;
-            exec($command . ' 2>&1', $output, $returnVar);
+            exec($command.' 2>&1', $output, $returnVar);
             $combinedOutput = trim(implode("\n", $output));
 
             if (file_exists($batchFile)) {
@@ -1313,7 +1330,7 @@ class BackupController extends Controller
                     'output' => $combinedOutput,
                 ]);
                 throw new \Exception(
-                    "Failed to recreate PostgreSQL database before restore.\n\n" .
+                    "Failed to recreate PostgreSQL database before restore.\n\n".
                     ($combinedOutput !== '' ? $combinedOutput : "Exit code: {$returnVar}")
                 );
             }
@@ -1336,7 +1353,7 @@ class BackupController extends Controller
                 $process->setTimeout(120);
                 $process->run();
 
-                if (!$process->isSuccessful()) {
+                if (! $process->isSuccessful()) {
                     $fullError = trim($process->getErrorOutput() ?: $process->getOutput() ?: '');
                     \Log::error('Failed to recreate PostgreSQL database (Unix)', [
                         'exit_code' => $process->getExitCode(),
@@ -1344,7 +1361,7 @@ class BackupController extends Controller
                         'statement' => $statement,
                     ]);
                     throw new \Exception(
-                        "Failed to recreate PostgreSQL database before restore.\n\n" .
+                        "Failed to recreate PostgreSQL database before restore.\n\n".
                         ($fullError !== '' ? $fullError : 'Unknown error occurred')
                     );
                 }
@@ -1355,13 +1372,13 @@ class BackupController extends Controller
     private function pgQuoteIdentifier(string $identifier): string
     {
         // Double-quote identifiers and escape any embedded quotes.
-        return '"' . str_replace('"', '""', $identifier) . '"';
+        return '"'.str_replace('"', '""', $identifier).'"';
     }
 
     private function pgQuoteLiteral(string $literal): string
     {
         // Single-quote string literals and escape any embedded single quotes.
-        return "'" . str_replace("'", "''", $literal) . "'";
+        return "'".str_replace("'", "''", $literal)."'";
     }
 
     /**
@@ -1371,36 +1388,36 @@ class BackupController extends Controller
     {
         // Normalize path for cross-platform compatibility
         $backupStorageDir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $backupStorageDir);
-        
+
         $targetPath = storage_path('app');
 
         // Create backup of current storage before restoring
         // Store outside storage/app to avoid infinite recursion
-        $currentBackupDir = storage_path('pre_restore_backups/pre_restore_backup_' . Carbon::now()->format('Y-m-d_H-i-s'));
-        
+        $currentBackupDir = storage_path('pre_restore_backups/pre_restore_backup_'.Carbon::now()->format('Y-m-d_H-i-s'));
+
         // Ensure the parent directory exists
         $parentDir = storage_path('pre_restore_backups');
-        if (!File::exists($parentDir)) {
+        if (! File::exists($parentDir)) {
             File::makeDirectory($parentDir, 0755, true);
         }
-        
+
         // Copy only contents of storage/app, excluding problematic directories
         if (File::exists($targetPath)) {
             $items = array_merge(
                 File::directories($targetPath),
                 File::files($targetPath)
             );
-            
+
             foreach ($items as $item) {
                 $basename = basename($item);
-                
+
                 // Skip directories that should not be backed up
                 if ($basename === 'backups' || strpos($basename, 'pre_restore_backup_') === 0) {
                     continue;
                 }
-                
-                $destination = $currentBackupDir . DIRECTORY_SEPARATOR . $basename;
-                
+
+                $destination = $currentBackupDir.DIRECTORY_SEPARATOR.$basename;
+
                 if (is_dir($item)) {
                     File::copyDirectory($item, $destination);
                 } else {
@@ -1431,50 +1448,54 @@ class BackupController extends Controller
 
             // Restore from backup
             // Validate that the backup storage directory exists and is readable
-            if (!File::exists($backupStorageDir)) {
+            if (! File::exists($backupStorageDir)) {
                 \Log::warning("Backup storage directory does not exist: {$backupStorageDir}. Skipping storage restore.");
+
                 return; // Storage restore is optional, don't throw error
             }
-            
-            if (!is_readable($backupStorageDir)) {
+
+            if (! is_readable($backupStorageDir)) {
                 \Log::warning("Backup storage directory is not readable: {$backupStorageDir}. Skipping storage restore.");
+
                 return; // Storage restore is optional, don't throw error
             }
-            
-            if (!is_dir($backupStorageDir)) {
+
+            if (! is_dir($backupStorageDir)) {
                 \Log::warning("Backup storage path is not a directory: {$backupStorageDir}. Skipping storage restore.");
+
                 return; // Storage restore is optional, don't throw error
             }
-            
+
             // Get directories and files from backup
             $directories = [];
             $files = [];
-            
+
             try {
                 $directories = File::directories($backupStorageDir);
             } catch (\Exception $e) {
-                \Log::warning("Failed to get directories from backup storage: " . $e->getMessage());
+                \Log::warning('Failed to get directories from backup storage: '.$e->getMessage());
                 // Continue with empty directories array
             }
-            
+
             try {
                 $files = File::files($backupStorageDir);
             } catch (\Exception $e) {
-                \Log::warning("Failed to get files from backup storage: " . $e->getMessage());
+                \Log::warning('Failed to get files from backup storage: '.$e->getMessage());
                 // Continue with empty files array
             }
-            
+
             $items = array_merge($directories, $files);
-            
+
             if (empty($items)) {
                 \Log::warning("Backup storage directory is empty: {$backupStorageDir}");
+
                 // Don't throw error, just log warning - empty storage backup is acceptable
                 return;
             }
 
             foreach ($items as $item) {
                 $basename = basename($item);
-                $destination = $targetPath . DIRECTORY_SEPARATOR . $basename;
+                $destination = $targetPath.DIRECTORY_SEPARATOR.$basename;
 
                 if (is_dir($item)) {
                     // Skip backups directory to avoid overwriting current backups
@@ -1488,7 +1509,7 @@ class BackupController extends Controller
             }
         } catch (\Exception $e) {
             // Restore from pre-restore backup on error
-            \Log::error('Storage restore failed, attempting rollback: ' . $e->getMessage());
+            \Log::error('Storage restore failed, attempting rollback: '.$e->getMessage());
 
             if (File::exists($currentBackupDir)) {
                 File::deleteDirectory($targetPath);
@@ -1525,9 +1546,9 @@ class BackupController extends Controller
             foreach ($commonPaths as $basePath) {
                 if (is_dir($basePath)) {
                     // Look for PostgreSQL versions (e.g., 14, 15, 16, etc.)
-                    $versions = glob($basePath . '\\*', GLOB_ONLYDIR);
+                    $versions = glob($basePath.'\\*', GLOB_ONLYDIR);
                     foreach ($versions as $versionPath) {
-                        $pgDumpPath = $versionPath . '\\bin\\pg_dump.exe';
+                        $pgDumpPath = $versionPath.'\\bin\\pg_dump.exe';
                         if (file_exists($pgDumpPath)) {
                             return $pgDumpPath;
                         }
@@ -1545,7 +1566,7 @@ class BackupController extends Controller
     private function findExecutableInPath(string $executable): ?string
     {
         $pathEnv = getenv('PATH');
-        if (!$pathEnv) {
+        if (! $pathEnv) {
             return null;
         }
 
@@ -1553,7 +1574,7 @@ class BackupController extends Controller
         $extension = PHP_OS_FAMILY === 'Windows' ? '.exe' : '';
 
         foreach ($paths as $path) {
-            $fullPath = $path . DIRECTORY_SEPARATOR . $executable . $extension;
+            $fullPath = $path.DIRECTORY_SEPARATOR.$executable.$extension;
             if (file_exists($fullPath) && is_executable($fullPath)) {
                 return $fullPath;
             }
@@ -1583,9 +1604,9 @@ class BackupController extends Controller
             foreach ($commonPaths as $basePath) {
                 if (is_dir($basePath)) {
                     // Look for PostgreSQL versions (e.g., 14, 15, 16, etc.)
-                    $versions = glob($basePath . '\\*', GLOB_ONLYDIR);
+                    $versions = glob($basePath.'\\*', GLOB_ONLYDIR);
                     foreach ($versions as $versionPath) {
-                        $psqlPath = $versionPath . '\\bin\\psql.exe';
+                        $psqlPath = $versionPath.'\\bin\\psql.exe';
                         if (file_exists($psqlPath)) {
                             return $psqlPath;
                         }
@@ -1618,9 +1639,9 @@ class BackupController extends Controller
             foreach ($commonPaths as $basePath) {
                 if (is_dir($basePath)) {
                     // Look for PostgreSQL versions (e.g., 14, 15, 16, etc.)
-                    $versions = glob($basePath . '\\*', GLOB_ONLYDIR);
+                    $versions = glob($basePath.'\\*', GLOB_ONLYDIR);
                     foreach ($versions as $versionPath) {
-                        $pgRestorePath = $versionPath . '\\bin\\pg_restore.exe';
+                        $pgRestorePath = $versionPath.'\\bin\\pg_restore.exe';
                         if (file_exists($pgRestorePath)) {
                             return $pgRestorePath;
                         }
@@ -1632,7 +1653,6 @@ class BackupController extends Controller
         return null;
     }
 
-
     /**
      * Get pg_dump version string
      */
@@ -1643,9 +1663,11 @@ class BackupController extends Controller
             $process->setTimeout(10);
             $process->run();
             $output = trim($process->getOutput());
+
             return $output !== '' ? $output : null;
         } catch (\Exception $e) {
-            \Log::warning('Failed to read pg_dump version: ' . $e->getMessage());
+            \Log::warning('Failed to read pg_dump version: '.$e->getMessage());
+
             return null;
         }
     }
@@ -1660,9 +1682,11 @@ class BackupController extends Controller
             $process->setTimeout(10);
             $process->run();
             $output = trim($process->getOutput());
+
             return $output !== '' ? $output : null;
         } catch (\Exception $e) {
-            \Log::warning('Failed to read pg_restore version: ' . $e->getMessage());
+            \Log::warning('Failed to read pg_restore version: '.$e->getMessage());
+
             return null;
         }
     }
@@ -1685,14 +1709,14 @@ class BackupController extends Controller
 
         // Use plain SQL format for better compatibility across PostgreSQL versions
         // Plain SQL format works with any PostgreSQL version and doesn't have version compatibility issues
-        $backupFile = $backupDir . DIRECTORY_SEPARATOR . 'database.sql';
+        $backupFile = $backupDir.DIRECTORY_SEPARATOR.'database.sql';
 
         // Use pg_dump for PostgreSQL
         if ($dbConnection === 'pgsql') {
             // Find pg_dump executable
             $pgDumpPath = $this->findPgDumpPath();
-            
-            if (!$pgDumpPath) {
+
+            if (! $pgDumpPath) {
                 $errorMessage = 'pg_dump executable not found. ';
                 if (PHP_OS_FAMILY === 'Windows') {
                     $errorMessage .= 'Please ensure PostgreSQL is installed and pg_dump.exe is available. ';
@@ -1712,7 +1736,7 @@ class BackupController extends Controller
                 // Create temporary batch file
                 // Normalize temp directory path for Windows
                 $tempDir = str_replace('/', '\\', sys_get_temp_dir());
-                $batchFile = $tempDir . '\\pg_dump_backup_' . uniqid() . '.bat';
+                $batchFile = $tempDir.'\\pg_dump_backup_'.uniqid().'.bat';
                 // Escape password for batch file (double quotes and special characters)
                 $escapedPassword = str_replace(['"', '%', '!', '^', '&'], ['""', '%%', '!!', '^^', '^&'], $dbPassword);
                 // Normalize backup file path for Windows (use backslashes, escape backslashes and quotes)
@@ -1734,20 +1758,20 @@ class BackupController extends Controller
                     $escapedBackupFile
                 );
                 file_put_contents($batchFile, $batchContent);
-                
+
                 // Execute batch file using cmd /c to ensure proper execution on Windows
                 // Normalize batch file path for Windows
                 $normalizedBatchFile = str_replace('/', '\\', $batchFile);
-                
+
                 // Use exec() directly to bypass Laravel Process issues on Windows
                 // This is more reliable for batch file execution on Windows
-                $command = 'cmd /c "' . $normalizedBatchFile . '"';
-                
+                $command = 'cmd /c "'.$normalizedBatchFile.'"';
+
                 $output = [];
                 $returnVar = 0;
-                exec($command . ' 2>&1', $output, $returnVar);
+                exec($command.' 2>&1', $output, $returnVar);
                 $combinedOutput = implode("\n", $output);
-                
+
                 // Create a mock Process object for compatibility with existing error handling code
                 // We'll check the return code and output manually
                 if ($returnVar !== 0) {
@@ -1757,49 +1781,59 @@ class BackupController extends Controller
                     $errorOutput = '';
                     $output = $combinedOutput;
                 }
-                
+
                 // Create a Process-like object for compatibility
                 // Since we already executed via exec(), this is just a wrapper for compatibility
-                $process = new class($returnVar, $output, $errorOutput) {
+                $process = new class($returnVar, $output, $errorOutput)
+                {
                     private $exitCode;
+
                     private $output;
+
                     private $errorOutput;
+
                     private $hasRun = false;
-                    
-                    public function __construct($exitCode, $output, $errorOutput) {
+
+                    public function __construct($exitCode, $output, $errorOutput)
+                    {
                         $this->exitCode = $exitCode;
                         $this->output = $output;
                         $this->errorOutput = $errorOutput;
                     }
-                    
-                    public function run($callback = null) {
+
+                    public function run($callback = null)
+                    {
                         // Already executed via exec(), so this is a no-op
                         // But we can call the callback if provided for compatibility
                         if ($callback && is_callable($callback)) {
                             // Call callback with output if any
-                            if (!empty($this->output)) {
+                            if (! empty($this->output)) {
                                 $callback(1, $this->output); // 1 = stdout
                             }
-                            if (!empty($this->errorOutput)) {
+                            if (! empty($this->errorOutput)) {
                                 $callback(2, $this->errorOutput); // 2 = stderr
                             }
                         }
                         $this->hasRun = true;
                     }
-                    
-                    public function isSuccessful() {
+
+                    public function isSuccessful()
+                    {
                         return $this->exitCode === 0;
                     }
-                    
-                    public function getExitCode() {
+
+                    public function getExitCode()
+                    {
                         return $this->exitCode;
                     }
-                    
-                    public function getOutput() {
+
+                    public function getOutput()
+                    {
                         return $this->output;
                     }
-                    
-                    public function getErrorOutput() {
+
+                    public function getErrorOutput()
+                    {
                         return $this->errorOutput;
                     }
                 };
@@ -1819,9 +1853,9 @@ class BackupController extends Controller
                     '--no-owner',
                     '--no-privileges',
                     '-F', 'p',  // Plain SQL format for maximum compatibility
-                    '-f', $backupFile
+                    '-f', $backupFile,
                 ];
-                
+
                 $process = new Process($commandArray, null, ['PGPASSWORD' => $dbPassword]);
                 $process->setTimeout(300); // 5 minutes timeout
                 $process->run();
@@ -1834,13 +1868,13 @@ class BackupController extends Controller
         } elseif ($dbConnection === 'mysql') {
             // Find mysqldump executable
             $mysqldumpPath = $this->findExecutableInPath('mysqldump');
-            
-            if (!$mysqldumpPath) {
+
+            if (! $mysqldumpPath) {
                 $errorMessage = 'mysqldump executable not found. ';
                 $errorMessage .= 'Please install MySQL client tools or add mysqldump to your system PATH.';
                 throw new \Exception($errorMessage);
             }
-            
+
             // Use mysqldump for MySQL
             // Note: MySQL password is passed via -p flag (no space between -p and password)
             $command = sprintf(
@@ -1853,7 +1887,7 @@ class BackupController extends Controller
                 escapeshellarg($dbName),
                 escapeshellarg($backupFile)
             );
-            
+
             $process = Process::fromShellCommandline($command);
             $process->setTimeout(300); // 5 minutes timeout
             $process->run();
@@ -1862,33 +1896,32 @@ class BackupController extends Controller
         }
 
         // Check if command was successful
-        if (!$process->isSuccessful()) {
+        if (! $process->isSuccessful()) {
             $errorOutput = $process->getErrorOutput();
             $output = $process->getOutput();
-            
-            
+
             // Combine both error output and standard output for full error message
             $fullError = trim($errorOutput);
-            if ($output && !$fullError) {
+            if ($output && ! $fullError) {
                 $fullError = trim($output);
             } elseif ($output && $fullError) {
-                $fullError = trim($errorOutput) . "\n" . trim($output);
+                $fullError = trim($errorOutput)."\n".trim($output);
             }
-            
+
             $errorMessage = 'Database backup command failed. ';
             if ($fullError) {
-                $errorMessage .= 'Error: ' . $fullError;
+                $errorMessage .= 'Error: '.$fullError;
             } else {
-                $errorMessage .= 'Exit code: ' . $process->getExitCode();
+                $errorMessage .= 'Exit code: '.$process->getExitCode();
             }
-            
+
             // Add more context for common errors
             if (str_contains($errorOutput, 'password authentication failed')) {
                 $errorMessage .= ' Please check your database credentials.';
             } elseif (str_contains($errorOutput, 'could not connect')) {
                 $errorMessage .= ' Please check your database connection settings.';
             }
-            
+
             throw new \Exception($errorMessage);
         }
 
@@ -1900,23 +1933,23 @@ class BackupController extends Controller
      */
     private function backupStorage(string $backupDir): string
     {
-        $storageBackupDir = $backupDir . DIRECTORY_SEPARATOR . 'storage';
-        
+        $storageBackupDir = $backupDir.DIRECTORY_SEPARATOR.'storage';
+
         // Ensure backup directory exists
-        if (!File::exists($storageBackupDir)) {
+        if (! File::exists($storageBackupDir)) {
             try {
                 File::makeDirectory($storageBackupDir, 0775, true);
             } catch (\Exception $e) {
-                \Log::error('Failed to create storage backup directory: ' . $e->getMessage(), [
-                    'path' => $storageBackupDir
+                \Log::error('Failed to create storage backup directory: '.$e->getMessage(), [
+                    'path' => $storageBackupDir,
                 ]);
-                throw new \Exception('Failed to create storage backup directory: ' . $e->getMessage());
+                throw new \Exception('Failed to create storage backup directory: '.$e->getMessage());
             }
         }
 
         // Copy storage/app directory
         $sourcePath = storage_path('app');
-        $destPath = $storageBackupDir . DIRECTORY_SEPARATOR . 'app';
+        $destPath = $storageBackupDir.DIRECTORY_SEPARATOR.'app';
 
         // Validate paths
         if (empty($sourcePath) || empty($destPath)) {
@@ -1924,63 +1957,73 @@ class BackupController extends Controller
         }
 
         // Ensure source exists
-        if (!File::exists($sourcePath)) {
-            \Log::warning('Storage source path does not exist: ' . $sourcePath);
+        if (! File::exists($sourcePath)) {
+            \Log::warning('Storage source path does not exist: '.$sourcePath);
+
             return $storageBackupDir;
         }
 
         // Ensure destination parent directory exists
         $destParent = dirname($destPath);
-        if (!File::exists($destParent)) {
+        if (! File::exists($destParent)) {
             try {
                 File::makeDirectory($destParent, 0775, true);
             } catch (\Exception $e) {
-                \Log::error('Failed to create destination parent directory: ' . $e->getMessage(), [
-                    'path' => $destParent
+                \Log::error('Failed to create destination parent directory: '.$e->getMessage(), [
+                    'path' => $destParent,
                 ]);
-                throw new \Exception('Failed to create destination directory: ' . $e->getMessage());
+                throw new \Exception('Failed to create destination directory: '.$e->getMessage());
             }
         }
+
+        // CATCH_GET_CHILD (16) skips directories that cannot be opened (e.g. permission denied)
+        $iteratorFlags = \RecursiveDirectoryIterator::SKIP_DOTS | (defined('RecursiveDirectoryIterator::CATCH_GET_CHILD') ? \RecursiveDirectoryIterator::CATCH_GET_CHILD : 16);
 
         try {
             // Copy storage/app directory, excluding backups and restore_temp to avoid recursion
             // Use manual copy with filtering to exclude backup directories
             $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($sourcePath, \RecursiveDirectoryIterator::SKIP_DOTS),
+                new \RecursiveDirectoryIterator($sourcePath, $iteratorFlags),
                 \RecursiveIteratorIterator::SELF_FIRST
             );
 
             foreach ($iterator as $item) {
                 $sourceItem = $item->getPathname();
                 $relativePath = substr($sourceItem, strlen($sourcePath) + 1);
-                
+
                 // Skip backups and restore_temp directories to avoid recursion
                 if (strpos($relativePath, 'backups') === 0 || strpos($relativePath, 'restore_temp') === 0) {
                     continue;
                 }
-                
-                $destItem = $destPath . DIRECTORY_SEPARATOR . $relativePath;
-                
-                if ($item->isDir()) {
-                    if (!File::exists($destItem)) {
-                        File::makeDirectory($destItem, 0775, true);
+
+                $destItem = $destPath.DIRECTORY_SEPARATOR.$relativePath;
+
+                try {
+                    if ($item->isDir()) {
+                        if (! File::exists($destItem)) {
+                            File::makeDirectory($destItem, 0775, true);
+                        }
+                    } else {
+                        // Copy file
+                        $destDir = dirname($destItem);
+                        if (! File::exists($destDir)) {
+                            File::makeDirectory($destDir, 0775, true);
+                        }
+                        copy($sourceItem, $destItem);
                     }
-                } else {
-                    // Copy file
-                    $destDir = dirname($destItem);
-                    if (!File::exists($destDir)) {
-                        File::makeDirectory($destDir, 0775, true);
-                    }
-                    copy($sourceItem, $destItem);
+                } catch (\Throwable $itemException) {
+                    \Log::warning('Backup skipped item (permission or error): '.$sourceItem, [
+                        'error' => $itemException->getMessage(),
+                    ]);
                 }
             }
         } catch (\Exception $e) {
-            \Log::error('Failed to copy storage directory: ' . $e->getMessage(), [
+            \Log::error('Failed to copy storage directory: '.$e->getMessage(), [
                 'source' => $sourcePath,
                 'destination' => $destPath,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            throw new \Exception('Failed to copy storage directory: ' . $e->getMessage());
+            throw new \Exception('Failed to copy storage directory: '.$e->getMessage());
         }
 
         return $storageBackupDir;
@@ -1991,7 +2034,7 @@ class BackupController extends Controller
      */
     private function createZipArchive(string $sourceDir, string $zipPath): void
     {
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new \Exception('Failed to create ZIP archive');
@@ -2003,7 +2046,7 @@ class BackupController extends Controller
         );
 
         foreach ($files as $file) {
-            if (!$file->isDir()) {
+            if (! $file->isDir()) {
                 $filePath = $file->getRealPath();
                 $relativePath = substr($filePath, strlen($sourceDir) + 1);
                 $zip->addFile($filePath, $relativePath);

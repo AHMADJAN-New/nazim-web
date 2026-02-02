@@ -110,8 +110,8 @@ export default function FinanceProjects() {
     const openEditDialog = (project: FinanceProject) => {
         setEditProject(project);
         setFormData({
-            name: project.name,
-            description: project.description || '',
+            name: project.name ?? '',
+            description: project.description ?? '',
             currencyId: project.currencyId || null,
             startDate: project.startDate ? project.startDate.toISOString().split('T')[0] : null,
             endDate: project.endDate ? project.endDate.toISOString().split('T')[0] : null,
@@ -140,7 +140,7 @@ export default function FinanceProjects() {
                 <Label htmlFor="name">{t('events.name') || 'Name'} *</Label>
                 <Input
                     id="name"
-                    value={formData.name}
+                    value={formData.name ?? ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder={t('finance.projectNamePlaceholder') || 'e.g., Ramadan Iftar Project'}
                 />
@@ -157,11 +157,11 @@ export default function FinanceProjects() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="startDate">{t('events.startDate') || 'Start Date'}</Label>
-                    <CalendarDatePicker date={formData.startDate || '' ? new Date(formData.startDate || '') : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData({ ...formData, startDate: date ? date.toISOString().split('T')[0] : null })} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="endDate">{t('events.endDate') || 'End Date'}</Label>
-                    <CalendarDatePicker date={formData.endDate || '' ? new Date(formData.endDate || '') : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={formData.endDate ? new Date(formData.endDate) : undefined} onDateChange={(date) => setFormData({ ...formData, endDate: date ? date.toISOString().split('T')[0] : null })} />
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -200,13 +200,13 @@ export default function FinanceProjects() {
             <div className="flex items-center space-x-2">
                 <Switch
                     id="isActive"
-                    checked={formData.isActive}
+                    checked={formData.isActive ?? true}
                     onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 />
                 <Label htmlFor="isActive">{t('events.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
-                <Button type="submit" disabled={loading || !formData.name.trim()}>
+                <Button type="submit" disabled={loading || !(formData.name ?? '').trim()}>
                     {editProject ? t('events.update') || 'Update' : t('events.create') || 'Create'}
                 </Button>
             </DialogFooter>

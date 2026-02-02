@@ -32,18 +32,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.read')) {
+            if (! $user->hasPermissionTo('course_students.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -64,24 +65,24 @@ class CourseStudentController extends Controller
             $perPage = $request->input('per_page', 25);
             // Validate per_page is one of allowed values
             $allowedPerPage = [10, 25, 50, 100];
-            if (!in_array((int)$perPage, $allowedPerPage)) {
+            if (! in_array((int) $perPage, $allowedPerPage)) {
                 $perPage = 25; // Default to 25 if invalid
             }
-            
+
             $students = $query->orderBy('registration_date', 'desc')
-                ->paginate((int)$perPage);
-            
+                ->paginate((int) $perPage);
+
             // Debug: Log picture_path in response
             Log::debug('Course students paginated response', [
                 'total' => $students->total(),
                 'count' => $students->count(),
-                'students_with_picture' => $students->filter(fn($s) => !empty($s->picture_path))->count(),
-                'sample_picture_paths' => $students->take(3)->map(fn($s) => [
+                'students_with_picture' => $students->filter(fn ($s) => ! empty($s->picture_path))->count(),
+                'sample_picture_paths' => $students->take(3)->map(fn ($s) => [
                     'id' => $s->id,
                     'picture_path' => $s->picture_path,
                 ])->toArray(),
             ]);
-            
+
             // Return paginated response in Laravel's standard format
             return response()->json($students);
         }
@@ -95,18 +96,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.create')) {
+            if (! $user->hasPermissionTo('course_students.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -121,38 +123,82 @@ class CourseStudentController extends Controller
                 ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->find($validated['course_id']);
-            
+
             if ($course) {
-                $validated['admission_no'] = $this->generateAdmissionNumber($course);
+                $validated['admission_no'] = $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId);
             } else {
-                // Fallback if course not found - use Shamsi year
                 $shamsiDate = $this->dateService->getDateComponents(now(), 'jalali');
-                $year = substr((string) $shamsiDate['year'], -2); // Get last 2 digits of Shamsi year
-                $validated['admission_no'] = 'CS-' . $year . '-' . str_pad((string)(CourseStudent::where('organization_id', $profile->organization_id)->count() + 1), 3, '0', STR_PAD_LEFT);
+                $year = substr((string) $shamsiDate['year'], -2);
+                $seq = CourseStudent::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->count() + 1;
+                $validated['admission_no'] = 'CS-'.$year.'-'.str_pad((string) $seq, 3, '0', STR_PAD_LEFT);
             }
         }
 
         // Sanitize UTF-8 strings to prevent encoding errors
         $validated = $this->sanitizeUtf8($validated);
 
+        $maxAttempts = 3;
+        $attempt = 0;
+        $lastException = null;
+
+        $student = null;
+        while ($attempt < $maxAttempts) {
+            try {
+                $student = CourseStudent::create($validated);
+                break;
+            } catch (\Illuminate\Database\QueryException $e) {
+                $lastException = $e;
+                if (($e->getCode() === '23505' || $e->getCode() === 23505) && str_contains($e->getMessage(), 'course_students_admission_no_org_school_unique') && $attempt < $maxAttempts - 1) {
+                    $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
+                        ->whereNull('deleted_at')
+                        ->find($validated['course_id']);
+                    $validated['admission_no'] = $course
+                        ? $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId)
+                        : 'CS-'.substr((string) $this->dateService->getDateComponents(now(), 'jalali')['year'], -2).'-'.str_pad((string) (CourseStudent::where('organization_id', $profile->organization_id)->where('school_id', $currentSchoolId)->count() + 2 + $attempt), 3, '0', STR_PAD_LEFT);
+                    $attempt++;
+
+                    continue;
+                }
+                throw $e;
+            } catch (\Throwable $e) {
+                $lastException = $e;
+                break;
+            }
+        }
+
+        if (! isset($student)) {
+            Log::error('[CourseStudentController] Error creating course student', [
+                'error' => $lastException?->getMessage(),
+                'trace' => $lastException?->getTraceAsString(),
+                'validated' => $validated,
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to create course student',
+                'message' => $lastException?->getMessage(),
+            ], 500);
+        }
+
         try {
-            $student = CourseStudent::create($validated);
-            
+
             // Reload to get all attributes with proper encoding
             $student = $student->fresh();
-            
+
             // Convert model to array and ensure UTF-8 encoding
             $studentData = $student->toArray();
             $studentData = $this->ensureUtf8Encoding($studentData);
-            
+
             // Use JSON encoding flags that handle UTF-8 properly
             $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
             if (defined('JSON_INVALID_UTF8_IGNORE')) {
                 $jsonFlags |= JSON_INVALID_UTF8_IGNORE;
             }
-            
+
             return response()->json($studentData, 201, [
-                'Content-Type' => 'application/json; charset=utf-8'
+                'Content-Type' => 'application/json; charset=utf-8',
             ], $jsonFlags);
         } catch (\Exception $e) {
             Log::error('[CourseStudentController] Error creating course student', [
@@ -160,7 +206,7 @@ class CourseStudentController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'validated' => $validated,
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to create course student',
                 'message' => $e->getMessage(),
@@ -173,18 +219,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.read')) {
+            if (! $user->hasPermissionTo('course_students.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -194,7 +241,7 @@ class CourseStudentController extends Controller
             ->with(['course', 'mainStudent'])
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
@@ -206,18 +253,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.update')) {
+            if (! $user->hasPermissionTo('course_students.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -226,7 +274,7 @@ class CourseStudentController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
@@ -243,18 +291,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.delete')) {
+            if (! $user->hasPermissionTo('course_students.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -263,7 +312,7 @@ class CourseStudentController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
@@ -277,18 +326,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.update')) {
+            if (! $user->hasPermissionTo('course_students.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -297,7 +347,7 @@ class CourseStudentController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
@@ -311,18 +361,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.update')) {
+            if (! $user->hasPermissionTo('course_students.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -331,7 +382,7 @@ class CourseStudentController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
@@ -345,18 +396,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.update')) {
+            if (! $user->hasPermissionTo('course_students.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -365,7 +417,7 @@ class CourseStudentController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
@@ -379,18 +431,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.enroll_from_main')) {
+            if (! $user->hasPermissionTo('course_students.enroll_from_main')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -400,7 +453,7 @@ class CourseStudentController extends Controller
             ->whereNull('deleted_at')
             ->find($validated['course_id']);
 
-        if (!$course) {
+        if (! $course) {
             return response()->json(['error' => 'Course not found'], 404);
         }
 
@@ -412,26 +465,28 @@ class CourseStudentController extends Controller
                 ->whereNull('deleted_at')
                 ->find($mainStudentId);
 
-            if (!$mainStudent) {
+            if (! $mainStudent) {
                 Log::warning('[CourseStudentController] Student not found for enrollment', [
                     'student_id' => $mainStudentId,
                     'course_id' => $course->id,
                 ]);
+
                 continue;
             }
-            
+
             // Check if student is already enrolled in this course
             $existingEnrollment = CourseStudent::where('course_id', $course->id)
                 ->where('main_student_id', $mainStudent->id)
                 ->whereNull('deleted_at')
                 ->first();
-                
+
             if ($existingEnrollment) {
                 Log::info('[CourseStudentController] Student already enrolled in course', [
                     'student_id' => $mainStudentId,
                     'course_id' => $course->id,
                     'course_student_id' => $existingEnrollment->id,
                 ]);
+
                 continue;
             }
 
@@ -476,21 +531,42 @@ class CourseStudentController extends Controller
             $data['school_id'] = $currentSchoolId;
             $data['course_id'] = $course->id;
             $data['main_student_id'] = $mainStudent->id;
-            $data['admission_no'] = $this->generateAdmissionNumber($course);
+            $data['admission_no'] = $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId);
             $data['registration_date'] = $validated['registration_date'];
             $data['fee_paid'] = $validated['fee_paid'] ?? false;
             $data['fee_amount'] = $validated['fee_amount'] ?? null;
 
-            try {
-                $courseStudent = CourseStudent::create($data);
+            $enrollAttempts = 0;
+            $enrollMaxAttempts = 3;
+            $courseStudent = null;
+            while ($enrollAttempts < $enrollMaxAttempts) {
+                try {
+                    $courseStudent = CourseStudent::create($data);
+                    break;
+                } catch (\Illuminate\Database\QueryException $e) {
+                    if (($e->getCode() === '23505' || $e->getCode() === 23505) && str_contains($e->getMessage(), 'course_students_admission_no_org_school_unique') && $enrollAttempts < $enrollMaxAttempts - 1) {
+                        $data['admission_no'] = $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId);
+                        $enrollAttempts++;
+
+                        continue;
+                    }
+                    Log::error('[CourseStudentController] Failed to create course student', [
+                        'error' => $e->getMessage(),
+                        'student_id' => $mainStudentId,
+                        'course_id' => $course->id,
+                    ]);
+                    break;
+                } catch (\Exception $e) {
+                    Log::error('[CourseStudentController] Failed to create course student', [
+                        'error' => $e->getMessage(),
+                        'student_id' => $mainStudentId,
+                        'course_id' => $course->id,
+                    ]);
+                    break;
+                }
+            }
+            if ($courseStudent) {
                 $created[] = $courseStudent->fresh();
-            } catch (\Exception $e) {
-                Log::error('[CourseStudentController] Failed to create course student', [
-                    'error' => $e->getMessage(),
-                    'student_id' => $mainStudentId,
-                    'course_id' => $course->id,
-                ]);
-                continue;
             }
         }
 
@@ -503,10 +579,10 @@ class CourseStudentController extends Controller
 
         // Ensure proper UTF-8 encoding in response
         // Convert to array to ensure proper encoding
-        $responseData = array_map(function($item) {
+        $responseData = array_map(function ($item) {
             return $item->toArray();
         }, $created);
-        
+
         return response()->json($responseData, 201)
             ->header('Content-Type', 'application/json; charset=utf-8');
     }
@@ -516,18 +592,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.copy_to_main')) {
+            if (! $user->hasPermissionTo('course_students.copy_to_main')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -536,7 +613,7 @@ class CourseStudentController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
@@ -587,7 +664,7 @@ class CourseStudentController extends Controller
 
         $newStudent = Student::create($data);
 
-        if ($linkBack && !$student->main_student_id) {
+        if ($linkBack && ! $student->main_student_id) {
             $student->main_student_id = $newStudent->id;
             $student->save();
         }
@@ -603,18 +680,19 @@ class CourseStudentController extends Controller
         $user = $request->user();
         $profile = $this->getProfile($user);
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('course_students.create')) {
+            if (! $user->hasPermissionTo('course_students.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -631,7 +709,7 @@ class CourseStudentController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$existingStudent) {
+        if (! $existingStudent) {
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
@@ -641,22 +719,22 @@ class CourseStudentController extends Controller
             ->whereNull('deleted_at')
             ->find($request->course_id);
 
-        if (!$newCourse) {
+        if (! $newCourse) {
             return response()->json(['error' => 'Course not found'], 404);
         }
 
         // Check if student is already enrolled in this course
         $existingEnrollment = CourseStudent::where('course_id', $request->course_id)
             ->whereNull('deleted_at')
-            ->where(function($query) use ($existingStudent) {
+            ->where(function ($query) use ($existingStudent) {
                 // Check by main_student_id if available
                 if ($existingStudent->main_student_id) {
                     $query->where('main_student_id', $existingStudent->main_student_id);
                 }
                 // Also check by name matching (for students without main_student_id)
-                $query->orWhere(function($q) use ($existingStudent) {
+                $query->orWhere(function ($q) use ($existingStudent) {
                     $q->where('full_name', $existingStudent->full_name)
-                      ->where('father_name', $existingStudent->father_name);
+                        ->where('father_name', $existingStudent->father_name);
                 });
             })
             ->first();
@@ -706,14 +784,33 @@ class CourseStudentController extends Controller
         $newEnrollmentData['fee_amount'] = $request->fee_amount ?? $existingStudent->fee_amount ?? null;
         $newEnrollmentData['fee_paid_date'] = $request->fee_paid ? now() : null;
 
-        // Generate new admission number for the new course
-        $newEnrollmentData['admission_no'] = $this->generateAdmissionNumber($newCourse);
+        // Generate new admission number (unique per org/school)
+        $newEnrollmentData['admission_no'] = $this->generateAdmissionNumber($newCourse, $profile->organization_id, $currentSchoolId);
 
         // Sanitize UTF-8 strings
         $newEnrollmentData = $this->sanitizeUtf8($newEnrollmentData);
 
+        $newEnrollment = null;
+        $enrollAttempts = 0;
+        while ($enrollAttempts < 3) {
+            try {
+                $newEnrollment = CourseStudent::create($newEnrollmentData);
+                break;
+            } catch (\Illuminate\Database\QueryException $e) {
+                if (($e->getCode() === '23505' || $e->getCode() === 23505) && str_contains($e->getMessage(), 'course_students_admission_no_org_school_unique') && $enrollAttempts < 2) {
+                    $newEnrollmentData['admission_no'] = $this->generateAdmissionNumber($newCourse, $profile->organization_id, $currentSchoolId);
+                    $enrollAttempts++;
+
+                    continue;
+                }
+                throw $e;
+            }
+        }
+
         try {
-            $newEnrollment = CourseStudent::create($newEnrollmentData);
+            if (! $newEnrollment) {
+                throw new \RuntimeException('Failed to create enrollment after retries');
+            }
             $newEnrollment = $newEnrollment->fresh();
 
             $studentData = $newEnrollment->toArray();
@@ -725,7 +822,7 @@ class CourseStudentController extends Controller
             }
 
             return response()->json($studentData, 201, [
-                'Content-Type' => 'application/json; charset=utf-8'
+                'Content-Type' => 'application/json; charset=utf-8',
             ], $jsonFlags);
         } catch (\Exception $e) {
             Log::error('[CourseStudentController] Error enrolling student to new course', [
@@ -742,16 +839,21 @@ class CourseStudentController extends Controller
         }
     }
 
-    private function generateAdmissionNumber(ShortTermCourse $course): string
+    /**
+     * Generate admission number unique per organization + school (not per course).
+     * Constraint is (admission_no, organization_id, school_id).
+     */
+    private function generateAdmissionNumber(ShortTermCourse $course, string $organizationId, string $schoolId): string
     {
-        $sequence = CourseStudent::where('course_id', $course->id)->count() + 1;
-        
-        // Convert to Shamsi (Jalali) calendar and get 2-digit year
+        $sequence = CourseStudent::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->count() + 1;
+
         $date = $course->start_date ? $course->start_date : now();
         $shamsiDate = $this->dateService->getDateComponents($date, 'jalali');
-        $year = substr((string) $shamsiDate['year'], -2); // Get last 2 digits of Shamsi year
-        
-        return sprintf('CS-%s-%s-%03d', strtoupper(substr($course->name, 0, 3)), $year, $sequence);
+        $year = substr((string) $shamsiDate['year'], -2);
+
+        return sprintf('CS-%s-%s-%03d', strtoupper(substr($course->name ?? 'GEN', 0, 3)), $year, $sequence);
     }
 
     /**
@@ -769,7 +871,7 @@ class CourseStudentController extends Controller
             'family_income', 'picture_path', 'disability_status', 'completion_status', 'grade',
         ];
         foreach ($stringColumns as $key) {
-            if (!array_key_exists($key, $data)) {
+            if (! array_key_exists($key, $data)) {
                 continue;
             }
             $value = $data[$key];
@@ -781,7 +883,7 @@ class CourseStudentController extends Controller
         }
 
         foreach (['birth_year', 'age'] as $key) {
-            if (!array_key_exists($key, $data)) {
+            if (! array_key_exists($key, $data)) {
                 continue;
             }
             $value = $data[$key];
@@ -816,7 +918,7 @@ class CourseStudentController extends Controller
                 // Remove any remaining invalid UTF-8 sequences
                 $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value);
                 // Ensure valid UTF-8
-                if (!mb_check_encoding($value, 'UTF-8')) {
+                if (! mb_check_encoding($value, 'UTF-8')) {
                     $value = mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
                 }
                 // Trim whitespace
@@ -825,6 +927,7 @@ class CourseStudentController extends Controller
                 $data[$key] = $this->sanitizeUtf8($value);
             }
         }
+
         return $data;
     }
 
@@ -836,7 +939,7 @@ class CourseStudentController extends Controller
         foreach ($data as $key => $value) {
             if (is_string($value)) {
                 // Check and fix encoding
-                if (!mb_check_encoding($value, 'UTF-8')) {
+                if (! mb_check_encoding($value, 'UTF-8')) {
                     $value = mb_convert_encoding($value, 'UTF-8', mb_detect_encoding($value, mb_detect_order(), true) ?: 'UTF-8');
                 }
                 $data[$key] = $value;
@@ -844,6 +947,7 @@ class CourseStudentController extends Controller
                 $data[$key] = $this->ensureUtf8Encoding($value);
             }
         }
+
         return $data;
     }
 
@@ -858,32 +962,34 @@ class CourseStudentController extends Controller
             'has_file' => $request->hasFile('file'),
             'file_name' => $request->hasFile('file') ? $request->file('file')->getClientOriginalName() : null,
         ]);
-        
+
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 Log::warning('Course Student Picture Upload - Unauthorized', ['course_student_id' => $id]);
+
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
             $profile = $this->getProfile($user);
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             $currentSchoolId = $this->getCurrentSchoolId($request);
 
             try {
-                if (!$user->hasPermissionTo('course_students.update')) {
+                if (! $user->hasPermissionTo('course_students.update')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
                 Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
@@ -892,22 +998,24 @@ class CourseStudentController extends Controller
                 ->whereNull('deleted_at')
                 ->find($id);
 
-            if (!$student) {
+            if (! $student) {
                 Log::warning('Course Student Picture Upload - Student not found', [
                     'course_student_id' => $id,
                     'organization_id' => $profile->organization_id,
                     'school_id' => $currentSchoolId,
                 ]);
+
                 return response()->json(['error' => 'Course student not found'], 404);
             }
 
-            if (!$request->hasFile('file')) {
+            if (! $request->hasFile('file')) {
                 Log::warning('Course Student Picture Upload - No file provided', ['course_student_id' => $id]);
+
                 return response()->json(['error' => 'No file provided'], 422);
             }
 
             $file = $request->file('file');
-            if (!$file) {
+            if (! $file) {
                 return response()->json(['error' => 'No file provided'], 422);
             }
 
@@ -919,7 +1027,7 @@ class CourseStudentController extends Controller
 
             // Check extension
             $extension = strtolower($file->getClientOriginalExtension());
-            if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
+            if (! $this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                 return response()->json(['error' => 'The file must be an image (jpg, jpeg, png, gif, or webp).'], 422);
             }
 
@@ -939,18 +1047,18 @@ class CourseStudentController extends Controller
 
             // Update course student record
             $oldPicturePath = $student->picture_path;
-            
+
             // Use update() method to ensure the change is persisted
             // Also use DB::table() as a fallback to ensure the update happens
             $updated = $student->update(['picture_path' => $path]);
-            
+
             // Double-check by querying the database directly
-            if (!$updated) {
+            if (! $updated) {
                 Log::warning('Course Student Picture Upload - update() returned false, trying DB::table()', [
                     'course_student_id' => $id,
                     'picture_path' => $path,
                 ]);
-                
+
                 // Try direct DB update as fallback
                 $dbUpdated = DB::table('course_students')
                     ->where('id', $id)
@@ -958,17 +1066,18 @@ class CourseStudentController extends Controller
                     ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->update(['picture_path' => $path]);
-                
-                if (!$dbUpdated) {
+
+                if (! $dbUpdated) {
                     Log::error('Course Student Picture Upload - Failed to update picture_path via both methods', [
                         'course_student_id' => $id,
                         'picture_path' => $path,
                         'update_result' => $updated,
                         'db_update_result' => $dbUpdated,
                     ]);
+
                     return response()->json(['error' => 'Failed to save picture path'], 500);
                 }
-                
+
                 // Refresh the model after DB update
                 $student->refresh();
             } else {
@@ -996,16 +1105,18 @@ class CourseStudentController extends Controller
                 'errors' => $e->errors(),
                 'course_student_id' => $id,
             ]);
+
             return response()->json([
                 'error' => 'Validation failed',
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error uploading course student picture: ' . $e->getMessage(), [
+            Log::error('Error uploading course student picture: '.$e->getMessage(), [
                 'course_student_id' => $id,
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to upload picture: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to upload picture: '.$e->getMessage()], 500);
         }
     }
 
@@ -1016,24 +1127,24 @@ class CourseStudentController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 abort(401, 'Unauthorized');
             }
 
             $profile = $this->getProfile($user);
 
-            if (!$profile) {
+            if (! $profile) {
                 abort(404, 'Profile not found');
             }
 
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             $currentSchoolId = $this->getCurrentSchoolId($request);
 
             try {
-                if (!$user->hasPermissionTo('course_students.read')) {
+                if (! $user->hasPermissionTo('course_students.read')) {
                     return response()->json([
                         'error' => 'Access Denied',
                         'message' => 'You do not have permission to view course student pictures.',
@@ -1041,6 +1152,7 @@ class CourseStudentController extends Controller
                 }
             } catch (\Exception $e) {
                 Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
@@ -1049,7 +1161,7 @@ class CourseStudentController extends Controller
                 ->whereNull('deleted_at')
                 ->find($id);
 
-            if (!$student) {
+            if (! $student) {
                 return response()->json(['error' => 'Course student not found'], 404);
             }
 
@@ -1059,7 +1171,7 @@ class CourseStudentController extends Controller
             // First, try course student's own picture
             if ($student->picture_path) {
                 $picturePath = $student->picture_path;
-            } 
+            }
             // If no picture_path, try main student's picture if linked
             elseif ($student->main_student_id) {
                 $mainStudent = Student::where('id', $student->main_student_id)
@@ -1067,40 +1179,43 @@ class CourseStudentController extends Controller
                     ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
-                
+
                 if ($mainStudent && $mainStudent->picture_path) {
                     $picturePath = $mainStudent->picture_path;
                     $source = 'main_student';
                 }
             }
 
-            if (!$picturePath) {
+            if (! $picturePath) {
                 Log::info('Course student picture requested but no picture_path available', [
                     'course_student_id' => $id,
                     'main_student_id' => $student->main_student_id,
                 ]);
+
                 return response('', 404);
             }
 
             // Check if file exists using FileStorageService
-            if (!$this->fileStorageService->fileExists($picturePath)) {
+            if (! $this->fileStorageService->fileExists($picturePath)) {
                 Log::warning('Course student picture file not found on disk', [
                     'course_student_id' => $id,
                     'picture_path' => $picturePath,
                     'source' => $source,
                 ]);
+
                 return response('', 404);
             }
 
             // Get file content using FileStorageService
             $file = $this->fileStorageService->getFile($picturePath);
 
-            if (!$file || empty($file)) {
+            if (! $file || empty($file)) {
                 Log::error('Course student picture file is empty', [
                     'course_student_id' => $id,
                     'picture_path' => $picturePath,
                     'source' => $source,
                 ]);
+
                 return response('', 404);
             }
 
@@ -1109,12 +1224,12 @@ class CourseStudentController extends Controller
 
             return response($file, 200)
                 ->header('Content-Type', $mimeType)
-                ->header('Content-Disposition', 'inline; filename="' . basename($picturePath) . '"')
+                ->header('Content-Disposition', 'inline; filename="'.basename($picturePath).'"')
                 ->header('Cache-Control', 'private, max-age=3600');
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
             throw $e;
         } catch (\Exception $e) {
-            Log::error('Error retrieving course student picture: ' . $e->getMessage(), [
+            Log::error('Error retrieving course student picture: '.$e->getMessage(), [
                 'course_student_id' => $id,
                 'trace' => $e->getTraceAsString(),
             ]);

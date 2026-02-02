@@ -28,6 +28,7 @@ class CourseStudentSeeder extends Seeder
 
         if ($organizations->isEmpty()) {
             $this->command->warn('No organizations found. Please run DatabaseSeeder first.');
+
             return;
         }
 
@@ -44,6 +45,7 @@ class CourseStudentSeeder extends Seeder
 
             if ($schools->isEmpty()) {
                 $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping course student seeding for this org.");
+
                 continue;
             }
 
@@ -58,6 +60,7 @@ class CourseStudentSeeder extends Seeder
 
                 if ($courses->isEmpty()) {
                     $this->command->warn("  ⚠ No courses found for {$organization->name} - {$school->school_name}. Please run CourseSeeder first.");
+
                     continue;
                 }
 
@@ -189,24 +192,24 @@ class CourseStudentSeeder extends Seeder
      */
     protected function createCourseStudent(string $organizationId, string $schoolId, ShortTermCourse $course, array $studentData): bool
     {
-        // Generate admission number similar to controller: CS-COURSE_CODE-YEAR-SEQUENCE
-        // Get count of existing students for this course to generate sequence
-        $sequence = CourseStudent::where('course_id', $course->id)
+        // Generate admission number unique per org+school (matches controller)
+        $sequence = CourseStudent::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->whereNull('deleted_at')
             ->count() + 1;
-        
+
         // Convert to Shamsi (Jalali) calendar and get 2-digit year
         $dateService = app(DateConversionService::class);
         $date = $course->start_date ? $course->start_date : now();
         $shamsiDate = $dateService->getDateComponents($date, 'jalali');
         $year = substr((string) $shamsiDate['year'], -2); // Get last 2 digits of Shamsi year
-        
+
         // Extract course code from name (first 3 letters, uppercase, alphanumeric only)
         $courseCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $course->name_en), 0, 3));
         if (strlen($courseCode) < 3) {
             $courseCode = 'CRS'; // Fallback
         }
-        
+
         $admissionNo = sprintf('CS-%s-%s-%03d', $courseCode, $year, $sequence);
 
         // Check if course student already exists with this admission_no, organization_id, and school_id
