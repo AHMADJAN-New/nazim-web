@@ -29,7 +29,7 @@ class EnsurePublicWebsiteFeature
         }
 
         $access = $this->featureGateService->getFeatureAccessStatus($organizationId, 'public_website');
-        $hasAccess = $access['allowed'] ?? $access['has_access'] ?? false;
+        $hasAccess = is_array($access) && (isset($access['allowed']) ? $access['allowed'] : (isset($access['has_access']) ? $access['has_access'] : false));
 
         if (! $hasAccess) {
             $schoolName = null;
@@ -43,7 +43,7 @@ class EnsurePublicWebsiteFeature
                 'error' => 'Plan upgrade required for public website access.',
                 'feature_key' => 'public_website',
                 'upgrade_required' => true,
-                'required_plan' => $access['required_plan'] ?? null,
+                'required_plan' => (is_array($access) && array_key_exists('required_plan', $access)) ? $access['required_plan'] : null,
                 'school_name' => $schoolName,
                 'domain' => $host,
             ], 402);
