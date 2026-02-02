@@ -1888,11 +1888,11 @@ const App = () => (
                       </PermissionRoute>
                     } />
                     <Route path="/finance/settings" element={
-                      <PermissionRoute permission="currencies.read">
+                      <AnyPermissionRoute permissions={['currencies.read', 'income_categories.read', 'expense_categories.read', 'exchange_rates.read']}>
                         <Suspense fallback={<PageSkeleton />}>
                           <FinanceSettings />
                         </Suspense>
-                      </PermissionRoute>
+                      </AnyPermissionRoute>
                     } />
 
                     {/* Subscription routes - Accessible to ALL authenticated users (needed for expired subscriptions) */}

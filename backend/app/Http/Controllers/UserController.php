@@ -319,9 +319,9 @@ class UserController extends Controller
             // Then assign other tours based on permissions (if user has organization and permissions)
             $userModel = \App\Models\User::find($userId);
             if ($userModel && $organizationId) {
-                // Set organization context for permission checks
-                $userModel->setPermissionsTeamId($organizationId);
-                
+                // Set organization context for permission checks (global helper, not User method)
+                setPermissionsTeamId($organizationId);
+
                 // Get user's permissions (from roles and direct assignments)
                 $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
                 
@@ -388,9 +388,7 @@ class UserController extends Controller
         $request->validate([
             'full_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|max:255',
-            'role' => 'sometimes|string|in:admin,teacher,staff,student,parent',
-            'organization_id' => 'nullable|uuid|exists:organizations,id',
-            'default_school_id' => 'nullable|uuid',
+            'role' => 'sometimes|string|max:64',
             'phone' => 'nullable|string|max:20',
             'is_active' => 'sometimes|boolean',
             'schools_access_all' => 'nullable|boolean',
@@ -442,26 +440,37 @@ class UserController extends Controller
                 ->where('organization_id', $targetProfile->organization_id)
                 ->whereNull('deleted_at')
                 ->first();
-            
+
             if (!$staff) {
                 return response()->json(['error' => 'Staff member not found or does not belong to your organization'], 422);
             }
         }
 
-        // Build update data
+        // CRITICAL: Validate role exists in the target user's organization (same as store)
+        $organizationId = $targetProfile->organization_id;
+        if ($request->has('role') && $request->role !== null && $request->role !== '') {
+            $roleExists = DB::table('roles')
+                ->where('name', $request->role)
+                ->where('organization_id', $organizationId)
+                ->where('guard_name', 'web')
+                ->exists();
+
+            if (!$roleExists) {
+                return response()->json([
+                    'error' => 'The selected role is invalid.',
+                    'message' => "Role '{$request->role}' does not exist in your organization. Please select a valid role.",
+                ], 422);
+            }
+        }
+
+        // Build update data - NEVER change organization_id or default_school_id from request (keep intact)
         $updateData = [];
         if ($request->has('full_name')) $updateData['full_name'] = $request->full_name;
         if ($request->has('phone')) $updateData['phone'] = $request->phone;
         if ($request->has('role')) $updateData['role'] = $request->role;
         if ($request->has('is_active')) $updateData['is_active'] = $request->is_active;
-        if ($request->has('default_school_id')) $updateData['default_school_id'] = $request->default_school_id;
         if ($request->has('staff_id')) $updateData['staff_id'] = $request->staff_id;
         if ($request->has('schools_access_all')) $updateData['schools_access_all'] = $request->boolean('schools_access_all');
-
-        // Prevent organization_id changes (all users)
-        if ($request->has('organization_id') && $request->organization_id !== $targetProfile->organization_id) {
-            return response()->json(['error' => 'Cannot change organization_id'], 403);
-        }
 
         // Update email in both users and profiles tables
         if ($request->has('email')) {
@@ -487,6 +496,33 @@ class UserController extends Controller
         DB::table('profiles')
             ->where('id', $id)
             ->update($updateData);
+
+        // CRITICAL: Sync Spatie model_has_roles when role is updated (organization_id and default_school_id stay intact)
+        if ($request->has('role') && $organizationId) {
+            $newRoleName = $request->role;
+            $roleRow = DB::table('roles')
+                ->where('name', $newRoleName)
+                ->where('organization_id', $organizationId)
+                ->where('guard_name', 'web')
+                ->first();
+
+            if ($roleRow) {
+                // Remove all existing roles for this user in this organization
+                DB::table('model_has_roles')
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('model_id', $id)
+                    ->where('organization_id', $organizationId)
+                    ->delete();
+
+                // Assign the new role
+                DB::table('model_has_roles')->insert([
+                    'role_id' => $roleRow->id,
+                    'model_type' => 'App\\Models\\User',
+                    'model_id' => $id,
+                    'organization_id' => $organizationId,
+                ]);
+            }
+        }
 
         $updatedProfile = DB::table('profiles')->where('id', $id)->first();
 

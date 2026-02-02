@@ -169,9 +169,11 @@ class PermissionSeeder extends Seeder
         return [
             'admin' => '*', // All permissions EXCEPT subscription.admin (handled in getExcludedPermissions)
             'staff' => [
-                // Staff can read most things, create/update limited
+                // Staff: general office/operational access; finance/fees/currencies read-only (see accountant for full finance)
+                // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
                 'students.read', 'students.create', 'students.update', 'students.import',
-                'staff.read',
                 'classes.read',
                 'subjects.read',
                 'notifications.read', 'notifications.update', 'notifications.manage_preferences',
@@ -215,6 +217,14 @@ class PermissionSeeder extends Seeder
                 'event_types.read', 'event_types.create', 'event_types.update', 'event_types.delete',
                 'event_guests.read', 'event_guests.create', 'event_guests.update', 'event_guests.delete', 'event_guests.import', 'event_guests.checkin',
                 'event_checkins.read', 'event_checkins.create', 'event_checkins.update', 'event_checkins.delete',
+                // Finance (read-only) - staff can view finance, fees, currencies; use accountant role for full access
+                'finance_accounts.read', 'income_entries.read', 'income_categories.read',
+                'expense_entries.read', 'expense_categories.read', 'finance_projects.read',
+                'donors.read', 'finance_reports.read', 'finance_documents.read',
+                'fees.read',
+                'currencies.read', 'exchange_rates.read',
+                // Legacy finance read (backward compatibility)
+                'finance_income.read', 'finance_expense.read', 'finance_donors.read',
             ],
             'teacher' => [
                 // Teachers can read and manage academic content
@@ -247,11 +257,8 @@ class PermissionSeeder extends Seeder
                 'attendance_sessions.read', 'attendance_sessions.create', 'attendance_sessions.update',
                 'leave_requests.read', 'leave_requests.create', 'leave_requests.update',
                 // Basic read permissions for dashboard and navigation
-                'organizations.read', // Needed to view organization info
-                'rooms.read', // Needed for dashboard stats
-                'buildings.read', // Needed for dashboard stats
-                'staff.read', // Needed to view staff members
-                'school_branding.read', // Needed to view schools
+                'organizations.read', 'rooms.read', 'buildings.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
                 'assets.read', 'assets.create', 'assets.update', 'assets.delete', // Full asset management access
                 'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
                 // DMS permissions for teachers - can read documents, create letters for students
@@ -273,6 +280,9 @@ class PermissionSeeder extends Seeder
             ],
             'exam_controller' => [
                 // Dedicated exam controller role - full exam management except deletion
+                // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
                 'students.read',
                 'classes.read',
                 'subjects.read',
@@ -301,9 +311,42 @@ class PermissionSeeder extends Seeder
                 // ID Cards - read and export for exam controllers
                 'id_cards.read', 'id_cards.export',
             ],
+            'accountant' => [
+                // Full finance, fees, and multi-currency access for accounting staff
+                // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'notifications.read', 'notifications.update', 'notifications.manage_preferences',
+                'subscription.read',
+                'profiles.read', 'profiles.update',
+                'students.read', // Read-only for reference in finance context
+                // Finance - full CRUD
+                'finance_accounts.read', 'finance_accounts.create', 'finance_accounts.update', 'finance_accounts.delete',
+                'income_entries.read', 'income_entries.create', 'income_entries.update', 'income_entries.delete',
+                'income_categories.read', 'income_categories.create', 'income_categories.update', 'income_categories.delete',
+                'expense_entries.read', 'expense_entries.create', 'expense_entries.update', 'expense_entries.delete',
+                'expense_categories.read', 'expense_categories.create', 'expense_categories.update', 'expense_categories.delete',
+                'finance_projects.read', 'finance_projects.create', 'finance_projects.update', 'finance_projects.delete',
+                'donors.read', 'donors.create', 'donors.update', 'donors.delete',
+                'finance_reports.read', 'finance_documents.read', 'finance_documents.create', 'finance_documents.update', 'finance_documents.delete',
+                // Fees - full access
+                'fees.read', 'fees.create', 'fees.update', 'fees.delete',
+                'fees.payments.create', 'fees.exceptions.create', 'fees.exceptions.approve',
+                // Multi-currency
+                'currencies.read', 'currencies.create', 'currencies.update', 'currencies.delete',
+                'exchange_rates.read', 'exchange_rates.create', 'exchange_rates.update', 'exchange_rates.delete',
+                // Legacy finance (backward compatibility)
+                'finance_income.read', 'finance_income.create', 'finance_income.update', 'finance_income.delete',
+                'finance_expense.read', 'finance_expense.create', 'finance_expense.update', 'finance_expense.delete',
+                'finance_donors.read', 'finance_donors.create', 'finance_donors.update', 'finance_donors.delete',
+            ],
             'hostel_manager' => [
+                // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'profiles.read',
                 'hostel.read',
-                'rooms.read', 'rooms.create', 'rooms.update',
+                'rooms.create', 'rooms.update',
                 'student_admissions.read', 'student_admissions.update',
                 'reports.read',
                 'notifications.read', 'notifications.update',
@@ -311,15 +354,19 @@ class PermissionSeeder extends Seeder
                 'subscription.read',
             ],
             'librarian' => [
-                // Librarians manage library and can access DMS for document management
+                // Librarians manage library: lend/return books to both students and staff; need read access to both
+                // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                // Lend to students and staff – must read both to issue/return loans
+                'students.read', 'classes.read', // Students and classes for borrower lookup
+                'profiles.read', 'profiles.update', // View/update borrower profiles as needed
+                // Library – full management of categories, books, and loans
                 'library_categories.read', 'library_categories.create', 'library_categories.update', 'library_categories.delete',
                 'library_books.read', 'library_books.create', 'library_books.update', 'library_books.delete',
                 'library_loans.read', 'library_loans.create', 'library_loans.update',
-                'students.read',
-                'staff.read',
-                'profiles.read',
                 'notifications.read', 'notifications.update', 'notifications.manage_preferences',
-                // DMS permissions for librarians - can manage all documents
+                // DMS permissions for librarians – manage documents and letters
                 'dms.incoming.read', 'dms.incoming.create', 'dms.incoming.update',
                 'dms.outgoing.read', 'dms.outgoing.create', 'dms.outgoing.update', 'dms.outgoing.generate_pdf',
                 'dms.templates.read', 'dms.templates.create', 'dms.templates.update',
@@ -334,6 +381,9 @@ class PermissionSeeder extends Seeder
                 'subscription.read',
             ],
             'website_admin' => [
+                // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
                 'website_pages.read', 'website_pages.create', 'website_pages.update', 'website_pages.delete',
                 'website_posts.read', 'website_posts.create', 'website_posts.update', 'website_posts.delete',
                 'website_events.read', 'website_events.create', 'website_events.update', 'website_events.delete',
@@ -343,6 +393,9 @@ class PermissionSeeder extends Seeder
                 'website_settings.read', 'website_settings.update',
             ],
             'website_editor' => [
+                // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
                 'website_pages.read', 'website_pages.create', 'website_pages.update',
                 'website_posts.read', 'website_posts.create', 'website_posts.update',
                 'website_events.read', 'website_events.create', 'website_events.update',
@@ -350,6 +403,9 @@ class PermissionSeeder extends Seeder
                 'website_settings.read',
             ],
             'website_media' => [
+                // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
                 'website_media.read', 'website_media.create', 'website_media.update', 'website_media.delete',
             ],
         ];

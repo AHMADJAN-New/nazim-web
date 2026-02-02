@@ -617,6 +617,15 @@ function getFeatureKeysForPermission(permissionName: string): string[] {
   return Array.isArray(mapped) ? mapped : [mapped];
 }
 
+/**
+ * Get a single feature key for grouping permissions in UI (e.g. permissions dialog).
+ * Returns the first feature key or 'other' for permissions not mapped to a feature.
+ */
+export function getFeatureKeyForGrouping(permissionName: string): string {
+  const keys = getFeatureKeysForPermission(permissionName);
+  return keys[0] ?? 'other';
+}
+
 const READONLY_ACTIONS = new Set([
   'read',
   'export',

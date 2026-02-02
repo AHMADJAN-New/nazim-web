@@ -1,10 +1,15 @@
-import { Search, Shield, User, X, Building2, Plus } from 'lucide-react';
+import { Search, Shield, User, X, Building2, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useCurrentOrganization } from '@/hooks/useOrganizations';
-import { 
+import {
   usePermissions,
   useUserPermissionsForUser,
   useAssignPermissionToUser,
@@ -33,8 +38,9 @@ import {
   useRemoveRoleFromUser,
   useUserRoles,
   useRoles,
+  getFeatureKeyForGrouping,
   type Permission,
-  type Role
+  type Role,
 } from '@/hooks/usePermissions';
 import { useProfile, useProfiles } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -47,6 +53,41 @@ import {
 } from '@/components/ui/select';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
+
+/** Display labels for feature groups in the permissions dialog */
+const FEATURE_LABELS: Record<string, string> = {
+  students: 'Students',
+  staff: 'Staff',
+  classes: 'Classes',
+  attendance: 'Attendance',
+  hostel: 'Hostel',
+  subjects: 'Subjects',
+  exams: 'Exams',
+  exams_full: 'Exams (full)',
+  question_bank: 'Question Bank',
+  exam_paper_generator: 'Exam Papers',
+  grades: 'Grades',
+  timetables: 'Timetables',
+  timetable: 'Timetables',
+  library: 'Library',
+  finance: 'Finance',
+  fees: 'Fees',
+  multi_currency: 'Multi-currency',
+  dms: 'Document Management',
+  events: 'Events',
+  leave_management: 'Leave Management',
+  graduation: 'Graduation',
+  id_cards: 'ID Cards',
+  assets: 'Assets',
+  other: 'Other',
+};
+
+/** Order of feature sections in the permissions dialog (first = default expanded) */
+const FEATURE_ORDER = [
+  'students', 'staff', 'classes', 'subjects', 'exams', 'exams_full', 'grades',
+  'attendance', 'finance', 'fees', 'multi_currency', 'dms', 'events', 'library',
+  'hostel', 'graduation', 'id_cards', 'assets', 'leave_management', 'other',
+];
 
 export function UserPermissionsManagement() {
   const { t } = useLanguage();
@@ -63,6 +104,10 @@ export function UserPermissionsManagement() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
+  const [permissionSearchInDialog, setPermissionSearchInDialog] = useState('');
+  const [expandedFeatureSections, setExpandedFeatureSections] = useState<Set<string>>(
+    () => new Set([FEATURE_ORDER[0] ?? 'other'])
+  );
   
   // Get permissions for selected user
   const { data: userPermissionsData, isLoading: userPermissionsLoading } = useUserPermissionsForUser(selectedUserId || '');
@@ -177,7 +222,52 @@ export function UserPermissionsManagement() {
     });
     return grouped;
   }, [permissions]);
-  
+
+  // Group permissions by feature for dialog (collapsible sections)
+  const permissionsByFeature = useMemo(() => {
+    const grouped: Record<string, Permission[]> = {};
+    permissions.forEach(perm => {
+      const featureKey = getFeatureKeyForGrouping(perm.name);
+      if (!grouped[featureKey]) {
+        grouped[featureKey] = [];
+      }
+      grouped[featureKey].push(perm);
+    });
+    return grouped;
+  }, [permissions]);
+
+  // Filter by search in dialog (by permission name or resource)
+  const filteredPermissionsByFeature = useMemo(() => {
+    const search = (permissionSearchInDialog || '').trim().toLowerCase();
+    if (!search) {
+      return permissionsByFeature;
+    }
+    const result: Record<string, Permission[]> = {};
+    Object.entries(permissionsByFeature).forEach(([featureKey, perms]) => {
+      const filtered = perms.filter(
+        p =>
+          p.name.toLowerCase().includes(search) ||
+          (p.resource && p.resource.toLowerCase().includes(search))
+      );
+      if (filtered.length > 0) {
+        result[featureKey] = filtered;
+      }
+    });
+    return result;
+  }, [permissionsByFeature, permissionSearchInDialog]);
+
+  const toggleFeatureSection = (featureKey: string) => {
+    setExpandedFeatureSections(prev => {
+      const next = new Set(prev);
+      if (next.has(featureKey)) {
+        next.delete(featureKey);
+      } else {
+        next.add(featureKey);
+      }
+      return next;
+    });
+  };
+
   const handleOpenPermissionsDialog = (userId: string) => {
     setSelectedUserId(userId);
     setIsPermissionsDialogOpen(true);
@@ -186,6 +276,7 @@ export function UserPermissionsManagement() {
   const handleClosePermissionsDialog = () => {
     setIsPermissionsDialogOpen(false);
     setSelectedUserId(null);
+    setPermissionSearchInDialog('');
   };
   
   const handleTogglePermission = async (permission: Permission) => {
@@ -498,64 +589,100 @@ export function UserPermissionsManagement() {
                 </CardContent>
               </Card>
 
-              {/* Permissions Section */}
-              <div>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{t('userPermissions.directPermissions')}</CardTitle>
-                    <CardDescription className="hidden md:block">
-                      {t('userPermissions.directPermissionsDescription')}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </div>
-              
-              {Object.entries(permissionsByResource).map(([resource, resourcePermissions]) => (
-                <Card key={resource}>
-                  <CardHeader>
-                    <CardTitle className="text-lg capitalize">{resource.replace('_', ' ')}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {resourcePermissions.map((permission) => {
-                        const hasPermission = userEffectivePermissions.has(permission.name);
-                        const isUserSpecific = userSpecificPermissionIds.has(permission.id);
-                        const isRoleBased = hasPermission && !isUserSpecific;
-                        
-                        return (
-                          <div
-                            key={permission.id}
-                            className="flex items-start justify-between p-2 rounded border hover:bg-muted/50 gap-2"
-                          >
-                            <div className="flex items-start gap-3 flex-1 min-w-0">
-                              <Checkbox
-                                checked={hasPermission}
-                                onCheckedChange={() => handleTogglePermission(permission)}
-                                disabled={!hasPermissionsUpdatePermission}
-                                className="mt-1 flex-shrink-0"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Label className="font-medium break-words">{permission.name}</Label>
-                                  {isUserSpecific && (
-                                    <Badge variant="default" className="text-xs flex-shrink-0">{t('permissions.userSpecific')}</Badge>
-                                  )}
-                                  {isRoleBased && (
-                                    <Badge variant="outline" className="text-xs flex-shrink-0">{t('permissions.fromRole')}</Badge>
-                                  )}
-                                </div>
-                                {permission.description && (
-                                  <p className="text-sm text-muted-foreground mt-1 break-words">{permission.description}</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+              {/* Direct Permissions – grouped by feature with search */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">{t('userPermissions.directPermissions')}</CardTitle>
+                  <CardDescription className="hidden md:block">
+                    {t('userPermissions.directPermissionsDescription')}
+                  </CardDescription>
+                  <div className="pt-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder={t('userPermissions.searchPermissions') || 'Search by permission or resource...'}
+                        value={permissionSearchInDialog}
+                        onChange={(e) => setPermissionSearchInDialog(e.target.value)}
+                        className="pl-9"
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {FEATURE_ORDER.map((featureKey) => {
+                    const featurePermissions = filteredPermissionsByFeature[featureKey];
+                    if (!featurePermissions || featurePermissions.length === 0) {
+                      return null;
+                    }
+                    const label = FEATURE_LABELS[featureKey] ?? featureKey.replace(/_/g, ' ');
+                    const isOpen = expandedFeatureSections.has(featureKey);
+                    return (
+                      <Collapsible
+                        key={featureKey}
+                        open={isOpen}
+                        onOpenChange={() => toggleFeatureSection(featureKey)}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-between px-3 py-2 h-auto font-medium"
+                          >
+                            <span className="flex items-center gap-2">
+                              {isOpen ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                              {label}
+                              <Badge variant="secondary" className="text-xs">
+                                {featurePermissions.length}
+                              </Badge>
+                            </span>
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-2 pl-6 pt-2 pb-2">
+                            {featurePermissions.map((permission) => {
+                              const hasPermission = userEffectivePermissions.has(permission.name);
+                              const isUserSpecific = userSpecificPermissionIds.has(permission.id);
+                              const isRoleBased = hasPermission && !isUserSpecific;
+                              return (
+                                <div
+                                  key={permission.id}
+                                  className="flex items-start justify-between p-2 rounded border hover:bg-muted/50 gap-2"
+                                >
+                                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                                    <Checkbox
+                                      checked={hasPermission}
+                                      onCheckedChange={() => handleTogglePermission(permission)}
+                                      disabled={!hasPermissionsUpdatePermission}
+                                      className="mt-1 flex-shrink-0"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <Label className="font-medium break-words">{permission.name}</Label>
+                                        {isUserSpecific && (
+                                          <Badge variant="default" className="text-xs flex-shrink-0">{t('permissions.userSpecific')}</Badge>
+                                        )}
+                                        {isRoleBased && (
+                                          <Badge variant="outline" className="text-xs flex-shrink-0">{t('permissions.fromRole')}</Badge>
+                                        )}
+                                      </div>
+                                      {permission.description && (
+                                        <p className="text-sm text-muted-foreground mt-1 break-words">{permission.description}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  })}
+                </CardContent>
+              </Card>
             </div>
           )}
           

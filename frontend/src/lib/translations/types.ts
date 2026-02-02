@@ -5919,6 +5919,7 @@ export const TRANSLATION_KEYS = [
   "userPermissions.roleHostelManager",
   "userPermissions.roleLibrarian",
   "userPermissions.roleStaff",
+  "userPermissions.searchPermissions",
   "userPermissions.roleTeacher",
   "userPermissions.subtitle",
   "userPermissions.title",

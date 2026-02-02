@@ -31,8 +31,8 @@ class RoomController extends Controller
 
         // Ensure organization context is set for Spatie permissions
         // The 'organization' middleware should handle this, but we set it explicitly for safety
-        if (method_exists($user, 'setPermissionsTeamId')) {
-            $user->setPermissionsTeamId($profile->organization_id);
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId($profile->organization_id);
         }
 
         // Check permission WITH organization context
@@ -268,8 +268,8 @@ class RoomController extends Controller
         }
 
         // Ensure organization context is set for Spatie permissions
-        if (method_exists($user, 'setPermissionsTeamId')) {
-            $user->setPermissionsTeamId($profile->organization_id);
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId($profile->organization_id);
         }
 
         // Check permission WITH organization context
@@ -381,8 +381,8 @@ class RoomController extends Controller
 
         // Ensure organization context is set for Spatie permissions
         // The 'organization' middleware should handle this, but we set it explicitly for safety
-        if (method_exists($user, 'setPermissionsTeamId')) {
-            $user->setPermissionsTeamId($profile->organization_id);
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId($profile->organization_id);
         }
 
         // Check permission WITH organization context
@@ -489,8 +489,8 @@ class RoomController extends Controller
         }
 
         // Ensure organization context is set for Spatie permissions
-        if (method_exists($user, 'setPermissionsTeamId')) {
-            $user->setPermissionsTeamId($profile->organization_id);
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId($profile->organization_id);
         }
 
         // Check permission WITH organization context
@@ -649,8 +649,8 @@ class RoomController extends Controller
         }
 
         // Ensure organization context is set for Spatie permissions
-        if (method_exists($user, 'setPermissionsTeamId')) {
-            $user->setPermissionsTeamId($profile->organization_id);
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId($profile->organization_id);
         }
 
         // Check permission WITH organization context

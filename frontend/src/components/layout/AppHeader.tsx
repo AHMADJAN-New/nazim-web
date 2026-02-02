@@ -70,10 +70,6 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   // Check if website feature is enabled
   const hasWebsiteFeature = features?.some(f => f.featureKey === 'public_website') ?? false;
 
-  // Debug logging
-  console.log('[AppHeader DEBUG] Features:', features);
-  console.log('[AppHeader DEBUG] hasWebsiteFeature:', hasWebsiteFeature);
-
   // Tour system
   const { startTour, isTourCompleted } = useTour();
 
@@ -480,9 +476,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
           )}
 
           {/* Desktop: Open Website Button */}
-          {(() => {
-            console.log('[AppHeader DEBUG] Rendering website button section, hasWebsiteFeature:', hasWebsiteFeature);
-            return hasWebsiteFeature && (
+          {hasWebsiteFeature && (
               <Button
                 variant="outline"
                 size="sm"
@@ -492,8 +486,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 <Globe className="h-4 w-4" />
                 <span className="text-sm">Open Website</span>
               </Button>
-            );
-          })()}
+            )}
 
           {/* Desktop: Theme Toggle */}
           <Button

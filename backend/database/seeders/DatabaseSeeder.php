@@ -613,9 +613,9 @@ class DatabaseSeeder extends Seeder
                 // Then assign other tours based on permissions
                 $userModel = \App\Models\User::find($userId);
                 if ($userModel) {
-                    // Set organization context for permission checks
-                    $userModel->setPermissionsTeamId($organization->id);
-                    
+                    // Set organization context for permission checks (global helper, not User method)
+                    setPermissionsTeamId($organization->id);
+
                     // Get user's permissions (from roles and direct assignments)
                     $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
                     

@@ -685,6 +685,9 @@ class PermissionController extends Controller
         setPermissionsTeamId($profile->organization_id);
         $targetUser->assignRole($role);
 
+        // Clear permission cache so user's permissions are refreshed immediately
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         return response()->json(['message' => 'Role assigned to user successfully']);
     }
 
@@ -735,6 +738,9 @@ class PermissionController extends Controller
 
         setPermissionsTeamId($profile->organization_id);
         $targetUser->removeRole($role);
+
+        // Clear permission cache so user's permissions are refreshed immediately
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         return response()->json(['message' => 'Role removed from user successfully']);
     }

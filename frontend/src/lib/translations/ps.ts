@@ -2873,6 +2873,8 @@ export const ps: TranslationKeys = {
     dailyCashbook: 'ورځنی روزنامچه',
     dashboard: 'مالي ډشبورډ',
     dashboardDescription: 'د ادارې مالي عمومي وضعیت',
+    summary: 'لنډیز',
+    vsLastMonth: 'په پرتله د تیرې میاشتې',
     deficit: 'کسر / کمښت',
     deleteAccountWarning: 'ایا ډاډه یاست چې غواړئ دا حساب پاک کړئ؟ دا عمل بېرته نه ګرځیدونکی دی.',
     deleteCategoryWarning: 'ایا ډاډه یاست چې غواړئ دا کټګوري پاکه کړئ؟ دا عمل بېرته نه ګرځیدونکی دی.',
@@ -6310,7 +6312,8 @@ export const ps: TranslationKeys = {
     roleAccountant: 'محاسب',
     roleLibrarian: 'کتابتونپوه',
     roleHostelManager: 'لیلیه مدیر',
-    roleAssetManager: 'د شتمنۍ مدیر'
+    roleAssetManager: 'د شتمنۍ مدیر',
+    searchPermissions: 'د اجازې یا سرچینې له مخې لټون...'
   },
   validation: {
     ageMax: 'عمر باید د ښوونځي لپاره حقیقي وي',

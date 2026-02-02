@@ -35,6 +35,9 @@ compose up -d
 echo "[update] Running migrations + optimize..."
 compose exec -T php sh -lc 'php artisan migrate --force && php artisan optimize || true'
 
+echo "[update] Syncing default role permissions (staff + accountant)..."
+compose exec -T php sh -lc 'php artisan permissions:sync-default-roles' || true
+
 echo "[update] Renewing SSL certificates (if needed)..."
 # Ensure nginx is running for certificate renewal
 compose up -d nginx

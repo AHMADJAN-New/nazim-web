@@ -1388,9 +1388,9 @@ class SubscriptionAdminController extends Controller
                 
                 // Then assign other tours based on permissions
                 if ($userModel) {
-                    // Set organization context for permission checks
-                    $userModel->setPermissionsTeamId($organizationId);
-                    
+                    // Set organization context for permission checks (global helper, not User method)
+                    setPermissionsTeamId($organizationId);
+
                     // Get user's permissions (from roles and direct assignments)
                     $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
                     

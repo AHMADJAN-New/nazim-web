@@ -35,12 +35,14 @@ class FinanceReportController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
+            // Allow reports.read (general) or finance_reports.read (accountant role)
             try {
-                if (!$user->hasPermissionTo('reports.read')) {
+                $canAccess = $user->hasPermissionTo('reports.read') || $user->hasPermissionTo('finance_reports.read');
+                if (!$canAccess) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Permission check failed for reports.read: " . $e->getMessage());
+                \Log::warning("Permission check failed for finance dashboard: " . $e->getMessage());
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 

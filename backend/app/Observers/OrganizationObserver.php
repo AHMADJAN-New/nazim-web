@@ -24,28 +24,31 @@ class OrganizationObserver
     }
 
     /**
+     * Default roles created for every organization (must match PermissionSeeder::getRolePermissions keys).
+     */
+    protected function getDefaultRoleDefinitions(): array
+    {
+        return [
+            ['name' => 'admin', 'description' => 'Administrator with full access to all features'],
+            ['name' => 'organization_admin', 'description' => 'Organization Administrator - Full access to organization resources'],
+            ['name' => 'staff', 'description' => 'Staff member with limited access for operational tasks; finance/fees read-only'],
+            ['name' => 'teacher', 'description' => 'Teacher with access to academic content and student information'],
+            ['name' => 'accountant', 'description' => 'Accountant with full finance, fees, and multi-currency access'],
+            ['name' => 'exam_controller', 'description' => 'Exam controller with full exam management and marks entry'],
+            ['name' => 'hostel_manager', 'description' => 'Hostel manager with access to rooms and student admissions'],
+            ['name' => 'librarian', 'description' => 'Librarian – manage library, lend/return books to students and staff'],
+            ['name' => 'website_admin', 'description' => 'Website administrator – full website content and settings'],
+            ['name' => 'website_editor', 'description' => 'Website editor – edit pages, posts, events, and menus'],
+            ['name' => 'website_media', 'description' => 'Website media manager – manage media library only'],
+        ];
+    }
+
+    /**
      * Create default roles for the organization
      */
     protected function createDefaultRoles(Organization $organization): void
     {
-        $roles = [
-            [
-                'name' => 'admin',
-                'description' => 'Administrator with full access to all features',
-            ],
-            [
-                'name' => 'organization_admin',
-                'description' => 'Organization Administrator - Full access to organization resources',
-            ],
-            [
-                'name' => 'staff',
-                'description' => 'Staff member with limited access for operational tasks',
-            ],
-            [
-                'name' => 'teacher',
-                'description' => 'Teacher with access to academic content and student information',
-            ],
-        ];
+        $roles = $this->getDefaultRoleDefinitions();
 
         foreach ($roles as $roleData) {
             // Check if role already exists

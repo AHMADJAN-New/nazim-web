@@ -26,6 +26,27 @@ This step will update code, images, and dependencies.
 docker/scripts/prod/update.sh
 ```
 
+This also runs **permissions:sync-default-roles** (adds missing staff finance/fees read permissions and creates the accountant role for existing organizations).
+
+**Run sync manually** (e.g. after first deploy of the roles/permissions changes):
+
+```bash
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml exec php sh -lc 'php artisan permissions:sync-default-roles'
+```
+
+Or with dry-run: add `--dry-run` before the command string to see what would be done.
+
+**If users with accountant/staff/other roles still get 403 on organizations, buildings, schools, etc.:**
+
+1. Ensure the **latest backend** is deployed (PermissionSeeder and SyncDefaultRolesPermissions with base permissions for all roles).
+2. Run the sync **on the same environment** where the API runs (e.g. production Docker):
+   ```bash
+   docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml exec php sh -lc 'php artisan permissions:sync-default-roles'
+   ```
+3. Have affected users **log out and log back in** (or wait for cache expiry) so permissions are rechecked.
+
+**If you still see `[AppHeader DEBUG] Features:` in the browser console:** the frontend bundle is old. Rebuild and redeploy the frontend (e.g. run your build/deploy script or `docker/scripts/prod/update.sh` and ensure the frontend is rebuilt).
+
 ---
 
 ### 🚀 Build and Start

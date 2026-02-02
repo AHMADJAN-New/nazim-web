@@ -6325,7 +6325,8 @@ export const en = {
     roleAccountant: 'Accountant',
     roleLibrarian: 'Librarian',
     roleHostelManager: 'Hostel Manager',
-    roleAssetManager: 'Asset Manager'
+    roleAssetManager: 'Asset Manager',
+    searchPermissions: 'Search by permission or resource...'
   },
   validation: {
     ageMax: 'Age must be realistic for school',
