@@ -21,6 +21,7 @@ export const SchoolsManagement = lazy(() => import('@/components/settings/School
 export const ReportTemplatesManagement = lazy(() => import('@/components/settings/ReportTemplatesManagement').then(module => ({ default: module.ReportTemplatesManagement })));
 export const ResidencyTypesManagement = lazy(() => import('@/components/settings/ResidencyTypesManagement').then(module => ({ default: module.ResidencyTypesManagement })));
 export const AcademicYearsManagement = lazy(() => import('@/components/settings/AcademicYearsManagement').then(module => ({ default: module.AcademicYearsManagement })));
+export const ActivityLogsPage = lazy(() => import('@/pages/settings/ActivityLogsPage').then(module => ({ default: module.default })));
 export const ExamTypesPage = lazy(() => import('@/pages/settings/ExamTypesPage').then(module => ({ default: module.ExamTypesPage })));
 export const ClassesManagement = lazy(() => import('@/components/settings/ClassesManagement').then(module => ({ default: module.ClassesManagement })));
 export const SubjectsManagement = lazy(() => import('@/components/settings/SubjectsManagement').then(module => ({ default: module.SubjectsManagement })));

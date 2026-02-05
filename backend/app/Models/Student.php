@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivityWithContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use App\Services\CodeGenerator;
+use Spatie\Activitylog\LogOptions;
 
 class Student extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivityWithContext;
 
     protected $connection = 'pgsql';
     protected $table = 'students';
@@ -73,6 +75,18 @@ class Student extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+
+    /**
+     * Configure activity logging options for this model
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnlyDirty()
+            ->logOnly(['full_name', 'student_status', 'student_code', 'admission_no', 'school_id'])
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Student {$eventName}: {$this->full_name}");
+    }
 
     /**
      * Boot the model

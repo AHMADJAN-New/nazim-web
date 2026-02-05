@@ -94,7 +94,7 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public', // All tables in public schema
+            'search_path' => 'public,nazim_logs', // Include logs schema
             'sslmode' => 'prefer',
         ],
 

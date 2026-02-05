@@ -5181,3 +5181,42 @@ export const websiteFatwasApi = {
     return apiClient.delete(`/website/fatwas/${id}`);
   },
 };
+
+// Activity Logs API (for settings/admin)
+export const activityLogsApi = {
+  list: async (params?: {
+    page?: number;
+    per_page?: number;
+    log_name?: string;
+    event?: string;
+    subject_type?: string;
+    causer_id?: string;
+    start_date?: string;
+    end_date?: string;
+    search?: string;
+  }) => {
+    return apiClient.get<{
+      data: import('@/types/api/activityLog').ActivityLog[];
+      meta: {
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+      };
+    }>('/activity-logs', params);
+  },
+  getLogNames: async () => {
+    return apiClient.get<{ data: string[] }>('/activity-logs/log-names');
+  },
+  getEventTypes: async () => {
+    return apiClient.get<{ data: string[] }>('/activity-logs/event-types');
+  },
+  getStats: async () => {
+    return apiClient.get<{
+      today_count: number;
+      week_count: number;
+      unique_users_today: number;
+      top_events: Array<{ event: string; count: number }>;
+    }>('/activity-logs/stats');
+  },
+};

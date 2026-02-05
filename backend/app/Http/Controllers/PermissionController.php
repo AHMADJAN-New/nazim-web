@@ -7,12 +7,16 @@ use App\Models\PermissionGroup;
 use App\Models\PermissionGroupItem;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PermissionController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of permissions
      * CRITICAL: Returns ONLY organization-specific permissions for the user's organization
@@ -277,6 +281,22 @@ class PermissionController extends Controller
             'description' => $request->description,
         ]);
 
+        // Log permission creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $permission,
+                description: "Created permission: {$permission->name}",
+                properties: [
+                    'permission_name' => $permission->name,
+                    'resource' => $permission->resource,
+                    'action' => $permission->action,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log permission creation: ' . $e->getMessage());
+        }
+
         return response()->json($permission, 201);
     }
 
@@ -323,7 +343,23 @@ class PermissionController extends Controller
             'description' => 'nullable|string|max:500',
         ]);
 
+        $oldValues = $permission->only(['name', 'resource', 'action', 'description']);
         $permission->update($request->only(['name', 'resource', 'action', 'description']));
+
+        // Log permission update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $permission,
+                description: "Updated permission: {$permission->name}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $permission->only(['name', 'resource', 'action', 'description']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log permission update: ' . $e->getMessage());
+        }
 
         return response()->json($permission);
     }
@@ -369,7 +405,21 @@ class PermissionController extends Controller
             return response()->json(['error' => 'Cannot delete global permissions'], 403);
         }
 
+        $permissionName = $permission->name;
+        $permissionData = $permission->toArray();
         $permission->delete();
+
+        // Log permission deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $permission,
+                description: "Deleted permission: {$permissionName}",
+                properties: ['deleted_permission' => $permissionData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log permission deletion: ' . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Permission deleted successfully']);
     }
@@ -482,6 +532,24 @@ class PermissionController extends Controller
                 'permission_id' => $permission->id,
                 'organization_id' => $profile->organization_id,
             ]);
+
+            // Log permission assignment
+            try {
+                $this->activityLogService->logEvent(
+                    description: "Assigned permission '{$permission->name}' to role '{$role->name}'",
+                    logName: 'permissions',
+                    event: 'assigned',
+                    properties: [
+                        'role_id' => $role->id,
+                        'role_name' => $role->name,
+                        'permission_id' => $permission->id,
+                        'permission_name' => $permission->name,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log permission assignment: ' . $e->getMessage());
+            }
         }
 
         return response()->json(['message' => 'Permission assigned to role successfully']);
@@ -538,6 +606,24 @@ class PermissionController extends Controller
             ->where('permission_id', $permission->id)
             ->where('organization_id', $profile->organization_id)
             ->delete();
+
+        // Log permission removal
+        try {
+            $this->activityLogService->logEvent(
+                description: "Removed permission '{$permission->name}' from role '{$role->name}'",
+                logName: 'permissions',
+                event: 'removed',
+                properties: [
+                    'role_id' => $role->id,
+                    'role_name' => $role->name,
+                    'permission_id' => $permission->id,
+                    'permission_name' => $permission->name,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log permission removal: ' . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Permission removed from role successfully']);
     }
@@ -688,6 +774,23 @@ class PermissionController extends Controller
         // Clear permission cache so user's permissions are refreshed immediately
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // Log role assignment
+        try {
+            $this->activityLogService->logEvent(
+                description: "Assigned role '{$role->name}' to user",
+                logName: 'permissions',
+                event: 'role_assigned',
+                properties: [
+                    'target_user_id' => $targetUser->id,
+                    'role_id' => $role->id,
+                    'role_name' => $role->name,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log role assignment: ' . $e->getMessage());
+        }
+
         return response()->json(['message' => 'Role assigned to user successfully']);
     }
 
@@ -741,6 +844,23 @@ class PermissionController extends Controller
 
         // Clear permission cache so user's permissions are refreshed immediately
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Log role removal
+        try {
+            $this->activityLogService->logEvent(
+                description: "Removed role '{$role->name}' from user",
+                logName: 'permissions',
+                event: 'role_removed',
+                properties: [
+                    'target_user_id' => $targetUser->id,
+                    'role_id' => $role->id,
+                    'role_name' => $role->name,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log role removal: ' . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Role removed from user successfully']);
     }
@@ -819,6 +939,23 @@ class PermissionController extends Controller
                 'model_type' => get_class($targetUser),
                 'organization_id' => $profile->organization_id,
             ]);
+
+            // Log direct permission assignment
+            try {
+                $this->activityLogService->logEvent(
+                    description: "Assigned permission '{$permission->name}' directly to user",
+                    logName: 'permissions',
+                    event: 'direct_permission_assigned',
+                    properties: [
+                        'target_user_id' => $targetUser->id,
+                        'permission_id' => $permission->id,
+                        'permission_name' => $permission->name,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log direct permission assignment: ' . $e->getMessage());
+            }
         }
 
         return response()->json(['message' => 'Permission assigned to user successfully']);
@@ -891,6 +1028,23 @@ class PermissionController extends Controller
             ->where('model_type', get_class($targetUser))
             ->where('organization_id', $profile->organization_id)
             ->delete();
+
+        // Log direct permission removal
+        try {
+            $this->activityLogService->logEvent(
+                description: "Removed permission '{$permission->name}' directly from user",
+                logName: 'permissions',
+                event: 'direct_permission_removed',
+                properties: [
+                    'target_user_id' => $targetUser->id,
+                    'permission_id' => $permission->id,
+                    'permission_name' => $permission->name,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log direct permission removal: ' . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Permission removed from user successfully']);
     }

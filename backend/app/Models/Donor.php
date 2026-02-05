@@ -2,22 +2,25 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivityWithContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use App\Models\ExchangeRate;
-use App\Models\Currency;
+use Spatie\Activitylog\LogOptions;
 
 class Donor extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, LogsActivityWithContext, SoftDeletes;
 
     protected $connection = 'pgsql';
+
     protected $table = 'donors';
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -110,14 +113,14 @@ class Donor extends Model
             ->where('is_active', true)
             ->whereNull('deleted_at')
             ->first();
-        
-        if (!$baseCurrency) {
+
+        if (! $baseCurrency) {
             // If no base currency, use simple sum (backward compatibility)
             $this->total_donated = $this->incomeEntries()->whereNull('deleted_at')->sum('amount');
         } else {
             // Convert all donations to base currency
             $totalDonated = 0;
-            
+
             foreach ($this->incomeEntries()->whereNull('deleted_at')->get() as $entry) {
                 $amount = (float) $entry->amount;
                 if ($entry->currency_id && $entry->currency_id !== $baseCurrency->id) {
@@ -135,12 +138,12 @@ class Donor extends Model
                 }
                 $totalDonated += $amount;
             }
-            
+
             $this->total_donated = $totalDonated;
         }
-        
+
         $this->save();
-        
+
         return $this->total_donated;
     }
 
@@ -157,18 +160,18 @@ class Donor extends Model
             ->where('is_active', true)
             ->whereNull('deleted_at')
             ->first();
-        
-        if (!$baseCurrency) {
+
+        if (! $baseCurrency) {
             // If no base currency, use simple sum (backward compatibility)
             return $this->incomeEntries()
                 ->whereNull('deleted_at')
                 ->whereBetween('date', [$startDate, $endDate])
                 ->sum('amount');
         }
-        
+
         // Convert all donations to base currency
         $totalDonated = 0;
-        
+
         foreach ($this->incomeEntries()
             ->whereNull('deleted_at')
             ->whereBetween('date', [$startDate, $endDate])
@@ -189,7 +192,18 @@ class Donor extends Model
             }
             $totalDonated += $amount;
         }
-        
+
         return $totalDonated;
+    }
+
+    /**
+     * Get the activity log options for the model.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnlyDirty()
+            ->logFillable()
+            ->dontSubmitEmptyLogs();
     }
 }

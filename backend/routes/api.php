@@ -78,6 +78,7 @@ use App\Http\Controllers\Website\WebsiteInboxController;
 use App\Http\Controllers\Website\WebsiteOnlineAdmissionController;
 use App\Http\Controllers\Website\WebsiteOnlineAdmissionFieldController;
 use App\Http\Controllers\PlatformWebsiteDomainController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\PlatformWebsiteConfigController;
 use App\Http\Controllers\PlatformWebsiteSettingsController;
 use App\Http\Controllers\IdCardTemplateController;
@@ -392,6 +393,12 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     // Resource creation requires limit:resourceKey enforcement
     // ============================================================
     Route::middleware(['school.context'])->group(function () {
+
+        // Activity Logs (admin feature - read only)
+        Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+        Route::get('/activity-logs/log-names', [ActivityLogController::class, 'logNames']);
+        Route::get('/activity-logs/event-types', [ActivityLogController::class, 'eventTypes']);
+        Route::get('/activity-logs/stats', [ActivityLogController::class, 'stats']);
 
         // Buildings (core feature - no additional feature check)
         Route::get('/buildings', [BuildingController::class, 'index']);

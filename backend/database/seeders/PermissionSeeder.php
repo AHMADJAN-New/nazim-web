@@ -153,6 +153,8 @@ class PermissionSeeder extends Seeder
             'website_domains' => ['read', 'create', 'update', 'delete'],
             'website_menus' => ['read', 'create', 'update', 'delete'],
             'website_settings' => ['read', 'update'],
+            // Activity Logs (audit trail)
+            'activity_logs' => ['read'],
         ];
     }
 
@@ -168,6 +170,7 @@ class PermissionSeeder extends Seeder
     {
         return [
             'admin' => '*', // All permissions EXCEPT subscription.admin (handled in getExcludedPermissions)
+            'organization_admin' => '*', // Organization Admin - same as admin, full access EXCEPT subscription.admin
             'staff' => [
                 // Staff: general office/operational access; finance/fees/currencies read-only (see accountant for full finance)
                 // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook

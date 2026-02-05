@@ -211,7 +211,8 @@ import {
   TranslationsManagement,
   HelpCenterManagement,
   MaintenanceHistory,
-  DesktopLicenseGeneration
+  DesktopLicenseGeneration,
+  ActivityLogsPage
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -964,6 +965,13 @@ const App = () => (
                       <PermissionRoute permission="reports.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ReportTemplatesManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/settings/activity-logs" element={
+                      <PermissionRoute permission="activity_logs.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ActivityLogsPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

@@ -50,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'token.from.query' => \App\Http\Middleware\AcceptTokenFromQuery::class,
             'public.website.resolve' => \App\Http\Middleware\ResolvePublicWebsiteSchool::class,
             'public.website.feature' => \App\Http\Middleware\EnsurePublicWebsiteFeature::class,
+            'log.activity' => \App\Http\Middleware\LogActivity::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

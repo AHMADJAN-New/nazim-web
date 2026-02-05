@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivityWithContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use App\Services\CodeGenerator;
+use Spatie\Activitylog\LogOptions;
 
 class Staff extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivityWithContext;
 
     protected $connection = 'pgsql';
     protected $table = 'staff';
@@ -70,6 +72,18 @@ class Staff extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+
+    /**
+     * Configure activity logging options for this model
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnlyDirty()
+            ->logOnly(['first_name', 'father_name', 'staff_type', 'status', 'position', 'school_id'])
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Staff {$eventName}: {$this->first_name}");
+    }
 
     /**
      * Boot the model
