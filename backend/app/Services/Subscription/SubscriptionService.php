@@ -525,27 +525,7 @@ class SubscriptionService
                 throw new \Exception('Payment was rejected');
             }
 
-            // Validate payment amount matches expected total (within tolerance)
-            $discountCodeStr = null;
-            if ($request->discount_code_id) {
-                $discountCodeStr = DiscountCode::find($request->discount_code_id)?->code;
-            }
-
-            $priceInfo = $this->calculatePrice(
-                $request->requested_plan_id,
-                $request->additional_schools,
-                $discountCodeStr,
-                $paymentRecord->currency,
-                $request->organization_id
-            );
-
-            $expectedTotal = (float) ($priceInfo['total'] ?? 0);
-            $submittedAmount = (float) $paymentRecord->amount;
-            $tolerance = 0.01;
-
-            if (abs($submittedAmount - $expectedTotal) > $tolerance) {
-                throw new \Exception("Payment amount does not match expected total. Expected {$expectedTotal} {$paymentRecord->currency}.");
-            }
+            // Amount is flexible; notes are required when creating the payment record so admins document any variance
 
             // Confirm payment (idempotent)
             if ($paymentRecord->isPending()) {

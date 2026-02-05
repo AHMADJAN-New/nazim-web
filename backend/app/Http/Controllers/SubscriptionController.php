@@ -537,7 +537,7 @@ class SubscriptionController extends Controller
                     }
                 }
 
-                // Calculate price with discount if applicable
+                // Calculate price with discount for record-keeping (amount is flexible)
                 $priceInfo = $this->subscriptionService->calculatePrice(
                     $renewalRequest->requested_plan_id,
                     $renewalRequest->additional_schools,
@@ -546,13 +546,7 @@ class SubscriptionController extends Controller
                     $profile->organization_id
                 );
 
-                $expectedTotal = (float) ($priceInfo['total'] ?? 0);
                 $submittedAmount = (float) $request->amount;
-                $tolerance = 0.01;
-
-                if (abs($submittedAmount - $expectedTotal) > $tolerance) {
-                    throw new \Exception("Payment amount does not match expected total. Expected {$expectedTotal} {$request->currency}.");
-                }
 
                 $subscription = $this->subscriptionService->getCurrentSubscription($profile->organization_id);
                 $plan = SubscriptionPlan::findOrFail($renewalRequest->requested_plan_id);

@@ -255,8 +255,8 @@ class ApiClient {
             }
           }
           
-          // Use the first error message as the main message, fallback to generic message
-          const errorMessage = firstErrorMessage || error.message || 'Validation failed';
+          // Use the first error message as the main message; Laravel often returns single message in error.error
+          const errorMessage = firstErrorMessage || error.message || error.error || 'Validation failed';
           const validationError = new Error(errorMessage);
           
           // Attach errors object so hooks can access it

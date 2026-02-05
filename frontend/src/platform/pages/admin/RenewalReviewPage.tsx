@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   Info,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -75,6 +75,30 @@ export default function RenewalReviewPage() {
     notes: '',
   });
 
+  // Pre-fill amount with expected total when approve dialog opens and renewal has no payment record
+  useEffect(() => {
+    if (!renewal || !isApproveDialogOpen || renewal.payment_record) return;
+    const expected =
+      paymentData.currency === 'AFN'
+        ? renewal.expected_total_afn
+        : renewal.expected_total_usd;
+    if (typeof expected === 'number' && expected > 0) {
+      setPaymentData((prev) => ({ ...prev, amount: String(expected) }));
+    }
+  }, [isApproveDialogOpen, renewal?.id]); // Only when dialog opens or renewal changes
+
+  // When currency changes and no payment record, set amount to expected total for that currency
+  useEffect(() => {
+    if (!renewal || renewal.payment_record) return;
+    const expected =
+      paymentData.currency === 'AFN'
+        ? renewal.expected_total_afn
+        : renewal.expected_total_usd;
+    if (typeof expected === 'number' && expected > 0) {
+      setPaymentData((prev) => ({ ...prev, amount: String(expected) }));
+    }
+  }, [paymentData.currency, renewal?.expected_total_afn, renewal?.expected_total_usd]);
+
   // Access control - redirect if no permission
   if (!hasAdminPermission) {
     return <Navigate to="/dashboard" replace />;
@@ -132,9 +156,9 @@ export default function RenewalReviewPage() {
       notes?: string;
     } = {};
 
-    // If no payment record exists, include payment data
+    // If no payment record exists, include payment data (notes required to document amount variance)
     if (!renewal.payment_record) {
-      if (!paymentData.amount || !paymentData.payment_date) {
+      if (!paymentData.amount || !paymentData.payment_date || !paymentData.notes?.trim()) {
         return; // Validation will be handled by backend
       }
       payload.amount = Number(paymentData.amount);
@@ -142,7 +166,7 @@ export default function RenewalReviewPage() {
       payload.payment_method = paymentData.payment_method;
       payload.payment_reference = paymentData.payment_reference || undefined;
       payload.payment_date = paymentData.payment_date;
-      payload.notes = paymentData.notes || undefined;
+      payload.notes = paymentData.notes.trim();
     }
 
     approveRenewal.mutate({ renewalId: renewal.id, ...payload }, {
@@ -531,7 +555,18 @@ export default function RenewalReviewPage() {
                     </div>
                   </div>
                 </div>
-                
+                {(typeof renewal.expected_total_afn === 'number' || typeof renewal.expected_total_usd === 'number') && (
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    Expected total:{' '}
+                    {paymentData.currency === 'AFN'
+                      ? typeof renewal.expected_total_afn === 'number'
+                        ? `${Number(renewal.expected_total_afn).toLocaleString()} AFN`
+                        : '—'
+                      : typeof renewal.expected_total_usd === 'number'
+                        ? `${Number(renewal.expected_total_usd).toLocaleString()} USD`
+                        : '—'}
+                  </p>
+                )}
                 {/* Payment Form */}
                 <div className="grid gap-3 grid-cols-2 pt-2">
                   <div className="space-y-2">
@@ -635,7 +670,7 @@ export default function RenewalReviewPage() {
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="payment-notes" className="text-xs font-medium">
-                      Notes
+                      Notes <span className="text-destructive">*</span>
                     </Label>
                     <Textarea
                       id="payment-notes"
@@ -643,9 +678,10 @@ export default function RenewalReviewPage() {
                       onChange={(e) =>
                         setPaymentData({ ...paymentData, notes: e.target.value })
                       }
-                      placeholder="Optional notes about this payment"
-                      rows={2}
+                      placeholder="Required: explain the payment amount (e.g. discount, partial payment, round figure, reason for higher or lower than expected)"
+                      rows={3}
                       className="resize-none"
+                      required
                     />
                   </div>
                 </div>
@@ -665,7 +701,9 @@ export default function RenewalReviewPage() {
               disabled={
                 approveRenewal.isPending ||
                 (!renewal.payment_record &&
-                  (!paymentData.amount || !paymentData.payment_date))
+                  (!paymentData.amount ||
+                    !paymentData.payment_date ||
+                    !paymentData.notes?.trim()))
               }
             >
               {approveRenewal.isPending ? (
