@@ -10,6 +10,7 @@ use App\Models\AssetAssignment;
 use App\Models\AssetCopy;
 use App\Models\AssetHistory;
 use App\Models\AssetMaintenanceRecord;
+use App\Services\ActivityLogService;
 use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Schema;
 class AssetController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private NotificationService $notificationService
     ) {
     }
@@ -267,6 +269,25 @@ class AssetController extends Controller
             $loadRelations[] = 'copies';
         }
 
+        // Log asset creation
+        try {
+            $categoryName = $asset->category?->name ?? 'Uncategorized';
+            $this->activityLogService->logCreate(
+                subject: $asset,
+                description: "Created asset: {$asset->name} ({$asset->asset_tag}) in category {$categoryName}",
+                properties: [
+                    'asset_id' => $asset->id,
+                    'asset_tag' => $asset->asset_tag,
+                    'name' => $asset->name,
+                    'category_id' => $asset->category_id,
+                    'total_copies' => $totalCopies,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log asset creation: ' . $e->getMessage());
+        }
+
         return response()->json($asset->load($loadRelations), 201);
     }
 
@@ -387,6 +408,12 @@ class AssetController extends Controller
             return response()->json(['error' => 'Asset not found'], 404);
         }
 
+        // Capture old values before update
+        $oldValues = $asset->only([
+            'name', 'asset_tag', 'description', 'category_id', 'purchase_date', 'purchase_price',
+            'currency_id', 'finance_account_id', 'building_id', 'room_id', 'status', 'condition'
+        ]);
+
         $data = $request->validated();
         // Prevent cross-school moves
         unset($data['school_id'], $data['organization_id']);
@@ -463,6 +490,27 @@ class AssetController extends Controller
             ]);
         }
 
+        // Log asset update
+        try {
+            $categoryName = $asset->category?->name ?? 'Uncategorized';
+            $this->activityLogService->logUpdate(
+                subject: $asset,
+                description: "Updated asset: {$asset->name} ({$asset->asset_tag}) in category {$categoryName}",
+                properties: [
+                    'asset_id' => $asset->id,
+                    'asset_tag' => $asset->asset_tag,
+                    'old_values' => $oldValues,
+                    'new_values' => $asset->only([
+                        'name', 'asset_tag', 'description', 'category_id', 'purchase_date', 'purchase_price',
+                        'currency_id', 'finance_account_id', 'building_id', 'room_id', 'status', 'condition'
+                    ]),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log asset update: ' . $e->getMessage());
+        }
+
         return response()->json($asset->load(['building', 'room', 'school', 'category', 'currency', 'financeAccount', 'activeAssignment']));
     }
 
@@ -499,6 +547,28 @@ class AssetController extends Controller
 
         if (!$asset) {
             return response()->json(['error' => 'Asset not found'], 404);
+        }
+
+        // Load relationships for logging
+        $asset->load(['category']);
+
+        // Log asset deletion
+        try {
+            $categoryName = $asset->category?->name ?? 'Uncategorized';
+            $this->activityLogService->logDelete(
+                subject: $asset,
+                description: "Deleted asset: {$asset->name} ({$asset->asset_tag}) in category {$categoryName}",
+                properties: [
+                    'asset_id' => $asset->id,
+                    'asset_tag' => $asset->asset_tag,
+                    'name' => $asset->name,
+                    'category_id' => $asset->category_id,
+                    'deleted_entity' => $asset->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log asset deletion: ' . $e->getMessage());
         }
 
         $asset->delete();

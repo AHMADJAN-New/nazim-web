@@ -4,12 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\LibraryBook;
 use App\Models\LibraryCopy;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class LibraryCopyController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     public function store(Request $request)
     {
         $user = $request->user();
@@ -58,6 +64,24 @@ class LibraryCopyController extends Controller
             'acquired_at' => $data['acquired_at'] ?? null,
         ]);
 
+        // Log library copy creation
+        try {
+            $bookTitle = $book->title ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $copy,
+                description: "Added copy {$copy->copy_code ?? 'N/A'} for library book {$bookTitle}",
+                properties: [
+                    'library_copy_id' => $copy->id,
+                    'book_id' => $copy->book_id,
+                    'copy_code' => $copy->copy_code,
+                    'status' => $copy->status,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log library copy creation: ' . $e->getMessage());
+        }
+
         return response()->json($copy, 201);
     }
 
@@ -90,12 +114,34 @@ class LibraryCopyController extends Controller
             return response()->json(['error' => 'Copy not found'], 404);
         }
 
+        // Capture old values before update
+        $oldValues = $copy->only(['copy_code', 'status', 'acquired_at']);
+
         $data = $request->validate([
             'copy_code' => 'nullable|string|max:100',
             'status' => 'nullable|string',
             'acquired_at' => 'nullable|date',
         ]);
         $copy->update($data);
+
+        // Log library copy update
+        try {
+            $copy->load('book');
+            $bookTitle = $copy->book?->title ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $copy,
+                description: "Updated copy {$copy->copy_code ?? 'N/A'} for library book {$bookTitle}",
+                properties: [
+                    'library_copy_id' => $copy->id,
+                    'book_id' => $copy->book_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $copy->only(['copy_code', 'status', 'acquired_at']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log library copy update: ' . $e->getMessage());
+        }
 
         return response()->json($copy);
     }
@@ -127,6 +173,28 @@ class LibraryCopyController extends Controller
         $copy = LibraryCopy::where('school_id', $currentSchoolId)->find($id);
         if (!$copy) {
             return response()->json(['error' => 'Copy not found'], 404);
+        }
+
+        // Load book for logging
+        $copy->load('book');
+
+        // Log library copy deletion
+        try {
+            $bookTitle = $copy->book?->title ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $copy,
+                description: "Removed copy {$copy->copy_code ?? 'N/A'} for library book {$bookTitle}",
+                properties: [
+                    'library_copy_id' => $copy->id,
+                    'book_id' => $copy->book_id,
+                    'copy_code' => $copy->copy_code,
+                    'status' => $copy->status,
+                    'deleted_entity' => $copy->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log library copy deletion: ' . $e->getMessage());
         }
 
         $copy->delete();

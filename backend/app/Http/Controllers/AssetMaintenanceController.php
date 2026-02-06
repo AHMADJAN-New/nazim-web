@@ -6,6 +6,7 @@ use App\Http\Requests\StoreAssetMaintenanceRequest;
 use App\Http\Requests\UpdateAssetMaintenanceRequest;
 use App\Models\Asset;
 use App\Models\AssetMaintenanceRecord;
+use App\Services\ActivityLogService;
 use App\Services\Notifications\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 class AssetMaintenanceController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private NotificationService $notificationService
     ) {
     }
@@ -163,6 +165,25 @@ class AssetMaintenanceController extends Controller
             ]);
         }
 
+        // Log maintenance record creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $record,
+                description: "Created maintenance record for asset {$asset->name} ({$asset->asset_tag}): {$record->maintenance_type}",
+                properties: [
+                    'asset_maintenance_record_id' => $record->id,
+                    'asset_id' => $record->asset_id,
+                    'maintenance_type' => $record->maintenance_type,
+                    'status' => $record->status,
+                    'performed_on' => $record->performed_on,
+                    'cost' => $record->cost,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log maintenance record creation: ' . $e->getMessage());
+        }
+
         return response()->json($record, 201);
     }
 
@@ -206,6 +227,9 @@ class AssetMaintenanceController extends Controller
                 'error' => $e->getMessage(),
             ]);
         }
+
+        // Capture old values before update
+        $oldValues = $record->only(['maintenance_type', 'status', 'performed_on', 'next_due_date', 'cost', 'vendor', 'notes']);
 
         $data = $request->validated();
         
@@ -272,6 +296,25 @@ class AssetMaintenanceController extends Controller
             ]);
         }
 
+        // Log maintenance record update
+        try {
+            $assetName = $asset?->name ?? 'Unknown';
+            $assetTag = $asset?->asset_tag ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $record,
+                description: "Updated maintenance record for asset {$assetName} ({$assetTag}): {$record->maintenance_type}",
+                properties: [
+                    'asset_maintenance_record_id' => $record->id,
+                    'asset_id' => $record->asset_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $record->only(['maintenance_type', 'status', 'performed_on', 'next_due_date', 'cost', 'vendor', 'notes']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log maintenance record update: ' . $e->getMessage());
+        }
+
         return response()->json($record);
     }
 
@@ -309,6 +352,32 @@ class AssetMaintenanceController extends Controller
                 'permission' => 'assets.update',
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        // Load asset for logging
+        $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $record->asset_id)
+            ->first();
+
+        // Log maintenance record deletion
+        try {
+            $assetName = $asset?->name ?? 'Unknown';
+            $assetTag = $asset?->asset_tag ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $record,
+                description: "Deleted maintenance record for asset {$assetName} ({$assetTag}): {$record->maintenance_type}",
+                properties: [
+                    'asset_maintenance_record_id' => $record->id,
+                    'asset_id' => $record->asset_id,
+                    'maintenance_type' => $record->maintenance_type,
+                    'status' => $record->status,
+                    'deleted_entity' => $record->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log maintenance record deletion: ' . $e->getMessage());
         }
 
         $assetId = $record->asset_id;

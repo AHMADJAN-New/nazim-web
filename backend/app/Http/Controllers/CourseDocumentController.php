@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CourseDocument;
 use App\Models\ShortTermCourse;
+use App\Services\ActivityLogService;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ use Illuminate\Support\Str;
 class CourseDocumentController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private FileStorageService $fileStorageService
     ) {}
     private function getProfile($user)
@@ -125,6 +127,25 @@ class CourseDocumentController extends Controller
             'uploaded_by' => (string) $user->id,
         ]);
 
+        // Log course document creation
+        try {
+            $courseName = $course->title ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $document,
+                description: "Uploaded course document: {$document->title} for course {$courseName}",
+                properties: [
+                    'course_document_id' => $document->id,
+                    'course_id' => $document->course_id,
+                    'document_type' => $document->document_type,
+                    'title' => $document->title,
+                    'file_name' => $document->file_name,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log course document creation: ' . $e->getMessage());
+        }
+
         return response()->json($document, 201);
     }
 
@@ -209,6 +230,29 @@ class CourseDocumentController extends Controller
 
         if (!$document) {
             return response()->json(['error' => 'Document not found'], 404);
+        }
+
+        // Load course for logging
+        $document->load('course');
+
+        // Log course document deletion
+        try {
+            $courseName = $document->course?->title ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $document,
+                description: "Deleted course document: {$document->title} for course {$courseName}",
+                properties: [
+                    'course_document_id' => $document->id,
+                    'course_id' => $document->course_id,
+                    'document_type' => $document->document_type,
+                    'title' => $document->title,
+                    'file_name' => $document->file_name,
+                    'deleted_entity' => $document->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log course document deletion: ' . $e->getMessage());
         }
 
         // Delete file from storage using FileStorageService

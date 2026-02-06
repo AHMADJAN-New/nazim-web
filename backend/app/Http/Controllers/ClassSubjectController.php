@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\ClassSubject;
 use App\Models\ClassAcademicYear;
 use App\Models\Subject;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ClassSubjectController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of class subjects
      */
@@ -174,6 +178,24 @@ class ClassSubjectController extends Controller
             'room'
         ]);
 
+        // Log class subject creation
+        try {
+            $subjectName = $classSubject->subject?->name ?? 'Unknown';
+            $className = $classSubject->classAcademicYear?->class?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $classSubject,
+                description: "Assigned subject {$subjectName} to class {$className}",
+                properties: [
+                    'class_subject_id' => $classSubject->id,
+                    'subject_id' => $classSubject->subject_id,
+                    'class_academic_year_id' => $classSubject->class_academic_year_id,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log class subject creation: ' . $e->getMessage());
+        }
+
         return response()->json($classSubject, 201);
     }
 
@@ -279,6 +301,9 @@ class ClassSubjectController extends Controller
             $validated['room_id'] = null;
         }
 
+        // Capture old values before update
+        $oldValues = $classSubject->only(['teacher_id', 'room_id', 'credits', 'hours_per_week', 'is_required', 'notes']);
+
         $classSubject->update($validated);
 
         $classSubject->load([
@@ -289,6 +314,23 @@ class ClassSubjectController extends Controller
             'teacher', 
             'room'
         ]);
+
+        // Log class subject update
+        try {
+            $subjectName = $classSubject->subject?->name ?? 'Unknown';
+            $className = $classSubject->classAcademicYear?->class?->name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $classSubject,
+                description: "Updated subject assignment: {$subjectName} for class {$className}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $classSubject->only(['teacher_id', 'room_id', 'credits', 'hours_per_week', 'is_required', 'notes']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log class subject update: ' . $e->getMessage());
+        }
 
         return response()->json($classSubject);
     }
@@ -330,7 +372,24 @@ class ClassSubjectController extends Controller
             return response()->json(['error' => 'Class subject not found'], 404);
         }
 
+        // Capture data before deletion
+        $classSubjectData = $classSubject->toArray();
+        $subjectName = $classSubject->subject?->name ?? 'Unknown';
+        $className = $classSubject->classAcademicYear?->class?->name ?? 'Unknown';
+
         $classSubject->delete();
+
+        // Log class subject deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $classSubject,
+                description: "Removed subject {$subjectName} from class {$className}",
+                properties: ['deleted_class_subject' => $classSubjectData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log class subject deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

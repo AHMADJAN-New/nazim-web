@@ -8,6 +8,7 @@ use App\Http\Requests\StoreAttendanceSessionRequest;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\ClassModel;
+use App\Services\ActivityLogService;
 use App\Services\Notifications\NotificationService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ReportConfig;
@@ -22,6 +23,7 @@ use Illuminate\Support\Str;
 class AttendanceSessionController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private ReportService $reportService,
         private DateConversionService $dateService,
         private NotificationService $notificationService
@@ -175,6 +177,26 @@ class AttendanceSessionController extends Controller
         // Load relationships for notification
         $session->load(['classModel', 'classes', 'school', 'academicYear']);
 
+        // Log attendance session creation
+        try {
+            $classNames = $session->classes->pluck('name')->join(', ') ?: ($session->classModel?->name ?? 'Class');
+            $sessionDate = $session->session_date ? Carbon::parse($session->session_date)->format('Y-m-d') : 'N/A';
+            $this->activityLogService->logCreate(
+                subject: $session,
+                description: "Created attendance session for {$classNames} on {$sessionDate}",
+                properties: [
+                    'attendance_session_id' => $session->id,
+                    'class_id' => $session->class_id,
+                    'session_date' => $session->session_date,
+                    'method' => $session->method,
+                    'records_count' => count($validated['records'] ?? []),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log attendance session creation: ' . $e->getMessage());
+        }
+
         // Notify about attendance session creation
         try {
             $classNames = $session->classes->pluck('name')->join(', ') ?: ($session->classModel?->name ?? 'Class');
@@ -270,6 +292,9 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
+        // Capture old values before update
+        $oldValues = $session->only(['status', 'remarks']);
+
         // Track old status for status change notification
         $oldStatus = $session->status;
         
@@ -280,6 +305,24 @@ class AttendanceSessionController extends Controller
         ]);
 
         $session->fresh(['classModel', 'classes', 'school', 'academicYear']);
+
+        // Log attendance session update
+        try {
+            $classNames = $session->classes->pluck('name')->join(', ') ?: ($session->classModel?->name ?? 'Class');
+            $sessionDate = $session->session_date ? Carbon::parse($session->session_date)->format('Y-m-d') : 'N/A';
+            $this->activityLogService->logUpdate(
+                subject: $session,
+                description: "Updated attendance session for {$classNames} on {$sessionDate}",
+                properties: [
+                    'attendance_session_id' => $session->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $session->only(['status', 'remarks']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log attendance session update: ' . $e->getMessage());
+        }
 
         // Notify if session is closed
         try {

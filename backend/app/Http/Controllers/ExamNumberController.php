@@ -7,6 +7,7 @@ use App\Models\ExamStudent;
 use App\Models\ExamClass;
 use App\Models\ExamSubject;
 use App\Models\StudentAdmission;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,11 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ExamNumberController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     /**
      * Get students with their numbers for an exam
      * GET /api/exams/{exam}/students-with-numbers
@@ -423,6 +429,7 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'Exam student not found'], 404);
         }
 
+        $oldRollNumber = $examStudent->exam_roll_number;
         $newRollNumber = $validated['exam_roll_number'];
 
         // Check uniqueness if setting a value
@@ -434,6 +441,29 @@ class ExamNumberController extends Controller
 
         $examStudent->exam_roll_number = $newRollNumber;
         $examStudent->save();
+
+        // Load relationships for logging
+        $examStudent->load(['student', 'exam']);
+
+        // Log roll number update
+        try {
+            $studentName = $examStudent->student?->full_name ?? 'Unknown';
+            $examName = $examStudent->exam?->name ?? 'Unknown';
+            $this->activityLogService->logEvent(
+                subject: $examStudent,
+                event: 'exam_roll_number_updated',
+                description: "Updated roll number for student {$studentName} in exam {$examName}",
+                properties: [
+                    'exam_student_id' => $examStudent->id,
+                    'exam_id' => $examStudent->exam_id,
+                    'old_roll_number' => $oldRollNumber,
+                    'new_roll_number' => $newRollNumber,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log roll number update: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Roll number updated successfully',
@@ -746,6 +776,7 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'Exam student not found'], 404);
         }
 
+        $oldSecretNumber = $examStudent->exam_secret_number;
         $newSecretNumber = $validated['exam_secret_number'];
 
         if ($newSecretNumber !== null && !ExamStudent::isSecretNumberUnique($examId, $newSecretNumber, $examStudentId)) {
@@ -756,6 +787,29 @@ class ExamNumberController extends Controller
 
         $examStudent->exam_secret_number = $newSecretNumber;
         $examStudent->save();
+
+        // Load relationships for logging
+        $examStudent->load(['student', 'exam']);
+
+        // Log secret number update
+        try {
+            $studentName = $examStudent->student?->full_name ?? 'Unknown';
+            $examName = $examStudent->exam?->name ?? 'Unknown';
+            $this->activityLogService->logEvent(
+                subject: $examStudent,
+                event: 'exam_secret_number_updated',
+                description: "Updated secret number for student {$studentName} in exam {$examName}",
+                properties: [
+                    'exam_student_id' => $examStudent->id,
+                    'exam_id' => $examStudent->exam_id,
+                    'old_secret_number' => $oldSecretNumber,
+                    'new_secret_number' => $newSecretNumber,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log secret number update: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Secret number updated successfully',

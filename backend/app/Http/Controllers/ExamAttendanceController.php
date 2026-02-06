@@ -9,12 +9,18 @@ use App\Models\ExamClass;
 use App\Models\ExamSubject;
 use App\Models\ExamStudent;
 use App\Models\Student;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExamAttendanceController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     /**
      * Get all attendance records for an exam
      * GET /api/exams/{exam}/attendance
@@ -523,6 +529,9 @@ class ExamAttendanceController extends Controller
             ], 422);
         }
 
+        // Capture old values before update
+        $oldValues = $attendance->only(['status', 'checked_in_at', 'seat_number', 'notes']);
+
         $validated = $request->validate([
             'status' => 'sometimes|required|in:present,absent,late,excused',
             'checked_in_at' => 'nullable|date',
@@ -531,6 +540,28 @@ class ExamAttendanceController extends Controller
         ]);
 
         $attendance->update($validated);
+
+        // Load relationships for logging
+        $attendance->load(['examTime', 'student', 'exam']);
+
+        // Log attendance update
+        try {
+            $studentName = $attendance->student?->full_name ?? 'Unknown';
+            $examName = $attendance->exam?->name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $attendance,
+                description: "Updated attendance for student {$studentName} in exam {$examName}",
+                properties: [
+                    'exam_attendance_id' => $attendance->id,
+                    'exam_id' => $attendance->exam_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $attendance->only(['status', 'checked_in_at', 'seat_number', 'notes']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log attendance update: ' . $e->getMessage());
+        }
 
         return response()->json($attendance->fresh(['examTime', 'student']));
     }
@@ -585,6 +616,28 @@ class ExamAttendanceController extends Controller
                 'error' => 'Cannot delete attendance for exam in this status',
                 'status' => $attendance->exam->status,
             ], 422);
+        }
+
+        // Load relationships for logging
+        $attendance->load(['student', 'exam']);
+
+        // Log attendance deletion
+        try {
+            $studentName = $attendance->student?->full_name ?? 'Unknown';
+            $examName = $attendance->exam?->name ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $attendance,
+                description: "Deleted attendance record for student {$studentName} in exam {$examName}",
+                properties: [
+                    'exam_attendance_id' => $attendance->id,
+                    'exam_id' => $attendance->exam_id,
+                    'status' => $attendance->status,
+                    'deleted_entity' => $attendance->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log attendance deletion: ' . $e->getMessage());
         }
 
         // Soft delete

@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class AcademicYearController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of academic years
      */
@@ -156,6 +160,23 @@ class AcademicYearController extends Controller
                 'school_id' => $currentSchoolId,
             ]);
 
+            // Log academic year creation
+            try {
+                $this->activityLogService->logCreate(
+                    subject: $academicYear,
+                    description: "Created academic year: {$academicYear->name}",
+                    properties: [
+                        'academic_year_id' => $academicYear->id,
+                        'name' => $academicYear->name,
+                        'start_date' => $academicYear->start_date,
+                        'end_date' => $academicYear->end_date,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Failed to log academic year creation: ' . $e->getMessage());
+            }
+
             return response()->json($academicYear, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -297,7 +318,25 @@ class AcademicYearController extends Controller
                 $validated['name'] = trim($validated['name']);
             }
 
+            // Capture old values before update
+            $oldValues = $academicYear->only(['name', 'start_date', 'end_date', 'is_current', 'description', 'status']);
+
             $academicYear->update($validated);
+
+            // Log academic year update
+            try {
+                $this->activityLogService->logUpdate(
+                    subject: $academicYear,
+                    description: "Updated academic year: {$academicYear->name}",
+                    properties: [
+                        'old_values' => $oldValues,
+                        'new_values' => $academicYear->only(['name', 'start_date', 'end_date', 'is_current', 'description', 'status']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Failed to log academic year update: ' . $e->getMessage());
+            }
 
             return response()->json($academicYear);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -363,7 +402,23 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Cannot delete the current academic year. Please set another year as current first.'], 400);
             }
 
+            // Capture data before deletion
+            $academicYearData = $academicYear->toArray();
+            $academicYearName = $academicYear->name;
+
             $academicYear->delete(); // Soft delete
+
+            // Log academic year deletion
+            try {
+                $this->activityLogService->logDelete(
+                    subject: $academicYear,
+                    description: "Deleted academic year: {$academicYearName}",
+                    properties: ['deleted_academic_year' => $academicYearData],
+                    request: request()
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Failed to log academic year deletion: ' . $e->getMessage());
+            }
 
             return response()->noContent();
         } catch (\Exception $e) {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FinanceProject;
 use App\Models\Currency;
 use App\Services\Notifications\NotificationService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,8 @@ use Illuminate\Validation\Rule;
 class FinanceProjectController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private ActivityLogService $activityLogService
     ) {}
     /**
      * Display a listing of finance projects
@@ -145,6 +147,24 @@ class FinanceProjectController extends Controller
 
             $project->load('currency');
 
+            // Log finance project creation
+            try {
+                $this->activityLogService->logCreate(
+                    subject: $project,
+                    description: "Created finance project: {$project->name}",
+                    properties: [
+                        'project_name' => $project->name,
+                        'project_code' => $project->code,
+                        'budget_amount' => $project->budget_amount,
+                        'currency_id' => $project->currency_id,
+                        'status' => $project->status,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log finance project creation: ' . $e->getMessage());
+            }
+
             return response()->json($project, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -228,6 +248,9 @@ class FinanceProjectController extends Controller
             if (!$project) {
                 return response()->json(['error' => 'Finance project not found'], 404);
             }
+
+            // Capture old values for logging
+            $oldValues = $project->only(['name', 'code', 'currency_id', 'description', 'budget_amount', 'start_date', 'end_date', 'status', 'is_active']);
 
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
@@ -321,6 +344,21 @@ class FinanceProjectController extends Controller
                 ]);
             }
 
+            // Log finance project update
+            try {
+                $this->activityLogService->logUpdate(
+                    subject: $project,
+                    description: "Updated finance project: {$project->name}",
+                    properties: [
+                        'old_values' => $oldValues,
+                        'new_values' => $project->only(['name', 'code', 'currency_id', 'description', 'budget_amount', 'start_date', 'end_date', 'status', 'is_active']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log finance project update: ' . $e->getMessage());
+            }
+
             return response()->json($project);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -373,7 +411,21 @@ class FinanceProjectController extends Controller
                 return response()->json(['error' => 'Cannot delete project with existing entries'], 409);
             }
 
+            $projectName = $project->name;
+            $projectData = $project->toArray();
             $project->delete();
+
+            // Log finance project deletion
+            try {
+                $this->activityLogService->logDelete(
+                    subject: $project,
+                    description: "Deleted finance project: {$projectName}",
+                    properties: ['deleted_project' => $projectData],
+                    request: request()
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log finance project deletion: ' . $e->getMessage());
+            }
 
             return response()->noContent();
         } catch (\Exception $e) {

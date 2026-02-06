@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\ScheduleSlot;
 use App\Http\Requests\StoreScheduleSlotRequest;
 use App\Http\Requests\UpdateScheduleSlotRequest;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ScheduleSlotController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of schedule slots
      */
@@ -189,6 +193,24 @@ class ScheduleSlotController extends Controller
 
         $slot->load(['academicYear', 'school']);
 
+        // Log schedule slot creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $slot,
+                description: "Created schedule slot: {$slot->name}",
+                properties: [
+                    'slot_id' => $slot->id,
+                    'name' => $slot->name,
+                    'code' => $slot->code,
+                    'start_time' => $slot->start_time,
+                    'end_time' => $slot->end_time,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log schedule slot creation: ' . $e->getMessage());
+        }
+
         return response()->json([
             'id' => $slot->id,
             'organization_id' => $slot->organization_id,
@@ -329,6 +351,9 @@ class ScheduleSlotController extends Controller
         // Prevent org/school changes (strict scoping)
         unset($validated['organization_id'], $validated['school_id']);
 
+        // Capture old values before update
+        $oldValues = $slot->only(['name', 'code', 'start_time', 'end_time', 'days_of_week', 'default_duration_minutes', 'academic_year_id', 'sort_order', 'is_active', 'description']);
+
         // Validate academic year belongs to current org + school if provided
         if (array_key_exists('academic_year_id', $validated) && !empty($validated['academic_year_id'])) {
             $exists = DB::table('academic_years')
@@ -405,6 +430,21 @@ class ScheduleSlotController extends Controller
                 'school_name' => $slot->school->school_name,
             ] : null,
         ]);
+
+        // Log schedule slot update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $slot,
+                description: "Updated schedule slot: {$slot->name}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $slot->only(['name', 'code', 'start_time', 'end_time', 'days_of_week', 'default_duration_minutes', 'academic_year_id', 'sort_order', 'is_active', 'description']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log schedule slot update: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -445,7 +485,23 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Schedule slot not found'], 404);
         }
 
+        // Capture data before deletion
+        $slotData = $slot->toArray();
+        $slotName = $slot->name;
+
         $slot->delete();
+
+        // Log schedule slot deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $slot,
+                description: "Deleted schedule slot: {$slotName}",
+                properties: ['deleted_slot' => $slotData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log schedule slot deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

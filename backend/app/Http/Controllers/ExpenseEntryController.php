@@ -8,6 +8,7 @@ use App\Models\ExpenseCategory;
 use App\Models\FinanceProject;
 use App\Models\ExchangeRate;
 use App\Services\Notifications\NotificationService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,7 +16,8 @@ use Illuminate\Support\Facades\Log;
 class ExpenseEntryController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private ActivityLogService $activityLogService
     ) {}
     /**
      * Display a listing of expense entries
@@ -329,6 +331,29 @@ class ExpenseEntryController extends Controller
                 ]);
             }
 
+            // Log expense entry creation
+            try {
+                $amount = number_format((float) $entry->amount, 2);
+                $currencyCode = $entry->currency?->code ?? '';
+                $categoryName = $entry->expenseCategory?->name ?? 'Unknown';
+                $this->activityLogService->logCreate(
+                    subject: $entry,
+                    description: "Created expense entry: {$amount} {$currencyCode} ({$categoryName})",
+                    properties: [
+                        'entry_id' => $entry->id,
+                        'account_id' => $entry->account_id,
+                        'expense_category_id' => $entry->expense_category_id,
+                        'amount' => $entry->amount,
+                        'currency_id' => $entry->currency_id,
+                        'date' => $entry->date,
+                        'reference_no' => $entry->reference_no,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log expense entry creation: ' . $e->getMessage());
+            }
+
             return response()->json($entry, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -412,6 +437,9 @@ class ExpenseEntryController extends Controller
             if (!$entry) {
                 return response()->json(['error' => 'Expense entry not found'], 404);
             }
+
+            // Capture old values for logging
+            $oldValues = $entry->only(['account_id', 'expense_category_id', 'currency_id', 'amount', 'date', 'project_id', 'reference_no', 'description', 'paid_to', 'payment_method', 'status']);
 
             $validated = $request->validate([
                 'account_id' => 'sometimes|uuid|exists:finance_accounts,id',
@@ -617,6 +645,23 @@ class ExpenseEntryController extends Controller
                 ]);
             }
 
+            // Log expense entry update
+            try {
+                $amount = number_format((float) $entry->amount, 2);
+                $currencyCode = $entry->currency?->code ?? '';
+                $this->activityLogService->logUpdate(
+                    subject: $entry,
+                    description: "Updated expense entry: {$amount} {$currencyCode}",
+                    properties: [
+                        'old_values' => $oldValues,
+                        'new_values' => $entry->only(['account_id', 'expense_category_id', 'currency_id', 'amount', 'date', 'project_id', 'reference_no', 'description', 'paid_to', 'payment_method', 'status']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log expense entry update: ' . $e->getMessage());
+            }
+
             return response()->json($entry);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -661,7 +706,22 @@ class ExpenseEntryController extends Controller
                 return response()->json(['error' => 'Expense entry not found'], 404);
             }
 
+            $entryData = $entry->toArray();
+            $amount = number_format((float) $entry->amount, 2);
+            $currencyCode = $entry->currency?->code ?? '';
             $entry->delete();
+
+            // Log expense entry deletion
+            try {
+                $this->activityLogService->logDelete(
+                    subject: $entry,
+                    description: "Deleted expense entry: {$amount} {$currencyCode}",
+                    properties: ['deleted_entry' => $entryData],
+                    request: request()
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log expense entry deletion: ' . $e->getMessage());
+            }
 
             return response()->noContent();
         } catch (\Exception $e) {

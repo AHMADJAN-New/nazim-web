@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\StaffType;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class StaffTypeController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of staff types
      */
@@ -150,6 +154,22 @@ class StaffTypeController extends Controller
             'display_order' => $request->display_order ?? 0,
         ]);
 
+        // Log staff type creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $staffType,
+                description: "Created staff type: {$staffType->name}",
+                properties: [
+                    'staff_type_id' => $staffType->id,
+                    'name' => $staffType->name,
+                    'code' => $staffType->code,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log staff type creation: ' . $e->getMessage());
+        }
+
         return response()->json($staffType, 201);
     }
 
@@ -214,6 +234,9 @@ class StaffTypeController extends Controller
             }
         }
 
+        // Capture old values before update
+        $oldValues = $staffType->only(['name', 'code', 'description', 'is_active', 'display_order']);
+
         $staffType->update($request->only([
             'name',
             'code',
@@ -221,6 +244,21 @@ class StaffTypeController extends Controller
             'is_active',
             'display_order',
         ]));
+
+        // Log staff type update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $staffType,
+                description: "Updated staff type: {$staffType->name}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $staffType->only(['name', 'code', 'description', 'is_active', 'display_order']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log staff type update: ' . $e->getMessage());
+        }
 
         return response()->json($staffType);
     }
@@ -281,8 +319,24 @@ class StaffTypeController extends Controller
                 ->update(['staff_type_id' => null]);
         }
 
+        // Capture data before deletion
+        $staffTypeData = $staffType->toArray();
+        $staffTypeName = $staffType->name;
+
         // Soft delete using SoftDeletes trait
         $staffType->delete();
+
+        // Log staff type deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $staffType,
+                description: "Deleted staff type: {$staffTypeName}",
+                properties: ['deleted_staff_type' => $staffTypeData],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log staff type deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateCourseStudentRequest;
 use App\Models\CourseStudent;
 use App\Models\ShortTermCourse;
 use App\Models\Student;
+use App\Services\ActivityLogService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 class CourseStudentController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private FileStorageService $fileStorageService,
         private DateConversionService $dateService
     ) {}
@@ -191,6 +193,24 @@ class CourseStudentController extends Controller
             $studentData = $student->toArray();
             $studentData = $this->ensureUtf8Encoding($studentData);
 
+            // Log course student enrollment
+            try {
+                $courseName = $student->course?->title ?? 'Unknown';
+                $this->activityLogService->logCreate(
+                    subject: $student,
+                    description: "Enrolled student {$student->full_name} ({$student->admission_no}) in course {$courseName}",
+                    properties: [
+                        'course_student_id' => $student->id,
+                        'course_id' => $student->course_id,
+                        'admission_no' => $student->admission_no,
+                        'full_name' => $student->full_name,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log course student enrollment: ' . $e->getMessage());
+            }
+
             // Use JSON encoding flags that handle UTF-8 properly
             $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
             if (defined('JSON_INVALID_UTF8_IGNORE')) {
@@ -278,10 +298,35 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
+        // Capture old values before update
+        $oldValues = $student->only([
+            'full_name', 'father_name', 'completion_status', 'completion_date', 'certificate_issued', 'fee_paid'
+        ]);
+
         $payload = $request->validated();
         unset($payload['organization_id'], $payload['school_id']);
         $payload = $this->normalizeCourseStudentData($payload);
         $student->update($payload);
+
+        // Log course student update
+        try {
+            $courseName = $student->course?->title ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $student,
+                description: "Updated course student {$student->full_name} ({$student->admission_no}) in course {$courseName}",
+                properties: [
+                    'course_student_id' => $student->id,
+                    'course_id' => $student->course_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $student->only([
+                        'full_name', 'father_name', 'completion_status', 'completion_date', 'certificate_issued', 'fee_paid'
+                    ]),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log course student update: ' . $e->getMessage());
+        }
 
         return response()->json($student);
     }
@@ -314,6 +359,28 @@ class CourseStudentController extends Controller
 
         if (! $student) {
             return response()->json(['error' => 'Course student not found'], 404);
+        }
+
+        // Load course for logging
+        $student->load('course');
+
+        // Log course student removal
+        try {
+            $courseName = $student->course?->title ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $student,
+                description: "Removed student {$student->full_name} ({$student->admission_no}) from course {$courseName}",
+                properties: [
+                    'course_student_id' => $student->id,
+                    'course_id' => $student->course_id,
+                    'admission_no' => $student->admission_no,
+                    'full_name' => $student->full_name,
+                    'deleted_entity' => $student->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log course student removal: ' . $e->getMessage());
         }
 
         $student->delete();

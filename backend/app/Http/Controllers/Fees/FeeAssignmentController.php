@@ -9,14 +9,17 @@ use App\Models\FeeAssignment;
 use App\Models\FeeStructure;
 use App\Models\StudentAdmission;
 use App\Services\Notifications\NotificationService;
+use App\Services\ActivityLogService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FeeAssignmentController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private ActivityLogService $activityLogService
     ) {
     }
     public function index(Request $request)
@@ -183,6 +186,28 @@ class FeeAssignmentController extends Controller
             ]);
         }
 
+        // Log fee assignment creation
+        try {
+            $studentName = $assignment->student?->full_name ?? 'Unknown';
+            $amount = number_format((float) $assignment->assigned_amount, 2);
+            $currencyCode = $assignment->currency?->code ?? '';
+            $this->activityLogService->logCreate(
+                subject: $assignment,
+                description: "Created fee assignment: {$amount} {$currencyCode} for {$studentName}",
+                properties: [
+                    'assignment_id' => $assignment->id,
+                    'student_id' => $assignment->student_id,
+                    'fee_structure_id' => $assignment->fee_structure_id,
+                    'assigned_amount' => $assignment->assigned_amount,
+                    'currency_id' => $assignment->currency_id,
+                    'due_date' => $assignment->due_date,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee assignment creation: ' . $e->getMessage());
+        }
+
         return response()->json($assignment->fresh(['feeStructure', 'student', 'studentAdmission']), 201);
     }
 
@@ -217,6 +242,9 @@ class FeeAssignmentController extends Controller
         if (!$assignment) {
             return response()->json(['error' => 'Fee assignment not found'], 404);
         }
+
+        // Capture old values for logging
+        $oldValues = $assignment->only(['fee_structure_id', 'assigned_amount', 'original_amount', 'due_date', 'status']);
 
         $validated = $request->validated();
 
@@ -326,6 +354,24 @@ class FeeAssignmentController extends Controller
             ]);
         }
 
+        // Log fee assignment update
+        try {
+            $studentName = $assignment->student?->full_name ?? 'Unknown';
+            $amount = number_format((float) $assignment->assigned_amount, 2);
+            $currencyCode = $assignment->currency?->code ?? '';
+            $this->activityLogService->logUpdate(
+                subject: $assignment,
+                description: "Updated fee assignment: {$amount} {$currencyCode} for {$studentName}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $assignment->only(['fee_structure_id', 'assigned_amount', 'original_amount', 'due_date', 'status']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee assignment update: ' . $e->getMessage());
+        }
+
         return response()->json($assignment->fresh(['feeStructure', 'student', 'studentAdmission']));
     }
 
@@ -366,7 +412,23 @@ class FeeAssignmentController extends Controller
             return response()->json(['error' => 'This fee assignment has payments and cannot be deleted'], 409);
         }
 
+        $assignmentData = $assignment->toArray();
+        $studentName = $assignment->student?->full_name ?? 'Unknown';
+        $amount = number_format((float) $assignment->assigned_amount, 2);
+        $currencyCode = $assignment->currency?->code ?? '';
         $assignment->delete();
+
+        // Log fee assignment deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $assignment,
+                description: "Deleted fee assignment: {$amount} {$currencyCode} for {$studentName}",
+                properties: ['deleted_assignment' => $assignmentData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee assignment deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

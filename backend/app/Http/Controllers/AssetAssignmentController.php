@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateAssetAssignmentRequest;
 use App\Models\Asset;
 use App\Models\AssetAssignment;
 use App\Models\AssetCopy;
+use App\Services\ActivityLogService;
 use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Schema;
 class AssetAssignmentController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private NotificationService $notificationService
     ) {
     }
@@ -179,6 +181,25 @@ class AssetAssignmentController extends Controller
             ]);
         }
 
+        // Log asset assignment creation
+        try {
+            $assigneeType = $assignment->assigned_to_type ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $assignment,
+                description: "Assigned asset {$asset->name} ({$asset->asset_tag}) to {$assigneeType}",
+                properties: [
+                    'asset_assignment_id' => $assignment->id,
+                    'asset_id' => $assignment->asset_id,
+                    'assigned_to_type' => $assignment->assigned_to_type,
+                    'assigned_to_id' => $assignment->assigned_to_id,
+                    'assigned_on' => $assignment->assigned_on,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log asset assignment creation: ' . $e->getMessage());
+        }
+
         return response()->json($assignment->refresh(), 201);
     }
 
@@ -226,6 +247,9 @@ class AssetAssignmentController extends Controller
                 'error' => $e->getMessage(),
             ]);
         }
+
+        // Capture old values before update
+        $oldValues = $assignment->only(['status', 'assigned_to_type', 'assigned_to_id', 'expected_return_date', 'returned_on']);
 
         $data = $request->validated();
         $assignment->fill($data);
@@ -295,6 +319,25 @@ class AssetAssignmentController extends Controller
             ]);
         }
 
+        // Log asset assignment update
+        try {
+            $assigneeType = $assignment->assigned_to_type ?? 'Unknown';
+            $action = $wasReturned ? 'returned' : 'updated';
+            $this->activityLogService->logUpdate(
+                subject: $assignment,
+                description: "{$action} asset assignment for asset {$asset->name} ({$asset->asset_tag}) to {$assigneeType}",
+                properties: [
+                    'asset_assignment_id' => $assignment->id,
+                    'asset_id' => $assignment->asset_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $assignment->only(['status', 'assigned_to_type', 'assigned_to_id', 'expected_return_date', 'returned_on']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log asset assignment update: ' . $e->getMessage());
+        }
+
         return response()->json($assignment);
     }
 
@@ -336,6 +379,33 @@ class AssetAssignmentController extends Controller
                 'permission' => 'assets.update',
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        // Load asset for logging
+        if ($asset) {
+            $assignment->load(['asset']);
+        }
+
+        // Log asset assignment deletion
+        try {
+            $assetName = $asset?->name ?? 'Unknown';
+            $assetTag = $asset?->asset_tag ?? 'Unknown';
+            $assigneeType = $assignment->assigned_to_type ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $assignment,
+                description: "Removed asset assignment for asset {$assetName} ({$assetTag}) from {$assigneeType}",
+                properties: [
+                    'asset_assignment_id' => $assignment->id,
+                    'asset_id' => $assignment->asset_id,
+                    'assigned_to_type' => $assignment->assigned_to_type,
+                    'assigned_to_id' => $assignment->assigned_to_id,
+                    'status' => $assignment->status,
+                    'deleted_entity' => $assignment->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log asset assignment deletion: ' . $e->getMessage());
         }
 
         $hasCopiesTable = Schema::hasTable('asset_copies');

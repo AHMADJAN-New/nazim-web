@@ -3,12 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\IncomeCategory;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class IncomeCategoryController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of income categories
      */
@@ -114,6 +119,23 @@ class IncomeCategoryController extends Controller
                 'display_order' => $validated['display_order'] ?? 0,
             ]);
 
+            // Log income category creation
+            try {
+                $this->activityLogService->logCreate(
+                    subject: $category,
+                    description: "Created income category: {$category->name}",
+                    properties: [
+                        'category_name' => $category->name,
+                        'category_code' => $category->code,
+                        'is_active' => $category->is_active,
+                        'is_restricted' => $category->is_restricted,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log income category creation: ' . $e->getMessage());
+            }
+
             return response()->json($category, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -197,6 +219,9 @@ class IncomeCategoryController extends Controller
                 return response()->json(['error' => 'Income category not found'], 404);
             }
 
+            // Capture old values for logging
+            $oldValues = $category->only(['name', 'code', 'description', 'is_restricted', 'is_active', 'display_order']);
+
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
                 'code' => ['nullable', 'string', 'max:50', Rule::unique('income_categories')->where(function ($query) use ($profile, $currentSchoolId) {
@@ -215,6 +240,21 @@ class IncomeCategoryController extends Controller
             }
 
             $category->update($validated);
+
+            // Log income category update
+            try {
+                $this->activityLogService->logUpdate(
+                    subject: $category,
+                    description: "Updated income category: {$category->name}",
+                    properties: [
+                        'old_values' => $oldValues,
+                        'new_values' => $category->only(['name', 'code', 'description', 'is_restricted', 'is_active', 'display_order']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log income category update: ' . $e->getMessage());
+            }
 
             return response()->json($category);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -266,7 +306,21 @@ class IncomeCategoryController extends Controller
                 return response()->json(['error' => 'Cannot delete category with existing entries'], 409);
             }
 
+            $categoryName = $category->name;
+            $categoryData = $category->toArray();
             $category->delete();
+
+            // Log income category deletion
+            try {
+                $this->activityLogService->logDelete(
+                    subject: $category,
+                    description: "Deleted income category: {$categoryName}",
+                    properties: ['deleted_category' => $categoryData],
+                    request: request()
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log income category deletion: ' . $e->getMessage());
+            }
 
             return response()->noContent();
         } catch (\Exception $e) {

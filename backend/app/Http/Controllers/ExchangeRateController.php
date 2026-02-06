@@ -4,11 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\ExchangeRate;
 use App\Models\Currency;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ExchangeRateController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of exchange rates
      */
@@ -157,6 +162,26 @@ class ExchangeRateController extends Controller
 
             $rate->load(['fromCurrency', 'toCurrency']);
 
+            // Log exchange rate creation
+            try {
+                $fromCode = $rate->fromCurrency?->code ?? 'Unknown';
+                $toCode = $rate->toCurrency?->code ?? 'Unknown';
+                $this->activityLogService->logCreate(
+                    subject: $rate,
+                    description: "Created exchange rate: {$fromCode} to {$toCode} ({$rate->rate})",
+                    properties: [
+                        'rate_id' => $rate->id,
+                        'from_currency_id' => $rate->from_currency_id,
+                        'to_currency_id' => $rate->to_currency_id,
+                        'rate' => $rate->rate,
+                        'effective_date' => $rate->effective_date,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log exchange rate creation: ' . $e->getMessage());
+            }
+
             return response()->json($rate, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -247,6 +272,9 @@ class ExchangeRateController extends Controller
                 return response()->json(['error' => 'Exchange rate not found'], 404);
             }
 
+            // Capture old values for logging
+            $oldValues = $rate->only(['from_currency_id', 'to_currency_id', 'rate', 'effective_date', 'is_active']);
+
             $validated = $request->validate([
                 'from_currency_id' => 'sometimes|uuid|exists:currencies,id',
                 'to_currency_id' => 'sometimes|uuid|exists:currencies,id|different:from_currency_id',
@@ -299,6 +327,23 @@ class ExchangeRateController extends Controller
             $rate->update($validated);
             $rate->load(['fromCurrency', 'toCurrency']);
 
+            // Log exchange rate update
+            try {
+                $fromCode = $rate->fromCurrency?->code ?? 'Unknown';
+                $toCode = $rate->toCurrency?->code ?? 'Unknown';
+                $this->activityLogService->logUpdate(
+                    subject: $rate,
+                    description: "Updated exchange rate: {$fromCode} to {$toCode} ({$rate->rate})",
+                    properties: [
+                        'old_values' => $oldValues,
+                        'new_values' => $rate->only(['from_currency_id', 'to_currency_id', 'rate', 'effective_date', 'is_active']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log exchange rate update: ' . $e->getMessage());
+            }
+
             return response()->json($rate);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -345,7 +390,22 @@ class ExchangeRateController extends Controller
                 return response()->json(['error' => 'Exchange rate not found'], 404);
             }
 
+            $rateData = $rate->toArray();
+            $fromCode = $rate->fromCurrency?->code ?? 'Unknown';
+            $toCode = $rate->toCurrency?->code ?? 'Unknown';
             $rate->delete();
+
+            // Log exchange rate deletion
+            try {
+                $this->activityLogService->logDelete(
+                    subject: $rate,
+                    description: "Deleted exchange rate: {$fromCode} to {$toCode}",
+                    properties: ['deleted_rate' => $rateData],
+                    request: request()
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log exchange rate deletion: ' . $e->getMessage());
+            }
 
             return response()->noContent();
         } catch (\Exception $e) {

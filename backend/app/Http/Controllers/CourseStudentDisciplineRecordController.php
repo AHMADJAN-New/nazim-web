@@ -6,12 +6,18 @@ use App\Http\Requests\StoreStudentDisciplineRecordRequest;
 use App\Http\Requests\UpdateStudentDisciplineRecordRequest;
 use App\Models\CourseStudent;
 use App\Models\CourseStudentDisciplineRecord;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CourseStudentDisciplineRecordController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     private function getProfile($user)
     {
         return DB::table('profiles')->where('id', (string) $user->id)->first();
@@ -93,6 +99,24 @@ class CourseStudentDisciplineRecordController extends Controller
 
         $record = CourseStudentDisciplineRecord::create($validated);
 
+        // Log discipline record creation
+        try {
+            $studentName = $student->full_name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $record,
+                description: "Created discipline record for course student {$studentName}",
+                properties: [
+                    'course_student_discipline_record_id' => $record->id,
+                    'course_student_id' => $record->course_student_id,
+                    'incident_date' => $record->incident_date,
+                    'violation_type' => $record->violation_type,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log discipline record creation: ' . $e->getMessage());
+        }
+
         return response()->json($record, 201);
     }
 
@@ -124,9 +148,31 @@ class CourseStudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'Record not found'], 404);
         }
 
+        // Capture old values before update
+        $oldValues = $record->only(['incident_date', 'violation_type', 'description', 'action_taken', 'resolved']);
+
         $payload = $request->validated();
         unset($payload['organization_id'], $payload['school_id']);
         $record->update($payload);
+
+        // Log discipline record update
+        try {
+            $student = CourseStudent::find($record->course_student_id);
+            $studentName = $student?->full_name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $record,
+                description: "Updated discipline record for course student {$studentName}",
+                properties: [
+                    'course_student_discipline_record_id' => $record->id,
+                    'course_student_id' => $record->course_student_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $record->only(['incident_date', 'violation_type', 'description', 'action_taken', 'resolved']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log discipline record update: ' . $e->getMessage());
+        }
 
         return response()->json($record);
     }
@@ -157,6 +203,27 @@ class CourseStudentDisciplineRecordController extends Controller
 
         if (!$record || $record->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Record not found'], 404);
+        }
+
+        // Load student for logging
+        $student = CourseStudent::find($record->course_student_id);
+
+        // Log discipline record deletion
+        try {
+            $studentName = $student?->full_name ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $record,
+                description: "Deleted discipline record for course student {$studentName}",
+                properties: [
+                    'course_student_discipline_record_id' => $record->id,
+                    'course_student_id' => $record->course_student_id,
+                    'violation_type' => $record->violation_type,
+                    'deleted_entity' => $record->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log discipline record deletion: ' . $e->getMessage());
         }
 
         $record->delete();

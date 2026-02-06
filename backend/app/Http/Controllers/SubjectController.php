@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Subject;
 use App\Http\Requests\StoreSubjectRequest;
 use App\Http\Requests\UpdateSubjectRequest;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SubjectController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of subjects
      */
@@ -104,6 +108,22 @@ class SubjectController extends Controller
             'school_id' => $currentSchoolId,
         ]);
 
+        // Log subject creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $subject,
+                description: "Created subject: {$subject->name}",
+                properties: [
+                    'subject_id' => $subject->id,
+                    'name' => $subject->name,
+                    'code' => $subject->code,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log subject creation: ' . $e->getMessage());
+        }
+
         return response()->json($subject, 201);
     }
 
@@ -196,6 +216,9 @@ class SubjectController extends Controller
             unset($validated['school_id']);
         }
 
+        // Capture old values before update
+        $oldValues = $subject->only(['name', 'code', 'description', 'is_active']);
+
         // Update only provided fields
         if (isset($validated['name'])) {
             $subject->name = trim($validated['name']);
@@ -212,6 +235,21 @@ class SubjectController extends Controller
         // organization_id cannot be changed
 
         $subject->save();
+
+        // Log subject update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $subject,
+                description: "Updated subject: {$subject->name}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $subject->only(['name', 'code', 'description', 'is_active']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log subject update: ' . $e->getMessage());
+        }
 
         return response()->json($subject);
     }
@@ -253,7 +291,23 @@ class SubjectController extends Controller
             return response()->json(['error' => 'Subject not found'], 404);
         }
 
+        // Capture data before deletion
+        $subjectData = $subject->toArray();
+        $subjectName = $subject->name;
+
         $subject->delete();
+
+        // Log subject deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $subject,
+                description: "Deleted subject: {$subjectName}",
+                properties: ['deleted_subject' => $subjectData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log subject deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

@@ -7,12 +7,16 @@ use App\Models\TimetableEntry;
 use App\Http\Requests\StoreTimetableRequest;
 use App\Http\Requests\UpdateTimetableRequest;
 use App\Http\Requests\StoreTimetableEntryRequest;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TimetableController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of timetables
      */
@@ -264,6 +268,23 @@ class TimetableController extends Controller
                 Log::warning("Failed to load relationships for timetable: " . $e->getMessage());
             }
 
+            // Log timetable creation
+            try {
+                $this->activityLogService->logCreate(
+                    subject: $timetable,
+                    description: "Created timetable: {$timetable->name}",
+                    properties: [
+                        'timetable_id' => $timetable->id,
+                        'name' => $timetable->name,
+                        'timetable_type' => $timetable->timetable_type,
+                        'entries_count' => count($entries),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log timetable creation: ' . $e->getMessage());
+            }
+
             // Format response safely
             try {
                 return response()->json([
@@ -497,6 +518,9 @@ class TimetableController extends Controller
             }
         }
 
+        // Capture old values before update
+        $oldValues = $timetable->only(['name', 'timetable_type', 'description', 'academic_year_id', 'is_active']);
+
         // Update only provided fields
         if (isset($validated['name'])) {
             $timetable->name = trim($validated['name']);
@@ -541,6 +565,21 @@ class TimetableController extends Controller
                 'school_name' => $timetable->school->school_name,
             ] : null,
         ]);
+
+        // Log timetable update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $timetable,
+                description: "Updated timetable: {$timetable->name}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $timetable->only(['name', 'timetable_type', 'description', 'academic_year_id', 'is_active']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log timetable update: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -579,7 +618,23 @@ class TimetableController extends Controller
             return response()->json(['error' => 'Timetable not found'], 404);
         }
 
+        // Capture data before deletion
+        $timetableData = $timetable->toArray();
+        $timetableName = $timetable->name;
+
         $timetable->delete();
+
+        // Log timetable deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $timetable,
+                description: "Deleted timetable: {$timetableName}",
+                properties: ['deleted_timetable' => $timetableData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log timetable deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

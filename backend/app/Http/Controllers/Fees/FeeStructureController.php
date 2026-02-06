@@ -6,11 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Fees\FeeStructureStoreRequest;
 use App\Http\Requests\Fees\FeeStructureUpdateRequest;
 use App\Models\FeeStructure;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FeeStructureController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     public function index(Request $request)
     {
         $user = $request->user();
@@ -104,6 +109,23 @@ class FeeStructureController extends Controller
 
         $structure = FeeStructure::create($validated);
 
+        // Log fee structure creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $structure,
+                description: "Created fee structure: {$structure->name}",
+                properties: [
+                    'structure_name' => $structure->name,
+                    'amount' => $structure->amount,
+                    'currency_id' => $structure->currency_id,
+                    'academic_year_id' => $structure->academic_year_id,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee structure creation: ' . $e->getMessage());
+        }
+
         return response()->json($structure, 201);
     }
 
@@ -167,7 +189,25 @@ class FeeStructureController extends Controller
             return response()->json(['error' => 'Fee structure not found'], 404);
         }
 
+        // Capture old values for logging
+        $oldValues = $structure->only(['name', 'amount', 'currency_id', 'academic_year_id', 'class_id', 'is_active']);
+
         $structure->update($request->validated());
+
+        // Log fee structure update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $structure,
+                description: "Updated fee structure: {$structure->name}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $structure->only(['name', 'amount', 'currency_id', 'academic_year_id', 'class_id', 'is_active']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee structure update: ' . $e->getMessage());
+        }
 
         return response()->json($structure->fresh());
     }
@@ -200,7 +240,21 @@ class FeeStructureController extends Controller
             return response()->noContent();
         }
 
+        $structureName = $structure->name;
+        $structureData = $structure->toArray();
         $structure->delete();
+
+        // Log fee structure deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $structure,
+                description: "Deleted fee structure: {$structureName}",
+                properties: ['deleted_structure' => $structureData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee structure deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

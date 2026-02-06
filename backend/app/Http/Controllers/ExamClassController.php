@@ -5,12 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\ExamClass;
 use App\Models\Exam;
 use App\Models\ClassAcademicYear;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExamClassController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -117,7 +123,25 @@ class ExamClassController extends Controller
             'school_id' => $currentSchoolId,
         ]);
 
-        $examClass->load(['classAcademicYear.class', 'classAcademicYear.academicYear']);
+        $examClass->load(['classAcademicYear.class', 'classAcademicYear.academicYear', 'exam']);
+
+        // Log exam class assignment
+        try {
+            $examName = $examClass->exam?->name ?? 'Unknown';
+            $className = $examClass->classAcademicYear?->class?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $examClass,
+                description: "Assigned class {$className} to exam {$examName}",
+                properties: [
+                    'exam_class_id' => $examClass->id,
+                    'exam_id' => $examClass->exam_id,
+                    'class_academic_year_id' => $examClass->class_academic_year_id,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam class assignment: ' . $e->getMessage());
+        }
 
         return response()->json($examClass, 201);
     }
@@ -162,6 +186,28 @@ class ExamClassController extends Controller
             ->exists();
         if (!$schoolOk) {
             return response()->json(['error' => 'Exam class not found'], 404);
+        }
+
+        // Load relationships for logging
+        $examClass->load(['classAcademicYear.class', 'exam']);
+
+        // Log exam class removal
+        try {
+            $examName = $examClass->exam?->name ?? 'Unknown';
+            $className = $examClass->classAcademicYear?->class?->name ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $examClass,
+                description: "Removed class {$className} from exam {$examName}",
+                properties: [
+                    'exam_class_id' => $examClass->id,
+                    'exam_id' => $examClass->exam_id,
+                    'class_academic_year_id' => $examClass->class_academic_year_id,
+                    'deleted_entity' => $examClass->toArray(),
+                ],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam class removal: ' . $e->getMessage());
         }
 
         $examClass->delete();

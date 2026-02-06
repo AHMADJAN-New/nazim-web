@@ -10,12 +10,16 @@ use App\Models\IncomeEntry;
 use App\Models\Currency;
 use App\Models\FinanceAccount;
 use App\Models\IncomeCategory;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class StudentIdCardController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of student ID cards with filters
      */
@@ -501,6 +505,9 @@ class StudentIdCardController extends Controller
             return response()->json(['error' => 'Cannot change organization_id'], 403);
         }
 
+        // Capture old values before update
+        $oldValues = $card->only(['card_number', 'card_fee', 'card_fee_paid', 'card_fee_paid_date', 'is_printed', 'printed_at', 'notes']);
+
         // Check if fee payment status is changing
         $wasFeePaid = $card->card_fee_paid;
         $isFeePaid = $validated['card_fee_paid'] ?? $wasFeePaid;
@@ -540,6 +547,22 @@ class StudentIdCardController extends Controller
         ]);
         
         // Note: printedBy relationship is not loaded to avoid UUID type mismatch errors
+
+        // Log ID card update
+        try {
+            $studentName = $card->student?->full_name ?? ($card->courseStudent?->full_name ?? 'Unknown');
+            $this->activityLogService->logUpdate(
+                subject: $card,
+                description: "Updated ID card for {$studentName}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $card->only(['card_number', 'card_fee', 'card_fee_paid', 'card_fee_paid_date', 'is_printed', 'printed_at', 'notes']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log ID card update: ' . $e->getMessage());
+        }
 
         return response()->json($card);
     }
@@ -586,6 +609,22 @@ class StudentIdCardController extends Controller
             'printed_at' => now(),
             'printed_by' => $user->id,
         ]);
+
+        // Log ID card printed
+        try {
+            $studentName = $card->student?->full_name ?? ($card->courseStudent?->full_name ?? 'Unknown');
+            $this->activityLogService->logEvent(
+                subject: $card,
+                description: "Marked ID card as printed for {$studentName}",
+                properties: [
+                    'card_id' => $card->id,
+                    'card_number' => $card->card_number,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log ID card printed: ' . $e->getMessage());
+        }
 
         return response()->json($card);
     }
@@ -704,8 +743,24 @@ class StudentIdCardController extends Controller
             return response()->json(['error' => 'Cannot delete ID card from different organization'], 403);
         }
 
+        // Capture data before deletion
+        $cardData = $card->toArray();
+        $studentName = $card->student?->full_name ?? ($card->courseStudent?->full_name ?? 'Unknown');
+
         // Soft delete
         $card->delete();
+
+        // Log ID card deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $card,
+                description: "Deleted ID card for {$studentName}",
+                properties: ['deleted_card' => $cardData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log ID card deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

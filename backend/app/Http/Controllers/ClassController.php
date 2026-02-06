@@ -9,12 +9,16 @@ use App\Http\Requests\UpdateClassRequest;
 use App\Http\Requests\AssignClassToYearRequest;
 use App\Http\Requests\BulkAssignSectionsRequest;
 use App\Http\Requests\CopyClassesRequest;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ClassController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of classes
      */
@@ -113,6 +117,23 @@ class ClassController extends Controller
             'school_id' => $currentSchoolId,
         ]);
 
+        // Log class creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $class,
+                description: "Created class: {$class->name}",
+                properties: [
+                    'class_id' => $class->id,
+                    'name' => $class->name,
+                    'code' => $class->code,
+                    'grade_level' => $class->grade_level,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log class creation: ' . $e->getMessage());
+        }
+
         return response()->json($class, 201);
     }
 
@@ -210,6 +231,9 @@ class ClassController extends Controller
             return response()->json(['error' => 'Cannot change scope fields'], 403);
         }
 
+        // Capture old values before update
+        $oldValues = $class->only(['name', 'code', 'grade_level', 'description', 'default_capacity', 'is_active']);
+
         $class->update($request->only([
             'name',
             'code',
@@ -218,6 +242,21 @@ class ClassController extends Controller
             'default_capacity',
             'is_active',
         ]));
+
+        // Log class update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $class,
+                description: "Updated class: {$class->name}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $class->only(['name', 'code', 'grade_level', 'description', 'default_capacity', 'is_active']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log class update: ' . $e->getMessage());
+        }
 
         return response()->json($class);
     }
@@ -269,8 +308,24 @@ class ClassController extends Controller
             return response()->json(['error' => 'Cannot delete class that is assigned to academic years. Please remove all assignments first.'], 422);
         }
 
+        // Capture data before deletion
+        $classData = $class->toArray();
+        $className = $class->name;
+
         // Soft delete
         $class->delete();
+
+        // Log class deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $class,
+                description: "Deleted class: {$className}",
+                properties: ['deleted_class' => $classData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log class deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

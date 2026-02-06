@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ExamDocument;
 use App\Models\Exam;
+use App\Services\ActivityLogService;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ use Illuminate\Support\Str;
 class ExamDocumentController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private FileStorageService $fileStorageService
     ) {}
     
@@ -131,6 +133,25 @@ class ExamDocumentController extends Controller
             'uploaded_by' => (string) $user->id,
         ]);
 
+        // Log exam document creation
+        try {
+            $examName = $exam->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $document,
+                description: "Uploaded exam document: {$document->title} for exam {$examName}",
+                properties: [
+                    'exam_document_id' => $document->id,
+                    'exam_id' => $document->exam_id,
+                    'document_type' => $document->document_type,
+                    'title' => $document->title,
+                    'file_name' => $document->file_name,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam document creation: ' . $e->getMessage());
+        }
+
         return response()->json($document, 201);
     }
 
@@ -215,6 +236,29 @@ class ExamDocumentController extends Controller
 
         if (!$document) {
             return response()->json(['error' => 'Document not found'], 404);
+        }
+
+        // Load exam for logging
+        $document->load('exam');
+
+        // Log exam document deletion
+        try {
+            $examName = $document->exam?->name ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $document,
+                description: "Deleted exam document: {$document->title} for exam {$examName}",
+                properties: [
+                    'exam_document_id' => $document->id,
+                    'exam_id' => $document->exam_id,
+                    'document_type' => $document->document_type,
+                    'title' => $document->title,
+                    'file_name' => $document->file_name,
+                    'deleted_entity' => $document->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam document deletion: ' . $e->getMessage());
         }
 
         // Delete file from storage using FileStorageService

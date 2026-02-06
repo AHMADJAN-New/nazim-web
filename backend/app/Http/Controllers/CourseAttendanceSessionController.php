@@ -6,12 +6,18 @@ use App\Models\CourseAttendanceRecord;
 use App\Models\CourseAttendanceSession;
 use App\Models\CourseStudent;
 use App\Models\ShortTermCourse;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CourseAttendanceSessionController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     private function getProfile($user)
     {
         return DB::table('profiles')->where('id', (string) $user->id)->first();
@@ -115,6 +121,24 @@ class CourseAttendanceSessionController extends Controller
         $session->load('course:id,name');
         $session->stats = $session->getAttendanceStats();
 
+        // Log attendance session creation
+        try {
+            $courseName = $session->course?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $session,
+                description: "Created attendance session for course {$courseName} on {$session->session_date}",
+                properties: [
+                    'course_attendance_session_id' => $session->id,
+                    'course_id' => $session->course_id,
+                    'session_date' => $session->session_date,
+                    'method' => $session->method,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log attendance session creation: ' . $e->getMessage());
+        }
+
         return response()->json($session, 201);
     }
 
@@ -180,6 +204,9 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'Session not found'], 404);
         }
 
+        // Capture old values before update
+        $oldValues = $session->only(['session_date', 'session_title', 'method', 'remarks']);
+
         $validated = $request->validate([
             'session_date' => 'sometimes|date',
             'session_title' => 'nullable|string|max:255',
@@ -190,6 +217,24 @@ class CourseAttendanceSessionController extends Controller
         $session->update($validated);
         $session->load('course:id,name');
         $session->stats = $session->getAttendanceStats();
+
+        // Log attendance session update
+        try {
+            $courseName = $session->course?->name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $session,
+                description: "Updated attendance session for course {$courseName} on {$session->session_date}",
+                properties: [
+                    'course_attendance_session_id' => $session->id,
+                    'course_id' => $session->course_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $session->only(['session_date', 'session_title', 'method', 'remarks']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log attendance session update: ' . $e->getMessage());
+        }
 
         return response()->json($session);
     }
@@ -220,6 +265,27 @@ class CourseAttendanceSessionController extends Controller
 
         if (!$session) {
             return response()->json(['error' => 'Session not found'], 404);
+        }
+
+        // Load course for logging
+        $session->load('course');
+
+        // Log attendance session deletion
+        try {
+            $courseName = $session->course?->name ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $session,
+                description: "Deleted attendance session for course {$courseName} on {$session->session_date}",
+                properties: [
+                    'course_attendance_session_id' => $session->id,
+                    'course_id' => $session->course_id,
+                    'session_date' => $session->session_date,
+                    'deleted_entity' => $session->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log attendance session deletion: ' . $e->getMessage());
         }
 
         $session->delete();

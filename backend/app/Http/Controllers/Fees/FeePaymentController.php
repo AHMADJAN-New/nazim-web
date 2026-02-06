@@ -8,13 +8,16 @@ use App\Models\FeeAssignment;
 use App\Models\FeePayment;
 use App\Models\FinanceAccount;
 use App\Services\Notifications\NotificationService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FeePaymentController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private ActivityLogService $activityLogService
     ) {
     }
     public function index(Request $request)
@@ -207,6 +210,28 @@ class FeePaymentController extends Controller
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        // Log fee payment creation
+        try {
+            $studentName = $payment->student?->full_name ?? 'Unknown';
+            $amount = number_format((float) $payment->amount, 2);
+            $currencyCode = $payment->currency?->code ?? '';
+            $this->activityLogService->logCreate(
+                subject: $payment,
+                description: "Created fee payment: {$amount} {$currencyCode} for {$studentName}",
+                properties: [
+                    'payment_id' => $payment->id,
+                    'student_id' => $payment->student_id,
+                    'fee_assignment_id' => $payment->fee_assignment_id,
+                    'amount' => $payment->amount,
+                    'currency_id' => $payment->currency_id,
+                    'payment_date' => $payment->payment_date,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee payment creation: ' . $e->getMessage());
         }
 
         return response()->json($payment->fresh(['feeAssignment', 'incomeEntry', 'account']), 201);

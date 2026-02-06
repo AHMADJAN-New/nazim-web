@@ -10,6 +10,7 @@ use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Notifications\NotificationService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,7 +22,8 @@ class StudentAdmissionController extends Controller
     public function __construct(
         private ReportService $reportService,
         private DateConversionService $dateService,
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private ActivityLogService $activityLogService
     ) {}
     /**
      * Get accessible organization IDs for the current user
@@ -268,6 +270,26 @@ class StudentAdmissionController extends Controller
             ]);
         }
 
+        // Log student admission creation
+        try {
+            $studentName = $admission->student?->full_name ?? 'Unknown';
+            $className = $admission->class?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $admission,
+                description: "Created student admission: {$studentName} to {$className}",
+                properties: [
+                    'admission_id' => $admission->id,
+                    'student_id' => $admission->student_id,
+                    'class_id' => $admission->class_id,
+                    'academic_year_id' => $admission->academic_year_id,
+                    'enrollment_status' => $admission->enrollment_status,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log student admission creation: ' . $e->getMessage());
+        }
+
         return response()->json($admission, 201);
     }
 
@@ -314,6 +336,9 @@ class StudentAdmissionController extends Controller
         
         // Remove organization_id from update data to prevent changes
         unset($validated['organization_id']);
+
+        // Capture old values for logging
+        $oldValues = $admission->only(['class_id', 'academic_year_id', 'enrollment_status', 'admission_date']);
 
         // Track status changes for notifications
         $oldStatus = $admission->enrollment_status;
@@ -373,6 +398,23 @@ class StudentAdmissionController extends Controller
             ]);
         }
 
+        // Log student admission update
+        try {
+            $studentName = $admission->student?->full_name ?? 'Unknown';
+            $className = $admission->class?->name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $admission,
+                description: "Updated student admission: {$studentName} to {$className}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $admission->only(['class_id', 'academic_year_id', 'enrollment_status', 'admission_date']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log student admission update: ' . $e->getMessage());
+        }
+
         return response()->json($admission);
     }
 
@@ -421,8 +463,21 @@ class StudentAdmissionController extends Controller
         $studentName = $admission->student->full_name ?? 'Student';
         $className = $admission->class->name ?? 'class';
         $academicYearName = $admission->academicYear->name ?? 'academic year';
+        $admissionData = $admission->toArray();
 
         $admission->delete();
+
+        // Log student admission deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $admission,
+                description: "Deleted student admission: {$studentName} from {$className}",
+                properties: ['deleted_admission' => $admissionData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log student admission deletion: ' . $e->getMessage());
+        }
 
         // Send notification when admission is deleted (fast - notification service is optimized)
         // Note: We need to create a temporary model instance for the notification since the original was deleted
@@ -941,6 +996,22 @@ class StudentAdmissionController extends Controller
             return response()->json([
                 'error' => 'Failed to generate report: ' . $e->getMessage(),
             ], 500);
+        }
+
+        // Log report export
+        try {
+            $this->activityLogService->logEvent(
+                subject: null,
+                description: "Exported student admissions report",
+                properties: [
+                    'format' => $format,
+                    'filters' => $filters,
+                    'count' => count($admissions),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log student admissions report export: ' . $e->getMessage());
         }
     }
 

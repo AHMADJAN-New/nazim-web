@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\TeacherTimetablePreference;
 use App\Http\Requests\StoreTeacherTimetablePreferenceRequest;
 use App\Http\Requests\UpdateTeacherTimetablePreferenceRequest;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TeacherTimetablePreferenceController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of teacher timetable preferences
      */
@@ -154,6 +158,23 @@ class TeacherTimetablePreferenceController extends Controller
 
         $preference->load(['academicYear', 'teacher']);
 
+        // Log teacher timetable preference creation
+        try {
+            $teacherName = $preference->teacher?->full_name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $preference,
+                description: "Created timetable preference for teacher {$teacherName}",
+                properties: [
+                    'preference_id' => $preference->id,
+                    'teacher_id' => $preference->teacher_id,
+                    'academic_year_id' => $preference->academic_year_id,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log teacher timetable preference creation: ' . $e->getMessage());
+        }
+
         return response()->json([
             'id' => $preference->id,
             'organization_id' => $preference->organization_id,
@@ -273,6 +294,9 @@ class TeacherTimetablePreferenceController extends Controller
 
         $validated = $request->validated();
 
+        // Capture old values before update
+        $oldValues = $preference->only(['schedule_slot_ids', 'is_active', 'notes']);
+
         // Update only provided fields
         if (isset($validated['schedule_slot_ids'])) {
             $preference->schedule_slot_ids = $validated['schedule_slot_ids'];
@@ -306,6 +330,22 @@ class TeacherTimetablePreferenceController extends Controller
                 'full_name' => $preference->teacher->full_name,
             ] : null,
         ]);
+
+        // Log teacher timetable preference update
+        try {
+            $teacherName = $preference->teacher?->full_name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $preference,
+                description: "Updated timetable preference for teacher {$teacherName}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $preference->only(['schedule_slot_ids', 'is_active', 'notes']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log teacher timetable preference update: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -345,7 +385,23 @@ class TeacherTimetablePreferenceController extends Controller
             return response()->json(['error' => 'Teacher timetable preference not found'], 404);
         }
 
+        // Capture data before deletion
+        $preferenceData = $preference->toArray();
+        $teacherName = $preference->teacher?->full_name ?? 'Unknown';
+
         $preference->delete();
+
+        // Log teacher timetable preference deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $preference,
+                description: "Deleted timetable preference for teacher {$teacherName}",
+                properties: ['deleted_preference' => $preferenceData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log teacher timetable preference deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

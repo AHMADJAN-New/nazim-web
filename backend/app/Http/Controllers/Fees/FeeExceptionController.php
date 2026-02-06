@@ -7,11 +7,16 @@ use App\Http\Requests\Fees\FeeExceptionStoreRequest;
 use App\Http\Requests\Fees\FeeExceptionUpdateRequest;
 use App\Models\FeeAssignment;
 use App\Models\FeeException;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FeeExceptionController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     public function index(Request $request)
     {
         $user = $request->user();
@@ -209,6 +214,27 @@ class FeeExceptionController extends Controller
             $assignment->save();
         });
 
+        // Log fee exception creation
+        try {
+            $studentName = $exception->student?->full_name ?? 'Unknown';
+            $exceptionType = $exception->exception_type;
+            $amount = number_format((float) $exception->exception_amount, 2);
+            $this->activityLogService->logCreate(
+                subject: $exception,
+                description: "Created fee exception: {$exceptionType} ({$amount}) for {$studentName}",
+                properties: [
+                    'exception_id' => $exception->id,
+                    'fee_assignment_id' => $exception->fee_assignment_id,
+                    'student_id' => $exception->student_id,
+                    'exception_type' => $exception->exception_type,
+                    'exception_amount' => $exception->exception_amount,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee exception creation: ' . $e->getMessage());
+        }
+
         return response()->json($exception->fresh([
             'feeAssignment.feeStructure',
             'feeAssignment.classAcademicYear.class',
@@ -249,6 +275,9 @@ class FeeExceptionController extends Controller
             return response()->json(['error' => 'Fee exception not found'], 404);
         }
 
+        // Capture old values for logging
+        $oldValues = $exception->only(['exception_type', 'exception_amount', 'exception_reason', 'is_active']);
+
         $validated = $request->validated();
 
         // If fee_assignment_id is being updated, validate it
@@ -269,6 +298,23 @@ class FeeExceptionController extends Controller
         }
 
         $exception->update($validated);
+
+        // Log fee exception update
+        try {
+            $studentName = $exception->student?->full_name ?? 'Unknown';
+            $exceptionType = $exception->exception_type;
+            $this->activityLogService->logUpdate(
+                subject: $exception,
+                description: "Updated fee exception: {$exceptionType} for {$studentName}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $exception->only(['exception_type', 'exception_amount', 'exception_reason', 'is_active']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee exception update: ' . $e->getMessage());
+        }
 
         return response()->json($exception->fresh([
             'feeAssignment.feeStructure',
@@ -319,7 +365,22 @@ class FeeExceptionController extends Controller
         }
 
         // Soft delete
+        $exceptionData = $exception->toArray();
+        $studentName = $exception->student?->full_name ?? 'Unknown';
+        $exceptionType = $exception->exception_type;
         $exception->delete();
+
+        // Log fee exception deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $exception,
+                description: "Deleted fee exception: {$exceptionType} for {$studentName}",
+                properties: ['deleted_exception' => $exceptionData],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log fee exception deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

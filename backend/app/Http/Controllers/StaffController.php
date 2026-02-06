@@ -6,6 +6,7 @@ use App\Models\Staff;
 use App\Models\StaffType;
 use App\Models\StaffDocument;
 use App\Services\Storage\FileStorageService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Storage;
 class StaffController extends Controller
 {
     public function __construct(
-        private FileStorageService $fileStorageService
+        private FileStorageService $fileStorageService,
+        private ActivityLogService $activityLogService
     ) {}
     /**
      * Display a listing of staff
@@ -387,6 +389,25 @@ class StaffController extends Controller
             ];
         }
 
+        // Log staff creation
+        try {
+            $fullName = trim(($staff->first_name ?? '') . ' ' . ($staff->father_name ?? ''));
+            $this->activityLogService->logCreate(
+                subject: $staff,
+                description: "Created staff: {$fullName} (Employee ID: {$staff->employee_id})",
+                properties: [
+                    'staff_id' => $staff->id,
+                    'employee_id' => $staff->employee_id,
+                    'staff_code' => $staff->staff_code,
+                    'staff_type' => $staff->staff_type,
+                    'status' => $staff->status,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log staff creation: ' . $e->getMessage());
+        }
+
         return response()->json($staffArray, 201);
     }
 
@@ -410,6 +431,9 @@ class StaffController extends Controller
         if (!$staff) {
             return response()->json(['error' => 'Staff member not found'], 404);
         }
+
+        // Capture old values for logging
+        $oldValues = $staff->only(['employee_id', 'staff_code', 'staff_type', 'first_name', 'father_name', 'status']);
 
         // Require organization_id for all users
         if (!$profile->organization_id) {
@@ -608,6 +632,22 @@ class StaffController extends Controller
             ];
         }
 
+        // Log staff update
+        try {
+            $fullName = trim(($staff->first_name ?? '') . ' ' . ($staff->father_name ?? ''));
+            $this->activityLogService->logUpdate(
+                subject: $staff,
+                description: "Updated staff: {$fullName} (Employee ID: {$staff->employee_id})",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $staff->only(['employee_id', 'staff_code', 'staff_type', 'first_name', 'father_name', 'status']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log staff update: ' . $e->getMessage());
+        }
+
         return response()->json($staffArray);
     }
 
@@ -651,7 +691,22 @@ class StaffController extends Controller
         // Org access is enforced by organization middleware + school scope.
 
         // Soft delete
+        $fullName = trim(($staff->first_name ?? '') . ' ' . ($staff->father_name ?? ''));
+        $employeeId = $staff->employee_id;
+        $staffData = $staff->toArray();
         $staff->delete();
+
+        // Log staff deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $staff,
+                description: "Deleted staff: {$fullName} (Employee ID: {$employeeId})",
+                properties: ['deleted_staff' => $staffData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log staff deletion: ' . $e->getMessage());
+        }
 
         // CRITICAL: Return 204 No Content with NO body (not JSON)
         return response()->noContent();

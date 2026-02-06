@@ -7,6 +7,7 @@ use App\Models\ExamResult;
 use App\Models\ExamSubject;
 use App\Models\ExamStudent;
 use App\Services\Notifications\NotificationService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Log;
 class ExamResultController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private ActivityLogService $activityLogService
     ) {
     }
     /**
@@ -199,6 +201,9 @@ class ExamResultController extends Controller
             ->first();
 
         if ($existingResult) {
+            // Capture old values before update
+            $oldValues = $existingResult->only(['marks_obtained', 'is_absent', 'remarks']);
+
             // Update existing result
             $existingResult->update([
                 'marks_obtained' => $validated['marks_obtained'],
@@ -211,6 +216,24 @@ class ExamResultController extends Controller
                 'examSubject.subject',
                 'examStudent.studentAdmission.student',
             ]);
+
+            // Log exam result update
+            try {
+                $studentName = $existingResult->examStudent?->studentAdmission?->student?->full_name ?? 'Unknown';
+                $examName = $existingResult->exam?->name ?? 'Unknown';
+                $subjectName = $existingResult->examSubject?->subject?->name ?? 'Unknown';
+                $this->activityLogService->logUpdate(
+                    subject: $existingResult,
+                    description: "Updated exam result: {$studentName} - {$examName} - {$subjectName}",
+                    properties: [
+                        'old_values' => $oldValues,
+                        'new_values' => $existingResult->only(['marks_obtained', 'is_absent', 'remarks']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log exam result update: ' . $e->getMessage());
+            }
 
             return response()->json($existingResult);
         }
@@ -233,6 +256,28 @@ class ExamResultController extends Controller
             'examSubject.subject',
             'examStudent.studentAdmission.student',
         ]);
+
+        // Log exam result creation
+        try {
+            $studentName = $result->examStudent?->studentAdmission?->student?->full_name ?? 'Unknown';
+            $examName = $result->exam?->name ?? 'Unknown';
+            $subjectName = $result->examSubject?->subject?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $result,
+                description: "Entered exam result: {$studentName} - {$examName} - {$subjectName}",
+                properties: [
+                    'result_id' => $result->id,
+                    'exam_id' => $result->exam_id,
+                    'exam_subject_id' => $result->exam_subject_id,
+                    'exam_student_id' => $result->exam_student_id,
+                    'marks_obtained' => $result->marks_obtained,
+                    'is_absent' => $result->is_absent,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam result creation: ' . $e->getMessage());
+        }
 
         return response()->json($result, 201);
     }
@@ -381,6 +426,24 @@ class ExamResultController extends Controller
 
             DB::commit();
 
+            // Log bulk results operation
+            try {
+                $this->activityLogService->logEvent(
+                    subject: null,
+                    description: "Bulk saved exam results: {$exam->name}",
+                    properties: [
+                        'exam_id' => $exam->id,
+                        'exam_subject_id' => $validated['exam_subject_id'],
+                        'created_count' => count($created),
+                        'updated_count' => count($updated),
+                        'errors_count' => count($errors),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log bulk exam results: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'message' => 'Results saved successfully',
                 'created_count' => count($created),
@@ -482,6 +545,9 @@ class ExamResultController extends Controller
         $oldMarks = $result->marks_obtained;
         $oldIsAbsent = $result->is_absent;
         
+        // Capture old values before update
+        $oldValues = $result->only(['marks_obtained', 'is_absent', 'remarks']);
+        
         $result->update($validated);
 
         $result->load([
@@ -519,6 +585,24 @@ class ExamResultController extends Controller
                 'result_id' => $result->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        // Log exam result update
+        try {
+            $studentName = $result->examStudent?->studentAdmission?->student?->full_name ?? 'Unknown';
+            $examName = $result->exam?->name ?? 'Unknown';
+            $subjectName = $result->examSubject?->subject?->name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $result,
+                description: "Updated exam result: {$studentName} - {$examName} - {$subjectName}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $result->only(['marks_obtained', 'is_absent', 'remarks']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam result update: ' . $e->getMessage());
         }
 
         return response()->json($result);
@@ -574,7 +658,25 @@ class ExamResultController extends Controller
             ], 422);
         }
 
+        // Capture data before deletion
+        $resultData = $result->toArray();
+        $studentName = $result->examStudent?->studentAdmission?->student?->full_name ?? 'Unknown';
+        $examName = $result->exam?->name ?? 'Unknown';
+        $subjectName = $result->examSubject?->subject?->name ?? 'Unknown';
+
         $result->delete();
+
+        // Log exam result deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $result,
+                description: "Deleted exam result: {$studentName} - {$examName} - {$subjectName}",
+                properties: ['deleted_result' => $resultData],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam result deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

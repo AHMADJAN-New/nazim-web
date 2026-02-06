@@ -6,12 +6,18 @@ use App\Models\ExamSubject;
 use App\Models\Exam;
 use App\Models\ExamClass;
 use App\Models\ClassSubject;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExamSubjectController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -140,7 +146,27 @@ class ExamSubjectController extends Controller
             'scheduled_at' => $validated['scheduled_at'] ?? null,
         ]);
 
-        $examSubject->load(['subject', 'classSubject', 'examClass']);
+        $examSubject->load(['subject', 'classSubject', 'examClass', 'exam']);
+
+        // Log exam subject assignment
+        try {
+            $subjectName = $examSubject->subject?->name ?? 'Unknown';
+            $examName = $examSubject->exam?->name ?? 'Unknown';
+            $className = $examSubject->examClass?->classAcademicYear?->class?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $examSubject,
+                description: "Assigned subject {$subjectName} to exam {$examName} for class {$className}",
+                properties: [
+                    'exam_subject_id' => $examSubject->id,
+                    'exam_id' => $examSubject->exam_id,
+                    'exam_class_id' => $examSubject->exam_class_id,
+                    'class_subject_id' => $examSubject->class_subject_id,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam subject assignment: ' . $e->getMessage());
+        }
 
         return response()->json($examSubject, 201);
     }
@@ -185,6 +211,29 @@ class ExamSubjectController extends Controller
             ->exists();
         if (!$schoolOk) {
             return response()->json(['error' => 'Exam subject not found'], 404);
+        }
+
+        // Load relationships for logging
+        $examSubject->load(['subject', 'examClass', 'exam']);
+
+        // Log exam subject removal
+        try {
+            $subjectName = $examSubject->subject?->name ?? 'Unknown';
+            $examName = $examSubject->exam?->name ?? 'Unknown';
+            $className = $examSubject->examClass?->classAcademicYear?->class?->name ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $examSubject,
+                description: "Removed subject {$subjectName} from exam {$examName} for class {$className}",
+                properties: [
+                    'exam_subject_id' => $examSubject->id,
+                    'exam_id' => $examSubject->exam_id,
+                    'exam_class_id' => $examSubject->exam_class_id,
+                    'deleted_entity' => $examSubject->toArray(),
+                ],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam subject removal: ' . $e->getMessage());
         }
 
         $examSubject->delete();
@@ -234,6 +283,9 @@ class ExamSubjectController extends Controller
             return response()->json(['error' => 'Exam subject not found'], 404);
         }
 
+        // Capture old values before update
+        $oldValues = $examSubject->only(['total_marks', 'passing_marks', 'scheduled_at']);
+
         $validated = $request->validate([
             'total_marks' => 'nullable|integer|min:0',
             'passing_marks' => 'nullable|integer|min:0',
@@ -243,7 +295,26 @@ class ExamSubjectController extends Controller
         $examSubject->fill($validated);
         $examSubject->save();
 
-        $examSubject->load(['subject', 'classSubject', 'examClass']);
+        $examSubject->load(['subject', 'classSubject', 'examClass', 'exam']);
+
+        // Log exam subject update
+        try {
+            $subjectName = $examSubject->subject?->name ?? 'Unknown';
+            $examName = $examSubject->exam?->name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $examSubject,
+                description: "Updated exam subject {$subjectName} for exam {$examName}",
+                properties: [
+                    'exam_subject_id' => $examSubject->id,
+                    'exam_id' => $examSubject->exam_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $examSubject->only(['total_marks', 'passing_marks', 'scheduled_at']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam subject update: ' . $e->getMessage());
+        }
 
         return response()->json($examSubject);
     }

@@ -3,12 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\ExamType;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExamTypeController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     private function getProfile($user)
     {
         return DB::table('profiles')->where('id', (string) $user->id)->first();
@@ -106,6 +112,22 @@ class ExamTypeController extends Controller
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
+        // Log exam type creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $examType,
+                description: "Created exam type: {$examType->name}",
+                properties: [
+                    'exam_type_id' => $examType->id,
+                    'name' => $examType->name,
+                    'code' => $examType->code,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam type creation: ' . $e->getMessage());
+        }
+
         return response()->json($examType, 201);
     }
 
@@ -176,6 +198,9 @@ class ExamTypeController extends Controller
             return response()->json(['error' => 'Exam type not found'], 404);
         }
 
+        // Capture old values before update
+        $oldValues = $examType->only(['name', 'code', 'description', 'display_order', 'is_active']);
+
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'code' => 'nullable|string|max:50',
@@ -198,6 +223,22 @@ class ExamTypeController extends Controller
         }
 
         $examType->update($validated);
+
+        // Log exam type update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $examType,
+                description: "Updated exam type: {$examType->name}",
+                properties: [
+                    'exam_type_id' => $examType->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $examType->only(['name', 'code', 'description', 'display_order', 'is_active']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam type update: ' . $e->getMessage());
+        }
 
         return response()->json($examType);
     }
@@ -239,6 +280,23 @@ class ExamTypeController extends Controller
 
         if ($inUse) {
             return response()->json(['error' => 'This exam type is in use and cannot be deleted'], 409);
+        }
+
+        // Log exam type deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $examType,
+                description: "Deleted exam type: {$examType->name}",
+                properties: [
+                    'exam_type_id' => $examType->id,
+                    'name' => $examType->name,
+                    'code' => $examType->code,
+                    'deleted_entity' => $examType->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam type deletion: ' . $e->getMessage());
         }
 
         $examType->delete();
