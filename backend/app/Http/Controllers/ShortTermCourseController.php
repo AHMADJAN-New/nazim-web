@@ -14,8 +14,7 @@ class ShortTermCourseController extends Controller
 {
     public function __construct(
         private ActivityLogService $activityLogService
-    ) {
-    }
+    ) {}
 
     private function getProfile($user)
     {
@@ -102,24 +101,7 @@ class ShortTermCourseController extends Controller
 
         $course = ShortTermCourse::create($validated);
 
-        // Log course creation
-        try {
-            $this->activityLogService->logCreate(
-                subject: $course,
-                description: "Created short-term course: {$course->title}",
-                properties: [
-                    'short_term_course_id' => $course->id,
-                    'title' => $course->title,
-                    'status' => $course->status,
-                    'start_date' => $course->start_date,
-                    'end_date' => $course->end_date,
-                ],
-                request: $request
-            );
-        } catch (\Exception $e) {
-            Log::warning('Failed to log course creation: ' . $e->getMessage());
-        }
-
+        // Activity is logged by ShortTermCourse model's LogsActivityWithContext trait
         return response()->json($course, 201);
     }
 
@@ -188,32 +170,11 @@ class ShortTermCourseController extends Controller
         }
 
         // Capture old values before update
-        $oldValues = $course->only([
-            'title', 'description', 'start_date', 'end_date', 'status', 'fee', 'max_students', 'instructor_name'
-        ]);
-
         $payload = $request->validated();
         unset($payload['organization_id'], $payload['school_id']);
         $course->update($payload);
 
-        // Log course update
-        try {
-            $this->activityLogService->logUpdate(
-                subject: $course,
-                description: "Updated short-term course: {$course->title}",
-                properties: [
-                    'short_term_course_id' => $course->id,
-                    'old_values' => $oldValues,
-                    'new_values' => $course->only([
-                        'title', 'description', 'start_date', 'end_date', 'status', 'fee', 'max_students', 'instructor_name'
-                    ]),
-                ],
-                request: $request
-            );
-        } catch (\Exception $e) {
-            Log::warning('Failed to log course update: ' . $e->getMessage());
-        }
-
+        // Activity is logged by ShortTermCourse model's LogsActivityWithContext trait
         return response()->json($course);
     }
 
@@ -246,25 +207,9 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'Course not found'], 404);
         }
 
-        // Log course deletion
-        try {
-            $this->activityLogService->logDelete(
-                subject: $course,
-                description: "Deleted short-term course: {$course->title}",
-                properties: [
-                    'short_term_course_id' => $course->id,
-                    'title' => $course->title,
-                    'status' => $course->status,
-                    'deleted_entity' => $course->toArray(),
-                ],
-                request: $request
-            );
-        } catch (\Exception $e) {
-            Log::warning('Failed to log course deletion: ' . $e->getMessage());
-        }
-
         $course->delete();
 
+        // Activity is logged by ShortTermCourse model's LogsActivityWithContext trait
         return response()->noContent();
     }
 

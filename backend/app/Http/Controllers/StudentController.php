@@ -14,7 +14,6 @@ use App\Services\Reports\PdfReportService;
 use App\Services\Reports\ReportConfig;
 use App\Services\Reports\BrandingCacheService;
 use App\Services\Reports\DateConversionService;
-use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -27,8 +26,7 @@ class StudentController extends Controller
         private NotificationService $notificationService,
         private PdfReportService $pdfReportService,
         private BrandingCacheService $brandingCache,
-        private DateConversionService $dateService,
-        private ActivityLogService $activityLogService
+        private DateConversionService $dateService
     ) {}
 
     /**
@@ -314,23 +312,7 @@ class StudentController extends Controller
             ]);
         }
 
-        // Log student creation
-        try {
-            $this->activityLogService->logCreate(
-                subject: $student,
-                description: "Created student: {$student->full_name} (Admission No: {$student->admission_no})",
-                properties: [
-                    'student_id' => $student->id,
-                    'admission_no' => $student->admission_no,
-                    'full_name' => $student->full_name,
-                    'student_status' => $student->student_status,
-                ],
-                request: $request
-            );
-        } catch (\Exception $e) {
-            Log::warning('Failed to log student creation: ' . $e->getMessage());
-        }
-
+        // Activity is logged by Student model's LogsActivityWithContext trait
         return response()->json($student, 201);
     }
 
@@ -497,24 +479,7 @@ class StudentController extends Controller
         
         $student->load(['organization', 'school']);
 
-        // Log student update
-        try {
-            if (!empty($updateData)) {
-                $this->activityLogService->logUpdate(
-                    subject: $student,
-                    description: "Updated student: {$student->full_name} (Admission No: {$student->admission_no})",
-                    properties: [
-                        'old_values' => $oldValues,
-                        'new_values' => $student->only(['full_name', 'admission_no', 'father_name', 'student_status', 'class_id', 'academic_year_id']),
-                        'updated_fields' => array_keys($updateData),
-                    ],
-                    request: $request
-                );
-            }
-        } catch (\Exception $e) {
-            Log::warning('Failed to log student update: ' . $e->getMessage());
-        }
-
+        // Activity is logged by Student model's LogsActivityWithContext trait
         return response()->json($student);
     }
 
@@ -592,18 +557,7 @@ class StudentController extends Controller
         $studentData = $student->toArray();
         $student->delete();
 
-        // Log student deletion
-        try {
-            $this->activityLogService->logDelete(
-                subject: $student,
-                description: "Deleted student: {$studentName} (Admission No: {$admissionNo})",
-                properties: ['deleted_student' => $studentData],
-                request: request()
-            );
-        } catch (\Exception $e) {
-            Log::warning('Failed to log student deletion: ' . $e->getMessage());
-        }
-
+        // Activity is logged by Student model's LogsActivityWithContext trait
         return response()->noContent();
     }
 

@@ -83,8 +83,9 @@ export const useActivityLogs = (params: UseActivityLogsParams = {}) => {
       };
     },
     enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id,
-    staleTime: 2 * 60 * 1000, // 2 minutes (activity logs change frequently)
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // 30 seconds so new data shows without full reload
+    refetchOnWindowFocus: true, // Refetch when user returns to tab so new logs appear
+    refetchOnMount: true, // Refetch when navigating to the page
   });
 };
 
@@ -162,7 +163,7 @@ export const useActivityLogStats = () => {
       };
     },
     enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // 30 seconds so stats stay in sync with list
+    refetchOnWindowFocus: true,
   });
 };

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\FinanceAccount;
 use App\Models\Currency;
 use App\Services\Notifications\NotificationService;
-use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,8 +13,7 @@ use Illuminate\Validation\Rule;
 class FinanceAccountController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService,
-        private ActivityLogService $activityLogService
+        private NotificationService $notificationService
     ) {}
     /**
      * Display a listing of finance accounts
@@ -151,23 +149,7 @@ class FinanceAccountController extends Controller
             $account->load('currency');
 
             // Log finance account creation
-            try {
-                $this->activityLogService->logCreate(
-                    subject: $account,
-                    description: "Created finance account: {$account->name}",
-                    properties: [
-                        'account_name' => $account->name,
-                        'account_code' => $account->code,
-                        'account_type' => $account->type,
-                        'currency_id' => $account->currency_id,
-                        'opening_balance' => $account->opening_balance,
-                    ],
-                    request: $request
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log finance account creation: ' . $e->getMessage());
-            }
-
+            // Activity is logged by FinanceAccount model's LogsActivityWithContext trait
             return response()->json($account, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -342,20 +324,7 @@ class FinanceAccountController extends Controller
             }
 
             // Log finance account update
-            try {
-                $this->activityLogService->logUpdate(
-                    subject: $account,
-                    description: "Updated finance account: {$account->name}",
-                    properties: [
-                        'old_values' => $oldValues,
-                        'new_values' => $account->only(['name', 'code', 'type', 'currency_id', 'description', 'opening_balance', 'is_active']),
-                    ],
-                    request: $request
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log finance account update: ' . $e->getMessage());
-            }
-
+            // Activity is logged by FinanceAccount model's LogsActivityWithContext trait
             return response()->json($account);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -417,17 +386,7 @@ class FinanceAccountController extends Controller
             $account->delete();
 
             // Log finance account deletion
-            try {
-                $this->activityLogService->logDelete(
-                    subject: $account,
-                    description: "Deleted finance account: {$accountName}",
-                    properties: ['deleted_account' => $accountData],
-                    request: request()
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log finance account deletion: ' . $e->getMessage());
-            }
-
+            // Activity is logged by FinanceAccount model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('FinanceAccountController@destroy error: ' . $e->getMessage());

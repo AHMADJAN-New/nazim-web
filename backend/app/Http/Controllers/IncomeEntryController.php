@@ -9,7 +9,6 @@ use App\Models\FinanceProject;
 use App\Models\Donor;
 use App\Models\ExchangeRate;
 use App\Services\Notifications\NotificationService;
-use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,8 +16,7 @@ use Illuminate\Support\Facades\Log;
 class IncomeEntryController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService,
-        private ActivityLogService $activityLogService
+        private NotificationService $notificationService
     ) {}
     /**
      * Display a listing of income entries
@@ -322,30 +320,7 @@ class IncomeEntryController extends Controller
                 ]);
             }
 
-            // Log income entry creation
-            try {
-                $amount = number_format((float) $entry->amount, 2);
-                $currencyCode = $entry->currency?->code ?? '';
-                $categoryName = $entry->incomeCategory?->name ?? 'Unknown';
-                $this->activityLogService->logCreate(
-                    subject: $entry,
-                    description: "Created income entry: {$amount} {$currencyCode} ({$categoryName})",
-                    properties: [
-                        'entry_id' => $entry->id,
-                        'account_id' => $entry->account_id,
-                        'income_category_id' => $entry->income_category_id,
-                        'amount' => $entry->amount,
-                        'currency_id' => $entry->currency_id,
-                        'date' => $entry->date,
-                        'reference_no' => $entry->reference_no,
-                        'donor_id' => $entry->donor_id,
-                    ],
-                    request: $request
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log income entry creation: ' . $e->getMessage());
-            }
-
+            // Activity is logged by IncomeEntry model's LogsActivityWithContext trait
             return response()->json($entry, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -626,23 +601,7 @@ class IncomeEntryController extends Controller
                 ]);
             }
 
-            // Log income entry update
-            try {
-                $amount = number_format((float) $entry->amount, 2);
-                $currencyCode = $entry->currency?->code ?? '';
-                $this->activityLogService->logUpdate(
-                    subject: $entry,
-                    description: "Updated income entry: {$amount} {$currencyCode}",
-                    properties: [
-                        'old_values' => $oldValues,
-                        'new_values' => $entry->only(['account_id', 'income_category_id', 'currency_id', 'amount', 'date', 'project_id', 'donor_id', 'reference_no', 'description', 'payment_method']),
-                    ],
-                    request: $request
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log income entry update: ' . $e->getMessage());
-            }
-
+            // Activity is logged by IncomeEntry model's LogsActivityWithContext trait
             return response()->json($entry);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -693,17 +652,7 @@ class IncomeEntryController extends Controller
             $entry->delete();
 
             // Log income entry deletion
-            try {
-                $this->activityLogService->logDelete(
-                    subject: $entry,
-                    description: "Deleted income entry: {$amount} {$currencyCode}",
-                    properties: ['deleted_entry' => $entryData],
-                    request: request()
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log income entry deletion: ' . $e->getMessage());
-            }
-
+            // Activity is logged by IncomeEntry model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('IncomeEntryController@destroy error: ' . $e->getMessage());

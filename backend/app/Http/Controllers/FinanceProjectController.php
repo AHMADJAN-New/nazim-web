@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\FinanceProject;
 use App\Models\Currency;
 use App\Services\Notifications\NotificationService;
-use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,8 +13,7 @@ use Illuminate\Validation\Rule;
 class FinanceProjectController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService,
-        private ActivityLogService $activityLogService
+        private NotificationService $notificationService
     ) {}
     /**
      * Display a listing of finance projects
@@ -148,23 +146,7 @@ class FinanceProjectController extends Controller
             $project->load('currency');
 
             // Log finance project creation
-            try {
-                $this->activityLogService->logCreate(
-                    subject: $project,
-                    description: "Created finance project: {$project->name}",
-                    properties: [
-                        'project_name' => $project->name,
-                        'project_code' => $project->code,
-                        'budget_amount' => $project->budget_amount,
-                        'currency_id' => $project->currency_id,
-                        'status' => $project->status,
-                    ],
-                    request: $request
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log finance project creation: ' . $e->getMessage());
-            }
-
+            // Activity is logged by FinanceProject model's LogsActivityWithContext trait
             return response()->json($project, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -345,20 +327,7 @@ class FinanceProjectController extends Controller
             }
 
             // Log finance project update
-            try {
-                $this->activityLogService->logUpdate(
-                    subject: $project,
-                    description: "Updated finance project: {$project->name}",
-                    properties: [
-                        'old_values' => $oldValues,
-                        'new_values' => $project->only(['name', 'code', 'currency_id', 'description', 'budget_amount', 'start_date', 'end_date', 'status', 'is_active']),
-                    ],
-                    request: $request
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log finance project update: ' . $e->getMessage());
-            }
-
+            // Activity is logged by FinanceProject model's LogsActivityWithContext trait
             return response()->json($project);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -416,17 +385,7 @@ class FinanceProjectController extends Controller
             $project->delete();
 
             // Log finance project deletion
-            try {
-                $this->activityLogService->logDelete(
-                    subject: $project,
-                    description: "Deleted finance project: {$projectName}",
-                    properties: ['deleted_project' => $projectData],
-                    request: request()
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log finance project deletion: ' . $e->getMessage());
-            }
-
+            // Activity is logged by FinanceProject model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('FinanceProjectController@destroy error: ' . $e->getMessage());

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ExpenseCategory;
-use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,9 +10,6 @@ use Illuminate\Validation\Rule;
 
 class ExpenseCategoryController extends Controller
 {
-    public function __construct(
-        private ActivityLogService $activityLogService
-    ) {}
     /**
      * Display a listing of expense categories
      */
@@ -118,21 +114,7 @@ class ExpenseCategoryController extends Controller
             ]);
 
             // Log expense category creation
-            try {
-                $this->activityLogService->logCreate(
-                    subject: $category,
-                    description: "Created expense category: {$category->name}",
-                    properties: [
-                        'category_name' => $category->name,
-                        'category_code' => $category->code,
-                        'is_active' => $category->is_active,
-                    ],
-                    request: $request
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log expense category creation: ' . $e->getMessage());
-            }
-
+            // Activity is logged by ExpenseCategory model's LogsActivityWithContext trait
             return response()->json($category, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -238,20 +220,7 @@ class ExpenseCategoryController extends Controller
             $category->update($validated);
 
             // Log expense category update
-            try {
-                $this->activityLogService->logUpdate(
-                    subject: $category,
-                    description: "Updated expense category: {$category->name}",
-                    properties: [
-                        'old_values' => $oldValues,
-                        'new_values' => $category->only(['name', 'code', 'description', 'is_active', 'display_order']),
-                    ],
-                    request: $request
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log expense category update: ' . $e->getMessage());
-            }
-
+            // Activity is logged by ExpenseCategory model's LogsActivityWithContext trait
             return response()->json($category);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -307,17 +276,7 @@ class ExpenseCategoryController extends Controller
             $category->delete();
 
             // Log expense category deletion
-            try {
-                $this->activityLogService->logDelete(
-                    subject: $category,
-                    description: "Deleted expense category: {$categoryName}",
-                    properties: ['deleted_category' => $categoryData],
-                    request: request()
-                );
-            } catch (\Exception $e) {
-                Log::warning('Failed to log expense category deletion: ' . $e->getMessage());
-            }
-
+            // Activity is logged by ExpenseCategory model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('ExpenseCategoryController@destroy error: ' . $e->getMessage());
