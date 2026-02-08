@@ -443,6 +443,31 @@ export const indexTranslations = {
     },
   },
 
+  // Download Page (Nazim Desktop)
+  download: {
+    navButton: 'Desktop App',
+    title: 'Download Nazim Desktop',
+    subtitle: 'Get the offline desktop application for a faster and richer management experience — with built-in automatic updates.',
+    desktopApp: 'Desktop Application',
+    downloadButton: 'Download for Windows',
+    windowsOnly: 'Windows 10 / 11 (64-bit)',
+    prerequisitesTitle: 'Required Prerequisites',
+    prerequisitesDesc: 'Install these components before running Nazim Desktop for the first time.',
+    required: 'Required',
+    reqWindows: 'Windows 10+ (64-bit)',
+    reqAutoUpdater: 'Auto-update built in',
+    comingSoon: 'Coming Soon',
+    comingSoonDesc: 'The Nazim Desktop application is being prepared for release. Check back soon to download it.',
+    backToHome: 'Back to Home',
+    systemRequirements: 'System Requirements',
+    featureAutoUpdate: 'Automatic Updates',
+    featureAutoUpdateDesc: 'Stay up to date — the app checks for updates and installs them automatically.',
+    featureSecure: 'Secure & Signed',
+    featureSecureDesc: 'Digitally signed installer ensures safe and trusted installation.',
+    featureOffline: 'Offline Ready',
+    featureOfflineDesc: 'Work without internet — data syncs when you reconnect.',
+  },
+
   // Footer & landing nav (used by Index, Terms, Privacy, About)
   footer: {
     tagline: 'Comprehensive Islamic School Management System',

@@ -961,5 +961,138 @@ export const platformApi = {
       return apiClient.delete(`/platform/desktop-licenses/${id}`);
     },
   },
+
+  // Desktop Releases Management (Nazim Desktop downloads & updates)
+  desktopReleases: {
+    list: async () => {
+      return apiClient.get<{ data: Array<{
+        id: string;
+        version: string;
+        display_name: string;
+        release_notes: string | null;
+        file_path: string | null;
+        file_name: string | null;
+        file_size: number | null;
+        file_hash: string | null;
+        status: 'draft' | 'published' | 'archived';
+        is_latest: boolean;
+        download_count: number;
+        download_url: string | null;
+        published_at: string | null;
+        created_at: string;
+        updated_at: string;
+      }> }>('/platform/desktop-releases');
+    },
+    get: async (id: string) => {
+      return apiClient.get<{ data: {
+        id: string;
+        version: string;
+        display_name: string;
+        release_notes: string | null;
+        file_path: string | null;
+        file_name: string | null;
+        file_size: number | null;
+        file_hash: string | null;
+        status: 'draft' | 'published' | 'archived';
+        is_latest: boolean;
+        download_count: number;
+        download_url: string | null;
+        published_at: string | null;
+        created_at: string;
+        updated_at: string;
+      } }>(`/platform/desktop-releases/${id}`);
+    },
+    create: async (data: {
+      version: string;
+      display_name: string;
+      release_notes?: string;
+      file: File;
+      status?: 'draft' | 'published';
+    }) => {
+      const formData = new FormData();
+      formData.append('version', data.version);
+      formData.append('display_name', data.display_name);
+      if (data.release_notes) formData.append('release_notes', data.release_notes);
+      formData.append('file', data.file);
+      if (data.status) formData.append('status', data.status);
+      return apiClient.post<{ data: any }>('/platform/desktop-releases', formData, { headers: {} });
+    },
+    update: async (id: string, data: {
+      version?: string;
+      display_name?: string;
+      release_notes?: string;
+      status?: 'draft' | 'published' | 'archived';
+    }) => {
+      return apiClient.put<{ data: any }>(`/platform/desktop-releases/${id}`, data);
+    },
+    replaceFile: async (id: string, file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiClient.post<{ data: any }>(`/platform/desktop-releases/${id}/replace-file`, formData, { headers: {} });
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/desktop-releases/${id}`);
+    },
+  },
+
+  // Desktop Prerequisites Management
+  desktopPrerequisites: {
+    list: async () => {
+      return apiClient.get<{ data: Array<{
+        id: string;
+        name: string;
+        version: string | null;
+        description: string | null;
+        file_path: string | null;
+        file_name: string | null;
+        file_size: number | null;
+        file_hash: string | null;
+        install_order: number;
+        is_required: boolean;
+        is_active: boolean;
+        download_count: number;
+        download_url: string | null;
+        created_at: string;
+        updated_at: string;
+      }> }>('/platform/desktop-prerequisites');
+    },
+    create: async (data: {
+      name: string;
+      version?: string;
+      description?: string;
+      file: File;
+      install_order?: number;
+      is_required?: boolean;
+      is_active?: boolean;
+    }) => {
+      const formData = new FormData();
+      formData.append('name', data.name);
+      if (data.version) formData.append('version', data.version);
+      if (data.description) formData.append('description', data.description);
+      formData.append('file', data.file);
+      if (data.install_order !== undefined) formData.append('install_order', String(data.install_order));
+      if (data.is_required !== undefined) formData.append('is_required', data.is_required ? '1' : '0');
+      if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
+      return apiClient.post<{ data: any }>('/platform/desktop-prerequisites', formData, { headers: {} });
+    },
+    update: async (id: string, data: {
+      name?: string;
+      version?: string;
+      description?: string;
+      install_order?: number;
+      is_required?: boolean;
+      is_active?: boolean;
+    }) => {
+      return apiClient.put<{ data: any }>(`/platform/desktop-prerequisites/${id}`, data);
+    },
+    replaceFile: async (id: string, file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiClient.post<{ data: any }>(`/platform/desktop-prerequisites/${id}/replace-file`, formData, { headers: {} });
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/desktop-prerequisites/${id}`);
+    },
+  },
 };
 

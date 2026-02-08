@@ -444,6 +444,31 @@ export const indexTranslations = {
     },
   },
 
+  // د ډاونلوډ پاڼه (نظیم ډیسکټاپ)
+  download: {
+    navButton: 'ډیسکټاپ اپلیکیشن',
+    title: 'نظیم ډیسکټاپ ډاونلوډ کړئ',
+    subtitle: 'د ګړندي او غوره مدیریت تجربې لپاره آفلاین ډیسکټاپ اپلیکیشن ترلاسه کړئ — د اتوماتیک تازه کولو سره.',
+    desktopApp: 'ډیسکټاپ اپلیکیشن',
+    downloadButton: 'د وینډوز لپاره ډاونلوډ',
+    windowsOnly: 'وینډوز ۱۰ / ۱۱ (۶۴ بټي)',
+    prerequisitesTitle: 'اړین مخکینیاوې',
+    prerequisitesDesc: 'د نظیم ډیسکټاپ د لومړي ځل چلولو دمخه دا اجزا نصب کړئ.',
+    required: 'اړین',
+    reqWindows: 'وینډوز ۱۰+ (۶۴ بټي)',
+    reqAutoUpdater: 'اتوماتیک تازه کول',
+    comingSoon: 'ډیر ژر',
+    comingSoonDesc: 'د نظیم ډیسکټاپ اپلیکیشن د خپرولو لپاره چمتو کیږي. د ډاونلوډ لپاره ډیر ژر بیا وګورئ.',
+    backToHome: 'کور ته بیرته',
+    systemRequirements: 'د سیسټم اړتیاوې',
+    featureAutoUpdate: 'اتوماتیک تازه کول',
+    featureAutoUpdateDesc: 'تل تازه اوسئ — اپلیکیشن تازه کولو ته ګوري او اتوماتیک یې نصبوي.',
+    featureSecure: 'خوندي او لاسلیک شوی',
+    featureSecureDesc: 'دیجیتلي لاسلیک شوی نصب کونکی خوندي او باوري نصب تضمینوي.',
+    featureOffline: 'آفلاین چمتو',
+    featureOfflineDesc: 'بې انټرنیت کار وکړئ — معلومات بیا وصل کیدو پر مهال همغږي کیږي.',
+  },
+
   // Footer & landing nav
   footer: {
     tagline: 'د دیني مدارسو  لپاره بشپړ د مدیریت سیسټم',

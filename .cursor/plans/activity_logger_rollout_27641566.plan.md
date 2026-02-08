@@ -1,19 +1,12 @@
----
-name: Activity logger rollout
-overview: "Add ActivityLogService to all controllers in the provided list using the same pattern as PermissionController: inject the service, then call logCreate / logUpdate / logDelete (and logEvent or logAction for custom actions) inside try/catch after successful write operations, without failing the main request if logging fails."
-todos: []
-isProject: false
----
-
 # Activity Logger Rollout Plan
 
 ## Reference implementation
 
 - **Service**: [backend/app/Services/ActivityLogService.php](backend/app/Services/ActivityLogService.php) — provides `logCreate()`, `logUpdate()`, `logDelete()`, `logEvent()`, `logAction()`.
 - **Pattern**: [backend/app/Http/Controllers/PermissionController.php](backend/app/Http/Controllers/PermissionController.php) — constructor injection, then after each successful write:
-  - **store**: `logCreate($model, "Created {Entity}: {$model->name}", ['key' => $model->key], $request)` inside `try { ... } catch (\Exception $e) { Log::warning('Failed to log...'); }`.
-  - **update**: optionally capture `$oldValues` before update; after update call `logUpdate($model, "Updated {Entity}: {$model->name}", ['old_values' => $oldValues, 'new_values' => $model->only([...])], $request)` in try/catch.
-  - **destroy**: for soft delete, call `logDelete($model, "Deleted {Entity}: ...", ['deleted_entity' => $model->toArray()], request())` in try/catch after `$model->delete()`. For hard delete, log before delete (subject still in memory) or use `logEvent()` with a snapshot in `properties`.
+- **store**: `logCreate($model, "Created {Entity}: {$model->name}", ['key' => $model->key], $request) `inside `try { ... } catch (\Exception $e) { Log::warning('Failed to log...'); }`.
+- **update**: optionally capture `$oldValues` before update; after update call `logUpdate($model, "Updated {Entity}: {$model->name}", ['old_values' => $oldValues, 'new_values' => $model->only([...])], $request)` in try/catch.
+- **destroy**: for soft delete, call `logDelete($model, "Deleted {Entity}: ...", ['deleted_entity' => $model->toArray()], request()) `in try/catch after `$model->delete()`. For hard delete, log before delete (subject still in memory) or use `logEvent()` with a snapshot in `properties`.
 
 Logging must never break the HTTP response: always wrap in try/catch and `Log::warning()` on failure.
 
@@ -50,7 +43,6 @@ Descriptions should be human-readable and include entity identifiers (e.g. name 
 
 Implement in batches to keep PRs reviewable and to catch integration issues early.
 
-
 | Phase                                                | Controllers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **1 – Finance & fees**                               | FinanceAccountController, FinanceDocumentController, FinanceProjectController, FinanceReportController (writes/exports only), ExpenseEntryController, ExpenseCategoryController, IncomeEntryController, IncomeCategoryController, ExchangeRateController, FeeAssignmentController, FeeExceptionController, FeePaymentController, FeeReportController (writes/exports), FeeStructureController                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -60,7 +52,6 @@ Implement in batches to keep PRs reviewable and to catch integration issues earl
 | **5 – DMS**                                          | BaseDmsController (constructor + property), then IncomingDocumentsController, OutgoingDocumentsController, DocumentFilesController, DocumentSettingsController, DocumentReportsController, ArchiveSearchController, DepartmentsController, LetterheadsController, LetterTemplatesController, LetterTypesController                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | **6 – Certificates, settings, other**                | CertificateTemplateController, Certificates\CertificateTemplateController, Certificates\IssuedCertificateController, IdCardTemplateController, CertificateVerifyController (writes if any); SchoolBrandingController, RoomController, BuildingController, ProfileController, ReportGenerationController, ReportTemplateController, TranslationController; CurrencyController, DonorController, HostelController, LeaveRequestController, MaintenanceController, MaintenanceFeeController, LicenseFeeController, DesktopLicenseController, HelpCenterCategoryController, HelpCenterArticleController, ContactMessageController, NotificationController, UserTourController, ResidencyTypeController, RoleController, PhoneBookController, TestimonialController, GraduationBatchController |
 | **7 – Optional / read-only**                         | StorageController (log uploads/deletes), BackupController (log backup/restore), DashboardController, StatsController, SearchController, LandingController — only for write or high-value actions.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-
 
 ---
 
@@ -79,4 +70,3 @@ Implement in batches to keep PRs reviewable and to catch integration issues earl
 - After each phase, run existing controller/feature tests and confirm no regressions.
 - Manually or via test: perform create/update/delete (and any custom actions) and assert that `nazim_logs.activity_log` (or configured table) has the expected new rows with correct `organization_id`, `school_id`, `description`, `event`, and `subject_type`/`subject_id`.
 - Ensure failed logging only produces a warning log and never changes the HTTP status or response body of the main action.
-
