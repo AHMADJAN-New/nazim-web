@@ -4,12 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\LibraryBook;
 use App\Models\LibraryCopy;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class LibraryBookController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -183,6 +189,26 @@ class LibraryBookController extends Controller
             ]);
         }
 
+        // Log library book creation
+        try {
+            $categoryName = $book->category?->name ?? 'Uncategorized';
+            $this->activityLogService->logCreate(
+                subject: $book,
+                description: "Added library book: {$book->title} by {$book->author} ({$categoryName})",
+                properties: [
+                    'library_book_id' => $book->id,
+                    'title' => $book->title,
+                    'author' => $book->author,
+                    'book_number' => $book->book_number,
+                    'category_id' => $book->category_id,
+                    'initial_copies' => $copiesToCreate,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log library book creation: ' . $e->getMessage());
+        }
+
         return response()->json($book->load(['category', 'currency', 'financeAccount.currency'])->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
             $builder->where('status', 'available');
         }]));
@@ -219,6 +245,11 @@ class LibraryBookController extends Controller
             }
         } catch (\Exception $e) {
         }
+
+        // Capture old values before update
+        $oldValues = $book->only([
+            'title', 'author', 'isbn', 'book_number', 'category_id', 'price', 'default_loan_days'
+        ]);
 
         $data = $request->validate([
             'title' => 'sometimes|required|string|max:255',
@@ -293,6 +324,25 @@ class LibraryBookController extends Controller
 
         $book->update($data);
 
+        // Log library book update
+        try {
+            $categoryName = $book->category?->name ?? 'Uncategorized';
+            $this->activityLogService->logUpdate(
+                subject: $book,
+                description: "Updated library book: {$book->title} by {$book->author} ({$categoryName})",
+                properties: [
+                    'library_book_id' => $book->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $book->only([
+                        'title', 'author', 'isbn', 'book_number', 'category_id', 'price', 'default_loan_days'
+                    ]),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log library book update: ' . $e->getMessage());
+        }
+
         return response()->json($book->fresh()->load(['category', 'currency', 'financeAccount.currency'])->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
             $builder->where('status', 'available');
         }]));
@@ -314,6 +364,29 @@ class LibraryBookController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
+        }
+
+        // Load relationships for logging
+        $book->load(['category']);
+
+        // Log library book deletion
+        try {
+            $categoryName = $book->category?->name ?? 'Uncategorized';
+            $this->activityLogService->logDelete(
+                subject: $book,
+                description: "Deleted library book: {$book->title} by {$book->author} ({$categoryName})",
+                properties: [
+                    'library_book_id' => $book->id,
+                    'title' => $book->title,
+                    'author' => $book->author,
+                    'book_number' => $book->book_number,
+                    'category_id' => $book->category_id,
+                    'deleted_entity' => $book->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log library book deletion: ' . $e->getMessage());
         }
 
         $book->delete();

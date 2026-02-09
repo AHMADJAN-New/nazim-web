@@ -312,6 +312,7 @@ class StudentController extends Controller
             ]);
         }
 
+        // Activity is logged by Student model's LogsActivityWithContext trait
         return response()->json($student, 201);
     }
 
@@ -376,6 +377,8 @@ class StudentController extends Controller
 
         // Get current student data for comparison
         $currentData = $student->toArray();
+        // Capture old values for logging (before update)
+        $oldValues = $student->only(['full_name', 'admission_no', 'father_name', 'student_status', 'class_id', 'academic_year_id']);
         Log::info('Current Student Data', [
             'student_id' => $id,
             'current_data' => $currentData,
@@ -476,6 +479,7 @@ class StudentController extends Controller
         
         $student->load(['organization', 'school']);
 
+        // Activity is logged by Student model's LogsActivityWithContext trait
         return response()->json($student);
     }
 
@@ -548,8 +552,12 @@ class StudentController extends Controller
             ]);
         }
 
+        $studentName = $student->full_name ?? 'Unknown';
+        $admissionNo = $student->admission_no ?? 'N/A';
+        $studentData = $student->toArray();
         $student->delete();
 
+        // Activity is logged by Student model's LogsActivityWithContext trait
         return response()->noContent();
     }
 

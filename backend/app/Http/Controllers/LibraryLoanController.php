@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LibraryBook;
 use App\Models\LibraryCopy;
 use App\Models\LibraryLoan;
+use App\Services\ActivityLogService;
 use App\Services\Notifications\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 class LibraryLoanController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private NotificationService $notificationService
     ) {
     }
@@ -120,6 +122,28 @@ class LibraryLoanController extends Controller
         // Load relationships for notification
         $loan->load(['book', 'copy']);
 
+        // Log library loan creation
+        try {
+            $bookTitle = $loan->book?->title ?? 'Unknown';
+            $borrowerType = $loan->student_id ? 'student' : ($loan->staff_id ? 'staff' : 'unknown');
+            $this->activityLogService->logCreate(
+                subject: $loan,
+                description: "Loaned library book {$bookTitle} to {$borrowerType}",
+                properties: [
+                    'library_loan_id' => $loan->id,
+                    'book_id' => $loan->book_id,
+                    'book_copy_id' => $loan->book_copy_id,
+                    'student_id' => $loan->student_id,
+                    'staff_id' => $loan->staff_id,
+                    'loan_date' => $loan->loan_date,
+                    'due_date' => $loan->due_date,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log library loan creation: ' . $e->getMessage());
+        }
+
         // Notify if book is overdue or due soon
         try {
             $now = Carbon::now();
@@ -207,6 +231,9 @@ class LibraryLoanController extends Controller
         ]);
 
         try {
+            // Capture old values before update
+            $oldValues = $loan->only(['returned_at', 'fee_retained', 'refunded', 'notes']);
+
             $loan->update([
                 'returned_at' => $data['returned_at'] ?? Carbon::now()->toDateString(),
                 'fee_retained' => $data['fee_retained'] ?? $loan->fee_retained,
@@ -221,6 +248,26 @@ class LibraryLoanController extends Controller
 
             // Load relationships
             $loan->fresh()->load(['book', 'copy']);
+
+            // Log library loan return
+            try {
+                $bookTitle = $loan->book?->title ?? 'Unknown';
+                $this->activityLogService->logEvent(
+                    subject: $loan,
+                    event: 'library_loan_returned',
+                    description: "Returned library book {$bookTitle}",
+                    properties: [
+                        'library_loan_id' => $loan->id,
+                        'book_id' => $loan->book_id,
+                        'book_copy_id' => $loan->book_copy_id,
+                        'old_values' => $oldValues,
+                        'new_values' => $loan->only(['returned_at', 'fee_retained', 'refunded', 'notes']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Failed to log library loan return: ' . $e->getMessage());
+            }
 
             // Notify about return (optional - asset.returned equivalent)
             // Note: Library doesn't have a specific "returned" event, but we could add one if needed

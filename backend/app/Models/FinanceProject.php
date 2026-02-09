@@ -2,21 +2,25 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivityWithContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use App\Models\ExchangeRate;
+use Spatie\Activitylog\LogOptions;
 
 class FinanceProject extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, LogsActivityWithContext, SoftDeletes;
 
     protected $connection = 'pgsql';
+
     protected $table = 'finance_projects';
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -132,7 +136,7 @@ class FinanceProject extends Model
      */
     public function recalculateTotals()
     {
-        if (!$this->currency_id) {
+        if (! $this->currency_id) {
             // If project has no currency, use simple sum (backward compatibility)
             $this->total_income = $this->incomeEntries()->whereNull('deleted_at')->sum('amount');
             $this->total_expense = $this->expenseEntries()->whereNull('deleted_at')->where('status', 'approved')->sum('amount');
@@ -140,7 +144,7 @@ class FinanceProject extends Model
             // Convert all entries to project's currency
             $totalIncome = 0;
             $totalExpense = 0;
-            
+
             // Process income entries
             foreach ($this->incomeEntries()->whereNull('deleted_at')->get() as $entry) {
                 $amount = (float) $entry->amount;
@@ -159,7 +163,7 @@ class FinanceProject extends Model
                 }
                 $totalIncome += $amount;
             }
-            
+
             // Process expense entries (only approved)
             foreach ($this->expenseEntries()->whereNull('deleted_at')->where('status', 'approved')->get() as $entry) {
                 $amount = (float) $entry->amount;
@@ -178,13 +182,13 @@ class FinanceProject extends Model
                 }
                 $totalExpense += $amount;
             }
-            
+
             $this->total_income = $totalIncome;
             $this->total_expense = $totalExpense;
         }
-        
+
         $this->save();
-        
+
         return [
             'total_income' => $this->total_income,
             'total_expense' => $this->total_expense,
@@ -198,5 +202,16 @@ class FinanceProject extends Model
     public function getRemainingBalanceAttribute()
     {
         return $this->total_income - $this->total_expense;
+    }
+
+    /**
+     * Get the activity log options for the model.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnlyDirty()
+            ->logFillable()
+            ->dontSubmitEmptyLogs();
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\AcademicYear;
 use App\Models\GraduationBatch;
 use App\Services\Notifications\NotificationService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +15,8 @@ use Illuminate\Validation\Rule;
 class ExamController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private ActivityLogService $activityLogService
     ) {
     }
     /**
@@ -154,6 +156,23 @@ class ExamController extends Controller
             ]);
         }
 
+        // Log exam creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $exam,
+                description: "Created exam: {$exam->name}",
+                properties: [
+                    'exam_id' => $exam->id,
+                    'name' => $exam->name,
+                    'academic_year_id' => $exam->academic_year_id,
+                    'status' => $exam->status,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam creation: ' . $e->getMessage());
+        }
+
         return response()->json($exam, 201);
     }
 
@@ -291,6 +310,9 @@ class ExamController extends Controller
         // Track old status for status change notification
         $oldStatus = $exam->status;
         
+        // Capture old values before update
+        $oldValues = $exam->only(['name', 'academic_year_id', 'description', 'start_date', 'end_date', 'status']);
+        
         $exam->fill($validated);
         $exam->save();
 
@@ -332,6 +354,21 @@ class ExamController extends Controller
                 'exam_id' => $exam->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        // Log exam update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $exam,
+                description: "Updated exam: {$exam->name}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $exam->only(['name', 'academic_year_id', 'description', 'start_date', 'end_date', 'status']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam update: ' . $e->getMessage());
         }
 
         return response()->json($exam);
@@ -397,7 +434,23 @@ class ExamController extends Controller
             ], 422);
         }
 
+        // Capture data before deletion
+        $examData = $exam->toArray();
+        $examName = $exam->name;
+
         $exam->delete();
+
+        // Log exam deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $exam,
+                description: "Deleted exam: {$examName}",
+                properties: ['deleted_exam' => $examData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }
@@ -505,6 +558,22 @@ class ExamController extends Controller
         $oldStatus = $exam->status;
         $exam->status = $newStatus;
         $exam->save();
+
+        // Log exam status change
+        try {
+            $this->activityLogService->logEvent(
+                subject: $exam,
+                description: "Changed exam status: {$exam->name} from {$oldStatus} to {$newStatus}",
+                properties: [
+                    'exam_id' => $exam->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam status change: ' . $e->getMessage());
+        }
 
         $exam->load(['academicYear']);
 

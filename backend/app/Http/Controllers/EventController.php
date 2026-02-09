@@ -4,12 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventType;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class EventController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     /**
      * Display a listing of events
      */
@@ -151,6 +157,25 @@ class EventController extends Controller
 
             Log::info("Event created", ['id' => $event->id, 'title' => $event->title]);
 
+            // Log event creation
+            try {
+                $eventTypeName = $event->eventType?->name ?? 'No Type';
+                $this->activityLogService->logCreate(
+                    subject: $event,
+                    description: "Created event: {$event->title} ({$eventTypeName})",
+                    properties: [
+                        'event_id' => $event->id,
+                        'title' => $event->title,
+                        'event_type_id' => $event->event_type_id,
+                        'status' => $event->status,
+                        'starts_at' => $event->starts_at,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log event creation: ' . $e->getMessage());
+            }
+
             return response()->json($event->load(['eventType', 'school']), 201);
         } catch (\Exception $e) {
             Log::error("Failed to create event: " . $e->getMessage());
@@ -256,6 +281,9 @@ class EventController extends Controller
         ]);
 
         try {
+            // Capture old values before update
+            $oldValues = $event->only(['title', 'event_type_id', 'starts_at', 'ends_at', 'venue', 'capacity', 'status']);
+
             $oldStatus = $event->status;
             $event->update($validated);
             
@@ -278,6 +306,24 @@ class EventController extends Controller
             }
             
             Log::info("Event updated", ['id' => $event->id]);
+
+            // Log event update
+            try {
+                $eventTypeName = $event->eventType?->name ?? 'No Type';
+                $this->activityLogService->logUpdate(
+                    subject: $event,
+                    description: "Updated event: {$event->title} ({$eventTypeName})",
+                    properties: [
+                        'event_id' => $event->id,
+                        'old_values' => $oldValues,
+                        'new_values' => $event->only(['title', 'event_type_id', 'starts_at', 'ends_at', 'venue', 'capacity', 'status']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log event update: ' . $e->getMessage());
+            }
+
             return response()->json($event->load(['eventType', 'school']));
         } catch (\Exception $e) {
             Log::error("Failed to update event: " . $e->getMessage());
@@ -319,6 +365,28 @@ class EventController extends Controller
 
         if (!$event) {
             return response()->json(['error' => 'Event not found'], 404);
+        }
+
+        // Load relationships for logging
+        $event->load(['eventType']);
+
+        // Log event deletion
+        try {
+            $eventTypeName = $event->eventType?->name ?? 'No Type';
+            $this->activityLogService->logDelete(
+                subject: $event,
+                description: "Deleted event: {$event->title} ({$eventTypeName})",
+                properties: [
+                    'event_id' => $event->id,
+                    'title' => $event->title,
+                    'event_type_id' => $event->event_type_id,
+                    'status' => $event->status,
+                    'deleted_entity' => $event->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log event deletion: ' . $e->getMessage());
         }
 
         try {

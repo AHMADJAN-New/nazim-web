@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\ClassSubjectTemplate;
 use App\Models\ClassModel;
 use App\Models\Subject;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ClassSubjectTemplateController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of class subject templates
      */
@@ -139,6 +143,24 @@ class ClassSubjectTemplateController extends Controller
 
         $template->load(['subject', 'class']);
 
+        // Log class subject template creation
+        try {
+            $subjectName = $template->subject?->name ?? 'Unknown';
+            $className = $template->class?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $template,
+                description: "Created subject template: {$subjectName} for class {$className}",
+                properties: [
+                    'template_id' => $template->id,
+                    'subject_id' => $template->subject_id,
+                    'class_id' => $template->class_id,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log class subject template creation: ' . $e->getMessage());
+        }
+
         return response()->json($template, 201);
     }
 
@@ -226,9 +248,29 @@ class ClassSubjectTemplateController extends Controller
             'hours_per_week' => 'nullable|integer|min:0|max:40',
         ]);
 
+        // Capture old values before update
+        $oldValues = $template->only(['is_required', 'credits', 'hours_per_week']);
+
         $template->update($validated);
 
         $template->load(['subject', 'class']);
+
+        // Log class subject template update
+        try {
+            $subjectName = $template->subject?->name ?? 'Unknown';
+            $className = $template->class?->name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $template,
+                description: "Updated subject template: {$subjectName} for class {$className}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $template->only(['is_required', 'credits', 'hours_per_week']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log class subject template update: ' . $e->getMessage());
+        }
 
         return response()->json($template);
     }
@@ -270,7 +312,24 @@ class ClassSubjectTemplateController extends Controller
             return response()->json(['error' => 'Class subject template not found'], 404);
         }
 
+        // Capture data before deletion
+        $templateData = $template->toArray();
+        $subjectName = $template->subject?->name ?? 'Unknown';
+        $className = $template->class?->name ?? 'Unknown';
+
         $template->delete();
+
+        // Log class subject template deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $template,
+                description: "Deleted subject template: {$subjectName} from class {$className}",
+                properties: ['deleted_template' => $templateData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log class subject template deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

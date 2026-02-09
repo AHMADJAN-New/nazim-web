@@ -1017,11 +1017,33 @@ class SubscriptionAdminController extends Controller
     {
         $this->enforceSubscriptionAdmin($request);
 
-        $renewal = RenewalRequest::with(['organization', 'subscription.plan', 'requestedPlan', 'paymentRecord'])
+        $renewal = RenewalRequest::with(['organization', 'subscription.plan', 'requestedPlan', 'paymentRecord', 'discountCode'])
             ->findOrFail($renewalId);
 
+        $data = $renewal->toArray();
+
+        // When there is no payment record, include expected totals so the frontend can pre-fill the amount
+        if (! $renewal->payment_record_id) {
+            $priceAfn = $this->subscriptionService->calculatePrice(
+                $renewal->requested_plan_id,
+                $renewal->additional_schools ?? 0,
+                $renewal->discountCode?->code,
+                'AFN',
+                $renewal->organization_id
+            );
+            $priceUsd = $this->subscriptionService->calculatePrice(
+                $renewal->requested_plan_id,
+                $renewal->additional_schools ?? 0,
+                $renewal->discountCode?->code,
+                'USD',
+                $renewal->organization_id
+            );
+            $data['expected_total_afn'] = (float) ($priceAfn['total'] ?? 0);
+            $data['expected_total_usd'] = (float) ($priceUsd['total'] ?? 0);
+        }
+
         return response()->json([
-            'data' => $renewal,
+            'data' => $data,
         ]);
     }
 
@@ -1054,14 +1076,16 @@ class SubscriptionAdminController extends Controller
                 'payment_method' => 'required|in:bank_transfer,cash,check,mobile_money,other',
                 'payment_reference' => 'nullable|string|max:255',
                 'payment_date' => 'required|date',
-                'notes' => 'nullable|string|max:1000',
+                'notes' => 'required|string|max:1000', // Required so admins document reason when amount differs from expected
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['error' => $validator->errors()->first()], 422);
             }
 
-            // Calculate price with discount if applicable
+            $submittedAmount = (float) $request->amount;
+
+            // Calculate price with discount for record-keeping (amount is flexible; notes explain variance)
             $priceInfo = $this->subscriptionService->calculatePrice(
                 $renewal->requested_plan_id,
                 $renewal->additional_schools,
@@ -1069,16 +1093,6 @@ class SubscriptionAdminController extends Controller
                 $request->currency,
                 $renewal->organization_id
             );
-
-            $expectedTotal = (float) ($priceInfo['total'] ?? 0);
-            $submittedAmount = (float) $request->amount;
-            $tolerance = 0.01;
-
-            if (abs($submittedAmount - $expectedTotal) > $tolerance) {
-                return response()->json([
-                    'error' => "Payment amount does not match expected total. Expected {$expectedTotal} {$request->currency}.",
-                ], 422);
-            }
 
             $subscription = $this->subscriptionService->getCurrentSubscription($renewal->organization_id);
             $plan = SubscriptionPlan::findOrFail($renewal->requested_plan_id);

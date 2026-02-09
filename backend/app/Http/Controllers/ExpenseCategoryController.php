@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ExpenseCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class ExpenseCategoryController extends Controller
@@ -112,6 +113,8 @@ class ExpenseCategoryController extends Controller
                 'display_order' => $validated['display_order'] ?? 0,
             ]);
 
+            // Log expense category creation
+            // Activity is logged by ExpenseCategory model's LogsActivityWithContext trait
             return response()->json($category, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -195,6 +198,9 @@ class ExpenseCategoryController extends Controller
                 return response()->json(['error' => 'Expense category not found'], 404);
             }
 
+            // Capture old values for logging
+            $oldValues = $category->only(['name', 'code', 'description', 'is_active', 'display_order']);
+
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
                 'code' => ['nullable', 'string', 'max:50', Rule::unique('expense_categories')->where(function ($query) use ($profile, $currentSchoolId) {
@@ -213,6 +219,8 @@ class ExpenseCategoryController extends Controller
 
             $category->update($validated);
 
+            // Log expense category update
+            // Activity is logged by ExpenseCategory model's LogsActivityWithContext trait
             return response()->json($category);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -263,8 +271,12 @@ class ExpenseCategoryController extends Controller
                 return response()->json(['error' => 'Cannot delete category with existing entries'], 409);
             }
 
+            $categoryName = $category->name;
+            $categoryData = $category->toArray();
             $category->delete();
 
+            // Log expense category deletion
+            // Activity is logged by ExpenseCategory model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('ExpenseCategoryController@destroy error: ' . $e->getMessage());

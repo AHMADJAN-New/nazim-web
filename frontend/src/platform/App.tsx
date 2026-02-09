@@ -18,6 +18,7 @@ import PlatformSettings from './pages/admin/PlatformSettings';
 import MaintenanceFeesManagement from './pages/admin/MaintenanceFeesManagement';
 import LicenseFeesManagement from './pages/admin/LicenseFeesManagement';
 import DesktopLicenseGeneration from './pages/admin/DesktopLicenseGeneration';
+import DesktopReleasesManagement from './pages/admin/DesktopReleasesManagement';
 import ContactMessagesManagement from './pages/admin/ContactMessagesManagement';
 import WebsiteManagementPage from './pages/admin/WebsiteManagementPage';
 import LandingOffersPage from './pages/admin/LandingOffersPage';
@@ -203,6 +204,7 @@ export function PlatformAdminApp() {
               <Route path="help-center" element={<HelpCenterManagement />} />
               <Route path="maintenance-history" element={<MaintenanceHistory />} />
               <Route path="desktop-licenses" element={<DesktopLicenseGeneration />} />
+              <Route path="desktop-releases" element={<DesktopReleasesManagement />} />
 
               {/* Fallback inside platform */}
               <Route path="*" element={<Navigate to="dashboard" replace />} />

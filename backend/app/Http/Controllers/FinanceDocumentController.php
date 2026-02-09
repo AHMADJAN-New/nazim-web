@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FinanceDocument;
 use App\Services\Storage\FileStorageService;
 use App\Services\Notifications\NotificationService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,8 @@ class FinanceDocumentController extends Controller
 {
     public function __construct(
         private FileStorageService $fileStorageService,
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private ActivityLogService $activityLogService
     ) {}
     
     private function getProfile($user)
@@ -200,6 +202,23 @@ class FinanceDocumentController extends Controller
             ]);
         }
 
+        // Log finance document creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $document,
+                description: "Created finance document: {$document->title} ({$document->document_type})",
+                properties: [
+                    'document_id' => $document->id,
+                    'document_type' => $document->document_type,
+                    'title' => $document->title,
+                    'file_name' => $document->file_name,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log finance document creation: ' . $e->getMessage());
+        }
+
         return response()->json($document, 201);
     }
 
@@ -286,7 +305,21 @@ class FinanceDocumentController extends Controller
         }
 
         // Soft delete the document
+        $documentTitle = $document->title;
+        $documentData = $document->toArray();
         $document->delete();
+
+        // Log finance document deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $document,
+                description: "Deleted finance document: {$documentTitle}",
+                properties: ['deleted_document' => $documentData],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log finance document deletion: ' . $e->getMessage());
+        }
 
         // Optionally delete the file from storage
         try {

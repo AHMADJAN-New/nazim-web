@@ -370,6 +370,10 @@ export const ar: TranslationKeys = {
     "year": "السنة"
   },
   "articleFound": null,
+  "activityLogs": {
+    "title": "سجلات النشاط",
+    "description": "عرض وتصفية جميع سجلات نشاط النظام."
+  },
   "assets": {
     "active": "نشط",
     "assetReports": "تقارير الأصول",

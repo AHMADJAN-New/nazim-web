@@ -3,12 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\LibraryCategory;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class LibraryCategoryController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     /**
      * Display a listing of library categories
      */
@@ -150,6 +156,22 @@ class LibraryCategoryController extends Controller
             'display_order' => $request->display_order ?? 0,
         ]);
 
+        // Log library category creation
+        try {
+            $this->activityLogService->logCreate(
+                subject: $category,
+                description: "Created library category: {$category->name}",
+                properties: [
+                    'library_category_id' => $category->id,
+                    'name' => $category->name,
+                    'code' => $category->code,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log library category creation: ' . $e->getMessage());
+        }
+
         return response()->json($category, 201);
     }
 
@@ -190,6 +212,9 @@ class LibraryCategoryController extends Controller
             Log::info("Permission check for library_categories.update: " . $e->getMessage() . " - Allowing access during migration");
         }
 
+        // Capture old values before update
+        $oldValues = $category->only(['name', 'code', 'description', 'is_active', 'display_order']);
+
         // Org access enforced by query.
 
         $request->validate([
@@ -221,6 +246,22 @@ class LibraryCategoryController extends Controller
             'is_active',
             'display_order',
         ]));
+
+        // Log library category update
+        try {
+            $this->activityLogService->logUpdate(
+                subject: $category,
+                description: "Updated library category: {$category->name}",
+                properties: [
+                    'library_category_id' => $category->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $category->only(['name', 'code', 'description', 'is_active', 'display_order']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log library category update: ' . $e->getMessage());
+        }
 
         return response()->json($category);
     }
@@ -278,6 +319,24 @@ class LibraryCategoryController extends Controller
                 ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->update(['category_id' => null]);
+        }
+
+        // Log library category deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $category,
+                description: "Deleted library category: {$category->name}",
+                properties: [
+                    'library_category_id' => $category->id,
+                    'name' => $category->name,
+                    'code' => $category->code,
+                    'books_count' => $booksCount,
+                    'deleted_entity' => $category->toArray(),
+                ],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log library category deletion: ' . $e->getMessage());
         }
 
         // Soft delete using SoftDeletes trait

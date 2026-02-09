@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Staff;
 use App\Models\StaffDocument;
 use App\Services\Storage\FileStorageService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,8 @@ use Illuminate\Support\Facades\Storage;
 class StaffDocumentController extends Controller
 {
     public function __construct(
-        private FileStorageService $fileStorageService
+        private FileStorageService $fileStorageService,
+        private ActivityLogService $activityLogService
     ) {}
     /**
      * Display a listing of documents for a staff member
@@ -135,6 +137,24 @@ class StaffDocumentController extends Controller
         // Return download URL for private file
         $downloadUrl = $this->fileStorageService->getPrivateDownloadUrl($filePath);
 
+        // Log staff document creation
+        try {
+            $staffName = $staff->full_name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $document,
+                description: "Created staff document: {$document->file_name} for {$staffName}",
+                properties: [
+                    'document_id' => $document->id,
+                    'staff_id' => $staffId,
+                    'document_type' => $document->document_type,
+                    'file_name' => $document->file_name,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log staff document creation: ' . $e->getMessage());
+        }
+
         return response()->json([
             'document' => $document,
             'download_url' => $downloadUrl,
@@ -179,6 +199,11 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'Document not found'], 404);
         }
 
+        // Capture data before deletion
+        $documentData = $document->toArray();
+        $documentName = $document->file_name;
+        $staffId = $document->staff_id;
+
         // Delete file from storage using FileStorageService
         if ($document->file_path) {
             $this->fileStorageService->deleteFile($document->file_path);
@@ -186,6 +211,21 @@ class StaffDocumentController extends Controller
 
         // Soft delete
         $document->delete();
+
+        // Log staff document deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $document,
+                description: "Deleted staff document: {$documentName}",
+                properties: [
+                    'deleted_document' => $documentData,
+                    'staff_id' => $staffId,
+                ],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log staff document deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

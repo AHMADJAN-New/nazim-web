@@ -444,6 +444,31 @@ export const indexTranslations = {
     },
   },
 
+  // صفحه دانلود (نظیم دسکتاپ)
+  download: {
+    navButton: 'برنامه دسکتاپ',
+    title: 'دانلود نظیم دسکتاپ',
+    subtitle: 'نسخه آفلاین دسکتاپ را برای تجربه مدیریتی سریع‌تر و غنی‌تر دریافت کنید — با بروزرسانی خودکار.',
+    desktopApp: 'برنامه دسکتاپ',
+    downloadButton: 'دانلود برای ویندوز',
+    windowsOnly: 'ویندوز ۱۰ / ۱۱ (۶۴ بیتی)',
+    prerequisitesTitle: 'پیش‌نیازهای لازم',
+    prerequisitesDesc: 'قبل از اجرای اولین بار نظیم دسکتاپ، این اجزا را نصب کنید.',
+    required: 'ضروری',
+    reqWindows: 'ویندوز ۱۰+ (۶۴ بیتی)',
+    reqAutoUpdater: 'بروزرسانی خودکار',
+    comingSoon: 'به زودی',
+    comingSoonDesc: 'نسخه دسکتاپ نظیم در حال آماده‌سازی برای انتشار است. به زودی برای دانلود آن مراجعه کنید.',
+    backToHome: 'بازگشت به صفحه اصلی',
+    systemRequirements: 'نیازمندی‌های سیستم',
+    featureAutoUpdate: 'بروزرسانی خودکار',
+    featureAutoUpdateDesc: 'همیشه بروز باشید — برنامه بروزرسانی‌ها را بررسی و خودکار نصب می‌کند.',
+    featureSecure: 'امن و امضاشده',
+    featureSecureDesc: 'نصب‌کننده دارای امضای دیجیتال برای نصب امن و مطمئن.',
+    featureOffline: 'آماده برای آفلاین',
+    featureOfflineDesc: 'بدون اینترنت کار کنید — داده‌ها هنگام اتصال مجدد همگام‌سازی می‌شوند.',
+  },
+
   // Footer & landing nav
   footer: {
     tagline: 'سیستم جامع مدیریت مکاتب اسلامی',

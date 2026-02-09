@@ -320,6 +320,7 @@ class IncomeEntryController extends Controller
                 ]);
             }
 
+            // Activity is logged by IncomeEntry model's LogsActivityWithContext trait
             return response()->json($entry, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -403,6 +404,9 @@ class IncomeEntryController extends Controller
             if (!$entry) {
                 return response()->json(['error' => 'Income entry not found'], 404);
             }
+
+            // Capture old values for logging
+            $oldValues = $entry->only(['account_id', 'income_category_id', 'currency_id', 'amount', 'date', 'project_id', 'donor_id', 'reference_no', 'description', 'payment_method']);
 
             $validated = $request->validate([
                 'account_id' => 'sometimes|uuid|exists:finance_accounts,id',
@@ -597,6 +601,7 @@ class IncomeEntryController extends Controller
                 ]);
             }
 
+            // Activity is logged by IncomeEntry model's LogsActivityWithContext trait
             return response()->json($entry);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -641,8 +646,13 @@ class IncomeEntryController extends Controller
                 return response()->json(['error' => 'Income entry not found'], 404);
             }
 
+            $entryData = $entry->toArray();
+            $amount = number_format((float) $entry->amount, 2);
+            $currencyCode = $entry->currency?->code ?? '';
             $entry->delete();
 
+            // Log income entry deletion
+            // Activity is logged by IncomeEntry model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('IncomeEntryController@destroy error: ' . $e->getMessage());

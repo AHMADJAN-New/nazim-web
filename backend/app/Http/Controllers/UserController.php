@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\SchoolBranding;
 use App\Services\TourAssignmentService;
+use App\Services\ActivityLogService;
 use App\Helpers\OrganizationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,9 @@ use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of users
      */
@@ -601,9 +605,29 @@ class UserController extends Controller
             return response()->json(['error' => 'Cannot delete user from different organization'], 403);
         }
 
+        // Capture user data before deletion for logging
+        $deletedUserData = [
+            'id' => $id,
+            'email' => DB::table('users')->where('id', $id)->value('email'),
+            'full_name' => $targetProfile->full_name ?? null,
+        ];
+
         // Delete user (cascade will delete profile)
         DB::table('users')->where('id', $id)->delete();
         DB::table('profiles')->where('id', $id)->delete();
+
+        // Log user deletion
+        try {
+            $this->activityLogService->logEvent(
+                description: "Deleted user: {$deletedUserData['email']}",
+                logName: 'users',
+                event: 'deleted',
+                properties: ['deleted_user' => $deletedUserData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log user deletion: ' . $e->getMessage());
+        }
 
         return response()->json(['message' => 'User deleted successfully']);
     }
@@ -653,6 +677,22 @@ class UserController extends Controller
                 'encrypted_password' => $encryptedPassword,
                 'updated_at' => now(),
             ]);
+
+        // Log password reset
+        try {
+            $this->activityLogService->logEvent(
+                description: "Reset password for user: {$targetUser->email}",
+                logName: 'authentication',
+                event: 'password_reset',
+                properties: [
+                    'target_user_id' => $id,
+                    'target_email' => $targetUser->email,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log password reset: ' . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Password reset successfully']);
     }

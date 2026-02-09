@@ -6,6 +6,7 @@ use App\Models\Student;
 use App\Models\StudentDocument;
 use App\Http\Requests\StoreStudentDocumentRequest;
 use App\Services\Storage\FileStorageService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Log;
 class StudentDocumentController extends Controller
 {
     public function __construct(
-        private FileStorageService $fileStorageService
+        private FileStorageService $fileStorageService,
+        private ActivityLogService $activityLogService
     ) {}
     /**
      * Get accessible organization IDs for the current user
@@ -176,6 +178,24 @@ class StudentDocumentController extends Controller
             'email' => $uploadedByProfile->email,
         ] : null;
 
+        // Log student document creation
+        try {
+            $studentName = $student->full_name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $document,
+                description: "Created student document: {$document->file_name} for {$studentName}",
+                properties: [
+                    'document_id' => $document->id,
+                    'student_id' => $studentId,
+                    'document_type' => $document->document_type,
+                    'file_name' => $document->file_name,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log student document creation: ' . $e->getMessage());
+        }
+
         return response()->json($documentArray, 201);
     }
 
@@ -223,6 +243,11 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Cannot delete document from different organization'], 403);
         }
 
+        // Capture data before deletion
+        $documentData = $document->toArray();
+        $documentName = $document->file_name;
+        $studentId = $document->student_id;
+
         // Delete file from storage using FileStorageService
         if ($document->file_path) {
             $this->fileStorageService->deleteFile($document->file_path);
@@ -230,6 +255,21 @@ class StudentDocumentController extends Controller
 
         // Soft delete
         $document->delete();
+
+        // Log student document deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $document,
+                description: "Deleted student document: {$documentName}",
+                properties: [
+                    'deleted_document' => $documentData,
+                    'student_id' => $studentId,
+                ],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log student document deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }

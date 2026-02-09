@@ -5,12 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreShortTermCourseRequest;
 use App\Http\Requests\UpdateShortTermCourseRequest;
 use App\Models\ShortTermCourse;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ShortTermCourseController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
+
     private function getProfile($user)
     {
         return DB::table('profiles')->where('id', (string) $user->id)->first();
@@ -96,6 +101,7 @@ class ShortTermCourseController extends Controller
 
         $course = ShortTermCourse::create($validated);
 
+        // Activity is logged by ShortTermCourse model's LogsActivityWithContext trait
         return response()->json($course, 201);
     }
 
@@ -163,10 +169,12 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'Course not found'], 404);
         }
 
+        // Capture old values before update
         $payload = $request->validated();
         unset($payload['organization_id'], $payload['school_id']);
         $course->update($payload);
 
+        // Activity is logged by ShortTermCourse model's LogsActivityWithContext trait
         return response()->json($course);
     }
 
@@ -201,6 +209,7 @@ class ShortTermCourseController extends Controller
 
         $course->delete();
 
+        // Activity is logged by ShortTermCourse model's LogsActivityWithContext trait
         return response()->noContent();
     }
 
@@ -237,7 +246,26 @@ class ShortTermCourseController extends Controller
             return response()->json(['message' => 'Course already closed']);
         }
 
+        $oldStatus = $course->status;
         $course->close((string) $user->id);
+
+        // Log course close event
+        try {
+            $this->activityLogService->logEvent(
+                subject: $course,
+                event: 'course_closed',
+                description: "Closed short-term course: {$course->title}",
+                properties: [
+                    'short_term_course_id' => $course->id,
+                    'title' => $course->title,
+                    'old_status' => $oldStatus,
+                    'new_status' => $course->status,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log course close: ' . $e->getMessage());
+        }
 
         return response()->json($course);
     }
@@ -271,7 +299,26 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'Course not found'], 404);
         }
 
+        $oldStatus = $course->status;
         $course->reopen();
+
+        // Log course reopen event
+        try {
+            $this->activityLogService->logEvent(
+                subject: $course,
+                event: 'course_reopened',
+                description: "Reopened short-term course: {$course->title}",
+                properties: [
+                    'short_term_course_id' => $course->id,
+                    'title' => $course->title,
+                    'old_status' => $oldStatus,
+                    'new_status' => $course->status,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log course reopen: ' . $e->getMessage());
+        }
 
         return response()->json($course);
     }

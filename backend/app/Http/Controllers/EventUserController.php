@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Profile;
 use App\Models\User;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -13,6 +14,11 @@ use Illuminate\Support\Str;
 
 class EventUserController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     /**
      * List event-specific users for an event
      */
@@ -234,6 +240,25 @@ class EventUserController extends Controller
                 'email' => $validated['email'],
             ]);
 
+            // Log event user creation
+            try {
+                $eventTitle = $event->title ?? 'Unknown';
+                $this->activityLogService->logCreate(
+                    subject: (object)['id' => $userId, 'email' => $validated['email']],
+                    description: "Created event-specific user {$validated['email']} for event {$eventTitle}",
+                    properties: [
+                        'user_id' => $userId,
+                        'event_id' => $eventId,
+                        'email' => $validated['email'],
+                        'full_name' => $validated['full_name'],
+                        'permissions_count' => count($validated['permissions']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log event user creation: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'id' => $userId,
                 'email' => $validated['email'],
@@ -422,6 +447,33 @@ class EventUserController extends Controller
                 'user_id' => $userId,
             ]);
 
+            // Log event user update
+            try {
+                $event = Event::find($eventId);
+                $eventTitle = $event?->title ?? 'Unknown';
+                $this->activityLogService->logUpdate(
+                    subject: (object)['id' => $userId, 'email' => $eventUser->email],
+                    description: "Updated event-specific user {$eventUser->email} for event {$eventTitle}",
+                    properties: [
+                        'user_id' => $userId,
+                        'event_id' => $eventId,
+                        'old_values' => [
+                            'full_name' => $eventUser->full_name,
+                            'phone' => $eventUser->phone,
+                            'is_active' => $eventUser->is_active,
+                        ],
+                        'new_values' => [
+                            'full_name' => $updates['full_name'] ?? $eventUser->full_name,
+                            'phone' => $updates['phone'] ?? $eventUser->phone,
+                            'is_active' => $updates['is_active'] ?? $eventUser->is_active,
+                        ],
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log event user update: ' . $e->getMessage());
+            }
+
             return response()->json(['message' => 'Event user updated successfully']);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
@@ -479,6 +531,25 @@ class EventUserController extends Controller
 
             if (!$eventUser) {
                 return response()->json(['error' => 'Event user not found'], 404);
+            }
+
+            // Log event user deletion (deactivation)
+            try {
+                $event = Event::find($eventId);
+                $eventTitle = $event?->title ?? 'Unknown';
+                $this->activityLogService->logDelete(
+                    subject: (object)['id' => $userId, 'email' => $eventUser->email],
+                    description: "Deactivated event-specific user {$eventUser->email} for event {$eventTitle}",
+                    properties: [
+                        'user_id' => $userId,
+                        'event_id' => $eventId,
+                        'email' => $eventUser->email,
+                        'full_name' => $eventUser->full_name,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log event user deletion: ' . $e->getMessage());
             }
 
             // Deactivate the user (soft delete by setting is_active = false)

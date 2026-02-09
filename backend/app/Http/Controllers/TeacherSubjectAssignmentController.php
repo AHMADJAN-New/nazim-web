@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\TeacherSubjectAssignment;
 use App\Http\Requests\StoreTeacherSubjectAssignmentRequest;
 use App\Http\Requests\UpdateTeacherSubjectAssignmentRequest;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TeacherSubjectAssignmentController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Get accessible organization IDs for the current user
      */
@@ -230,6 +234,25 @@ class TeacherSubjectAssignmentController extends Controller
                 'organization:id,name',
             ]);
 
+            // Log teacher subject assignment creation
+            try {
+                $teacherName = $assignment->teacher?->first_name ?? 'Unknown';
+                $subjectName = $assignment->subject?->name ?? 'Unknown';
+                $this->activityLogService->logCreate(
+                    subject: $assignment,
+                    description: "Assigned teacher {$teacherName} to subject {$subjectName}",
+                    properties: [
+                        'assignment_id' => $assignment->id,
+                        'teacher_id' => $assignment->teacher_id,
+                        'subject_id' => $assignment->subject_id,
+                        'class_academic_year_id' => $assignment->class_academic_year_id,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log teacher subject assignment creation: ' . $e->getMessage());
+            }
+
             return response()->json($assignment, 201);
         } catch (\Exception $e) {
             Log::error('Error creating teacher subject assignment: ' . $e->getMessage());
@@ -288,6 +311,9 @@ class TeacherSubjectAssignmentController extends Controller
             $validated['schedule_slot_ids'] = [];
         }
 
+        // Capture old values before update
+        $oldValues = $assignment->only(['teacher_id', 'subject_id', 'class_academic_year_id', 'academic_year_id', 'schedule_slot_ids']);
+
         try {
             $assignment->update($validated);
 
@@ -302,6 +328,23 @@ class TeacherSubjectAssignmentController extends Controller
                 'school:id,school_name',
                 'organization:id,name',
             ]);
+
+            // Log teacher subject assignment update
+            try {
+                $teacherName = $assignment->teacher?->first_name ?? 'Unknown';
+                $subjectName = $assignment->subject?->name ?? 'Unknown';
+                $this->activityLogService->logUpdate(
+                    subject: $assignment,
+                    description: "Updated teacher assignment: {$teacherName} to subject {$subjectName}",
+                    properties: [
+                        'old_values' => $oldValues,
+                        'new_values' => $assignment->only(['teacher_id', 'subject_id', 'class_academic_year_id', 'academic_year_id', 'schedule_slot_ids']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log teacher subject assignment update: ' . $e->getMessage());
+            }
 
             return response()->json($assignment);
         } catch (\Exception $e) {
@@ -354,7 +397,24 @@ class TeacherSubjectAssignmentController extends Controller
         }
 
         try {
+            // Capture data before deletion
+            $assignmentData = $assignment->toArray();
+            $teacherName = $assignment->teacher?->first_name ?? 'Unknown';
+            $subjectName = $assignment->subject?->name ?? 'Unknown';
+
             $assignment->delete(); // Soft delete
+
+            // Log teacher subject assignment deletion
+            try {
+                $this->activityLogService->logDelete(
+                    subject: $assignment,
+                    description: "Removed teacher assignment: {$teacherName} from subject {$subjectName}",
+                    properties: ['deleted_assignment' => $assignmentData],
+                    request: request()
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log teacher subject assignment deletion: ' . $e->getMessage());
+            }
 
             return response()->noContent();
         } catch (\Exception $e) {

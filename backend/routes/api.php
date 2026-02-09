@@ -1,105 +1,105 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AssetAssignmentController;
+use App\Http\Controllers\AssetCategoryController;
+use App\Http\Controllers\AssetController;
+use App\Http\Controllers\AssetMaintenanceController;
+use App\Http\Controllers\AttendanceSessionController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\OrganizationController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\RoleController;
 use App\Http\Controllers\BuildingController;
-use App\Http\Controllers\RoomController;
-use App\Http\Controllers\StaffController;
-use App\Http\Controllers\StudentController;
+use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\ClassController;
-use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\ClassSubjectController;
 use App\Http\Controllers\ClassSubjectTemplateController;
-use App\Http\Controllers\AcademicYearController;
-use App\Http\Controllers\TimetableController;
-use App\Http\Controllers\ScheduleSlotController;
-use App\Http\Controllers\TeacherSubjectAssignmentController;
-use App\Http\Controllers\StatsController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\CourseAttendanceSessionController;
+use App\Http\Controllers\CourseDocumentController;
+use App\Http\Controllers\CourseStudentController;
+use App\Http\Controllers\CourseStudentDisciplineRecordController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExamAttendanceController;
+use App\Http\Controllers\ExamClassController;
+use App\Http\Controllers\ExamController;
+use App\Http\Controllers\ExamDocumentController;
+use App\Http\Controllers\ExamNumberController;
+use App\Http\Controllers\ExamPaperPreviewController;
+use App\Http\Controllers\ExamPaperTemplateController;
+use App\Http\Controllers\ExamPaperTemplateFileController;
+use App\Http\Controllers\ExamReportController;
+use App\Http\Controllers\ExamResultController;
+use App\Http\Controllers\ExamStudentController;
+use App\Http\Controllers\ExamSubjectController;
+use App\Http\Controllers\ExamTimeController;
+use App\Http\Controllers\ExamTypeController;
 use App\Http\Controllers\Fees\FeeAssignmentController;
 use App\Http\Controllers\Fees\FeeExceptionController;
 use App\Http\Controllers\Fees\FeePaymentController;
 use App\Http\Controllers\Fees\FeeReportController;
 use App\Http\Controllers\Fees\FeeStructureController;
-use App\Http\Controllers\SchoolBrandingController;
-use App\Http\Controllers\StaffTypeController;
-use App\Http\Controllers\ResidencyTypeController;
-use App\Http\Controllers\StaffDocumentController;
-use App\Http\Controllers\ReportTemplateController;
-use App\Http\Controllers\StudentAdmissionController;
-use App\Http\Controllers\StudentImportController;
-use App\Http\Controllers\StudentDocumentController;
-use App\Http\Controllers\StudentEducationalHistoryController;
-use App\Http\Controllers\StudentDisciplineRecordController;
-use App\Http\Controllers\StudentHistoryController;
-use App\Http\Controllers\TeacherTimetablePreferenceController;
-use App\Http\Controllers\StudentReportController;
-use App\Http\Controllers\StaffReportController;
+use App\Http\Controllers\FinanceDocumentController;
+use App\Http\Controllers\GradeController;
+use App\Http\Controllers\GraduationBatchController;
 use App\Http\Controllers\HostelController;
-use App\Http\Controllers\AttendanceSessionController;
+use App\Http\Controllers\IdCardTemplateController;
+use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LibraryBookController;
 use App\Http\Controllers\LibraryCategoryController;
 use App\Http\Controllers\LibraryCopyController;
 use App\Http\Controllers\LibraryLoanController;
+use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\PlatformWebsiteConfigController;
+use App\Http\Controllers\PlatformWebsiteDomainController;
+use App\Http\Controllers\PlatformWebsiteSettingsController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\ReportTemplateController;
+use App\Http\Controllers\ResidencyTypeController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RoomController;
+use App\Http\Controllers\ScheduleSlotController;
+use App\Http\Controllers\SchoolBrandingController;
 use App\Http\Controllers\ShortTermCourseController;
-use App\Http\Controllers\CourseStudentController;
-use App\Http\Controllers\CourseStudentDisciplineRecordController;
-use App\Http\Controllers\LeaveRequestController;
-use App\Http\Controllers\AssetController;
-use App\Http\Controllers\AssetAssignmentController;
-use App\Http\Controllers\AssetMaintenanceController;
-use App\Http\Controllers\AssetCategoryController;
-use App\Http\Controllers\CourseAttendanceSessionController;
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\StaffDocumentController;
+use App\Http\Controllers\StaffReportController;
+use App\Http\Controllers\StaffTypeController;
+use App\Http\Controllers\StatsController;
+use App\Http\Controllers\StudentAdmissionController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentDisciplineRecordController;
+use App\Http\Controllers\StudentDocumentController;
+use App\Http\Controllers\StudentEducationalHistoryController;
+use App\Http\Controllers\StudentHistoryController;
+use App\Http\Controllers\StudentImportController;
+use App\Http\Controllers\StudentReportController;
+use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\TeacherSubjectAssignmentController;
+use App\Http\Controllers\TeacherTimetablePreferenceController;
+use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\TranslationController;
-use App\Http\Controllers\CourseDocumentController;
-use App\Http\Controllers\CertificateTemplateController;
-use App\Http\Controllers\Website\WebsiteSettingsController;
-use App\Http\Controllers\Website\WebsitePageController;
-use App\Http\Controllers\Website\WebsitePostController;
-use App\Http\Controllers\Website\WebsiteEventController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\Website\PublicOnlineAdmissionController;
+use App\Http\Controllers\Website\PublicWebsiteController;
 use App\Http\Controllers\Website\WebsiteAnnouncementController;
 use App\Http\Controllers\Website\WebsiteAuditLogController;
-use App\Http\Controllers\Website\WebsiteMediaController;
-use App\Http\Controllers\Website\WebsiteMediaCategoryController;
-use App\Http\Controllers\Website\WebsiteMenuController;
-use App\Http\Controllers\Website\PublicWebsiteController;
-use App\Http\Controllers\Website\PublicOnlineAdmissionController;
-use App\Http\Controllers\Website\WebsitePublicBooksController;
-use App\Http\Controllers\Website\WebsiteScholarsController;
 use App\Http\Controllers\Website\WebsiteCoursesController;
-use App\Http\Controllers\Website\WebsiteGraduatesController;
 use App\Http\Controllers\Website\WebsiteDonationsController;
+use App\Http\Controllers\Website\WebsiteEventController;
+use App\Http\Controllers\Website\WebsiteGraduatesController;
 use App\Http\Controllers\Website\WebsiteInboxController;
+use App\Http\Controllers\Website\WebsiteMediaCategoryController;
+use App\Http\Controllers\Website\WebsiteMediaController;
+use App\Http\Controllers\Website\WebsiteMenuController;
 use App\Http\Controllers\Website\WebsiteOnlineAdmissionController;
 use App\Http\Controllers\Website\WebsiteOnlineAdmissionFieldController;
-use App\Http\Controllers\PlatformWebsiteDomainController;
-use App\Http\Controllers\PlatformWebsiteConfigController;
-use App\Http\Controllers\PlatformWebsiteSettingsController;
-use App\Http\Controllers\IdCardTemplateController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ExamController;
-use App\Http\Controllers\ExamClassController;
-use App\Http\Controllers\ExamSubjectController;
-use App\Http\Controllers\ExamStudentController;
-use App\Http\Controllers\ExamResultController;
-use App\Http\Controllers\ExamReportController;
-use App\Http\Controllers\ExamTimeController;
-use App\Http\Controllers\ExamAttendanceController;
-use App\Http\Controllers\ExamNumberController;
-use App\Http\Controllers\ExamTypeController;
-use App\Http\Controllers\ExamDocumentController;
-use App\Http\Controllers\ExamPaperTemplateController;
-use App\Http\Controllers\ExamPaperTemplateFileController;
-use App\Http\Controllers\ExamPaperPreviewController;
-use App\Http\Controllers\QuestionController;
-use App\Http\Controllers\FinanceDocumentController;
-use App\Http\Controllers\GradeController;
-use App\Http\Controllers\GraduationBatchController;
+use App\Http\Controllers\Website\WebsitePageController;
+use App\Http\Controllers\Website\WebsitePostController;
+use App\Http\Controllers\Website\WebsitePublicBooksController;
+use App\Http\Controllers\Website\WebsiteScholarsController;
+use App\Http\Controllers\Website\WebsiteSettingsController;
+use Illuminate\Support\Facades\Route;
 
 // Lightweight health check for reverse proxy (/api/*) setups
 Route::get('/health', function () {
@@ -119,15 +119,14 @@ use App\Http\Controllers\Dms\LetterheadsController;
 use App\Http\Controllers\Dms\LetterTemplatesController;
 use App\Http\Controllers\Dms\LetterTypesController;
 use App\Http\Controllers\Dms\OutgoingDocumentsController;
-use App\Http\Controllers\StorageController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\HelpCenterCategoryController;
 use App\Http\Controllers\HelpCenterArticleController;
+use App\Http\Controllers\HelpCenterCategoryController;
 use App\Http\Controllers\LandingController;
-use App\Http\Controllers\MaintenanceFeeController;
 use App\Http\Controllers\LicenseFeeController;
-use App\Http\Controllers\DesktopLicenseController;
+use App\Http\Controllers\MaintenanceFeeController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\StorageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -145,10 +144,19 @@ Route::get('/maintenance/status/public', [App\Http\Controllers\MaintenanceContro
 Route::get('/desktop-licenses/keys/public/{kid}', [App\Http\Controllers\DesktopLicenseController::class, 'getPublicKeyByKid'])
     ->middleware('throttle:60,1'); // Rate limit: 60 requests per minute
 
+// Public Nazim Desktop download & updater endpoints (rate-limited, no auth)
+Route::prefix('desktop')->middleware('throttle:30,1')->group(function () {
+    Route::get('/latest', [App\Http\Controllers\DesktopReleaseController::class, 'latestRelease']);
+    Route::get('/releases/{id}/download', [App\Http\Controllers\DesktopReleaseController::class, 'downloadRelease']);
+    Route::get('/prerequisites/{id}/download', [App\Http\Controllers\DesktopReleaseController::class, 'downloadPrerequisite']);
+    Route::get('/updates.txt', [App\Http\Controllers\DesktopReleaseController::class, 'updaterConfig']);
+});
+
 // Public certificate verification routes (rate limited)
 use App\Http\Controllers\CertificateVerifyController;
-use App\Http\Controllers\Website\PublicFatwaController;
 use App\Http\Controllers\Website\PublicExamResultController;
+use App\Http\Controllers\Website\PublicFatwaController;
+
 Route::get('/verify/certificate/{hash}', [CertificateVerifyController::class, 'show'])
     ->middleware('throttle:60,1'); // 60 requests per minute for hash verification
 
@@ -392,6 +400,12 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
     // Resource creation requires limit:resourceKey enforcement
     // ============================================================
     Route::middleware(['school.context'])->group(function () {
+
+        // Activity Logs (admin feature - read only)
+        Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+        Route::get('/activity-logs/log-names', [ActivityLogController::class, 'logNames']);
+        Route::get('/activity-logs/event-types', [ActivityLogController::class, 'eventTypes']);
+        Route::get('/activity-logs/stats', [ActivityLogController::class, 'stats']);
 
         // Buildings (core feature - no additional feature check)
         Route::get('/buildings', [BuildingController::class, 'index']);
@@ -1514,10 +1528,10 @@ Route::get('/reports/preview/template', [\App\Http\Controllers\ReportGenerationC
 // SUBSCRIPTION / SAAS ROUTES
 // =====================================================
 
-use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\SubscriptionAdminController;
-use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\ContactMessageController;
+use App\Http\Controllers\SubscriptionAdminController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\TestimonialController;
 
 // Public subscription routes
 Route::get('/subscription/plans', [SubscriptionController::class, 'plans']);
@@ -1686,10 +1700,9 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::put('/users/{id}', [SubscriptionAdminController::class, 'updatePlatformUser']);
     Route::delete('/users/{id}', [SubscriptionAdminController::class, 'deletePlatformUser']);
     Route::post('/users/{id}/reset-password', [SubscriptionAdminController::class, 'resetPlatformUserPassword']);
-    
+
     // Reset password for any user (organization admins, regular users, etc.)
     Route::post('/users/{id}/reset-password-any', [SubscriptionAdminController::class, 'resetUserPassword']);
-    
 
     // Testimonials management
     Route::get('/testimonials', [TestimonialController::class, 'adminIndex']);
@@ -1732,6 +1745,23 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/maintenance/enable', [App\Http\Controllers\MaintenanceController::class, 'enable']);
     Route::post('/maintenance/disable', [App\Http\Controllers\MaintenanceController::class, 'disable']);
     Route::get('/maintenance/history', [App\Http\Controllers\MaintenanceController::class, 'history']);
+
+    // Desktop Release Management (Nazim Desktop downloads & updates)
+    Route::prefix('desktop-releases')->group(function () {
+        Route::get('/', [App\Http\Controllers\DesktopReleaseController::class, 'listReleases']);
+        Route::post('/', [App\Http\Controllers\DesktopReleaseController::class, 'storeRelease']);
+        Route::get('/{id}', [App\Http\Controllers\DesktopReleaseController::class, 'showRelease']);
+        Route::put('/{id}', [App\Http\Controllers\DesktopReleaseController::class, 'updateRelease']);
+        Route::post('/{id}/replace-file', [App\Http\Controllers\DesktopReleaseController::class, 'replaceReleaseFile']);
+        Route::delete('/{id}', [App\Http\Controllers\DesktopReleaseController::class, 'destroyRelease']);
+    });
+    Route::prefix('desktop-prerequisites')->group(function () {
+        Route::get('/', [App\Http\Controllers\DesktopReleaseController::class, 'listPrerequisites']);
+        Route::post('/', [App\Http\Controllers\DesktopReleaseController::class, 'storePrerequisite']);
+        Route::put('/{id}', [App\Http\Controllers\DesktopReleaseController::class, 'updatePrerequisite']);
+        Route::post('/{id}/replace-file', [App\Http\Controllers\DesktopReleaseController::class, 'replacePrerequisiteFile']);
+        Route::delete('/{id}', [App\Http\Controllers\DesktopReleaseController::class, 'destroyPrerequisite']);
+    });
 
     // Desktop License Management
     Route::prefix('desktop-licenses')->group(function () {

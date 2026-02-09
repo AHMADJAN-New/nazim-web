@@ -1,3 +1,9 @@
+---
+name: ""
+overview: ""
+todos: []
+---
+
 # Add Restore Type Selection Feature
 
 ## Overview
@@ -93,9 +99,6 @@ Add restore type selection to allow users to choose between:
                 }
   ```
 
-
-
-
 - Update `uploadAndRestore()` method to accept restore type:
   ```typescript
                 uploadAndRestore: async (file: File, restoreType: 'database' | 'all' = 'all') => {
@@ -105,8 +108,6 @@ Add restore type selection to allow users to choose between:
                   return apiClient.post('/platform/backups/upload-restore', formData, { headers: {} });
                 }
   ```
-
-
 
 
 ### Translation Keys
@@ -132,8 +133,6 @@ restoreType: {
   databaseAndFilesDescription: string;
 }
 ```
-
-
 
 ## Implementation Flow
 

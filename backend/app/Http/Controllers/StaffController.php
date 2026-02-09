@@ -387,6 +387,8 @@ class StaffController extends Controller
             ];
         }
 
+        // Activity is logged once by Staff model's LogsActivityWithContext trait (no duplicate)
+
         return response()->json($staffArray, 201);
     }
 
@@ -608,6 +610,8 @@ class StaffController extends Controller
             ];
         }
 
+        // Activity is logged once by Staff model's LogsActivityWithContext trait (no duplicate)
+
         return response()->json($staffArray);
     }
 
@@ -650,7 +654,7 @@ class StaffController extends Controller
         // Get accessible organization IDs (user's organization only)
         // Org access is enforced by organization middleware + school scope.
 
-        // Soft delete
+        // Soft delete (activity is logged once by Staff model's LogsActivityWithContext trait)
         $staff->delete();
 
         // CRITICAL: Return 204 No Content with NO body (not JSON)

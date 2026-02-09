@@ -332,6 +332,15 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       description: 'Generate and manage desktop application licenses',
       badge: null,
     },
+    { 
+      name: 'Desktop Releases', 
+      href: '/platform/desktop-releases', 
+      icon: Package,
+      iconColor: 'text-fuchsia-500',
+      iconBg: 'bg-fuchsia-500/10',
+      description: 'Manage Nazim Desktop releases, updates, and prerequisites',
+      badge: null,
+    },
   ];
 
   return (

@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import AboutUs from "./pages/AboutUs";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import DownloadPage from "./pages/DownloadPage";
 import HelpCenter from "./pages/HelpCenter";
 import HelpCenterArticle from "./pages/HelpCenterArticle";
 import MaintenancePage from "./pages/MaintenancePage";
@@ -211,7 +212,9 @@ import {
   TranslationsManagement,
   HelpCenterManagement,
   MaintenanceHistory,
-  DesktopLicenseGeneration
+  DesktopLicenseGeneration,
+  DesktopReleasesManagement,
+  ActivityLogsPage
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -447,6 +450,7 @@ const App = () => (
                   <Route path="/about" element={<AboutUs />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/download" element={<DownloadPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
 
@@ -674,6 +678,11 @@ const App = () => (
                     <Route path="desktop-licenses" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <DesktopLicenseGeneration />
+                      </Suspense>
+                    } />
+                    <Route path="desktop-releases" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <DesktopReleasesManagement />
                       </Suspense>
                     } />
                     <Route path="maintenance" element={<Navigate to="maintenance-history" replace />} />
@@ -964,6 +973,13 @@ const App = () => (
                       <PermissionRoute permission="reports.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ReportTemplatesManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/settings/activity-logs" element={
+                      <PermissionRoute permission="activity_logs.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ActivityLogsPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

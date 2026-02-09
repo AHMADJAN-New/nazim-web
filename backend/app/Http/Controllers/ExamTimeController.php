@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\ExamClass;
 use App\Models\ExamSubject;
 use App\Models\ExamTime;
+use App\Services\ActivityLogService;
 use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 class ExamTimeController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private NotificationService $notificationService
     ) {
     }
@@ -271,6 +273,29 @@ class ExamTimeController extends Controller
             ]);
         }
 
+        // Log exam time creation
+        try {
+            $subjectName = $examTime->examSubject?->subject?->name ?? 'Unknown';
+            $className = $examTime->examClass?->classAcademicYear?->class?->name ?? 'Unknown';
+            $examName = $examTime->exam?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $examTime,
+                description: "Created exam time slot for {$subjectName} in {$className} for exam {$examName}",
+                properties: [
+                    'exam_time_id' => $examTime->id,
+                    'exam_id' => $examTime->exam_id,
+                    'exam_class_id' => $examTime->exam_class_id,
+                    'exam_subject_id' => $examTime->exam_subject_id,
+                    'date' => $examTime->date,
+                    'start_time' => $examTime->start_time,
+                    'end_time' => $examTime->end_time,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam time creation: ' . $e->getMessage());
+        }
+
         return response()->json($examTime, 201);
     }
 
@@ -324,6 +349,11 @@ class ExamTimeController extends Controller
                 'status' => $exam->status
             ], 422);
         }
+
+        // Capture old values before update
+        $oldValues = $examTime->only([
+            'date', 'start_time', 'end_time', 'room_id', 'invigilator_id', 'notes', 'is_locked'
+        ]);
 
         $validated = $request->validate([
             'date' => 'sometimes|required|date',
@@ -417,6 +447,28 @@ class ExamTimeController extends Controller
             ]);
         }
 
+        // Log exam time update
+        try {
+            $subjectName = $examTime->examSubject?->subject?->name ?? 'Unknown';
+            $className = $examTime->examClass?->classAcademicYear?->class?->name ?? 'Unknown';
+            $examName = $examTime->exam?->name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $examTime,
+                description: "Updated exam time slot for {$subjectName} in {$className} for exam {$examName}",
+                properties: [
+                    'exam_time_id' => $examTime->id,
+                    'exam_id' => $examTime->exam_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $examTime->only([
+                        'date', 'start_time', 'end_time', 'room_id', 'invigilator_id', 'notes', 'is_locked'
+                    ]),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam time update: ' . $e->getMessage());
+        }
+
         return response()->json($examTime);
     }
 
@@ -471,6 +523,37 @@ class ExamTimeController extends Controller
             ], 422);
         }
 
+        // Load relationships for logging
+        $examTime->load([
+            'examClass.classAcademicYear.class',
+            'examSubject.subject',
+            'exam'
+        ]);
+
+        // Log exam time deletion
+        try {
+            $subjectName = $examTime->examSubject?->subject?->name ?? 'Unknown';
+            $className = $examTime->examClass?->classAcademicYear?->class?->name ?? 'Unknown';
+            $examName = $examTime->exam?->name ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $examTime,
+                description: "Deleted exam time slot for {$subjectName} in {$className} for exam {$examName}",
+                properties: [
+                    'exam_time_id' => $examTime->id,
+                    'exam_id' => $examTime->exam_id,
+                    'exam_class_id' => $examTime->exam_class_id,
+                    'exam_subject_id' => $examTime->exam_subject_id,
+                    'date' => $examTime->date,
+                    'start_time' => $examTime->start_time,
+                    'end_time' => $examTime->end_time,
+                    'deleted_entity' => $examTime->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam time deletion: ' . $e->getMessage());
+        }
+
         $examTime->delete();
 
         return response()->noContent();
@@ -513,6 +596,7 @@ class ExamTimeController extends Controller
             return response()->json(['error' => 'Exam time not found'], 404);
         }
 
+        $wasLocked = $examTime->is_locked;
         $examTime->is_locked = !$examTime->is_locked;
         $examTime->save();
 
@@ -522,6 +606,28 @@ class ExamTimeController extends Controller
             'room',
             'invigilator'
         ]);
+
+        // Log lock/unlock event
+        try {
+            $subjectName = $examTime->examSubject?->subject?->name ?? 'Unknown';
+            $className = $examTime->examClass?->classAcademicYear?->class?->name ?? 'Unknown';
+            $examName = $examTime->exam?->name ?? 'Unknown';
+            $action = $examTime->is_locked ? 'locked' : 'unlocked';
+            $this->activityLogService->logEvent(
+                subject: $examTime,
+                event: 'exam_time_lock_toggled',
+                description: "{$action} exam time slot for {$subjectName} in {$className} for exam {$examName}",
+                properties: [
+                    'exam_time_id' => $examTime->id,
+                    'exam_id' => $examTime->exam_id,
+                    'was_locked' => $wasLocked,
+                    'is_locked' => $examTime->is_locked,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam time lock toggle: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => $examTime->is_locked ? 'Time slot locked' : 'Time slot unlocked',

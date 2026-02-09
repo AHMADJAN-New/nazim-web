@@ -329,6 +329,7 @@ class ExpenseEntryController extends Controller
                 ]);
             }
 
+            // Activity is logged by ExpenseEntry model's LogsActivityWithContext trait
             return response()->json($entry, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -412,6 +413,9 @@ class ExpenseEntryController extends Controller
             if (!$entry) {
                 return response()->json(['error' => 'Expense entry not found'], 404);
             }
+
+            // Capture old values for logging
+            $oldValues = $entry->only(['account_id', 'expense_category_id', 'currency_id', 'amount', 'date', 'project_id', 'reference_no', 'description', 'paid_to', 'payment_method', 'status']);
 
             $validated = $request->validate([
                 'account_id' => 'sometimes|uuid|exists:finance_accounts,id',
@@ -617,6 +621,7 @@ class ExpenseEntryController extends Controller
                 ]);
             }
 
+            // Activity is logged by ExpenseEntry model's LogsActivityWithContext trait
             return response()->json($entry);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -661,8 +666,12 @@ class ExpenseEntryController extends Controller
                 return response()->json(['error' => 'Expense entry not found'], 404);
             }
 
+            $entryData = $entry->toArray();
+            $amount = number_format((float) $entry->amount, 2);
+            $currencyCode = $entry->currency?->code ?? '';
             $entry->delete();
 
+            // Activity is logged by ExpenseEntry model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('ExpenseEntryController@destroy error: ' . $e->getMessage());

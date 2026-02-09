@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogIn, UserPlus, Rocket, Mail, Languages } from 'lucide-react';
+import { LogIn, UserPlus, Rocket, Mail, Languages, Monitor } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -195,6 +195,16 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => navigate('/download')}
+                className="text-[#0b0b56] hover:bg-[#0b0b56]/10 flex items-center gap-2 flex-shrink-0"
+                aria-label={t('download.navButton')}
+              >
+                <Monitor className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('download.navButton')}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => navigate('/auth')}
                 className="text-[#0b0b56] hover:bg-[#0b0b56]/10 flex items-center gap-2 flex-shrink-0"
                 aria-label={t('nav.login')}
@@ -328,6 +338,12 @@ const Index = () => {
                   <a href="/#testimonials" className="hover:text-[#c9a44d] transition-colors">
                     {t('landing.nav.reviews') || 'Reviews'}
                   </a>
+                </li>
+                <li>
+                  <Link to="/download" className="hover:text-[#c9a44d] transition-colors flex items-center gap-1.5">
+                    <Monitor className="h-3.5 w-3.5" />
+                    {t('download.navButton')}
+                  </Link>
                 </li>
               </ul>
             </div>

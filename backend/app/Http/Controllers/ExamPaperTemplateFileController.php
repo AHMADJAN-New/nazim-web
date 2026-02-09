@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ExamPaperTemplateFile;
+use App\Services\ActivityLogService;
 use App\Services\ExamPaperGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,8 +14,10 @@ class ExamPaperTemplateFileController extends Controller
 {
     protected ExamPaperGeneratorService $generatorService;
 
-    public function __construct(ExamPaperGeneratorService $generatorService)
-    {
+    public function __construct(
+        private ActivityLogService $activityLogService,
+        ExamPaperGeneratorService $generatorService
+    ) {
         $this->generatorService = $generatorService;
     }
 
@@ -170,6 +173,22 @@ class ExamPaperTemplateFileController extends Controller
                 'is_active' => $validated['is_active'] ?? true,
             ]);
 
+            // Log template file creation
+            try {
+                $this->activityLogService->logCreate(
+                    subject: $templateFile,
+                    description: "Created exam paper template file: {$templateFile->name} ({$templateFile->language})",
+                    properties: [
+                        'exam_paper_template_file_id' => $templateFile->id,
+                        'name' => $templateFile->name,
+                        'language' => $templateFile->language,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log template file creation: ' . $e->getMessage());
+            }
+
             return response()->json($templateFile, 201);
         } catch (\Exception $e) {
             Log::error('Error creating template file: ' . $e->getMessage(), [
@@ -215,6 +234,9 @@ class ExamPaperTemplateFileController extends Controller
             return response()->json(['error' => 'Template file not found'], 404);
         }
 
+        // Capture old values before update
+        $oldValues = $templateFile->only(['name', 'description', 'language', 'is_default', 'is_active']);
+
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string|max:1000',
@@ -236,6 +258,22 @@ class ExamPaperTemplateFileController extends Controller
             }
 
             $templateFile->update($validated);
+
+            // Log template file update
+            try {
+                $this->activityLogService->logUpdate(
+                    subject: $templateFile,
+                    description: "Updated exam paper template file: {$templateFile->name} ({$templateFile->language})",
+                    properties: [
+                        'exam_paper_template_file_id' => $templateFile->id,
+                        'old_values' => $oldValues,
+                        'new_values' => $templateFile->only(['name', 'description', 'language', 'is_default', 'is_active']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log template file update: ' . $e->getMessage());
+            }
 
             return response()->json($templateFile);
         } catch (\Exception $e) {
@@ -286,6 +324,23 @@ class ExamPaperTemplateFileController extends Controller
         $inUse = $templateFile->templates()->whereNull('deleted_at')->exists();
         if ($inUse) {
             return response()->json(['error' => 'This template file is in use and cannot be deleted'], 409);
+        }
+
+        // Log template file deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $templateFile,
+                description: "Deleted exam paper template file: {$templateFile->name} ({$templateFile->language})",
+                properties: [
+                    'exam_paper_template_file_id' => $templateFile->id,
+                    'name' => $templateFile->name,
+                    'language' => $templateFile->language,
+                    'deleted_entity' => $templateFile->toArray(),
+                ],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log template file deletion: ' . $e->getMessage());
         }
 
         try {

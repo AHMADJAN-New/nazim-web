@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Grade;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class GradeController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Display a listing of grades
      */
@@ -135,6 +139,23 @@ class GradeController extends Controller
                 'order' => $validated['order'],
                 'is_pass' => $validated['is_pass'],
             ]);
+
+            // Log grade creation
+            try {
+                $this->activityLogService->logCreate(
+                    subject: $grade,
+                    description: "Created grade: {$grade->name_en}",
+                    properties: [
+                        'grade_id' => $grade->id,
+                        'name_en' => $grade->name_en,
+                        'min_percentage' => $grade->min_percentage,
+                        'max_percentage' => $grade->max_percentage,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Failed to log grade creation: ' . $e->getMessage());
+            }
 
             return response()->json($grade, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -304,7 +325,25 @@ class GradeController extends Controller
                 }
             }
 
+            // Capture old values before update
+            $oldValues = $grade->only(['name_en', 'name_ar', 'name_ps', 'name_fa', 'min_percentage', 'max_percentage', 'order', 'is_pass']);
+
             $grade->update($validated);
+
+            // Log grade update
+            try {
+                $this->activityLogService->logUpdate(
+                    subject: $grade,
+                    description: "Updated grade: {$grade->name_en}",
+                    properties: [
+                        'old_values' => $oldValues,
+                        'new_values' => $grade->only(['name_en', 'name_ar', 'name_ps', 'name_fa', 'min_percentage', 'max_percentage', 'order', 'is_pass']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Failed to log grade update: ' . $e->getMessage());
+            }
 
             return response()->json($grade);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -365,7 +404,23 @@ class GradeController extends Controller
                 return response()->json(['error' => 'Grade not found'], 404);
             }
 
+            // Capture data before deletion
+            $gradeData = $grade->toArray();
+            $gradeName = $grade->name_en;
+
             $grade->delete(); // Soft delete
+
+            // Log grade deletion
+            try {
+                $this->activityLogService->logDelete(
+                    subject: $grade,
+                    description: "Deleted grade: {$gradeName}",
+                    properties: ['deleted_grade' => $gradeData],
+                    request: request()
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Failed to log grade deletion: ' . $e->getMessage());
+            }
 
             return response()->noContent();
         } catch (\Exception $e) {

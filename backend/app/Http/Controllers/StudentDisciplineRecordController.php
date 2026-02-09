@@ -7,12 +7,16 @@ use App\Models\StudentDisciplineRecord;
 use App\Models\Profile;
 use App\Http\Requests\StoreStudentDisciplineRecordRequest;
 use App\Http\Requests\UpdateStudentDisciplineRecordRequest;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class StudentDisciplineRecordController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {}
     /**
      * Get accessible organization IDs for the current user
      */
@@ -210,6 +214,24 @@ class StudentDisciplineRecordController extends Controller
             $record->setRelation('resolvedBy', null);
         }
 
+        // Log discipline record creation
+        try {
+            $studentName = $student->full_name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $record,
+                description: "Created discipline record for {$studentName}",
+                properties: [
+                    'record_id' => $record->id,
+                    'student_id' => $studentId,
+                    'incident_type' => $record->incident_type,
+                    'severity' => $record->severity,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log discipline record creation: ' . $e->getMessage());
+        }
+
         return response()->json($record, 201);
     }
 
@@ -254,6 +276,9 @@ class StudentDisciplineRecordController extends Controller
         $validated = $request->validated();
         unset($validated['organization_id'], $validated['school_id'], $validated['student_id'], $validated['created_by']);
 
+        // Capture old values before update
+        $oldValues = $record->only(['incident_type', 'incident_date', 'description', 'severity', 'resolved', 'resolved_date', 'resolved_by']);
+
         $record->update($validated);
         
         // Manually load relationships to avoid UUID type mismatch
@@ -277,6 +302,23 @@ class StudentDisciplineRecordController extends Controller
             }
         } else {
             $record->setRelation('resolvedBy', null);
+        }
+
+        // Log discipline record update
+        try {
+            $student = Student::find($record->student_id);
+            $studentName = $student?->full_name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $record,
+                description: "Updated discipline record for {$studentName}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $record->only(['incident_type', 'incident_date', 'description', 'severity', 'resolved', 'resolved_date', 'resolved_by']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log discipline record update: ' . $e->getMessage());
         }
 
         return response()->json($record);
@@ -320,7 +362,24 @@ class StudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'Discipline record not found'], 404);
         }
 
+        // Capture data before deletion
+        $recordData = $record->toArray();
+        $student = Student::find($record->student_id);
+        $studentName = $student?->full_name ?? 'Unknown';
+
         $record->delete();
+
+        // Log discipline record deletion
+        try {
+            $this->activityLogService->logDelete(
+                subject: $record,
+                description: "Deleted discipline record for {$studentName}",
+                properties: ['deleted_record' => $recordData],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log discipline record deletion: ' . $e->getMessage());
+        }
 
         return response()->noContent();
     }
@@ -347,6 +406,9 @@ class StudentDisciplineRecordController extends Controller
         if (!$record) {
             return response()->json(['error' => 'Discipline record not found'], 404);
         }
+
+        // Capture old values before update
+        $oldValues = $record->only(['resolved', 'resolved_date', 'resolved_by']);
 
         $record->update([
             'resolved' => true,
@@ -375,6 +437,23 @@ class StudentDisciplineRecordController extends Controller
             }
         } else {
             $record->setRelation('resolvedBy', null);
+        }
+
+        // Log discipline record resolution
+        try {
+            $student = Student::find($record->student_id);
+            $studentName = $student?->full_name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $record,
+                description: "Resolved discipline record for {$studentName}",
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $record->only(['resolved', 'resolved_date', 'resolved_by']),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log discipline record resolution: ' . $e->getMessage());
         }
 
         return response()->json($record);

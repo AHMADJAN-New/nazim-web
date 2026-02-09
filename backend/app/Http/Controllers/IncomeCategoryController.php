@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\IncomeCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class IncomeCategoryController extends Controller
@@ -114,6 +115,8 @@ class IncomeCategoryController extends Controller
                 'display_order' => $validated['display_order'] ?? 0,
             ]);
 
+            // Log income category creation
+            // Activity is logged by IncomeCategory model's LogsActivityWithContext trait
             return response()->json($category, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -197,6 +200,9 @@ class IncomeCategoryController extends Controller
                 return response()->json(['error' => 'Income category not found'], 404);
             }
 
+            // Capture old values for logging
+            $oldValues = $category->only(['name', 'code', 'description', 'is_restricted', 'is_active', 'display_order']);
+
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
                 'code' => ['nullable', 'string', 'max:50', Rule::unique('income_categories')->where(function ($query) use ($profile, $currentSchoolId) {
@@ -216,6 +222,8 @@ class IncomeCategoryController extends Controller
 
             $category->update($validated);
 
+            // Log income category update
+            // Activity is logged by IncomeCategory model's LogsActivityWithContext trait
             return response()->json($category);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -266,8 +274,12 @@ class IncomeCategoryController extends Controller
                 return response()->json(['error' => 'Cannot delete category with existing entries'], 409);
             }
 
+            $categoryName = $category->name;
+            $categoryData = $category->toArray();
             $category->delete();
 
+            // Log income category deletion
+            // Activity is logged by IncomeCategory model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('IncomeCategoryController@destroy error: ' . $e->getMessage());

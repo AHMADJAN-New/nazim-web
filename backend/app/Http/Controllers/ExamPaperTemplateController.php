@@ -9,6 +9,7 @@ use App\Models\Exam;
 use App\Models\ExamSubject;
 use App\Models\Subject;
 use App\Models\ClassAcademicYear;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,11 @@ use Illuminate\Validation\Rule;
 
 class ExamPaperTemplateController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     /**
      * Get all exam paper templates for the organization/school
      */
@@ -301,6 +307,26 @@ class ExamPaperTemplateController extends Controller
             'templateFile',
         ]);
 
+        // Log exam paper template creation
+        try {
+            $subjectName = $template->subject?->name ?? 'Unknown';
+            $examName = $template->exam?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $template,
+                description: "Created exam paper template: {$template->title} for subject {$subjectName}" . ($examName !== 'Unknown' ? " in exam {$examName}" : ''),
+                properties: [
+                    'exam_paper_template_id' => $template->id,
+                    'exam_id' => $template->exam_id,
+                    'exam_subject_id' => $template->exam_subject_id,
+                    'subject_id' => $template->subject_id,
+                    'title' => $template->title,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam paper template creation: ' . $e->getMessage());
+        }
+
         return response()->json($template, 201);
     }
 
@@ -402,6 +428,28 @@ class ExamPaperTemplateController extends Controller
             'templateFile',
         ]);
 
+        // Log exam paper template update
+        try {
+            $subjectName = $template->subject?->name ?? 'Unknown';
+            $examName = $template->exam?->name ?? 'Unknown';
+            $this->activityLogService->logUpdate(
+                subject: $template,
+                description: "Updated exam paper template: {$template->title} for subject {$subjectName}" . ($examName !== 'Unknown' ? " in exam {$examName}" : ''),
+                properties: [
+                    'exam_paper_template_id' => $template->id,
+                    'exam_id' => $template->exam_id,
+                    'old_values' => $oldValues,
+                    'new_values' => $template->only([
+                        'exam_id', 'exam_subject_id', 'subject_id', 'class_academic_year_id', 'template_file_id',
+                        'title', 'language', 'total_marks', 'duration_minutes', 'is_default_for_exam_subject', 'is_active'
+                    ]),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam paper template update: ' . $e->getMessage());
+        }
+
         return response()->json($template);
     }
 
@@ -437,6 +485,29 @@ class ExamPaperTemplateController extends Controller
 
         if (!$template) {
             return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        // Load relationships for logging
+        $template->load(['subject', 'exam']);
+
+        // Log exam paper template deletion
+        try {
+            $subjectName = $template->subject?->name ?? 'Unknown';
+            $examName = $template->exam?->name ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $template,
+                description: "Deleted exam paper template: {$template->title} for subject {$subjectName}" . ($examName !== 'Unknown' ? " in exam {$examName}" : ''),
+                properties: [
+                    'exam_paper_template_id' => $template->id,
+                    'exam_id' => $template->exam_id,
+                    'subject_id' => $template->subject_id,
+                    'title' => $template->title,
+                    'deleted_entity' => $template->toArray(),
+                ],
+                request: request()
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log exam paper template deletion: ' . $e->getMessage());
         }
 
         // Soft delete all items first

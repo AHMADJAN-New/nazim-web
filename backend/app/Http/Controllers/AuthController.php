@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Helpers\OrganizationHelper;
 use App\Services\Notifications\NotificationService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     public function __construct(
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private ActivityLogService $activityLogService
     ) {}
     /**
      * Handle GET requests to login endpoint (returns error message)
@@ -163,6 +165,24 @@ class AuthController extends Controller
             ]);
         }
 
+        // Log successful login
+        try {
+            $this->activityLogService->logEvent(
+                description: "User logged in",
+                logName: 'authentication',
+                event: 'login',
+                properties: [
+                    'email' => $authUser->email,
+                    'is_platform_admin' => $isPlatformAdmin,
+                    'organization_id' => $profile->organization_id ?? null,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            // Don't let logging errors break login
+            Log::warning('Failed to log login activity: ' . $e->getMessage());
+        }
+
         return response()->json([
             'user' => [
                 'id' => $authUser->id,
@@ -178,7 +198,21 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $user = $request->user();
         $request->user()->currentAccessToken()->delete();
+
+        // Log logout
+        try {
+            $this->activityLogService->logEvent(
+                description: "User logged out",
+                logName: 'authentication',
+                event: 'logout',
+                request: $request
+            );
+        } catch (\Exception $e) {
+            // Don't let logging errors break logout
+            Log::warning('Failed to log logout activity: ' . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Logged out successfully']);
     }
@@ -313,6 +347,19 @@ class AuthController extends Controller
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        // Log password change
+        try {
+            $this->activityLogService->logEvent(
+                description: "User changed password",
+                logName: 'authentication',
+                event: 'password_changed',
+                request: $request
+            );
+        } catch (\Exception $e) {
+            // Don't let logging errors break password change
+            Log::warning('Failed to log password change activity: ' . $e->getMessage());
         }
 
         return response()->json(['message' => 'Password changed successfully']);

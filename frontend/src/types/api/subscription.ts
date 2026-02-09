@@ -225,6 +225,9 @@ export interface RenewalRequest {
     id: string;
     plan?: SubscriptionPlan;
   };
+  /** When no payment record exists, backend includes expected totals for manual entry */
+  expected_total_afn?: number;
+  expected_total_usd?: number;
   created_at: string;
   updated_at: string;
 }

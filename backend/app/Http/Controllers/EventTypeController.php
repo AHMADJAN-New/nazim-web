@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EventType;
 use App\Models\EventTypeField;
 use App\Models\EventTypeFieldGroup;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,11 @@ use Illuminate\Support\Str;
 
 class EventTypeController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     /**
      * Display a listing of event types
      */
@@ -101,6 +107,22 @@ class EventTypeController extends Controller
             ]);
 
             Log::info("Event type created", ['id' => $eventType->id, 'name' => $eventType->name]);
+
+            // Log event type creation
+            try {
+                $this->activityLogService->logCreate(
+                    subject: $eventType,
+                    description: "Created event type: {$eventType->name}",
+                    properties: [
+                        'event_type_id' => $eventType->id,
+                        'name' => $eventType->name,
+                        'is_active' => $eventType->is_active,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log event type creation: ' . $e->getMessage());
+            }
 
             return response()->json($eventType, 201);
         } catch (\Exception $e) {
@@ -192,8 +214,28 @@ class EventTypeController extends Controller
         ]);
 
         try {
+            // Capture old values before update
+            $oldValues = $eventType->only(['name', 'description', 'is_active']);
+
             $eventType->update($validated);
             Log::info("Event type updated", ['id' => $eventType->id]);
+
+            // Log event type update
+            try {
+                $this->activityLogService->logUpdate(
+                    subject: $eventType,
+                    description: "Updated event type: {$eventType->name}",
+                    properties: [
+                        'event_type_id' => $eventType->id,
+                        'old_values' => $oldValues,
+                        'new_values' => $eventType->only(['name', 'description', 'is_active']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log event type update: ' . $e->getMessage());
+            }
+
             return response()->json($eventType);
         } catch (\Exception $e) {
             Log::error("Failed to update event type: " . $e->getMessage());

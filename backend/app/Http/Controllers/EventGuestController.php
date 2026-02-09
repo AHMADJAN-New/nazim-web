@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventGuest;
 use App\Models\EventGuestFieldValue;
 use App\Models\EventTypeField;
+use App\Services\ActivityLogService;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ use Intervention\Image\Drivers\Gd\Driver;
 class EventGuestController extends Controller
 {
     public function __construct(
+        private ActivityLogService $activityLogService,
         private FileStorageService $fileStorageService
     ) {}
     /**
@@ -273,6 +275,26 @@ class EventGuestController extends Controller
 
             Log::info("Guest created", ['id' => $guest->id, 'event_id' => $eventId]);
 
+            // Log event guest creation
+            try {
+                $eventTitle = $event->title ?? 'Unknown';
+                $this->activityLogService->logCreate(
+                    subject: $guest,
+                    description: "Added guest {$guest->full_name} ({$guest->guest_code}) to event {$eventTitle}",
+                    properties: [
+                        'event_guest_id' => $guest->id,
+                        'event_id' => $guest->event_id,
+                        'guest_code' => $guest->guest_code,
+                        'full_name' => $guest->full_name,
+                        'guest_type' => $guest->guest_type,
+                        'invite_count' => $guest->invite_count,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log event guest creation: ' . $e->getMessage());
+            }
+
             // Return guest with generated codes and photo URL
             return response()->json([
                 'id' => $guest->id,
@@ -415,6 +437,9 @@ class EventGuestController extends Controller
         ]);
 
         try {
+            // Capture old values before update
+            $oldValues = $guest->only(['full_name', 'phone', 'guest_type', 'invite_count', 'status']);
+
             DB::beginTransaction();
 
             // Update core fields
@@ -446,6 +471,25 @@ class EventGuestController extends Controller
             DB::commit();
 
             Log::info("Guest updated", ['id' => $guest->id]);
+
+            // Log event guest update
+            try {
+                $event = Event::find($eventId);
+                $eventTitle = $event?->title ?? 'Unknown';
+                $this->activityLogService->logUpdate(
+                    subject: $guest,
+                    description: "Updated guest {$guest->full_name} ({$guest->guest_code}) for event {$eventTitle}",
+                    properties: [
+                        'event_guest_id' => $guest->id,
+                        'event_id' => $guest->event_id,
+                        'old_values' => $oldValues,
+                        'new_values' => $guest->only(['full_name', 'phone', 'guest_type', 'invite_count', 'status']),
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log event guest update: ' . $e->getMessage());
+            }
 
             return response()->json($guest);
         } catch (\Exception $e) {
@@ -486,6 +530,28 @@ class EventGuestController extends Controller
 
         if (!$guest) {
             return response()->json(['error' => 'Guest not found'], 404);
+        }
+
+        // Load event for logging
+        $event = Event::find($eventId);
+
+        // Log event guest deletion
+        try {
+            $eventTitle = $event?->title ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $guest,
+                description: "Removed guest {$guest->full_name} ({$guest->guest_code}) from event {$eventTitle}",
+                properties: [
+                    'event_guest_id' => $guest->id,
+                    'event_id' => $guest->event_id,
+                    'guest_code' => $guest->guest_code,
+                    'full_name' => $guest->full_name,
+                    'deleted_entity' => $guest->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log event guest deletion: ' . $e->getMessage());
         }
 
         try {

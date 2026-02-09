@@ -290,6 +290,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasOrganizationsPermission = useHasPermissionAndFeature('organizations.read');
   const hasProfilesPermission = useHasPermissionAndFeature('profiles.read');
   const hasUsersPermission = useHasPermissionAndFeature('users.read');
+  const hasActivityLogsPermission = useHasPermissionAndFeature('activity_logs.read');
   const hasWebsiteSettingsPermission = useHasPermissionAndFeature('website_settings.read');
   const hasWebsitePagesPermission = useHasPermissionAndFeature('website_pages.read');
   const hasWebsitePostsPermission = useHasPermissionAndFeature('website_posts.read');
@@ -1614,6 +1615,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "userManagement",
             url: "/admin/users",
             icon: UsersRound,
+          }] : []),
+          ...(hasActivityLogsPermission ? [{
+            title: "Activity Logs",
+            titleKey: "activityLogs.title",
+            url: "/settings/activity-logs",
+            icon: ClipboardList,
           }] : []),
         ],
       },

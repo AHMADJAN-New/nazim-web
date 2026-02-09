@@ -21,6 +21,7 @@ export const SchoolsManagement = lazy(() => import('@/components/settings/School
 export const ReportTemplatesManagement = lazy(() => import('@/components/settings/ReportTemplatesManagement').then(module => ({ default: module.ReportTemplatesManagement })));
 export const ResidencyTypesManagement = lazy(() => import('@/components/settings/ResidencyTypesManagement').then(module => ({ default: module.ResidencyTypesManagement })));
 export const AcademicYearsManagement = lazy(() => import('@/components/settings/AcademicYearsManagement').then(module => ({ default: module.AcademicYearsManagement })));
+export const ActivityLogsPage = lazy(() => import('@/pages/settings/ActivityLogsPage').then(module => ({ default: module.default })));
 export const ExamTypesPage = lazy(() => import('@/pages/settings/ExamTypesPage').then(module => ({ default: module.ExamTypesPage })));
 export const ClassesManagement = lazy(() => import('@/components/settings/ClassesManagement').then(module => ({ default: module.ClassesManagement })));
 export const SubjectsManagement = lazy(() => import('@/components/settings/SubjectsManagement').then(module => ({ default: module.SubjectsManagement })));
@@ -171,6 +172,7 @@ export const LicenseFeesManagement = lazy(() => import('@/platform/pages/admin/L
 export const OrganizationRevenueHistory = lazy(() => import('@/platform/pages/admin/OrganizationRevenueHistory').then(module => ({ default: module.default })));
 export const PlanRequestsPage = lazy(() => import('@/platform/pages/admin/PlanRequestsPage').then(module => ({ default: module.default })));
 export const DesktopLicenseGeneration = lazy(() => import('@/platform/pages/admin/DesktopLicenseGeneration').then(module => ({ default: module.default })));
+export const DesktopReleasesManagement = lazy(() => import('@/platform/pages/admin/DesktopReleasesManagement').then(module => ({ default: module.default })));
 export const LandingOffersPage = lazy(() => import('@/platform/pages/admin/LandingOffersPage').then(module => ({ default: module.default })));
 
 // Re-export loading components for backward compatibility

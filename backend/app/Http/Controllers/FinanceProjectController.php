@@ -145,6 +145,8 @@ class FinanceProjectController extends Controller
 
             $project->load('currency');
 
+            // Log finance project creation
+            // Activity is logged by FinanceProject model's LogsActivityWithContext trait
             return response()->json($project, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -228,6 +230,9 @@ class FinanceProjectController extends Controller
             if (!$project) {
                 return response()->json(['error' => 'Finance project not found'], 404);
             }
+
+            // Capture old values for logging
+            $oldValues = $project->only(['name', 'code', 'currency_id', 'description', 'budget_amount', 'start_date', 'end_date', 'status', 'is_active']);
 
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
@@ -321,6 +326,8 @@ class FinanceProjectController extends Controller
                 ]);
             }
 
+            // Log finance project update
+            // Activity is logged by FinanceProject model's LogsActivityWithContext trait
             return response()->json($project);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -373,8 +380,12 @@ class FinanceProjectController extends Controller
                 return response()->json(['error' => 'Cannot delete project with existing entries'], 409);
             }
 
+            $projectName = $project->name;
+            $projectData = $project->toArray();
             $project->delete();
 
+            // Log finance project deletion
+            // Activity is logged by FinanceProject model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('FinanceProjectController@destroy error: ' . $e->getMessage());

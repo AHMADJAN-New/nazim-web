@@ -6,12 +6,18 @@ use App\Models\Exam;
 use App\Models\ExamStudent;
 use App\Models\ExamClass;
 use App\Models\StudentAdmission;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExamStudentController extends Controller
 {
+    public function __construct(
+        private ActivityLogService $activityLogService
+    ) {
+    }
+
     /**
      * Get all students enrolled in an exam
      */
@@ -174,6 +180,26 @@ class ExamStudentController extends Controller
             'studentAdmission.student'
         ]);
 
+        // Log student enrollment
+        try {
+            $studentName = $examStudent->studentAdmission?->student?->full_name ?? 'Unknown';
+            $examName = $examStudent->exam?->name ?? 'Unknown';
+            $className = $examStudent->examClass?->classAcademicYear?->class?->name ?? 'Unknown';
+            $this->activityLogService->logCreate(
+                subject: $examStudent,
+                description: "Enrolled student {$studentName} in exam {$examName} for class {$className}",
+                properties: [
+                    'exam_student_id' => $examStudent->id,
+                    'exam_id' => $examStudent->exam_id,
+                    'exam_class_id' => $examStudent->exam_class_id,
+                    'student_admission_id' => $examStudent->student_admission_id,
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log student enrollment: ' . $e->getMessage());
+        }
+
         return response()->json($examStudent, 201);
     }
 
@@ -298,6 +324,28 @@ class ExamStudentController extends Controller
             }
 
             DB::commit();
+
+            // Log bulk enrollment event
+            try {
+                $examName = $exam->name ?? 'Unknown';
+                $className = $examClass->classAcademicYear?->class?->name ?? 'Unknown';
+                $this->activityLogService->logEvent(
+                    subject: $exam,
+                    event: 'exam_bulk_enrollment',
+                    description: "Bulk enrolled students in exam {$examName} for class {$className}",
+                    properties: [
+                        'exam_id' => $exam->id,
+                        'exam_class_id' => $examClass->id,
+                        'enrolled_count' => count($enrolled),
+                        'skipped_count' => count($skipped),
+                        'error_count' => count($errors),
+                        'enrolled_ids' => $enrolled,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log bulk enrollment: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'message' => 'Bulk enrollment completed',
@@ -438,6 +486,26 @@ class ExamStudentController extends Controller
 
             DB::commit();
 
+            // Log enroll all event
+            try {
+                $examName = $exam->name ?? 'Unknown';
+                $this->activityLogService->logEvent(
+                    subject: $exam,
+                    event: 'exam_enroll_all',
+                    description: "Enrolled all students in exam {$examName}",
+                    properties: [
+                        'exam_id' => $exam->id,
+                        'total_enrolled' => $totalEnrolled,
+                        'total_skipped' => $totalSkipped,
+                        'total_errors' => $totalErrors,
+                        'class_results' => $classResults,
+                    ],
+                    request: $request
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to log enroll all: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'message' => 'Enrollment completed for all classes',
                 'summary' => [
@@ -517,6 +585,34 @@ class ExamStudentController extends Controller
                 'error' => 'Cannot remove student who has exam results. Delete the results first.',
                 'has_results' => true
             ], 422);
+        }
+
+        // Load relationships for logging
+        $examStudent->load([
+            'exam',
+            'examClass.classAcademicYear.class',
+            'studentAdmission.student'
+        ]);
+
+        // Log student removal
+        try {
+            $studentName = $examStudent->studentAdmission?->student?->full_name ?? 'Unknown';
+            $examName = $examStudent->exam?->name ?? 'Unknown';
+            $className = $examStudent->examClass?->classAcademicYear?->class?->name ?? 'Unknown';
+            $this->activityLogService->logDelete(
+                subject: $examStudent,
+                description: "Removed student {$studentName} from exam {$examName} for class {$className}",
+                properties: [
+                    'exam_student_id' => $examStudent->id,
+                    'exam_id' => $examStudent->exam_id,
+                    'exam_class_id' => $examStudent->exam_class_id,
+                    'student_admission_id' => $examStudent->student_admission_id,
+                    'deleted_entity' => $examStudent->toArray(),
+                ],
+                request: $request
+            );
+        } catch (\Exception $e) {
+            Log::warning('Failed to log student removal: ' . $e->getMessage());
         }
 
         $examStudent->delete();

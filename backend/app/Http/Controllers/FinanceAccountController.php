@@ -148,6 +148,8 @@ class FinanceAccountController extends Controller
 
             $account->load('currency');
 
+            // Log finance account creation
+            // Activity is logged by FinanceAccount model's LogsActivityWithContext trait
             return response()->json($account, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -243,6 +245,9 @@ class FinanceAccountController extends Controller
                 return response()->json(['error' => 'Finance account not found'], 404);
             }
 
+            // Capture old values for logging
+            $oldValues = $account->only(['name', 'code', 'type', 'currency_id', 'description', 'opening_balance', 'is_active']);
+
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
                 'code' => ['nullable', 'string', 'max:50', Rule::unique('finance_accounts')->where(function ($query) use ($profile, $currentSchoolId) {
@@ -318,6 +323,8 @@ class FinanceAccountController extends Controller
                 ]);
             }
 
+            // Log finance account update
+            // Activity is logged by FinanceAccount model's LogsActivityWithContext trait
             return response()->json($account);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -374,8 +381,12 @@ class FinanceAccountController extends Controller
                 return response()->json(['error' => 'Cannot delete account with existing entries'], 409);
             }
 
+            $accountName = $account->name;
+            $accountData = $account->toArray();
             $account->delete();
 
+            // Log finance account deletion
+            // Activity is logged by FinanceAccount model's LogsActivityWithContext trait
             return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('FinanceAccountController@destroy error: ' . $e->getMessage());
