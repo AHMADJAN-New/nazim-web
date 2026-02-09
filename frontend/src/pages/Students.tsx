@@ -25,6 +25,7 @@ import {
   usePrintStudentProfile,
 } from '@/hooks/useStudents';
 import type { Student } from '@/types/domain/student';
+import { useStudentGuardianPictureUpload } from '@/hooks/useStudentGuardianPictureUpload';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -74,6 +75,15 @@ const cleanStudentData = (data: StudentFormData): Partial<Student> => {
   }
   if (data.card_number !== undefined) {
     cleaned.cardNumber = data.card_number || null;
+  }
+  if (data.tazkira_number !== undefined) {
+    cleaned.tazkiraNumber = data.tazkira_number || null;
+  }
+  if (data.phone !== undefined) {
+    cleaned.phone = data.phone || null;
+  }
+  if (data.notes !== undefined) {
+    cleaned.notes = data.notes || null;
   }
   if (data.full_name !== undefined) {
     cleaned.fullName = data.full_name?.trim() || '';
@@ -248,6 +258,7 @@ export function Students() {
   const updateStudent = useUpdateStudent();
   const deleteStudent = useDeleteStudent();
   const pictureUpload = useStudentPictureUpload();
+  const guardianPictureUpload = useStudentGuardianPictureUpload();
   const printProfile = usePrintStudentProfile();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -282,10 +293,18 @@ export function Students() {
       student_status: 'active',
       preferred_language: 'Dari',
       nationality: 'Afghan',
+      tazkira_number: '',
+      phone: '',
+      notes: '',
     },
   });
 
-  const onDialogSubmit = async (values: StudentFormData, isEdit: boolean, pictureFile?: File | null) => {
+  const onDialogSubmit = async (
+    values: StudentFormData,
+    isEdit: boolean,
+    pictureFile?: File | null,
+    guardianPictureFile?: File | null
+  ) => {
     // Use same cleaning as existing submit
     const cleanedData = cleanStudentData(values as StudentFormData);
     // Resolve organizationId respecting multi-tenancy
@@ -466,9 +485,22 @@ export function Students() {
                       schoolId: cleanedData.schoolId || null,
                     });
                   } catch (error) {
-                    // Silently fail - picture upload is optional
                     if (import.meta.env.DEV) {
                       console.warn('Picture upload failed (non-critical):', error);
+                    }
+                  }
+                }
+                if (guardianPictureFile && updatedStudent?.id && organizationId) {
+                  try {
+                    await guardianPictureUpload.mutateAsync({
+                      file: guardianPictureFile,
+                      studentId: updatedStudent.id,
+                      organizationId,
+                      schoolId: cleanedData.schoolId || null,
+                    });
+                  } catch (error) {
+                    if (import.meta.env.DEV) {
+                      console.warn('Guardian picture upload failed (non-critical):', error);
                     }
                   }
                 }
@@ -489,9 +521,22 @@ export function Students() {
               schoolId: cleanedData.schoolId || null,
             });
           } catch (error) {
-            // Silently fail - picture upload is optional
             if (import.meta.env.DEV) {
               console.warn('Picture upload failed (non-critical):', error);
+            }
+          }
+        }
+        if (guardianPictureFile && selectedStudent.id && organizationId) {
+          try {
+            await guardianPictureUpload.mutateAsync({
+              file: guardianPictureFile,
+              studentId: selectedStudent.id,
+              organizationId,
+              schoolId: cleanedData.schoolId || null,
+            });
+          } catch (error) {
+            if (import.meta.env.DEV) {
+              console.warn('Guardian picture upload failed (non-critical):', error);
             }
           }
         }
@@ -513,7 +558,20 @@ export function Students() {
                 if (import.meta.env.DEV) {
                   console.error('Failed to upload picture:', error);
                 }
-                // Don't reject the whole mutation if picture upload fails
+              }
+            }
+            if (guardianPictureFile && createdStudent?.id && organizationId) {
+              try {
+                await guardianPictureUpload.mutateAsync({
+                  file: guardianPictureFile,
+                  studentId: createdStudent.id,
+                  organizationId,
+                  schoolId: cleanedData.schoolId || null,
+                });
+              } catch (error) {
+                if (import.meta.env.DEV) {
+                  console.error('Failed to upload guardian picture:', error);
+                }
               }
             }
             resolve();

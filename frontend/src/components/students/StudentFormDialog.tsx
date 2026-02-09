@@ -13,6 +13,7 @@ import {
     GuardianInformationSection,
     OtherInformationSection,
 } from './StudentFormSections';
+import { StudentGuardianPictureUpload } from './StudentGuardianPictureUpload';
 import { StudentPictureUpload } from './StudentPictureUpload';
 
 import { UsageLimitWarning, useCanCreate } from '@/components/subscription';
@@ -50,7 +51,7 @@ export interface StudentFormDialogProps {
     onOpenChange: (open: boolean) => void;
     student?: Student | null;
     onSuccess?: () => void;
-    onSubmitData?: (values: StudentFormValues, isEdit: boolean, pictureFile?: File | null) => Promise<void> | void;
+    onSubmitData?: (values: StudentFormValues, isEdit: boolean, pictureFile?: File | null, guardianPictureFile?: File | null) => Promise<void> | void;
 }
 
 // Use StudentFormData from shared validation schema
@@ -62,6 +63,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
     const { t } = useLanguage();
     const { data: ac } = useStudentAutocomplete();
     const [selectedPictureFile, setSelectedPictureFile] = useState<File | null>(null);
+    const [selectedGuardianPictureFile, setSelectedGuardianPictureFile] = useState<File | null>(null);
     const pictureUpload = useStudentPictureUpload();
     
     // Check usage limits for students (only relevant when creating new students)
@@ -77,6 +79,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
         defaultValues: {
             admission_no: '',
             card_number: '',
+            tazkira_number: '',
+            phone: '',
+            notes: '',
             full_name: '',
             father_name: '',
             grandfather_name: '',
@@ -138,6 +143,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
     useEffect(() => {
         if (!open) {
             setSelectedPictureFile(null);
+            setSelectedGuardianPictureFile(null);
             setActiveTab('admission');
             return;
         }
@@ -146,6 +152,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
             reset({
                 admission_no: student.admissionNumber || '',
                 card_number: student.cardNumber || '',
+                tazkira_number: student.tazkiraNumber || '',
+                phone: student.phone || '',
+                notes: student.notes || '',
                 full_name: student.fullName || '',
                 father_name: student.fatherName || '',
                 grandfather_name: student.grandfatherName || '',
@@ -188,6 +197,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
             reset({
                 admission_no: '',
                 card_number: '',
+                tazkira_number: '',
+                phone: '',
+                notes: '',
                 full_name: '',
                 father_name: '',
                 grandfather_name: '',
@@ -244,7 +256,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                 const dupes = await duplicateCheck.mutateAsync({
                     full_name: values.full_name,
                     father_name: values.father_name,
-                    tazkira_number: values.guardian_tazkira || null,
+                    tazkira_number: values.tazkira_number || null,
                     card_number: values.card_number || null,
                     admission_no: values.admission_no || null,
                 });
@@ -267,11 +279,12 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
 
         if (onSubmitData) {
             try {
-                // Pass the selected picture file to the parent so it can upload after student creation
-                await onSubmitData(values, isEdit, selectedPictureFile);
+                // Pass the selected picture and guardian picture files to the parent so it can upload after student creation
+                await onSubmitData(values, isEdit, selectedPictureFile, selectedGuardianPictureFile);
                 // Only close dialog and call onSuccess if submission was successful
                 onSuccess?.();
                 setSelectedPictureFile(null);
+                setSelectedGuardianPictureFile(null);
                 onOpenChange(false);
             } catch (error) {
                 // Error handling is done in the parent component (onDialogSubmit)
@@ -286,6 +299,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
             // If no onSubmitData, just close the dialog
             onSuccess?.();
             setSelectedPictureFile(null);
+            setSelectedGuardianPictureFile(null);
             onOpenChange(false);
         }
     };
@@ -346,7 +360,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                         // Map field names to tabs
                         if (['admission_no', 'card_number', 'applying_grade', 'admission_year', 'school_id'].includes(errorField)) {
                             setActiveTab('admission');
-                        } else if (['full_name', 'father_name', 'grandfather_name', 'mother_name', 'gender', 'birth_year', 'birth_date', 'age', 'preferred_language', 'nationality', 'previous_school'].includes(errorField)) {
+                        } else if (['full_name', 'father_name', 'grandfather_name', 'mother_name', 'gender', 'birth_year', 'birth_date', 'age', 'preferred_language', 'nationality', 'previous_school', 'tazkira_number', 'phone'].includes(errorField)) {
                             setActiveTab('personal');
                         } else if (['orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'home_address'].includes(errorField)) {
                             setActiveTab('address');
@@ -466,6 +480,14 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         {errors.father_name && (
                                             <p className="text-sm text-destructive mt-1">{errors.father_name.message}</p>
                                         )}
+                                    </div>
+                                    <div>
+                                        <Label>{t('students.tazkiraNumber') || 'Tazkira Number'}</Label>
+                                        <Input placeholder={t('students.tazkiraNumber') || 'Tazkira Number'} {...register('tazkira_number')} />
+                                    </div>
+                                    <div>
+                                        <Label>{t('students.phone') || 'Phone'}</Label>
+                                        <Input placeholder={t('students.phone') || 'Phone'} {...register('phone')} />
                                     </div>
                                     <div>
                                         <Label>{t('students.grandfatherName') || 'Grandfather Name'}</Label>
@@ -637,8 +659,17 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                 <Input placeholder={t('students.guardianTazkira') || 'Tazkira'} {...register('guardian_tazkira')} />
                                             </div>
                                             <div className="sm:col-span-2">
-                                                <Label>{t('students.guardianPicturePath') || 'Guardian Picture Path'}</Label>
-                                                <Input placeholder={t('students.guardianPicturePath') || 'Storage path'} {...register('guardian_picture_path')} />
+                                                <Label>{t('students.guardianPhoto') || t('students.guardianPicturePath') || 'Guardian Photo'}</Label>
+                                                <div className="mt-2">
+                                                    <StudentGuardianPictureUpload
+                                                        studentId={student?.id}
+                                                        organizationId={student?.organizationId || profile?.organization_id}
+                                                        schoolId={student?.schoolId || formValues.school_id || null}
+                                                        currentGuardianPicturePath={student?.guardianPicturePath || formValues.guardian_picture_path || null}
+                                                        onFileSelected={setSelectedGuardianPictureFile}
+                                                        allowUploadWithoutStudent={!isEdit}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -769,6 +800,14 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                 className="min-h-[80px]"
                                             />
                                         </div>
+                                        <div className="sm:col-span-2 lg:col-span-3">
+                                            <Label>{t('students.notes') || 'Notes'}</Label>
+                                            <Textarea
+                                                placeholder={t('students.notesPlaceholder') || 'Additional notes'}
+                                                {...register('notes')}
+                                                className="min-h-[80px]"
+                                            />
+                                        </div>
                                     </div>
                                     {isEdit && (
                                         <div className="pt-4 border-t">
@@ -891,5 +930,3 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
 });
 
 export default StudentFormDialog;
-
-

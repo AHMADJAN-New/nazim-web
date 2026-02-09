@@ -486,6 +486,8 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
               <InfoRow label={t('students.grandfatherName') || 'Grandfather Name'} value={student.grandfatherName} icon={<User className="w-4 h-4" />} />
               <InfoRow label={t('studentReportCard.motherName') || 'Mother Name'} value={student.motherName} icon={<User className="w-4 h-4" />} />
               <InfoRow label={t('students.gender') || 'Gender'} value={student.gender === 'male' ? t('students.male') : t('students.female')} icon={<User className="w-4 h-4" />} />
+              <InfoRow label={t('students.tazkiraNumber') || 'Tazkira Number'} value={student.tazkiraNumber} icon={<FileText className="w-4 h-4" />} />
+              <InfoRow label={t('students.phone') || 'Phone'} value={student.phone} icon={<Phone className="w-4 h-4" />} />
               <InfoRow label={t('students.birthYear') || 'Birth Year'} value={student.birthYear} icon={<Calendar className="w-4 h-4" />} />
               <InfoRow label={t('students.birthDate') || 'Birth Date'} value={student.birthDate} icon={<Calendar className="w-4 h-4" />} />
               <InfoRow label={t('students.age') || 'Age'} value={student.age ? `${student.age} ${t('events.years') || 'years'}` : null} icon={<Calendar className="w-4 h-4" />} />
@@ -544,6 +546,20 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
               </CardContent>
             </Card>
           </div>
+
+          {student.notes && (
+            <Card className="print-section">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  {t('students.notes') || 'Notes'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm font-medium whitespace-pre-wrap">{student.notes}</p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Guardian and Guarantor Information - Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print-grid print-section">
@@ -833,4 +849,3 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
 });
 
 export default StudentProfileView;
-

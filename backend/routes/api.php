@@ -485,6 +485,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/students/stats', [StudentController::class, 'stats']);
         Route::get('/students/autocomplete', [StudentController::class, 'autocomplete']);
         Route::get('/students/{id}/picture', [StudentController::class, 'getPicture']);
+        Route::get('/students/{id}/guardian-picture', [StudentController::class, 'getGuardianPicture']);
         Route::get('/students/report/export', [StudentReportController::class, 'export']);
         Route::get('/students', [StudentController::class, 'index']);
         Route::get('/students/{student}', [StudentController::class, 'show']);
@@ -495,6 +496,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/student-import/commit', [StudentImportController::class, 'commit'])->middleware('limit:students');
             Route::post('/students/check-duplicates', [StudentController::class, 'checkDuplicates']);
             Route::post('/students/{id}/picture', [StudentController::class, 'uploadPicture']);
+            Route::post('/students/{id}/guardian-picture', [StudentController::class, 'uploadGuardianPicture']);
             Route::post('/students', [StudentController::class, 'store'])->middleware('limit:students');
             Route::put('/students/{student}', [StudentController::class, 'update']);
             Route::delete('/students/{student}', [StudentController::class, 'destroy']);

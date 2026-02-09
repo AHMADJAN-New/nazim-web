@@ -10,6 +10,9 @@ describe('mapStudentApiToDomain', () => {
       school_id: null,
       student_code: null,
       card_number: 'CARD-1',
+      tazkira_number: 'TK-123',
+      phone: '0701',
+      notes: 'Needs extra help',
       admission_no: 'ADM-1',
       full_name: 'Fatima Noor',
       father_name: 'Ali Noor',
@@ -58,6 +61,9 @@ describe('mapStudentApiToDomain', () => {
 
     expect(student.fullName).toBe('Fatima Noor');
     expect(student.guardianName).toBe('Ali Noor');
+    expect(student.tazkiraNumber).toBe('TK-123');
+    expect(student.phone).toBe('0701');
+    expect(student.notes).toBe('Needs extra help');
     expect(student.address).toMatchObject({
       street: 'Street 1',
       city: 'Central',

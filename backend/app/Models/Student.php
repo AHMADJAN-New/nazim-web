@@ -26,6 +26,9 @@ class Student extends Model
         'organization_id',
         'school_id',
         'card_number',
+        'tazkira_number',
+        'phone',
+        'notes',
         'admission_no',
         'student_code',
         'full_name',
@@ -211,4 +214,3 @@ class Student extends Model
         return $query->where('admission_fee_status', $status);
     }
 }
-

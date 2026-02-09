@@ -98,6 +98,8 @@ export interface Student {
   studentCode?: string | null;
   cardNumber?: string | null;
   rollNumber?: string;
+  tazkiraNumber?: string | null;
+  notes?: string | null;
   
   // Personal Information
   fullName: string;
@@ -117,7 +119,7 @@ export interface Student {
   preferredLanguage?: string | null;
   
   // Contact Information
-  phone?: string;
+  phone?: string | null;
   email?: string;
   address: Address;
   homeAddress?: string | null;

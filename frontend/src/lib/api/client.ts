@@ -1860,6 +1860,14 @@ export const studentsApi = {
     });
   },
 
+  uploadGuardianPicture: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post(`/students/${id}/guardian-picture`, formData, {
+      headers: {}, // Let browser set Content-Type with boundary
+    });
+  },
+
   printProfile: async (studentId: string) => {
     return apiClient.requestFile(`/students/${studentId}/print-profile`, { method: 'GET' });
   },

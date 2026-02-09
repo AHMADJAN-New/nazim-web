@@ -18,7 +18,7 @@ class StoreCourseStudentRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $stringKeys = [
-            'admission_no', 'card_number', 'full_name', 'father_name', 'grandfather_name', 'mother_name',
+            'admission_no', 'card_number', 'tazkira_number', 'phone', 'notes', 'full_name', 'father_name', 'grandfather_name', 'mother_name',
             'gender', 'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village',
             'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation',
             'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address', 'zamin_name',
@@ -69,6 +69,9 @@ class StoreCourseStudentRequest extends FormRequest
             'fee_paid_date' => ['nullable', 'date'],
             'fee_amount' => ['nullable', 'numeric', 'min:0'],
             'card_number' => ['nullable', 'string', 'max:255'],
+            'tazkira_number' => ['nullable', 'string', 'max:100'],
+            'phone' => ['nullable', 'string', 'max:25'],
+            'notes' => ['nullable', 'string'],
             'full_name' => ['nullable', 'string', 'max:255'],
             'father_name' => ['nullable', 'string', 'max:255'],
             'grandfather_name' => ['nullable', 'string', 'max:255'],

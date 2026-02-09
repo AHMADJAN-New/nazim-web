@@ -4863,6 +4863,7 @@ export const TRANSLATION_KEYS = [
   "students.guardianInfo",
   "students.guardianName",
   "students.guardianPhone",
+  "students.guardianPhoto",
   "students.guardianPicturePath",
   "students.guardianRelation",
   "students.guardianTazkira",

@@ -133,7 +133,7 @@ class StudentHistoryService
             'admissionYear' => $student->admission_year,
             'status' => $student->student_status,
             'picturePath' => $student->picture_path,
-            'phone' => $student->guardian_phone,
+            'phone' => $student->phone,
             'email' => null,
             'schoolId' => $student->school_id,
             'schoolName' => $student->school?->school_name,
@@ -937,4 +937,3 @@ class StudentHistoryService
         };
     }
 }
-

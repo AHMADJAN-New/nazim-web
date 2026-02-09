@@ -186,6 +186,18 @@ export function CourseStudentDetailsPanel({
                     <p className="text-sm text-muted-foreground">{t('courses.registrationForm.fullName')}</p>
                     <p className="text-sm font-medium">{student.fullName || '-'}</p>
                   </div>
+                  {student.tazkiraNumber && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.tazkiraNumber')}</p>
+                      <p className="text-sm font-medium">{student.tazkiraNumber}</p>
+                    </div>
+                  )}
+                  {student.phone && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('courses.registrationForm.phoneNumber')}</p>
+                      <p className="text-sm font-medium">{student.phone}</p>
+                    </div>
+                  )}
                   {student.fatherName && (
                     <div>
                       <p className="text-sm text-muted-foreground">{t('courses.registrationForm.fatherName')}</p>
@@ -336,6 +348,20 @@ export function CourseStudentDetailsPanel({
                       </div>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {student.notes && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    {t('courses.registrationForm.notes')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm font-medium whitespace-pre-wrap">{student.notes}</p>
                 </CardContent>
               </Card>
             )}
@@ -608,4 +634,3 @@ export function CourseStudentDetailsPanel({
     </Sheet>
   );
 }
-

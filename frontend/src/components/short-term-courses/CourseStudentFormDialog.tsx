@@ -42,6 +42,9 @@ interface StudentFormValues {
   admissionNo?: string;
   registrationDate: string;
   fullName: string;
+  tazkiraNumber: string;
+  phone: string;
+  notes: string;
   fatherName: string;
   grandfatherName: string;
   motherName: string;
@@ -93,6 +96,9 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
       admissionNo: '',
       registrationDate: new Date().toISOString().split('T')[0],
       fullName: '',
+      tazkiraNumber: '',
+      phone: '',
+      notes: '',
       fatherName: '',
       grandfatherName: '',
       motherName: '',
@@ -137,6 +143,9 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
         admissionNo: student.admissionNo || '',
         registrationDate: student.registrationDate || new Date().toISOString().split('T')[0],
         fullName: student.fullName || '',
+        tazkiraNumber: student.tazkiraNumber || '',
+        phone: student.phone || '',
+        notes: student.notes || '',
         fatherName: student.fatherName || '',
         grandfatherName: student.grandfatherName || '',
         motherName: student.motherName || '',
@@ -167,6 +176,9 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
         admissionNo: '',
         registrationDate: new Date().toISOString().split('T')[0],
         fullName: '',
+        tazkiraNumber: '',
+        phone: '',
+        notes: '',
         fatherName: '',
         grandfatherName: '',
         motherName: '',
@@ -209,6 +221,9 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
       admissionNo: values.admissionNo || undefined, // Let backend auto-generate if empty
       registrationDate: values.registrationDate,
       fullName: values.fullName,
+      tazkiraNumber: values.tazkiraNumber || null,
+      phone: values.phone || null,
+      notes: values.notes || null,
       fatherName: values.fatherName || null,
       grandfatherName: values.grandfatherName || null,
       motherName: values.motherName || null,
@@ -363,6 +378,24 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                     {...register('fullName', { required: t('userManagement.fullNameRequired') })}
                   />
                   {errors.fullName && <p className="text-sm text-destructive mt-1">{errors.fullName.message}</p>}
+                </div>
+
+                <div>
+                  <Label htmlFor="tazkiraNumber">{t('courses.registrationForm.tazkiraNumber')}</Label>
+                  <Input
+                    id="tazkiraNumber"
+                    placeholder={t('courses.registrationForm.tazkiraNumberPlaceholder')}
+                    {...register('tazkiraNumber')}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="phone">{t('courses.registrationForm.phoneNumber')}</Label>
+                  <Input
+                    id="phone"
+                    placeholder={t('courses.registrationForm.phoneNumberPlaceholder')}
+                    {...register('phone')}
+                  />
                 </div>
 
                 <div>
@@ -619,6 +652,15 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                     step={0.01}
                     placeholder={t('courses.registrationForm.feeAmountPlaceholder')}
                     {...register('feeAmount', { valueAsNumber: true })}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="notes">{t('courses.registrationForm.notes')}</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder={t('courses.registrationForm.notesPlaceholder')}
+                    {...register('notes')}
                   />
                 </div>
               </div>

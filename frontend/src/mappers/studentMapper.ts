@@ -83,6 +83,7 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
     admissionNumber: api.admission_no,
     studentCode: api.student_code,
     cardNumber: api.card_number,
+    tazkiraNumber: api.tazkira_number,
     rollNumber: undefined,
     
     // Personal Information
@@ -103,7 +104,7 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
     preferredLanguage: api.preferred_language,
     
     // Contact Information
-    phone: api.guardian_phone || undefined,
+    phone: api.phone ?? null,
     email: undefined,
     address,
     homeAddress: api.home_address,
@@ -149,6 +150,7 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
     
     // Financial Information
     familyIncome: api.family_income,
+    notes: api.notes,
     
     // Documents and Media
     profilePhoto: api.picture_path || undefined,
@@ -202,6 +204,9 @@ export function mapStudentDomainToInsert(domain: Partial<Student>): StudentApi.S
     organization_id: domain.organizationId || null,
     school_id: domain.schoolId || null,
     card_number: domain.cardNumber || null,
+    tazkira_number: domain.tazkiraNumber || null,
+    phone: domain.phone || null,
+    notes: domain.notes || null,
     grandfather_name: domain.grandfatherName || null,
     mother_name: domain.motherName || null,
     birth_year: domain.birthYear || null,

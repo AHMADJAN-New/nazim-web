@@ -116,7 +116,9 @@ class StudentController extends Controller
                   ->orWhere('father_name', 'ilike', "%{$search}%")
                   ->orWhere('admission_no', 'ilike', "%{$search}%")
                   ->orWhere('guardian_name', 'ilike', "%{$search}%")
-                  ->orWhere('guardian_phone', 'ilike', "%{$search}%");
+                  ->orWhere('guardian_phone', 'ilike', "%{$search}%")
+                  ->orWhere('phone', 'ilike', "%{$search}%")
+                  ->orWhere('tazkira_number', 'ilike', "%{$search}%");
             });
         }
 
@@ -409,7 +411,7 @@ class StudentController extends Controller
         $updateData = [];
         foreach ($validated as $key => $value) {
             // Skip null values unless they're explicitly being set to null for nullable fields
-            if ($value === null && !in_array($key, ['school_id', 'card_number', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date', 'age', 'admission_year', 'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address', 'applying_grade', 'disability_status', 'emergency_contact_name', 'emergency_contact_phone', 'family_income', 'picture_path'])) {
+            if ($value === null && !in_array($key, ['school_id', 'card_number', 'tazkira_number', 'phone', 'notes', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date', 'age', 'admission_year', 'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address', 'applying_grade', 'disability_status', 'emergency_contact_name', 'emergency_contact_phone', 'family_income', 'picture_path'])) {
                 continue;
             }
 
@@ -799,6 +801,158 @@ class StudentController extends Controller
     }
 
     /**
+     * Upload student guardian picture
+     */
+    public function uploadGuardianPicture(Request $request, string $id)
+    {
+        try {
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            $profile = DB::table('profiles')->where('id', $user->id)->first();
+            if (!$profile) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
+
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+            $student = Student::whereNull('deleted_at')
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
+
+            if (!$student) {
+                return response()->json(['error' => 'Student not found'], 404);
+            }
+
+            if (!$request->hasFile('file')) {
+                return response()->json(['error' => 'No file provided'], 422);
+            }
+
+            $file = $request->file('file');
+            if (!$file) {
+                return response()->json(['error' => 'No file provided'], 422);
+            }
+
+            $fileSize = $file->getSize();
+            if ($fileSize > 5120 * 1024) {
+                return response()->json(['error' => 'File size exceeds maximum allowed size of 5MB'], 422);
+            }
+
+            if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
+                return response()->json(['error' => 'The file must be an image (jpg, jpeg, png, gif, or webp).'], 422);
+            }
+
+            if ($student->guardian_picture_path) {
+                $this->fileStorageService->deleteFile($student->guardian_picture_path);
+            }
+
+            $path = $this->fileStorageService->storeStudentGuardianPicture(
+                $file,
+                $student->organization_id,
+                $id,
+                $student->school_id
+            );
+
+            $student->update(['guardian_picture_path' => $path]);
+
+            Log::info('Student Guardian Picture Upload', [
+                'student_id' => $id,
+                'user_id' => $user->id,
+                'guardian_picture_path' => $path,
+            ]);
+
+            return response()->json([
+                'message' => 'Guardian picture uploaded successfully',
+                'guardian_picture_path' => $path,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error uploading student guardian picture: ' . $e->getMessage(), [
+                'student_id' => $id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to upload guardian picture: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get student guardian picture
+     */
+    public function getGuardianPicture(Request $request, string $id)
+    {
+        try {
+            $user = $request->user();
+            if (!$user) {
+                abort(401, 'Unauthorized');
+            }
+
+            $profile = DB::table('profiles')->where('id', $user->id)->first();
+            if (!$profile) {
+                abort(404, 'Profile not found');
+            }
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            try {
+                if (!$user->hasPermissionTo('students.read')) {
+                    return response()->json([
+                        'error' => 'Access Denied',
+                        'message' => 'You do not have permission to access this resource.',
+                        'required_permission' => 'students.read'
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for students.read: " . $e->getMessage());
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'students.read'
+                ], 403);
+            }
+
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+            $student = Student::whereNull('deleted_at')
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
+
+            if (!$student) {
+                abort(404, 'Student not found');
+            }
+            if (!$student->guardian_picture_path) {
+                abort(404, 'Guardian picture not found');
+            }
+            if (!$this->fileStorageService->fileExists($student->guardian_picture_path)) {
+                Log::warning('Student guardian picture file not found on disk', [
+                    'student_id' => $id,
+                    'guardian_picture_path' => $student->guardian_picture_path,
+                ]);
+                abort(404, 'Guardian picture file not found');
+            }
+
+            $file = $this->fileStorageService->getFile($student->guardian_picture_path);
+            if (!$file || empty($file)) {
+                abort(404, 'Guardian picture file is empty');
+            }
+
+            $mimeType = $this->fileStorageService->getMimeTypeFromExtension($student->guardian_picture_path);
+
+            return response($file, 200)
+                ->header('Content-Type', $mimeType)
+                ->header('Content-Disposition', 'inline; filename="' . basename($student->guardian_picture_path) . '"')
+                ->header('Cache-Control', 'private, max-age=3600');
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Error getting student guardian picture', [
+                'student_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            abort(500, 'Error getting guardian picture: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Get distinct values for autocomplete
      */
     public function autocomplete(Request $request)
@@ -902,7 +1056,7 @@ class StudentController extends Controller
             $baseQuery = Student::whereNull('deleted_at')
                 ->whereIn('organization_id', $orgIds)
                 ->where('school_id', $currentSchoolId)
-                ->select('id', 'full_name', 'father_name', 'guardian_tazkira', 'card_number', 'admission_no', 'orig_province', 'admission_year', 'created_at');
+                ->select('id', 'full_name', 'father_name', 'tazkira_number', 'card_number', 'admission_no', 'orig_province', 'admission_year', 'created_at');
 
             // Exact: name + father_name
             $exactMatches = (clone $baseQuery)
@@ -914,7 +1068,7 @@ class StudentController extends Controller
                     'id' => $match->id,
                     'full_name' => $match->full_name ?? null,
                     'father_name' => $match->father_name ?? null,
-                    'tazkira_number' => $match->guardian_tazkira ?? null,
+                    'tazkira_number' => $match->tazkira_number ?? null,
                     'card_number' => $match->card_number ?? null,
                     'admission_no' => $match->admission_no ?? null,
                     'orig_province' => $match->orig_province ?? null,
@@ -927,14 +1081,14 @@ class StudentController extends Controller
             // Tazkira number match
             if ($request->tazkira_number) {
                 $tazkiraMatches = (clone $baseQuery)
-                    ->where('guardian_tazkira', $request->tazkira_number)
+                    ->where('tazkira_number', $request->tazkira_number)
                     ->get();
                 foreach ($tazkiraMatches as $match) {
                     $results[] = [
                         'id' => $match->id,
                         'full_name' => $match->full_name ?? null,
                         'father_name' => $match->father_name ?? null,
-                        'tazkira_number' => $match->guardian_tazkira ?? null,
+                        'tazkira_number' => $match->tazkira_number ?? null,
                         'card_number' => $match->card_number ?? null,
                         'admission_no' => $match->admission_no ?? null,
                         'orig_province' => $match->orig_province ?? null,
@@ -955,7 +1109,7 @@ class StudentController extends Controller
                         'id' => $match->id,
                         'full_name' => $match->full_name ?? null,
                         'father_name' => $match->father_name ?? null,
-                        'tazkira_number' => $match->guardian_tazkira ?? null,
+                        'tazkira_number' => $match->tazkira_number ?? null,
                         'card_number' => $match->card_number ?? null,
                         'admission_no' => $match->admission_no ?? null,
                         'orig_province' => $match->orig_province ?? null,
@@ -976,7 +1130,7 @@ class StudentController extends Controller
                         'id' => $match->id,
                         'full_name' => $match->full_name ?? null,
                         'father_name' => $match->father_name ?? null,
-                        'tazkira_number' => $match->guardian_tazkira ?? null,
+                        'tazkira_number' => $match->tazkira_number ?? null,
                         'card_number' => $match->card_number ?? null,
                         'admission_no' => $match->admission_no ?? null,
                         'orig_province' => $match->orig_province ?? null,
@@ -997,7 +1151,7 @@ class StudentController extends Controller
                     'id' => $match->id,
                     'full_name' => $match->full_name ?? null,
                     'father_name' => $match->father_name ?? null,
-                    'tazkira_number' => $match->guardian_tazkira ?? null,
+                    'tazkira_number' => $match->tazkira_number ?? null,
                     'card_number' => $match->card_number ?? null,
                     'admission_no' => $match->admission_no ?? null,
                     'orig_province' => $match->orig_province ?? null,
@@ -1392,6 +1546,3 @@ class StudentController extends Controller
         return round($size, 2) . ' ' . $units[$unitIndex];
     }
 }
-
-
-

@@ -158,16 +158,20 @@ class PdfReportService
         }
 
         // Set Puppeteer cache directory (required for Browsershot)
-        $puppeteerCacheDir = env('PUPPETEER_CACHE_DIR') ?: getenv('PUPPETEER_CACHE_DIR') ?: '/var/www/.cache/puppeteer';
+        $defaultCacheDir = PHP_OS_FAMILY === 'Windows'
+            ? (getenv('USERPROFILE') ?: getenv('HOMEDRIVE') . getenv('HOMEPATH')) . DIRECTORY_SEPARATOR . '.cache' . DIRECTORY_SEPARATOR . 'puppeteer'
+            : '/var/www/.cache/puppeteer';
+        $puppeteerCacheDir = env('PUPPETEER_CACHE_DIR') ?: getenv('PUPPETEER_CACHE_DIR') ?: $defaultCacheDir;
         if (is_dir($puppeteerCacheDir)) {
             \Log::info("Using Puppeteer cache directory: {$puppeteerCacheDir}");
-            // Set environment variable for Puppeteer
             putenv("PUPPETEER_CACHE_DIR={$puppeteerCacheDir}");
         } else {
             \Log::warning("Puppeteer cache directory not found at {$puppeteerCacheDir}, creating it");
             @mkdir($puppeteerCacheDir, 0775, true);
-            @chown($puppeteerCacheDir, 'www-data');
-            @chmod($puppeteerCacheDir, 0775);
+            if (PHP_OS_FAMILY !== 'Windows') {
+                @chown($puppeteerCacheDir, 'www-data');
+                @chmod($puppeteerCacheDir, 0775);
+            }
             putenv("PUPPETEER_CACHE_DIR={$puppeteerCacheDir}");
         }
 
@@ -320,63 +324,86 @@ HTML;
 
     /**
      * Find Chrome/Chromium executable path
-     * Checks puppeteer cache first, then system paths
-     * 
+     * Checks puppeteer cache first, then system paths.
+     * Supports Linux and Windows.
+     *
      * Priority:
      * 1. Environment variable PUPPETEER_CHROME_PATH
-     * 2. /home/nazim/.cache/puppeteer (where it was installed)
-     * 3. Other possible cache directories
-     * 4. System-installed Chrome/Chromium
+     * 2. Puppeteer cache (e.g. ~/.cache/puppeteer or %USERPROFILE%\.cache\puppeteer)
+     * 3. System-installed Chrome/Chromium
      */
     private function findChromePath(): ?string
     {
-        // Check environment variable first (allows override)
-        // Use env() helper for Laravel, fallback to getenv() for CLI
         $envChromePath = env('PUPPETEER_CHROME_PATH') ?: getenv('PUPPETEER_CHROME_PATH');
-        if ($envChromePath && is_file($envChromePath) && is_executable($envChromePath)) {
-            \Log::info("Using Chrome from PUPPETEER_CHROME_PATH: {$envChromePath}");
-            return $envChromePath;
+        if ($envChromePath && is_file($envChromePath)) {
+            if (PHP_OS_FAMILY === 'Windows' || is_executable($envChromePath)) {
+                \Log::info("Using Chrome from PUPPETEER_CHROME_PATH: {$envChromePath}");
+                return $envChromePath;
+            }
         }
-        
-        // Check multiple possible locations for puppeteer cache
-        $possibleCacheDirs = [
-            '/home/nazim/.cache/puppeteer',  // User home directory (where it was installed)
-            '/var/www/.cache/puppeteer',      // Web server directory
-            getenv('HOME') . '/.cache/puppeteer' ?: null,
-            '/root/.cache/puppeteer',         // Root user
-        ];
-        
-        // Filter out null values and non-existent directories
-        $possibleCacheDirs = array_filter($possibleCacheDirs, function($dir) {
-            return $dir !== null && is_dir($dir);
-        });
-        
-        // Look for chrome-headless-shell in puppeteer cache
-        $chromePaths = [];
-        
-        foreach ($possibleCacheDirs as $puppeteerCache) {
-            // Try chrome-headless-shell first (newer, lighter)
-            $chromePaths[] = $puppeteerCache . '/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell';
-            // Fallback to full Chrome
-            $chromePaths[] = $puppeteerCache . '/chrome/linux-*/chrome-linux64/chrome';
-        }
-        
-        // Add system paths
-        $chromePaths = array_merge($chromePaths, [
-            '/usr/bin/google-chrome',
-            '/usr/bin/chromium',
-            '/usr/bin/chromium-browser',
-            '/snap/bin/chromium',
-            '/usr/bin/google-chrome-stable',
-        ]);
 
-        foreach ($chromePaths as $pattern) {
+        $sep = DIRECTORY_SEPARATOR;
+        $possibleCacheDirs = [];
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            $userProfile = getenv('USERPROFILE') ?: (getenv('HOMEDRIVE') . getenv('HOMEPATH'));
+            if ($userProfile) {
+                $possibleCacheDirs[] = $userProfile . $sep . '.cache' . $sep . 'puppeteer';
+            }
+            $possibleCacheDirs[] = getenv('PUPPETEER_CACHE_DIR') ?: null;
+        } else {
+            $possibleCacheDirs = [
+                '/home/nazim/.cache/puppeteer',
+                '/var/www/.cache/puppeteer',
+                getenv('HOME') ? getenv('HOME') . '/.cache/puppeteer' : null,
+                '/root/.cache/puppeteer',
+            ];
+        }
+
+        $possibleCacheDirs = array_filter($possibleCacheDirs, fn ($dir) => $dir !== null && $dir !== '' && is_dir($dir));
+
+        $chromePathPatterns = [];
+        foreach ($possibleCacheDirs as $cache) {
+            if (PHP_OS_FAMILY === 'Windows') {
+                $chromePathPatterns[] = $cache . $sep . 'chrome-headless-shell' . $sep . 'win32-*' . $sep . 'chrome-headless-shell' . $sep . 'chrome-headless-shell.exe';
+                $chromePathPatterns[] = $cache . $sep . 'chrome-headless-shell' . $sep . 'win64-*' . $sep . 'chrome-headless-shell' . $sep . 'chrome-headless-shell.exe';
+                $chromePathPatterns[] = $cache . $sep . 'chrome' . $sep . 'win64-*' . $sep . 'chrome-win64' . $sep . 'chrome.exe';
+                $chromePathPatterns[] = $cache . $sep . 'chrome' . $sep . 'win32-*' . $sep . 'chrome-win' . $sep . 'chrome.exe';
+            } else {
+                $chromePathPatterns[] = $cache . '/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell';
+                $chromePathPatterns[] = $cache . '/chrome/linux-*/chrome-linux64/chrome';
+            }
+        }
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            $localAppData = getenv('LOCALAPPDATA');
+            $systemChromePaths = [
+                'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+                'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            ];
+            if ($localAppData) {
+                $systemChromePaths[] = $localAppData . $sep . 'Google' . $sep . 'Chrome' . $sep . 'Application' . $sep . 'chrome.exe';
+            }
+            $chromePathPatterns = array_merge($chromePathPatterns, $systemChromePaths);
+        } else {
+            $chromePathPatterns = array_merge($chromePathPatterns, [
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium',
+                '/usr/bin/chromium-browser',
+                '/snap/bin/chromium',
+                '/usr/bin/google-chrome-stable',
+            ]);
+        }
+
+        foreach ($chromePathPatterns as $pattern) {
+            if ($pattern === null || $pattern === '') {
+                continue;
+            }
             $matches = glob($pattern);
-            if (!empty($matches)) {
-                // Sort matches to get the latest version first
+            if (! empty($matches)) {
                 rsort($matches);
                 foreach ($matches as $chromePath) {
-                    if (is_file($chromePath) && is_executable($chromePath)) {
+                    if (is_file($chromePath) && (PHP_OS_FAMILY === 'Windows' || is_executable($chromePath))) {
                         \Log::info("Found Chrome at: {$chromePath}");
                         return $chromePath;
                     }
@@ -384,8 +411,8 @@ HTML;
             }
         }
 
-        \Log::warning("Chrome not found in any of the checked paths", [
-            'checked_paths' => $chromePaths,
+        \Log::warning('Chrome not found in any of the checked paths', [
+            'checked_paths' => $chromePathPatterns,
             'possible_cache_dirs' => array_values($possibleCacheDirs),
             'env_chrome_path' => $envChromePath,
         ]);

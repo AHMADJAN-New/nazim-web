@@ -450,6 +450,18 @@ export function StudentProfilePrint({
               <td className="print-label">{printText.birthYear}</td>
               <td className="print-value">{displayValue(student.birth_year)}</td>
             </tr>
+            <tr>
+              <td className="print-label">{printText.tazkiraNumber}</td>
+              <td className="print-value">{displayValue(student.tazkiraNumber)}</td>
+              <td className="print-label">{t('students.phone') || 'Phone'}</td>
+              <td className="print-value">{displayValue(student.phone)}</td>
+            </tr>
+            <tr>
+              <td className="print-label">{t('students.birthDate') || 'Birth Date'}</td>
+              <td className="print-value">{displayValue(student.birthDate)}</td>
+              <td className="print-label"></td>
+              <td className="print-value"></td>
+            </tr>
             {student.mother_name && (
               <tr>
                 <td className="print-label">{t('studentReportCard.motherName') || 'Mother Name'}</td>
@@ -576,6 +588,13 @@ export function StudentProfilePrint({
         </table>
       </div>
 
+      {student.notes && (
+        <div className="print-section">
+          <div className="print-section-title">{t('students.notes') || 'Notes'}</div>
+          <div style={{ fontSize: '12pt', whiteSpace: 'pre-wrap' }}>{student.notes}</div>
+        </div>
+      )}
+
       {/* Page Break for Second Page */}
       <div className="page-break"></div>
 
@@ -648,4 +667,3 @@ export function StudentProfilePrint({
     </div>
   );
 }
-

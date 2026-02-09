@@ -17,6 +17,9 @@ export interface CourseStudent {
   fee_paid_date?: string | null;
   fee_amount?: number | null;
   full_name: string;
+  tazkira_number?: string | null;
+  phone?: string | null;
+  notes?: string | null;
   father_name?: string | null;
   grandfather_name?: string | null;
   mother_name?: string | null;
@@ -52,6 +55,9 @@ export interface CourseStudentInsert {
   fee_paid?: boolean;
   fee_amount?: number | null;
   full_name: string;
+  tazkira_number?: string | null;
+  phone?: string | null;
+  notes?: string | null;
   guardian_name?: string | null;
   guardian_phone?: string | null;
   home_address?: string | null;

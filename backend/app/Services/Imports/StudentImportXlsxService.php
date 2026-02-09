@@ -34,6 +34,9 @@ class StudentImportXlsxService
         // Optional
         'school_id' => ['label' => 'School ID (ignored - auto)'],
         'card_number' => ['label' => 'Card Number'],
+        'tazkira_number' => ['label' => 'Tazkira Number'],
+        'phone' => ['label' => 'Phone Number'],
+        'notes' => ['label' => 'Notes'],
         'grandfather_name' => ['label' => 'Grandfather Name'],
         'mother_name' => ['label' => 'Mother Name'],
         'birth_year' => ['label' => 'Birth Year'],
@@ -485,5 +488,4 @@ class StudentImportXlsxService
         }
     }
 }
-
 

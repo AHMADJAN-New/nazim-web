@@ -264,8 +264,10 @@ const StudentReport = () => {
       birth_date: student.birthDate ? new Date(student.birthDate).toISOString().split('T')[0] : '—',
       nationality: student.nationality || '—',
       address: student.homeAddress || '—',
-      phone: student.guardianPhone || '—',
+      phone: student.phone || '—',
+      tazkira_number: student.tazkiraNumber || '—',
       guardian: student.guardianName || '—',
+      notes: student.notes || '—',
       applying_grade: student.applyingGrade || '—',
       school: schools?.find(s => s.id === student.schoolId)?.schoolName || '—',
       admission_year: student.admissionYear || '—',
@@ -380,6 +382,26 @@ const StudentReport = () => {
       },
     },
     {
+      accessorKey: 'tazkiraNumber',
+      header: t('students.tazkiraNumber') || 'Tazkira Number',
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.tazkiraNumber || '—'}</div>
+      ),
+      meta: {
+        className: 'hidden lg:table-cell',
+      },
+    },
+    {
+      accessorKey: 'phone',
+      header: t('students.phone') || 'Phone',
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.phone || '—'}</div>
+      ),
+      meta: {
+        className: 'hidden lg:table-cell',
+      },
+    },
+    {
       accessorKey: 'status',
       header: t('events.status') || 'Status',
       cell: ({ row }) => (
@@ -453,7 +475,8 @@ const StudentReport = () => {
               { key: 'birth_date', label: t('students.birthDate') || 'Birth Date' },
               { key: 'nationality', label: t('students.nationality') || 'Nationality' },
               { key: 'address', label: t('events.address') || 'Address' },
-              { key: 'phone', label: t('events.phone') || 'Phone' },
+              { key: 'phone', label: t('students.phone') || 'Phone' },
+              { key: 'tazkira_number', label: t('students.tazkiraNumber') || 'Tazkira Number' },
               { key: 'guardian', label: t('students.guardian') || 'Guardian' },
               { key: 'applying_grade', label: t('students.applyingGrade') || 'Applying Grade' },
               { key: 'school', label: t('students.school') || 'School' },
@@ -465,6 +488,7 @@ const StudentReport = () => {
               { key: 'orphan', label: t('studentReport.isOrphan') || 'Orphan' },
               { key: 'disability', label: t('studentReport.disabilityStatus') || 'Disability' },
               { key: 'emergency_contact', label: t('studentReport.emergencyContact') || 'Emergency Contact' },
+              { key: 'notes', label: t('students.notes') || 'Notes' },
             ]}
             reportKey="student_list"
             title={t('nav.studentReports') || 'Students Report'}

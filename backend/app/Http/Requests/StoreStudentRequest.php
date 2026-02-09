@@ -67,6 +67,9 @@ class StoreStudentRequest extends FormRequest
             'organization_id' => 'nullable|uuid|exists:organizations,id',
             'school_id' => 'nullable|uuid|exists:school_branding,id',
             'card_number' => 'nullable|string|max:50',
+            'tazkira_number' => 'nullable|string|max:100',
+            'phone' => 'nullable|string|max:25',
+            'notes' => 'nullable|string',
             'grandfather_name' => 'nullable|string|max:150',
             'mother_name' => 'nullable|string|max:150',
             'birth_year' => 'nullable|string|max:10',
@@ -111,7 +114,7 @@ class StoreStudentRequest extends FormRequest
     {
         // Convert empty strings to null for optional fields
         $fieldsToClean = [
-            'card_number', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date',
+            'card_number', 'tazkira_number', 'phone', 'notes', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date',
             'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district',
             'curr_village', 'nationality', 'preferred_language', 'previous_school',
             'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira',
@@ -145,4 +148,3 @@ class StoreStudentRequest extends FormRequest
         }
     }
 }
-

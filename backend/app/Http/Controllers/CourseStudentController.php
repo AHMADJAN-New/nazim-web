@@ -690,6 +690,9 @@ class CourseStudentController extends Controller
             'father_name',
             'grandfather_name',
             'mother_name',
+            'tazkira_number',
+            'phone',
+            'notes',
             'gender',
             'birth_year',
             'birth_date',
@@ -1029,7 +1032,7 @@ class CourseStudentController extends Controller
     private function normalizeCourseStudentData(array $data): array
     {
         $stringColumns = [
-            'admission_no', 'card_number', 'full_name', 'father_name', 'grandfather_name', 'mother_name',
+            'admission_no', 'card_number', 'tazkira_number', 'phone', 'notes', 'full_name', 'father_name', 'grandfather_name', 'mother_name',
             'gender', 'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village',
             'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation',
             'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address', 'zamin_name',

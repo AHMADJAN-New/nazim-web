@@ -158,11 +158,15 @@ const CourseStudentReports = () => {
     { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission No' },
     { key: 'guardian_name', label: t('students.guardianName') || 'Guardian Name' },
     { key: 'guardian_phone', label: t('events.phone') || 'Phone' },
+    { key: 'student_phone', label: t('courses.registrationForm.phoneNumber') || 'Phone Number' },
+    { key: 'tazkira_number', label: t('courses.registrationForm.tazkiraNumber') || 'Tazkira Number' },
+    { key: 'birth_date', label: t('courses.registrationForm.birthDate') || 'Birth Date' },
     { key: 'birth_year', label: t('students.birthYear') || 'Birth Year' },
     { key: 'age', label: t('students.age') || 'Age' },
     { key: 'registration_date', label: t('courses.registration') || 'Registered' },
     { key: 'status', label: t('events.statusLabel') || 'Status' },
     { key: 'course_name', label: t('courses.courseName') || 'Course' },
+    { key: 'notes', label: t('courses.registrationForm.notes') || 'Notes' },
   ], [t]);
 
   // Transform data for report
@@ -175,11 +179,15 @@ const CourseStudentReports = () => {
         admission_no: student.admissionNo || '-',
         guardian_name: student.guardianName || '-',
         guardian_phone: student.guardianPhone || '-',
+        student_phone: student.phone || '-',
+        tazkira_number: student.tazkiraNumber || '-',
+        birth_date: student.birthDate ? formatDate(student.birthDate) : '-',
         birth_year: student.birthYear?.toString() || '-',
         age: student.age?.toString() || '-',
         registration_date: student.registrationDate ? formatDate(student.registrationDate) : '-',
         status: student.completionStatus || '-',
         course_name: course?.name || '-',
+        notes: student.notes || '-',
       };
     });
   }, [courses]);

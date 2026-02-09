@@ -730,7 +730,7 @@ class StudentImportService
 
         // Optional fields: pass through known keys if present
         $optional = [
-            'card_number', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date', 'age', 'admission_year',
+            'card_number', 'tazkira_number', 'phone', 'notes', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date', 'age', 'admission_year',
             'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village',
             'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation', 'guardian_phone',
             'guardian_tazkira', 'home_address', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address',
@@ -857,5 +857,4 @@ class StudentImportService
         return $data;
     }
 }
-
 

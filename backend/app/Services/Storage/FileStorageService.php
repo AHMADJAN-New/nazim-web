@@ -93,6 +93,25 @@ class FileStorageService
         return $filePath;
     }
 
+    /**
+     * Store student guardian picture (PRIVATE)
+     * CRITICAL: Student files are school-scoped and MUST include schoolId
+     */
+    public function storeStudentGuardianPicture(
+        UploadedFile $file,
+        string $organizationId,
+        string $studentId,
+        string $schoolId
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_STUDENTS, $studentId, 'guardians');
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
     // ==============================================
     // ONLINE ADMISSIONS
     // ==============================================

@@ -16,6 +16,9 @@ export interface CourseStudent {
   feePaid: boolean;
   feePaidDate?: string | null;
   feeAmount?: number | null;
+  tazkiraNumber?: string | null;
+  phone?: string | null;
+  notes?: string | null;
   fullName: string;
   fatherName?: string | null;
   grandfatherName?: string | null;

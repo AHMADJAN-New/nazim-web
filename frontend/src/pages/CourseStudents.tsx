@@ -125,6 +125,9 @@ const StudentRow = ({
       <TableCell className="hidden lg:table-cell text-sm">
         {student.guardianPhone || '-'}
       </TableCell>
+      <TableCell className="hidden lg:table-cell text-sm">
+        {student.phone || '-'}
+      </TableCell>
       <TableCell className="hidden md:table-cell text-sm">
         {student.birthYear || '-'}
       </TableCell>
@@ -522,6 +525,7 @@ const CourseStudents = () => {
                       <TableHead className="hidden lg:table-cell">{t('certificateTemplates.course')}</TableHead>
                       <TableHead className="hidden lg:table-cell">{t('students.guardianName')}</TableHead>
                       <TableHead className="hidden lg:table-cell">{t('events.phone')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('courses.registrationForm.phoneNumber')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('students.birthYear')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('students.age')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('courses.registration')}</TableHead>
@@ -547,7 +551,7 @@ const CourseStudents = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={12} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={13} className="py-8 text-center text-muted-foreground">
                           {typedStudents.length === 0 
                             ? t('courses.noCourseStudentsFound')
                             : t('courses.noStudentsMatchFilters')}

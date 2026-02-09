@@ -11,6 +11,9 @@ export const studentSchema = z.object({
   organization_id: optionalUuidSchema,
   school_id: optionalUuidSchema,
   card_number: optionalStringLength(50, 'Card number'),
+  tazkira_number: optionalStringLength(100, 'Tazkira number'),
+  phone: phoneSchema,
+  notes: optionalStringLength(1000, 'Notes'),
   admission_no: requiredStringLength(50, 'Admission number'),
   full_name: requiredStringLength(200, 'Full name'),
   father_name: requiredStringLength(150, 'Father name'),
@@ -59,4 +62,3 @@ export const studentSchema = z.object({
 });
 
 export type StudentFormData = z.infer<typeof studentSchema>;
-
