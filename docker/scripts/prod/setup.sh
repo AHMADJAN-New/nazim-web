@@ -51,6 +51,9 @@ if [[ ! -f "${COMPOSE_ENV}" ]]; then
   echo -e "   - POSTGRES_PASSWORD (database password)"
   echo -e "   - HTTP_PORT (default: 80)"
   echo -e "   - HTTPS_PORT (default: 443)"
+  echo -e "   - PGADMIN_EMAIL (pgAdmin login email, default: admin@nazim.cloud)"
+  echo -e "   - PGADMIN_PASSWORD (pgAdmin login password, default: admin)"
+  echo -e "   - PGADMIN_PORT (pgAdmin web port, default: 5050)"
   echo ""
   read -p "Press Enter after editing the file to continue..."
 fi
@@ -160,6 +163,7 @@ echo -e "1. Check logs: ${YELLOW}docker compose --env-file docker/env/compose.pr
 echo -e "2. Access your application at: ${YELLOW}https://${DOMAIN:-your-domain.com}${NC}"
 echo -e "3. Monitor services: ${YELLOW}docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml ps${NC}"
 echo -e "4. Access Grafana (monitoring): ${YELLOW}http://$(hostname -I | awk '{print $1}'):3000${NC} (admin/admin)"
+echo -e "5. Access pgAdmin (database admin): ${YELLOW}http://localhost:${PGADMIN_PORT:-5050}${NC} (${PGADMIN_EMAIL:-admin@nazim.cloud}/${PGADMIN_PASSWORD:-admin})"
 echo ""
 echo -e "${BLUE}Useful commands:${NC}"
 echo -e "- View logs: ${YELLOW}docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml logs -f [service]${NC}"

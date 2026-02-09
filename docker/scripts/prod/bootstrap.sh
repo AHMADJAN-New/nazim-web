@@ -166,6 +166,9 @@ compose exec -T php sh -lc '
 echo "[bootstrap] Starting queue + scheduler..."
 compose up -d queue scheduler
 
+echo "[bootstrap] Starting pgAdmin (database administration)..."
+compose up -d pgadmin
+
 echo "[bootstrap] Starting nginx..."
 compose up -d nginx
 
@@ -212,4 +215,7 @@ echo "[bootstrap] Done."
 echo "[bootstrap] Application services: docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml logs -f"
 echo "[bootstrap] Monitoring services: docker compose -f docker-compose.monitoring.yml logs -f"
 echo "[bootstrap] Grafana: http://$(hostname -I | awk '{print $1}'):3000 (admin/admin)"
+# shellcheck disable=SC1090
+source "${COMPOSE_ENV}"
+echo "[bootstrap] pgAdmin: http://localhost:${PGADMIN_PORT:-5050} (${PGADMIN_EMAIL:-admin@nazim.cloud}/${PGADMIN_PASSWORD:-admin})"
 

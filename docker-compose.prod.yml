@@ -183,12 +183,37 @@ services:
     networks:
       - nazim_network
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: nazim_prod_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@nazim.cloud}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    volumes:
+      - nazim_pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - nazim_network
+
 volumes:
   nazim_pg_data:
   nazim_redis_data:
   nazim_backend_storage:
   nazim_letsencrypt:
   nazim_certbot_www:
+  nazim_pgadmin_data:
 
 networks:
   nazim_network:

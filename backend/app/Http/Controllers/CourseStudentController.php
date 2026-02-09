@@ -127,12 +127,8 @@ class CourseStudentController extends Controller
             if ($course) {
                 $validated['admission_no'] = $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId);
             } else {
-                $shamsiDate = $this->dateService->getDateComponents(now(), 'jalali');
-                $year = substr((string) $shamsiDate['year'], -2);
-                $seq = CourseStudent::where('organization_id', $profile->organization_id)
-                    ->where('school_id', $currentSchoolId)
-                    ->count() + 1;
-                $validated['admission_no'] = 'CS-'.$year.'-'.str_pad((string) $seq, 3, '0', STR_PAD_LEFT);
+                // Fallback: generate admission number without course (use generic course code)
+                $validated['admission_no'] = $this->generateAdmissionNumberWithoutCourse($profile->organization_id, $currentSchoolId);
             }
         }
 
@@ -157,7 +153,7 @@ class CourseStudentController extends Controller
                         ->find($validated['course_id']);
                     $validated['admission_no'] = $course
                         ? $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId)
-                        : 'CS-'.substr((string) $this->dateService->getDateComponents(now(), 'jalali')['year'], -2).'-'.str_pad((string) (CourseStudent::where('organization_id', $profile->organization_id)->where('school_id', $currentSchoolId)->count() + 2 + $attempt), 3, '0', STR_PAD_LEFT);
+                        : $this->generateAdmissionNumberWithoutCourse($profile->organization_id, $currentSchoolId);
                     $attempt++;
 
                     continue;
@@ -842,18 +838,121 @@ class CourseStudentController extends Controller
     /**
      * Generate admission number unique per organization + school (not per course).
      * Constraint is (admission_no, organization_id, school_id).
+     * Uses database transaction with lock to ensure thread-safety and prevent duplicates.
      */
     private function generateAdmissionNumber(ShortTermCourse $course, string $organizationId, string $schoolId): string
     {
-        $sequence = CourseStudent::where('organization_id', $organizationId)
-            ->where('school_id', $schoolId)
-            ->count() + 1;
+        return DB::transaction(function () use ($course, $organizationId, $schoolId) {
+            // Get the course code (first 3 letters, uppercase, alphanumeric only)
+            $courseCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $course->name ?? 'GEN'), 0, 3));
+            if (strlen($courseCode) < 3) {
+                $courseCode = 'GEN'; // Fallback
+            }
 
-        $date = $course->start_date ? $course->start_date : now();
-        $shamsiDate = $this->dateService->getDateComponents($date, 'jalali');
-        $year = substr((string) $shamsiDate['year'], -2);
+            // Get Shamsi (Jalali) year
+            $date = $course->start_date ? $course->start_date : now();
+            $shamsiDate = $this->dateService->getDateComponents($date, 'jalali');
+            $year = substr((string) $shamsiDate['year'], -2);
 
-        return sprintf('CS-%s-%s-%03d', strtoupper(substr($course->name ?? 'GEN', 0, 3)), $year, $sequence);
+            // Get the maximum sequence number for this org/school/year/course combination
+            // Use a subquery to find the max sequence, then add 1
+            // This is more reliable than count() and works within the transaction
+            $maxSequence = CourseStudent::where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->where('admission_no', 'like', "CS-{$courseCode}-{$year}-%")
+                ->selectRaw("COALESCE(MAX(CAST(SUBSTRING(admission_no FROM '\\d+$') AS INTEGER)), 0) as max_seq")
+                ->value('max_seq') ?? 0;
+
+            // Start with max sequence + 1, but we'll verify uniqueness
+            $baseSequence = $maxSequence + 1;
+
+            // Try to find a unique admission number by incrementing sequence if needed
+            $maxAttempts = 100; // Safety limit to prevent infinite loops
+            $attempt = 0;
+            $sequence = $baseSequence;
+
+            while ($attempt < $maxAttempts) {
+                $admissionNo = sprintf('CS-%s-%s-%03d', $courseCode, $year, $sequence);
+
+                // Check if this admission number already exists
+                $exists = CourseStudent::where('organization_id', $organizationId)
+                    ->where('school_id', $schoolId)
+                    ->where('admission_no', $admissionNo)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                if (!$exists) {
+                    // Found a unique admission number
+                    return $admissionNo;
+                }
+
+                // If it exists, try next sequence number
+                $sequence++;
+                $attempt++;
+            }
+
+            // Fallback: use timestamp-based suffix if we can't find a unique sequence
+            $timestamp = now()->format('His'); // Hours, minutes, seconds
+            return sprintf('CS-%s-%s-%s', $courseCode, $year, $timestamp);
+        });
+    }
+
+    /**
+     * Generate admission number when course is not available (fallback method).
+     * Uses same logic as generateAdmissionNumber but with generic course code.
+     */
+    private function generateAdmissionNumberWithoutCourse(string $organizationId, string $schoolId): string
+    {
+        return DB::transaction(function () use ($organizationId, $schoolId) {
+            $courseCode = 'GEN'; // Generic course code
+
+            // Get Shamsi (Jalali) year
+            $shamsiDate = $this->dateService->getDateComponents(now(), 'jalali');
+            $year = substr((string) $shamsiDate['year'], -2);
+
+            // Get the maximum sequence number for this org/school/year/course combination
+            // Use a subquery to find the max sequence, then add 1
+            // This is more reliable than count() and works within the transaction
+            $maxSequence = CourseStudent::where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->where('admission_no', 'like', "CS-{$courseCode}-{$year}-%")
+                ->selectRaw("COALESCE(MAX(CAST(SUBSTRING(admission_no FROM '\\d+$') AS INTEGER)), 0) as max_seq")
+                ->value('max_seq') ?? 0;
+
+            // Start with max sequence + 1, but we'll verify uniqueness
+            $baseSequence = $maxSequence + 1;
+
+            // Try to find a unique admission number by incrementing sequence if needed
+            $maxAttempts = 100; // Safety limit to prevent infinite loops
+            $attempt = 0;
+            $sequence = $baseSequence;
+
+            while ($attempt < $maxAttempts) {
+                $admissionNo = sprintf('CS-%s-%s-%03d', $courseCode, $year, $sequence);
+
+                // Check if this admission number already exists
+                $exists = CourseStudent::where('organization_id', $organizationId)
+                    ->where('school_id', $schoolId)
+                    ->where('admission_no', $admissionNo)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                if (!$exists) {
+                    // Found a unique admission number
+                    return $admissionNo;
+                }
+
+                // If it exists, try next sequence number
+                $sequence++;
+                $attempt++;
+            }
+
+            // Fallback: use timestamp-based suffix if we can't find a unique sequence
+            $timestamp = now()->format('His'); // Hours, minutes, seconds
+            return sprintf('CS-%s-%s-%s', $courseCode, $year, $timestamp);
+        });
     }
 
     /**

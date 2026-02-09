@@ -73,7 +73,7 @@ When you run the above commands, the system will automatically:
 * Create and mount persistent volumes
 * Run database migrations
 * Apply database seeders (if configured)
-* Start all containers in the correct dependency order
+* Start all containers in the correct dependency order (including pgAdmin for database management)
 * Perform basic health checks
 
 ---
@@ -86,6 +86,27 @@ After completion:
 * The database is up-to-date
 * The environment is consistent and reproducible
 * The system is ready for production use
+* **pgAdmin is available** for database administration at `http://localhost:5050` (default port)
+
+### Accessing pgAdmin
+
+After setup/update, you can access pgAdmin (database administration tool) at:
+
+- **URL**: `http://localhost:5050` (or the port specified in `PGADMIN_PORT` env var)
+- **Email**: `admin@nazim.cloud` (or value from `PGADMIN_EMAIL` env var)
+- **Password**: `admin` (or value from `PGADMIN_PASSWORD` env var)
+
+**To connect to your PostgreSQL database in pgAdmin:**
+1. Login to pgAdmin
+2. Right-click "Servers" → "Register" → "Server"
+3. Use these connection details:
+   - **Host**: `db` (Docker service name)
+   - **Port**: `5432`
+   - **Database**: `nazim` (or value from `POSTGRES_DB`)
+   - **Username**: `nazim` (or value from `POSTGRES_USER`)
+   - **Password**: Your `POSTGRES_PASSWORD` value
+
+See `docker/pgadmin-setup.md` for detailed instructions.
 
 This workflow guarantees a **stable, repeatable, and production-safe deployment process**.
 

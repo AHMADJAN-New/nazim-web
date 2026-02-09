@@ -103,5 +103,6 @@ source "${COMPOSE_ENV}"
 echo -e "- Application: ${YELLOW}https://${DOMAIN:-your-domain.com}${NC}"
 echo -e "- Grafana: ${YELLOW}http://$(hostname -I | awk '{print $1}'):3000${NC} (admin/admin)"
 echo -e "- Prometheus: ${YELLOW}http://$(hostname -I | awk '{print $1}'):9090${NC}"
+echo -e "- pgAdmin (database admin): ${YELLOW}http://localhost:${PGADMIN_PORT:-5050}${NC} (${PGADMIN_EMAIL:-admin@nazim.cloud}/${PGADMIN_PASSWORD:-admin})"
 echo ""
 
