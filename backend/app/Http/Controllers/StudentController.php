@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SchoolAdmissionRules;
 use App\Models\Student;
 use App\Models\StudentDocument;
 use App\Models\StudentEducationalHistory;
@@ -1329,6 +1330,17 @@ class StudentController extends Controller
             // Build report data
             $reportData = $this->buildProfileReportData($student, $educationalHistory, $disciplineRecords, $documents, $picturePath, $guardianPicturePath);
 
+            // Load school admission rules from DB for the second page (commitments, guarantee, approval)
+            $admissionRules = SchoolAdmissionRules::where('school_id', $student->school_id)
+                ->whereNull('deleted_at')
+                ->first();
+            $commitmentItems = $admissionRules?->commitment_items ?? SchoolAdmissionRules::defaultCommitmentItems();
+            $guaranteeText = $admissionRules?->guarantee_text ?? SchoolAdmissionRules::defaultGuaranteeText();
+            $rulesLabels = array_merge(
+                SchoolAdmissionRules::defaultLabels(),
+                $admissionRules?->labels ?? []
+            );
+
             // Create report config
             $config = ReportConfig::fromArray([
                 'report_key' => 'student_profile',
@@ -1414,11 +1426,16 @@ class StudentController extends Controller
                 
                 // Watermark (if any)
                 'WATERMARK' => null,
-                
+
                 // Notes
                 'NOTES_HEADER' => [],
                 'NOTES_BODY' => [],
                 'NOTES_FOOTER' => [],
+
+                // School admission rules from DB (page 2: commitments, guarantee, approval)
+                'commitment_items' => $commitmentItems,
+                'guarantee_text' => $guaranteeText,
+                'rules_labels' => $rulesLabels,
             ]);
 
             // Generate PDF
@@ -1488,25 +1505,49 @@ class StudentController extends Controller
             'grandfather_name' => $student->grandfather_name ?? '—',
             'mother_name' => $student->mother_name ?? '—',
             'birth_date' => $student->birth_date ? $student->birth_date->format('Y-m-d') : '—',
+            'birth_year' => $student->birth_year ?? null,
+            'age' => $student->age !== null ? (string) $student->age : null,
             'gender' => $student->gender ?? '—',
             'admission_no' => $student->admission_no ?? '—',
+            'admission_year' => $student->admission_year ?? null,
             'student_code' => $student->student_code ?? '—',
             'card_number' => $student->card_number ?? '—',
+            'tazkira_number' => $student->tazkira_number ?? null,
+            'phone' => $student->phone ?? null,
             'status' => $student->student_status ?? '—',
             'current_class' => $currentClass ?? '—',
             'current_section' => $currentSection ?? null,
             'current_academic_year' => $currentAcademicYear ?? null,
-            'phone' => $student->guardian_phone ?? null,
             'guardian_phone' => $student->guardian_phone ?? '—',
             'guardian_name' => $student->guardian_name ?? '—',
             'guardian_relation' => $student->guardian_relation ?? null,
+            'guardian_tazkira' => $student->guardian_tazkira ?? null,
             'home_address' => $student->home_address ?? '—',
+            'orig_province' => $student->orig_province ?? null,
+            'orig_district' => $student->orig_district ?? null,
+            'orig_village' => $student->orig_village ?? null,
+            'curr_province' => $student->curr_province ?? null,
+            'curr_district' => $student->curr_district ?? null,
+            'curr_village' => $student->curr_village ?? null,
             'nationality' => $student->nationality ?? '—',
             'preferred_language' => $student->preferred_language ?? '—',
+            'previous_school' => $student->previous_school ?? null,
             'picture_path' => $picturePath,
             'guardian_picture_path' => $guardianPicturePath,
             'school_name' => $student->school->school_name ?? '—',
             'organization_name' => $student->organization->name ?? '—',
+            'zamin_name' => $student->zamin_name ?? null,
+            'zamin_phone' => $student->zamin_phone ?? null,
+            'zamin_tazkira' => $student->zamin_tazkira ?? null,
+            'zamin_address' => $student->zamin_address ?? null,
+            'applying_grade' => $student->applying_grade ?? null,
+            'is_orphan' => $student->is_orphan !== null ? ($student->is_orphan ? 'Yes' : 'No') : null,
+            'admission_fee_status' => $student->admission_fee_status ?? null,
+            'disability_status' => $student->disability_status ?? null,
+            'emergency_contact_name' => $student->emergency_contact_name ?? null,
+            'emergency_contact_phone' => $student->emergency_contact_phone ?? null,
+            'family_income' => $student->family_income ?? null,
+            'notes' => $student->notes ?? null,
         ];
 
         return [

@@ -1,8 +1,9 @@
 import React, { useMemo, useEffect } from 'react';
 
 import { useLanguage } from '@/hooks/useLanguage';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate as formatDateUtil } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
+import type { SchoolAdmissionRules } from '@/types/domain/schoolAdmissionRules';
 
 interface StudentProfilePrintProps {
   student: Student;
@@ -10,6 +11,7 @@ interface StudentProfilePrintProps {
   pictureUrl: string | null;
   guardianPictureUrl: string | null;
   isRTL: boolean;
+  schoolAdmissionRules?: SchoolAdmissionRules | null;
 }
 
 export function StudentProfilePrint({
@@ -18,6 +20,7 @@ export function StudentProfilePrint({
   pictureUrl,
   guardianPictureUrl,
   isRTL,
+  schoolAdmissionRules,
 }: StudentProfilePrintProps) {
   const { t } = useLanguage();
   // Inject print styles
@@ -120,6 +123,10 @@ export function StudentProfilePrint({
 
         .student-profile-print-layout .print-section:first-of-type {
           border-top: none;
+        }
+
+        .student-profile-print-layout .print-page-info {
+          page-break-after: always;
         }
 
         .student-profile-print-layout .print-header-section {
@@ -296,6 +303,105 @@ export function StudentProfilePrint({
         .student-profile-print-layout .page-break {
           page-break-before: always;
         }
+
+        /* Second page: Rules (Commitments, Guarantee, Approval) - full page design */
+        .student-profile-print-layout .print-page-rules {
+          page-break-before: always;
+          min-height: 257mm;
+          padding: 0 5mm;
+          box-sizing: border-box;
+        }
+
+        .student-profile-print-layout .print-page-rules .print-rules-title {
+          text-align: center;
+          font-size: 18pt;
+          font-weight: 700;
+          margin: 0 0 20px;
+          color: #0b0b56;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #0b0b56;
+        }
+
+        .student-profile-print-layout .print-rules-section {
+          margin-bottom: 22px;
+          page-break-inside: avoid;
+        }
+
+        .student-profile-print-layout .print-rules-section-title {
+          font-size: 13pt;
+          font-weight: 700;
+          color: #14146f;
+          margin-bottom: 10px;
+          padding-bottom: 4px;
+          border-bottom: 1px solid #c4c4e0;
+        }
+
+        .student-profile-print-layout .print-rules-list {
+          margin: 0;
+          padding-${isRTL ? 'right' : 'left'}: 22px;
+          padding-${isRTL ? 'left' : 'right'}: 0;
+          font-size: 11pt;
+          line-height: 1.6;
+        }
+
+        .student-profile-print-layout .print-rules-list li {
+          margin-bottom: 8px;
+        }
+
+        .student-profile-print-layout .print-rules-guarantee-text {
+          font-size: 11pt;
+          line-height: 1.65;
+          text-align: ${isRTL ? 'right' : 'left'};
+          margin: 0 0 12px;
+        }
+
+        .student-profile-print-layout .print-rules-signature-row {
+          margin-top: 14px;
+          font-size: 10.5pt;
+        }
+
+        .student-profile-print-layout .print-rules-signature-line {
+          border-bottom: 1px solid #333;
+          min-width: 120px;
+          display: inline-block;
+          height: 20px;
+          margin: 0 6px;
+          vertical-align: middle;
+        }
+
+        .student-profile-print-layout .print-rules-approval-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11pt;
+          margin-top: 8px;
+        }
+
+        .student-profile-print-layout .print-rules-approval-table td {
+          padding: 10px 8px;
+          vertical-align: middle;
+          border: none;
+        }
+
+        .student-profile-print-layout .print-rules-stamp-box {
+          border: 1.5px solid #666;
+          width: 85px;
+          height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #555;
+          font-size: 9pt;
+          vertical-align: middle;
+        }
+
+        .student-profile-print-layout .print-rules-footer {
+          margin-top: 24px;
+          padding-top: 12px;
+          border-top: 1px solid #e0e0e0;
+          font-size: 9pt;
+          color: #666;
+          text-align: center;
+        }
       }
     `;
 
@@ -358,15 +464,20 @@ export function StudentProfilePrint({
       commitmentTitle: t('students.commitmentTitle') || 'Commitment',
       guaranteeTitle: t('students.guaranteeTitle') || 'Guarantee',
       approvalTitle: t('students.approvalTitle') || 'Approval',
-      commitmentText: [
-        t('students.commitmentText1') || 'I will follow all school rules',
-        t('students.commitmentText2') || 'I will follow Islamic laws in addition to school rules',
-        t('students.commitmentText3') || 'I will respect all teachers and staff and protect school property',
-        t('students.commitmentText4') || 'I accept any decision by the administration for violations or absences',
-        t('students.commitmentText5') || 'I will follow school rules regarding mobile phones, and the school has the right to expel me or confiscate my phone if I violate.',
-        t('students.commitmentText6') || 'I authorize the school principal or deputy to act on my behalf in zakat, charity, and similar charitable activities',
-      ],
-      guaranteeText: t('students.guaranteeText') || 'The mentioned conditions and regulations are correct according to my knowledge; therefore, I am satisfied with admission to the school and guarantee that the mentioned student will abide by all school rules, and any decision by the school in case of violation is acceptable to me.',
+      // Use school-specific rules if provided, otherwise fallback to translations
+      commitmentText: schoolAdmissionRules?.commitmentItems && schoolAdmissionRules.commitmentItems.length > 0
+        ? schoolAdmissionRules.commitmentItems
+        : [
+            t('students.commitmentText1') || 'I will follow all school rules',
+            t('students.commitmentText2') || 'I will follow Islamic laws in addition to school rules',
+            t('students.commitmentText3') || 'I will respect all teachers and staff and protect school property',
+            t('students.commitmentText4') || 'I accept any decision by the administration for violations or absences',
+            t('students.commitmentText5') || 'I will follow school rules regarding mobile phones, and the school has the right to expel me or confiscate my phone if I violate.',
+            t('students.commitmentText6') || 'I authorize the school principal or deputy to act on my behalf in zakat, charity, and similar charitable activities',
+          ],
+      guaranteeText: schoolAdmissionRules?.guaranteeText && schoolAdmissionRules.guaranteeText.trim()
+        ? schoolAdmissionRules.guaranteeText
+        : (t('students.guaranteeText') || 'The mentioned conditions and regulations are correct according to my knowledge; therefore, I am satisfied with admission to the school and guarantee that the mentioned student will abide by all school rules, and any decision by the school in case of violation is acceptable to me.'),
       approvalText: {
         admission: t('students.approvalAdmission') || 'The mentioned student was admitted to grade',
         fee: t('students.approvalFee') || 'Admission Fee:',
@@ -375,7 +486,7 @@ export function StudentProfilePrint({
         stamp: t('students.approvalStamp') || 'Stamp',
       },
     };
-  }, [isRTL, t]);
+  }, [isRTL, t, schoolAdmissionRules]);
 
   const displayValue = (value?: string | number | null) => {
     if (value === null || value === undefined || value === '') {
@@ -386,18 +497,20 @@ export function StudentProfilePrint({
 
   const boolToText = (value?: boolean | null) => (value ? printText.yes : printText.no);
 
-  const formatDate = (value?: string | null) => {
+  const formatDateValue = (value?: string | null) => {
     if (!value) return '';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return formatDate(date);
+    return formatDateUtil(date);
   };
 
   return (
     <div className="student-profile-print-layout" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="print-title">{printText.title}</div>
+      {/* Page 1: Student information */}
+      <div className="print-page-info">
+        <div className="print-title">{printText.title}</div>
 
-      {/* Header Row with Photos */}
+        {/* Header Row with Photos */}
       <div className="print-section print-header-section">
         <table className="header-table">
           <tbody>
@@ -580,9 +693,9 @@ export function StudentProfilePrint({
             </tr>
             <tr>
               <td className="print-label">{printText.createdAt}</td>
-              <td className="print-value">{formatDate(student.created_at)}</td>
+              <td className="print-value">{formatDateValue(student.created_at)}</td>
               <td className="print-label">{printText.updatedAt}</td>
-              <td className="print-value">{formatDate(student.updated_at)}</td>
+              <td className="print-value">{formatDateValue(student.updated_at)}</td>
             </tr>
           </tbody>
         </table>
@@ -594,75 +707,79 @@ export function StudentProfilePrint({
           <div style={{ fontSize: '12pt', whiteSpace: 'pre-wrap' }}>{student.notes}</div>
         </div>
       )}
-
-      {/* Page Break for Second Page */}
-      <div className="page-break"></div>
-
-      {/* Commitments, Guarantee, and Approval */}
-      <div className="print-title">{printText.commitmentsTitle}</div>
-
-      {/* Commitment */}
-      <div className="print-section">
-        <div className="blue-title">{printText.commitmentTitle}</div>
-        <ul>
-          {printText.commitmentText.map((text, index) => (
-            <li key={index}>{text}</li>
-          ))}
-        </ul>
-        <div style={{ marginTop: '18px' }}>
-          {t('events.signature') || 'Signature'}: <span className="signature-line"></span>
-        </div>
       </div>
 
-      {/* Guarantee */}
-      <div className="print-section">
-        <div className="blue-title">{printText.guaranteeTitle}</div>
-        <div style={{ fontSize: '13pt', paddingBottom: '10px' }}>
-          {printText.guaranteeText}
-        </div>
-        <div style={{ marginTop: '10px' }}>
-          {t('students.guarantorSignature') || 'Guarantor Signature'}: <span className="signature-line"></span>
-        </div>
-      </div>
+      {/* Page 2: Commitments, Guarantee, and Approval (school rules) */}
+      <div className="print-page-rules">
+        <h1 className="print-rules-title">{printText.commitmentsTitle}</h1>
 
-      {/* Approval */}
-      <div className="print-section">
-        <div className="blue-title">{printText.approvalTitle}</div>
-        <table className="guarantee-table" style={{ width: '100%', fontSize: '13.5pt' }}>
-          <tbody>
-            <tr>
-              <td style={{ width: isRTL ? '42%' : '58%', textAlign: isRTL ? 'right' : 'left' }}>
-                {printText.approvalText.admission}
-                <span className="signature-line" style={{ width: '110px', margin: '0 8px', verticalAlign: 'middle' }}></span>
-                {t('students.wasAdmitted') || 'was admitted.'}
-              </td>
-              <td style={{ width: isRTL ? '58%' : '42%' }}></td>
-            </tr>
-            <tr>
-              <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '16px' }}>
-                {printText.approvalText.fee}
-                <span className="signature-line" style={{ width: '140px', margin: '0 8px', verticalAlign: 'middle' }}></span>
-              </td>
-              <td></td>
-            </tr>
-            <tr>
-              <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '16px' }}>
-                {printText.approvalText.date}
-                <span className="signature-line" style={{ width: '130px', margin: '0 8px', verticalAlign: 'middle' }}></span>
-              </td>
-              <td></td>
-            </tr>
-            <tr>
-              <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '16px' }}>
-                {printText.approvalText.signature}
-                <span className="signature-line" style={{ width: '120px', margin: '0 8px', verticalAlign: 'middle' }}></span>
-              </td>
-              <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '16px' }}>
-                {t('students.stamp') || 'Stamp'}: <span className="stamp-box">{printText.approvalText.stamp}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        {/* Commitment (تعهد نامه) */}
+        <div className="print-rules-section">
+          <div className="print-rules-section-title">{printText.commitmentTitle}</div>
+          <ul className="print-rules-list">
+            {printText.commitmentText.map((text, index) => (
+              <li key={index}>{text}</li>
+            ))}
+          </ul>
+          <div className="print-rules-signature-row">
+            {t('events.signature') || 'Signature'}: <span className="print-rules-signature-line" />
+          </div>
+        </div>
+
+        {/* Guarantee (ضمانت نامه) */}
+        <div className="print-rules-section">
+          <div className="print-rules-section-title">{printText.guaranteeTitle}</div>
+          <p className="print-rules-guarantee-text">{printText.guaranteeText}</p>
+          <div className="print-rules-signature-row">
+            {t('students.guarantorSignature') || 'Guarantor Signature'}: <span className="print-rules-signature-line" />
+          </div>
+        </div>
+
+        {/* Approval (تائيد نامه) */}
+        <div className="print-rules-section">
+          <div className="print-rules-section-title">{printText.approvalTitle}</div>
+          <table className="print-rules-approval-table">
+            <tbody>
+              <tr>
+                <td style={{ width: isRTL ? '48%' : '52%', textAlign: isRTL ? 'right' : 'left' }}>
+                  {printText.approvalText.admission}
+                  <span className="print-rules-signature-line" style={{ width: '100px' }} />
+                  {t('students.wasAdmitted') || 'was admitted.'}
+                </td>
+                <td style={{ width: isRTL ? '52%' : '48%' }} />
+              </tr>
+              <tr>
+                <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '14px' }}>
+                  {printText.approvalText.fee}
+                  <span className="print-rules-signature-line" style={{ width: '130px' }} />
+                </td>
+                <td />
+              </tr>
+              <tr>
+                <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '14px' }}>
+                  {printText.approvalText.date}
+                  <span className="print-rules-signature-line" style={{ width: '120px' }} />
+                </td>
+                <td />
+              </tr>
+              <tr>
+                <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '14px' }}>
+                  {printText.approvalText.signature}
+                  <span className="print-rules-signature-line" style={{ width: '110px' }} />
+                </td>
+                <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '14px' }}>
+                  {t('students.stamp') || 'Stamp'}: <span className="print-rules-stamp-box">{printText.approvalText.stamp}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="print-rules-footer">
+          {schoolName && <span>{schoolName}</span>}
+          {schoolName && ' · '}
+          {printText.title} — {printText.commitmentsTitle}
+        </div>
       </div>
     </div>
   );

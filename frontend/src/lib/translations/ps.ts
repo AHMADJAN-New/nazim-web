@@ -4603,7 +4603,14 @@ export const ps: TranslationKeys = {
     updateSchoolInfo: 'د ښوونځي معلومات او نښانونه تازه کړئ',
     usage: 'کارول',
     viewCompleteInfo: 'د ښوونځي بشپړ معلومات وګورئ',
-    website: 'ویبپاڼه'
+    website: 'ویبپاڼه',
+    schoolRules: 'د ښوونځي قوانین',
+    editSchoolRules: 'د ښوونځي قوانین سم کړئ',
+    commitmentItems: 'د ژمنو فهرست (تعهد نامه)',
+    commitmentItem: 'د ژمنې بند',
+    guaranteeText: 'د تضمین متن (ضمانت نامه)',
+    guaranteeTextPlaceholder: 'د تضمین متن ولیکئ...',
+    noCommitmentItems: 'د ژمنو بندونه نشته. د اضافه کولو لپاره "اضافه کړئ" کلیک وکړئ.'
   },
   search: {
     academicYears: 'تعلیمي کلونه',
@@ -4890,7 +4897,7 @@ export const ps: TranslationKeys = {
     classTeacher: 'د ټولګي نګران',
     dateIssued: 'د صادرولو نېټه',
     dateOfBirth: 'د زیږون نېټه',
-    generating: 'د راپور کارت جوړېږي...',
+    generating: ' راپور  جوړېږي...',
     grade: 'درجه',
     grandTotal: 'ټول مجموعه',
     maxMarks: 'اعظمي نمرې',
@@ -6153,6 +6160,8 @@ export const ps: TranslationKeys = {
     schoolCreated: 'ښوونځی په بریالیتوب سره جوړ شو',
     schoolDeleted: 'ښوونځی په بریالیتوب سره ړنګ شو',
     schoolUpdated: 'ښوونځی په بریالیتوب سره تازه شو',
+    schoolRulesUpdated: 'د ښوونځي قوانین په بریالیتوب سره تازه شول',
+    schoolRulesUpdateFailed: 'د ښوونځي قوانینو د تازه کولو کې پاتې راغی',
     secretNumberAssignFailed: 'د پټو شمېرو سپارل ناکام شول',
     secretNumbersAssigned: 'پټې شمېرې وسپارل شوې',
     secretNumbersAssignedWithErrors: 'پټې شمېرې د تېروتنو سره وسپارل شوې',

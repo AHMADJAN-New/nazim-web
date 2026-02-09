@@ -59,6 +59,7 @@ use App\Http\Controllers\ResidencyTypeController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ScheduleSlotController;
+use App\Http\Controllers\SchoolAdmissionRulesController;
 use App\Http\Controllers\SchoolBrandingController;
 use App\Http\Controllers\ShortTermCourseController;
 use App\Http\Controllers\StaffController;
@@ -320,6 +321,13 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::patch('/schools/{school}', [SchoolBrandingController::class, 'update']);
         Route::delete('/schools/{school}', [SchoolBrandingController::class, 'destroy'])
             ->middleware(['feature:multi_school']);
+    });
+
+    // School Admission Rules (شرائط و تعهدات)
+    Route::get('/schools/{school}/admission-rules', [SchoolAdmissionRulesController::class, 'show']);
+    Route::middleware(['subscription:write'])->group(function () {
+        Route::put('/schools/{school}/admission-rules', [SchoolAdmissionRulesController::class, 'update']);
+        Route::patch('/schools/{school}/admission-rules', [SchoolAdmissionRulesController::class, 'update']);
     });
 
     // Watermarks (for school branding)

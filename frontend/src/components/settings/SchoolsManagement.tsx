@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Pencil, Trash2, Search, School as SchoolIcon, Shield, Eye, Droplet } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, School as SchoolIcon, Shield, Eye, Droplet, FileText, MoreHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import * as z from 'zod';
 
 import { WatermarkManagement } from './WatermarkManagement';
+import { SchoolRulesManagement } from './SchoolRulesManagement';
 
 import {
   AlertDialog,
@@ -45,6 +46,13 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -105,6 +113,7 @@ export function SchoolsManagement() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
   const [selectedSchoolForWatermarks, setSelectedSchoolForWatermarks] = useState<string | null>(null);
+  const [selectedSchoolForRules, setSelectedSchoolForRules] = useState<string | null>(null);
   // Logo URLs for details dialog
   const [detailsPrimaryLogoUrl, setDetailsPrimaryLogoUrl] = useState<string | null>(null);
   const [detailsSecondaryLogoUrl, setDetailsSecondaryLogoUrl] = useState<string | null>(null);
@@ -676,60 +685,72 @@ export function SchoolsManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-1.5 sm:gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedSchool(school.id);
-                                setIsDetailsDialogOpen(true);
-                              }}
-                              title={t('events.viewDetails')}
-                              className="flex-shrink-0"
-                              aria-label={t('events.viewDetails')}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedSchoolForWatermarks(
-                                  selectedSchoolForWatermarks === school.id ? null : school.id
-                                );
-                              }}
-                              title={t('watermarks.manage') || 'Manage Watermarks'}
-                              className={`flex-shrink-0 ${selectedSchoolForWatermarks === school.id ? 'bg-muted' : ''}`}
-                              aria-label={t('watermarks.manage') || 'Manage Watermarks'}
-                            >
-                              <Droplet className="h-4 w-4" />
-                            </Button>
-                            {hasUpdatePermission && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenDialog(school.id)}
-                                title={t('events.edit')}
-                                className="flex-shrink-0"
-                                aria-label={t('schools.edit')}
+                                size="icon"
+                                className="h-8 w-8 flex-shrink-0"
+                                aria-label={t('events.actions')}
                                 data-tour="schools-edit-button"
                               >
-                                <Pencil className="h-4 w-4" />
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">{t('events.actions')}</span>
                               </Button>
-                            )}
-                            {hasDeletePermission && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteClick(school.id)}
-                                title={t('events.delete')}
-                                className="flex-shrink-0"
-                                aria-label={t('events.delete')}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedSchool(school.id);
+                                  setIsDetailsDialogOpen(true);
+                                }}
                               >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            )}
-                          </div>
+                                <Eye className="mr-2 h-4 w-4" />
+                                {t('events.viewDetails')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedSchoolForWatermarks(
+                                    selectedSchoolForWatermarks === school.id ? null : school.id
+                                  );
+                                }}
+                              >
+                                <Droplet className="mr-2 h-4 w-4" />
+                                {t('watermarks.manage') || 'Manage Watermarks'}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedSchoolForRules(
+                                    selectedSchoolForRules === school.id ? null : school.id
+                                  );
+                                }}
+                              >
+                                <FileText className="mr-2 h-4 w-4" />
+                                {t('schools.schoolRules') || 'School Rules'}
+                              </DropdownMenuItem>
+                              {hasUpdatePermission && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleOpenDialog(school.id)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    {t('events.edit')}
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              {hasDeletePermission && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteClick(school.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    {t('events.delete')}
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );
@@ -746,6 +767,14 @@ export function SchoolsManagement() {
         <WatermarkManagement
           brandingId={selectedSchoolForWatermarks}
           brandingName={schools?.find((s) => s.id === selectedSchoolForWatermarks)?.schoolName || 'School'}
+        />
+      )}
+
+      {/* School Rules Management Section */}
+      {selectedSchoolForRules && (
+        <SchoolRulesManagement
+          schoolId={selectedSchoolForRules}
+          schoolName={schools?.find((s) => s.id === selectedSchoolForRules)?.schoolName || 'School'}
         />
       )}
 

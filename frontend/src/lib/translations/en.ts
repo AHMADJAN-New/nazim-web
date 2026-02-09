@@ -4559,7 +4559,14 @@ export const en = {
     updateSchoolInfo: 'Update school information and branding settings',
     usage: 'Usage',
     viewCompleteInfo: 'View complete school information',
-    website: 'Website'
+    website: 'Website',
+    schoolRules: 'School Rules',
+    editSchoolRules: 'Edit School Rules',
+    commitmentItems: 'Commitment Items',
+    commitmentItem: 'Commitment Item',
+    guaranteeText: 'Guarantee Text',
+    guaranteeTextPlaceholder: 'Enter guarantee text...',
+    noCommitmentItems: 'No commitment items. Click "Add" to add one.'
   },
   search: {
     academicYears: 'Academic Years',
@@ -6167,6 +6174,8 @@ export const en = {
     schoolCreated: 'School created successfully',
     schoolDeleted: 'School deleted successfully',
     schoolUpdated: 'School updated successfully',
+    schoolRulesUpdated: 'School rules updated successfully',
+    schoolRulesUpdateFailed: 'Failed to update school rules',
     secretNumberAssignFailed: 'Failed to assign secret numbers',
     secretNumbersAssigned: 'Secret numbers assigned',
     secretNumbersAssignedWithErrors: 'Secret numbers assigned with errors',

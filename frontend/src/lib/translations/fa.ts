@@ -4782,5 +4782,18 @@ export const fa: TranslationKeys = {
   classes: {
     noClasses: 'صنفی وجود ندارد',
     viewAll: 'مشاهده همه'
+  },
+  schools: {
+    schoolRules: 'قوانین مکتب',
+    editSchoolRules: 'ویرایش قوانین مکتب',
+    commitmentItems: 'فهرست تعهدات (تعهد نامه)',
+    commitmentItem: 'بند تعهد',
+    guaranteeText: 'متن ضمانت (ضمانت نامه)',
+    guaranteeTextPlaceholder: 'متن ضمانت را وارد کنید...',
+    noCommitmentItems: 'هیچ بند تعهدی وجود ندارد. برای افزودن روی "افزودن" کلیک کنید.'
+  },
+  toast: {
+    schoolRulesUpdated: 'قوانین مکتب با موفقیت به‌روزرسانی شد',
+    schoolRulesUpdateFailed: 'به‌روزرسانی قوانین مکتب ناموفق بود'
   }
 };

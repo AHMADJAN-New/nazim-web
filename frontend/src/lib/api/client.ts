@@ -952,6 +952,23 @@ export const schoolsApi = {
   delete: async (id: string) => {
     return apiClient.delete(`/schools/${id}`);
   },
+
+  // School Admission Rules
+  getAdmissionRules: async (schoolId: string) => {
+    return apiClient.get<import('@/types/api/schoolAdmissionRules').SchoolAdmissionRules>(
+      `/schools/${schoolId}/admission-rules`
+    );
+  },
+
+  updateAdmissionRules: async (
+    schoolId: string,
+    data: import('@/types/api/schoolAdmissionRules').SchoolAdmissionRulesUpdate
+  ) => {
+    return apiClient.put<import('@/types/api/schoolAdmissionRules').SchoolAdmissionRules>(
+      `/schools/${schoolId}/admission-rules`,
+      data
+    );
+  },
 };
 
 export const watermarksApi = {

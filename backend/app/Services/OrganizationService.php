@@ -167,6 +167,23 @@ class OrganizationService
             ]);
         }
 
+        // Seed default admission rules for new school
+        try {
+            \Database\Seeders\SchoolAdmissionRulesSeeder::seedForSchool($organization->id, $school->id);
+            
+            Log::info('School admission rules seeded for new school', [
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+            ]);
+        } catch (\Exception $e) {
+            // Log error but don't fail organization creation
+            Log::warning('Failed to seed school admission rules for new school', [
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return $school;
     }
 

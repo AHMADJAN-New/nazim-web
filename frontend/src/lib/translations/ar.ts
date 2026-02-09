@@ -4550,7 +4550,14 @@ export const ar: TranslationKeys = {
     "updateSchoolInfo": "تحديث معلومات المدرسة وإعدادات العلامة التجارية",
     "usage": "الاستخدام",
     "viewCompleteInfo": "عرض معلومات المدرسة الكاملة",
-    "website": "الموقع الإلكتروني"
+    "website": "الموقع الإلكتروني",
+    "schoolRules": "قوانين المدرسة",
+    "editSchoolRules": "تعديل قوانين المدرسة",
+    "commitmentItems": "بنود الالتزام (تعهد نامه)",
+    "commitmentItem": "بند الالتزام",
+    "guaranteeText": "نص الضمان (ضمانت نامه)",
+    "guaranteeTextPlaceholder": "أدخل نص الضمان...",
+    "noCommitmentItems": "لا توجد بنود التزام. انقر على \"إضافة\" لإضافة واحد."
   },
   "search": {
     "academicYears": "السنوات الأكاديمية",
@@ -6116,6 +6123,8 @@ export const ar: TranslationKeys = {
     "schoolCreated": "تم إنشاء المدرسة بنجاح",
     "schoolDeleted": "تم حذف المدرسة بنجاح",
     "schoolUpdated": "تم تحديث المدرسة بنجاح",
+    "schoolRulesUpdated": "تم تحديث قوانين المدرسة بنجاح",
+    "schoolRulesUpdateFailed": "فشل تحديث قوانين المدرسة",
     "secretNumberAssignFailed": "Failed to assign secret numbers",
     "secretNumbersAssigned": "Secret numbers assigned",
     "secretNumbersAssignedWithErrors": "Secret numbers assigned with errors",

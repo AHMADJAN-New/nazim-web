@@ -37,6 +37,7 @@ import {
   useStudentDisciplineRecords,
   usePrintStudentProfile,
 } from '@/hooks/useStudents';
+import { useSchoolAdmissionRules } from '@/hooks/useSchoolAdmissionRules';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
 
@@ -95,6 +96,11 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
   const { data: educationalHistory } = useStudentEducationalHistory(open ? student?.id : undefined);
   const { data: disciplineRecords } = useStudentDisciplineRecords(open ? student?.id : undefined);
   const printProfile = usePrintStudentProfile();
+  
+  // Fetch school admission rules when dialog is open and student has schoolId
+  const { data: schoolAdmissionRules } = useSchoolAdmissionRules(
+    open && student?.schoolId ? student.schoolId : null
+  );
 
   const printText = isRTL
     ? {
@@ -817,6 +823,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
               pictureUrl={pictureUrl}
               guardianPictureUrl={guardianPictureUrl}
               isRTL={isRTL}
+              schoolAdmissionRules={schoolAdmissionRules ?? null}
             />
           </div>
         )}

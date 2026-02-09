@@ -345,6 +345,23 @@ class SchoolBrandingController extends Controller
             ]);
         }
 
+        // Seed default admission rules for new school
+        try {
+            \Database\Seeders\SchoolAdmissionRulesSeeder::seedForSchool($school->organization_id, $school->id);
+            
+            \Log::info('School admission rules seeded for new school', [
+                'organization_id' => $school->organization_id,
+                'school_id' => $school->id,
+            ]);
+        } catch (\Exception $e) {
+            // Log error but don't fail school creation
+            \Log::warning('Failed to seed school admission rules for new school', [
+                'organization_id' => $school->organization_id,
+                'school_id' => $school->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json($school, 201);
     }
 
