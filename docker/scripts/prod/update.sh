@@ -36,7 +36,7 @@ compose_monitoring() {
 }
 
 # Step 1: Clean up old containers and networks
-echo -e "${GREEN}[1/5] Cleaning up old containers and networks...${NC}"
+echo -e "${GREEN}[1/6] Cleaning up old containers and networks...${NC}"
 
 # Stop containers first (this may remove network if it was created by compose)
 compose down --remove-orphans 2>/dev/null || true
@@ -59,7 +59,7 @@ echo -e "${GREEN}✓ Cleanup completed${NC}"
 echo ""
 
 # Step 2: Pull latest images
-echo -e "${GREEN}[2/5] Pulling latest images...${NC}"
+echo -e "${GREEN}[2/6] Pulling latest images...${NC}"
 compose pull || echo -e "${YELLOW}Warning: Some images failed to pull${NC}"
 if [[ -f "${MONITORING_COMPOSE_FILE}" ]]; then
   compose_monitoring pull || echo -e "${YELLOW}Warning: Some monitoring images failed to pull${NC}"
@@ -68,19 +68,38 @@ echo -e "${GREEN}✓ Images pulled${NC}"
 echo ""
 
 # Step 3: Rebuild application images
-echo -e "${GREEN}[3/5] Rebuilding application images...${NC}"
+echo -e "${GREEN}[3/6] Rebuilding application images...${NC}"
 compose build --no-cache
 echo -e "${GREEN}✓ Application images rebuilt${NC}"
 echo ""
 
 # Step 4: Start all services (skip build/cleanup since we already did it)
-echo -e "${GREEN}[4/5] Starting all services...${NC}"
+echo -e "${GREEN}[4/6] Starting all services...${NC}"
 bash "${ROOT_DIR}/docker/scripts/prod/bootstrap.sh" --skip-build --skip-cleanup
 echo -e "${GREEN}✓ All services started${NC}"
 echo ""
 
-# Step 5: Clean up old images
-echo -e "${GREEN}[5/5] Cleaning up old/dangling images...${NC}"
+# Step 5: Install Composer dependencies and regenerate autoloader
+echo -e "${GREEN}[5/6] Installing Composer dependencies and regenerating autoloader...${NC}"
+if compose exec -T php composer install --no-interaction --no-dev --optimize-autoloader 2>&1 | grep -q "Nothing to install\|Updating dependencies\|Installing dependencies"; then
+  echo -e "${GREEN}✓ Composer dependencies installed${NC}"
+else
+  echo -e "${YELLOW}⚠️  Composer install completed (may have warnings)${NC}"
+fi
+
+# Regenerate autoloader to ensure all classes/traits are available
+if compose exec -T php composer dump-autoload --optimize --no-interaction >/dev/null 2>&1; then
+  echo -e "${GREEN}✓ Autoloader regenerated${NC}"
+else
+  echo -e "${YELLOW}⚠️  Autoloader regeneration completed (may have warnings)${NC}"
+fi
+
+# Clear Laravel caches to ensure fresh state
+compose exec -T php php artisan optimize:clear >/dev/null 2>&1 || echo -e "${YELLOW}⚠️  Cache clear completed (may have warnings)${NC}"
+echo ""
+
+# Step 6: Clean up old images
+echo -e "${GREEN}[6/6] Cleaning up old/dangling images...${NC}"
 PRUNED=$(docker image prune -f 2>&1 | grep -oP 'Total reclaimed space: \K[0-9.]+[KMGT]?B' || echo "0B")
 echo -e "${GREEN}✓ Cleaned up old images (reclaimed: ${PRUNED})${NC}"
 echo ""
