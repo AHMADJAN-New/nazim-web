@@ -11,6 +11,14 @@ import type * as Api from '@/types/api/courseStudent';
 import type { CourseStudent } from '@/types/domain/courseStudent';
 import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
 
+export interface CourseStudentsSummary {
+  total: number;
+  enrolled: number;
+  completed: number;
+  dropped: number;
+  failed?: number;
+}
+
 
 export const useCourseStudents = (courseId?: string, usePaginated?: boolean) => {
   const { user, profile } = useAuth();
@@ -75,7 +83,16 @@ export const useCourseStudents = (courseId?: string, usePaginated?: boolean) => 
           next_page_url: paginated.next_page_url,
           prev_page_url: paginated.prev_page_url,
         };
-        return { data: students, meta } as PaginatedResponse<Api.CourseStudent>;
+        const summary: CourseStudentsSummary | undefined = paginated.summary
+          ? {
+              total: Number(paginated.summary.total ?? 0),
+              enrolled: Number(paginated.summary.enrolled ?? 0),
+              completed: Number(paginated.summary.completed ?? 0),
+              dropped: Number(paginated.summary.dropped ?? 0),
+              failed: paginated.summary.failed != null ? Number(paginated.summary.failed) : undefined,
+            }
+          : undefined;
+        return { data: students, meta, summary } as PaginatedResponse<Api.CourseStudent> & { summary?: CourseStudentsSummary };
       }
       // Handle non-paginated response
       if (Array.isArray(apiStudents)) {
@@ -99,12 +116,13 @@ export const useCourseStudents = (courseId?: string, usePaginated?: boolean) => 
   }, [data, usePaginated, updateFromMeta]);
 
   if (usePaginated) {
-    const paginated = data as PaginatedResponse<Api.CourseStudent> | undefined;
+    const paginated = data as (PaginatedResponse<Api.CourseStudent> & { summary?: CourseStudentsSummary }) | undefined;
     return {
       data: paginated?.data || [],
       isLoading,
       error,
       pagination: paginated?.meta ?? null,
+      summary: paginated?.summary ?? null,
       paginationState,
       page,
       pageSize,

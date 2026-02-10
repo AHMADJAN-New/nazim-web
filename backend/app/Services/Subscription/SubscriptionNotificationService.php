@@ -205,11 +205,16 @@ class SubscriptionNotificationService
             ->whereNull('deleted_at')
             ->first();
 
+        $from = config('mail.from');
+        $fromAddress = $from['address'] ?? 'noreply@nazim.local';
+        $fromName = $from['name'] ?? config('app.name', 'Nazim');
+
         foreach ($adminEmails as $email) {
             try {
-                // Send email using Laravel's mail facade
-                Mail::raw($body, function ($message) use ($email, $subject) {
-                    $message->to($email)
+                // Send email using Laravel's mail facade (From required by Symfony Mime)
+                Mail::raw($body, function ($message) use ($email, $subject, $fromAddress, $fromName) {
+                    $message->from($fromAddress, $fromName)
+                        ->to($email)
                         ->subject($subject);
                 });
 

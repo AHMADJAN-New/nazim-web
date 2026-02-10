@@ -448,7 +448,7 @@ export const ps: TranslationKeys = {
     retired: 'تقاعد شوی',
     returnDate: 'د بیرته ورکولو نیټه',
     searchCategories: 'د کټګوریو لټون...',
-    searchPlaceholder: 'د املاکو لټون...',
+    searchPlaceholder: 'لټون ...',
     status: 'حالت',
     statusBreakdown: 'د وضعیت تفکیک',
     subtitle: 'املاک مدیریت کړئ او ساتنه تعقیب کړئ',

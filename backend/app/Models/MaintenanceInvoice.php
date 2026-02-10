@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class MaintenanceInvoice extends Model
 {
@@ -83,28 +84,51 @@ class MaintenanceInvoice extends Model
     }
 
     /**
-     * Generate a unique invoice number
+     * Generate a unique invoice number using OrganizationCounter (concurrency-safe).
+     * Format: MNT-YYYYMM-NNNN.
      */
     public static function generateInvoiceNumber(?string $organizationId = null): string
     {
         $prefix = 'MNT';
         $year = date('Y');
         $month = date('m');
-        
-        // Get the last invoice number for this month
-        $lastInvoice = self::where('invoice_number', 'like', "{$prefix}-{$year}{$month}-%")
-            ->orderBy('invoice_number', 'desc')
-            ->first();
-        
-        if ($lastInvoice) {
-            // Extract the sequence number and increment
-            $parts = explode('-', $lastInvoice->invoice_number);
-            $sequence = (int) end($parts) + 1;
-        } else {
-            $sequence = 1;
+        $ym = $year . $month;
+
+        if ($organizationId === null || $organizationId === '') {
+            // Fallback when no org context (e.g. tests): use last invoice + 1 without lock
+            $lastInvoice = self::where('invoice_number', 'like', "{$prefix}-{$ym}-%")
+                ->orderBy('invoice_number', 'desc')
+                ->first();
+            $sequence = $lastInvoice
+                ? (int) explode('-', $lastInvoice->invoice_number)[2] + 1
+                : 1;
+
+            return sprintf('%s-%s-%04d', $prefix, $ym, $sequence);
         }
-        
-        return sprintf('%s-%s%s-%04d', $prefix, $year, $month, $sequence);
+
+        $counterType = "maintenance_invoice_{$ym}";
+
+        $sequence = DB::transaction(function () use ($organizationId, $counterType) {
+            $counter = OrganizationCounter::lockForUpdate()
+                ->where('organization_id', $organizationId)
+                ->where('counter_type', $counterType)
+                ->first();
+
+            if (! $counter) {
+                $counter = OrganizationCounter::create([
+                    'organization_id' => $organizationId,
+                    'counter_type' => $counterType,
+                    'last_value' => 0,
+                ]);
+            }
+
+            $counter->increment('last_value');
+            $counter->refresh();
+
+            return (int) $counter->last_value;
+        });
+
+        return sprintf('%s-%s-%04d', $prefix, $ym, $sequence);
     }
 
     /**

@@ -10,7 +10,7 @@ use App\Models\CourseStudent;
 use App\Models\ShortTermCourse;
 use App\Models\Student;
 use App\Services\ActivityLogService;
-use App\Services\Reports\DateConversionService;
+use App\Services\CourseStudentAdmissionService;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +21,7 @@ class CourseStudentController extends Controller
     public function __construct(
         private ActivityLogService $activityLogService,
         private FileStorageService $fileStorageService,
-        private DateConversionService $dateService
+        private CourseStudentAdmissionService $admissionService
     ) {}
 
     private function getProfile($user)
@@ -71,6 +71,12 @@ class CourseStudentController extends Controller
                 $perPage = 25; // Default to 25 if invalid
             }
 
+            // Summary counts for all matching students (same filters, no pagination) for stats cards
+            $countsByStatus = (clone $query)
+                ->selectRaw('completion_status, count(*) as cnt')
+                ->groupBy('completion_status')
+                ->pluck('cnt', 'completion_status');
+
             $students = $query->orderBy('registration_date', 'desc')
                 ->paginate((int) $perPage);
 
@@ -85,8 +91,16 @@ class CourseStudentController extends Controller
                 ])->toArray(),
             ]);
 
-            // Return paginated response in Laravel's standard format
-            return response()->json($students);
+            $payload = $students->toArray();
+            $payload['summary'] = [
+                'total' => $students->total(),
+                'enrolled' => (int) $countsByStatus->get('enrolled', 0),
+                'completed' => (int) $countsByStatus->get('completed', 0),
+                'dropped' => (int) $countsByStatus->get('dropped', 0),
+                'failed' => (int) $countsByStatus->get('failed', 0),
+            ];
+
+            return response()->json($payload);
         }
 
         // Return all results if no pagination requested (backward compatibility)
@@ -119,7 +133,7 @@ class CourseStudentController extends Controller
         $validated['school_id'] = $currentSchoolId;
         $validated = $this->normalizeCourseStudentData($validated);
 
-        // Auto-generate admission number if not provided or empty
+        // Auto-generate admission number if not provided or empty (locked counter ensures uniqueness)
         if (empty($validated['admission_no']) || trim($validated['admission_no'] ?? '') === '') {
             $course = ShortTermCourse::where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
@@ -127,44 +141,21 @@ class CourseStudentController extends Controller
                 ->find($validated['course_id']);
 
             if ($course) {
-                $validated['admission_no'] = $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId);
+                $validated['admission_no'] = $this->admissionService->generateForCourse($course, $profile->organization_id, $currentSchoolId);
             } else {
-                // Fallback: generate admission number without course (use generic course code)
-                $validated['admission_no'] = $this->generateAdmissionNumberWithoutCourse($profile->organization_id, $currentSchoolId);
+                $validated['admission_no'] = $this->admissionService->generateWithoutCourse($profile->organization_id, $currentSchoolId);
             }
         }
 
         // Sanitize UTF-8 strings to prevent encoding errors
         $validated = $this->sanitizeUtf8($validated);
 
-        $maxAttempts = 3;
-        $attempt = 0;
         $lastException = null;
-
-        $student = null;
-        while ($attempt < $maxAttempts) {
-            try {
-                $student = CourseStudent::create($validated);
-                break;
-            } catch (\Illuminate\Database\QueryException $e) {
-                $lastException = $e;
-                if (($e->getCode() === '23505' || $e->getCode() === 23505) && str_contains($e->getMessage(), 'course_students_admission_no_org_school_unique') && $attempt < $maxAttempts - 1) {
-                    $course = ShortTermCourse::where('organization_id', $profile->organization_id)
-                        ->where('school_id', $currentSchoolId)
-                        ->whereNull('deleted_at')
-                        ->find($validated['course_id']);
-                    $validated['admission_no'] = $course
-                        ? $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId)
-                        : $this->generateAdmissionNumberWithoutCourse($profile->organization_id, $currentSchoolId);
-                    $attempt++;
-
-                    continue;
-                }
-                throw $e;
-            } catch (\Throwable $e) {
-                $lastException = $e;
-                break;
-            }
+        try {
+            $student = CourseStudent::create($validated);
+        } catch (\Throwable $e) {
+            $lastException = $e;
+            $student = null;
         }
 
         if (! isset($student)) {
@@ -594,39 +585,20 @@ class CourseStudentController extends Controller
             $data['school_id'] = $currentSchoolId;
             $data['course_id'] = $course->id;
             $data['main_student_id'] = $mainStudent->id;
-            $data['admission_no'] = $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId);
+            $data['admission_no'] = $this->admissionService->generateForCourse($course, $profile->organization_id, $currentSchoolId);
             $data['registration_date'] = $validated['registration_date'];
             $data['fee_paid'] = $validated['fee_paid'] ?? false;
             $data['fee_amount'] = $validated['fee_amount'] ?? null;
 
-            $enrollAttempts = 0;
-            $enrollMaxAttempts = 3;
-            $courseStudent = null;
-            while ($enrollAttempts < $enrollMaxAttempts) {
-                try {
-                    $courseStudent = CourseStudent::create($data);
-                    break;
-                } catch (\Illuminate\Database\QueryException $e) {
-                    if (($e->getCode() === '23505' || $e->getCode() === 23505) && str_contains($e->getMessage(), 'course_students_admission_no_org_school_unique') && $enrollAttempts < $enrollMaxAttempts - 1) {
-                        $data['admission_no'] = $this->generateAdmissionNumber($course, $profile->organization_id, $currentSchoolId);
-                        $enrollAttempts++;
-
-                        continue;
-                    }
-                    Log::error('[CourseStudentController] Failed to create course student', [
-                        'error' => $e->getMessage(),
-                        'student_id' => $mainStudentId,
-                        'course_id' => $course->id,
-                    ]);
-                    break;
-                } catch (\Exception $e) {
-                    Log::error('[CourseStudentController] Failed to create course student', [
-                        'error' => $e->getMessage(),
-                        'student_id' => $mainStudentId,
-                        'course_id' => $course->id,
-                    ]);
-                    break;
-                }
+            try {
+                $courseStudent = CourseStudent::create($data);
+            } catch (\Throwable $e) {
+                Log::error('[CourseStudentController] Failed to create course student', [
+                    'error' => $e->getMessage(),
+                    'student_id' => $mainStudentId,
+                    'course_id' => $course->id,
+                ]);
+                $courseStudent = null;
             }
             if ($courseStudent) {
                 $created[] = $courseStudent->fresh();
@@ -850,47 +822,15 @@ class CourseStudentController extends Controller
         $newEnrollmentData['fee_amount'] = $request->fee_amount ?? $existingStudent->fee_amount ?? null;
         $newEnrollmentData['fee_paid_date'] = $request->fee_paid ? now() : null;
 
-        // Generate new admission number (unique per org/school)
-        $newEnrollmentData['admission_no'] = $this->generateAdmissionNumber($newCourse, $profile->organization_id, $currentSchoolId);
+        // Generate new admission number (locked counter ensures uniqueness)
+        $newEnrollmentData['admission_no'] = $this->admissionService->generateForCourse($newCourse, $profile->organization_id, $currentSchoolId);
 
         // Sanitize UTF-8 strings
         $newEnrollmentData = $this->sanitizeUtf8($newEnrollmentData);
 
-        $newEnrollment = null;
-        $enrollAttempts = 0;
-        while ($enrollAttempts < 3) {
-            try {
-                $newEnrollment = CourseStudent::create($newEnrollmentData);
-                break;
-            } catch (\Illuminate\Database\QueryException $e) {
-                if (($e->getCode() === '23505' || $e->getCode() === 23505) && str_contains($e->getMessage(), 'course_students_admission_no_org_school_unique') && $enrollAttempts < 2) {
-                    $newEnrollmentData['admission_no'] = $this->generateAdmissionNumber($newCourse, $profile->organization_id, $currentSchoolId);
-                    $enrollAttempts++;
-
-                    continue;
-                }
-                throw $e;
-            }
-        }
-
         try {
-            if (! $newEnrollment) {
-                throw new \RuntimeException('Failed to create enrollment after retries');
-            }
-            $newEnrollment = $newEnrollment->fresh();
-
-            $studentData = $newEnrollment->toArray();
-            $studentData = $this->ensureUtf8Encoding($studentData);
-
-            $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
-            if (defined('JSON_INVALID_UTF8_IGNORE')) {
-                $jsonFlags |= JSON_INVALID_UTF8_IGNORE;
-            }
-
-            return response()->json($studentData, 201, [
-                'Content-Type' => 'application/json; charset=utf-8',
-            ], $jsonFlags);
-        } catch (\Exception $e) {
+            $newEnrollment = CourseStudent::create($newEnrollmentData);
+        } catch (\Throwable $e) {
             Log::error('[CourseStudentController] Error enrolling student to new course', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -903,126 +843,20 @@ class CourseStudentController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
-    }
 
-    /**
-     * Generate admission number unique per organization + school (not per course).
-     * Constraint is (admission_no, organization_id, school_id).
-     * Uses database transaction with lock to ensure thread-safety and prevent duplicates.
-     */
-    private function generateAdmissionNumber(ShortTermCourse $course, string $organizationId, string $schoolId): string
-    {
-        return DB::transaction(function () use ($course, $organizationId, $schoolId) {
-            // Get the course code (first 3 letters, uppercase, alphanumeric only)
-            $courseCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $course->name ?? 'GEN'), 0, 3));
-            if (strlen($courseCode) < 3) {
-                $courseCode = 'GEN'; // Fallback
-            }
+        $newEnrollment = $newEnrollment->fresh();
 
-            // Get Shamsi (Jalali) year
-            $date = $course->start_date ? $course->start_date : now();
-            $shamsiDate = $this->dateService->getDateComponents($date, 'jalali');
-            $year = substr((string) $shamsiDate['year'], -2);
+        $studentData = $newEnrollment->toArray();
+        $studentData = $this->ensureUtf8Encoding($studentData);
 
-            // Get the maximum sequence number for this org/school/year/course combination
-            // Use a subquery to find the max sequence, then add 1
-            // This is more reliable than count() and works within the transaction
-            $maxSequence = CourseStudent::where('organization_id', $organizationId)
-                ->where('school_id', $schoolId)
-                ->whereNull('deleted_at')
-                ->where('admission_no', 'like', "CS-{$courseCode}-{$year}-%")
-                ->selectRaw("COALESCE(MAX(CAST(SUBSTRING(admission_no FROM '\\d+$') AS INTEGER)), 0) as max_seq")
-                ->value('max_seq') ?? 0;
+        $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+        if (defined('JSON_INVALID_UTF8_IGNORE')) {
+            $jsonFlags |= JSON_INVALID_UTF8_IGNORE;
+        }
 
-            // Start with max sequence + 1, but we'll verify uniqueness
-            $baseSequence = $maxSequence + 1;
-
-            // Try to find a unique admission number by incrementing sequence if needed
-            $maxAttempts = 100; // Safety limit to prevent infinite loops
-            $attempt = 0;
-            $sequence = $baseSequence;
-
-            while ($attempt < $maxAttempts) {
-                $admissionNo = sprintf('CS-%s-%s-%03d', $courseCode, $year, $sequence);
-
-                // Check if this admission number already exists
-                $exists = CourseStudent::where('organization_id', $organizationId)
-                    ->where('school_id', $schoolId)
-                    ->where('admission_no', $admissionNo)
-                    ->whereNull('deleted_at')
-                    ->exists();
-
-                if (!$exists) {
-                    // Found a unique admission number
-                    return $admissionNo;
-                }
-
-                // If it exists, try next sequence number
-                $sequence++;
-                $attempt++;
-            }
-
-            // Fallback: use timestamp-based suffix if we can't find a unique sequence
-            $timestamp = now()->format('His'); // Hours, minutes, seconds
-            return sprintf('CS-%s-%s-%s', $courseCode, $year, $timestamp);
-        });
-    }
-
-    /**
-     * Generate admission number when course is not available (fallback method).
-     * Uses same logic as generateAdmissionNumber but with generic course code.
-     */
-    private function generateAdmissionNumberWithoutCourse(string $organizationId, string $schoolId): string
-    {
-        return DB::transaction(function () use ($organizationId, $schoolId) {
-            $courseCode = 'GEN'; // Generic course code
-
-            // Get Shamsi (Jalali) year
-            $shamsiDate = $this->dateService->getDateComponents(now(), 'jalali');
-            $year = substr((string) $shamsiDate['year'], -2);
-
-            // Get the maximum sequence number for this org/school/year/course combination
-            // Use a subquery to find the max sequence, then add 1
-            // This is more reliable than count() and works within the transaction
-            $maxSequence = CourseStudent::where('organization_id', $organizationId)
-                ->where('school_id', $schoolId)
-                ->whereNull('deleted_at')
-                ->where('admission_no', 'like', "CS-{$courseCode}-{$year}-%")
-                ->selectRaw("COALESCE(MAX(CAST(SUBSTRING(admission_no FROM '\\d+$') AS INTEGER)), 0) as max_seq")
-                ->value('max_seq') ?? 0;
-
-            // Start with max sequence + 1, but we'll verify uniqueness
-            $baseSequence = $maxSequence + 1;
-
-            // Try to find a unique admission number by incrementing sequence if needed
-            $maxAttempts = 100; // Safety limit to prevent infinite loops
-            $attempt = 0;
-            $sequence = $baseSequence;
-
-            while ($attempt < $maxAttempts) {
-                $admissionNo = sprintf('CS-%s-%s-%03d', $courseCode, $year, $sequence);
-
-                // Check if this admission number already exists
-                $exists = CourseStudent::where('organization_id', $organizationId)
-                    ->where('school_id', $schoolId)
-                    ->where('admission_no', $admissionNo)
-                    ->whereNull('deleted_at')
-                    ->exists();
-
-                if (!$exists) {
-                    // Found a unique admission number
-                    return $admissionNo;
-                }
-
-                // If it exists, try next sequence number
-                $sequence++;
-                $attempt++;
-            }
-
-            // Fallback: use timestamp-based suffix if we can't find a unique sequence
-            $timestamp = now()->format('His'); // Hours, minutes, seconds
-            return sprintf('CS-%s-%s-%s', $courseCode, $year, $timestamp);
-        });
+        return response()->json($studentData, 201, [
+            'Content-Type' => 'application/json; charset=utf-8',
+        ], $jsonFlags);
     }
 
     /**

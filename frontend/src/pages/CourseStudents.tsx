@@ -237,7 +237,7 @@ const CourseStudents = () => {
   }, [courseIdFromUrl]);
 
   const effectiveCourseId = selectedCourseId === 'all' ? undefined : selectedCourseId;
-  const { data: students, isLoading, error, pagination, page, pageSize, setPage, setPageSize, refetch } = useCourseStudents(effectiveCourseId, true);
+  const { data: students, isLoading, error, pagination, summary: apiSummary, page, pageSize, setPage, setPageSize, refetch } = useCourseStudents(effectiveCourseId, true);
   const { data: courses } = useShortTermCourses();
   
   // Type assertions to ensure domain types
@@ -271,13 +271,22 @@ const CourseStudents = () => {
     });
   }, [typedStudents, status, search]);
 
+  // Use API summary (all students for current course filter) for cards; fallback to current-page counts if API has no summary
   const summary = useMemo(() => {
+    if (apiSummary) {
+      return {
+        total: apiSummary.total,
+        enrolled: apiSummary.enrolled,
+        completed: apiSummary.completed,
+        dropped: apiSummary.dropped,
+      };
+    }
     const total = filtered.length;
     const completed = filtered.filter((s) => s.completionStatus === 'completed').length;
     const enrolled = filtered.filter((s) => s.completionStatus === 'enrolled').length;
     const dropped = filtered.filter((s) => s.completionStatus === 'dropped').length;
     return { total, completed, enrolled, dropped };
-  }, [filtered]);
+  }, [apiSummary, filtered]);
 
   const paginationState: PaginationState = {
     pageIndex: page - 1,
