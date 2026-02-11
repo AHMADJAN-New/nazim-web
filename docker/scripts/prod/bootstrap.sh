@@ -142,6 +142,12 @@ compose ps
 echo "[bootstrap] Starting php (API)..."
 compose up -d php
 
+echo "[bootstrap] Installing Composer dependencies..."
+compose exec -T php composer install --no-interaction --no-dev --optimize-autoloader >/dev/null 2>&1 || echo "[bootstrap] Warning: Composer install completed (may have warnings)"
+
+echo "[bootstrap] Regenerating autoloader..."
+compose exec -T php composer dump-autoload --optimize --no-interaction >/dev/null 2>&1 || echo "[bootstrap] Warning: Autoloader regeneration completed (may have warnings)"
+
 echo "[bootstrap] Running Laravel setup..."
 compose exec -T php sh -lc '
   set -e
