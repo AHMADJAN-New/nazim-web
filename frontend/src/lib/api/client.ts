@@ -706,6 +706,12 @@ export const organizationsApi = {
   },
 };
 
+export const organizationDashboardApi = {
+  overview: async () => {
+    return apiClient.get('/organization-dashboard/overview');
+  },
+};
+
 // Profiles API
 export const profilesApi = {
   list: async (params?: { organization_id?: string }) => {

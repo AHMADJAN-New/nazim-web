@@ -288,6 +288,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasRoomsPermission = useHasPermissionAndFeature('rooms.read');
   const hasHostelPermission = useHasPermissionAndFeature('hostel.read');
   const hasOrganizationsPermission = useHasPermissionAndFeature('organizations.read');
+  const hasDashboardPermission = useHasPermissionAndFeature('dashboard.read');
   const hasProfilesPermission = useHasPermissionAndFeature('profiles.read');
   const hasUsersPermission = useHasPermissionAndFeature('users.read');
   const hasActivityLogsPermission = useHasPermissionAndFeature('activity_logs.read');
@@ -572,6 +573,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   // Check if user is event user (profile already declared above)
   const isEventUser = profile?.is_event_user === true;
+  const hasOrganizationDashboardPermissionFromList =
+    permissions.includes('organizations.read') ||
+    permissions.includes('dashboard.read') ||
+    permissions.includes('school_branding.read');
+  const hasOrganizationDashboardAccess =
+    !!profile?.schools_access_all &&
+    (
+      role === 'organization_admin' ||
+      hasOrganizationDashboardPermissionFromList ||
+      hasOrganizationsPermission === true ||
+      hasDashboardPermission === true ||
+      hasBrandingPermission === true
+    );
 
   // Define category colors for icons
   const categoryColors = {
@@ -788,6 +802,15 @@ export const SmartSidebar = memo(function SmartSidebar() {
         category: 'core' as NavigationCategory,
         iconColor: categoryColors.core,
       },
+      ...(hasOrganizationDashboardAccess ? [asNavItem({
+        titleKey: "organizationDashboard",
+        url: "/organization-dashboard",
+        icon: Building2,
+        badge: null,
+        priority: 0.6,
+        category: 'core' as NavigationCategory,
+        iconColor: categoryColors.core,
+      })] : []),
       ...((hasStaffPermission || hasStaffReportsPermission) ? [asNavItem({
         titleKey: "staffManagement",
         icon: Users,
@@ -1769,7 +1792,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [subscriptionBlocked, isOnSubscriptionPage, hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasExamDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission, hasWebsiteSettingsPermission, hasWebsitePagesPermission, hasWebsitePostsPermission, hasWebsiteEventsPermission, hasWebsiteMediaPermission, hasWebsiteMenusPermission, hasWebsiteAccess, websiteOnlyUser]);
+  }, [subscriptionBlocked, isOnSubscriptionPage, hasSettingsPermission, hasOrganizationsPermission, hasDashboardPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasExamDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission, hasWebsiteSettingsPermission, hasWebsitePagesPermission, hasWebsitePostsPermission, hasWebsiteEventsPermission, hasWebsiteMediaPermission, hasWebsiteMenusPermission, hasWebsiteAccess, websiteOnlyUser, hasOrganizationDashboardAccess, hasOrganizationDashboardPermissionFromList, role, profile?.schools_access_all, permissions]);
 
   const websiteNavItem = useMemo(() => {
     return allNavigationItems.find((item) => item.titleKey === 'websiteManager') ?? null;

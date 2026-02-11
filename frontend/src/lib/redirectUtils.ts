@@ -7,15 +7,21 @@ import { useFeatures, type FeatureInfo } from '@/hooks/useSubscription';
  * Get the redirect path after login based on user permissions and event user status
  * Priority:
  * 1. If user is event user -> redirect to their assigned event (only if events feature is enabled)
- * 2. If user has dashboard permission -> redirect to dashboard
- * 3. Otherwise -> redirect to dashboard
+ * 2. If user can access org dashboard -> redirect to organization dashboard
+ * 3. If user has dashboard permission -> redirect to dashboard
+ * 4. Otherwise -> redirect to dashboard
  * 
  * CRITICAL: Only event users (is_event_user = true) are redirected to events pages.
  * Regular users with event permissions are NOT redirected to events on first login.
  */
 export async function getPostLoginRedirectPath(
   permissions: string[], 
-  profile?: { event_id?: string | null; is_event_user?: boolean } | null,
+  profile?: {
+    event_id?: string | null;
+    is_event_user?: boolean;
+    role?: string | null;
+    schools_access_all?: boolean;
+  } | null,
   features?: FeatureInfo[]
 ): Promise<string> {
   // Check if events feature is enabled
@@ -42,6 +48,19 @@ export async function getPostLoginRedirectPath(
     return `/events/${profile.event_id}`;
   }
 
+  const canAccessOrganizationDashboard =
+    profile?.schools_access_all === true &&
+    (
+      profile?.role === 'organization_admin' ||
+      permissions.includes('organizations.read') ||
+      permissions.includes('dashboard.read') ||
+      permissions.includes('school_branding.read')
+    );
+
+  if (canAccessOrganizationDashboard) {
+    return '/organization-dashboard';
+  }
+
   const hasDashboardPermission = permissions.includes('dashboard.read');
 
   // If user has dashboard permission, go to dashboard
@@ -63,4 +82,3 @@ export function usePostLoginRedirectPath(): Promise<string> {
   const { data: features } = useFeatures();
   return getPostLoginRedirectPath(permissions, profile, features);
 }
-

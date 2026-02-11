@@ -54,6 +54,7 @@ import { PublicLayout } from "@/website/components/layout/PublicLayout"
 // Lazy-loaded components with optimized loading
 import {
   Dashboard,
+  OrganizationDashboard,
   ResetPasswordPage,
   DashboardSkeleton,
   PageSkeleton,
@@ -702,6 +703,16 @@ const App = () => (
                     <Route path="/dashboard" element={
                       <Suspense fallback={<DashboardSkeleton />}>
                         <Dashboard />
+                      </Suspense>
+                    } />
+                    <Route path="/organization-dashboard" element={
+                      <Suspense fallback={<DashboardSkeleton />}>
+                        <OrganizationDashboard />
+                      </Suspense>
+                    } />
+                    <Route path="/org/dashboard" element={
+                      <Suspense fallback={<DashboardSkeleton />}>
+                        <OrganizationDashboard />
                       </Suspense>
                     } />
                     {/* User Profile and Settings */}
