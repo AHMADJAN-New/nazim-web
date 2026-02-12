@@ -47,6 +47,10 @@ Or with dry-run: add `--dry-run` before the command string to see what would be 
 
 **If you still see `[AppHeader DEBUG] Features:` in the browser console:** the frontend bundle is old. Rebuild and redeploy the frontend (e.g. run your build/deploy script or `docker/scripts/prod/update.sh` and ensure the frontend is rebuilt).
 
+**If desktop release uploads fail with 413 (Request Entity Too Large):** Nginx and PHP upload limits must allow at least 500 MB. The repo sets `client_max_body_size 512M` in `docker/nginx/*` and `post_max_size` / `upload_max_filesize 512M` in `docker/php/nazim.ini`. After changing these, rebuild or restart the nginx and php containers so the new limits apply.
+
+**If desktop release downloads are very slow (~25 kbps):** The stack uses **X-Accel-Redirect** so nginx serves the file directly (not via PHP). Ensure the nginx config includes the `internal-desktop-files/` location and that `DESKTOP_USE_X_ACCEL_REDIRECT=true` in `.env`. Rebuild/restart nginx after config changes.
+
 ---
 
 ### 🚀 Build and Start

@@ -168,7 +168,11 @@ function uploadWithProgress(
         }
       } else {
         let msg = 'Upload failed';
-        try { msg = JSON.parse(xhr.responseText)?.message || JSON.parse(xhr.responseText)?.error || msg; } catch { /* empty */ }
+        if (xhr.status === 413) {
+          msg = 'File too large. Server allows up to 500 MB; ensure Nginx and PHP upload limits are at least 512M.';
+        } else {
+          try { msg = JSON.parse(xhr.responseText)?.message || JSON.parse(xhr.responseText)?.error || msg; } catch { /* empty */ }
+        }
         reject(new Error(msg));
       }
     });
@@ -304,6 +308,7 @@ export default function DesktopReleasesManagement() {
   });
 
   const replaceReleaseFileMutation = useMutation({
+    retry: false, // Large file uploads: avoid retrying on 413/network so progress does not reset
     mutationFn: async ({ id, file }: { id: string; file: File }) => {
       const formData = new FormData();
       formData.append('file', file);
@@ -339,6 +344,7 @@ export default function DesktopReleasesManagement() {
   // ── Prerequisite Mutations ──
 
   const createPrereqMutation = useMutation({
+    retry: false, // Large file uploads: avoid retrying on 413/network so progress does not reset
     mutationFn: async (data: { name: string; version?: string; description?: string; file: File; install_order?: number; is_required?: boolean; is_active?: boolean }) => {
       const formData = new FormData();
       formData.append('name', data.name);
@@ -381,6 +387,7 @@ export default function DesktopReleasesManagement() {
   });
 
   const replacePrereqFileMutation = useMutation({
+    retry: false, // Large file uploads: avoid retrying on 413/network so progress does not reset
     mutationFn: async ({ id, file }: { id: string; file: File }) => {
       const formData = new FormData();
       formData.append('file', file);
@@ -525,8 +532,8 @@ export default function DesktopReleasesManagement() {
     }
   }
 
-  // ── Updater config URL ──
-  const updaterConfigUrl = `${window.location.origin}/api/desktop/updates.txt`;
+  const updaterConfigUrl = desktopConfig?.updater_config_url ?? `${window.location.origin}/api/desktop/updates.txt`;
+  const friendlyDownloadUrl = desktopConfig?.friendly_download_url ?? null;
 
   const isMutating =
     createReleaseMutation.isPending ||

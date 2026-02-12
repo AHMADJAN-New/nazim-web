@@ -324,8 +324,9 @@ class DesktopReleaseController extends Controller
 
     /**
      * Download a release file (public, increments counter).
+     * Uses X-Accel-Redirect when available so nginx serves the file directly for full download speed.
      */
-    public function downloadRelease(string $id): \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\JsonResponse
+    public function downloadRelease(string $id): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\JsonResponse
     {
         $release = DesktopRelease::whereNull('deleted_at')
             ->where('status', 'published')
@@ -335,8 +336,19 @@ class DesktopReleaseController extends Controller
             return response()->json(['error' => 'File not found'], 404);
         }
 
-        // Increment download count
         $release->increment('download_count');
+
+        if (config('desktop.use_x_accel_redirect', true)) {
+            $internalPath = '/internal-desktop-files/'.$release->file_path;
+            $filename = $release->file_name ?? basename($release->file_path);
+            if ($filename !== '') {
+                $internalPath .= '?f='.rawurlencode($filename);
+            }
+
+            return response('', 200)
+                ->header('X-Accel-Redirect', $internalPath)
+                ->header('Content-Type', 'application/octet-stream');
+        }
 
         return Storage::disk('public')->download(
             $release->file_path,
@@ -346,8 +358,9 @@ class DesktopReleaseController extends Controller
 
     /**
      * Download a prerequisite file (public, increments counter).
+     * Uses X-Accel-Redirect when available so nginx serves the file directly for full download speed.
      */
-    public function downloadPrerequisite(string $id): \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\JsonResponse
+    public function downloadPrerequisite(string $id): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\JsonResponse
     {
         $prerequisite = DesktopPrerequisite::whereNull('deleted_at')
             ->where('is_active', true)
@@ -358,6 +371,18 @@ class DesktopReleaseController extends Controller
         }
 
         $prerequisite->increment('download_count');
+
+        if (config('desktop.use_x_accel_redirect', true)) {
+            $internalPath = '/internal-desktop-files/'.$prerequisite->file_path;
+            $filename = $prerequisite->file_name ?? basename($prerequisite->file_path);
+            if ($filename !== '') {
+                $internalPath .= '?f='.rawurlencode($filename);
+            }
+
+            return response('', 200)
+                ->header('X-Accel-Redirect', $internalPath)
+                ->header('Content-Type', 'application/octet-stream');
+        }
 
         return Storage::disk('public')->download(
             $prerequisite->file_path,

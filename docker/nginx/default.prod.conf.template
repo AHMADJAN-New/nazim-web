@@ -2,7 +2,7 @@ server {
     listen 80;
     server_name ${DOMAIN} _;
 
-    client_max_body_size 50M;
+    client_max_body_size 512M;
 
     # Health endpoint
     location = /healthz {
@@ -44,6 +44,23 @@ server {
             add_header Cache-Control "public, max-age=604800";
         }
 
+        location /internal-desktop-files/ {
+            internal;
+            alias /backend-storage/app/public/;
+            add_header Content-Disposition "attachment; filename=\"$arg_f\"";
+            add_header X-Content-Type-Options "nosniff";
+        }
+
+        # desktop friendly download URL (e.g. /downloads/Nazim.exe)
+        location ^~ /downloads/ {
+            include fastcgi_params;
+            fastcgi_pass php:9000;
+            fastcgi_param SCRIPT_FILENAME /var/www/backend/public/index.php;
+            fastcgi_param DOCUMENT_ROOT  /var/www/backend/public;
+            fastcgi_param REQUEST_URI $request_uri;
+            fastcgi_read_timeout 300;
+        }
+
         # api proxy over HTTP (still works)
         location = /api { return 301 /api/; }
 
@@ -54,6 +71,8 @@ server {
             fastcgi_param DOCUMENT_ROOT  /var/www/backend/public;
             fastcgi_param REQUEST_URI $request_uri;
             fastcgi_read_timeout 300;
+            fastcgi_buffering off;
+            fastcgi_request_buffering off;
         }
 
         try_files $uri $uri/ /index.html;
