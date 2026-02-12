@@ -12,6 +12,14 @@ interface MaintenanceModeDetail {
   scheduledEnd?: string | null;
 }
 
+interface MaintenanceStatusData {
+  is_maintenance_mode: boolean;
+  message?: string | null;
+  scheduled_end_at?: string | null;
+  started_at?: string | null;
+  affected_services?: string[];
+}
+
 export function MaintenanceModeHandler({ children }: { children: React.ReactNode }) {
   const [maintenanceMode, setMaintenanceMode] = useState<MaintenanceModeDetail | null>(null);
   const navigate = useNavigate();
@@ -21,46 +29,43 @@ export function MaintenanceModeHandler({ children }: { children: React.ReactNode
   // Check if user is a platform admin (has platform admin session flag)
   const isPlatformAdminSession = localStorage.getItem('is_platform_admin_session') === 'true';
 
-  // CRITICAL: Periodically check maintenance status to clear maintenance mode when disabled
-  // Also check on initial mount to handle page refreshes
-  // Always check status (even when maintenanceMode is null) to detect when maintenance is enabled
+  // Check maintenance status: one initial fetch, then only poll when maintenance is active.
+  // When not in maintenance we do NOT poll; 503 from any API call will set maintenanceMode via event.
   const { data: maintenanceStatus } = useQuery({
     queryKey: ['maintenance-status-check'],
-    queryFn: async () => {
+    queryFn: async (): Promise<MaintenanceStatusData> => {
       try {
         const response = await maintenanceApi.getPublicStatus();
-        return response.data;
+        return response.data as MaintenanceStatusData;
       } catch (error) {
         // If we can't fetch status, assume maintenance is disabled
         return { is_maintenance_mode: false };
       }
     },
-    refetchInterval: (data) => {
-      // CRITICAL: Always poll when maintenanceMode state is set (to detect when it's disabled)
-      // Also poll when API says maintenance is active
-      // This ensures we can clear the state when maintenance is disabled
+    refetchInterval: (query) => {
+      const data = query.state?.data as MaintenanceStatusData | undefined;
+      // Only poll when we're in maintenance (state set) or API says maintenance is active
       if (maintenanceMode !== null) {
-        // State is set - poll frequently to detect when it's disabled
-        return 10000; // Check every 10 seconds
+        return 15000; // Poll every 15s to detect when maintenance is disabled
       }
       if (data?.is_maintenance_mode) {
-        // API says maintenance is active - poll frequently
-        return 10000; // Check every 10 seconds
+        return 15000; // Poll every 15s while maintenance is active
       }
-      // No maintenance active - poll less frequently (just to detect when it becomes active)
-      return 30000; // Check every 30 seconds
+      // No maintenance: do not poll (503 from any request will trigger maintenance-mode event)
+      return false;
     },
-    staleTime: 5 * 1000, // Consider data stale after 5 seconds
+    staleTime: 60 * 1000, // 1 minute when not in maintenance
+    refetchOnWindowFocus: true, // Check once when user returns to tab (detect maintenance turned on in background)
   });
 
   // CRITICAL: On initial mount, check if maintenance is active and set state accordingly
   useEffect(() => {
-    if (maintenanceStatus && maintenanceStatus.is_maintenance_mode && !maintenanceMode) {
-      // Maintenance is active but state is not set - set it
+    const status = maintenanceStatus as MaintenanceStatusData | undefined;
+    if (status?.is_maintenance_mode && !maintenanceMode) {
       setMaintenanceMode({
-        message: maintenanceStatus.message || undefined,
+        message: status.message ?? undefined,
         retryAfter: null,
-        scheduledEnd: maintenanceStatus.scheduled_end_at || undefined,
+        scheduledEnd: status.scheduled_end_at ?? undefined,
       });
     }
   }, [maintenanceStatus, maintenanceMode]);

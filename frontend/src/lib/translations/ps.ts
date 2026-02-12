@@ -4039,6 +4039,7 @@ export const ps: TranslationKeys = {
     courses: 'دورې/ کورسونه',
     courseStudents: 'د دوره/ کورس زده کوونکي',
     dashboard: 'ډشبورډ',
+    organizationDashboard: 'Organization Dashboard',
     documents: 'اسناد',
     examAnalytics: 'د ازموینې تحلیل',
     examAttendance: 'د ازموینې حاضري',

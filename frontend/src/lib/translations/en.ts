@@ -3992,6 +3992,7 @@ export const en = {
     courses: 'Courses',
     courseStudents: 'Course Students',
     dashboard: 'Dashboard',
+    organizationDashboard: 'Organization Dashboard',
     documents: 'Documents',
     examAnalytics: 'Exam Analytics',
     examAttendance: 'Exam Attendance',

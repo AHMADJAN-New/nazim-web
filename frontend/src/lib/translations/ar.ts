@@ -4006,6 +4006,7 @@ export const ar: TranslationKeys = {
     "courses": "الدورات",
     "courseStudents": "طلاب الدورة",
     "dashboard": "لوحة التحكم",
+    "organizationDashboard": "Organization Dashboard",
     "documents": "Documents",
     "examAnalytics": "Exam Analytics",
     "examAttendance": "Exam Attendance",

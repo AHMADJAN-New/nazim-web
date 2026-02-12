@@ -25,6 +25,8 @@ export function PersistentLayout() {
   const pageTitle = useMemo(() => {
     const path = location.pathname;
     if (path === '/dashboard' || path === '/') return 'Dashboard';
+    if (path === '/organization-dashboard') return 'Organization Dashboard';
+    if (path === '/org/dashboard') return 'Organization Dashboard';
     // Add more title mappings as needed
     return '';
   }, [location.pathname]);

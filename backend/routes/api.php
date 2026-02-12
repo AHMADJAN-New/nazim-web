@@ -48,6 +48,7 @@ use App\Http\Controllers\LibraryCategoryController;
 use App\Http\Controllers\LibraryCopyController;
 use App\Http\Controllers\LibraryLoanController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\OrganizationDashboardController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PlatformWebsiteConfigController;
 use App\Http\Controllers\PlatformWebsiteDomainController;
@@ -330,6 +331,9 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::put('/schools/{school}/admission-rules', [SchoolAdmissionRulesController::class, 'update']);
         Route::patch('/schools/{school}/admission-rules', [SchoolAdmissionRulesController::class, 'update']);
     });
+
+    // Organization dashboard (organization-scoped, all schools aggregation)
+    Route::get('/organization-dashboard/overview', [OrganizationDashboardController::class, 'overview']);
 
     // Watermarks (for school branding)
     Route::get('/watermarks', [\App\Http\Controllers\WatermarkController::class, 'index']);

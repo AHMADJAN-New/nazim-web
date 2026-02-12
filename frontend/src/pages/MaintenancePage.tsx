@@ -51,15 +51,15 @@ export default function MaintenancePage({
   const [timeUntilEnd, setTimeUntilEnd] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
 
-  // Fetch maintenance status from database
+  // Use same query key as MaintenanceModeHandler so we share cache and avoid duplicate requests.
+  // Handler drives polling when maintenance is active; no refetchInterval here.
   const { data: maintenanceData, isLoading, error } = useQuery({
-    queryKey: ['maintenance-status-public'],
+    queryKey: ['maintenance-status-check'],
     queryFn: async () => {
       const response = await maintenanceApi.getPublicStatus();
       return response.data;
     },
-    refetchInterval: 10000, // Refetch every 10 seconds (faster to detect when disabled)
-    staleTime: 5 * 1000, // Consider data stale after 5 seconds
+    staleTime: 60 * 1000,
   });
 
   const maintenanceStatus: MaintenanceStatus | null = maintenanceData || null;

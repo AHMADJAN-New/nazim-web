@@ -4,6 +4,7 @@ import { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 
 // Lazy load core pages for better code splitting
 export const Dashboard = lazy(() => import('@/pages/Dashboard'));
+export const OrganizationDashboard = lazy(() => import('@/pages/OrganizationDashboard'));
 export const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 export const UserProfile = lazy(() => import('@/pages/UserProfile'));
 export const UserSettings = lazy(() => import('@/pages/UserSettings'));
