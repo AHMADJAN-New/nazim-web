@@ -265,9 +265,61 @@ export default function DesktopReleasesManagement() {
   const releases = releasesData ?? [];
   const prerequisites = prereqsData ?? [];
 
+  const { data: updatesFileStatus, refetch: refetchUpdatesFile } = useQuery({
+    queryKey: ['platform-desktop-releases-updates-file'],
+    queryFn: async () => {
+      const r = await platformApi.desktopReleases.hasUpdatesFile();
+      return r as { has_override: boolean };
+    },
+  });
+  const hasUpdatesOverride = updatesFileStatus?.has_override ?? false;
+
+  const uploadUpdatesFileMutation = useMutation({
+    mutationFn: (file: File) => platformApi.desktopReleases.uploadUpdatesFile(file),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['platform-desktop-releases-updates-file'] });
+      refetchUpdatesFile();
+      showToast.success('Updates file uploaded and is now served');
+    },
+    onError: (e: Error) => showToast.error(e?.message ?? 'Upload failed'),
+  });
+  const deleteUpdatesFileMutation = useMutation({
+    mutationFn: () => platformApi.desktopReleases.deleteUpdatesFile(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['platform-desktop-releases-updates-file'] });
+      refetchUpdatesFile();
+      showToast.success('Override removed; auto-generated content will be served again');
+    },
+    onError: (e: Error) => showToast.error(e?.message ?? 'Remove failed'),
+  });
+
+  const updatesFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Desktop config (friendly download URL, updates.txt URL) — public API
+  const apiBase = import.meta.env.VITE_API_BASE_URL
+    ? (String(import.meta.env.VITE_API_BASE_URL).startsWith('http')
+        ? String(import.meta.env.VITE_API_BASE_URL)
+        : `${window.location.origin}${String(import.meta.env.VITE_API_BASE_URL)}`)
+    : `${window.location.origin}/api`;
+  const { data: desktopConfig } = useQuery({
+    queryKey: ['desktop-config'],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/desktop/config`);
+      if (!res.ok) throw new Error('Failed to load desktop config');
+      return res.json() as Promise<{
+        download_path: string;
+        download_filename: string;
+        friendly_download_url: string;
+        updater_config_url: string;
+      }>;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   // ── Release Mutations ──
 
   const createReleaseMutation = useMutation({
+    retry: false, // Large file uploads: avoid retrying on 413/network so progress does not reset
     mutationFn: async (data: { version: string; display_name: string; release_notes?: string; file: File; status?: 'draft' | 'published' }) => {
       const formData = new FormData();
       formData.append('version', data.version);
@@ -558,29 +610,112 @@ export default function DesktopReleasesManagement() {
         </div>
       </div>
 
-      {/* Updater Config Info Card */}
+      {/* Updater & download URLs */}
       <Card className="border-blue-200 bg-blue-50/50">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <ExternalLink className="h-4 w-4 text-blue-600 shrink-0" />
-            <span className="text-sm font-medium text-blue-800">Advanced Installer Updater URL:</span>
-            <code className="bg-white text-xs px-2 py-1 rounded border text-blue-900 break-all">
-              {updaterConfigUrl}
-            </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(updaterConfigUrl);
-                showToast.success('URL copied to clipboard');
-              }}
-            >
-              <Copy className="h-3 w-3" />
-            </Button>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Updater config (updates.txt) &amp; download URL
+          </CardTitle>
+          <CardDescription>
+            The <code className="text-xs bg-white/80 px-1 rounded">updates.txt</code> file is generated automatically when someone requests it; it always reflects the current latest published release. To change the download path or filename (e.g. <code className="text-xs bg-white/80 px-1 rounded">/downloads/Nazim.exe</code>), set <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_PATH</code> and <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_FILENAME</code> in the backend <code className="text-xs bg-white/80 px-1 rounded">.env</code>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-0">
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-blue-800">Updater config URL (updates.txt)</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <code className="bg-white text-xs px-2 py-1.5 rounded border text-blue-900 break-all flex-1 min-w-0">
+                {updaterConfigUrl}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(updaterConfigUrl);
+                  showToast.success('Updater config URL copied');
+                }}
+              >
+                <Copy className="h-3.5 w-3.5 mr-1" />
+                Copy
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => window.open(updaterConfigUrl, '_blank')}
+              >
+                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                View
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-blue-600 mt-1">
-            Use this URL in your Advanced Installer project's Updater settings. The file is auto-generated from the latest published release.
-          </p>
+          {friendlyDownloadUrl && (
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-blue-800">Friendly download URL (used in updates.txt; points to latest release)</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <code className="bg-white text-xs px-2 py-1.5 rounded border text-blue-900 break-all flex-1 min-w-0">
+                  {friendlyDownloadUrl}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    navigator.clipboard.writeText(friendlyDownloadUrl);
+                    showToast.success('Download URL copied');
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5 mr-1" />
+                  Copy
+                </Button>
+              </div>
+            </div>
+          )}
+          <div className="space-y-1.5 pt-2 border-t border-blue-200/60">
+            <span className="text-xs font-medium text-blue-800">Upload custom updates.txt (override)</span>
+            <p className="text-xs text-blue-600">
+              Upload a .txt file to serve it at the updater config URL instead of the auto-generated content. Use this if you need exact control (e.g. custom [Update] section with MD5, Flags, RegistryKey). Remove the override to use auto-generated content again.
+            </p>
+            {hasUpdatesOverride ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="secondary" className="bg-green-100 text-green-800">Custom file active</Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => deleteUpdatesFileMutation.mutate()}
+                  disabled={deleteUpdatesFileMutation.isPending}
+                >
+                  {deleteUpdatesFileMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                  Remove override
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap">
+                <input
+                  type="file"
+                  ref={updatesFileInputRef}
+                  accept=".txt"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadUpdatesFileMutation.mutate(f);
+                    e.target.value = '';
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updatesFileInputRef.current?.click()}
+                  disabled={uploadUpdatesFileMutation.isPending}
+                >
+                  {uploadUpdatesFileMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+                  Upload updates.txt
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -667,7 +802,20 @@ export default function DesktopReleasesManagement() {
                         <TableCell className="text-right font-mono">{r.download_count}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{formatDate(r.published_at)}</TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1 flex-wrap">
+                            {r.download_url && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Copy download link"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(r.download_url!);
+                                  showToast.success('Download link copied');
+                                }}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            )}
                             {r.status === 'draft' && (
                               <Button
                                 variant="ghost"

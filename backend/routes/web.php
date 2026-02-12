@@ -2,7 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CertificateVerifyController;
+use App\Http\Controllers\DesktopReleaseController;
 use App\Http\Controllers\StorageController;
+
+// Friendly desktop download URL: /downloads/Nazim.exe -> redirects to latest release (for updater)
+Route::get('/downloads/{filename}', [DesktopReleaseController::class, 'downloadLatestAt'])
+    ->where('filename', '[a-zA-Z0-9_.-]+')
+    ->middleware('throttle:30,1');
 
 // Serve public storage files via centralized StorageController (e.g. website images, media) - no auth required
 Route::get('/storage/{path}', [StorageController::class, 'servePublic'])

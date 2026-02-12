@@ -1033,6 +1033,17 @@ export const platformApi = {
     delete: async (id: string) => {
       return apiClient.delete(`/platform/desktop-releases/${id}`);
     },
+    hasUpdatesFile: async () => {
+      return apiClient.get<{ has_override: boolean }>('/platform/desktop-releases/updates-file');
+    },
+    uploadUpdatesFile: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiClient.post<{ message: string }>('/platform/desktop-releases/updates-file', formData, { headers: {} });
+    },
+    deleteUpdatesFile: async () => {
+      return apiClient.delete<{ message: string }>('/platform/desktop-releases/updates-file');
+    },
   },
 
   // Desktop Prerequisites Management

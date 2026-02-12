@@ -147,6 +147,7 @@ Route::get('/desktop-licenses/keys/public/{kid}', [App\Http\Controllers\DesktopL
 
 // Public Nazim Desktop download & updater endpoints (rate-limited, no auth)
 Route::prefix('desktop')->middleware('throttle:30,1')->group(function () {
+    Route::get('/config', [App\Http\Controllers\DesktopReleaseController::class, 'desktopConfig']);
     Route::get('/latest', [App\Http\Controllers\DesktopReleaseController::class, 'latestRelease']);
     Route::get('/releases/{id}/download', [App\Http\Controllers\DesktopReleaseController::class, 'downloadRelease']);
     Route::get('/prerequisites/{id}/download', [App\Http\Controllers\DesktopReleaseController::class, 'downloadPrerequisite']);
@@ -1760,6 +1761,9 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::prefix('desktop-releases')->group(function () {
         Route::get('/', [App\Http\Controllers\DesktopReleaseController::class, 'listReleases']);
         Route::post('/', [App\Http\Controllers\DesktopReleaseController::class, 'storeRelease']);
+        Route::get('/updates-file', [App\Http\Controllers\DesktopReleaseController::class, 'hasUpdatesFile']);
+        Route::post('/updates-file', [App\Http\Controllers\DesktopReleaseController::class, 'uploadUpdatesFile']);
+        Route::delete('/updates-file', [App\Http\Controllers\DesktopReleaseController::class, 'deleteUpdatesFile']);
         Route::get('/{id}', [App\Http\Controllers\DesktopReleaseController::class, 'showRelease']);
         Route::put('/{id}', [App\Http\Controllers\DesktopReleaseController::class, 'updateRelease']);
         Route::post('/{id}/replace-file', [App\Http\Controllers\DesktopReleaseController::class, 'replaceReleaseFile']);

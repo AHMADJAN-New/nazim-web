@@ -40,6 +40,7 @@ class DesktopReleaseController extends Controller
 
         $file = $request->file('file');
         $hash = hash_file('sha256', $file->getRealPath());
+        $hashMd5 = hash_file('md5', $file->getRealPath());
         $ext = $file->getClientOriginalExtension();
         $storedName = 'nazim-desktop-'.$request->version.'-'.Str::random(8).'.'.$ext;
         $path = $file->storeAs('desktop/releases', $storedName, 'public');
@@ -61,6 +62,7 @@ class DesktopReleaseController extends Controller
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),
             'file_hash' => $hash,
+            'file_hash_md5' => $hashMd5,
             'status' => $status,
             'is_latest' => $isLatest,
             'published_at' => $status === 'published' ? now() : null,
@@ -129,6 +131,7 @@ class DesktopReleaseController extends Controller
 
         $file = $request->file('file');
         $hash = hash_file('sha256', $file->getRealPath());
+        $hashMd5 = hash_file('md5', $file->getRealPath());
         $ext = $file->getClientOriginalExtension();
         $storedName = 'nazim-desktop-'.$release->version.'-'.Str::random(8).'.'.$ext;
         $path = $file->storeAs('desktop/releases', $storedName, 'public');
@@ -138,6 +141,7 @@ class DesktopReleaseController extends Controller
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),
             'file_hash' => $hash,
+            'file_hash_md5' => $hashMd5,
         ]);
 
         return response()->json(['data' => $this->formatRelease($release->fresh())]);
@@ -391,13 +395,34 @@ class DesktopReleaseController extends Controller
     }
 
     /**
-     * Serve the Advanced Installer updater configuration file (`;aiu;` format).
-     *
-     * The updater in the desktop app hits this URL to check for updates.
-     * Format:  ;aiu;  header followed by [Update1] section with key=value pairs.
+     * Public config for desktop download URL (used by platform admin UI to show/copy friendly URL).
      */
-    public function updaterConfig(): \Illuminate\Http\Response
+    public function desktopConfig(): \Illuminate\Http\JsonResponse
     {
+        $baseUrl = rtrim(config('app.url'), '/');
+        $path = trim(config('desktop.download_path'), '/');
+        $filename = config('desktop.download_filename');
+        $friendlyUrl = $path ? $baseUrl.'/'.$path.'/'.$filename : $baseUrl.'/'.$filename;
+
+        return response()->json([
+            'download_path' => config('desktop.download_path'),
+            'download_filename' => $filename,
+            'friendly_download_url' => $friendlyUrl,
+            'updater_config_url' => $baseUrl.'/api/desktop/updates.txt',
+        ]);
+    }
+
+    /**
+     * Friendly download URL: redirect /downloads/Nazim.exe to the latest release file.
+     * Used by the updater so it can point to a stable URL like https://example.com/downloads/Nazim.exe.
+     */
+    public function downloadLatestAt(string $filename): \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+    {
+        $expected = config('desktop.download_filename');
+        if ($filename !== $expected) {
+            return response()->json(['error' => 'Not found'], 404);
+        }
+
         $release = DesktopRelease::whereNull('deleted_at')
             ->where('status', 'published')
             ->where('is_latest', true)
@@ -411,26 +436,73 @@ class DesktopReleaseController extends Controller
         }
 
         if (! $release || ! $release->file_path) {
-            // Return an empty config — updater sees "no update"
+            return response()->json(['error' => 'No release available'], 404);
+        }
+
+        $url = config('app.url').'/api/desktop/releases/'.$release->id.'/download';
+
+        return redirect()->away($url, 302);
+    }
+
+    /**
+     * Serve the Advanced Installer updater configuration file (`;aiu;` format).
+     *
+     * If an updates file was uploaded via platform admin, that content is served.
+     * Otherwise the file is generated from the latest published release in the format:
+     * [Update] with Name, ProductVersion, URL, Size, SHA256, MD5, ServerFileName, Flags, RegistryKey, Version.
+     */
+    public function updaterConfig(): \Illuminate\Http\Response
+    {
+        $overridePath = 'desktop/updates_override.txt';
+        if (Storage::disk('local')->exists($overridePath)) {
+            $content = Storage::disk('local')->get($overridePath);
+
+            return response($content, 200)
+                ->header('Content-Type', 'text/plain; charset=utf-8')
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+
+        $release = DesktopRelease::whereNull('deleted_at')
+            ->where('status', 'published')
+            ->where('is_latest', true)
+            ->first();
+
+        if (! $release) {
+            $release = DesktopRelease::whereNull('deleted_at')
+                ->where('status', 'published')
+                ->orderByDesc('published_at')
+                ->first();
+        }
+
+        if (! $release || ! $release->file_path) {
             return response(";aiu;\r\n", 200)
                 ->header('Content-Type', 'text/plain; charset=utf-8');
         }
 
-        $baseUrl = config('app.url');
-        $downloadUrl = $baseUrl.'/api/desktop/releases/'.$release->id.'/download';
+        $baseUrl = rtrim(config('app.url'), '/');
+        $path = trim(config('desktop.download_path'), '/');
+        $filename = config('desktop.download_filename');
+        $downloadUrl = $path ? $baseUrl.'/'.$path.'/'.$filename : $baseUrl.'/'.$filename;
 
-        // Build the Advanced Installer updates configuration file
+        $sha256 = $release->file_hash ? strtoupper($release->file_hash) : '';
+        $md5 = $release->file_hash_md5 ? strtolower($release->file_hash_md5) : '';
+        $flags = config('desktop.updater_flags', 'Critical');
+        $registryKey = config('desktop.updater_registry_key', 'HKLM\\Software\\Nazim\\Nazim\\Version');
+
         $lines = [
             ';aiu;',
             '',
-            '[Update1]',
+            '[Update]',
             'Name = '.$release->display_name,
             'ProductVersion = '.$release->version,
             'URL = '.$downloadUrl,
             'Size = '.($release->file_size ?? 0),
-            'SHA256 = '.($release->file_hash ?? ''),
-            'ServerFileName = '.($release->file_name ?? ''),
-            'Description = '.str_replace(["\r\n", "\n"], ' ', strip_tags($release->release_notes ?? '')),
+            'SHA256 = '.$sha256,
+            'MD5 = '.$md5,
+            'ServerFileName = '.($release->file_name ?? $filename),
+            'Flags = '.$flags,
+            'RegistryKey = '.$registryKey,
+            'Version = '.$release->version,
         ];
 
         $content = implode("\r\n", $lines)."\r\n";
@@ -438,6 +510,44 @@ class DesktopReleaseController extends Controller
         return response($content, 200)
             ->header('Content-Type', 'text/plain; charset=utf-8')
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+
+    /**
+     * Upload a custom updates.txt file (platform admin). When present, it is served instead of the auto-generated content.
+     */
+    public function uploadUpdatesFile(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:txt|max:1024',
+        ]);
+
+        $content = file_get_contents($request->file('file')->getRealPath());
+        Storage::disk('local')->put('desktop/updates_override.txt', $content);
+
+        return response()->json(['message' => 'Updates file uploaded. It will be served at /api/desktop/updates.txt until removed.']);
+    }
+
+    /**
+     * Remove the custom updates.txt override (platform admin). After removal, auto-generated content is served again.
+     */
+    public function deleteUpdatesFile(): \Illuminate\Http\JsonResponse
+    {
+        $path = 'desktop/updates_override.txt';
+        if (Storage::disk('local')->exists($path)) {
+            Storage::disk('local')->delete($path);
+        }
+
+        return response()->json(['message' => 'Updates file override removed.']);
+    }
+
+    /**
+     * Check if a custom updates file is set (platform admin).
+     */
+    public function hasUpdatesFile(): \Illuminate\Http\JsonResponse
+    {
+        $exists = Storage::disk('local')->exists('desktop/updates_override.txt');
+
+        return response()->json(['has_override' => $exists]);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────
@@ -455,6 +565,7 @@ class DesktopReleaseController extends Controller
             'file_name' => $r->file_name,
             'file_size' => $r->file_size,
             'file_hash' => $r->file_hash,
+            'file_hash_md5' => $r->file_hash_md5 ?? null,
             'status' => $r->status,
             'is_latest' => $r->is_latest,
             'download_count' => $r->download_count,

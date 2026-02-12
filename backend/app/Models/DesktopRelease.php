@@ -23,6 +23,7 @@ class DesktopRelease extends Model
         'file_name',
         'file_size',
         'file_hash',
+        'file_hash_md5',
         'status',
         'is_latest',
         'download_count',
