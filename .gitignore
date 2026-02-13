@@ -15,8 +15,9 @@ dist-ssr
 .env.local
 .env
 vendor/
-# SSL certificates for development
-frontend/certs/
+# SSL certificates for development (keep README and config; ignore actual certs)
+frontend/certs/*.pem
+frontend/certs/*.key
 *.pem
 *.key
 

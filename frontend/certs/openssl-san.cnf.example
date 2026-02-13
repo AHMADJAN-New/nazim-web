@@ -1,0 +1,26 @@
+# Copy to openssl-san.cnf and set IP.3 to your LAN IP (e.g. 192.168.0.109).
+# Then: openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout certs/key.pem -out certs/cert.pem -config certs/openssl-san.cnf -extensions v3_req
+# openssl-san.cnf is gitignored if you put secrets in it; this example is safe to commit.
+
+[req]
+default_bits = 2048
+prompt = no
+default_md = sha256
+distinguished_name = dn
+req_extensions = v3_req
+
+[dn]
+C = US
+ST = State
+L = City
+O = Development
+CN = localhost
+
+[v3_req]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+IP.1 = 127.0.0.1
+IP.2 = ::1
+IP.3 = 192.168.0.109
