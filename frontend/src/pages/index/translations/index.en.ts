@@ -450,6 +450,7 @@ export const indexTranslations = {
     subtitle: 'Get the offline desktop application for a faster and richer management experience — with built-in automatic updates.',
     desktopApp: 'Desktop Application',
     downloadButton: 'Download for Windows',
+    downloadNotYetAvailable: 'Download not yet available for this version.',
     windowsOnly: 'Windows 10 / 11 (64-bit)',
     prerequisitesTitle: 'Required Prerequisites',
     prerequisitesDesc: 'Install these components before running Nazim Desktop for the first time.',

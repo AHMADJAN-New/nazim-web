@@ -36,6 +36,7 @@ class DesktopReleaseController extends Controller
             'release_notes' => 'nullable|string|max:10000',
             'file' => 'required|file|max:512000', // 500 MB max
             'status' => 'nullable|string|in:draft,published,archived',
+            'download_available' => 'nullable|boolean',
         ]);
 
         $file = $request->file('file');
@@ -54,6 +55,8 @@ class DesktopReleaseController extends Controller
             $isLatest = true;
         }
 
+        $downloadAvailable = $request->boolean('download_available', false);
+
         $release = DesktopRelease::create([
             'version' => $request->version,
             'display_name' => $request->display_name,
@@ -65,6 +68,7 @@ class DesktopReleaseController extends Controller
             'file_hash_md5' => $hashMd5,
             'status' => $status,
             'is_latest' => $isLatest,
+            'download_available' => $downloadAvailable,
             'published_at' => $status === 'published' ? now() : null,
         ]);
 
@@ -93,9 +97,11 @@ class DesktopReleaseController extends Controller
             'display_name' => 'sometimes|string|max:255',
             'release_notes' => 'nullable|string|max:10000',
             'status' => 'nullable|string|in:draft,published,archived',
+            'download_available' => 'nullable|boolean',
+            'is_latest' => 'nullable|boolean',
         ]);
 
-        $data = $request->only(['version', 'display_name', 'release_notes', 'status']);
+        $data = $request->only(['version', 'display_name', 'release_notes', 'status', 'download_available', 'is_latest']);
 
         // Handle status transitions
         if (isset($data['status']) && $data['status'] === 'published' && $release->status !== 'published') {
@@ -106,6 +112,16 @@ class DesktopReleaseController extends Controller
 
         if (isset($data['status']) && $data['status'] !== 'published' && $release->is_latest) {
             $data['is_latest'] = false;
+        }
+
+        // When enabling download_available, set as latest so updates.txt and friendly URL point here
+        if (isset($data['download_available']) && $data['download_available'] && ! $release->download_available) {
+            DesktopRelease::where('is_latest', true)->where('id', '!=', $id)->update(['is_latest' => false]);
+            $data['is_latest'] = true;
+        }
+
+        if (array_key_exists('is_latest', $data) && $data['is_latest']) {
+            DesktopRelease::where('is_latest', true)->where('id', '!=', $id)->update(['is_latest' => false]);
         }
 
         $release->update($data);
@@ -310,6 +326,7 @@ class DesktopReleaseController extends Controller
                     'file_name' => $release->file_name,
                     'file_size' => $release->file_size,
                     'download_url' => $baseUrl.'/api/desktop/releases/'.$release->id.'/download',
+                    'download_available' => (bool) $release->download_available,
                     'published_at' => $release->published_at?->toISOString(),
                 ] : null,
                 'prerequisites' => $prerequisites->map(fn ($p) => [
@@ -335,6 +352,10 @@ class DesktopReleaseController extends Controller
         $release = DesktopRelease::whereNull('deleted_at')
             ->where('status', 'published')
             ->findOrFail($id);
+
+        if (! $release->download_available) {
+            return response()->json(['error' => 'Download not available for this release'], 403);
+        }
 
         if (! $release->file_path || ! Storage::disk('public')->exists($release->file_path)) {
             return response()->json(['error' => 'File not found'], 404);
@@ -423,17 +444,7 @@ class DesktopReleaseController extends Controller
             return response()->json(['error' => 'Not found'], 404);
         }
 
-        $release = DesktopRelease::whereNull('deleted_at')
-            ->where('status', 'published')
-            ->where('is_latest', true)
-            ->first();
-
-        if (! $release) {
-            $release = DesktopRelease::whereNull('deleted_at')
-                ->where('status', 'published')
-                ->orderByDesc('published_at')
-                ->first();
-        }
+        $release = $this->getDownloadLatestRelease();
 
         if (! $release || ! $release->file_path) {
             return response()->json(['error' => 'No release available'], 404);
@@ -462,17 +473,7 @@ class DesktopReleaseController extends Controller
                 ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
         }
 
-        $release = DesktopRelease::whereNull('deleted_at')
-            ->where('status', 'published')
-            ->where('is_latest', true)
-            ->first();
-
-        if (! $release) {
-            $release = DesktopRelease::whereNull('deleted_at')
-                ->where('status', 'published')
-                ->orderByDesc('published_at')
-                ->first();
-        }
+        $release = $this->getDownloadLatestRelease();
 
         if (! $release || ! $release->file_path) {
             return response(";aiu;\r\n", 200)
@@ -552,6 +553,28 @@ class DesktopReleaseController extends Controller
 
     // ─── Helpers ─────────────────────────────────────────────────────────
 
+    /**
+     * Get the release used for updates.txt and /downloads/Nazim.exe: published, download_available, is_latest or most recent.
+     */
+    private function getDownloadLatestRelease(): ?DesktopRelease
+    {
+        $release = DesktopRelease::whereNull('deleted_at')
+            ->where('status', 'published')
+            ->where('download_available', true)
+            ->where('is_latest', true)
+            ->first();
+
+        if (! $release) {
+            $release = DesktopRelease::whereNull('deleted_at')
+                ->where('status', 'published')
+                ->where('download_available', true)
+                ->orderByDesc('published_at')
+                ->first();
+        }
+
+        return $release;
+    }
+
     private function formatRelease(DesktopRelease $r): array
     {
         $baseUrl = config('app.url');
@@ -568,6 +591,7 @@ class DesktopReleaseController extends Controller
             'file_hash_md5' => $r->file_hash_md5 ?? null,
             'status' => $r->status,
             'is_latest' => $r->is_latest,
+            'download_available' => (bool) $r->download_available,
             'download_count' => $r->download_count,
             'download_url' => $r->file_path ? $baseUrl.'/api/desktop/releases/'.$r->id.'/download' : null,
             'published_at' => $r->published_at?->toISOString(),

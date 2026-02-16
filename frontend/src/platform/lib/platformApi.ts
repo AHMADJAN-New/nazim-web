@@ -1008,6 +1008,7 @@ export const platformApi = {
       release_notes?: string;
       file: File;
       status?: 'draft' | 'published';
+      download_available?: boolean;
     }) => {
       const formData = new FormData();
       formData.append('version', data.version);
@@ -1015,6 +1016,7 @@ export const platformApi = {
       if (data.release_notes) formData.append('release_notes', data.release_notes);
       formData.append('file', data.file);
       if (data.status) formData.append('status', data.status);
+      if (data.download_available !== undefined) formData.append('download_available', data.download_available ? '1' : '0');
       return apiClient.post<{ data: any }>('/platform/desktop-releases', formData, { headers: {} });
     },
     update: async (id: string, data: {
@@ -1022,6 +1024,8 @@ export const platformApi = {
       display_name?: string;
       release_notes?: string;
       status?: 'draft' | 'published' | 'archived';
+      download_available?: boolean;
+      is_latest?: boolean;
     }) => {
       return apiClient.put<{ data: any }>(`/platform/desktop-releases/${id}`, data);
     },

@@ -451,6 +451,7 @@ export const indexTranslations = {
     subtitle: 'د ګړندي او غوره مدیریت تجربې لپاره آفلاین ډیسکټاپ اپلیکیشن ترلاسه کړئ — د اتوماتیک تازه کولو سره.',
     desktopApp: 'ډیسکټاپ اپلیکیشن',
     downloadButton: 'د وینډوز لپاره ډاونلوډ',
+    downloadNotYetAvailable: 'د دې نسخې لپاره ډاونلوډ لا شتون نلري.',
     windowsOnly: 'وینډوز ۱۰ / ۱۱ (۶۴ بټي)',
     prerequisitesTitle: 'اړین مخکینیاوې',
     prerequisitesDesc: 'د ناظم ډیسکټاپ د لومړي ځل چلولو دمخه دا اجزا نصب کړئ.',

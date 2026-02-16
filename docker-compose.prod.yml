@@ -64,6 +64,7 @@ services:
         condition: service_healthy
     volumes:
       - nazim_backend_storage:/var/www/backend/storage
+      - ./backend/.env:/var/www/backend/.env
       - ./backend/app:/var/www/backend/app:ro
       - ./backend/routes:/var/www/backend/routes:ro
       - ./backend/config:/var/www/backend/config:ro
@@ -92,6 +93,7 @@ services:
         condition: service_healthy
     volumes:
       - nazim_backend_storage:/var/www/backend/storage
+      - ./backend/.env:/var/www/backend/.env
       - ./backend/app:/var/www/backend/app:ro
       - ./backend/routes:/var/www/backend/routes:ro
       - ./backend/config:/var/www/backend/config:ro
@@ -116,6 +118,7 @@ services:
         condition: service_healthy
     volumes:
       - nazim_backend_storage:/var/www/backend/storage
+      - ./backend/.env:/var/www/backend/.env
     command:
       [
         "sh",

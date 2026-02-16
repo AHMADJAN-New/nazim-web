@@ -1,6 +1,21 @@
 #!/bin/bash
 set -e
 
+# Ensure Laravel APP_KEY exists (setup and update: generate if missing)
+# Run from backend so artisan and .env paths are correct
+cd /var/www/backend
+if [ ! -s .env ] && [ -f .env.example ]; then
+    cp .env.example .env
+fi
+if [ ! -s .env ]; then
+    touch .env
+fi
+if ! grep -qE '^APP_KEY=base64:[A-Za-z0-9+/]+=*$' .env 2>/dev/null; then
+    echo "Generating Laravel application key..."
+    php artisan key:generate --force --no-interaction
+fi
+cd - >/dev/null
+
 # Ensure Puppeteer cache directory exists with correct permissions
 mkdir -p /var/www/.cache/puppeteer /var/www/.cache/npm
 chown -R www-data:www-data /var/www/.cache

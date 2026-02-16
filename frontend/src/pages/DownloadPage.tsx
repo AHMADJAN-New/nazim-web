@@ -17,6 +17,7 @@ interface ReleaseData {
     file_name: string | null;
     file_size: number | null;
     download_url: string;
+    download_available?: boolean;
     published_at: string | null;
   } | null;
   prerequisites: Array<{
@@ -158,16 +159,22 @@ export default function DownloadPage() {
                         </p>
                       )}
 
-                      <Button
-                        asChild
-                        size="lg"
-                        className="bg-[#c9a44d] hover:bg-[#b8933e] text-white font-bold text-lg px-10 py-4 rounded-xl shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
-                      >
-                        <a href={data!.release!.download_url} download>
-                          <Download className="h-5 w-5 mr-2" />
-                          {t('download.downloadButton')}
-                        </a>
-                      </Button>
+                      {data!.release!.download_available !== false ? (
+                        <Button
+                          asChild
+                          size="lg"
+                          className="bg-[#c9a44d] hover:bg-[#b8933e] text-white font-bold text-lg px-10 py-4 rounded-xl shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
+                        >
+                          <a href={data!.release!.download_url} download>
+                            <Download className="h-5 w-5 mr-2" />
+                            {t('download.downloadButton')}
+                          </a>
+                        </Button>
+                      ) : (
+                        <p className="text-sm text-white/60 text-center">
+                          {t('download.downloadNotYetAvailable')}
+                        </p>
+                      )}
 
                       <p className="text-xs text-white/50">
                         {t('download.windowsOnly')}

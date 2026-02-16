@@ -49,7 +49,11 @@ Or with dry-run: add `--dry-run` before the command string to see what would be 
 
 **If desktop release uploads fail with 413 (Request Entity Too Large):** Nginx and PHP upload limits must allow at least 500 MB. The repo sets `client_max_body_size 512M` in `docker/nginx/*` and `post_max_size` / `upload_max_filesize 512M` in `docker/php/nazim.ini`. After changing these, rebuild or restart the nginx and php containers so the new limits apply.
 
-**If desktop release downloads are very slow (~25 kbps):** The stack uses **X-Accel-Redirect** so nginx serves the file directly (not via PHP). Ensure the nginx config includes the `internal-desktop-files/` location and that `DESKTOP_USE_X_ACCEL_REDIRECT=true` in `.env`. Rebuild/restart nginx after config changes.
+**If desktop release downloads are slow (e.g. ~70 KB/s despite fast internet):**
+1. **X-Accel-Redirect:** The stack uses **X-Accel-Redirect** so nginx serves the file directly (not via PHP). Ensure the nginx config includes the `internal-desktop-files/` location and `DESKTOP_USE_X_ACCEL_REDIRECT=true` in backend `.env`.
+2. **Nginx tuning:** The config uses `sendfile on`, `tcp_nopush off`, and `tcp_nodelay on` for the internal desktop files location to maximize throughput. Rebuild or restart nginx after config changes: `docker compose ... restart nginx`.
+3. **CDN/proxy:** If the site is behind Cloudflare or another CDN, downloads can be throttled. For the download endpoint, consider using a subdomain that bypasses the CDN (e.g. Cloudflare "gray cloud") or whitelist the `/api/desktop/` path from throttling.
+4. **Server bandwidth:** Outbound bandwidth on the server itself can be the limit. Check hosting provider limits and consider a CDN for large file delivery if needed.
 
 ---
 

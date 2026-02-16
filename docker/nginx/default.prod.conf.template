@@ -49,6 +49,9 @@ server {
             alias /backend-storage/app/public/;
             add_header Content-Disposition "attachment; filename=\"$arg_f\"";
             add_header X-Content-Type-Options "nosniff";
+            sendfile on;
+            tcp_nopush off;
+            tcp_nodelay on;
         }
 
         # desktop friendly download URL (e.g. /downloads/Nazim.exe)

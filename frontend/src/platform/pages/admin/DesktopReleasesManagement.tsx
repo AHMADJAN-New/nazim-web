@@ -14,6 +14,7 @@ import {
   ExternalLink,
   RefreshCw,
   HardDrive,
+  Star,
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -73,6 +74,7 @@ interface DesktopRelease {
   file_hash: string | null;
   status: 'draft' | 'published' | 'archived';
   is_latest: boolean;
+  download_available: boolean;
   download_count: number;
   download_url: string | null;
   published_at: string | null;
@@ -224,6 +226,7 @@ export default function DesktopReleasesManagement() {
     display_name: '',
     release_notes: '',
     status: 'draft' as 'draft' | 'published',
+    download_available: false,
   });
   const [releaseFile, setReleaseFile] = useState<File | null>(null);
   const releaseFileRef = useRef<HTMLInputElement>(null);
@@ -320,13 +323,14 @@ export default function DesktopReleasesManagement() {
 
   const createReleaseMutation = useMutation({
     retry: false, // Large file uploads: avoid retrying on 413/network so progress does not reset
-    mutationFn: async (data: { version: string; display_name: string; release_notes?: string; file: File; status?: 'draft' | 'published' }) => {
+    mutationFn: async (data: { version: string; display_name: string; release_notes?: string; file: File; status?: 'draft' | 'published'; download_available?: boolean }) => {
       const formData = new FormData();
       formData.append('version', data.version);
       formData.append('display_name', data.display_name);
       if (data.release_notes) formData.append('release_notes', data.release_notes);
       formData.append('file', data.file);
       if (data.status) formData.append('status', data.status);
+      if (data.download_available !== undefined) formData.append('download_available', data.download_available ? '1' : '0');
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
       return uploadWithProgress(
         `${baseUrl}/platform/desktop-releases`,
@@ -476,7 +480,7 @@ export default function DesktopReleasesManagement() {
 
   function openNewRelease() {
     setEditingRelease(null);
-    setReleaseForm({ version: '', display_name: '', release_notes: '', status: 'draft' });
+    setReleaseForm({ version: '', display_name: '', release_notes: '', status: 'draft', download_available: false });
     setReleaseFile(null);
     setReleaseDialogOpen(true);
   }
@@ -488,6 +492,7 @@ export default function DesktopReleasesManagement() {
       display_name: r.display_name,
       release_notes: r.release_notes || '',
       status: r.status === 'archived' ? 'draft' : (r.status as 'draft' | 'published'),
+      download_available: r.download_available ?? false,
     });
     setReleaseFile(null);
     setReleaseDialogOpen(true);
@@ -537,6 +542,7 @@ export default function DesktopReleasesManagement() {
           display_name: releaseForm.display_name,
           release_notes: releaseForm.release_notes || undefined,
           status: releaseForm.status,
+          download_available: releaseForm.download_available,
         },
       });
     } else {
@@ -550,6 +556,7 @@ export default function DesktopReleasesManagement() {
         release_notes: releaseForm.release_notes || undefined,
         file: releaseFile,
         status: releaseForm.status,
+        download_available: releaseForm.download_available,
       });
     }
   }
@@ -618,7 +625,7 @@ export default function DesktopReleasesManagement() {
             Updater config (updates.txt) &amp; download URL
           </CardTitle>
           <CardDescription>
-            The <code className="text-xs bg-white/80 px-1 rounded">updates.txt</code> file is generated automatically when someone requests it; it always reflects the current latest published release. To change the download path or filename (e.g. <code className="text-xs bg-white/80 px-1 rounded">/downloads/Nazim.exe</code>), set <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_PATH</code> and <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_FILENAME</code> in the backend <code className="text-xs bg-white/80 px-1 rounded">.env</code>.
+            The <code className="text-xs bg-white/80 px-1 rounded">updates.txt</code> file is generated from the latest release that has <strong>Publish to download</strong> enabled (not just &quot;Published&quot;). The friendly URL below points to that same release. Use <strong>Publish to public page</strong> to show a version on the download page; use <strong>Publish to download</strong> to allow file download and to have it appear in updates.txt. To change the download path or filename (e.g. <code className="text-xs bg-white/80 px-1 rounded">/downloads/Nazim.exe</code>), set <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_PATH</code> and <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_FILENAME</code> in the backend <code className="text-xs bg-white/80 px-1 rounded">.env</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-0">
@@ -653,7 +660,7 @@ export default function DesktopReleasesManagement() {
           </div>
           {friendlyDownloadUrl && (
             <div className="space-y-1.5">
-              <span className="text-xs font-medium text-blue-800">Friendly download URL (used in updates.txt; points to latest release)</span>
+              <span className="text-xs font-medium text-blue-800">Friendly download URL (points to latest release with download available; used in updates.txt)</span>
               <div className="flex items-center gap-2 flex-wrap">
                 <code className="bg-white text-xs px-2 py-1.5 rounded border text-blue-900 break-all flex-1 min-w-0">
                   {friendlyDownloadUrl}
@@ -742,7 +749,7 @@ export default function DesktopReleasesManagement() {
         <TabsContent value="releases" className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Upload and manage Nazim Desktop installer packages. Publishing a release marks it as the latest version and updates the updater config.
+              Upload and manage Nazim Desktop installer packages. <strong>Publish to public page</strong> shows the release on the public download page. <strong>Publish to download</strong> makes the file downloadable and uses it in updates.txt and the friendly download URL.
             </p>
             <Button onClick={openNewRelease} className="shrink-0">
               <Plus className="h-4 w-4 mr-1" />
@@ -772,6 +779,7 @@ export default function DesktopReleasesManagement() {
                       <TableHead>Version</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Download</TableHead>
                       <TableHead>File</TableHead>
                       <TableHead className="text-right">Downloads</TableHead>
                       <TableHead>Published</TableHead>
@@ -784,6 +792,13 @@ export default function DesktopReleasesManagement() {
                         <TableCell className="font-mono font-medium">{r.version}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{r.display_name}</TableCell>
                         <TableCell>{statusBadge(r.status, r.is_latest)}</TableCell>
+                        <TableCell>
+                          {r.download_available ? (
+                            <Badge className="bg-green-600 text-white text-xs">Available</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">Off</Badge>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div className="text-xs text-muted-foreground">
                             {r.file_name && <div className="truncate max-w-[150px]">{r.file_name}</div>}
@@ -803,7 +818,7 @@ export default function DesktopReleasesManagement() {
                         <TableCell className="text-xs text-muted-foreground">{formatDate(r.published_at)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1 flex-wrap">
-                            {r.download_url && (
+                            {r.download_url && r.download_available && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -816,11 +831,14 @@ export default function DesktopReleasesManagement() {
                                 <Copy className="h-4 w-4" />
                               </Button>
                             )}
+                            {r.download_url && !r.download_available && (
+                              <span className="text-xs text-muted-foreground" title="Download not published">—</span>
+                            )}
                             {r.status === 'draft' && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                title="Publish"
+                                title="Publish to public page"
                                 onClick={() => updateReleaseMutation.mutate({ id: r.id, data: { status: 'published' } })}
                               >
                                 <CheckCircle className="h-4 w-4 text-green-600" />
@@ -830,10 +848,47 @@ export default function DesktopReleasesManagement() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                title="Archive"
+                                title="Archive (unpublish from page)"
                                 onClick={() => updateReleaseMutation.mutate({ id: r.id, data: { status: 'archived' } })}
                               >
                                 <Archive className="h-4 w-4 text-orange-500" />
+                              </Button>
+                            )}
+                            {r.status === 'published' && !r.is_latest && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Set as latest (show on public page and, if download available, in updates.txt)"
+                                onClick={() => updateReleaseMutation.mutate({ id: r.id, data: { is_latest: true } })}
+                              >
+                                <Star className="h-4 w-4 text-amber-500" />
+                              </Button>
+                            )}
+                            {r.status === 'published' && !r.download_available && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Publish to download"
+                                onClick={() => updateReleaseMutation.mutate({ id: r.id, data: { download_available: true } })}
+                              >
+                                <Download className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            )}
+                            {r.download_available && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Unpublish from download"
+                                onClick={() => {
+                                  const othersWithDownload = releases.filter((x) => x.id !== r.id && x.download_available);
+                                  if (othersWithDownload.length === 0 && confirm('This is the only release with download available. Unpublishing it will leave updates.txt and the friendly download URL with no release until you publish another. Continue?')) {
+                                    updateReleaseMutation.mutate({ id: r.id, data: { download_available: false } });
+                                  } else if (othersWithDownload.length > 0) {
+                                    updateReleaseMutation.mutate({ id: r.id, data: { download_available: false } });
+                                  }
+                                }}
+                              >
+                                <XCircle className="h-4 w-4 text-amber-600" />
                               </Button>
                             )}
                             <input
@@ -1061,6 +1116,25 @@ export default function DesktopReleasesManagement() {
                 rows={4}
                 value={releaseForm.release_notes}
                 onChange={(e) => setReleaseForm({ ...releaseForm, release_notes: e.target.value })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="release-download-available">Publish to download</Label>
+                <p className="text-xs text-muted-foreground">
+                  When on, the file can be downloaded and is used in updates.txt. When off, only the public page shows this version; direct download is disabled.
+                </p>
+                {releaseForm.status === 'draft' && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Publish to public page first for the file to be downloadable.
+                  </p>
+                )}
+              </div>
+              <Switch
+                id="release-download-available"
+                checked={releaseForm.download_available}
+                onCheckedChange={(checked) => setReleaseForm({ ...releaseForm, download_available: checked })}
               />
             </div>
 

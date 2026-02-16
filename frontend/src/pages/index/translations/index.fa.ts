@@ -451,6 +451,7 @@ export const indexTranslations = {
     subtitle: 'نسخه آفلاین دسکتاپ را برای تجربه مدیریتی سریع‌تر و غنی‌تر دریافت کنید — با بروزرسانی خودکار.',
     desktopApp: 'برنامه دسکتاپ',
     downloadButton: 'دانلود برای ویندوز',
+    downloadNotYetAvailable: 'دانلود این نسخه هنوز در دسترس نیست.',
     windowsOnly: 'ویندوز ۱۰ / ۱۱ (۶۴ بیتی)',
     prerequisitesTitle: 'پیش‌نیازهای لازم',
     prerequisitesDesc: 'قبل از اجرای اولین بار نظیم دسکتاپ، این اجزا را نصب کنید.',

@@ -26,6 +26,7 @@ class DesktopRelease extends Model
         'file_hash_md5',
         'status',
         'is_latest',
+        'download_available',
         'download_count',
         'published_at',
     ];
@@ -34,6 +35,7 @@ class DesktopRelease extends Model
     {
         return [
             'is_latest' => 'boolean',
+            'download_available' => 'boolean',
             'file_size' => 'integer',
             'download_count' => 'integer',
             'published_at' => 'datetime',
