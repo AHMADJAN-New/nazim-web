@@ -481,9 +481,10 @@ class DesktopReleaseController extends Controller
         }
 
         $baseUrl = rtrim(config('app.url'), '/');
-        $path = trim(config('desktop.download_path'), '/');
         $filename = config('desktop.download_filename');
-        $downloadUrl = $path ? $baseUrl.'/'.$path.'/'.$filename : $baseUrl.'/'.$filename;
+        // Use direct API URL so updates.txt points only to the downloadable release (publish-to-download).
+        // The friendly URL (/downloads/Nazim.exe) remains available for manual use.
+        $downloadUrl = $baseUrl.'/api/desktop/releases/'.$release->id.'/download';
 
         $sha256 = $release->file_hash ? strtoupper($release->file_hash) : '';
         $md5 = $release->file_hash_md5 ? strtolower($release->file_hash_md5) : '';

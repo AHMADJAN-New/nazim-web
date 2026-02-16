@@ -625,7 +625,7 @@ export default function DesktopReleasesManagement() {
             Updater config (updates.txt) &amp; download URL
           </CardTitle>
           <CardDescription>
-            The <code className="text-xs bg-white/80 px-1 rounded">updates.txt</code> file is generated from the latest release that has <strong>Publish to download</strong> enabled (not just &quot;Published&quot;). The friendly URL below points to that same release. Use <strong>Publish to public page</strong> to show a version on the download page; use <strong>Publish to download</strong> to allow file download and to have it appear in updates.txt. To change the download path or filename (e.g. <code className="text-xs bg-white/80 px-1 rounded">/downloads/Nazim.exe</code>), set <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_PATH</code> and <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_FILENAME</code> in the backend <code className="text-xs bg-white/80 px-1 rounded">.env</code>.
+            The <code className="text-xs bg-white/80 px-1 rounded">updates.txt</code> file uses the <strong>direct download URL</strong> for the latest release with <strong>Publish to download</strong> enabled (no redirect). <strong>Publish to public page</strong> shows the release on the download page (preview only, no download button). <strong>Publish to download</strong> enables the direct download URL and includes it in updates.txt. With both on, the release appears on the page with a download button. The friendly URL below redirects to the direct download. To customize the path/filename (e.g. <code className="text-xs bg-white/80 px-1 rounded">/downloads/Nazim.exe</code>), set <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_PATH</code> and <code className="text-xs bg-white/80 px-1 rounded">DESKTOP_DOWNLOAD_FILENAME</code> in the backend <code className="text-xs bg-white/80 px-1 rounded">.env</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-0">
@@ -749,7 +749,7 @@ export default function DesktopReleasesManagement() {
         <TabsContent value="releases" className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Upload and manage Nazim Desktop installer packages. <strong>Publish to public page</strong> shows the release on the public download page. <strong>Publish to download</strong> makes the file downloadable and uses it in updates.txt and the friendly download URL.
+              Upload and manage Nazim Desktop installer packages. <strong>Publish to public page</strong> shows the release on the download page (preview only, no download button). <strong>Publish to download</strong> enables the direct download URL and uses it in updates.txt. When both are on, the release appears on the page with a download button.
             </p>
             <Button onClick={openNewRelease} className="shrink-0">
               <Plus className="h-4 w-4 mr-1" />
