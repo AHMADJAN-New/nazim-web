@@ -231,6 +231,20 @@ class ApiClient {
         // This is normal behavior, not an error
         const isExpectedUnauth = response.status === 401 && !hasToken && endpoint.includes('/auth/');
 
+        // Handle 429 rate limit (login and other endpoints)
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const minutes = retryAfter ? Math.ceil(parseInt(retryAfter, 10) / 60) : null;
+          const rateLimitMsg = error.message || error.error || 'Too many requests.';
+          const userMsg = minutes != null && !isNaN(minutes)
+            ? `Too many login attempts. Please try again in ${minutes} minute(s).`
+            : rateLimitMsg;
+          const rateLimitError = new Error(userMsg);
+          (rateLimitError as any).status = 429;
+          (rateLimitError as any).retryAfter = retryAfter;
+          throw rateLimitError;
+        }
+
         // Handle 404 errors
         if (response.status === 404) {
           const errorMsg = error.message || error.error || 'Route not found';
@@ -255,8 +269,16 @@ class ApiClient {
             }
           }
           
-          // Use the first error message as the main message; Laravel often returns single message in error.error
-          const errorMessage = firstErrorMessage || error.message || error.error || 'Validation failed';
+          let errorMessage = firstErrorMessage || error.message || error.error || 'Validation failed';
+          // Login lockout: show user-friendly message with locked_until if present
+          if (endpoint.includes('/auth/login') && error.locked_until) {
+            try {
+              const until = new Date(error.locked_until);
+              errorMessage = `Account locked until ${until.toLocaleString()}. Use Forgot password to reset.`;
+            } catch {
+              errorMessage = error.message || error.error || 'Account locked. Use Forgot password to reset.';
+            }
+          }
           const validationError = new Error(errorMessage);
           
           // Attach errors object so hooks can access it
@@ -580,11 +602,20 @@ export const maintenanceApi = {
 
 // Auth API
 export const authApi = {
-  login: async (email: string, password: string): Promise<{ user: any; token: string; profile?: any }> => {
-    const response = await apiClient.post<{ user: any; token: string; profile?: any }>('/auth/login', {
-      email,
-      password,
-    });
+  login: async (
+    email: string,
+    password: string,
+    options?: { loginContext?: 'main_app' | 'platform_admin' }
+  ): Promise<{ user: any; token: string; profile?: any }> => {
+    const headers: Record<string, string> = {};
+    if (options?.loginContext === 'platform_admin') {
+      headers['X-Login-Context'] = 'platform_admin';
+    }
+    const response = await apiClient.post<{ user: any; token: string; profile?: any }>(
+      '/auth/login',
+      { email, password },
+      { headers }
+    );
     apiClient.setToken(response.token);
     return response;
   },

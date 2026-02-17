@@ -163,6 +163,7 @@ export const PlansManagement = lazy(() => import('@/platform/pages/admin/PlansMa
 export const OrganizationSubscriptionDetail = lazy(() => import('@/platform/pages/admin/OrganizationSubscriptionDetail').then(module => ({ default: module.default })));
 export const PlatformSettings = lazy(() => import('@/platform/pages/admin/PlatformSettings').then(module => ({ default: module.default })));
 export const ContactMessagesManagement = lazy(() => import('@/platform/pages/admin/ContactMessagesManagement').then(module => ({ default: module.default })));
+export const LoginAuditPage = lazy(() => import('@/platform/pages/admin/LoginAuditPage').then(module => ({ default: module.default })));
 export const HelpCenterManagement = lazy(() => import('@/platform/pages/admin/HelpCenterManagement').then(module => ({ default: module.default })));
 export const MaintenanceHistory = lazy(() => import('@/platform/pages/admin/MaintenanceHistory').then(module => ({ default: module.default })));
 export const TranslationsManagement = lazy(() => import('@/platform/pages/admin/TranslationsManagement').then(module => ({ default: module.default })));

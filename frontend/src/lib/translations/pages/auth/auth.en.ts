@@ -17,6 +17,8 @@ export default {
     role: "Role",
     selectRole: "Select your role",
     signInFailed: "Sign in failed. Please try again.",
+    rateLimited: "Too many login attempts. Please try again later.",
+    accountLocked: "Account locked. Use Forgot password to reset.",
     subtitle: "Access your school management system",
     title: "School Management System"
   }

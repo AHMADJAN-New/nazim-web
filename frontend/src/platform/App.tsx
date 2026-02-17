@@ -20,6 +20,7 @@ import LicenseFeesManagement from './pages/admin/LicenseFeesManagement';
 import DesktopLicenseGeneration from './pages/admin/DesktopLicenseGeneration';
 import DesktopReleasesManagement from './pages/admin/DesktopReleasesManagement';
 import ContactMessagesManagement from './pages/admin/ContactMessagesManagement';
+import LoginAuditPage from './pages/admin/LoginAuditPage';
 import WebsiteManagementPage from './pages/admin/WebsiteManagementPage';
 import LandingOffersPage from './pages/admin/LandingOffersPage';
 import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
@@ -194,6 +195,7 @@ export function PlatformAdminApp() {
               } />
               <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
               <Route path="contact-messages" element={<ContactMessagesManagement />} />
+              <Route path="login-audit" element={<LoginAuditPage />} />
               {/* CRITICAL: More specific routes must come before less specific ones */}
               <Route path="settings/translations" element={
                 <Suspense fallback={<PageSkeleton />}>

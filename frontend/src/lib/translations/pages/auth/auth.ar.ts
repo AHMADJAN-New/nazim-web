@@ -17,6 +17,8 @@ export default {
     role: "الدور",
     selectRole: "اختر دورك",
     signInFailed: "Sign in failed. Please try again.",
+    rateLimited: "محاولات تسجيل دخول كثيرة. يرجى المحاولة لاحقاً.",
+    accountLocked: "الحساب مقفل. استخدم نسيت كلمة المرور لإعادة التعيين.",
     subtitle: "Access your school management system",
     title: "School Management System"
   }

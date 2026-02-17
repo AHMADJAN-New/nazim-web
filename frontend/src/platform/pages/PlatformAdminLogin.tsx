@@ -58,8 +58,8 @@ export function PlatformAdminLogin() {
         localStorage.setItem('is_platform_admin_session', 'true');
       }
 
-      // Login
-      await authApi.login(data.email, data.password);
+      // Login with platform_admin context for audit logging
+      await authApi.login(data.email, data.password, { loginContext: 'platform_admin' });
 
       // Refresh auth state
       await refreshAuth();

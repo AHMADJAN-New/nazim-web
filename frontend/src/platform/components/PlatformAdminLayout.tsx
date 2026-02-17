@@ -230,6 +230,15 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       badgeVariant: 'default' as const,
     },
     { 
+      name: 'Login Audit', 
+      href: '/platform/login-audit', 
+      icon: Lock,
+      iconColor: 'text-red-500',
+      iconBg: 'bg-red-500/10',
+      description: 'View login attempts, locked accounts, and security alerts',
+      badge: null,
+    },
+    { 
       name: 'Pending Actions', 
       href: '/platform/pending', 
       icon: Clock,

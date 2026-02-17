@@ -5,10 +5,12 @@ import {
   Clock,
   CreditCard,
   DollarSign,
+  Lock,
   Package,
   Plus,
   RefreshCw,
   Search,
+  Shield,
   Ticket,
   TrendingUp,
   Users,
@@ -23,9 +25,10 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { usePlatformDashboard, usePlatformPendingPayments, usePlatformPendingRenewals, usePlatformSubscriptions, usePlatformOrganizations, usePlatformOrganizationAdmins } from '../hooks/usePlatformAdmin';
+import { useLoginAlerts, useLockedAccounts } from '@/platform/hooks/useLoginAudit';
 
 import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
 import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
@@ -67,6 +70,7 @@ import { TrendingUp as TrendingUpIcon } from 'lucide-react';
 export function PlatformAdminDashboard() {
   const { t } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Determine active tab based on route
   const getInitialTab = () => {
@@ -90,6 +94,8 @@ export function PlatformAdminDashboard() {
   const { data: subscriptions, isLoading: isSubscriptionsLoading } = usePlatformSubscriptions();
   const { data: organizations } = usePlatformOrganizations();
   const { data: organizationAdmins } = usePlatformOrganizationAdmins();
+  const { data: loginAlertsData } = useLoginAlerts();
+  const { data: lockedAccountsData } = useLockedAccounts();
 
   if (isDashboardLoading) {
     return (
@@ -114,6 +120,11 @@ export function PlatformAdminDashboard() {
 
   const activeSubscriptions = stats.subscriptionsByStatus['active'] || 0;
   const trialSubscriptions = stats.subscriptionsByStatus['trial'] || 0;
+
+  const ipAlerts = loginAlertsData?.ip_alerts ?? [];
+  const emailAlerts = loginAlertsData?.email_alerts ?? [];
+  const alertsCount = ipAlerts.length + emailAlerts.length;
+  const lockedCount = lockedAccountsData?.data?.length ?? 0;
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
@@ -153,6 +164,30 @@ export function PlatformAdminDashboard() {
           icon={DollarSign}
           description={`$${stats.revenueThisYear.usd.toLocaleString()} USD`}
           color="purple"
+        />
+      </div>
+
+      {/* Login Audit summary cards */}
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 max-w-2xl">
+        <StatsCard
+          title={t('platform.loginAudit.alerts') ?? 'Brute-force alerts'}
+          value={alertsCount}
+          icon={Shield}
+          description={t('platform.loginAudit.alertsLastHour') ?? 'IP/email in last hour'}
+          color={alertsCount > 0 ? 'destructive' : 'secondary'}
+          showButton
+          buttonText={t('common.view') ?? 'View'}
+          onClick={() => navigate('/platform/login-audit')}
+        />
+        <StatsCard
+          title={t('platform.loginAudit.lockedAccounts') ?? 'Locked accounts'}
+          value={lockedCount}
+          icon={Lock}
+          description={t('platform.loginAudit.lockedAccountsDescription') ?? 'Due to failed attempts'}
+          color={lockedCount > 0 ? 'amber' : 'secondary'}
+          showButton
+          buttonText={t('common.view') ?? 'View'}
+          onClick={() => navigate('/platform/login-audit')}
         />
       </div>
 

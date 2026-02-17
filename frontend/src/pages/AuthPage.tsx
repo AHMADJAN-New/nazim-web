@@ -159,6 +159,16 @@ export default function AuthPage() {
         errorMessage = t('auth.signInFailed') || 'Failed to sign in. Please check your credentials and try again.';
       }
 
+      // Check for rate limit (429) - use errorMessage to preserve "try again in X minutes" from API
+      if (error.status === 429) {
+        toast.error(errorMessage || t('auth.rateLimited'));
+        return;
+      }
+      // Check for account lockout
+      if (errorMessage.toLowerCase().includes('locked') || error.locked_until) {
+        toast.error(t('auth.accountLocked') || errorMessage);
+        return;
+      }
       // Check if error is related to credentials (case-insensitive)
       const errorMessageLower = errorMessage.toLowerCase();
       if (errorMessageLower.includes('credentials') || errorMessageLower.includes('invalid') || errorMessageLower.includes('incorrect')) {

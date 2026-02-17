@@ -667,6 +667,8 @@ export const TRANSLATION_KEYS = [
   "auth.role",
   "auth.selectRole",
   "auth.signInFailed",
+  "auth.rateLimited",
+  "auth.accountLocked",
   "auth.subtitle",
   "auth.title",
   "browseHelpCenter",

@@ -209,6 +209,7 @@ import {
   OrganizationRevenueHistory,
   PlanRequestsPage,
   ContactMessagesManagement,
+  LoginAuditPage,
   LandingOffersPage,
   PlatformSettings,
   TranslationsManagement,
@@ -625,6 +626,11 @@ const App = () => (
                     <Route path="contact-messages" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <ContactMessagesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="login-audit" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <LoginAuditPage />
                       </Suspense>
                     } />
                     <Route path="pending" element={

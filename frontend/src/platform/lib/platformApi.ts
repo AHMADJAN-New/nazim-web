@@ -3,6 +3,7 @@ import type * as HelpCenterApi from '@/types/api/helpCenter';
 import type * as OrganizationApi from '@/types/api/organization';
 import type * as SubscriptionApi from '@/types/api/subscription';
 import type * as DesktopLicenseApi from '@/types/api/desktopLicense';
+import type * as LoginAuditApi from '@/types/api/loginAudit';
 
 /**
  * Platform Admin API Client
@@ -513,6 +514,32 @@ export const platformApi = {
       } }>('/platform/contact-messages/stats');
     },
   },
+
+  // Login Audit (platform admin)
+  loginAudit: {
+    list: async (params?: LoginAuditApi.LoginAttemptFilters) => {
+      return apiClient.get<LoginAuditApi.LoginAttemptsPaginatedResponse>('/platform/login-audit', params);
+    },
+    getByUser: async (userId: string, params?: { page?: number; per_page?: number; start_date?: string; end_date?: string }) => {
+      return apiClient.get<LoginAuditApi.LoginAttemptsPaginatedResponse>(`/platform/login-audit/users/${userId}`, params);
+    },
+    getByOrganization: async (organizationId: string, params?: LoginAuditApi.LoginAttemptFilters) => {
+      return apiClient.get<LoginAuditApi.LoginAttemptsPaginatedResponse>(`/platform/login-audit/organizations/${organizationId}`, params);
+    },
+    alerts: async () => {
+      return apiClient.get<{ ip_alerts: LoginAuditApi.BruteForceAlert[]; email_alerts: LoginAuditApi.BruteForceAlert[] }>('/platform/login-audit/alerts');
+    },
+    locked: async () => {
+      return apiClient.get<{ data: LoginAuditApi.LockedAccount[] }>('/platform/login-audit/locked');
+    },
+    unlock: async (email: string) => {
+      return apiClient.post<{ message: string; email: string }>('/platform/login-audit/unlock', { email });
+    },
+    export: async (params?: LoginAuditApi.LoginAttemptFilters) => {
+      return apiClient.requestFile('/platform/login-audit/export', { method: 'GET', params });
+    },
+  },
+
   planRequests: {
     list: async (params?: { search?: string; page?: number; per_page?: number }) => {
       return apiClient.get<{

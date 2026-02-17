@@ -12,7 +12,10 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    // Alias HasRoles::hasPermissionTo so we can safely override it.
+    use HasApiTokens, HasFactory, Notifiable, HasRoles {
+        HasRoles::hasPermissionTo as spatieHasPermissionTo;
+    }
 
     protected $connection = 'pgsql';
     protected $table = 'users'; // Now in public schema
@@ -99,7 +102,7 @@ class User extends Authenticatable
         // If no team context is set, fall back to Spatie's default behavior
         // This handles global permissions (like subscription.admin for platform admins)
         if ($teamId === null) {
-            return parent::hasPermissionTo($permission, $guardName);
+            return $this->spatieHasPermissionTo($permission, $guardName);
         }
 
         // For platform org UUID, check global permissions (organization_id = NULL)

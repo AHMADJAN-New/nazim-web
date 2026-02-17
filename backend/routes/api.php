@@ -125,6 +125,7 @@ use App\Http\Controllers\HelpCenterArticleController;
 use App\Http\Controllers\HelpCenterCategoryController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LicenseFeeController;
+use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\MaintenanceFeeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SearchController;
@@ -138,7 +139,7 @@ use App\Http\Controllers\StorageController;
 
 // Public routes (no authentication required)
 Route::get('auth/login', [AuthController::class, 'loginGet']); // Handle GET requests gracefully
-Route::post('auth/login', [AuthController::class, 'login']);
+Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scanPublic']);
 Route::get('/maintenance/status/public', [App\Http\Controllers\MaintenanceController::class, 'getPublicStatus']);
 
@@ -1731,6 +1732,17 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::get('/contact-messages/{id}', [ContactMessageController::class, 'show']);
     Route::put('/contact-messages/{id}', [ContactMessageController::class, 'update']);
     Route::delete('/contact-messages/{id}', [ContactMessageController::class, 'destroy']);
+
+    // Login audit (platform admin)
+    Route::prefix('login-audit')->group(function () {
+        Route::get('/', [LoginAuditController::class, 'index']);
+        Route::get('/users/{userId}', [LoginAuditController::class, 'showByUser']);
+        Route::get('/organizations/{organizationId}', [LoginAuditController::class, 'showByOrganization']);
+        Route::get('/alerts', [LoginAuditController::class, 'alerts']);
+        Route::get('/locked', [LoginAuditController::class, 'lockedAccounts']);
+        Route::post('/unlock', [LoginAuditController::class, 'unlockAccount']);
+        Route::get('/export', [LoginAuditController::class, 'export']);
+    });
 
     // Help Center management (platform admin - no organization filter)
     Route::prefix('help-center')->group(function () {
