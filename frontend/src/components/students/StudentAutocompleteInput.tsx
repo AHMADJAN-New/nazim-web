@@ -27,6 +27,7 @@ export const StudentAutocompleteInput = React.forwardRef<HTMLInputElement, Stude
                 <Input
                     ref={ref}
                     list={listId}
+                    autoComplete="off"
                     className={cn(isRTL ? 'text-right' : 'text-left', className)}
                     dir={isRTL ? 'rtl' : 'ltr'}
                     {...inputProps}

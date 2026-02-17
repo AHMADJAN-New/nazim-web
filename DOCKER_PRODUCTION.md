@@ -14,7 +14,8 @@ This setup matches the audited production topology:
 - `docker/env/compose.prod.env.example` + `docker/env/backend.env.example`
 - `docker/scripts/prod/setup.sh` (master setup script - recommended)
 - `docker/scripts/prod/bootstrap.sh` (first-time setup)
-- `docker/scripts/maintenance/update.sh` (update/redeploy)
+- `docker/scripts/maintenance/update.sh` (full update/redeploy)
+- `docker/scripts/maintenance/update-app.sh` (app-only: frontend + PHP, no db/redis teardown)
 - `docker/scripts/backup/backup_db.sh`, `docker/scripts/backup/restore_db.sh`
 
 ### 1) On a new VPS
@@ -74,6 +75,21 @@ bash docker/scripts/prod/https_renew.sh
 If you use a **wildcard** cert for subdomains (e.g. `*.nazim.cloud`), it was issued with `https_init_wildcard.sh` and does not auto-renew. Renew it manually before expiry by running `bash docker/scripts/prod/https_init_wildcard.sh` again and adding the TXT record when prompted. See WEBSITE_PORTAL_SETUP.md for details.
 
 ### 4) Update (future deploys)
+
+**App-only update** (recommended for routine fixes and small deploys):
+
+- Pulls latest code
+- Builds PHP image (composer install)
+- Builds Nginx image (frontend: npm ci + npm run build)
+- Restarts php, queue, scheduler, nginx only (keeps db, redis, certbot, pgadmin running)
+- Installs composer deps for bind-mounted code
+- Runs migrations and optimize
+
+```bash
+bash docker/scripts/maintenance/update-app.sh
+```
+
+**Full update** (use when changing infra, Dockerfiles, or doing a clean redeploy):
 
 ```bash
 bash docker/scripts/maintenance/update.sh

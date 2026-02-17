@@ -513,10 +513,6 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         />
                                     </div>
                                     <div>
-                                        <Label>{t('studentReportCard.motherName') || 'Mother Name'}</Label>
-                                        <Input placeholder={t('studentReportCard.motherName') || 'Mother name'} {...register('mother_name')} />
-                                    </div>
-                                    <div>
                                         <Label>
                                             {t('students.gender') || 'Gender'}
                                             <span className="text-destructive ml-1">*</span>
@@ -542,7 +538,19 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     </div>
                                     <div>
                                         <Label>{t('students.birthYear') || 'Birth Year'}</Label>
-                                        <Input placeholder="1387" {...register('birth_year')} />
+                                        <Input 
+                                            placeholder="1387" 
+                                            readOnly={!!watchedBirthDate}
+                                            {...register('birth_year')} 
+                                            className={cn(
+                                                watchedBirthDate ? 'bg-muted cursor-not-allowed' : ''
+                                            )}
+                                        />
+                                        {watchedBirthDate && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                {t('students.autoCalculated') || 'Auto-calculated from birth date'}
+                                            </p>
+                                        )}
                                     </div>
                                     <div>
                                         <CalendarFormField
@@ -605,7 +613,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                             <div>
                                                 <Label>{t('students.originProvince') || 'Origin Province'}</Label>
-                                                <Input placeholder={t('students.originProvince') || 'Province'} {...register('orig_province')} />
+                                                <StudentAutocompleteInput
+                                                    placeholder={t('students.originProvince') || 'Province'}
+                                                    suggestions={ac?.origProvinces || []}
+                                                    {...register('orig_province')}
+                                                />
                                             </div>
                                             <div>
                                                 <Label>{t('students.originDistrict') || 'Origin District'}</Label>
@@ -630,7 +642,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                             <div>
                                                 <Label>{t('students.currentProvince') || 'Current Province'}</Label>
-                                                <Input placeholder={t('students.currentProvince') || 'Province'} {...register('curr_province')} />
+                                                <StudentAutocompleteInput
+                                                    placeholder={t('students.currentProvince') || 'Province'}
+                                                    suggestions={ac?.currProvinces || []}
+                                                    {...register('curr_province')}
+                                                />
                                             </div>
                                             <div>
                                                 <Label>{t('students.currentDistrict') || 'Current District'}</Label>

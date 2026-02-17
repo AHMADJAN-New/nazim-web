@@ -461,7 +461,7 @@ export function AdmissionFormDialog({
         ref={(el) => {
           dialogRef.current = el;
         }}
-        className="max-w-6xl w-full sm:w-[92vw] p-0 gap-0 flex flex-col"
+        className="max-w-6xl w-full sm:w-[92vw] p-0 gap-0 flex flex-col max-h-[90vh]"
         aria-describedby="admission-form-description"
       >
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex-shrink-0">
@@ -507,9 +507,9 @@ export function AdmissionFormDialog({
               const firstError = Object.values(errs)[0];
               if (firstError?.message) showToast.error(firstError.message);
             })}
-            className="flex-1 overflow-hidden"
+            className="flex-1 overflow-hidden flex flex-col min-h-0"
           >
-            <div className="px-4 sm:px-6 pb-4">
+            <div className="px-4 sm:px-6 pb-4 flex-1 overflow-y-auto min-h-0">
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
                 {/* Left: Wizard / Cards */}
                 <Card className="border overflow-hidden flex flex-col">

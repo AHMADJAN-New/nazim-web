@@ -1,121 +1,156 @@
+# Docker Setup & Update Guide
 
-## How to Use
-
-This section explains the standard workflow for setting up, updating, and running the production environment.
-
----
-
-### 🟢 Initial Setup (First Time Only)
-
-Run this once when deploying the project for the very first time.  
-It prepares the environment, creates required folders, and initializes core services.
-
-```bash
-docker/scripts/prod/setup.sh
-````
+Standard workflow for setting up, updating, and running the production environment.
 
 ---
 
-### 🔄 Update Everything
+## 🟢 Initial Setup (First Time Only)
 
-Use this whenever you pull new changes from the repository or want to refresh all services.
-
-This step will update code, images, and dependencies.
+Run once when deploying for the very first time. Prepares the environment, creates folders, and initializes all services.
 
 ```bash
-docker/scripts/prod/update.sh
+sudo bash docker/scripts/prod/setup.sh
 ```
 
-This also runs **permissions:sync-default-roles** (adds missing staff finance/fees read permissions and creates the accountant role for existing organizations).
+**Or step-by-step:**
+```bash
+bash docker/scripts/prod/preflight.sh
+bash docker/scripts/prod/bootstrap.sh
+bash docker/scripts/maintenance/smoke_test.sh
+```
 
-**Run sync manually** (e.g. after first deploy of the roles/permissions changes):
+---
+
+## 🔄 Updates (After First Deploy)
+
+### App-only update (recommended for routine deploys)
+
+Use for bug fixes, small changes, and regular deploys. Keeps database, Redis, and other services running.
+
+**What it does:**
+- Pulls latest code
+- Installs frontend dependencies (npm ci)
+- Builds PHP image (composer install)
+- Builds Nginx image (frontend: npm ci + npm run build)
+- Restarts php, queue, scheduler, nginx only
+- Installs composer deps for bind-mounted code
+- Runs migrations and optimize
+- Syncs default role permissions
+
+```bash
+bash docker/scripts/maintenance/update-app.sh
+```
+
+### Full update (use sparingly)
+
+Use when changing Dockerfiles, infrastructure, or doing a clean redeploy. Stops and removes all containers, rebuilds everything with `--no-cache`.
+
+```bash
+bash docker/scripts/prod/update.sh
+```
+
+---
+
+## 🚀 Build and Start (Full Stack)
+
+Start the full production stack. Run after initial setup or after a full update.
+
+```bash
+bash docker/scripts/prod/bootstrap.sh
+```
+
+**Note:** After `update-app.sh`, you do **not** need bootstrap — app services are already restarted.
+
+---
+
+## Quick Reference
+
+| Situation | Command |
+|-----------|---------|
+| First deploy | `sudo bash docker/scripts/prod/setup.sh` |
+| Routine fix / small deploy | `bash docker/scripts/maintenance/update-app.sh` |
+| Infra change / full rebuild | `bash docker/scripts/prod/update.sh` |
+| Start stack (after full update) | `bash docker/scripts/prod/bootstrap.sh` |
+
+---
+
+## Common Tasks
+
+### Sync role permissions manually
 
 ```bash
 docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml exec php sh -lc 'php artisan permissions:sync-default-roles'
 ```
 
-Or with dry-run: add `--dry-run` before the command string to see what would be done.
+Add `--dry-run` before the command to preview changes without applying.
 
-**If users with accountant/staff/other roles still get 403 on organizations, buildings, schools, etc.:**
+**If users with accountant/staff roles get 403 on organizations, buildings, schools:**
+1. Deploy latest backend (PermissionSeeder, SyncDefaultRolesPermissions).
+2. Run the sync on the production environment (see above).
+3. Have affected users log out and log back in.
 
-1. Ensure the **latest backend** is deployed (PermissionSeeder and SyncDefaultRolesPermissions with base permissions for all roles).
-2. Run the sync **on the same environment** where the API runs (e.g. production Docker):
-   ```bash
-   docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml exec php sh -lc 'php artisan permissions:sync-default-roles'
-   ```
-3. Have affected users **log out and log back in** (or wait for cache expiry) so permissions are rechecked.
+### Rebuild frontend after env var changes
 
-**If you still see `[AppHeader DEBUG] Features:` in the browser console:** the frontend bundle is old. Rebuild and redeploy the frontend (e.g. run your build/deploy script or `docker/scripts/prod/update.sh` and ensure the frontend is rebuilt).
-
-**If desktop release uploads fail with 413 (Request Entity Too Large):** Nginx and PHP upload limits must allow at least 500 MB. The repo sets `client_max_body_size 512M` in `docker/nginx/*` and `post_max_size` / `upload_max_filesize 512M` in `docker/php/nazim.ini`. After changing these, rebuild or restart the nginx and php containers so the new limits apply.
-
-**If desktop release downloads are slow (e.g. ~70 KB/s despite fast internet):**
-1. **X-Accel-Redirect:** The stack uses **X-Accel-Redirect** so nginx serves the file directly (not via PHP). Ensure the nginx config includes the `internal-desktop-files/` location and `DESKTOP_USE_X_ACCEL_REDIRECT=true` in backend `.env`.
-2. **Nginx tuning:** The config uses `sendfile on`, `tcp_nopush off`, and `tcp_nodelay on` for the internal desktop files location to maximize throughput. Rebuild or restart nginx after config changes: `docker compose ... restart nginx`.
-3. **CDN/proxy:** If the site is behind Cloudflare or another CDN, downloads can be throttled. For the download endpoint, consider using a subdomain that bypasses the CDN (e.g. Cloudflare "gray cloud") or whitelist the `/api/desktop/` path from throttling.
-4. **Server bandwidth:** Outbound bandwidth on the server itself can be the limit. Check hosting provider limits and consider a CDN for large file delivery if needed.
-
----
-
-### 🚀 Build and Start
-
-Build all Docker images and start the full production stack.
-
-Run this after setup or update.
+If you change `VITE_*` in `docker/env/compose.prod.env`, rebuild the Nginx image so the frontend gets new build-time values:
 
 ```bash
-docker/scripts/prod/bootstrap.sh
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml build nginx
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml up -d nginx
 ```
 
+Or run `bash docker/scripts/maintenance/update-app.sh`.
+
+### Old frontend bundle (debug output in console)
+
+If you see `[AppHeader DEBUG] Features:` in the browser console, the frontend bundle is outdated. Rebuild:
+`bash docker/scripts/maintenance/update-app.sh` or `bash docker/scripts/prod/update.sh`.
+
 ---
-ebuild the frontend (and Nginx image) so the new env vars are baked in:
-   docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml build 
-Or run your usual deploy/update script.
-## What Happens Automatically
 
-When you run the above commands, the system will automatically:
+## Troubleshooting
 
-* Pull the latest Docker images
-* Build all required services
-* Create and configure Docker networks
-* Create and mount persistent volumes
-* Run database migrations
-* Apply database seeders (if configured)
-* Start all containers in the correct dependency order (including pgAdmin for database management)
-* Perform basic health checks
+### 413 Request Entity Too Large on desktop uploads
+
+Nginx and PHP limits must allow at least 500 MB. The repo sets `client_max_body_size 512M` and `post_max_size`/`upload_max_filesize 512M`. Rebuild or restart nginx and php after changing limits.
+
+### Slow desktop release downloads (~70 KB/s)
+
+1. **X-Accel-Redirect:** Stack uses X-Accel-Redirect so nginx serves files directly. Ensure nginx config has `internal-desktop-files/` location and `DESKTOP_USE_X_ACCEL_REDIRECT=true` in backend `.env`.
+2. **Nginx tuning:** Config uses `sendfile on` and tcp options for throughput. Rebuild or restart nginx after changes.
+3. **CDN:** If behind Cloudflare, downloads may be throttled. Use a subdomain that bypasses CDN or whitelist `/api/desktop/`.
+4. **Bandwidth:** Check hosting provider limits.
+
+---
+
+## What Runs Automatically
+
+When you run the commands above:
+
+- Latest Docker images are pulled (or built)
+- Services are built and started in dependency order
+- Database migrations run
+- Seeders apply (if configured)
+- pgAdmin starts for database management
+- Health checks run
 
 ---
 
 ## Result
 
-After completion:
+- All services running
+- Database up to date
+- Environment consistent and reproducible
+- Ready for production
 
-* All services are running
-* The database is up-to-date
-* The environment is consistent and reproducible
-* The system is ready for production use
-* **pgAdmin is available** for database administration at `http://localhost:5050` (default port)
+### pgAdmin access
 
-### Accessing pgAdmin
+- **URL:** `http://localhost:5050` (or `PGADMIN_PORT`)
+- **Email:** value from `PGADMIN_EMAIL` (default `admin@nazim.cloud`)
+- **Password:** value from `PGADMIN_PASSWORD` (default `admin`)
 
-After setup/update, you can access pgAdmin (database administration tool) at:
-
-- **URL**: `http://localhost:5050` (or the port specified in `PGADMIN_PORT` env var)
-- **Email**: `admin@nazim.cloud` (or value from `PGADMIN_EMAIL` env var)
-- **Password**: `admin` (or value from `PGADMIN_PASSWORD` env var)
-
-**To connect to your PostgreSQL database in pgAdmin:**
+**Connect to PostgreSQL:**
 1. Login to pgAdmin
 2. Right-click "Servers" → "Register" → "Server"
-3. Use these connection details:
-   - **Host**: `db` (Docker service name)
-   - **Port**: `5432`
-   - **Database**: `nazim` (or value from `POSTGRES_DB`)
-   - **Username**: `nazim` (or value from `POSTGRES_USER`)
-   - **Password**: Your `POSTGRES_PASSWORD` value
+3. Host: `db`, Port: `5432`, Database: `nazim`, Username: `nazim`, Password: `POSTGRES_PASSWORD`
 
-See `docker/pgadmin-setup.md` for detailed instructions.
-
-This workflow guarantees a **stable, repeatable, and production-safe deployment process**.
-
-```
+See `docker/pgadmin-setup.md` for details.

@@ -972,6 +972,8 @@ class StudentController extends Controller
                 'names' => [],
                 'fatherNames' => [],
                 'grandfatherNames' => [],
+                'origProvinces' => [],
+                'currProvinces' => [],
                 'origDistricts' => [],
                 'currDistricts' => [],
                 'origVillages' => [],
@@ -990,6 +992,8 @@ class StudentController extends Controller
         $names = (clone $query)->whereNotNull('full_name')->where('full_name', '!=', '')->distinct()->pluck('full_name')->sort()->values()->toArray();
         $fatherNames = (clone $query)->whereNotNull('father_name')->where('father_name', '!=', '')->distinct()->pluck('father_name')->sort()->values()->toArray();
         $grandfatherNames = (clone $query)->whereNotNull('grandfather_name')->where('grandfather_name', '!=', '')->distinct()->pluck('grandfather_name')->sort()->values()->toArray();
+        $origProvinces = (clone $query)->whereNotNull('orig_province')->where('orig_province', '!=', '')->distinct()->pluck('orig_province')->sort()->values()->toArray();
+        $currProvinces = (clone $query)->whereNotNull('curr_province')->where('curr_province', '!=', '')->distinct()->pluck('curr_province')->sort()->values()->toArray();
         $origDistricts = (clone $query)->whereNotNull('orig_district')->where('orig_district', '!=', '')->distinct()->pluck('orig_district')->sort()->values()->toArray();
         $currDistricts = (clone $query)->whereNotNull('curr_district')->where('curr_district', '!=', '')->distinct()->pluck('curr_district')->sort()->values()->toArray();
         $origVillages = (clone $query)->whereNotNull('orig_village')->where('orig_village', '!=', '')->distinct()->pluck('orig_village')->sort()->values()->toArray();
@@ -1001,6 +1005,8 @@ class StudentController extends Controller
             'names' => $names,
             'fatherNames' => $fatherNames,
             'grandfatherNames' => $grandfatherNames,
+            'origProvinces' => $origProvinces,
+            'currProvinces' => $currProvinces,
             'origDistricts' => $origDistricts,
             'currDistricts' => $currDistricts,
             'origVillages' => $origVillages,
