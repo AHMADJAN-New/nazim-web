@@ -76,7 +76,7 @@ export default {
       contactName: "د اړیکې کس نوم",
       contactNamePlaceholder: "ستاسو بشپړ نوم",
       contactEmail: "برېښنالیک پته",
-      contactEmailPlaceholder: "your@email.com",
+      contactEmailPlaceholder: "برېښنالیک@بېلګه.کام",
       contactPhone: "د ټیلیفون شمېره",
       contactPhonePlaceholder: "+93-701234567",
       contactWhatsApp: "د واټساپ شمېره",

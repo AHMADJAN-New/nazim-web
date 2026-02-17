@@ -102,8 +102,11 @@ export default {
       preview: "Preview:",
       date: "Date:",
       dateTime: "Date & Time:",
-      note: "Note:",
-      noteText: "Your date preference is saved locally and will persist across sessions. This preference affects how dates are displayed in tables, forms, reports, and throughout the application."
+      note: "توجه:",
+      noteText: "ترجیح تاریخ شما در حساب کاربری ذخیره می‌شود و در همه دستگاه‌ها و جلسات حفظ خواهد شد. این تنظیم بر نحوه نمایش تاریخ‌ها در جداول، فرم‌ها، گزارش‌ها و در کل برنامه تأثیر می‌گذارد.",
+      saveButton: "ذخیره تنظیمات",
+      saved: "ترجیح تاریخ با موفقیت ذخیره شد",
+      saveFailed: "ذخیره ترجیح تاریخ ناموفق بود"
     },
     activityLogs: {
       title: "Activity Logs",

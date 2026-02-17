@@ -1,6 +1,6 @@
 # Translation Report: Arabic (ar)
 
-**Generated:** 2026-02-13T16:23:03.871Z
+**Generated:** 2026-02-17T05:01:04.279Z
 
 ## Summary
 
@@ -363,6 +363,59 @@
 ---
 
 ## Keys with English Hardcoded Values (should be translated)
+
+### Summary by File
+
+| File | Module | Count |
+|------|--------|-------|
+| `pages/website-admin/websiteAdmin.ar.ts` | `pages/website-admin/websiteAdmin` | 488 |
+| `shared/toast/toast.ar.ts` | `shared/toast/toast` | 354 |
+| `pages/exams/exams.ar.ts` | `pages/exams/exams` | 332 |
+| `pages/events/events.ar.ts` | `pages/events/events` | 171 |
+| `pages/id-cards/idCards.ar.ts` | `pages/id-cards/idCards` | 117 |
+| `pages/fees/fees.ar.ts` | `pages/fees/fees` | 94 |
+| `pages/finance/finance.ar.ts` | `pages/finance/finance` | 88 |
+| `pages/settings/settings.ar.ts` | `pages/settings/settings` | 62 |
+| `pages/graduation/graduation.ar.ts` | `pages/graduation/graduation` | 56 |
+| `pages/hostel/hostel.ar.ts` | `pages/hostel/hostel` | 42 |
+| `pages/student-history/studentHistory.ar.ts` | `pages/student-history/studentHistory` | 41 |
+| `pages/students/students.ar.ts` | `pages/students/students` | 40 |
+| `pages/attendance/attendance.ar.ts` | `pages/attendance/attendance` | 37 |
+| `shared/common/common.ar.ts` | `shared/common/common` | 37 |
+| `pages/question-bank/questionBank.ar.ts` | `pages/question-bank/questionBank` | 35 |
+| `shared/termsOfService/termsOfService.ar.ts` | `shared/termsOfService/termsOfService` | 33 |
+| `pages/academic/academic.ar.ts` | `pages/academic/academic` | 32 |
+| `shared/privacyPolicy/privacyPolicy.ar.ts` | `shared/privacyPolicy/privacyPolicy` | 30 |
+| `pages/dms/dms.ar.ts` | `pages/dms/dms` | 29 |
+| `pages/admissions/admissions.ar.ts` | `pages/admissions/admissions` | 22 |
+| `pages/reports/reports.ar.ts` | `pages/reports/reports` | 20 |
+| `pages/assets/assets.ar.ts` | `pages/assets/assets` | 18 |
+| `shared/footer/footer.ar.ts` | `shared/footer/footer` | 18 |
+| `shared/errorBoundary/errorBoundary.ar.ts` | `shared/errorBoundary/errorBoundary` | 16 |
+| `pages/leave/leave.ar.ts` | `pages/leave/leave` | 14 |
+| `pages/library/library.ar.ts` | `pages/library/library` | 13 |
+| `shared/nav/nav.ar.ts` | `shared/nav/nav` | 13 |
+| `pages/auth/auth.ar.ts` | `pages/auth/auth` | 12 |
+| `pages/dashboard/dashboard.ar.ts` | `pages/dashboard/dashboard` | 12 |
+| `pages/staff/staff.ar.ts` | `pages/staff/staff` | 12 |
+| `pages/courses/courses.ar.ts` | `pages/courses/courses` | 11 |
+| `pages/grades/grades.ar.ts` | `pages/grades/grades` | 11 |
+| `shared/resetPassword/resetPassword.ar.ts` | `shared/resetPassword/resetPassword` | 11 |
+| `pages/short-term-courses/shortTermCourses.ar.ts` | `pages/short-term-courses/shortTermCourses` | 10 |
+| `pages/watermarks/watermarks.ar.ts` | `pages/watermarks/watermarks` | 9 |
+| `pages/misc/misc.ar.ts` | `pages/misc/misc` | 8 |
+| `pages/certificates/certificates.ar.ts` | `pages/certificates/certificates` | 5 |
+| `pages/subjects/subjects.ar.ts` | `pages/subjects/subjects` | 3 |
+| `pages/timetable/timetable.ar.ts` | `pages/timetable/timetable` | 3 |
+| `pages/user-management/userManagement.ar.ts` | `pages/user-management/userManagement` | 2 |
+| `shared/notFound/notFound.ar.ts` | `shared/notFound/notFound` | 2 |
+| `pages/onboarding/onboarding.ar.ts` | `pages/onboarding/onboarding` | 1 |
+| `pages/permissions/permissions.ar.ts` | `pages/permissions/permissions` | 1 |
+| `pages/schools/schools.ar.ts` | `pages/schools/schools` | 1 |
+| `pages/subscription/subscription.ar.ts` | `pages/subscription/subscription` | 1 |
+| `shared/pagination/pagination.ar.ts` | `shared/pagination/pagination` | 1 |
+
+### Detail (first 200)
 
 | File | Key | Value |
 |------|-----|-------|

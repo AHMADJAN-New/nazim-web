@@ -220,7 +220,7 @@ export function StudentFullDetailsSection({ student }: StudentFullDetailsSection
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {renderField(t('students.studentCode') || 'Student Code', student.studentCode)}
                 {renderField(t('students.cardNumber') || 'Card Number', student.cardNumber)}
-                {renderField(t('students.status') || 'Status', student.status)}
+                {renderField(t('students.status') ?? 'Status', student.status)}
                 {renderField(t('common.createdAt') || 'Created At', student.createdAt ? formatDate(student.createdAt) : null)}
               </div>
             </div>

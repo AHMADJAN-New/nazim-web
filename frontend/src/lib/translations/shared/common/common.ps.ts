@@ -48,7 +48,7 @@ export default {
     hide: "پټول",
     import: "واردول",
     inactive: "غیر فعال",
-    kb: "KB",
+    kb: "کیلوبایټ",
     loading: "تر لاسه کیږي... ",
     metadata: "میټاډاټا",
     more: "نور",

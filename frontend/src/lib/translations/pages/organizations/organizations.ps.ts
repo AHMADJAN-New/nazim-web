@@ -20,7 +20,7 @@ export default {
     editOrganization: "اداره سم کړئ",
     editOrganizationButton: "اداره سم کړئ",
     enterOrganizationDetails: "د اداره جزئیات لاندې ولیکئ",
-    id: "ID",
+    id: "شمېره",
     loadingOrganizations: "ادارې  ترلاسه کیږي...",
     name: "نوم",
     noOrganizationsMessage: "ادارې  نشته. خپل لومړی اداره اضافه کړئ.",

@@ -31,7 +31,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -44,6 +44,7 @@ import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { useLanguage } from '@/hooks/useLanguage';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
 import { showToast } from '@/lib/toast';
+import { cn } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
 
 export interface StudentFormDialogProps {
@@ -130,6 +131,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
     const orgIdForQuery = profile?.organization_id;
     const { data: schools } = useSchools(orgIdForQuery);
     const formValues = watch();
+    const watchedBirthDate = watch('birth_date');
     const [activeTab, setActiveTab] = useState('admission');
 
     // If only one school exists, preselect it automatically
@@ -138,6 +140,19 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
             setValue('school_id', schools[0].id);
         }
     }, [schools, setValue]);
+
+    // Auto-calculate age and birth_year from birth_date
+    useEffect(() => {
+        if (watchedBirthDate && typeof watchedBirthDate === 'string' && watchedBirthDate.trim()) {
+            const birthDate = new Date(watchedBirthDate);
+            if (!isNaN(birthDate.getTime())) {
+                const today = new Date();
+                const calculatedAge = today.getFullYear() - birthDate.getFullYear();
+                setValue('age', calculatedAge >= 0 ? calculatedAge : 0);
+                setValue('birth_year', String(birthDate.getFullYear()));
+            }
+        }
+    }, [watchedBirthDate, setValue]);
 
     // Reset form when dialog opens and when switching between create/edit modes
     useEffect(() => {
@@ -530,14 +545,20 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         <Input placeholder="1387" {...register('birth_year')} />
                                     </div>
                                     <div>
-                                        <Label>{t('students.birthDate') || 'Birth Date'}</Label>
-                                        <Input placeholder="2008-03-21" {...register('birth_date')} />
+                                        <CalendarFormField
+                                            control={control}
+                                            name="birth_date"
+                                            label={t('students.birthDate') || 'Birth Date'}
+                                            placeholder={t('common.selectDate') || 'Select date'}
+                                            maxDate={new Date()}
+                                        />
                                     </div>
                                     <div>
                                         <Label>{t('students.age') || 'Age'}</Label>
                                         <Input 
                                             type="number" 
                                             placeholder="15" 
+                                            readOnly={!!watchedBirthDate}
                                             {...register('age', { 
                                                 valueAsNumber: true,
                                                 setValueAs: (value) => {
@@ -547,8 +568,16 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                     return Number(value);
                                                 }
                                             })} 
-                                            className={errors.age ? 'border-destructive' : ''}
+                                            className={cn(
+                                                errors.age ? 'border-destructive' : '',
+                                                watchedBirthDate ? 'bg-muted cursor-not-allowed' : ''
+                                            )}
                                         />
+                                        {watchedBirthDate && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                {t('students.autoCalculated') || 'Auto-calculated from birth date'}
+                                            </p>
+                                        )}
                                         {errors.age && (
                                             <p className="text-sm text-destructive mt-1">{errors.age.message}</p>
                                         )}
@@ -743,14 +772,14 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                             />
                                         </div>
                                         <div>
-                                            <Label>{t('students.status.label') || 'Student Status'}</Label>
+                                            <Label>{t('students.statusOptions.label') ?? t('students.status') ?? 'Student Status'}</Label>
                                             <Controller
                                                 control={control}
                                                 name="student_status"
                                                 render={({ field }) => (
                                                     <Select value={field.value} onValueChange={field.onChange}>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder={t('students.status.label') || 'Status'} />
+                                                            <SelectValue placeholder={t('students.statusOptions.label') ?? t('students.status') ?? 'Status'} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>

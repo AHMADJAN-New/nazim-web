@@ -27,18 +27,18 @@ class DateConversionService
 
     // Jalali month names in Pashto (Afghan calendar)
     public const JALALI_MONTHS_PS = [
-        1 => 'وری',      // Wray
-        2 => 'غویی',     // Ghwayee
-        3 => 'غبرګولی',   // Gbargolay
-        4 => 'چنګاښ',    // Changaakh
-        5 => 'زمری',     // Zmaray
-        6 => 'وږی',      // Wazzhay
-        7 => 'تله',      // Tala
-        8 => 'لړم',      // Laram
-        9 => 'لیندۍ',    // Lindai
-        10 => 'مرغومی',   // Marghumay
-        11 => 'سلواغه',   // Salwagha
-        12 => 'کب',      // Kab
+        1 => 'حمل',      // Hamal
+        2 => 'ثور',      // Sawr
+        3 => 'جوزا',     // Jawza
+        4 => 'سرطان',    // Saratan
+        5 => 'اسد',      // Asad
+        6 => 'سنبله',    // Sonbola
+        7 => 'میزان',    // Mizan
+        8 => 'عقرب',     // Aqrab
+        9 => 'قوس',      // Qaws
+        10 => 'جدی',     // Jadi
+        11 => 'دلو',     // Dalw
+        12 => 'حوت',     // Hoot
     ];
 
     // Hijri Qamari month names

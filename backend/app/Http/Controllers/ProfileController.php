@@ -124,6 +124,7 @@ class ProfileController extends Controller
             'has_completed_onboarding' => 'sometimes|boolean',
             'has_completed_tour' => 'sometimes|boolean',
             'onboarding_completed_at' => 'nullable|date',
+            'calendar_preference' => 'sometimes|string|in:gregorian,hijri_shamsi,hijri_qamari',
         ]);
 
         $user = $request->user();
@@ -174,6 +175,8 @@ class ProfileController extends Controller
             if ($request->has('has_completed_onboarding')) $updateData['has_completed_onboarding'] = $request->has_completed_onboarding;
             if ($request->has('has_completed_tour')) $updateData['has_completed_tour'] = $request->has_completed_tour;
             if ($request->has('onboarding_completed_at')) $updateData['onboarding_completed_at'] = $request->onboarding_completed_at;
+            // Users can update their own calendar preference
+            if ($request->has('calendar_preference')) $updateData['calendar_preference'] = $request->calendar_preference;
         } else {
             // Admins can update: full_name, email, phone, avatar_url, role, is_active, organization_id
             if ($request->has('full_name')) $updateData['full_name'] = $request->full_name;

@@ -922,7 +922,7 @@ export function Students() {
           </Select>
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
             <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder={t('students.status.label') || 'Status'} />
+              <SelectValue placeholder={t('students.statusOptions.label') ?? t('students.status') ?? 'Status'} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('userManagement.allStatus') || 'All Status'}</SelectItem>

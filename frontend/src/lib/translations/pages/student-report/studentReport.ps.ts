@@ -29,7 +29,7 @@ export default {
     guardianName: "د سرپرست نوم",
     guardianPhone: "د سرپرست ټیلیفون",
     homeAddress: "د کور پته",
-    idLabel: "ID",
+    idLabel: "شمېره",
     isOrphan: "یتیم",
     loadingStudents: "زده کوونکي راپورته کېږي...",
     locationInformation: "د موقعیت معلومات",
@@ -43,7 +43,7 @@ export default {
     reportExported: "راپور د ... راپور جوړ شو",
     school: "ښوونځی",
     schoolRequired: "د راپور صادرولو لپاره ښوونځی اړین دی.",
-    studentId: "ID",
+    studentId: "شمېره",
     withdrawn: "خارج شوی"
   },
   studentReportCard: {

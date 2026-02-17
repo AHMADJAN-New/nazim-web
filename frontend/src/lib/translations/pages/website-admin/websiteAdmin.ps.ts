@@ -21,7 +21,7 @@ export default {
       type: "ډول",
       visible: "ښکاره",
       order: "ترتیب",
-      url: "URL",
+      url: "پته",
       parent: "والد",
       created: "جوړ شوی",
       preview: "مخکینی لید",
@@ -97,7 +97,7 @@ export default {
         publishedAt: "د خپرېدو نېټه"
       },
       placeholders: {
-        slug: "my-article",
+        slug: "زما-مقاله",
         title: "د مقالې سرلیک",
         excerpt: "د مقالې لنډیز...",
         content: "خپل مقاله ولیکئ..."
@@ -123,7 +123,7 @@ export default {
         content: "منځپانګه"
       },
       placeholders: {
-        slug: "about-us",
+        slug: "زموږ-په-اړه",
         title: "زموږ په اړه"
       }
     },
@@ -141,7 +141,7 @@ export default {
       deleteDescription: "ایا ډاډه یاست چې دا مېنو توکی ړنګوئ؟ دا عمل بېرته نه شي کېدای.",
       fields: {
         label: "لیبل",
-        url: "URL",
+        url: "پته",
         parentMenu: "اصلي مېنو",
         sortOrder: "د ترتیب شمېره",
         visible: "ښکاره",
@@ -151,7 +151,7 @@ export default {
       placeholders: {
         selectPage: "یوه پاڼه وټاکئ...",
         label: "کور",
-        url: "/home",
+        url: "/کور",
         parentNone: "هیڅ (لوړ کچه)"
       }
     },
@@ -200,7 +200,7 @@ export default {
         sslStatus: "د SSL حالت"
       },
       placeholders: {
-        domain: "example.com",
+        domain: "بېلګه.کام",
         selectStatus: "حالت وټاکئ"
       }
     },
@@ -231,8 +231,8 @@ export default {
         search: "رسنۍ ولټوئ...",
         selectCategory: "کټګوري وټاکئ",
         imageUrl: "https://... یا لاره",
-        videoUrl: "https://www.youtube.com/watch?v=...",
-        documentUrl: "https://...",
+        videoUrl: "د ویډیو لینک (لکه YouTube)",
+        documentUrl: "د سند لینک",
         fileName: "زما ښکلی انځور",
         altText: "د منځپانګې لنډه تشریح"
       },
@@ -290,11 +290,11 @@ export default {
         answerDraft: "د ځواب مسوده"
       },
       placeholders: {
-        slug: "fatwa-slug",
+        slug: "فتوا-سلګ",
         title: "د فتوا سرلیک",
         question: "د پوښتنې متن...",
         answer: "د فتوا ځواب...",
-        categorySlug: "category-slug",
+        categorySlug: "کټګوري-سلګ",
         categoryName: "د کټګورۍ نوم",
         categoryDescription: "د کټګورۍ تشریح...",
         assignedTo: "د کاروونکي ID یا ایمیل",
@@ -336,7 +336,7 @@ export default {
       },
       placeholders: {
         name: "د کټګورۍ نوم",
-        slug: "gallery-category",
+        slug: "ګالري-کټګوري",
         coverPath: "د انځور لاره یا URL"
       },
       coverUploadCta: "پوښ انځور پورته یا له کتابتون څخه وټاکئ",
@@ -367,7 +367,7 @@ export default {
         instructor: "د ښوونکي نوم",
         duration: "لکه ۸ اونۍ",
         level: "کچه وټاکئ",
-        enrollmentLink: "https://...",
+        enrollmentLink: "https://... (د نوم لیکنې پته)",
         description: "د کورس تشریح...",
         category: "کټګوري"
       },
@@ -406,7 +406,7 @@ export default {
         author: "د لیکوال نوم",
         category: "کټګوري",
         description: "د کتاب لنډیز...",
-        fileUrl: "https://...pdf"
+        fileUrl: "https://...pdf (د فایل پته)"
       },
       uploadCover: "پوښ پورته کول",
       uploadFile: "فایل پورته کول",
@@ -461,7 +461,7 @@ export default {
       placeholders: {
         name: "بشپړ نوم",
         title: "عنوان یا رول",
-        email: "name@example.com",
+        email: "برېښنالیک@بېلګه.کام",
         bio: "لنډه پېژندنه..."
       },
       featured: "په مخپاڼه کې ځانګړی",

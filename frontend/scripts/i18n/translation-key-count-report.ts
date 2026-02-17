@@ -229,6 +229,25 @@ function generateMarkdownReport(
   if (englishHardcoded.length > 0) {
     md += `\n---\n\n`;
     md += `## Keys with English Hardcoded Values (should be translated)\n\n`;
+
+    // Summary table: group by file, count hardcoded entries
+    const hardcodedByFileInReport = new Map<string, number>();
+    for (const e of englishHardcoded) {
+      hardcodedByFileInReport.set(e.filePath, (hardcodedByFileInReport.get(e.filePath) ?? 0) + 1);
+    }
+    const sortedFilesForSummary = [...hardcodedByFileInReport.entries()].sort(
+      (a, b) => b[1] - a[1]
+    );
+    md += `### Summary by File\n\n`;
+    md += `| File | Module | Count |\n`;
+    md += `|------|--------|-------|\n`;
+    for (const [filePath, count] of sortedFilesForSummary) {
+      const moduleName = englishHardcoded.find((e) => e.filePath === filePath)?.module ?? filePath;
+      md += `| \`${filePath}\` | \`${moduleName}\` | ${count} |\n`;
+    }
+    md += `\n`;
+
+    md += `### Detail (first 200)\n\n`;
     md += `| File | Key | Value |\n`;
     md += `|------|-----|-------|\n`;
     for (const e of englishHardcoded.slice(0, 200)) {
@@ -324,17 +343,29 @@ async function main() {
     hardcodedByFile.set(e.filePath, list);
   }
 
+  const sortedFiles = [...hardcodedByFile.entries()].sort((a, b) => b[1].length - a[1].length);
+
   let hardcodedMd = `# English Hardcoded in PS / FA / AR Translation Files\n\n`;
   hardcodedMd += `**Generated:** ${new Date().toISOString()}\n\n`;
   hardcodedMd += `Files (ps, fa, ar) that contain string values which look like English instead of the target language.\n\n`;
   hardcodedMd += `## Summary\n\n`;
   hardcodedMd += `- **Total keys with English values:** ${allEnglishHardcoded.length}\n`;
   hardcodedMd += `- **Files affected:** ${hardcodedByFile.size}\n\n`;
-  hardcodedMd += `---\n\n`;
+
+  // Summary table: file, language, module, count (sorted by count desc)
+  hardcodedMd += `## Summary by File\n\n`;
+  hardcodedMd += `| File | Lang | Module | Count |\n`;
+  hardcodedMd += `|------|------|--------|-------|\n`;
+  for (const [filePath, entries] of sortedFiles) {
+    const langTag = filePath.match(/\.(ps|fa|ar)\.ts$/)?.slice(1, 2).join().toUpperCase() ?? '?';
+    const moduleName = entries[0]?.module ?? filePath;
+    hardcodedMd += `| \`${filePath}\` | ${langTag} | \`${moduleName}\` | ${entries.length} |\n`;
+  }
+  hardcodedMd += `\n---\n\n`;
   hardcodedMd += `## By File\n\n`;
 
-  const sortedFiles = [...hardcodedByFile.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  for (const [filePath, entries] of sortedFiles) {
+  const sortedFilesByName = [...hardcodedByFile.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  for (const [filePath, entries] of sortedFilesByName) {
     const langTag = filePath.match(/\.(ps|fa|ar)\.ts$/)?.slice(1, 2).join().toUpperCase() ?? '?';
     hardcodedMd += `### \`${filePath}\` (${langTag})\n\n`;
     hardcodedMd += `| Key | Value |\n|-----|-------|\n`;

@@ -116,7 +116,7 @@ export default function StudentHistoryListPage() {
     },
     {
       accessorKey: 'status',
-      header: t('students.status.label') || 'Status',
+      header: t('students.statusOptions.label') ?? t('students.status') ?? 'Status',
       cell: ({ row }) => {
         const status = row.original.status;
         const variant = status === 'active' ? 'default' : 
@@ -240,10 +240,10 @@ export default function StudentHistoryListPage() {
                 className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="all">{t('common.allStatuses') || 'All Statuses'}</option>
-                <option value="active">{t('students.status.active') || 'Active'}</option>
-                <option value="inactive">{t('students.status.inactive') || 'Inactive'}</option>
-                <option value="graduated">{t('students.status.graduated') || 'Graduated'}</option>
-                <option value="withdrawn">{t('students.status.withdrawn') || 'Withdrawn'}</option>
+                <option value="active">{t('students.statusOptions.active') ?? 'Active'}</option>
+                <option value="inactive">{t('students.statusOptions.inactive') ?? 'Inactive'}</option>
+                <option value="graduated">{t('students.statusOptions.graduated') ?? 'Graduated'}</option>
+                <option value="withdrawn">{t('students.statusOptions.withdrawn') ?? 'Withdrawn'}</option>
               </select>
             </div>
           </div>

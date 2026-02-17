@@ -89,7 +89,7 @@ export default {
         documentNumber: "د سند شمیره",
         manualNumber: "د سند لاسي شمیره",
         assignManualNumber: "د سند شمیره په لاسي توګه وټاکئ",
-        manualNumberPlaceholder: "IN-2025-001",
+        manualNumberPlaceholder: "ر-۲۰۲۵-۰۰۱",
         externalDocNumber: "د بهرني سند شمیره",
         externalDocNumberPlaceholder: "د بهرني حواله شمیره",
         externalDocDate: "د بهرني سند نیټه",
@@ -295,7 +295,7 @@ export default {
         title: "د لیک ډول جوړ کړئ",
         description: "د قالبونو او سرپاڼو د تنظیم لپاره د لیک نوی ډول اضافه کړئ.",
         keyLabel: "کیلي",
-        keyPlaceholder: "لکه: application, moe_letter",
+        keyPlaceholder: "لکه: غوښتنه، وزارت_لیک",
         keyHint: "یوازې کوچني انګلیسي توري، شمېرې او لاندې خط",
         nameLabel: "نوم",
         namePlaceholder: "لکه: د غوښتنلیک لیکونه",
@@ -374,7 +374,7 @@ export default {
         deleting: "پاک کیږي..."
       }
     },
-    archive: "Archive",
+    archive: "آرشيف",
     archiveSearch: {
       title: "آرشیف او لټون",
       description: "ټول راغلي او وتلي اسناد وپلټئ",
@@ -469,7 +469,7 @@ export default {
         recipientType: "د ترلاسه کوونکي ډول"
       }
     },
-    reports: "Reports",
+    reports: "راپورونه",
     reportsPage: {
       incomingByDepartment: "راغلي د څانګې له مخې",
       department: "څانګه",
@@ -485,7 +485,7 @@ export default {
       notAvailable: "شتون نلري",
       filterSummary: "د اسنادو د ویش راپور"
     },
-    settings: "Settings",
+    settings: "تنظیمات",
     settingsPage: {
       title: "شمېره وهل او امنیتي تنظیمات",
       incomingPrefix: "د راغلو مخکښ (Prefix)",
@@ -516,7 +516,7 @@ export default {
       richText: "بډایه متن (Rich Text)",
       fontLabel: "فونټ",
       fontSizeLabel: "د فونټ اندازه",
-      fontSizeSuffix: "px",
+      fontSizeSuffix: "پیکسل",
       bodyTextLabel: "د متن محتوا",
       bodyTextPlaceholder: "اداره تصدیق کوي چې {{student_name}} د {{father_name}} زوی...",
       bodyTextRichPlaceholder: "دلته خپل لیک ولیکئ. لاندې د معلوماتو د ځای پر ځای کولو لپاره له لیست څخه کار واخلئ.",
@@ -559,7 +559,7 @@ export default {
       namePlaceholder: "اصلي عمودي سرپاڼه",
       fileLabel: "فایل",
       uploadHint: "د اپلوډ لپاره کلیک وکړئ",
-      fileTypesHint: "PDF, JPG, PNG, WEBP (اعظمي 10MB)",
+      fileTypesHint: "پي ډي اېف، جي پي جي، پي ان جي، وېب پي (اعظمي ۱۰ MB)",
       letterheadTypeLabel: "د سرپاڼې ډول",
       backgroundLabel: "شالید",
       backgroundDescription: "بشپړ مخ شالید چې په ټولو پاڼو کې ښکاري",

@@ -1,6 +1,6 @@
 # Translation Report: Farsi (fa)
 
-**Generated:** 2026-02-13T16:23:03.864Z
+**Generated:** 2026-02-17T05:01:04.272Z
 
 ## Summary
 
@@ -276,6 +276,59 @@
 ---
 
 ## Keys with English Hardcoded Values (should be translated)
+
+### Summary by File
+
+| File | Module | Count |
+|------|--------|-------|
+| `pages/students/students.fa.ts` | `pages/students/students` | 269 |
+| `shared/nav/nav.fa.ts` | `shared/nav/nav` | 187 |
+| `pages/library/library.fa.ts` | `pages/library/library` | 174 |
+| `pages/events/events.fa.ts` | `pages/events/events` | 168 |
+| `pages/student-history/studentHistory.fa.ts` | `pages/student-history/studentHistory` | 141 |
+| `pages/staff/staff.fa.ts` | `pages/staff/staff` | 136 |
+| `pages/leave/leave.fa.ts` | `pages/leave/leave` | 122 |
+| `pages/settings/settings.fa.ts` | `pages/settings/settings` | 116 |
+| `pages/subscription/subscription.fa.ts` | `pages/subscription/subscription` | 88 |
+| `pages/finance/finance.fa.ts` | `pages/finance/finance` | 87 |
+| `pages/user-management/userManagement.fa.ts` | `pages/user-management/userManagement` | 73 |
+| `pages/student-report/studentReport.fa.ts` | `pages/student-report/studentReport` | 67 |
+| `pages/reports/reports.fa.ts` | `pages/reports/reports` | 61 |
+| `pages/graduation/graduation.fa.ts` | `pages/graduation/graduation` | 60 |
+| `pages/timetable/timetable.fa.ts` | `pages/timetable/timetable` | 60 |
+| `pages/teacher-subject-assignments/teacherSubjectAssignments.fa.ts` | `pages/teacher-subject-assignments/teacherSubjectAssignments` | 52 |
+| `pages/watermarks/watermarks.fa.ts` | `pages/watermarks/watermarks` | 48 |
+| `pages/question-bank/questionBank.fa.ts` | `pages/question-bank/questionBank` | 40 |
+| `pages/user-permissions/userPermissions.fa.ts` | `pages/user-permissions/userPermissions` | 38 |
+| `pages/organizations/organizations.fa.ts` | `pages/organizations/organizations` | 35 |
+| `pages/roles/roles.fa.ts` | `pages/roles/roles` | 26 |
+| `shared/validation/validation.fa.ts` | `shared/validation/validation` | 25 |
+| `pages/permissions/permissions.fa.ts` | `pages/permissions/permissions` | 23 |
+| `pages/phone-book/phoneBook.fa.ts` | `pages/phone-book/phoneBook` | 21 |
+| `pages/maintenance/maintenance.fa.ts` | `pages/maintenance/maintenance` | 15 |
+| `pages/profile-management/profileManagement.fa.ts` | `pages/profile-management/profileManagement` | 15 |
+| `shared/footer/footer.fa.ts` | `shared/footer/footer` | 15 |
+| `pages/website-admin/websiteAdmin.fa.ts` | `pages/website-admin/websiteAdmin` | 14 |
+| `shared/resetPassword/resetPassword.fa.ts` | `shared/resetPassword/resetPassword` | 12 |
+| `shared/search/search.fa.ts` | `shared/search/search` | 12 |
+| `pages/short-term-courses/shortTermCourses.fa.ts` | `pages/short-term-courses/shortTermCourses` | 11 |
+| `shared/pagination/pagination.fa.ts` | `shared/pagination/pagination` | 8 |
+| `pages/exams/exams.fa.ts` | `pages/exams/exams` | 6 |
+| `pages/dms/dms.fa.ts` | `pages/dms/dms` | 4 |
+| `pages/misc/misc.fa.ts` | `pages/misc/misc` | 3 |
+| `pages/subjects/subjects.fa.ts` | `pages/subjects/subjects` | 3 |
+| `shared/common/common.fa.ts` | `shared/common/common` | 3 |
+| `shared/notFound/notFound.fa.ts` | `shared/notFound/notFound` | 3 |
+| `shared/ui/ui.fa.ts` | `shared/ui/ui` | 3 |
+| `pages/courses/courses.fa.ts` | `pages/courses/courses` | 2 |
+| `pages/hostel/hostel.fa.ts` | `pages/hostel/hostel` | 2 |
+| `pages/assets/assets.fa.ts` | `pages/assets/assets` | 1 |
+| `pages/attendance/attendance.fa.ts` | `pages/attendance/attendance` | 1 |
+| `pages/fees/fees.fa.ts` | `pages/fees/fees` | 1 |
+| `pages/id-cards/idCards.fa.ts` | `pages/id-cards/idCards` | 1 |
+| `pages/onboarding/onboarding.fa.ts` | `pages/onboarding/onboarding` | 1 |
+
+### Detail (first 200)
 
 | File | Key | Value |
 |------|-----|-------|

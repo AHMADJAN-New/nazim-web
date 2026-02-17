@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { optionalUuidSchema, optionalEmailSchema, phoneSchema, optionalStringLength, requiredStringLength } from './common';
-import { validationMessages } from './validationHelpers';
 
 /**
  * Student form validation schema
@@ -29,7 +28,7 @@ export const studentSchema = z.object({
       }
       return typeof val === 'string' ? Number(val) : val;
     },
-    z.number().min(3, validationMessages.ageMin(3)).max(25, validationMessages.ageMax()).optional().nullable()
+    z.number().min(0).max(150).optional().nullable()
   ),
   admission_year: optionalStringLength(10, 'Admission year'),
   orig_province: optionalStringLength(80, 'Province'),

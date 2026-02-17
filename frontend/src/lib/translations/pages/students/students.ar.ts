@@ -45,6 +45,7 @@ export default {
     approvalSignature: "students",
     approvalStamp: "students",
     approvalTitle: "students",
+    autoCalculated: "محسوب تلقائياً من تاريخ الميلاد",
     backToStudents: "العودة إلى الطلاب",
     birthDate: "تاريخ الميلاد",
     birthYear: "سنة الميلاد",
@@ -275,6 +276,15 @@ export default {
     motherName: "اسم الأم",
     cardNumber: "رقم البطاقة",
     searchPlaceholder: "البحث عن الطلاب...",
-    status: "الحالة"
+    status: "الحالة",
+    statusOptions: {
+      label: "الحالة",
+      active: "نشط",
+      inactive: "غير نشط",
+      graduated: "خريج",
+      withdrawn: "منسحب",
+      applied: "مقدم",
+      admitted: "مقبول"
+    }
   }
 };

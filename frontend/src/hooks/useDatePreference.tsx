@@ -194,3 +194,24 @@ export function useDateFormatter() {
   const { formatDate, formatDateTime, formatShortDate, calendar } = useDatePreference();
   return { formatDate, formatDateTime, formatShortDate, calendar };
 }
+
+/**
+ * Sync calendar preference from user profile (DB) to local state.
+ * Call this once inside a component that has access to both AuthContext and DatePreferenceContext.
+ * On first load after login, if the profile has a saved calendar_preference, it overrides localStorage.
+ */
+export function useCalendarPreferenceSync(profileCalendarPreference?: string | null) {
+  const { calendar, setCalendar } = useDatePreference();
+
+  useEffect(() => {
+    if (
+      profileCalendarPreference &&
+      Object.values(CALENDAR_TYPES).includes(profileCalendarPreference as CalendarType) &&
+      profileCalendarPreference !== calendar
+    ) {
+      setCalendar(profileCalendarPreference as CalendarType);
+    }
+    // Only run when profileCalendarPreference changes (e.g. on login / profile load)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileCalendarPreference]);
+}

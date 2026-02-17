@@ -3,6 +3,7 @@ import { createQueryClient } from "@/lib/queryClient";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { useCalendarPreferenceSync } from "@/hooks/useDatePreference";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { PlatformAdminRoute } from "@/components/PlatformAdminRoute";
@@ -229,7 +230,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SchoolProvider } from "@/contexts/SchoolContext";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { appCoreTour, schoolSetupTour } from "@/onboarding";
 import { TourProviderWrapper } from "@/components/TourProviderWrapper";
 import { RouteToursHandler } from "@/components/RouteToursHandler";
@@ -429,12 +430,23 @@ const websiteModulePlaceholders = [
   },
 ];
 
+/**
+ * Syncs the user's saved calendar preference from their profile to the date preference context.
+ * Must be rendered inside both AuthProvider and DatePreferenceProvider.
+ */
+function CalendarPreferenceSyncFromProfile() {
+  const { profile } = useAuth();
+  useCalendarPreferenceSync(profile?.calendar_preference);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <AuthProvider>
+        <CalendarPreferenceSyncFromProfile />
         <SchoolProvider>
           <BrowserRouter
             future={{

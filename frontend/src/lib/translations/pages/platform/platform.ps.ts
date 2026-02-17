@@ -12,5 +12,43 @@ export default {
       databaseOnlyDescription: "دا به یوازې د ډیټابیس ډیټا بدل کړي. اوسنۍ ذخیره فایلونه به وساتل شي.",
       databaseAndFilesDescription: "دا به د بیک اپ څخه د ډیټابیس او ذخیره کولو ټول اوسنۍ ډیټا بدل کړي."
     }
+  },
+  platformLandingOffers: {
+    title: "د لینډ پاڼې وړاندیزونه",
+    subtitle: "په عامه نرخ پاڼه کې د تخفیف کوډونه وښایاست او د وړاندیز شمار معکوس کنټرول کړئ.",
+    columns: {
+      code: "کوډ",
+      plan: "پلان",
+      discount: "تخفیف",
+      validity: "اعتبار",
+      landing: "لینډ",
+      actions: "کړنې"
+    },
+    live: "ژوندی",
+    allPlans: "ټول پلانونه",
+    specificPlan: "ځانګړی پلان",
+    ends: "ختمیږي",
+    noExpiry: "بې پای",
+    visible: "ښکاره",
+    hidden: "پټ",
+    configure: "تنظیم",
+    empty: "تخفیف کوډونه ونه موندل شول.",
+    loading: "تخفیف کوډونه ترلاسه کیږي...",
+    expired: "ختم شوی",
+    saveSettings: "تنظیمات خوندي کړئ",
+    dialog: {
+      title: "د لینډ وړاندیز تنظیمات",
+      description: "کنټرول کړئ چې دا تخفیف په عامه نرخ کارټونو کې څنګه ښکاره شي.",
+      showTitle: "په لینډ پاڼه کې ښکاره کړئ",
+      showDescription: "باډج، تخفیفي نرخ او شمار معکوس وخت نښه فعالوي.",
+      badgeLabel: "د لینډ باډج لیبل",
+      badgePlaceholder: "محدود وړاندیز",
+      messageLabel: "د وړاندیز خبرتیا",
+      messagePlaceholder: "د وړاندیز لپاره لنډه ښکارېدنه",
+      validFrom: "له نیټې اعتبار لري",
+      validUntil: "تر نیټې اعتبار لري",
+      noStartDate: "د پیل نیټه نشته",
+      noExpiryDate: "د پای نیټه نشته"
+    }
   }
 };

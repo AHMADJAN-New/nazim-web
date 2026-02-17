@@ -74,7 +74,7 @@ export default {
       roomsWithWardensHeader: "د نګرانو لرونکې اتاقونه",
       utilizationHeader: "کارونه",
       noBuildingDataAvailable: "د ودانۍ معلومات نشته.",
-      occupiedOfTotal: "{occupied} له {total}",
+      occupiedOfTotal: "په {total} کې {occupied}",
       buildingsCount: "{count} ودانۍ",
       wardenHeader: "نګران",
       buildingsHeader: "ودانۍ",

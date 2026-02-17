@@ -23,7 +23,7 @@ export default {
     courses: "دورې/ کورسونه",
     courseStudents: "د دوره/ کورس زده کوونکي",
     dashboard: "ډشبورډ",
-    organizationDashboard: "Organization Dashboard",
+    organizationDashboard: "د سازمان ډشبورډ",
     documents: "اسناد",
     examAnalytics: "د ازموینې تحلیل",
     examAttendance: "د ازموینې حاضري",
@@ -34,7 +34,7 @@ export default {
     examReports: "د ازموینې راپورونه",
     examRollNumbers: "د حاضري شمېرې (Roll Numbers)",
     exams: "ازموینې",
-    examSecretNumbers: "پټې شمېرې (Secret Numbers)",
+    examSecretNumbers: "پټې شمېرې",
     examStudentEnrollment: "د زده کوونکو شمولیت",
     examTimetables: "د ازموینې مهالویش",
     graduationCertificates: "فراغت او سندونه",
@@ -191,6 +191,9 @@ export default {
     examNumberReports: "د شمېرو راپورونه",
     subjects: {
       all: "ټول"
+    },
+    nav: {
+      reports: "راپورونه"
     },
     status: {
       issued: "صادر شوی"

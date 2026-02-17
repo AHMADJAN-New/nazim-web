@@ -45,6 +45,7 @@ export default {
     approvalSignature: "Administrator Signature:",
     approvalStamp: "Stamp",
     approvalTitle: "Approval",
+    autoCalculated: "محاسبه خودکار از تاریخ تولد",
     backToStudents: "Back to Students",
     birthDate: "Birth Date",
     birthYear: "Birth Year",
@@ -275,6 +276,15 @@ export default {
     motherName: "Mother Name",
     cardNumber: "Card Number",
     searchPlaceholder: "Search students...",
-    status: "Status"
+    status: "Status",
+    statusOptions: {
+      label: "وضعیت",
+      active: "فعال",
+      inactive: "غیرفعال",
+      graduated: "فارغ",
+      withdrawn: "خارج شده",
+      applied: "متقاضی",
+      admitted: "پذیرفته شده"
+    }
   }
 };

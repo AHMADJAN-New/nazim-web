@@ -109,7 +109,7 @@ class UpdateStudentRequest extends FormRequest
             'mother_name' => 'nullable|string|max:150',
             'birth_year' => 'nullable|string|max:10',
             'birth_date' => 'nullable|date',
-            'age' => 'nullable|integer|min:1|max:100',
+            'age' => 'nullable|integer|min:0|max:150',
             'admission_year' => 'nullable|string|max:10',
             'orig_province' => 'nullable|string|max:100',
             'orig_district' => 'nullable|string|max:100',

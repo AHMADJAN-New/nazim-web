@@ -103,7 +103,10 @@ export default {
       date: "Date:",
       dateTime: "Date & Time:",
       note: "Note:",
-      noteText: "Your date preference is saved locally and will persist across sessions. This preference affects how dates are displayed in tables, forms, reports, and throughout the application."
+      noteText: "Your date preference is saved to your account and will persist across devices and sessions. This setting affects how dates are displayed in tables, forms, reports, and throughout the application.",
+      saveButton: "Save Preference",
+      saved: "Date preference saved successfully",
+      saveFailed: "Failed to save date preference"
     },
     activityLogs: {
       title: "Activity Logs",

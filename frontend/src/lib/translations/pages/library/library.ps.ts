@@ -78,7 +78,7 @@ export default {
     inactive: "غیر فعال",
     initialCopies: "لومړنۍ نسخې",
     inventory: "ګدام / موجودي",
-    isbn: "ISBN",
+    isbn: "نړیوال کتاب شمیره",
     isbnPlaceholder: "ISBN شمېره",
     libraryCategories: "د کتابتون کټګورۍ",
     libraryReports: "د کتابتون راپورونه",

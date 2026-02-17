@@ -26,7 +26,7 @@ export default {
     },
     auto: "اتومات (د اصلي اندازې له مخې)",
     autoBasedOnGlobal: "اتومات (د عمومي تنظیماتو له مخې)",
-    background: "شالید (Background)",
+    background: "شالید",
     backgroundBack: "د شالید انځور (شا)",
     backgroundFront: "د شالید انځور (مخ)",
     backgroundNotAvailable: "د شالید انځور شتون نلري",

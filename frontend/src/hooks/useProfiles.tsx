@@ -78,11 +78,12 @@ export const useUpdateProfile = () => {
       const domainUpdate: Partial<Profile> = {};
 
       if (isOwnProfile) {
-        // Users can update: fullName, phone, avatarUrl, defaultSchoolId
+        // Users can update: fullName, phone, avatarUrl, defaultSchoolId, calendarPreference
         if (updates.fullName !== undefined) domainUpdate.fullName = updates.fullName;
         if (updates.phone !== undefined) domainUpdate.phone = updates.phone;
         if (updates.avatarUrl !== undefined) domainUpdate.avatarUrl = updates.avatarUrl;
         if (updates.defaultSchoolId !== undefined) domainUpdate.defaultSchoolId = updates.defaultSchoolId;
+        if (updates.calendarPreference !== undefined) domainUpdate.calendarPreference = updates.calendarPreference;
       } else {
         // Admins can update: fullName, email, phone, avatarUrl, role, isActive, organizationId, defaultSchoolId
         if (updates.fullName !== undefined) domainUpdate.fullName = updates.fullName;

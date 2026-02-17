@@ -21,7 +21,7 @@ export default {
     deleteConfirmDescription: "ایا تاسو ډاډه یاست چې غواړئ دا واټر مارک ړنګ کړئ؟ دا عمل بیرته نشي اخیستل کیدی.",
     deleteConfirmTitle: "واټر مارک ړنګ کړئ",
     editWatermark: "واټر مارک سم کړئ",
-    enterFontFamily: "لکه، Arial، Times New Roman",
+    enterFontFamily: "لکه: اریال، ټایمز نیو رومن",
     enterReportKey: "د ټولو راپورونو لپاره خالي پریږدئ، لکه، student_list",
     enterText: "د واټر مارک متن دننه کړئ",
     enterWatermarkDetails: "د واټر مارک توضیحات دننه کړئ",

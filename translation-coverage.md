@@ -1,0 +1,380 @@
+# Translation Coverage Report
+
+Generated: 2026-02-17T04:58:30.122Z
+
+## Summary
+
+- EN keys: **7229**
+- Used keys (code scan): **6410**
+- Used keys missing in EN (likely typos/dynamic): **361**
+
+## Missing (from EN)
+
+- Missing in Pashto (ps): **0**
+- Missing in Farsi (fa): **729**
+- Missing in Arabic (ar): **214**
+
+## Missing USED keys (highest priority)
+
+- Missing USED in ps: **0**
+- Missing USED in fa: **530**
+- Missing USED in ar: **120**
+
+## Top 20 namespaces with missing USED keys (union across ps/fa/ar)
+
+- toast: 410
+- schools: 64
+- platformLandingOffers: 32
+- courses: 30
+- settings: 23
+- websiteAdmin: 9
+- nav: 8
+- dms: 7
+- status: 3
+- events: 3
+- staff: 3
+- leave: 2
+- reportTemplates: 2
+- helpCenter: 1
+- attendanceReports: 1
+- attendanceTotalsReport: 1
+- certificateTemplates: 1
+- table: 1
+- examPaperPreview: 1
+- common: 1
+
+## Top 20 files by missing USED keys (ps+fa+ar summed)
+
+- frontend\src\platform\pages\admin\LandingOffersPage.tsx: 64
+- frontend\src\components\settings\SchoolsManagement.tsx: 63
+- frontend\src\hooks\useExams.tsx: 48
+- frontend\src\platform\hooks\usePlatformAdminComplete.tsx: 36
+- frontend\src\pages\graduation\GraduationBatchesPage.tsx: 33
+- frontend\src\components\short-term-courses\EnrollFromMainDialog.tsx: 29
+- frontend\src\website\hooks\useWebsiteManager.ts: 26
+- frontend\src\pages\graduation\GraduationDashboard.tsx: 25
+- frontend\src\hooks\useFinance.tsx: 24
+- frontend\src\pages\settings\ActivityLogsPage.tsx: 23
+- frontend\src\hooks\useFees.tsx: 20
+- frontend\src\hooks\useExamPapers.tsx: 18
+- frontend\src\pages\graduation\GraduationBatchDetailPage.tsx: 14
+- frontend\src\hooks\useCurrencies.tsx: 13
+- frontend\src\hooks\useStudentIdCards.tsx: 13
+- frontend\src\hooks\useSubscriptionAdmin.tsx: 13
+- frontend\src\platform\hooks\useDesktopLicenses.tsx: 12
+- frontend\src\components\settings\ReportTemplatesManagement.tsx: 12
+- frontend\src\platform\pages\admin\WebsiteManagementPage.tsx: 11
+- frontend\src\hooks\useExamNumbers.tsx: 11
+
+## Missing in Pashto (ps) — Highest Priority (first 100 keys)
+
+
+## Missing in Farsi (fa) — Highest Priority (first 100 keys)
+
+- attendanceReports.subtitle
+- attendanceTotalsReport.subtitle
+- certificateTemplates.title
+- common.selectSchool
+- courses.feeAmountPlaceholder
+- dms.dashboard.awaitingAction
+- dms.dashboard.highSecurity
+- dms.reportsPage.filterSummary
+- dms.reportsPage.none
+- dms.reportsPage.notAvailable
+- dms.viewIncoming
+- dms.viewOutgoing
+- events.fair
+- events.good
+- events.strong
+- examPaperPreview.title
+- exams.title
+- helpCenter.subtitle
+- leave.subtitle
+- leave.viewRequests
+- platformLandingOffers.allPlans
+- platformLandingOffers.columns.actions
+- platformLandingOffers.columns.code
+- platformLandingOffers.columns.discount
+- platformLandingOffers.columns.landing
+- platformLandingOffers.columns.plan
+- platformLandingOffers.columns.validity
+- platformLandingOffers.configure
+- platformLandingOffers.dialog.badgeLabel
+- platformLandingOffers.dialog.badgePlaceholder
+- platformLandingOffers.dialog.description
+- platformLandingOffers.dialog.messageLabel
+- platformLandingOffers.dialog.messagePlaceholder
+- platformLandingOffers.dialog.noExpiryDate
+- platformLandingOffers.dialog.noStartDate
+- platformLandingOffers.dialog.showDescription
+- platformLandingOffers.dialog.showTitle
+- platformLandingOffers.dialog.title
+- platformLandingOffers.dialog.validFrom
+- platformLandingOffers.dialog.validUntil
+- platformLandingOffers.empty
+- platformLandingOffers.ends
+- platformLandingOffers.expired
+- platformLandingOffers.hidden
+- platformLandingOffers.live
+- platformLandingOffers.loading
+- platformLandingOffers.noExpiry
+- platformLandingOffers.saveSettings
+- platformLandingOffers.specificPlan
+- platformLandingOffers.subtitle
+- platformLandingOffers.title
+- platformLandingOffers.visible
+- schools.accentColor
+- schools.addNewSchool
+- schools.addSchool
+- schools.arabicName
+- schools.both
+- schools.calendarPreference
+- schools.currentLogo
+- schools.deleteConfirmDescription
+- schools.deleteConfirmTitle
+- schools.editSchool
+- schools.editSchoolButton
+- schools.enterArabicName
+- schools.enterHeaderText
+- schools.enterPashtoName
+- schools.enterPhone
+- schools.enterSchoolAddress
+- schools.enterSchoolDetails
+- schools.enterSchoolName
+- schools.enterWebsite
+- schools.fontFamily
+- schools.fontFamilyHint
+- schools.footer
+- schools.gregorian
+- schools.header
+- schools.headerText
+- schools.headerTextDesc
+- schools.hijri
+- schools.left
+- schools.loadingSchools
+- schools.logos
+- schools.maxLogosReached
+- schools.ministryLogo
+- schools.ministryLogoUsage
+- schools.multiSchoolFeatureRequired
+- schools.noLogoUploaded
+- schools.noSchoolsFound
+- schools.noSchoolsMessage
+- schools.orEnterCustomFont
+- schools.pashtoName
+- schools.primaryColor
+- schools.primaryLogo
+- schools.primaryLogoUsage
+- schools.reportFontSize
+- schools.reportFontSizeHint
+- schools.reportLogoSettings
+- schools.reportLogoSettingsDesc
+- schools.right
+- schools.school
+
+## Missing in Arabic (ar) — Highest Priority (first 100 keys)
+
+- attendanceReports.subtitle
+- attendanceTotalsReport.subtitle
+- certificateTemplates.title
+- courses.enrollFromMainDialog.born
+- courses.enrollFromMainDialog.cancel
+- courses.enrollFromMainDialog.courseNotFound
+- courses.enrollFromMainDialog.daughterOf
+- courses.enrollFromMainDialog.description
+- courses.enrollFromMainDialog.descriptionNoCourse
+- courses.enrollFromMainDialog.deselectAll
+- courses.enrollFromMainDialog.enrolling
+- courses.enrollFromMainDialog.enrollStudents
+- courses.enrollFromMainDialog.ensureStudentsInMainTable
+- courses.enrollFromMainDialog.fee
+- courses.enrollFromMainDialog.grandsonOf
+- courses.enrollFromMainDialog.guardian
+- courses.enrollFromMainDialog.markFeeAsPaid
+- courses.enrollFromMainDialog.nationality
+- courses.enrollFromMainDialog.noOpenCourses
+- courses.enrollFromMainDialog.noStudentsAvailable
+- courses.enrollFromMainDialog.noStudentsMatchSearch
+- courses.enrollFromMainDialog.registrationDate
+- courses.enrollFromMainDialog.searchPlaceholder
+- courses.enrollFromMainDialog.selectAll
+- courses.enrollFromMainDialog.selectCourse
+- courses.enrollFromMainDialog.selectCourseButton
+- courses.enrollFromMainDialog.selectCoursePlaceholder
+- courses.enrollFromMainDialog.selectStudents
+- courses.enrollFromMainDialog.sonOf
+- courses.enrollFromMainDialog.studentsSelected
+- courses.enrollFromMainDialog.title
+- courses.enrollFromMainDialog.tryDifferentSearch
+- dms.dashboard.awaitingAction
+- dms.dashboard.highSecurity
+- dms.viewIncoming
+- dms.viewOutgoing
+- examPaperPreview.title
+- leave.viewRequests
+- nav.clearSearch
+- nav.favorites
+- nav.keyboardShortcut
+- nav.noResults
+- nav.pinItem
+- nav.recent
+- nav.searchPlaceholder
+- nav.unpinItem
+- notFound.title
+- platformLandingOffers.allPlans
+- platformLandingOffers.columns.actions
+- platformLandingOffers.columns.code
+- platformLandingOffers.columns.discount
+- platformLandingOffers.columns.landing
+- platformLandingOffers.columns.plan
+- platformLandingOffers.columns.validity
+- platformLandingOffers.configure
+- platformLandingOffers.dialog.badgeLabel
+- platformLandingOffers.dialog.badgePlaceholder
+- platformLandingOffers.dialog.description
+- platformLandingOffers.dialog.messageLabel
+- platformLandingOffers.dialog.messagePlaceholder
+- platformLandingOffers.dialog.noExpiryDate
+- platformLandingOffers.dialog.noStartDate
+- platformLandingOffers.dialog.showDescription
+- platformLandingOffers.dialog.showTitle
+- platformLandingOffers.dialog.title
+- platformLandingOffers.dialog.validFrom
+- platformLandingOffers.dialog.validUntil
+- platformLandingOffers.empty
+- platformLandingOffers.ends
+- platformLandingOffers.expired
+- platformLandingOffers.hidden
+- platformLandingOffers.live
+- platformLandingOffers.loading
+- platformLandingOffers.noExpiry
+- platformLandingOffers.saveSettings
+- platformLandingOffers.specificPlan
+- platformLandingOffers.subtitle
+- platformLandingOffers.title
+- platformLandingOffers.visible
+- reportTemplates.subtitle
+- reportTemplates.title
+- resetPassword.subtitle
+- settings.activityLogs.dateTime
+- settings.activityLogs.description
+- settings.activityLogs.endDate
+- settings.activityLogs.event
+- settings.activityLogs.ipAddress
+- settings.activityLogs.logDetails
+- settings.activityLogs.logName
+- settings.activityLogs.method
+- settings.activityLogs.newValue
+- settings.activityLogs.noLogs
+- settings.activityLogs.previousValue
+- settings.activityLogs.properties
+- settings.activityLogs.requestInfo
+- settings.activityLogs.route
+- settings.activityLogs.searchPlaceholder
+- settings.activityLogs.startDate
+- settings.activityLogs.status
+- settings.activityLogs.subjectId
+
+## Used keys missing in EN (likely typos/dynamic) — first 100
+
+- ...
+- academic.subjects.noActiveSubjects
+- admissions.applicant
+- assets.assetTag
+- assets.availableCopiesLabel
+- assets.availableCount
+- assets.createAsset
+- assets.maintenanceSpend
+- assets.managementDescription
+- assets.newAsset
+- assets.noAssetsFound
+- assets.none
+- assets.purchaseDate
+- assets.purchasePrice
+- assets.purchaseValue
+- assets.searchByNameTagSerial
+- assets.selectCategory
+- assets.serialNumber
+- assets.updateAsset
+- assets.warrantyExpiry
+- attendance.session
+- attendance.viewSessions
+- attendancePage.noSessionsMatchSearch
+- buildings.title
+- common.announcement
+- common.cardView
+- common.confidential
+- common.confirmDelete
+- common.createdAt
+- common.errorLoading
+- common.exportExcel
+- common.exportPdf
+- common.field
+- common.general
+- common.generating
+- common.internal
+- common.moveDown
+- common.moveUp
+- common.noData
+- common.noPermission
+- common.noResults
+- common.organization
+- common.public
+- common.room
+- common.school
+- common.secret
+- common.selectBuilding
+- common.selectDate
+- common.selectRoom
+- common.staff
+- common.student
+- common.students
+- common.tableView
+- common.topSecret
+- common.value
+- contact.contactInfo
+- contact.form.cancel
+- contact.form.city
+- contact.form.country
+- contact.form.description
+- contact.form.email
+- contact.form.error
+- contact.form.firstName
+- contact.form.lastName
+- contact.form.message
+- contact.form.numberOfSchools
+- contact.form.optional
+- contact.form.phone
+- contact.form.position
+- contact.form.positionPlaceholder
+- contact.form.preferredContact
+- contact.form.referralSource
+- contact.form.referralSourcePlaceholder
+- contact.form.schoolName
+- contact.form.send
+- contact.form.sending
+- contact.form.staffCount
+- contact.form.studentCount
+- contact.form.success
+- contact.form.title
+- contact.form.whatsapp
+- contact.tagline
+- courses.attendance.recordsRequired
+- courses.attendance.scanPrompt
+- courses.attendance.scanSuccess
+- courses.attendance.selectCourseAndDate
+- courses.attendance.sessionRequired
+- dms.departmentsPage.editDialog.nameLabel
+- dms.letterheads
+- dms.templates
+- dms.templatesForm.actualHelp
+- dms.templatesForm.backgroundLetterheadHelp
+- dms.templatesForm.backgroundLetterheadPlaceholder
+- dms.templatesForm.designerHelp
+- dms.templatesForm.letterheadSectionTitle
+- dms.templatesForm.letterTypePlaceholder
+- dms.templatesForm.positioningHelp
+- dms.templatesForm.previewEmpty
+- dms.templatesForm.watermarkHelp
+- dms.templatesForm.watermarkLabel
+

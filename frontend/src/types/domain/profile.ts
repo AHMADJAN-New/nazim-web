@@ -10,6 +10,7 @@ export interface Profile {
   avatarUrl: string | null;
   isActive: boolean;
   defaultSchoolId: string | null;
+  calendarPreference?: string | null;
   eventId?: string | null;
   isEventUser?: boolean;
   hasCompletedOnboarding?: boolean;

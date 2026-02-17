@@ -45,6 +45,7 @@ export default {
     approvalSignature: "Administrator Signature:",
     approvalStamp: "Stamp",
     approvalTitle: "Approval",
+    autoCalculated: "Auto-calculated from birth date",
     backToStudents: "Back to Students",
     birthDate: "Birth Date",
     birthYear: "Birth Year",
@@ -275,6 +276,15 @@ export default {
     motherName: "Mother Name",
     cardNumber: "Card Number",
     searchPlaceholder: "Search students...",
-    status: "Status"
+    status: "Status",
+    statusOptions: {
+      label: "Status",
+      active: "Active",
+      inactive: "Inactive",
+      graduated: "Graduated",
+      withdrawn: "Withdrawn",
+      applied: "Applicant",
+      admitted: "Admitted"
+    }
   }
 };

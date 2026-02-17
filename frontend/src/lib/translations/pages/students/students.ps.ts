@@ -45,6 +45,7 @@ export default {
     approvalSignature: "د مسؤل لاسلیک:",
     approvalStamp: "مهر",
     approvalTitle: "تایید",
+    autoCalculated: "د زیږون نیټې پر اساس اتوماتیک محاسبه شوی",
     backToStudents: "بېرته زده کوونکو ته",
     birthDate: "د زیږون نېټه",
     birthYear: "د زیږون کال",
@@ -220,7 +221,8 @@ export default {
     severitySevere: "سخت",
     sheet: "شیټ",
     stamp: "مهر",
-    status: {
+    status: "حالت",
+    statusOptions: {
       label: "حالت",
       active: "فعال",
       inactive: "غیر فعال",

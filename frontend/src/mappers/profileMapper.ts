@@ -17,6 +17,7 @@ export function mapProfileApiToDomain(api: ProfileApi.Profile): Profile {
     avatarUrl: api.avatar_url,
     isActive: api.is_active,
     defaultSchoolId: api.default_school_id,
+    calendarPreference: api.calendar_preference ?? null,
     eventId: api.event_id ?? null,
     isEventUser: api.is_event_user ?? false,
     hasCompletedOnboarding: api.has_completed_onboarding ?? false,
@@ -41,6 +42,7 @@ export function mapProfileDomainToInsert(domain: Partial<Profile>): ProfileApi.P
     avatar_url: domain.avatarUrl || null,
     is_active: domain.isActive ?? true,
     default_school_id: domain.defaultSchoolId || null,
+    calendar_preference: domain.calendarPreference ?? null,
     event_id: domain.eventId ?? null,
     is_event_user: domain.isEventUser ?? false,
     has_completed_onboarding: domain.hasCompletedOnboarding ?? false,
@@ -63,6 +65,7 @@ export function mapProfileDomainToUpdate(domain: Partial<Profile>): ProfileApi.P
   if (domain.avatarUrl !== undefined) update.avatar_url = domain.avatarUrl;
   if (domain.isActive !== undefined) update.is_active = domain.isActive;
   if (domain.defaultSchoolId !== undefined) update.default_school_id = domain.defaultSchoolId;
+  if (domain.calendarPreference !== undefined) update.calendar_preference = domain.calendarPreference;
   if (domain.eventId !== undefined) update.event_id = domain.eventId;
   if (domain.isEventUser !== undefined) update.is_event_user = domain.isEventUser;
   if (domain.hasCompletedOnboarding !== undefined) update.has_completed_onboarding = domain.hasCompletedOnboarding;

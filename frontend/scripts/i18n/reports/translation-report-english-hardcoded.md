@@ -1,13 +1,111 @@
 # English Hardcoded in PS / FA / AR Translation Files
 
-**Generated:** 2026-02-13T16:23:03.873Z
+**Generated:** 2026-02-17T05:01:04.281Z
 
 Files (ps, fa, ar) that contain string values which look like English instead of the target language.
 
 ## Summary
 
-- **Total keys with English values:** 4672
-- **Files affected:** 108
+- **Total keys with English values:** 4622
+- **Files affected:** 93
+
+## Summary by File
+
+| File | Lang | Module | Count |
+|------|------|--------|-------|
+| `pages/website-admin/websiteAdmin.ar.ts` | AR | `pages/website-admin/websiteAdmin` | 488 |
+| `shared/toast/toast.ar.ts` | AR | `shared/toast/toast` | 354 |
+| `pages/exams/exams.ar.ts` | AR | `pages/exams/exams` | 332 |
+| `pages/students/students.fa.ts` | FA | `pages/students/students` | 269 |
+| `shared/nav/nav.fa.ts` | FA | `shared/nav/nav` | 187 |
+| `pages/library/library.fa.ts` | FA | `pages/library/library` | 174 |
+| `pages/events/events.ar.ts` | AR | `pages/events/events` | 171 |
+| `pages/events/events.fa.ts` | FA | `pages/events/events` | 168 |
+| `pages/student-history/studentHistory.fa.ts` | FA | `pages/student-history/studentHistory` | 141 |
+| `pages/staff/staff.fa.ts` | FA | `pages/staff/staff` | 136 |
+| `pages/leave/leave.fa.ts` | FA | `pages/leave/leave` | 122 |
+| `pages/id-cards/idCards.ar.ts` | AR | `pages/id-cards/idCards` | 117 |
+| `pages/settings/settings.fa.ts` | FA | `pages/settings/settings` | 116 |
+| `pages/fees/fees.ar.ts` | AR | `pages/fees/fees` | 94 |
+| `pages/subscription/subscription.fa.ts` | FA | `pages/subscription/subscription` | 88 |
+| `pages/finance/finance.ar.ts` | AR | `pages/finance/finance` | 88 |
+| `pages/finance/finance.fa.ts` | FA | `pages/finance/finance` | 87 |
+| `pages/user-management/userManagement.fa.ts` | FA | `pages/user-management/userManagement` | 73 |
+| `pages/student-report/studentReport.fa.ts` | FA | `pages/student-report/studentReport` | 67 |
+| `pages/settings/settings.ar.ts` | AR | `pages/settings/settings` | 62 |
+| `pages/reports/reports.fa.ts` | FA | `pages/reports/reports` | 61 |
+| `pages/graduation/graduation.fa.ts` | FA | `pages/graduation/graduation` | 60 |
+| `pages/timetable/timetable.fa.ts` | FA | `pages/timetable/timetable` | 60 |
+| `pages/graduation/graduation.ar.ts` | AR | `pages/graduation/graduation` | 56 |
+| `pages/teacher-subject-assignments/teacherSubjectAssignments.fa.ts` | FA | `pages/teacher-subject-assignments/teacherSubjectAssignments` | 52 |
+| `pages/watermarks/watermarks.fa.ts` | FA | `pages/watermarks/watermarks` | 48 |
+| `pages/hostel/hostel.ar.ts` | AR | `pages/hostel/hostel` | 42 |
+| `pages/student-history/studentHistory.ar.ts` | AR | `pages/student-history/studentHistory` | 41 |
+| `pages/question-bank/questionBank.fa.ts` | FA | `pages/question-bank/questionBank` | 40 |
+| `pages/students/students.ar.ts` | AR | `pages/students/students` | 40 |
+| `pages/user-permissions/userPermissions.fa.ts` | FA | `pages/user-permissions/userPermissions` | 38 |
+| `pages/attendance/attendance.ar.ts` | AR | `pages/attendance/attendance` | 37 |
+| `shared/common/common.ar.ts` | AR | `shared/common/common` | 37 |
+| `pages/organizations/organizations.fa.ts` | FA | `pages/organizations/organizations` | 35 |
+| `pages/question-bank/questionBank.ar.ts` | AR | `pages/question-bank/questionBank` | 35 |
+| `shared/termsOfService/termsOfService.ar.ts` | AR | `shared/termsOfService/termsOfService` | 33 |
+| `pages/academic/academic.ar.ts` | AR | `pages/academic/academic` | 32 |
+| `shared/privacyPolicy/privacyPolicy.ar.ts` | AR | `shared/privacyPolicy/privacyPolicy` | 30 |
+| `pages/dms/dms.ar.ts` | AR | `pages/dms/dms` | 29 |
+| `pages/roles/roles.fa.ts` | FA | `pages/roles/roles` | 26 |
+| `shared/validation/validation.fa.ts` | FA | `shared/validation/validation` | 25 |
+| `pages/permissions/permissions.fa.ts` | FA | `pages/permissions/permissions` | 23 |
+| `pages/admissions/admissions.ar.ts` | AR | `pages/admissions/admissions` | 22 |
+| `pages/phone-book/phoneBook.fa.ts` | FA | `pages/phone-book/phoneBook` | 21 |
+| `pages/reports/reports.ar.ts` | AR | `pages/reports/reports` | 20 |
+| `pages/assets/assets.ar.ts` | AR | `pages/assets/assets` | 18 |
+| `shared/footer/footer.ar.ts` | AR | `shared/footer/footer` | 18 |
+| `shared/errorBoundary/errorBoundary.ar.ts` | AR | `shared/errorBoundary/errorBoundary` | 16 |
+| `pages/maintenance/maintenance.fa.ts` | FA | `pages/maintenance/maintenance` | 15 |
+| `pages/profile-management/profileManagement.fa.ts` | FA | `pages/profile-management/profileManagement` | 15 |
+| `shared/footer/footer.fa.ts` | FA | `shared/footer/footer` | 15 |
+| `pages/website-admin/websiteAdmin.fa.ts` | FA | `pages/website-admin/websiteAdmin` | 14 |
+| `pages/leave/leave.ar.ts` | AR | `pages/leave/leave` | 14 |
+| `pages/library/library.ar.ts` | AR | `pages/library/library` | 13 |
+| `shared/nav/nav.ar.ts` | AR | `shared/nav/nav` | 13 |
+| `shared/resetPassword/resetPassword.fa.ts` | FA | `shared/resetPassword/resetPassword` | 12 |
+| `shared/search/search.fa.ts` | FA | `shared/search/search` | 12 |
+| `pages/auth/auth.ar.ts` | AR | `pages/auth/auth` | 12 |
+| `pages/dashboard/dashboard.ar.ts` | AR | `pages/dashboard/dashboard` | 12 |
+| `pages/staff/staff.ar.ts` | AR | `pages/staff/staff` | 12 |
+| `pages/short-term-courses/shortTermCourses.fa.ts` | FA | `pages/short-term-courses/shortTermCourses` | 11 |
+| `pages/courses/courses.ar.ts` | AR | `pages/courses/courses` | 11 |
+| `pages/grades/grades.ar.ts` | AR | `pages/grades/grades` | 11 |
+| `shared/resetPassword/resetPassword.ar.ts` | AR | `shared/resetPassword/resetPassword` | 11 |
+| `pages/short-term-courses/shortTermCourses.ar.ts` | AR | `pages/short-term-courses/shortTermCourses` | 10 |
+| `pages/watermarks/watermarks.ar.ts` | AR | `pages/watermarks/watermarks` | 9 |
+| `shared/pagination/pagination.fa.ts` | FA | `shared/pagination/pagination` | 8 |
+| `pages/misc/misc.ar.ts` | AR | `pages/misc/misc` | 8 |
+| `pages/exams/exams.fa.ts` | FA | `pages/exams/exams` | 6 |
+| `pages/certificates/certificates.ar.ts` | AR | `pages/certificates/certificates` | 5 |
+| `pages/dms/dms.fa.ts` | FA | `pages/dms/dms` | 4 |
+| `pages/misc/misc.fa.ts` | FA | `pages/misc/misc` | 3 |
+| `pages/subjects/subjects.fa.ts` | FA | `pages/subjects/subjects` | 3 |
+| `shared/common/common.fa.ts` | FA | `shared/common/common` | 3 |
+| `shared/notFound/notFound.fa.ts` | FA | `shared/notFound/notFound` | 3 |
+| `shared/ui/ui.fa.ts` | FA | `shared/ui/ui` | 3 |
+| `pages/subjects/subjects.ar.ts` | AR | `pages/subjects/subjects` | 3 |
+| `pages/timetable/timetable.ar.ts` | AR | `pages/timetable/timetable` | 3 |
+| `pages/courses/courses.fa.ts` | FA | `pages/courses/courses` | 2 |
+| `pages/hostel/hostel.fa.ts` | FA | `pages/hostel/hostel` | 2 |
+| `pages/user-management/userManagement.ar.ts` | AR | `pages/user-management/userManagement` | 2 |
+| `shared/notFound/notFound.ar.ts` | AR | `shared/notFound/notFound` | 2 |
+| `pages/hostel/hostel.ps.ts` | PS | `pages/hostel/hostel` | 1 |
+| `pages/assets/assets.fa.ts` | FA | `pages/assets/assets` | 1 |
+| `pages/attendance/attendance.fa.ts` | FA | `pages/attendance/attendance` | 1 |
+| `pages/fees/fees.fa.ts` | FA | `pages/fees/fees` | 1 |
+| `pages/id-cards/idCards.fa.ts` | FA | `pages/id-cards/idCards` | 1 |
+| `pages/onboarding/onboarding.fa.ts` | FA | `pages/onboarding/onboarding` | 1 |
+| `pages/onboarding/onboarding.ar.ts` | AR | `pages/onboarding/onboarding` | 1 |
+| `pages/permissions/permissions.ar.ts` | AR | `pages/permissions/permissions` | 1 |
+| `pages/schools/schools.ar.ts` | AR | `pages/schools/schools` | 1 |
+| `pages/subscription/subscription.ar.ts` | AR | `pages/subscription/subscription` | 1 |
+| `shared/pagination/pagination.ar.ts` | AR | `shared/pagination/pagination` | 1 |
 
 ---
 
@@ -76,13 +174,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `admissions.selectAcademicYearFirst` | Select academic year first |
 | `admissions.selectAcademicYearToSeeClasses` | Select an academic year above to see available classes |
 | `admissions.student` | Student |
-
-### `pages/admissions/admissions.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `admissions.boarderNo` | خارجي (Day Scholar) |
-| `admissions.shift` | وخت (Shift) |
 
 ### `pages/assets/assets.ar.ts` (AR)
 
@@ -211,13 +302,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `courses.csv` | CSV |
 | `courses.pdf` | PDF |
 
-### `pages/courses/courses.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `courses.csv` | CSV |
-| `courses.pdf` | PDF |
-
 ### `pages/dashboard/dashboard.ar.ts` (AR)
 
 | Key | Value |
@@ -277,18 +361,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `dms.letterTypesPage.createDialog.keyPlaceholder` | مثال: application, moe_letter |
 | `dms.templatesForm.fontSizeSuffix` | px |
 | `dms.letterheadForm.fileTypesHint` | PDF, JPG, PNG, WEBP (حداکثر 10MB) |
-
-### `pages/dms/dms.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `dms.forms.incoming.manualNumberPlaceholder` | IN-2025-001 |
-| `dms.letterTypesPage.createDialog.keyPlaceholder` | لکه: application, moe_letter |
-| `dms.archive` | Archive |
-| `dms.reports` | Reports |
-| `dms.settings` | Settings |
-| `dms.templatesForm.fontSizeSuffix` | px |
-| `dms.letterheadForm.fileTypesHint` | PDF, JPG, PNG, WEBP (اعظمي 10MB) |
 
 ### `pages/events/events.ar.ts` (AR)
 
@@ -1277,13 +1349,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `finance.donorInformation` | donor Information |
 | `finance.donorType` | donor Type |
 
-### `pages/finance/finance.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `finance.emailPlaceholder` | email@example.com |
-| `finance.documentTypes.invoice` | بل (Invoice) |
-
 ### `pages/grades/grades.ar.ts` (AR)
 
 | Key | Value |
@@ -1484,7 +1549,7 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 
 | Key | Value |
 |-----|-------|
-| `hostel.reports.occupiedOfTotal` | {occupied} له {total} |
+| `hostel.reports.occupiedOfTotal` | په {total} کې {occupied} |
 
 ### `pages/id-cards/idCards.ar.ts` (AR)
 
@@ -1613,12 +1678,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | Key | Value |
 |-----|-------|
 | `idCards.unprinted` | unprinted |
-
-### `pages/id-cards/idCards.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `idCards.background` | شالید (Background) |
 
 ### `pages/leave/leave.ar.ts` (AR)
 
@@ -1963,12 +2022,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `library.bookNumber` | Book # |
 | `library.available` | Available |
 
-### `pages/library/library.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `library.isbn` | ISBN |
-
 ### `pages/maintenance/maintenance.fa.ts` (FA)
 
 | Key | Value |
@@ -2061,12 +2114,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `organizations.updateOrganizationInfo` | Update organization information |
 | `organizations.users` | Users |
 | `organizations.viewCompleteInfo` | View complete organization information |
-
-### `pages/organizations/organizations.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `organizations.id` | ID |
 
 ### `pages/permissions/permissions.ar.ts` (AR)
 
@@ -2580,22 +2627,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `shortTermCourses.uploadDocument` | Upload document |
 | `shortTermCourses.uploaded` | Uploaded |
 
-### `pages/short-term-courses/shortTermCourses.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `shortTermCourses.subtitle` | Manage short-term courses and enrollments |
-| `shortTermCourses.completionDate` | Completion date |
-| `shortTermCourses.courseDocuments` | Course documents |
-| `shortTermCourses.deleteDocument` | Delete document |
-| `shortTermCourses.deleteDocumentConfirm` | Delete document confirm |
-| `shortTermCourses.documentType` | Document type |
-| `shortTermCourses.noDocuments` | No documents |
-| `shortTermCourses.size` | Size |
-| `shortTermCourses.student` | Student |
-| `shortTermCourses.uploadDocument` | Upload document |
-| `shortTermCourses.uploaded` | Uploaded |
-
 ### `pages/staff/staff.ar.ts` (AR)
 
 | Key | Value |
@@ -3017,13 +3048,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `studentReportCard.studentPhoto` | Student Photo |
 | `studentReportCard.subjectName` | Subject Name |
 | `studentReportCard.teacherRemarks` | Class Teacher's Remarks |
-
-### `pages/student-report/studentReport.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `studentReport.idLabel` | ID |
-| `studentReport.studentId` | ID |
 
 ### `pages/students/students.ar.ts` (AR)
 
@@ -3459,12 +3483,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `subscription.enterpriseContact.submitted` | Thank you! We will contact you soon. |
 | `subscription.enterpriseContact.submitFailed` | Failed to submit request. Please try again. |
 
-### `pages/subscription/subscription.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `subscription.enterpriseContact.contactEmailPlaceholder` | your@email.com |
-
 ### `pages/teacher-subject-assignments/teacherSubjectAssignments.fa.ts` (FA)
 
 | Key | Value |
@@ -3680,13 +3698,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `userManagement.roles` | Roles |
 | `userManagement.loadingUsers` | Loading users... |
 
-### `pages/user-management/userManagement.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `userManagement.emailPlaceholder` | john@example.com |
-| `userManagement.na` | N/A |
-
 ### `pages/user-permissions/userPermissions.fa.ts` (FA)
 
 | Key | Value |
@@ -3796,12 +3807,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `watermarks.type` | Type |
 | `watermarks.update` | Update |
 | `watermarks.updateWatermarkInfo` | Update watermark settings |
-
-### `pages/watermarks/watermarks.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `watermarks.enterFontFamily` | لکه، Arial، Times New Roman |
 
 ### `pages/website-admin/websiteAdmin.ar.ts` (AR)
 
@@ -4315,25 +4320,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `websiteAdmin.library.placeholders.fileUrl` | https://...pdf |
 | `websiteAdmin.scholars.placeholders.email` | name@example.com |
 
-### `pages/website-admin/websiteAdmin.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `websiteAdmin.common.url` | URL |
-| `websiteAdmin.articles.placeholders.slug` | my-article |
-| `websiteAdmin.pages.placeholders.slug` | about-us |
-| `websiteAdmin.navigation.fields.url` | URL |
-| `websiteAdmin.navigation.placeholders.url` | /home |
-| `websiteAdmin.domains.placeholders.domain` | example.com |
-| `websiteAdmin.media.placeholders.videoUrl` | https://www.youtube.com/watch?v=... |
-| `websiteAdmin.media.placeholders.documentUrl` | https://... |
-| `websiteAdmin.fatwas.placeholders.slug` | fatwa-slug |
-| `websiteAdmin.fatwas.placeholders.categorySlug` | category-slug |
-| `websiteAdmin.gallery.placeholders.slug` | gallery-category |
-| `websiteAdmin.courses.placeholders.enrollmentLink` | https://... |
-| `websiteAdmin.library.placeholders.fileUrl` | https://...pdf |
-| `websiteAdmin.scholars.placeholders.email` | name@example.com |
-
 ### `shared/common/common.ar.ts` (AR)
 
 | Key | Value |
@@ -4383,12 +4369,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `common.na` | N/A |
 | `common.cardView` | card View |
 | `common.tableView` | table View |
-
-### `shared/common/common.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `common.kb` | KB |
 
 ### `shared/errorBoundary/errorBoundary.ar.ts` (AR)
 
@@ -4663,13 +4643,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `nav.nav.reports` | reports |
 | `nav.teacherSubjectAssignments.title` | Teacher assignments |
 | `nav.timetable.title` | Timetables |
-
-### `shared/nav/nav.ps.ts` (PS)
-
-| Key | Value |
-|-----|-------|
-| `nav.organizationDashboard` | Organization Dashboard |
-| `nav.examSecretNumbers` | پټې شمېرې (Secret Numbers) |
 
 ### `shared/notFound/notFound.ar.ts` (AR)
 
