@@ -12,8 +12,9 @@ import {
 import { useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-// Lazy load react-markdown to reduce initial bundle size (351 KB)
+// Lazy load react-markdown to reduce initial bundle size
 const ReactMarkdown = lazy(() => import('react-markdown'));
+import remarkGfm from 'remark-gfm';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading';
 import {
   useHelpCenterArticle,
+  useHelpCenterArticleBySlug,
   useMarkArticleHelpful,
   useMarkArticleNotHelpful,
   useHelpCenterArticles,
@@ -31,13 +33,21 @@ import { formatDate } from '@/lib/utils';
 
 
 export default function HelpCenterArticle() {
-  const { id } = useParams<{ id: string }>();
+  const { id, categorySlug, articleSlug } = useParams<{
+    id?: string;
+    categorySlug?: string;
+    articleSlug?: string;
+  }>();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [hasMarkedHelpful, setHasMarkedHelpful] = useState(false);
   const [hasMarkedNotHelpful, setHasMarkedNotHelpful] = useState(false);
 
-  const { data: article, isLoading } = useHelpCenterArticle(id || null);
+  // Support both routes: /help-center/article/:id and /help-center/s/:categorySlug/:articleSlug
+  const byId = useHelpCenterArticle(id || null);
+  const bySlug = useHelpCenterArticleBySlug(categorySlug || null, articleSlug || null);
+  const article = byId.data ?? bySlug.data ?? null;
+  const isLoading = byId.isLoading || bySlug.isLoading;
   const markHelpful = useMarkArticleHelpful();
   const markNotHelpful = useMarkArticleNotHelpful();
 
@@ -53,9 +63,9 @@ export default function HelpCenterArticle() {
     .slice(0, 4);
 
   const handleMarkHelpful = async () => {
-    if (!id || hasMarkedHelpful) return;
+    if (!article?.id || hasMarkedHelpful) return;
     try {
-      await markHelpful.mutateAsync(id);
+      await markHelpful.mutateAsync(article.id);
       setHasMarkedHelpful(true);
       showToast.success(t('helpCenter.thankYou') || 'Thank you for your feedback!');
     } catch (error) {
@@ -64,9 +74,9 @@ export default function HelpCenterArticle() {
   };
 
   const handleMarkNotHelpful = async () => {
-    if (!id || hasMarkedNotHelpful) return;
+    if (!article?.id || hasMarkedNotHelpful) return;
     try {
-      await markNotHelpful.mutateAsync(id);
+      await markNotHelpful.mutateAsync(article.id);
       setHasMarkedNotHelpful(true);
       showToast.success(t('helpCenter.thankYou') || 'Thank you for your feedback!');
     } catch (error) {
@@ -219,10 +229,36 @@ export default function HelpCenterArticle() {
       {/* Article Content */}
       <Card className="mb-6">
         <CardContent className="p-8">
-          <div className="prose prose-slate dark:prose-invert max-w-none">
+          <div className="help-center-prose prose prose-slate dark:prose-invert max-w-none">
             {article.content_type === 'markdown' ? (
               <Suspense fallback={<LoadingSpinner />}>
-                <ReactMarkdown>{article.content}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    table: ({ children, ...props }) => (
+                      <div className="my-4 overflow-x-auto rounded-md border border-border">
+                        <table className="w-full min-w-[400px] border-collapse" {...props}>
+                          {children}
+                        </table>
+                      </div>
+                    ),
+                    thead: ({ children, ...props }) => (
+                      <thead className="bg-muted/50" {...props}>{children}</thead>
+                    ),
+                    th: ({ children, ...props }) => (
+                      <th className="border border-border px-4 py-2 text-start font-semibold" {...props}>
+                        {children}
+                      </th>
+                    ),
+                    td: ({ children, ...props }) => (
+                      <td className="border border-border px-4 py-2 text-start" {...props}>
+                        {children}
+                      </td>
+                    ),
+                  }}
+                >
+                  {article.content}
+                </ReactMarkdown>
               </Suspense>
             ) : (
               <div dangerouslySetInnerHTML={{ __html: article.content }} />
@@ -272,7 +308,14 @@ export default function HelpCenterArticle() {
                 <div
                   key={relatedArticle.id}
                   className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
-                  onClick={() => navigate(`/help-center/article/${relatedArticle.id}`)}
+                  onClick={() => {
+                  const catSlug = relatedArticle.category?.slug;
+                  const artSlug = relatedArticle.slug;
+                  const path = catSlug && artSlug
+                    ? `/help-center/s/${catSlug}/${artSlug}`
+                    : `/help-center/article/${relatedArticle.id}`;
+                  navigate(path);
+                }}
                 >
                   <BookOpen className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">

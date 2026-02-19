@@ -2,8 +2,9 @@ import { HelpCircle } from 'lucide-react';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// Lazy load react-markdown to reduce initial bundle size (351 KB)
+// Lazy load react-markdown to reduce initial bundle size
 const ReactMarkdown = lazy(() => import('react-markdown'));
+import remarkGfm from 'remark-gfm';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -141,7 +142,30 @@ export function ContextualHelpButton({
                     />
                   ) : (
                     <Suspense fallback={<LoadingSpinner />}>
-                      <ReactMarkdown>{article.content}</ReactMarkdown>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          table: ({ children, ...props }) => (
+                            <div className="my-3 overflow-x-auto rounded border border-border">
+                              <table className="w-full min-w-[300px] border-collapse text-sm" {...props}>
+                                {children}
+                              </table>
+                            </div>
+                          ),
+                          th: ({ children, ...props }) => (
+                            <th className="border border-border bg-muted/50 px-3 py-1.5 text-start font-semibold" {...props}>
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children, ...props }) => (
+                            <td className="border border-border px-3 py-1.5 text-start" {...props}>
+                              {children}
+                            </td>
+                          ),
+                        }}
+                      >
+                        {article.content}
+                      </ReactMarkdown>
                     </Suspense>
                   )}
                 </div>

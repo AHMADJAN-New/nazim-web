@@ -126,7 +126,7 @@ export const useHelpCenterArticles = (params?: {
   });
 };
 
-// Hook to fetch a single article
+// Hook to fetch a single article by ID
 export const useHelpCenterArticle = (id: string | null) => {
   const { user, profile } = useAuth();
   const { language } = useLanguage();
@@ -140,6 +140,23 @@ export const useHelpCenterArticle = (id: string | null) => {
       return apiArticle as HelpCenterApi.HelpCenterArticle;
     },
     enabled: !!user && !!profile && !!profile.organization_id && !!id,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+// Hook to fetch a single article by category slug + article slug (public, no auth required)
+export const useHelpCenterArticleBySlug = (categorySlug: string | null, articleSlug: string | null) => {
+  const { language } = useLanguage();
+
+  return useQuery<HelpCenterApi.HelpCenterArticle | null>({
+    queryKey: ['help-center-article-by-slug', categorySlug, articleSlug, language],
+    queryFn: async () => {
+      if (!categorySlug || !articleSlug) return null;
+
+      const apiArticle = await helpCenterArticlesApi.getBySlug(categorySlug, articleSlug);
+      return apiArticle as HelpCenterApi.HelpCenterArticle;
+    },
+    enabled: !!categorySlug && !!articleSlug,
     staleTime: 2 * 60 * 1000,
   });
 };
