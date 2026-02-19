@@ -44,30 +44,30 @@
 | `attendance-reports.md` | done | done | `frontend/src/pages/AttendanceReports.tsx` |
 | `attendance-reports-totals.md` | done | done | `frontend/src/pages/AttendanceTotalsReports.tsx` |
 
-### [ ] `finance` (22 articles)
+### [x] `finance` (22 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `finance.md` | generic | placeholder | `frontend/src/pages/finance/` (overview) |
-| `finance-dashboard.md` | generic | placeholder | `frontend/src/pages/finance/FinanceDashboard.tsx` |
-| `finance-accounts.md` | generic | placeholder | `frontend/src/pages/finance/FinanceAccounts.tsx` |
-| `finance-income.md` | generic | placeholder | `frontend/src/pages/finance/IncomeEntries.tsx` |
-| `finance-income-categories.md` | generic | placeholder | `frontend/src/pages/finance/IncomeCategories.tsx` |
-| `finance-expenses.md` | generic | placeholder | `frontend/src/pages/finance/ExpenseEntries.tsx` |
-| `finance-expenses-categories.md` | generic | placeholder | `frontend/src/pages/finance/ExpenseCategories.tsx` |
-| `finance-projects.md` | generic | placeholder | `frontend/src/pages/finance/FinanceProjects.tsx` |
-| `finance-donors.md` | generic | placeholder | `frontend/src/pages/finance/Donors.tsx` |
-| `finance-documents.md` | generic | placeholder | `frontend/src/pages/finance/FinanceDocuments.tsx` |
-| `finance-currencies.md` | generic | placeholder | `frontend/src/pages/finance/Currencies.tsx` |
-| `finance-exchange-rates.md` | generic | placeholder | `frontend/src/pages/finance/ExchangeRates.tsx` |
-| `finance-reports.md` | generic | placeholder | `frontend/src/pages/finance/FinanceReports.tsx` |
-| `finance-settings.md` | generic | placeholder | `frontend/src/pages/finance/FinanceSettings.tsx` |
-| `fees.md` | generic | placeholder | `frontend/src/pages/fees/` (overview) |
-| `finance-fees-dashboard.md` | generic | placeholder | `frontend/src/pages/fees/FeeDashboard.tsx` |
-| `finance-fees-structures.md` | generic | placeholder | `frontend/src/pages/fees/FeeStructuresPage.tsx` |
-| `finance-fees-assignments.md` | generic | placeholder | `frontend/src/pages/fees/FeeAssignmentsPage.tsx` |
-| `finance-fees-payments.md` | generic | placeholder | `frontend/src/pages/fees/FeePaymentsPage.tsx` |
-| `finance-fees-exceptions.md` | generic | placeholder | `frontend/src/pages/fees/FeeExceptionsPage.tsx` |
-| `finance-fees-reports.md` | generic | placeholder | `frontend/src/pages/fees/FeeReportsPage.tsx` |
+| `finance.md` | done | done | `frontend/src/pages/finance/` (overview) |
+| `finance-dashboard.md` | done | done | `frontend/src/pages/finance/FinanceDashboard.tsx` |
+| `finance-accounts.md` | done | done | `frontend/src/pages/finance/FinanceAccounts.tsx` |
+| `finance-income.md` | done | done | `frontend/src/pages/finance/IncomeEntries.tsx` |
+| `finance-income-categories.md` | done | done | `frontend/src/pages/finance/IncomeCategories.tsx` |
+| `finance-expenses.md` | done | done | `frontend/src/pages/finance/ExpenseEntries.tsx` |
+| `finance-expenses-categories.md` | done | done | `frontend/src/pages/finance/ExpenseCategories.tsx` |
+| `finance-projects.md` | done | done | `frontend/src/pages/finance/FinanceProjects.tsx` |
+| `finance-donors.md` | done | done | `frontend/src/pages/finance/Donors.tsx` |
+| `finance-documents.md` | done | done | `frontend/src/pages/FinanceDocuments.tsx` |
+| `finance-currencies.md` | done | done | `frontend/src/pages/finance/Currencies.tsx` |
+| `finance-exchange-rates.md` | done | done | `frontend/src/pages/finance/ExchangeRates.tsx` |
+| `finance-reports.md` | done | done | `frontend/src/pages/finance/FinanceReports.tsx` |
+| `finance-settings.md` | done | done | `frontend/src/pages/finance/FinanceSettings.tsx` |
+| `fees.md` | done | done | `frontend/src/pages/fees/` (overview) |
+| `finance-fees-dashboard.md` | done | done | `frontend/src/pages/fees/FeeDashboard.tsx` |
+| `finance-fees-structures.md` | done | done | `frontend/src/pages/fees/FeeStructuresPage.tsx` |
+| `finance-fees-assignments.md` | done | done | `frontend/src/pages/fees/FeeAssignmentsPage.tsx` |
+| `finance-fees-payments.md` | done | done | `frontend/src/pages/fees/FeePaymentsPage.tsx` |
+| `finance-fees-exceptions.md` | done | done | `frontend/src/pages/fees/FeeExceptionsPage.tsx` |
+| `finance-fees-reports.md` | done | done | `frontend/src/pages/fees/FeeReportsPage.tsx` |
 
 ### [x] `academic` (6 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
@@ -79,29 +79,29 @@
 | `timetables.md` | done | done | `frontend/src/pages/TimetableGeneration.tsx` |
 | `grades.md` | done | done | Settings > Grades |
 
-### [ ] `exams` (20 articles)
+### [x] `exams` (20 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `exams.md` | generic | placeholder | `frontend/src/pages/Exams.tsx` |
-| `exams-timetables.md` | generic | placeholder | `frontend/src/pages/ExamTimetablePage.tsx` |
-| `exams-enrollment.md` | generic | placeholder | Exam enrollment flow |
-| `exams-student-enrollment.md` | generic | placeholder | Exam student enrollment |
-| `exams-marks.md` | generic | placeholder | Exam marks entry |
-| `exams-reports.md` | generic | placeholder | `frontend/src/pages/ExamReportsPage.tsx` |
-| `exams-analytics.md` | generic | placeholder | Exam analytics |
-| `exams-attendance.md` | generic | placeholder | `frontend/src/pages/ExamAttendancePage.tsx` |
-| `exams-roll-numbers.md` | generic | placeholder | Roll number management |
-| `exams-secret-numbers.md` | generic | placeholder | Secret number management |
-| `exams-number-reports.md` | generic | placeholder | Number reports |
-| `exams-reports-hub.md` | generic | placeholder | Reports hub |
-| `exams-reports-consolidated.md` | generic | placeholder | Consolidated reports |
-| `exams-reports-class-subject.md` | generic | placeholder | Class-subject reports |
-| `exams-reports-student.md` | generic | placeholder | Student reports |
-| `exams-question-bank.md` | generic | placeholder | `frontend/src/pages/QuestionBank.tsx` |
-| `exams-papers.md` | generic | placeholder | Exam papers |
-| `exams-paper-templates.md` | generic | placeholder | `frontend/src/pages/ExamPaperTemplates.tsx` |
-| `exams-papers-print-tracking.md` | generic | placeholder | Print tracking |
-| `exam-documents.md` | generic | placeholder | `frontend/src/pages/ExamDocuments.tsx` |
+| `exams.md` | done | done | `frontend/src/pages/Exams.tsx` |
+| `exams-timetables.md` | done | done | `frontend/src/pages/ExamTimetablePage.tsx` |
+| `exams-enrollment.md` | done | done | Exam enrollment flow |
+| `exams-student-enrollment.md` | done | done | Exam student enrollment |
+| `exams-marks.md` | done | done | Exam marks entry |
+| `exams-reports.md` | done | done | `frontend/src/pages/ExamReportsPage.tsx` |
+| `exams-analytics.md` | done | done | Exam analytics |
+| `exams-attendance.md` | done | done | `frontend/src/pages/ExamAttendancePage.tsx` |
+| `exams-roll-numbers.md` | done | done | Roll number management |
+| `exams-secret-numbers.md` | done | done | Secret number management |
+| `exams-number-reports.md` | done | done | Number reports |
+| `exams-reports-hub.md` | done | done | Reports hub |
+| `exams-reports-consolidated.md` | done | done | Consolidated reports |
+| `exams-reports-class-subject.md` | done | done | Class-subject reports |
+| `exams-reports-student.md` | done | done | Student reports |
+| `exams-question-bank.md` | done | done | `frontend/src/pages/QuestionBank.tsx` |
+| `exams-papers.md` | done | done | Exam papers |
+| `exams-paper-templates.md` | done | done | `frontend/src/pages/ExamPaperTemplates.tsx` |
+| `exams-papers-print-tracking.md` | done | done | Print tracking |
+| `exam-documents.md` | done | done | `frontend/src/pages/ExamDocuments.tsx` |
 
 ### [x] `library` (6 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
@@ -113,43 +113,43 @@
 | `library-distribution.md` | done | done | `frontend/src/pages/LibraryDistribution.tsx` |
 | `library-reports.md` | done | done | `frontend/src/pages/LibraryReports.tsx` |
 
-### [ ] `settings` (19 articles)
+### [x] `settings` (19 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `settings-organizations.md` | generic | placeholder | Settings > Organizations |
-| `settings-buildings.md` | generic | placeholder | Settings > Buildings |
-| `settings-rooms.md` | generic | placeholder | Settings > Rooms |
-| `settings-profile.md` | generic | placeholder | Settings > Profile |
-| `settings-permissions.md` | generic | placeholder | Settings > Permissions |
-| `settings-roles.md` | generic | placeholder | Settings > Roles |
-| `settings-user-permissions.md` | generic | placeholder | Settings > User Permissions |
-| `settings-schools.md` | generic | placeholder | Settings > Schools |
-| `settings-report-templates.md` | generic | placeholder | Settings > Report Templates |
-| `settings-residency-types.md` | generic | placeholder | Settings > Residency Types |
-| `settings-academic-years.md` | generic | placeholder | Settings > Academic Years |
-| `settings-exam-types.md` | generic | placeholder | Settings > Exam Types |
-| `settings-classes.md` | generic | placeholder | Settings > Classes |
-| `settings-subjects.md` | generic | placeholder | Settings > Subjects |
-| `settings-schedule-slots.md` | generic | placeholder | Settings > Schedule Slots |
-| `settings-teacher-subject-assignments.md` | generic | placeholder | Settings > Teacher-Subject Assignments |
-| `settings-staff-types.md` | generic | placeholder | Settings > Staff Types |
-| `settings-grades.md` | generic | placeholder | Settings > Grades |
-| `settings-user.md` | generic | placeholder | Settings > User Management |
+| `settings-organizations.md` | done | done | Settings > Organizations |
+| `settings-buildings.md` | done | done | Settings > Buildings |
+| `settings-rooms.md` | done | done | Settings > Rooms |
+| `settings-profile.md` | done | done | Settings > Profile |
+| `settings-permissions.md` | done | done | Settings > Permissions |
+| `settings-roles.md` | done | done | Settings > Roles |
+| `settings-user-permissions.md` | done | done | Settings > User Permissions |
+| `settings-schools.md` | done | done | Settings > Schools |
+| `settings-report-templates.md` | done | done | Settings > Report Templates |
+| `settings-residency-types.md` | done | done | Settings > Residency Types |
+| `settings-academic-years.md` | done | done | Settings > Academic Years |
+| `settings-exam-types.md` | done | done | Settings > Exam Types |
+| `settings-classes.md` | done | done | Settings > Classes |
+| `settings-subjects.md` | done | done | Settings > Subjects |
+| `settings-schedule-slots.md` | done | done | Settings > Schedule Slots |
+| `settings-teacher-subject-assignments.md` | done | done | Settings > Teacher-Subject Assignments |
+| `settings-staff-types.md` | done | done | Settings > Staff Types |
+| `settings-grades.md` | done | done | Settings > Grades |
+| `settings-user.md` | done | done | Settings > User Management |
 
-### [ ] `dms` (11 articles)
+### [x] `dms` (11 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `dms-dashboard.md` | generic | placeholder | `frontend/src/pages/dms/DmsDashboard.tsx` |
-| `dms-incoming.md` | generic | placeholder | `frontend/src/pages/dms/IncomingDocuments.tsx` |
-| `dms-outgoing.md` | generic | placeholder | `frontend/src/pages/dms/OutgoingDocuments.tsx` |
-| `dms-issue-letter.md` | generic | placeholder | `frontend/src/pages/dms/IssueLetter.tsx` |
-| `dms-templates.md` | generic | placeholder | `frontend/src/pages/dms/TemplatesPage.tsx` |
-| `dms-letterheads.md` | generic | placeholder | `frontend/src/pages/dms/LetterheadsPage.tsx` |
-| `dms-letter-types.md` | generic | placeholder | `frontend/src/pages/dms/LetterTypesPage.tsx` |
-| `dms-departments.md` | generic | placeholder | `frontend/src/pages/dms/DepartmentsPage.tsx` |
-| `dms-archive.md` | generic | placeholder | `frontend/src/pages/dms/ArchiveSearch.tsx` |
-| `dms-reports.md` | generic | placeholder | `frontend/src/pages/dms/DmsReports.tsx` |
-| `dms-settings.md` | generic | placeholder | `frontend/src/pages/dms/DmsSettings.tsx` |
+| `dms-dashboard.md` | done | done | `frontend/src/pages/dms/DmsDashboard.tsx` |
+| `dms-incoming.md` | done | done | `frontend/src/pages/dms/IncomingDocuments.tsx` |
+| `dms-outgoing.md` | done | done | `frontend/src/pages/dms/OutgoingDocuments.tsx` |
+| `dms-issue-letter.md` | done | done | `frontend/src/pages/dms/IssueLetter.tsx` |
+| `dms-templates.md` | done | done | `frontend/src/pages/dms/TemplatesPage.tsx` |
+| `dms-letterheads.md` | done | done | `frontend/src/pages/dms/LetterheadsPage.tsx` |
+| `dms-letter-types.md` | done | done | `frontend/src/pages/dms/LetterTypesPage.tsx` |
+| `dms-departments.md` | done | done | `frontend/src/pages/dms/DepartmentsPage.tsx` |
+| `dms-archive.md` | done | done | `frontend/src/pages/dms/ArchiveSearch.tsx` |
+| `dms-reports.md` | done | done | `frontend/src/pages/dms/DmsReports.tsx` |
+| `dms-settings.md` | done | done | `frontend/src/pages/dms/DmsSettings.tsx` |
 
 ### [x] `events` (2 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
@@ -245,15 +245,15 @@
 
 | Folder | Articles | EN Done | PS Done |
 |---|---|---|---|
-| students | 5 | 5 | 5 |
+| students | 5 | 0 | 0 |
 | staff | 2 | 2 | 2 |
 | attendance | 4 | 4 | 4 |
-| finance | 22 | 0 | 0 |
+| finance | 22 | 22 | 22 |
 | academic | 6 | 6 | 6 |
-| exams | 20 | 0 | 0 |
+| exams | 20 | 20 | 20 |
 | library | 6 | 6 | 6 |
-| settings | 19 | 0 | 0 |
-| dms | 11 | 0 | 0 |
+| settings | 19 | 19 | 19 |
+| dms | 11 | 11 | 11 |
 | events | 2 | 2 | 2 |
 | hostel | 2 | 2 | 2 |
 | assets | 5 | 5 | 5 |
@@ -266,4 +266,4 @@
 | leave | 2 | 2 | 2 |
 | general | 5 | 5 | 5 |
 | admin | 1 | 0 | 0 |
-| **TOTAL** | **133** | **20** | **20** |
+| **TOTAL** | **133** | **95** | **95** |
