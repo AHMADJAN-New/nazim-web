@@ -36,13 +36,13 @@
 | `staff.md` | done | done | `frontend/src/pages/StaffList.tsx` |
 | `staff-report.md` | done | done | `frontend/src/pages/StaffReport.tsx`, links to reports |
 
-### [ ] `attendance` (4 articles)
+### [x] `attendance` (4 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `attendance.md` | generic | placeholder | `frontend/src/pages/Attendance.tsx` |
-| `attendance-marking.md` | generic | placeholder | `frontend/src/pages/Attendance.tsx` (marking mode) |
-| `attendance-reports.md` | generic | placeholder | `frontend/src/pages/attendance/AttendanceReportsPage.tsx` |
-| `attendance-reports-totals.md` | generic | placeholder | `frontend/src/pages/AttendanceTotalsReports.tsx` |
+| `attendance.md` | done | done | `frontend/src/pages/Attendance.tsx` |
+| `attendance-marking.md` | done | done | `frontend/src/pages/AttendanceMarking.tsx` |
+| `attendance-reports.md` | done | done | `frontend/src/pages/AttendanceReports.tsx` |
+| `attendance-reports-totals.md` | done | done | `frontend/src/pages/AttendanceTotalsReports.tsx` |
 
 ### [ ] `finance` (22 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
@@ -69,15 +69,15 @@
 | `finance-fees-exceptions.md` | generic | placeholder | `frontend/src/pages/fees/FeeExceptionsPage.tsx` |
 | `finance-fees-reports.md` | generic | placeholder | `frontend/src/pages/fees/FeeReportsPage.tsx` |
 
-### [ ] `academic` (6 articles)
+### [x] `academic` (6 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `academic-timetable-generation.md` | generic | placeholder | `frontend/src/pages/TimetableGeneration.tsx` |
-| `classes.md` | generic | placeholder | Settings > Classes |
-| `subjects.md` | generic | placeholder | Settings > Subjects |
-| `academic-years.md` | generic | placeholder | Settings > Academic Years |
-| `timetables.md` | generic | placeholder | `frontend/src/pages/TimetableGeneration.tsx` |
-| `grades.md` | generic | placeholder | Settings > Grades |
+| `academic-timetable-generation.md` | done | done | `frontend/src/pages/TimetableGeneration.tsx` |
+| `classes.md` | done | done | Settings > Classes |
+| `subjects.md` | done | done | Settings > Subjects |
+| `academic-years.md` | done | done | Settings > Academic Years |
+| `timetables.md` | done | done | `frontend/src/pages/TimetableGeneration.tsx` |
+| `grades.md` | done | done | Settings > Grades |
 
 ### [ ] `exams` (20 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
@@ -103,15 +103,15 @@
 | `exams-papers-print-tracking.md` | generic | placeholder | Print tracking |
 | `exam-documents.md` | generic | placeholder | `frontend/src/pages/ExamDocuments.tsx` |
 
-### [ ] `library` (6 articles)
+### [x] `library` (6 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `library.md` | generic | placeholder | Library overview |
-| `library-dashboard.md` | generic | placeholder | `frontend/src/pages/LibraryDashboard.tsx` |
-| `library-books.md` | generic | placeholder | Library books management |
-| `library-categories.md` | generic | placeholder | Library categories |
-| `library-distribution.md` | generic | placeholder | Book distribution/loans |
-| `library-reports.md` | generic | placeholder | `frontend/src/pages/LibraryReports.tsx` |
+| `library.md` | done | done | Library overview, `frontend/src/pages/Library.tsx` |
+| `library-dashboard.md` | done | done | `frontend/src/pages/LibraryDashboard.tsx` |
+| `library-books.md` | done | done | `frontend/src/pages/LibraryBooks.tsx` |
+| `library-categories.md` | done | done | `frontend/src/pages/LibraryCategories.tsx` |
+| `library-distribution.md` | done | done | `frontend/src/pages/LibraryDistribution.tsx` |
+| `library-reports.md` | done | done | `frontend/src/pages/LibraryReports.tsx` |
 
 ### [ ] `settings` (19 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
@@ -151,67 +151,67 @@
 | `dms-reports.md` | generic | placeholder | `frontend/src/pages/dms/DmsReports.tsx` |
 | `dms-settings.md` | generic | placeholder | `frontend/src/pages/dms/DmsSettings.tsx` |
 
-### [ ] `events` (2 articles)
+### [x] `events` (2 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `events.md` | generic | placeholder | `frontend/src/pages/events/EventsPage.tsx` |
-| `events-types.md` | generic | placeholder | `frontend/src/pages/events/EventTypesPage.tsx` |
+| `events.md` | done | done | `frontend/src/pages/events/EventsPage.tsx` |
+| `events-types.md` | done | done | `frontend/src/pages/events/EventTypesPage.tsx` |
 
-### [ ] `hostel` (2 articles)
+### [x] `hostel` (2 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `hostel.md` | generic | placeholder | `frontend/src/pages/HostelManagement.tsx` |
-| `hostel-reports.md` | generic | placeholder | `frontend/src/pages/HostelReports.tsx` |
+| `hostel.md` | done | done | `frontend/src/pages/HostelManagement.tsx` |
+| `hostel-reports.md` | done | done | `frontend/src/pages/HostelReports.tsx` |
 
-### [ ] `assets` (5 articles)
+### [x] `assets` (5 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `assets.md` | generic | placeholder | Assets overview |
-| `assets-dashboard.md` | generic | placeholder | `frontend/src/pages/assets/AssetsDashboard.tsx` |
-| `assets-assignments.md` | generic | placeholder | Asset assignments |
-| `assets-categories.md` | generic | placeholder | Asset categories |
-| `assets-reports.md` | generic | placeholder | Asset reports |
+| `assets.md` | done | done | Assets overview; `frontend/src/pages/Assets.tsx`, AssetListTab, AssetMaintenanceTab |
+| `assets-dashboard.md` | done | done | `frontend/src/pages/assets/AssetsDashboard.tsx` |
+| `assets-assignments.md` | done | done | `frontend/src/pages/AssetAssignments.tsx`, AssetAssignmentsTab |
+| `assets-categories.md` | done | done | `frontend/src/pages/AssetCategories.tsx` |
+| `assets-reports.md` | done | done | `frontend/src/pages/AssetReports.tsx`, AssetReportsTab |
 
-### [ ] `subscription` (5 articles)
+### [x] `subscription` (5 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `subscription.md` | generic | placeholder | `frontend/src/pages/subscription/SubscriptionPage.tsx` |
-| `subscription-plans.md` | generic | placeholder | `frontend/src/pages/subscription/PlansPage.tsx` |
-| `subscription-renew.md` | generic | placeholder | Subscription renewal flow |
-| `subscription-maintenance-fees.md` | generic | placeholder | `frontend/src/pages/subscription/MaintenanceFeesPage.tsx` |
-| `subscription-license-fees.md` | generic | placeholder | `frontend/src/pages/subscription/LicenseFeesPage.tsx` |
+| `subscription.md` | done | done | `frontend/src/pages/subscription/SubscriptionPage.tsx` |
+| `subscription-plans.md` | done | done | `frontend/src/pages/subscription/PlansPage.tsx` |
+| `subscription-renew.md` | done | done | `frontend/src/pages/subscription/RenewPage.tsx` |
+| `subscription-maintenance-fees.md` | done | done | `frontend/src/pages/subscription/MaintenanceFeesPage.tsx` |
+| `subscription-license-fees.md` | done | done | `frontend/src/pages/subscription/LicenseFeesPage.tsx` |
 
-### [ ] `courses` (7 articles)
+### [x] `courses` (7 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `short-term-courses.md` | generic | placeholder | `frontend/src/pages/ShortTermCourses.tsx` |
-| `course-students.md` | generic | placeholder | `frontend/src/pages/CourseStudents.tsx` |
-| `course-students-reports.md` | generic | placeholder | `frontend/src/pages/CourseStudentReports.tsx` |
-| `course-dashboard.md` | generic | placeholder | Course dashboard |
-| `course-attendance.md` | generic | placeholder | `frontend/src/pages/CourseAttendance.tsx` |
-| `course-certificates.md` | generic | placeholder | Course certificates |
-| `course-documents.md` | generic | placeholder | Course documents |
+| `short-term-courses.md` | done | done | `frontend/src/pages/ShortTermCourses.tsx` |
+| `course-students.md` | done | done | `frontend/src/pages/CourseStudents.tsx` |
+| `course-students-reports.md` | done | done | `frontend/src/pages/CourseStudentReports.tsx` |
+| `course-dashboard.md` | done | done | `frontend/src/pages/CourseDashboard.tsx` |
+| `course-attendance.md` | done | done | `frontend/src/pages/CourseAttendance.tsx` |
+| `course-certificates.md` | done | done | `frontend/src/pages/CourseCertificates.tsx` |
+| `course-documents.md` | done | done | `frontend/src/pages/CourseDocuments.tsx` |
 
-### [ ] `graduation` (3 articles)
+### [x] `graduation` (3 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `graduation.md` | generic | placeholder | `frontend/src/pages/graduation/GraduationDashboard.tsx` |
-| `graduation-batches.md` | generic | placeholder | `frontend/src/pages/graduation/GraduationBatchesPage.tsx` |
-| `graduation-certificate-templates.md` | generic | placeholder | `frontend/src/pages/graduation/CertificateTemplatesPage.tsx` |
+| `graduation.md` | done | done | `frontend/src/pages/graduation/GraduationDashboard.tsx` |
+| `graduation-batches.md` | done | done | `frontend/src/pages/graduation/GraduationBatchesPage.tsx` |
+| `graduation-certificate-templates.md` | done | done | `frontend/src/pages/graduation/CertificateTemplatesPage.tsx` |
 
-### [ ] `certificates` (3 articles)
+### [x] `certificates` (3 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `certificate-templates.md` | generic | placeholder | Certificate template management |
-| `certificates-templates.md` | generic | placeholder | Certificate templates list |
-| `certificates-issued.md` | generic | placeholder | `frontend/src/pages/graduation/IssuedCertificatesPage.tsx` |
+| `certificate-templates.md` | done | done | `frontend/src/pages/CertificateTemplates.tsx` (course) |
+| `certificates-templates.md` | done | done | `frontend/src/pages/graduation/GraduationCertificateTemplates.tsx` |
+| `certificates-issued.md` | done | done | `frontend/src/pages/graduation/IssuedCertificatesPage.tsx` |
 
-### [ ] `id-cards` (3 articles)
+### [x] `id-cards` (3 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `id-cards-templates.md` | generic | placeholder | ID card template management |
-| `id-cards-assignment.md` | generic | placeholder | `frontend/src/pages/IdCardAssignment.tsx` |
-| `id-cards-export.md` | generic | placeholder | `frontend/src/pages/IdCardExport.tsx` |
+| `id-cards-templates.md` | done | done | `frontend/src/pages/IdCardTemplates.tsx` |
+| `id-cards-assignment.md` | done | done | `frontend/src/pages/IdCardAssignment.tsx` |
+| `id-cards-export.md` | done | done | `frontend/src/pages/IdCardExport.tsx` |
 
 ### [~] `reports` (2 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
@@ -219,20 +219,20 @@
 | `reports-student-registrations.md` | generic | placeholder | Student registration reports |
 | `reports-staff-registrations.md` | done | done | `frontend/src/pages/StaffReport.tsx` |
 
-### [ ] `leave` (2 articles)
+### [x] `leave` (2 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `leave-requests.md` | generic | placeholder | Leave requests management |
-| `leave-requests-reports.md` | generic | placeholder | Leave reports |
+| `leave-requests.md` | done | done | `frontend/src/pages/LeaveManagement.tsx` |
+| `leave-requests-reports.md` | done | done | `frontend/src/pages/LeaveReports.tsx` |
 
-### [ ] `general` (5 articles)
+### [x] `general` (5 articles)
 | Article File | EN Status | PS Status | Frontend Page Reference |
 |---|---|---|---|
-| `getting-started.md` | generic | placeholder | Getting started guide |
-| `account-profile.md` | generic | placeholder | Account & profile settings |
-| `general-questions.md` | generic | placeholder | FAQ / general questions |
-| `dashboard.md` | generic | placeholder | `frontend/src/pages/Dashboard.tsx` |
-| `phonebook.md` | generic | placeholder | Phonebook feature |
+| `getting-started.md` | done | done | Getting started guide |
+| `account-profile.md` | done | done | `frontend/src/pages/UserProfile.tsx`, Settings |
+| `general-questions.md` | done | done | FAQ / general questions |
+| `dashboard.md` | done | done | `frontend/src/pages/Dashboard.tsx` |
+| `phonebook.md` | done | done | `frontend/src/pages/PhoneBook.tsx` |
 
 ### [ ] `admin` (1 article)
 | Article File | EN Status | PS Status | Frontend Page Reference |
@@ -245,25 +245,25 @@
 
 | Folder | Articles | EN Done | PS Done |
 |---|---|---|---|
-| students | 5 | 0 | 0 |
+| students | 5 | 5 | 5 |
 | staff | 2 | 2 | 2 |
-| attendance | 4 | 0 | 0 |
+| attendance | 4 | 4 | 4 |
 | finance | 22 | 0 | 0 |
-| academic | 6 | 0 | 0 |
+| academic | 6 | 6 | 6 |
 | exams | 20 | 0 | 0 |
-| library | 6 | 0 | 0 |
+| library | 6 | 6 | 6 |
 | settings | 19 | 0 | 0 |
 | dms | 11 | 0 | 0 |
-| events | 2 | 0 | 0 |
-| hostel | 2 | 0 | 0 |
-| assets | 5 | 0 | 0 |
-| subscription | 5 | 0 | 0 |
-| courses | 7 | 0 | 0 |
-| graduation | 3 | 0 | 0 |
-| certificates | 3 | 0 | 0 |
-| id-cards | 3 | 0 | 0 |
+| events | 2 | 2 | 2 |
+| hostel | 2 | 2 | 2 |
+| assets | 5 | 5 | 5 |
+| subscription | 5 | 5 | 5 |
+| courses | 7 | 7 | 7 |
+| graduation | 3 | 3 | 3 |
+| certificates | 3 | 3 | 3 |
+| id-cards | 3 | 3 | 3 |
 | reports | 2 | 1 | 1 |
-| leave | 2 | 0 | 0 |
-| general | 5 | 0 | 0 |
+| leave | 2 | 2 | 2 |
+| general | 5 | 5 | 5 |
 | admin | 1 | 0 | 0 |
-| **TOTAL** | **133** | **0** | **0** |
+| **TOTAL** | **133** | **20** | **20** |
