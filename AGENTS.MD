@@ -5761,6 +5761,55 @@ export const financeTour: TourDefinition = {
 - Test tours in both RTL and LTR languages
 - Enable debug mode during development
 
+## Help Center Article Generation
+
+**CRITICAL: When the user asks to generate help center articles, you MUST follow the dedicated Help Center workflow rule and two-phase process. Do not write short or generic articles.**
+
+### Trigger Phrases (Use Help Center Workflow)
+
+When the user says any of the following (or similar), treat it as a request to generate help center workflow articles and follow the rule in `.cursor/rules/help-center-workflow-generation.mdc`:
+
+- "Generate help center articles for the **{folder}** folder" (e.g., students, staff, settings)
+- "Generate help articles for **{folder}**"
+- "Write help center content for **{folder}**"
+- "Create help center articles for **{folder}** in English and Pashto"
+- "Translate **{folder}** help articles to Pashto" (Phase 2 only, after EN exists)
+- "Fill in the help center articles for **{folder}**"
+
+### Required Flow
+
+1. **Read the MANIFEST** at `backend/resources/help-center/MANIFEST.md` to get the list of articles for the requested folder and their **Frontend Page Reference** (which `.tsx` file to read).
+
+2. **Phase 1 — English (source of truth):**
+   - For each article: read the corresponding frontend page component(s), hooks (`use{Resource}*.tsx`), and form/table components.
+   - Extract every detail: stats cards, filters, table columns, row actions, create/edit form fields (all tabs, all fields with type and required/optional), sub-features (documents, history, profile dialogs), export options.
+   - Write the full English article using the **FULL ARTICLE TEMPLATE** defined in `.cursor/rules/help-center-workflow-generation.mdc` (Page Overview, Data Table, Creating/Editing/Deleting, Additional Features, Export, Tips, Related Pages).
+   - Save to `backend/resources/help-center/articles/{folder}/en/{article-slug}.md`.
+
+3. **Phase 2 — Pashto:**
+   - Translate the English article to Pashto using the **PASHTO TRANSLATION RULES** and terminology dictionary in the same rule file.
+   - Preserve exact markdown structure; use consistent Pashto terms (e.g., زده کوونکي, حاضري, مالي, تنظیمات).
+   - Save to `backend/resources/help-center/articles/{folder}/ps/{article-slug}.md`.
+
+4. **Update MANIFEST:** Mark the folder and article status in `backend/resources/help-center/MANIFEST.md`.
+
+### Key Rules
+
+- ✅ **ALWAYS** read the actual frontend code (page component, hooks, forms) before writing — do not guess.
+- ✅ **ALWAYS** document every stats card, filter, table column, row action, and form field.
+- ✅ **ALWAYS** follow the two-phase process: EN first (complete workflow), then PS (translation with terminology).
+- ✅ **ALWAYS** use the rule file `.cursor/rules/help-center-workflow-generation.mdc` for the full template, Pashto dictionary, and quality checklist.
+- ❌ **NEVER** write short placeholder-style articles when the user asked to "generate" or "create" help articles for a folder.
+- ❌ **NEVER** skip sections (e.g., row actions, form fields, sub-features) in the English article.
+
+### After Generation
+
+Remind the user to seed the database so new/updated articles appear in the app:
+
+```bash
+cd backend && php artisan db:seed --class=HelpCenterArticleSeeder
+```
+
 ## MCP Server Usage
 
 **CRITICAL: ALWAYS use Laravel Boost and Shadcn UI MCP servers for all relevant tasks. These are powerful tools designed specifically for this application.**

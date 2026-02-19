@@ -1,0 +1,627 @@
+---
+description: Generate help center workflow articles for the Nazim School Management System. Triggered when user asks to generate help articles, write help center content, or translate articles to Pashto.
+globs:
+  - backend/resources/help-center/articles/**/*.md
+---
+
+# Help Center Workflow Article Generation
+
+You are a technical documentation writer for the **Nazim School Management System** — an Islamic school management SaaS application. Your job is to produce comprehensive, step-by-step workflow articles that explain every feature of a page to a school administrator or staff member who has never used the system before.
+
+## Two-Phase Process
+
+**Phase 1 — English (source of truth):**
+1. Read the MANIFEST at `backend/resources/help-center/MANIFEST.md` to identify the target folder and articles.
+2. For EACH article in the folder, read the corresponding frontend page component(s) listed in the MANIFEST's "Frontend Page Reference" column.
+3. Also read related hooks (`frontend/src/hooks/use{Resource}*.tsx`), form components, dialog components, and table components to understand every field, action, and workflow.
+4. Write the English article following the FULL ARTICLE TEMPLATE below.
+5. Save to `backend/resources/help-center/articles/{folder}/en/{article-slug}.md`.
+
+**Phase 2 — Pashto (translation):**
+1. Read the completed English article.
+2. Translate to Pashto following the PASHTO TRANSLATION RULES below.
+3. Save to `backend/resources/help-center/articles/{folder}/ps/{article-slug}.md`.
+
+**After both phases:** Update the MANIFEST.md to mark the folder status.
+
+---
+
+## What You MUST Investigate Before Writing
+
+Before writing ANY article, you MUST read and understand:
+
+### 1. Page Component (REQUIRED)
+Read the main page `.tsx` file. Extract:
+- **Page title and description** (from PageHeader or top of component)
+- **Stats cards** — what summary cards appear at the top (count, labels, icons)
+- **Filters** — every filter option (search, dropdowns, date pickers, toggles)
+- **Tabs** — if the page has tabs, list each tab and what it contains
+- **Table columns** — every column in the data table (name, what it shows, visibility on mobile)
+- **Row actions** — every action in the row dropdown menu (View, Edit, Delete, custom actions)
+- **Bulk actions** — any multi-select operations
+- **Page-level buttons** — Create, Export, Import, etc.
+
+### 2. Create/Edit Form (REQUIRED)
+Read the form/dialog component. Extract:
+- **Form tabs** — if the form has tabs, list each tab name
+- **Every field** — field label, field type (text, select, date picker, file upload, textarea, checkbox, etc.), whether required or optional, any validation rules
+- **Auto-calculated fields** — fields that auto-fill (e.g., age from birth date)
+- **Conditional fields** — fields that appear/disappear based on other selections
+- **File uploads** — what files can be uploaded, size limits
+- **Submit button label** — "Register Student", "Save", etc.
+- **What happens on submit** — success message, dialog closes, table refreshes, etc.
+
+### 3. Hooks (RECOMMENDED)
+Read `frontend/src/hooks/use{Resource}*.tsx` to understand:
+- What API endpoints are called
+- What data transformations happen
+- What validation occurs before API calls
+- What toast messages appear on success/error
+
+### 4. Related Components (RECOMMENDED)
+Read any sub-components like:
+- Profile view dialogs
+- Document management dialogs
+- History/timeline views
+- Report generation components
+- Export functionality
+
+---
+
+## FULL ARTICLE TEMPLATE (English)
+
+Every article MUST follow this exact structure. Do NOT skip any section. Write as if explaining to a school administrator who has never used the system.
+
+```markdown
+# {Page Title}
+
+{One paragraph overview: What this page does, who uses it, and why it matters for school management. 2-3 sentences.}
+
+---
+
+## Page Overview
+
+When you open this page, you will see:
+
+### Summary Cards
+{Describe each stats card at the top of the page. If no cards, write "This page does not have summary cards."}
+
+- **{Card Title}** — {What this number represents and why it's useful}
+- **{Card Title}** — {What this number represents}
+
+### Filters & Search
+{Describe every filter available on the page.}
+
+- **Search** — {What fields the search covers, e.g., "Search by name, admission number, phone number"}
+- **{Filter Name}** — {Options available and what they filter}
+
+---
+
+## Data Table
+
+The main table shows the following columns:
+
+| Column | Description |
+|---|---|
+| {Column Name} | {What this column displays} |
+
+### Row Actions
+
+When you click the actions menu (⋮) on any row, you can:
+
+- **{Action Name}** — {What happens when clicked, where it navigates, what dialog opens}
+
+### Bulk Actions
+{If bulk actions exist, describe them. Otherwise write "No bulk actions available on this page."}
+
+---
+
+## {Creating / Adding} a New {Resource}
+
+To create a new {resource}, click the **"{Button Label}"** button at the top of the page. A form will open with the following sections:
+
+### {Tab 1 Name}
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| {Field Label} | {Text / Select / Date / File / etc.} | {Yes/No} | {What to enter and any notes} |
+
+### {Tab 2 Name}
+{Repeat for each tab}
+
+### What Happens After Submission
+{Describe: validation, duplicate checking, success message, where the user returns to, etc.}
+
+---
+
+## Editing a {Resource}
+
+To edit an existing {resource}:
+1. Find the {resource} in the table.
+2. Click the actions menu (⋮) → **Edit**.
+3. The edit form opens with the current data pre-filled.
+4. Make your changes across any tab.
+5. Click **"{Save Button Label}"**.
+6. {What happens: success message, table refreshes, etc.}
+
+---
+
+## Deleting a {Resource}
+
+To delete a {resource}:
+1. Click the actions menu (⋮) → **Delete**.
+2. A confirmation dialog will appear.
+3. Click **"Confirm"** to permanently remove the {resource}.
+4. {Any warnings about related data, e.g., "This will also remove all associated admissions."}
+
+---
+
+## {Additional Features Section — repeat as needed}
+
+{For each major feature like: View Profile, Documents, History, Export, Import, Reports, etc., create a dedicated section with step-by-step instructions.}
+
+### {Feature Name}
+{Step-by-step walkthrough of the feature}
+
+---
+
+## Export Options
+
+{Describe PDF and Excel export if available, what data is included, how filters affect the export.}
+
+---
+
+## Tips & Best Practices
+
+- {Practical tip for school administrators}
+- {Common mistake to avoid}
+- {Workflow recommendation}
+
+---
+
+## Related Pages
+
+- [{Related Page Name}](/help-center/s/{category}/{slug}) — {Brief description}
+
+---
+
+*Category: `{category/slug}` | Language: `en`*
+```
+
+---
+
+## SECTION RULES
+
+### For Dashboard Pages
+Include: what each card means, what each chart shows, what quick actions are available, how to interpret the data.
+
+### For Report Pages
+Include: what filters are available, what the report shows, how to export (PDF/Excel), what the summary cards mean, what each breakdown table shows.
+
+### For Settings Pages
+Include: what the setting controls, how to add/edit/delete entries, what depends on this setting (e.g., "Residency Types are used when admitting students"), any ordering or hierarchy.
+
+### For Import Pages
+Include: how to build the template, what fields are available, how to download the template, how to upload and validate, what errors look like, how to fix errors, how to confirm import.
+
+### For Pages with Sub-features (Dialogs)
+If a row action opens a dialog (e.g., "Documents", "Educational History", "Discipline Records"), describe:
+- How to open it
+- What it shows
+- How to add/edit/delete within the dialog
+- What fields are in the sub-form
+
+---
+
+## PASHTO TRANSLATION RULES
+
+When translating English articles to Pashto, follow these rules strictly:
+
+### 1. Structure Preservation
+- Keep the EXACT same markdown structure (headings, tables, bullets, code blocks)
+- Keep the same number of sections and subsections
+- Keep table column counts identical
+- Keep the `---` separators and metadata footer
+
+### 2. Terminology Dictionary
+
+Use these standard Pashto terms consistently across ALL articles:
+
+| English | Pashto |
+|---|---|
+| Students | زده کوونکي |
+| Student | زده کوونکی |
+| Staff | کارکوونکي |
+| Teacher | ښوونکی |
+| Attendance | حاضري |
+| Exams | ازموینې |
+| Finance | مالي |
+| Academic | تعلیمي |
+| Dashboard | ډشبورډ |
+| Settings | تنظیمات |
+| Library | کتابتون |
+| Reports | راپورونه |
+| Classes | ټولګي |
+| Subjects | مضمونونه |
+| Grades | درجې |
+| Academic Year | تعلیمي کال |
+| Admission | شمولیت |
+| Admissions | شمولیتونه |
+| Registration | ثبت نام |
+| Enrollment | شمولیت |
+| Search | لټون |
+| Filter | فلټر |
+| Table | جدول |
+| Column | کالم |
+| Row | قطار |
+| Actions | عملیات |
+| Create | جوړول |
+| Edit | سمون |
+| Delete | حذف |
+| Save | ساتل |
+| Cancel | لغوه |
+| Submit | ثبتول |
+| Export | صادرول |
+| Import | واردول |
+| Upload | اپلوډ |
+| Download | ډاونلوډ |
+| PDF | PDF |
+| Excel | Excel |
+| Required | اړین |
+| Optional | اختیاري |
+| Yes | هو |
+| No | نه |
+| Status | حالت |
+| Active | فعال |
+| Inactive | غیر فعال |
+| Pending | انتظار |
+| Name | نوم |
+| Full Name | بشپړ نوم |
+| Father Name | د پلار نوم |
+| Phone | تلیفون |
+| Address | پته |
+| Date | نیټه |
+| Gender | جنسیت |
+| Male | نارینه |
+| Female | ښځینه |
+| Picture | عکس |
+| Document | سند |
+| Documents | اسناد |
+| Notes | یادونې |
+| Page | پاڼه |
+| Overview | لنډیز |
+| Summary | لنډیز |
+| Total | ټول |
+| Card | کارډ |
+| Button | تڼۍ |
+| Click | کلیک وکړئ |
+| Open | خلاص کړئ |
+| Close | بند کړئ |
+| Select | وټاکئ |
+| Enter | دننه کړئ |
+| Type | ولیکئ |
+| Form | فورم |
+| Dialog | ډیالوګ |
+| Tab | ټب |
+| Confirm | تایید |
+| Confirmation | تایید |
+| Success | بریالیتوب |
+| Error | تېروتنه |
+| Warning | خبرداری |
+| Tips | لارښوونې |
+| Best Practices | غوره کړنې |
+| Related Pages | اړوند پاڼې |
+| Orphan | یتیم |
+| Guardian | سرپرست |
+| Guarantor / Zamin | ضامن |
+| Tazkira | تذکره |
+| Province | ولایت |
+| District | ولسوالي |
+| Village | کلی |
+| Residency | استوګنه |
+| Boarder | لیلیه یي |
+| Shift | شفت |
+| Room | خونه |
+| Building | ودانۍ |
+| School | مکتب |
+| Organization | سازمان |
+| Permission | اجازه |
+| Role | رول |
+| Fees | فیس |
+| Income | عاید |
+| Expense | لګښت |
+| Account | حساب |
+| Donor | خیریه ورکوونکی |
+| Project | پروژه |
+| Currency | اسعار |
+| Exchange Rate | د تبادلې نرخ |
+| Certificate | تصدیق لیک |
+| Graduation | فراغت |
+| Batch | بست |
+| ID Card | پیژندپاڼه |
+| Leave | رخصتي |
+| Hostel | لیلیه |
+| Asset | شتمني |
+| Event | پیښه |
+| DMS | د اسنادو سیسټم |
+| Letter | لیک |
+| Letterhead | سرلیک |
+| Template | ټیمپلیټ |
+| Archive | آرشیف |
+| Department | څانګه |
+| Course | کورس |
+| Subscription | ګډون |
+| Plan | پلان |
+| Renewal | تمدید |
+| License | جواز |
+| Maintenance | ساتنه |
+| Question Bank | د پوښتنو ذخیره |
+| Paper | پاڼه |
+| Roll Number | حاضري نمبر |
+| Secret Number | محرم نمبر |
+| Marks | نمرې |
+| Timetable | مهال ویش |
+| Schedule | مهال ویش |
+| Discipline | نظم |
+| History | تاریخچه |
+| Profile | پروفایل |
+| Phonebook | تلیفون لست |
+| Bulk | ډله ییز |
+| Validation | تایید |
+| Duplicate | تکراري |
+
+### 3. UI Element Names
+- Keep English UI element names in parentheses when first mentioned:
+  - Example: **"ثبت نام (Register Student)"** تڼۍ باندې کلیک وکړئ
+- After first mention, use only Pashto term
+- Keep technical terms like PDF, Excel, QR Code in English
+
+### 4. Writing Style for Pashto
+- Use formal/respectful Pashto (وکړئ not وکړه)
+- Use second person plural (تاسو) for instructions
+- Write right-to-left naturally — do not force LTR patterns
+- Keep sentences concise — Pashto tends to be more compact than English
+- Use Islamic school context where appropriate (e.g., حافظ, مدرسه terminology if relevant)
+
+### 5. Metadata Footer
+The footer MUST be:
+```
+*Category: `{same-category-slug}` | Language: `ps`*
+```
+
+### 6. Pashto Article Title
+- Translate the title to Pashto
+- Example: `# Students` → `# زده کوونکي`
+
+---
+
+## WORKFLOW WHEN USER ASKS "Generate help articles for {folder}"
+
+1. **Read MANIFEST** — `backend/resources/help-center/MANIFEST.md` to get the article list and frontend references for that folder.
+
+2. **For each article in the folder:**
+
+   a. **Read the frontend page component** listed in the MANIFEST.
+   
+   b. **Read related components** — search for form dialogs, table components, hooks:
+      - `frontend/src/hooks/use{Resource}*.tsx`
+      - `frontend/src/components/{resource}/*.tsx`
+      - `frontend/src/pages/{resource}/*.tsx`
+   
+   c. **Write the English article** following the FULL ARTICLE TEMPLATE above. Include:
+      - Every stats card with its meaning
+      - Every filter with its options
+      - Every table column
+      - Every row action and what it does
+      - Complete create form with every field, every tab
+      - Complete edit workflow
+      - Delete workflow with warnings
+      - All sub-features (documents, history, profile view, etc.)
+      - Export options
+      - Tips and best practices
+      - Related pages
+   
+   d. **Save English article** to `backend/resources/help-center/articles/{folder}/en/{slug}.md`
+   
+   e. **Translate to Pashto** using the PASHTO TRANSLATION RULES above.
+   
+   f. **Save Pashto article** to `backend/resources/help-center/articles/{folder}/ps/{slug}.md`
+
+3. **Update MANIFEST** — Change the folder checkbox from `[ ]` to `[x]` and update the article statuses.
+
+---
+
+## QUALITY CHECKLIST
+
+Before saving any article, verify:
+
+- [ ] Title matches the page name
+- [ ] Overview paragraph explains what, who, and why
+- [ ] ALL stats cards documented with their meaning
+- [ ] ALL filters documented with their options
+- [ ] ALL table columns documented
+- [ ] ALL row actions documented with what happens when clicked
+- [ ] Create form has EVERY field listed with type, required status, and description
+- [ ] Edit workflow is step-by-step
+- [ ] Delete workflow includes confirmation and warnings
+- [ ] Sub-features (documents, history, profile, etc.) have their own sections
+- [ ] Export options documented
+- [ ] Tips section has at least 3 practical tips
+- [ ] Related pages section links to related articles in the same module
+- [ ] Metadata footer has correct category slug and language code
+- [ ] Pashto version preserves exact same structure
+- [ ] Pashto uses consistent terminology from the dictionary
+- [ ] UI button/label names appear in parentheses on first mention in Pashto
+
+---
+
+## EXAMPLE: What a Good Article Looks Like (Abbreviated)
+
+### English (`students/en/students.md`):
+
+```markdown
+# Students
+
+The Students page is the central hub for managing all student records in your school. School administrators and staff use this page to register new students, view and edit student profiles, track admission status, and access student documents and history. Every student in your school appears here with their complete information.
+
+---
+
+## Page Overview
+
+When you open the Students page, you will see:
+
+### Summary Cards
+
+- **Total Students** — The total number of students registered across your organization, regardless of status.
+- **Male** — Count of registered male students.
+- **Female** — Count of registered female students.
+- **Orphans** — Students marked as orphans who may need special care or fee waivers.
+
+### Filters & Search
+
+- **Search** — Search by student name, admission number, father name, guardian phone, or card number. Type at least 2 characters to start searching.
+- **School** — Filter students by a specific school (if your organization has multiple schools). Default is "All Schools".
+- **Status** — Filter by student status: All Status, Applied, Admitted, Active, or Withdrawn.
+- **Gender** — Filter by gender: All Genders, Male, or Female.
+
+---
+
+## Data Table
+
+| Column | Description |
+|---|---|
+| Picture | Student photo thumbnail (60px). Shows a default avatar if no picture uploaded. |
+| Admission # | The unique admission number assigned to the student. Hidden on mobile screens. |
+| Student | Full name with status badge (colored), orphan badge if applicable, father name, and guardian phone below. |
+| School | The school the student belongs to. Hidden on mobile and tablet. |
+| Gender | Gender badge (Male/Female). Hidden on mobile and tablet. |
+| Applying Grade | The grade/class the student is applying for. Hidden on mobile and tablet. |
+| Actions | Dropdown menu with row-level actions. |
+
+### Row Actions
+
+When you click the actions menu (⋮) on any student row:
+
+- **View Profile** — Opens a dialog showing the student's complete profile information including personal details, address, guardian info, and additional notes.
+- **Print Profile** — Generates a PDF of the student's profile that you can print or save.
+- **Documents** — Opens a dialog where you can upload, view, and manage student documents (certificates, ID copies, etc.).
+- **Educational History** — Opens a dialog showing the student's previous school records and educational background.
+- **Discipline Records** — Opens a dialog to view and add discipline records for the student.
+- **Fee Assignments** — Navigates to the student's fee assignment page where you can see and manage their fee structure.
+- **View History** — Navigates to the student's complete history page with timeline, attendance, exams, and fees.
+- **Edit** — Opens the student edit form with all current data pre-filled.
+- **Delete** — Shows a confirmation dialog. Deleting a student removes their record permanently.
+
+---
+
+## Registering a New Student
+
+To register a new student, click the **"Register Student"** button at the top-right of the page. A multi-tab form will open:
+
+### Tab 1: Admission Information
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| School | Dropdown | Auto | Automatically selected if your organization has only one school. Choose manually if multiple schools exist. |
+| Admission No | Text | Yes | A unique admission number for the student. Must not duplicate an existing number. |
+| Card Number | Text | No | Optional ID card number for the student. |
+| Applying Grade | Dropdown | No | The grade/class the student is applying for. |
+| Admission Year | Text | No | The year of admission (e.g., 1403). |
+
+### Tab 2: Personal Information
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| Full Name | Text (autocomplete) | Yes | The student's full name. Autocomplete suggests existing names to help avoid duplicates. |
+| Father Name | Text (autocomplete) | Yes | Father's full name. |
+| Tazkira Number | Text | No | National ID (Tazkira) number. |
+| Phone | Text | No | Student's phone number. |
+| Grandfather Name | Text (autocomplete) | No | Grandfather's name. |
+| Gender | Select | Yes | Male or Female. |
+| Birth Year | Text (auto) | No | Auto-calculated from Birth Date if provided. |
+| Birth Date | Date Picker | No | Student's date of birth. Selecting this auto-fills Birth Year and Age. |
+| Age | Text (auto) | No | Auto-calculated from Birth Date. |
+| Preferred Language | Select | No | Student's preferred language. |
+| Nationality | Text | No | Student's nationality. |
+| Previous School | Text | No | Name of the student's previous school. |
+
+{...continues for all tabs...}
+
+### What Happens After Submission
+
+1. The system checks for duplicate students (matching name + father name).
+2. If a duplicate is found, you'll see a warning and can choose to proceed or cancel.
+3. The system checks your subscription limit — if you've reached the maximum students, registration is blocked.
+4. On success, a "Student registered successfully" message appears.
+5. If a picture was uploaded, it's saved to the student's profile.
+6. The form closes and the student table refreshes to show the new student.
+
+---
+
+## Tips & Best Practices
+
+- **Always fill required fields first** — Admission No, Full Name, Father Name, and Gender are required. Fill these before moving to other tabs.
+- **Use autocomplete** — When typing names, the system suggests existing entries. This helps maintain consistency and avoid typos.
+- **Upload a student picture** — Having a photo makes it easier to identify students and is required for ID card generation.
+- **Check for duplicates** — Before registering, search for the student first to avoid duplicate records.
+- **Set the correct status** — New students should typically start as "Applied" or "Admitted" and be changed to "Active" once they begin attending.
+
+---
+
+## Related Pages
+
+- [Admissions](/help-center/s/students/admissions) — Manage student admissions to specific classes and academic years
+- [Students Import](/help-center/s/students/students-import) — Bulk import students from an Excel file
+- [Students History](/help-center/s/students/students-history) — View complete student history with timeline and charts
+- [Admissions Report](/help-center/s/students/admissions-report) — Generate admission statistics and reports
+
+---
+
+*Category: `students` | Language: `en`*
+```
+
+### Pashto (`students/ps/students.md`):
+
+```markdown
+# زده کوونکي
+
+د زده کوونکو پاڼه ستاسو د مکتب د ټولو زده کوونکو د مدیریت مرکزي ځای دی. د مکتب مدیران او کارکوونکي دا پاڼه د نویو زده کوونکو د ثبت نام، د زده کوونکو پروفایلونو لیدلو او سمولو، د شمولیت حالت تعقیبولو، او د زده کوونکو اسنادو او تاریخچې ته لاسرسي لپاره کاروي. ستاسو د مکتب هر زده کوونکی دلته د خپلو بشپړو معلوماتو سره ښودل کیږي.
+
+---
+
+## د پاڼې لنډیز
+
+کله چې تاسو د زده کوونکو پاڼه خلاصه کړئ، تاسو به ووینئ:
+
+### لنډیز کارډونه
+
+- **ټول زده کوونکي** — ستاسو د سازمان په کچه د ثبت شویو زده کوونکو ټوله شمیره، د حالت په پام کې نیولو پرته.
+- **نارینه** — د ثبت شویو نارینه زده کوونکو شمیره.
+- **ښځینه** — د ثبت شویو ښځینه زده کوونکو شمیره.
+- **یتیمان** — هغه زده کوونکي چې د یتیم په توګه نښه شوي او ممکن خاصو پاملرنو یا د فیس معافیت ته اړتیا ولري.
+
+### فلټرونه او لټون
+
+- **لټون** — د زده کوونکي نوم، شمولیت نمبر، د پلار نوم، د سرپرست تلیفون، یا کارډ نمبر سره لټون وکړئ. لږ تر لږه ۲ توري ولیکئ.
+- **مکتب** — زده کوونکي د یو ځانګړي مکتب له مخې فلټر کړئ (که ستاسو سازمان ډیر مکتبونه ولري). اصلي حالت "ټول مکتبونه" دی.
+- **حالت** — د حالت له مخې فلټر: ټول، غوښتنه شوی، شمولیت شوی، فعال، یا وتلی.
+- **جنسیت** — د جنسیت له مخې فلټر: ټول، نارینه، یا ښځینه.
+
+{...continues with same structure...}
+
+---
+
+*Category: `students` | Language: `ps`*
+```
+
+---
+
+## IMPORTANT REMINDERS
+
+1. **Read the actual code** — Do NOT guess what a page does. Always read the frontend component first.
+2. **Every field matters** — If a form has 30 fields, document all 30. Do not summarize or skip.
+3. **Step-by-step instructions** — Write as if the reader has never seen a computer before. Every click, every button, every result.
+4. **Pashto must be natural** — Do not produce word-for-word translation. Write natural Pashto that a school administrator in Afghanistan would understand.
+5. **Keep metadata** — Every article MUST end with the category/language metadata line.
+6. **One folder at a time** — Process all articles in a folder before moving to the next folder.
+7. **Update MANIFEST** — After completing a folder, update the MANIFEST.md checkboxes.
