@@ -5,16 +5,16 @@
 
 export default {
   shortTermCourses: {
-    subtitle: "Manage short-term courses and enrollments",
-    completionDate: "Completion date",
-    courseDocuments: "Course documents",
-    deleteDocument: "Delete document",
-    deleteDocumentConfirm: "Delete document confirm",
-    documentType: "Document type",
-    noDocuments: "No documents",
-    size: "Size",
-    student: "Student",
-    uploadDocument: "Upload document",
-    uploaded: "Uploaded"
+    subtitle: "مدیریت کورس‌های کوتاه‌مدت و شمولیت‌ها",
+    completionDate: "تاریخ تکمیل",
+    courseDocuments: "اسناد کورس",
+    deleteDocument: "حذف سند",
+    deleteDocumentConfirm: "تأیید حذف سند",
+    documentType: "نوع سند",
+    noDocuments: "اسناد موجود نیست",
+    size: "اندازه",
+    student: "شاگرد",
+    uploadDocument: "بارگذاری سند",
+    uploaded: "بارگذاری شده"
   }
 };

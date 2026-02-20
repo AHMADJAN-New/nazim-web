@@ -6,88 +6,88 @@
 export default {
   graduation: {
     attendance: {
-      requireAttendance: "require Attendance",
-      requireAttendanceDescription: "Students must meet attendance requirements to graduate",
-      requireAttendanceNotEnforced: "Attendance requirements are not enforced",
-      minPercentage: "min Percentage",
-      minPercentageDescription: "Students must have at least {percentage}% attendance to be eligible for graduation",
-      excludeLeaves: "exclude Leaves",
-      excludeLeavesDescription: "Approved leaves (sick leave, personal leave, etc.) will not count as absences when calculating attendance percentage",
-      title: "title"
+      requireAttendance: "الزام حاضري",
+      requireAttendanceDescription: "شاگردان باید شرایط حاضري را برای فراغت رعایت کنند",
+      requireAttendanceNotEnforced: "شرایط حاضري اعمال نمی‌شود",
+      minPercentage: "حداقل درصد",
+      minPercentageDescription: "شاگردان باید حداقل {percentage}٪ حاضري داشته باشند تا واجد فراغت شوند",
+      excludeLeaves: "حذف رخصتی‌ها",
+      excludeLeavesDescription: "رخصتی‌های تأیید شده (مریضی، شخصی و غیره) در محاسبه درصد حاضري به عنوان غیبت شمارش نمی‌شوند",
+      title: "عنوان"
     },
     exams: {
-      weights: "weights",
-      equalWeights: "equal Weights",
-      totalWeight: "total Weight"
+      weights: "وزن‌ها",
+      equalWeights: "وزن‌های مساوی",
+      totalWeight: "وزن کل"
     },
     validation: {
-      weightsMustSum100: "weights Must Sum100"
+      weightsMustSum100: "مجموع وزن‌ها باید ۱۰۰ باشد"
     },
-    batches: "batches",
+    batches: "بست‌ها",
     status: {
-      draft: "draft",
-      approved: "approved",
-      issued: "issued"
+      draft: "پیش‌نویس",
+      approved: "تأیید شده",
+      issued: "صادر شده"
     },
-    graduationType: "graduation Type",
+    graduationType: "نوع فراغت",
     type: {
-      transfer: "transfer",
-      promotion: "promotion",
-      finalYear: "final Year"
+      transfer: "انتقال",
+      promotion: "ترفیع",
+      finalYear: "سال پایانی"
     },
-    classTransfer: "class Transfer",
-    transferringTo: "transferring To",
+    classTransfer: "انتقال صنف",
+    transferringTo: "انتقال به",
     table: {
-      students: "students"
+      students: "شاگردان"
     },
     types: {
-      finalYear: "final Year",
-      promotion: "promotion",
-      transfer: "transfer"
+      finalYear: "سال پایانی",
+      promotion: "ترفیع",
+      transfer: "انتقال"
     },
     filters: {
-      dateFrom: "date From",
-      dateTo: "date To",
-      searchPlaceholder: "search Placeholder"
+      dateFrom: "تاریخ از",
+      dateTo: "تاریخ تا",
+      searchPlaceholder: "جستجو..."
     },
-    selectSchoolDescription: "select School Description",
-    fromClass: "from Class",
-    selectFromClass: "select From Class",
-    toClass: "to Class",
-    selectToClass: "select To Class",
+    selectSchoolDescription: "مکتب را انتخاب کنید",
+    fromClass: "از صنف",
+    selectFromClass: "انتخاب صنف مبدأ",
+    toClass: "به صنف",
+    selectToClass: "انتخاب صنف مقصد",
     summary: {
-      totalBatches: "total Batches",
-      draftBatches: "draft Batches",
-      approvedBatches: "approved Batches",
-      issuedBatches: "issued Batches"
+      totalBatches: "مجموع بست‌ها",
+      draftBatches: "بست‌های پیش‌نویس",
+      approvedBatches: "بست‌های تأیید شده",
+      issuedBatches: "بست‌های صادر شده"
     },
     noBatches: {
-      title: "Title",
-      description: "description"
+      title: "عنوان",
+      description: "توضیحات"
     },
     pagination: {
-      showing: "showing",
-      of: "of"
+      showing: "نمایش",
+      of: "از"
     },
-    editBatchDescription: "edit Batch Description",
-    cannotChangeTypeWithStudents: "cannot Change Type With Students",
+    editBatchDescription: "ویرایش بست",
+    cannotChangeTypeWithStudents: "با وجود شاگردان در بست، نوع قابل تغییر نیست",
     dashboard: {
-      title: "Title",
-      noSchools: "no Schools",
-      selectSchool: "select School",
-      currentYearBatches: "current Year Batches",
-      certificatesThisYear: "certificates This Year",
-      quickActions: "quick Actions",
-      createBatch: "create Batch",
-      createBatchDesc: "create Batch Desc",
-      viewTemplates: "view Templates",
-      viewTemplatesDesc: "view Templates Desc",
-      issuedCertificates: "issued Certificates",
-      issuedCertificatesDesc: "issued Certificates Desc",
-      recentBatches: "recent Batches",
-      pendingApprovals: "pending Approvals",
-      noPendingApprovals: "no Pending Approvals",
-      upcomingGraduations: "upcoming Graduations"
+      title: "فراغت",
+      noSchools: "مکتبی یافت نشد",
+      selectSchool: "انتخاب مکتب",
+      currentYearBatches: "بست‌های سال جاری",
+      certificatesThisYear: "تصدیق‌نامه‌های امسال",
+      quickActions: "اقدامات سریع",
+      createBatch: "ایجاد بست",
+      createBatchDesc: "ایجاد بست فراغت جدید",
+      viewTemplates: "مشاهده قالب‌ها",
+      viewTemplatesDesc: "مدیریت قالب‌های تصدیق‌نامه",
+      issuedCertificates: "تصدیق‌نامه‌های صادر شده",
+      issuedCertificatesDesc: "مشاهده تصدیق‌نامه‌های صادر شده",
+      recentBatches: "بست‌های اخیر",
+      pendingApprovals: "تأییدهای در انتظار",
+      noPendingApprovals: "تأیید در انتظاری نیست",
+      upcomingGraduations: "فراغت‌های پیش‌رو"
     }
   }
 };

@@ -1980,6 +1980,10 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 - **RTL Languages**: Arabic, Pashto, Farsi
 - **LTR Languages**: English
 
+### Dari Translations (fa locale)
+- **Dari** is the Afghan variety of Persian; the app uses the **`fa`** locale for Dari (UI label: "دری").
+- When translating or fixing Dari strings, use the **Dari translation workflow rule** (`.cursor/rules/dari-translations-workflow.mdc`) and the **DARI_MANIFEST** (`frontend/src/lib/translations/DARI_MANIFEST.md`) for systematic English-to-Dari translation, consistent terminology, and grammar. The rule defines trigger phrases, a two-phase process (EN as source, then translate to Dari), a terminology dictionary, and quality checklist; the manifest tracks per-module translation status.
+
 ### Translation System
 - **Translation files are organized in `/src/lib/translations/` directory**
   - `types.ts` - Contains the `TranslationKeys` interface (type definitions)

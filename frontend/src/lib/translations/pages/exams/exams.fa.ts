@@ -5,6 +5,7 @@
 
 export default {
   examPaperPreview: {
+    title: "پیش‌نمایش پارچه",
     academicYear: "سال",
     answerHere: "پاسخ خود را اینجا بنویسید",
     duration: "مدت زمان",
@@ -40,12 +41,12 @@ export default {
     exam: "امتحان",
     filterExam: "امتحان",
     filterPrintStatus: "وضعیت چاپ",
-    footerHtml: "HTML پانوشت (Footer)",
+    footerHtml: "HTML پانوشت",
     footerHtmlPlaceholder: "HTML سفارشی پانوشت...",
     generatePdf: "تولید PDF",
     generic: "عمومی",
     genericTemplate: "قالب عمومی (بدون امتحان)",
-    headerHtml: "HTML سربرگ (Header)",
+    headerHtml: "HTML سربرگ",
     headerHtmlPlaceholder: "HTML سفارشی سربرگ...",
     instructions: "دستورالعمل‌ها",
     instructionsPlaceholder: "دستورالعمل‌ها برای شاگردان...",
@@ -266,6 +267,7 @@ export default {
     invigilator: "مراقب / ممتحن",
     list: "لیست امتحانات",
     listDescription: "مشاهده و مدیریت تمام امتحانات",
+    title: "امتحانات",
     locked: "قفل شده",
     management: "ایجاد و مدیریت امتحانات برای سال‌های تعلیمی",
     marks: "ثبت نمرات",
@@ -527,7 +529,7 @@ export default {
     subject: "مضمون",
     subjects: "مضامین",
     time: "زمان",
-    timeSlot: "وقت (Time Slot)",
+    timeSlot: "وقت امتحان",
     timetable: "تقسیم‌اوقات امتحان",
     timetableDescription: "مدیریت تقسیم‌اوقات و برنامه امتحان",
     total: "مجموع",
@@ -535,11 +537,11 @@ export default {
     totalMarks: "مجموع نمرات",
     totalSubjects: "مجموع مضامین",
     unlocked: "قفل باز شده",
-    unlock: "unlock",
-    lock: "lock"
+    unlock: "باز کردن قفل",
+    lock: "قفل کردن"
   },
   examTypes: {
-    codePlaceholder: "مثلاً: MONTHLY, FINAL, MID",
+    codePlaceholder: "مثلاً: MONTHLY، FINAL، MID",
     createDescription: "افزودن یک نوع امتحان جدید به سازمان شما",
     editDescription: "به‌روزرسانی جزئیات نوع امتحان",
     isActive: "فعال",

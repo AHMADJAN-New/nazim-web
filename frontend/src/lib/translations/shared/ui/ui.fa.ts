@@ -6,13 +6,13 @@
 export default {
   ui: {
     breadcrumb: {
-      label: "breadcrumb"
+      label: "مسیر"
     },
     carousel: {
-      nextSlide: "Next slide"
+      nextSlide: "اسلاید بعدی"
     },
     sidebar: {
-      toggle: "Toggle Sidebar"
+      toggle: "تغییر نوار کناری"
     }
   }
 };

@@ -5,6 +5,7 @@
 
 export default {
   helpCenter: {
+    subtitle: "پاسخ سوالات خود را بیابید و نحوه استفاده از نظام سیستم مدیریت مکتب را یاد بگیرید",
     allArticles: "همه مقالات",
     allCategories: "همه دسته‌بندی‌ها",
     articleFound: "مقاله یافت شد",

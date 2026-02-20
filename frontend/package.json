@@ -13,8 +13,6 @@
     "preview": "vite preview",
     "test": "vitest",
     "seed:admin": "npx --yes tsx ../scripts/seed-admin.ts",
-    "i18n:coverage": "npx --yes tsx scripts/i18n/translation-coverage.ts",
-    "i18n:coverage:ci": "npx --yes tsx scripts/i18n/translation-coverage.ts --ci",
     "i18n:check": "node scripts/i18n/check-bad-patterns.js",
     "i18n:check:update-baseline": "node scripts/i18n/check-bad-patterns.js --update-baseline",
     "i18n:keys:generate": "npx --yes tsx scripts/i18n/generate-translation-keys.ts",

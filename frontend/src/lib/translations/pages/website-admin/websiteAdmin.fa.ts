@@ -21,7 +21,7 @@ export default {
       type: "نوع",
       visible: "قابل نمایش",
       order: "ترتیب",
-      url: "URL",
+      url: "آدرس وب",
       parent: "والد",
       created: "ایجاد شده",
       preview: "پیش‌نمایش",
@@ -97,7 +97,7 @@ export default {
         publishedAt: "تاریخ نشر"
       },
       placeholders: {
-        slug: "my-article",
+        slug: "مقاله-نمونه",
         title: "عنوان مقاله",
         excerpt: "خلاصه کوتاه مقاله...",
         content: "مقاله خود را بنویسید..."
@@ -123,7 +123,7 @@ export default {
         content: "محتوا"
       },
       placeholders: {
-        slug: "about-us",
+        slug: "درباره-ما",
         title: "درباره ما"
       }
     },
@@ -141,7 +141,7 @@ export default {
       deleteDescription: "آیا مطمئن هستید که این آیتم منو را حذف می‌کنید؟ این عمل برگشت‌پذیر نیست.",
       fields: {
         label: "برچسب",
-        url: "URL",
+        url: "آدرس وب",
         parentMenu: "منوی والد",
         sortOrder: "ترتیب",
         visible: "قابل نمایش",
@@ -151,7 +151,7 @@ export default {
       placeholders: {
         selectPage: "یک صفحه را انتخاب کنید...",
         label: "خانه",
-        url: "/home",
+        url: "/صفحه-اصلی",
         parentNone: "هیچ (سطح بالا)"
       }
     },
@@ -200,7 +200,7 @@ export default {
         sslStatus: "وضعیت SSL"
       },
       placeholders: {
-        domain: "example.com",
+        domain: "مثال.کام",
         selectStatus: "انتخاب وضعیت"
       }
     },
@@ -232,7 +232,7 @@ export default {
         selectCategory: "انتخاب دسته‌بندی",
         imageUrl: "https://... یا مسیر",
         videoUrl: "https://www.youtube.com/watch?v=...",
-        documentUrl: "https://...",
+        documentUrl: "https://مثال.کام/...",
         fileName: "عکس عالی من",
         altText: "توضیح کوتاه محتوا"
       },
@@ -290,11 +290,11 @@ export default {
         answerDraft: "پیش‌نویس پاسخ"
       },
       placeholders: {
-        slug: "fatwa-slug",
+        slug: "فتوای-نمونه",
         title: "عنوان فتوا",
         question: "متن پرسش...",
         answer: "پاسخ فتوا...",
-        categorySlug: "category-slug",
+        categorySlug: "دسته-نمونه",
         categoryName: "نام دسته‌بندی",
         categoryDescription: "توضیح دسته‌بندی...",
         assignedTo: "شناسه کاربر یا ایمیل",
@@ -336,7 +336,7 @@ export default {
       },
       placeholders: {
         name: "نام دسته‌بندی",
-        slug: "gallery-category",
+        slug: "گالری-دسته",
         coverPath: "مسیر یا URL تصویر"
       },
       coverUploadCta: "تصویر کاور را بارگذاری یا از کتابخانه انتخاب کنید",
@@ -367,7 +367,7 @@ export default {
         instructor: "نام استاد",
         duration: "مثلاً ۸ هفته",
         level: "انتخاب سطح",
-        enrollmentLink: "https://...",
+        enrollmentLink: "https://مثال.کام/...",
         description: "توضیحات کورس...",
         category: "دسته‌بندی"
       },
@@ -406,7 +406,7 @@ export default {
         author: "نام نویسنده",
         category: "دسته‌بندی",
         description: "خلاصه کتاب...",
-        fileUrl: "https://...pdf"
+        fileUrl: "https://مثال.کام/فایل.pdf"
       },
       uploadCover: "بارگذاری کاور",
       uploadFile: "بارگذاری فایل",
@@ -461,7 +461,7 @@ export default {
       placeholders: {
         name: "نام کامل",
         title: "عنوان یا نقش",
-        email: "name@example.com",
+        email: "نام@مثال.کام",
         bio: "زندگی‌نامه کوتاه..."
       },
       featured: "ویژه در صفحه اصلی",

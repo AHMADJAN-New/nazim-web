@@ -5,17 +5,17 @@
 
 export default {
   resetPassword: {
-    subtitle: "Create a new secure password for your account",
-    invalidResetLink: "Invalid reset link. Please request a new password reset.",
-    passwordRequirements: "Password must contain:",
-    passwordsDoNotMatch: "Passwords do not match",
-    passwordStrength: "Password Strength",
-    requirement8Chars: "At least 8 characters",
-    requirementLowercase: "One lowercase letter",
-    requirementNumber: "One number",
-    requirementSpecial: "One special character",
-    requirementUppercase: "One uppercase letter",
-    updatePassword: "Update Password",
-    updatingPassword: "Updating Password..."
+    subtitle: "یک رمز عبور جدید و امن برای حساب خود ایجاد کنید",
+    invalidResetLink: "لینک بازنشانی نامعتبر است. لطفاً درخواست بازنشانی رمز جدید کنید.",
+    passwordRequirements: "رمز عبور باید شامل موارد زیر باشد:",
+    passwordsDoNotMatch: "رمزهای عبور مطابقت ندارند",
+    passwordStrength: "قدرت رمز عبور",
+    requirement8Chars: "حداقل ۸ کاراکتر",
+    requirementLowercase: "یک حرف کوچک",
+    requirementNumber: "یک عدد",
+    requirementSpecial: "یک کاراکتر خاص",
+    requirementUppercase: "یک حرف بزرگ",
+    updatePassword: "به‌روزرسانی رمز عبور",
+    updatingPassword: "در حال به‌روزرسانی رمز عبور..."
   }
 };

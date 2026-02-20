@@ -38,7 +38,7 @@ export default {
     classWiseSummary: "خلاصه فیس بر اساس صنف",
     classWiseSummaryDescription: "مشاهده آمار جمع‌آوری فیس به تفکیک صنف",
     code: "کد",
-    codePlaceholder: "مثال: G1_MONTHLY",
+    codePlaceholder: "مثلاً: G1_MONTHLY",
     collected: "جمع‌آوری شده",
     collectionByClass: "جمع‌آوری بر اساس صنف",
     collectionProgress: "پیشرفت جمع‌آوری",

@@ -5,8 +5,8 @@
 
 export default {
   notFound: {
-    title: "Page Not Found",
-    goHome: "Go Home",
-    message: "The page you are looking for does not exist."
+    title: "صفحه یافت نشد",
+    goHome: "بازگشت به صفحه اصلی",
+    message: "صفحه‌ای که جستجو می‌کنید وجود ندارد."
   }
 };

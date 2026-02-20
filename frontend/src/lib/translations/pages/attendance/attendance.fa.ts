@@ -18,7 +18,7 @@ export default {
     today: "امروز",
     total: "مجموع",
     totalSessions: "مجموع جلسات",
-    minPercentage: "min Percentage"
+    minPercentage: "حداقل درصد"
   },
   attendancePage: {
     title: "حاضری",

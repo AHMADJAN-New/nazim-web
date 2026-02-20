@@ -36,7 +36,7 @@ export default {
         failureReason: 'دلیل شکست',
         organization: 'سازمان',
         school: 'مدرسه',
-        ip: 'IP',
+        ip: 'آدرس IP',
         context: 'زمینه',
         userAgent: 'کاربر ایجنت',
       },
@@ -62,6 +62,44 @@ export default {
       databaseAndFiles: "پایگاه داده + فایل‌ها (بازیابی کامل)",
       databaseOnlyDescription: "این فقط داده‌های پایگاه داده را جایگزین می‌کند. فایل‌های ذخیره‌سازی فعلی حفظ خواهند شد.",
       databaseAndFilesDescription: "این تمام داده‌های فعلی در پایگاه داده و ذخیره‌سازی شما را با داده‌های این بکاپ جایگزین می‌کند."
+    }
+  },
+  platformLandingOffers: {
+    title: "پیشنهادات صفحه فرود",
+    subtitle: "کدهای تخفیف را در صفحه قیمت‌گذاری عمومی برجسته کنید و شمارش معکوس پیشنهادها را کنترل کنید.",
+    columns: {
+      code: "کد",
+      plan: "پلان",
+      discount: "تخفیف",
+      validity: "اعتبار",
+      landing: "فرود",
+      actions: "اقدامات"
+    },
+    live: "زنده",
+    allPlans: "همه پلان‌ها",
+    specificPlan: "پلان مشخص",
+    ends: "پایان",
+    noExpiry: "بدون انقضا",
+    visible: "قابل مشاهده",
+    hidden: "مخفی",
+    configure: "تنظیم",
+    empty: "هیچ کد تخفیفی یافت نشد.",
+    loading: "در حال بارگذاری کدهای تخفیف...",
+    expired: "منقضی شده",
+    saveSettings: "ذخیره تنظیمات",
+    dialog: {
+      title: "تنظیمات پیشنهاد فرود",
+      description: "کنترل کنید این تخفیف چگونه روی کارت‌های قیمت‌گذاری عمومی نمایش داده شود.",
+      showTitle: "نمایش در صفحه فرود",
+      showDescription: "نشان، قیمت تخفیف‌خورده و زمان‌سنج شمارش معکوس را فعال می‌کند.",
+      badgeLabel: "برچسب فرود",
+      badgePlaceholder: "پیشنهاد محدود",
+      messageLabel: "پیام فرود",
+      messagePlaceholder: "نکته کوتاه برای پیشنهاد",
+      validFrom: "معتبر از",
+      validUntil: "معتبر تا",
+      noStartDate: "بدون تاریخ شروع",
+      noExpiryDate: "بدون تاریخ انقضا"
     }
   }
 };

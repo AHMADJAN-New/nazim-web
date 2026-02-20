@@ -186,7 +186,7 @@ export default {
       },
       uploadAttachments: "آپلود ضمایم",
       uploadAttachmentsDescription: "ضمایم یا فایل‌های این مکتوب را آپلود کنید. تصاویر به طور خودکار فشرده می‌شوند.",
-      downloadPdf: "download Pdf"
+      downloadPdf: "بارگیری PDF"
     },
     uploadFiles: "آپلود فایل‌ها",
     dashboard: {
@@ -200,10 +200,14 @@ export default {
       confidentialAndHigher: "محرمانه و بالاتر",
       week: "هفته",
       month: "ماه",
-      manageHint: "از تب‌های منوی کناری برای مدیریت ورودی، خروجی، قالب‌ها و گزارش‌ها استفاده کنید."
+      manageHint: "از تب‌های منوی کناری برای مدیریت ورودی، خروجی، قالب‌ها و گزارش‌ها استفاده کنید.",
+      awaitingAction: "در انتظار اقدام",
+      highSecurity: "اسناد امنیت بالا"
     },
     incoming: "ورودی",
     outgoing: "خروجی",
+    viewIncoming: "مشاهده ورودی",
+    viewOutgoing: "مشاهده خروجی",
     issueLetterNav: "صدور نامه",
     letterTypes: "انواع نامه",
     letterTypesPage: {
@@ -235,7 +239,7 @@ export default {
         title: "ایجاد نوع نامه",
         description: "یک نوع نامه جدید برای سازماندهی قالب‌ها و سربرگ‌ها اضافه کنید.",
         keyLabel: "کلید",
-        keyPlaceholder: "مثال: application, moe_letter",
+        keyPlaceholder: "مثال: application، moe_letter",
         keyHint: "فقط حروف کوچک، اعداد و زیرخط",
         nameLabel: "نام",
         namePlaceholder: "مثال: نامه‌های درخواست",
@@ -418,7 +422,10 @@ export default {
       pendingAging: "سن در انتظار",
       status: "وضعیت",
       avgDays: "میانگین روزها",
-      unassigned: "اختصاص داده نشده"
+      unassigned: "اختصاص داده نشده",
+      none: "هیچ",
+      notAvailable: "موجود نیست",
+      filterSummary: "گزارش توزیع DMS"
     },
     settings: "تنظیمات",
     settingsPage: {
@@ -451,7 +458,7 @@ export default {
       richText: "متن غنی",
       fontLabel: "فونت",
       fontSizeLabel: "اندازه فونت",
-      fontSizeSuffix: "px",
+      fontSizeSuffix: "پیکسل",
       bodyTextLabel: "متن اصلی",
       bodyTextPlaceholder: "اداره تأیید می‌کند که {{student_name}} پسر {{father_name}}...",
       bodyTextRichPlaceholder: "متن نامه را اینجا بنویسید (متن غنی پشتیبانی می‌شود). برای درج فیلدها از انتخابگر فیلد زیر استفاده کنید.",
@@ -494,7 +501,7 @@ export default {
       namePlaceholder: "سربرگ عمودی اصلی",
       fileLabel: "فایل",
       uploadHint: "برای آپلود کلیک کنید یا بکشید و رها کنید",
-      fileTypesHint: "PDF, JPG, PNG, WEBP (حداکثر 10MB)",
+      fileTypesHint: "PDF، JPG، PNG، WEBP (حداکثر ۱۰ مگابایت)",
       letterheadTypeLabel: "نوع سربرگ",
       backgroundLabel: "پس‌زمینه",
       backgroundDescription: "پس‌زمینه تمام صفحه که در تمام صفحات نمایش داده می‌شود",

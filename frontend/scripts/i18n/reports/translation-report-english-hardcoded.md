@@ -1,13 +1,13 @@
 # English Hardcoded in PS / FA / AR Translation Files
 
-**Generated:** 2026-02-17T05:01:04.281Z
+**Generated:** 2026-02-20T18:20:19.099Z
 
 Files (ps, fa, ar) that contain string values which look like English instead of the target language.
 
 ## Summary
 
-- **Total keys with English values:** 4622
-- **Files affected:** 93
+- **Total keys with English values:** 2377
+- **Files affected:** 55
 
 ## Summary by File
 
@@ -16,93 +16,55 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `pages/website-admin/websiteAdmin.ar.ts` | AR | `pages/website-admin/websiteAdmin` | 488 |
 | `shared/toast/toast.ar.ts` | AR | `shared/toast/toast` | 354 |
 | `pages/exams/exams.ar.ts` | AR | `pages/exams/exams` | 332 |
-| `pages/students/students.fa.ts` | FA | `pages/students/students` | 269 |
-| `shared/nav/nav.fa.ts` | FA | `shared/nav/nav` | 187 |
-| `pages/library/library.fa.ts` | FA | `pages/library/library` | 174 |
 | `pages/events/events.ar.ts` | AR | `pages/events/events` | 171 |
-| `pages/events/events.fa.ts` | FA | `pages/events/events` | 168 |
-| `pages/student-history/studentHistory.fa.ts` | FA | `pages/student-history/studentHistory` | 141 |
-| `pages/staff/staff.fa.ts` | FA | `pages/staff/staff` | 136 |
-| `pages/leave/leave.fa.ts` | FA | `pages/leave/leave` | 122 |
 | `pages/id-cards/idCards.ar.ts` | AR | `pages/id-cards/idCards` | 117 |
-| `pages/settings/settings.fa.ts` | FA | `pages/settings/settings` | 116 |
 | `pages/fees/fees.ar.ts` | AR | `pages/fees/fees` | 94 |
-| `pages/subscription/subscription.fa.ts` | FA | `pages/subscription/subscription` | 88 |
 | `pages/finance/finance.ar.ts` | AR | `pages/finance/finance` | 88 |
-| `pages/finance/finance.fa.ts` | FA | `pages/finance/finance` | 87 |
-| `pages/user-management/userManagement.fa.ts` | FA | `pages/user-management/userManagement` | 73 |
-| `pages/student-report/studentReport.fa.ts` | FA | `pages/student-report/studentReport` | 67 |
 | `pages/settings/settings.ar.ts` | AR | `pages/settings/settings` | 62 |
-| `pages/reports/reports.fa.ts` | FA | `pages/reports/reports` | 61 |
-| `pages/graduation/graduation.fa.ts` | FA | `pages/graduation/graduation` | 60 |
-| `pages/timetable/timetable.fa.ts` | FA | `pages/timetable/timetable` | 60 |
 | `pages/graduation/graduation.ar.ts` | AR | `pages/graduation/graduation` | 56 |
-| `pages/teacher-subject-assignments/teacherSubjectAssignments.fa.ts` | FA | `pages/teacher-subject-assignments/teacherSubjectAssignments` | 52 |
-| `pages/watermarks/watermarks.fa.ts` | FA | `pages/watermarks/watermarks` | 48 |
 | `pages/hostel/hostel.ar.ts` | AR | `pages/hostel/hostel` | 42 |
 | `pages/student-history/studentHistory.ar.ts` | AR | `pages/student-history/studentHistory` | 41 |
-| `pages/question-bank/questionBank.fa.ts` | FA | `pages/question-bank/questionBank` | 40 |
 | `pages/students/students.ar.ts` | AR | `pages/students/students` | 40 |
-| `pages/user-permissions/userPermissions.fa.ts` | FA | `pages/user-permissions/userPermissions` | 38 |
 | `pages/attendance/attendance.ar.ts` | AR | `pages/attendance/attendance` | 37 |
 | `shared/common/common.ar.ts` | AR | `shared/common/common` | 37 |
-| `pages/organizations/organizations.fa.ts` | FA | `pages/organizations/organizations` | 35 |
 | `pages/question-bank/questionBank.ar.ts` | AR | `pages/question-bank/questionBank` | 35 |
 | `shared/termsOfService/termsOfService.ar.ts` | AR | `shared/termsOfService/termsOfService` | 33 |
 | `pages/academic/academic.ar.ts` | AR | `pages/academic/academic` | 32 |
 | `shared/privacyPolicy/privacyPolicy.ar.ts` | AR | `shared/privacyPolicy/privacyPolicy` | 30 |
 | `pages/dms/dms.ar.ts` | AR | `pages/dms/dms` | 29 |
-| `pages/roles/roles.fa.ts` | FA | `pages/roles/roles` | 26 |
-| `shared/validation/validation.fa.ts` | FA | `shared/validation/validation` | 25 |
-| `pages/permissions/permissions.fa.ts` | FA | `pages/permissions/permissions` | 23 |
 | `pages/admissions/admissions.ar.ts` | AR | `pages/admissions/admissions` | 22 |
-| `pages/phone-book/phoneBook.fa.ts` | FA | `pages/phone-book/phoneBook` | 21 |
 | `pages/reports/reports.ar.ts` | AR | `pages/reports/reports` | 20 |
 | `pages/assets/assets.ar.ts` | AR | `pages/assets/assets` | 18 |
 | `shared/footer/footer.ar.ts` | AR | `shared/footer/footer` | 18 |
 | `shared/errorBoundary/errorBoundary.ar.ts` | AR | `shared/errorBoundary/errorBoundary` | 16 |
-| `pages/maintenance/maintenance.fa.ts` | FA | `pages/maintenance/maintenance` | 15 |
-| `pages/profile-management/profileManagement.fa.ts` | FA | `pages/profile-management/profileManagement` | 15 |
-| `shared/footer/footer.fa.ts` | FA | `shared/footer/footer` | 15 |
-| `pages/website-admin/websiteAdmin.fa.ts` | FA | `pages/website-admin/websiteAdmin` | 14 |
 | `pages/leave/leave.ar.ts` | AR | `pages/leave/leave` | 14 |
 | `pages/library/library.ar.ts` | AR | `pages/library/library` | 13 |
 | `shared/nav/nav.ar.ts` | AR | `shared/nav/nav` | 13 |
-| `shared/resetPassword/resetPassword.fa.ts` | FA | `shared/resetPassword/resetPassword` | 12 |
-| `shared/search/search.fa.ts` | FA | `shared/search/search` | 12 |
 | `pages/auth/auth.ar.ts` | AR | `pages/auth/auth` | 12 |
 | `pages/dashboard/dashboard.ar.ts` | AR | `pages/dashboard/dashboard` | 12 |
 | `pages/staff/staff.ar.ts` | AR | `pages/staff/staff` | 12 |
-| `pages/short-term-courses/shortTermCourses.fa.ts` | FA | `pages/short-term-courses/shortTermCourses` | 11 |
 | `pages/courses/courses.ar.ts` | AR | `pages/courses/courses` | 11 |
 | `pages/grades/grades.ar.ts` | AR | `pages/grades/grades` | 11 |
 | `shared/resetPassword/resetPassword.ar.ts` | AR | `shared/resetPassword/resetPassword` | 11 |
 | `pages/short-term-courses/shortTermCourses.ar.ts` | AR | `pages/short-term-courses/shortTermCourses` | 10 |
 | `pages/watermarks/watermarks.ar.ts` | AR | `pages/watermarks/watermarks` | 9 |
-| `shared/pagination/pagination.fa.ts` | FA | `shared/pagination/pagination` | 8 |
 | `pages/misc/misc.ar.ts` | AR | `pages/misc/misc` | 8 |
-| `pages/exams/exams.fa.ts` | FA | `pages/exams/exams` | 6 |
 | `pages/certificates/certificates.ar.ts` | AR | `pages/certificates/certificates` | 5 |
-| `pages/dms/dms.fa.ts` | FA | `pages/dms/dms` | 4 |
-| `pages/misc/misc.fa.ts` | FA | `pages/misc/misc` | 3 |
-| `pages/subjects/subjects.fa.ts` | FA | `pages/subjects/subjects` | 3 |
-| `shared/common/common.fa.ts` | FA | `shared/common/common` | 3 |
-| `shared/notFound/notFound.fa.ts` | FA | `shared/notFound/notFound` | 3 |
-| `shared/ui/ui.fa.ts` | FA | `shared/ui/ui` | 3 |
 | `pages/subjects/subjects.ar.ts` | AR | `pages/subjects/subjects` | 3 |
 | `pages/timetable/timetable.ar.ts` | AR | `pages/timetable/timetable` | 3 |
-| `pages/courses/courses.fa.ts` | FA | `pages/courses/courses` | 2 |
-| `pages/hostel/hostel.fa.ts` | FA | `pages/hostel/hostel` | 2 |
 | `pages/user-management/userManagement.ar.ts` | AR | `pages/user-management/userManagement` | 2 |
 | `shared/notFound/notFound.ar.ts` | AR | `shared/notFound/notFound` | 2 |
 | `pages/hostel/hostel.ps.ts` | PS | `pages/hostel/hostel` | 1 |
-| `pages/assets/assets.fa.ts` | FA | `pages/assets/assets` | 1 |
-| `pages/attendance/attendance.fa.ts` | FA | `pages/attendance/attendance` | 1 |
-| `pages/fees/fees.fa.ts` | FA | `pages/fees/fees` | 1 |
-| `pages/id-cards/idCards.fa.ts` | FA | `pages/id-cards/idCards` | 1 |
-| `pages/onboarding/onboarding.fa.ts` | FA | `pages/onboarding/onboarding` | 1 |
+| `pages/platform/platform.ps.ts` | PS | `pages/platform/platform` | 1 |
+| `pages/dms/dms.fa.ts` | FA | `pages/dms/dms` | 1 |
+| `pages/exams/exams.fa.ts` | FA | `pages/exams/exams` | 1 |
+| `pages/hostel/hostel.fa.ts` | FA | `pages/hostel/hostel` | 1 |
+| `pages/library/library.fa.ts` | FA | `pages/library/library` | 1 |
+| `pages/watermarks/watermarks.fa.ts` | FA | `pages/watermarks/watermarks` | 1 |
+| `pages/website-admin/websiteAdmin.fa.ts` | FA | `pages/website-admin/websiteAdmin` | 1 |
 | `pages/onboarding/onboarding.ar.ts` | AR | `pages/onboarding/onboarding` | 1 |
 | `pages/permissions/permissions.ar.ts` | AR | `pages/permissions/permissions` | 1 |
+| `pages/platform/platform.ar.ts` | AR | `pages/platform/platform` | 1 |
 | `pages/schools/schools.ar.ts` | AR | `pages/schools/schools` | 1 |
 | `pages/subscription/subscription.ar.ts` | AR | `pages/subscription/subscription` | 1 |
 | `shared/pagination/pagination.ar.ts` | AR | `shared/pagination/pagination` | 1 |
@@ -198,12 +160,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `assets.viewAssignments` | View Assignments |
 | `assets.viewCategories` | View Categories |
 
-### `pages/assets/assets.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `assets.notAvailable` | N/A |
-
 ### `pages/attendance/attendance.ar.ts` (AR)
 
 | Key | Value |
@@ -245,12 +201,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `attendanceTotalsReport.room` | Room |
 | `attendanceTotalsReport.roomBreakdown` | Room performance |
 | `attendanceTotalsReport.schoolRequired` | School is required for report generation |
-
-### `pages/attendance/attendance.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `attendance.minPercentage` | min Percentage |
 
 ### `pages/auth/auth.ar.ts` (AR)
 
@@ -294,13 +244,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `courses.sessions` | Sessions |
 | `courses.totalCourses` | Total courses |
 | `courses.viewManageStudents` | View manage students |
-
-### `pages/courses/courses.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `courses.csv` | CSV |
-| `courses.pdf` | PDF |
 
 ### `pages/dashboard/dashboard.ar.ts` (AR)
 
@@ -357,10 +300,7 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 
 | Key | Value |
 |-----|-------|
-| `dms.issueLetter.downloadPdf` | download Pdf |
-| `dms.letterTypesPage.createDialog.keyPlaceholder` | مثال: application, moe_letter |
-| `dms.templatesForm.fontSizeSuffix` | px |
-| `dms.letterheadForm.fileTypesHint` | PDF, JPG, PNG, WEBP (حداکثر 10MB) |
+| `dms.letterTypesPage.createDialog.keyPlaceholder` | مثال: application، moe_letter |
 
 ### `pages/events/events.ar.ts` (AR)
 
@@ -533,179 +473,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `events.fair` | fair |
 | `events.good` | good |
 | `events.strong` | strong |
-| `events.veryStrong` | very Strong |
-| `events.currentPassword` | current Password |
-| `events.enterCurrentPassword` | enter Current Password |
-| `events.enterNewPassword` | enter New Password |
-
-### `pages/events/events.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `events.users` | users |
-| `events.userCreateFailed` | user Create Failed |
-| `events.error` | error |
-| `events.success` | success |
-| `events.noPermission` | no Permission |
-| `events.filters` | filters |
-| `events.to` | to |
-| `events.of` | of |
-| `events.total` | total |
-| `events.loading` | loading |
-| `events.search` | search |
-| `events.actions` | actions |
-| `events.view` | view |
-| `events.retry` | retry |
-| `events.cancel` | cancel |
-| `events.saving` | saving |
-| `events.confirm` | confirm |
-| `events.notAvailable` | not Available |
-| `events.status` | status |
-| `events.selectClass` | select Class |
-| `events.noResults` | no Results |
-| `events.notes` | notes |
-| `events.save` | save |
-| `events.name` | name |
-| `events.code` | code |
-| `events.base` | base |
-| `events.startDate` | start Date |
-| `events.endDate` | end Date |
-| `events.displayOrder` | display Order |
-| `events.active` | active |
-| `events.required` | required |
-| `events.unauthorized` | unauthorized |
-| `events.download` | download |
-| `events.type` | type |
-| `events.uploading` | uploading |
-| `events.upload` | upload |
-| `events.published` | published |
-| `events.back` | back |
-| `events.print` | print |
-| `events.default` | default |
-| `events.deselectAll` | deselect All |
-| `events.selectAll` | select All |
-| `events.preview` | preview |
-| `events.reset` | reset |
-| `events.resetToDefault` | reset To Default |
-| `events.downloadPdf` | download Pdf |
-| `events.schoolSwitched` | school Switched |
-| `events.mainNavigation` | main Navigation |
-| `events.checkin` | checkin |
-| `events.addGuest` | add Guest |
-| `events.export` | export |
-| `events.types` | types |
-| `events.title` | title |
-| `events.exportErrorNoSchool` | export Error No School |
-| `events.exportErrorNoData` | export Error No Data |
-| `events.exportSuccessExcel` | export Success Excel |
-| `events.exportErrorExcel` | export Error Excel |
-| `events.exportSuccessPdf` | export Success Pdf |
-| `events.exportErrorPdf` | export Error Pdf |
-| `events.exportExcel` | export Excel |
-| `events.exportPdf` | export Pdf |
-| `events.close` | close |
-| `events.subjects` | subjects |
-| `events.filterByStatus` | filter By Status |
-| `events.delete` | delete |
-| `events.filterByGrade` | filter By Grade |
-| `events.gradeExample` | grade Example |
-| `events.sectionExample` | section Example |
-| `events.none` | none |
-| `events.overrideCapacity` | override Capacity |
-| `events.example` | example |
-| `events.sectionsInputHint` | sections Input Hint |
-| `events.overrideCapacityAll` | override Capacity All |
-| `events.createdAt` | created At |
-| `events.updatedAt` | updated At |
-| `events.viewDetails` | view Details |
-| `events.edit` | edit |
-| `events.update` | update |
-| `events.create` | create |
-| `events.basicInformation` | basic Information |
-| `events.add` | add |
-| `events.deleting` | deleting |
-| `events.email` | email |
-| `events.inactive` | inactive |
-| `events.enterFullName` | enter Full Name |
-| `events.phone` | phone |
-| `events.enterPhoneNumber` | enter Phone Number |
-| `events.unknown` | unknown |
-| `events.optional` | optional |
-| `events.allAcademicYears` | all Academic Years |
-| `events.statusLabel` | status Label |
-| `events.address` | address |
-| `events.clear` | clear |
-| `events.previous` | previous |
-| `events.next` | next |
-| `events.creating` | creating |
-| `events.updating` | updating |
-| `events.searchStudentPlaceholder` | search Student Placeholder |
-| `events.selected` | selected |
-| `events.selectCourse` | select Course |
-| `events.autoGenerated` | auto Generated |
-| `events.courseNameExample` | course Name Example |
-| `events.date` | date |
-| `events.yes` | yes |
-| `events.no` | no |
-| `events.firstName` | first Name |
-| `events.lastName` | last Name |
-| `events.years` | years |
-| `events.clearFilters` | clear Filters |
-| `events.signature` | signature |
-| `events.kb` | kb |
-| `events.on` | on |
-| `events.days` | days |
-| `events.breadcrumb` | breadcrumb |
-| `events.morePages` | more Pages |
-| `events.today` | today |
-| `events.previousSlide` | previous Slide |
-| `events.previousPage` | previous Page |
-| `events.nextPage` | next Page |
-| `events.exampleCategories` | example Categories |
-| `events.noData` | no Data |
-| `events.viewAll` | view All |
-| `events.noDataToExport` | no Data To Export |
-| `events.refresh` | refresh |
-| `events.pass` | pass |
-| `events.fail` | fail |
-| `events.topPerformers` | top Performers |
-| `events.scanCardNumber` | scan Card Number |
-| `events.filter` | filter |
-| `events.more` | more |
-| `events.unexpectedError` | unexpected Error |
-| `events.user` | user |
-| `events.confirmDelete` | confirm Delete |
-| `events.notFound` | not Found |
-| `events.remove` | remove |
-| `events.saveAll` | save All |
-| `events.section` | section |
-| `events.hide` | hide |
-| `events.show` | show |
-| `events.goBack` | go Back |
-| `events.duplicate` | duplicate |
-| `events.howToUse` | how To Use |
-| `events.metadata` | metadata |
-| `events.dates` | dates |
-| `events.contact` | contact |
-| `events.other` | other |
-| `events.from` | from |
-| `events.body` | body |
-| `events.pageSize` | page Size |
-| `events.rtl` | rtl |
-| `events.generateStudents` | generate Students |
-| `events.approve` | approve |
-| `events.auditLog` | audit Log |
-| `events.passRate` | pass Rate |
-| `events.processing` | processing |
-| `events.tryAgain` | try Again |
-| `events.verify` | verify |
-| `events.select` | select |
-| `events.unread` | unread |
-| `events.validationError` | validation Error |
-| `events.notAssignedToOrganization` | not Assigned To Organization |
-| `events.pleaseSelectOrganization` | please Select Organization |
-| `events.import` | import |
-| `events.weak` | weak |
 | `events.veryStrong` | very Strong |
 | `events.currentPassword` | current Password |
 | `events.enterCurrentPassword` | enter Current Password |
@@ -1052,12 +819,7 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 
 | Key | Value |
 |-----|-------|
-| `examPapers.footerHtml` | HTML پانوشت (Footer) |
-| `examPapers.headerHtml` | HTML سربرگ (Header) |
-| `exams.timeSlot` | وقت (Time Slot) |
-| `exams.unlock` | unlock |
-| `exams.lock` | lock |
-| `examTypes.codePlaceholder` | مثلاً: MONTHLY, FINAL, MID |
+| `examTypes.codePlaceholder` | مثلاً: MONTHLY، FINAL، MID |
 
 ### `pages/fees/fees.ar.ts` (AR)
 
@@ -1158,12 +920,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `fees.viewExceptions` | Fees |
 | `fees.viewStudentFees` | Fees |
 
-### `pages/fees/fees.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `fees.codePlaceholder` | مثال: G1_MONTHLY |
-
 ### `pages/finance/finance.ar.ts` (AR)
 
 | Key | Value |
@@ -1171,98 +927,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `finance.accountCodePlaceholder` | مثال: MAIN_CASH |
 | `finance.emailPlaceholder` | email@example.com |
 | `finance.fees` | fees |
-| `finance.expenses` | expenses |
-| `finance.viewAccounts` | view Accounts |
-| `finance.accountName` | account Name |
-| `finance.accountType` | account Type |
-| `finance.currencyCode` | currency Code |
-| `finance.currencyCodeHint` | currency Code Hint |
-| `finance.currencyNamePlaceholder` | currency Name Placeholder |
-| `finance.currencySymbol` | currency Symbol |
-| `finance.decimalPlaces` | decimal Places |
-| `finance.baseCurrency` | base Currency |
-| `finance.currenciesDescription` | currencies Description |
-| `finance.addCurrency` | add Currency |
-| `finance.addCurrencyDescription` | add Currency Description |
-| `finance.allCurrencies` | all Currencies |
-| `finance.currenciesFound` | currencies Found |
-| `finance.noCurrencies` | no Currencies |
-| `finance.editCurrency` | edit Currency |
-| `finance.editCurrencyDescription` | edit Currency Description |
-| `finance.deleteCurrencyWarning` | delete Currency Warning |
-| `finance.fromCurrency` | from Currency |
-| `finance.selectCurrency` | select Currency |
-| `finance.toCurrency` | to Currency |
-| `finance.exchangeRate` | exchange Rate |
-| `finance.exchangeRateHint` | exchange Rate Hint |
-| `finance.effectiveDate` | effective Date |
-| `finance.rateNotesPlaceholder` | rate Notes Placeholder |
-| `finance.exchangeRatesDescription` | exchange Rates Description |
-| `finance.addExchangeRate` | add Exchange Rate |
-| `finance.addExchangeRateDescription` | add Exchange Rate Description |
-| `finance.allExchangeRates` | all Exchange Rates |
-| `finance.ratesFound` | rates Found |
-| `finance.noExchangeRates` | no Exchange Rates |
-| `finance.editExchangeRate` | edit Exchange Rate |
-| `finance.editExchangeRateDescription` | edit Exchange Rate Description |
-| `finance.deleteExchangeRateWarning` | delete Exchange Rate Warning |
-| `finance.currency` | currency |
-| `finance.entryDetails` | entry Details |
-| `finance.viewEntryDetails` | view Entry Details |
-| `finance.entryInformation` | entry Information |
-| `finance.accountInformation` | account Information |
-| `finance.accountCode` | account Code |
-| `finance.categoryInformation` | category Information |
-| `finance.projectInformation` | project Information |
-| `finance.budgetAmount` | budget Amount |
-| `finance.projectBalance` | project Balance |
-| `finance.currencyInformation` | currency Information |
-| `finance.viewAccountDetails` | view Account Details |
-| `finance.latestTransaction` | latest Transaction |
-| `finance.transactionSummary` | transaction Summary |
-| `finance.totalExpense` | total Expense |
-| `finance.transactionCount` | transaction Count |
-| `finance.recentTransactions` | recent Transactions |
-| `finance.includeAssetsAndBooks` | include Assets And Books |
-| `finance.cashOnly` | cash Only |
-| `finance.cashBalance` | cash Balance |
-| `finance.assets` | assets |
-| `finance.libraryBooks` | library Books |
-| `finance.totalAssetsValue` | total Assets Value |
-| `finance.viewAssets` | view Assets |
-| `finance.totalLibraryBooksValue` | total Library Books Value |
-| `finance.viewLibraryBooks` | view Library Books |
-| `finance.addNew` | add New |
-| `finance.assetsBreakdown` | assets Breakdown |
-| `finance.assetsBreakdownDescription` | assets Breakdown Description |
-| `finance.assetsByAccount` | assets By Account |
-| `finance.assetsByCurrency` | assets By Currency |
-| `finance.originalValue` | original Value |
-| `finance.convertedValue` | converted Value |
-| `finance.libraryBooksBreakdown` | library Books Breakdown |
-| `finance.libraryBooksBreakdownDescription` | library Books Breakdown Description |
-| `finance.libraryBooksByAccount` | library Books By Account |
-| `finance.libraryBooksByCurrency` | library Books By Currency |
-| `finance.converted` | converted |
-| `finance.budgetAmountPlaceholder` | budget Amount Placeholder |
-| `finance.noCashbookData` | no Cashbook Data |
-| `finance.incomeVsExpenseTrend` | income Vs Expense Trend |
-| `finance.showingTrendsForPeriod` | showing Trends For Period |
-| `finance.selectTimeRange` | select Time Range |
-| `finance.last7Days` | last7 Days |
-| `finance.last30Days` | last30 Days |
-| `finance.last90Days` | last90 Days |
-| `finance.showingProjectIncomeExpense` | showing Project Income Expense |
-| `finance.accountCurrencyHint` | account Currency Hint |
-| `finance.donorInformation` | donor Information |
-| `finance.donorType` | donor Type |
-
-### `pages/finance/finance.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `finance.accountCodePlaceholder` | مثال: MAIN_CASH |
-| `finance.emailPlaceholder` | email@example.com |
 | `finance.expenses` | expenses |
 | `finance.viewAccounts` | view Accounts |
 | `finance.accountName` | account Name |
@@ -1426,71 +1090,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `graduation.dashboard.noPendingApprovals` | no Pending Approvals |
 | `graduation.dashboard.upcomingGraduations` | upcoming Graduations |
 
-### `pages/graduation/graduation.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `graduation.attendance.requireAttendance` | require Attendance |
-| `graduation.attendance.requireAttendanceDescription` | Students must meet attendance requirements to graduate |
-| `graduation.attendance.requireAttendanceNotEnforced` | Attendance requirements are not enforced |
-| `graduation.attendance.minPercentage` | min Percentage |
-| `graduation.attendance.minPercentageDescription` | Students must have at least {percentage}% attendance to be eligible for gradu... |
-| `graduation.attendance.excludeLeaves` | exclude Leaves |
-| `graduation.attendance.excludeLeavesDescription` | Approved leaves (sick leave, personal leave, etc.) will not count as absences... |
-| `graduation.attendance.title` | title |
-| `graduation.exams.weights` | weights |
-| `graduation.exams.equalWeights` | equal Weights |
-| `graduation.exams.totalWeight` | total Weight |
-| `graduation.validation.weightsMustSum100` | weights Must Sum100 |
-| `graduation.batches` | batches |
-| `graduation.status.draft` | draft |
-| `graduation.status.approved` | approved |
-| `graduation.status.issued` | issued |
-| `graduation.graduationType` | graduation Type |
-| `graduation.type.transfer` | transfer |
-| `graduation.type.promotion` | promotion |
-| `graduation.type.finalYear` | final Year |
-| `graduation.classTransfer` | class Transfer |
-| `graduation.transferringTo` | transferring To |
-| `graduation.table.students` | students |
-| `graduation.types.finalYear` | final Year |
-| `graduation.types.promotion` | promotion |
-| `graduation.types.transfer` | transfer |
-| `graduation.filters.dateFrom` | date From |
-| `graduation.filters.dateTo` | date To |
-| `graduation.filters.searchPlaceholder` | search Placeholder |
-| `graduation.selectSchoolDescription` | select School Description |
-| `graduation.fromClass` | from Class |
-| `graduation.selectFromClass` | select From Class |
-| `graduation.toClass` | to Class |
-| `graduation.selectToClass` | select To Class |
-| `graduation.summary.totalBatches` | total Batches |
-| `graduation.summary.draftBatches` | draft Batches |
-| `graduation.summary.approvedBatches` | approved Batches |
-| `graduation.summary.issuedBatches` | issued Batches |
-| `graduation.noBatches.title` | Title |
-| `graduation.noBatches.description` | description |
-| `graduation.pagination.showing` | showing |
-| `graduation.pagination.of` | of |
-| `graduation.editBatchDescription` | edit Batch Description |
-| `graduation.cannotChangeTypeWithStudents` | cannot Change Type With Students |
-| `graduation.dashboard.title` | Title |
-| `graduation.dashboard.noSchools` | no Schools |
-| `graduation.dashboard.selectSchool` | select School |
-| `graduation.dashboard.currentYearBatches` | current Year Batches |
-| `graduation.dashboard.certificatesThisYear` | certificates This Year |
-| `graduation.dashboard.quickActions` | quick Actions |
-| `graduation.dashboard.createBatch` | create Batch |
-| `graduation.dashboard.createBatchDesc` | create Batch Desc |
-| `graduation.dashboard.viewTemplates` | view Templates |
-| `graduation.dashboard.viewTemplatesDesc` | view Templates Desc |
-| `graduation.dashboard.issuedCertificates` | issued Certificates |
-| `graduation.dashboard.issuedCertificatesDesc` | issued Certificates Desc |
-| `graduation.dashboard.recentBatches` | recent Batches |
-| `graduation.dashboard.pendingApprovals` | pending Approvals |
-| `graduation.dashboard.noPendingApprovals` | no Pending Approvals |
-| `graduation.dashboard.upcomingGraduations` | upcoming Graduations |
-
 ### `pages/hostel/hostel.ar.ts` (AR)
 
 | Key | Value |
@@ -1543,7 +1142,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | Key | Value |
 |-----|-------|
 | `hostel.reports.occupiedOfTotal` | {occupied} از {total} |
-| `hostel.overview` | overview |
 
 ### `pages/hostel/hostel.ps.ts` (PS)
 
@@ -1673,12 +1271,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `idCards.width` | Width (%) |
 | `idCards.unprinted` | unprinted |
 
-### `pages/id-cards/idCards.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `idCards.unprinted` | unprinted |
-
 ### `pages/leave/leave.ar.ts` (AR)
 
 | Key | Value |
@@ -1697,133 +1289,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `leave.requests` | requests |
 | `leave.schoolRequired` | School is required for report generation |
 | `leave.threeDays` | Three days |
-
-### `pages/leave/leave.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `leave.allSchools` | All Schools |
-| `leave.studentNotFound` | Student not found. Please check the card number, student code, or admission n... |
-| `leave.allStudents` | All Students |
-| `leave.totalRequests` | Total Requests |
-| `leave.pending` | Pending |
-| `leave.awaitingApproval` | Leave requests awaiting approval. |
-| `leave.approvalRate` | approval rate |
-| `leave.rejected` | Rejected |
-| `leave.requests` | requests |
-| `leave.recentRequests` | Recent Requests |
-| `leave.latestLeaveRequests` | Latest leave requests |
-| `leave.noRequests` | No leave requests found |
-| `leave.student` | Student |
-| `leave.leaveRequest` | Leave Request |
-| `leave.datesLabel` | Dates |
-| `leave.reason` | Reason |
-| `leave.scanToVerify` | Scan to verify leave (one-time use). |
-| `leave.oneDay` | 1 Day |
-| `leave.twoDays` | 2 Days |
-| `leave.threeDays` | Three days |
-| `leave.oneWeek` | 1 Week |
-| `leave.twoWeeks` | 2 Weeks |
-| `leave.oneMonth` | 1 Month |
-| `leave.sick` | Sick - Medical condition requiring rest |
-| `leave.gettingOutside` | Getting outside of school - Personal errand |
-| `leave.familyEmergency` | Family emergency - Urgent family matter |
-| `leave.medicalAppointment` | Medical appointment - Doctor visit |
-| `leave.personal` | Personal - Personal matter |
-| `leave.familyEvent` | Family event - Family gathering or celebration |
-| `leave.travel` | Travel - Out of town travel |
-| `leave.religious` | Religious - Religious observance or ceremony |
-| `leave.leaveGovernance` | Leave governance |
-| `leave.qrReadySlips` | Create requests with QR-ready slips for scanning. |
-| `leave.currentMonth` | Current month |
-| `leave.approvedThisYear` | Approved this year |
-| `leave.newRequest` | New Request |
-| `leave.createRequest` | Create Leave Request |
-| `leave.createRequestDescription` | Fill in the details below to create a new leave request with QR code for veri... |
-| `leave.fastSearchScan` | Fast Search / Scan |
-| `leave.scanCardPlaceholder` | Scan card or type student code / admission number / card number, then press E... |
-| `leave.scanCardHint` | Scan a student card or enter their code/admission number, then press Enter to... |
-| `leave.selectClassPlaceholder` | Select class... |
-| `leave.searchClassesPlaceholder` | Search classes... |
-| `leave.noClassesFound` | No classes found for current academic year. |
-| `leave.loadingAcademicYear` | Loading academic year... |
-| `leave.showingClassesFor` | Showing classes for: |
-| `leave.selectStudentPlaceholder` | Select student... |
-| `leave.noStudentsInClass` | No students found in this class. |
-| `leave.selectClassFirstMessage` | Please select a class first. |
-| `leave.leaveType` | Leave Type |
-| `leave.typePlaceholder` | Type |
-| `leave.fullDay` | Full day |
-| `leave.partialDay` | Partial day |
-| `leave.timeBound` | Time bound |
-| `leave.leaveDuration` | Leave Duration |
-| `leave.startTime` | Start Time |
-| `leave.endTime` | End Time |
-| `leave.reasonPlaceholder` | Enter the reason for leave or select a quick reason above... |
-| `leave.approvalNote` | Approval Note |
-| `leave.approvalNotePlaceholder` | Add any additional context for approvers or security guards... |
-| `leave.clearForm` | Clear Form |
-| `leave.leaveHistory` | Leave history |
-| `leave.filterDescription` | Filter by month/year and approve or reject quickly. |
-| `leave.month` | Month |
-| `leave.loadingLeaveRequests` | Loading leave requests... |
-| `leave.noLeaveRequestsYet` | No leave requests yet. |
-| `leave.pageOf` | Page {page} of {total} |
-| `leave.prev` | Prev |
-| `leave.studentLeaveHistory` | Student leave history |
-| `leave.viewLeaveTrend` | View a student's leave trend and approvals. |
-| `leave.totalLeaves` | Total leaves |
-| `leave.cancelled` | Cancelled |
-| `leave.monthlyVolume` | Monthly volume |
-| `leave.noHistoryYet` | No history yet. |
-| `leave.allLeaves` | All leaves |
-| `leave.loadingHistory` | Loading history… |
-| `leave.noLeaveHistoryFound` | No leave history found for this student. |
-| `leave.requiredFields` | Student, start date, and end date are required |
-| `leave.requestCreated` | Leave request created successfully |
-| `leave.academicYearNotLoaded` | Academic year not loaded. Please wait... |
-| `leave.studentFound` | Found: {name} - Class: {class} |
-| `leave.classNotAvailable` | Student found but class not available in current academic year. |
-| `leave.studentNotEnrolled` | Student found but not enrolled in any class for current academic year. |
-| `leave.couldNotDetermineClass` | Student found but could not determine their class. Please select manually. |
-| `leave.noRequestsToExport` | No leave requests to export for the selected filters |
-| `leave.schoolRequired` | School is required for report generation |
-| `leave.reportExported` | Report exported |
-| `leave.reportGenerationFailed` | Failed to check report status |
-| `leave.reportsTitle` | Leave Reports |
-| `leave.reportsSubtitle` | Build daily, status, or date-range reports for student leaves |
-| `leave.reportFilters` | Report Filters |
-| `leave.allStatuses` | All statuses |
-| `leave.anyStudent` | Any student |
-| `leave.anyClass` | Any class |
-| `leave.school` | School |
-| `leave.anySchool` | Any school |
-| `leave.rowsPerPage` | Rows per page |
-| `leave.resetFilters` | Reset Filters |
-| `leave.allRequests` | All Requests |
-| `leave.dailyBreakdown` | Daily Breakdown |
-| `leave.allLeaveRequests` | All Leave Requests |
-| `leave.completeListing` | Complete listing of all leave requests. |
-| `leave.entries` | entries |
-| `leave.noRequestsMatchFilters` | No leave requests match these filters. |
-| `leave.pendingRequests` | Pending Requests |
-| `leave.noPendingRequests` | No pending requests. |
-| `leave.approvedRequests` | Approved Requests |
-| `leave.approvedDescription` | Leave requests that have been approved. |
-| `leave.noApprovedRequests` | No approved requests. |
-| `leave.rejectedRequests` | Rejected Requests |
-| `leave.rejectedDescription` | Leave requests that have been rejected. |
-| `leave.noRejectedRequests` | No rejected requests. |
-| `leave.dailyBreakdownTitle` | Daily Breakdown |
-| `leave.dailyBreakdownDescription` | Each day with status distribution. |
-| `leave.leaves` | leave(s) |
-| `leave.noDailyRecords` | No daily records to show |
-| `leave.generatingReport` | Generating Report |
-| `leave.reportInProgress` | Please wait while the report is being generated... |
-| `leave.reportReady` | Report is ready! |
-| `leave.reportFailed` | Report generation failed. |
-| `leave.reportStatus` | Report status |
-| `leave.studentRequired` | Student is required |
 
 ### `pages/library/library.ar.ts` (AR)
 
@@ -1847,200 +1312,7 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 
 | Key | Value |
 |-----|-------|
-| `library.active` | Active |
-| `library.activeLoans` | Active Loans |
-| `library.activeLoansCount` | {count} active loan(s) |
-| `library.addBook` | Add Book |
-| `library.addCategory` | Add Category |
-| `library.addCopy` | Add Copy |
-| `library.addNewBookInfo` | Add a new book to your library collection. |
-| `library.addNewBookTitle` | Add New Book |
-| `library.addNewCategoryInfo` | Add a new category to organize your library books. |
-| `library.allCategories` | All Categories |
-| `library.allCategorized` | All books categorized |
-| `library.allCurrent` | All current |
-| `library.analytics` | Analytics and insights for your library |
-| `library.areYouSure` | Are you sure? |
-| `library.assignBook` | Assign Book |
-| `library.assignBookDescription` | Loan a book to a student or staff member |
-| `library.author` | Author |
-| `library.authorPlaceholder` | Author name |
-| `library.availableCopies` | Available Copies |
-| `library.book` | Book |
-| `library.bookInformation` | Book Information |
-| `library.bookNumberPlaceholder` | Unique book number |
-| `library.books` | Books |
-| `library.booksByCategory` | Books by Category |
-| `library.booksLabel` | books |
-| `library.booksPastDue` | Books past due date |
-| `library.bookTitle` | Book Title |
-| `library.borrower` | Borrower |
-| `library.cannotUndo` | This action cannot be undone. |
-| `library.categories` | Categories |
-| `library.category` | Category |
-| `library.categoryCodeMaxLength` | Code must be 50 characters or less |
-| `library.categoryCreated` | Category created successfully |
-| `library.categoryDeleted` | Category deleted successfully |
-| `library.categoryDescriptionMaxLength` | Description must be 500 characters or less |
-| `library.categoryDescriptionPlaceholder` | Optional description for this category |
-| `library.categoryNameMaxLength` | Name must be 100 characters or less |
-| `library.categoryNameRequired` | Name is required |
-| `library.categoryUpdated` | Category updated successfully |
-| `library.code` | Code |
-| `library.codePlaceholder` | e.g., FIC, NON-FIC, REF |
-| `library.copies` | Copies |
-| `library.copy` | Copy |
-| `library.create` | Create |
-| `library.createCategory` | Create Category |
-| `library.dashboard` | Library Dashboard |
-| `library.dashboardDescription` | Overview of your library |
-| `library.defaultLoanDays` | Default Loan Days |
-| `library.deleteBookConfirm` | This will delete the book "{title}". All copies and loan records will be affe... |
-| `library.deleteCategoryConfirm` | This will delete the category. Books using this category will have their cate... |
-| `library.deleteCategoryDescription` | This action cannot be undone. |
-| `library.deleting` | Deleting... |
-| `library.deposit` | Deposit |
-| `library.depositAmount` | Deposit Amount |
-| `library.description` | Description |
-| `library.details` | Details |
-| `library.distribution` | Distribution |
-| `library.filters` | Search & Filters |
-| `library.dueDate` | Due Date |
-| `library.dueInNext7Days` | Due in next 7 days |
-| `library.dueSoonBooks` | Due Soon |
-| `library.dueSoonTab` | Due Soon |
-| `library.dueSoonShort` | Due |
-| `library.dueSoonDescription` | Books due for return in the next 7 days |
-| `library.dueSoonCount` | Due Soon |
-| `library.editBookTitle` | Edit Book |
-| `library.editCategory` | Edit Category |
-| `library.enterBookTitle` | Enter book title |
-| `library.fromDate` | From Date |
-| `library.history` | History |
-| `library.inactive` | Inactive |
-| `library.initialCopies` | Initial Copies |
-| `library.inventory` | Inventory |
-| `library.isbn` | ISBN |
-| `library.isbnPlaceholder` | ISBN number |
-| `library.libraryCategories` | Library Categories |
-| `library.libraryReports` | Library Reports |
-| `library.loanDate` | Loan Date |
-| `library.loanHistory` | Loan History |
-| `library.loanHistoryTab` | Loan History |
-| `library.loanHistoryDescription` | All loans within the selected date range |
-| `library.noLoansInRange` | No loans found in the selected date range. |
-| `library.loans` | Loans |
-| `library.manageBookCategories` | Manage book categories for organizing your library |
-| `library.manageLoans` | Manage book loans and returns |
-| `library.management` | Library Management |
-| `library.monthlyLoanTrends` | Monthly Loan Trends |
-| `library.moreCategories` | more categories |
-| `library.mostBorrowedBooks` | Most Borrowed Books |
-| `library.mostBorrowedTab` | Most Borrowed |
-| `library.mostBorrowedDescription` | Most frequently borrowed books |
-| `library.mostBorrowedEmpty` | No loan history available yet. |
-| `library.name` | Name |
-| `library.namePlaceholder` | e.g., Fiction, Non-Fiction, Reference |
-| `library.noActiveLoans` | No active loans. |
-| `library.noLoansMatchFilters` | No loans found matching your filters. |
-| `library.noBooksDueSoon` | No books due in the next week. |
-| `library.noBooksMessage` | No books yet. Add your first book to get started. |
-| `library.noCategoriesAvailable` | No categories available |
-| `library.noOverdue` | No overdue books |
-| `library.of` | of |
-| `library.onLoanLabel` | on loan |
-| `library.order` | Order |
-| `library.overdue` | Overdue |
-| `library.overdueBooksTab` | Overdue Books |
-| `library.overdueBooksDescription` | Books that are past their due date |
-| `library.overview` | Overview |
-| `library.perPage` | per page |
-| `library.price` | Price |
-| `library.reports` | Reports |
-| `library.reset` | Reset |
-| `library.return` | Return |
-| `library.returned` | Returned |
-| `library.returning` | Returning... |
-| `library.returnLoan` | Return Loan |
-| `library.returnBookTitle` | Return Book |
-| `library.returnBookConfirm` | Confirm return of "{title}"? |
-| `library.confirmReturn` | Confirm Return |
-| `library.saveBook` | Save Book |
-| `library.searchBookPlaceholder` | Search by title or author... |
-| `library.searchLoansPlaceholder` | Search by book title, borrower, or copy code... |
-| `library.searchCategories` | Search categories... |
-| `library.searchStudents` | Search students... |
-| `library.searchStaff` | Search staff... |
-| `library.selectCategory` | Select category |
-| `library.selectStudent` | Select student... |
-| `library.selectStaff` | Select staff... |
-| `library.showing` | Showing |
-| `library.status` | Status |
-| `library.subtitle` | Manage books, copies, loans, and track returns |
-| `library.title` | Library Management |
-| `library.to` | to |
-| `library.toDate` | To Date |
-| `library.top5Books` | Top 5 most borrowed books |
-| `library.totalBooks` | Total Books |
-| `library.totalCategoriesLabel` | total categories |
-| `library.totalCopies` | Total Copies |
-| `library.totalCopiesLabel` | Total Copies |
-| `library.totalCopiesLabel2` | total copies |
-| `library.totalValue` | Total Value |
-| `library.totalValueDescription` | Based on book prices and copies |
-| `library.uncategorized` | uncategorized |
-| `library.update` | Update |
-| `library.updateBookInfo` | Update the book information below. |
-| `library.updateCategoryInfo` | Update the category information below. |
-| `library.viewAllBooks` | View All Books |
-| `library.viewAllCategories` | View All Categories |
-| `library.viewFullReport` | View Full Report |
-| `library.volume` | Volume |
-| `library.volumePlaceholder` | Volume number |
-| `library.totalCategories` | Total Categories |
-| `library.totalPrice` | Total Price |
-| `library.averagePrice` | Average Price |
-| `library.booksReport` | Books Report |
-| `library.completeInventory` | Complete inventory of all library books |
-| `library.exportCsv` | Export CSV |
-| `library.noBooksFoundMatchingFilters` | No books found matching your filters. |
-| `library.noBooksAvailable` | No books available. |
-| `library.showingOverdueBooks` | Showing {from} to {to} of {total} overdue books |
-| `library.showingDueSoonBooks` | Showing {from} to {to} of {total} books due soon |
-| `library.showingLoans` | Showing {from} to {to} of {total} loans |
-| `library.showingBooks` | Showing {from} to {to} of {total} books |
-| `library.itemsPerPage` | {count} per page |
-| `library.uniqueCategories` | Unique categories |
-| `library.sumOfAllBookPrices` | Sum of all book prices |
-| `library.priceTimesTotalCopies` | Price × Total Copies |
-| `library.booksReportTab` | Books Report |
-| `library.perBook` | Per book |
-| `library.completeInventoryDescription` | Complete inventory of all library books |
-| `library.exportCSV` | Export CSV |
-| `library.searchBooksPlaceholder` | Search by title, author, ISBN, or book number... |
-| `library.noBooksMatchingFilters` | No books found matching your filters. |
-| `library.bookNumber` | Book # |
-| `library.available` | Available |
-
-### `pages/maintenance/maintenance.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `maintenance.affectedServices` | Affected Services |
-| `maintenance.autoRefresh` | This page will automatically refresh every 30 seconds |
-| `maintenance.defaultMessage` | We are performing scheduled maintenance. We'll be back soon! |
-| `maintenance.info` | We apologize for any inconvenience. Our team is working hard to restore servi... |
-| `maintenance.inProgress` | Maintenance in Progress |
-| `maintenance.progress` | Maintenance Progress |
-| `maintenance.refresh` | Refresh Page |
-| `maintenance.remaining` | remaining |
-| `maintenance.retry` | Retry Connection |
-| `maintenance.retryAfter` | You can try again in |
-| `maintenance.scheduledEnd` | Scheduled Completion |
-| `maintenance.seconds` | seconds |
-| `maintenance.startedAt` | Maintenance Started |
-| `maintenance.teamWorking` | Our team is working hard to restore service |
-| `maintenance.title` | System Under Maintenance |
+| `library.codePlaceholder` | مثلاً: FIC، NON-FIC، REF |
 
 ### `pages/misc/misc.ar.ts` (AR)
 
@@ -2055,65 +1327,11 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `buildings.buildingDeleted` | building Deleted |
 | `classes.noClasses` | no Classes |
 
-### `pages/misc/misc.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `buildings.buildingCreated` | building Created |
-| `buildings.buildingUpdated` | building Updated |
-| `buildings.buildingDeleted` | building Deleted |
-
 ### `pages/onboarding/onboarding.ar.ts` (AR)
 
 | Key | Value |
 |-----|-------|
 | `onboarding.actions.initialSetup` | initial Setup |
-
-### `pages/onboarding/onboarding.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `onboarding.actions.initialSetup` | initial Setup |
-
-### `pages/organizations/organizations.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `organizations.actions` | Actions |
-| `organizations.addNewOrganization` | Add New Organization |
-| `organizations.addOrganization` | Add Organization |
-| `organizations.buildings` | Buildings |
-| `organizations.cancel` | Cancel |
-| `organizations.classes` | Classes |
-| `organizations.close` | Close |
-| `organizations.create` | Create |
-| `organizations.delete` | Delete |
-| `organizations.deleteConfirmDescription` | This action cannot be undone. This will permanently delete the organization |
-| `organizations.deleteConfirmTitle` | Are you sure? |
-| `organizations.edit` | Edit |
-| `organizations.editOrganization` | Edit Organization |
-| `organizations.editOrganizationButton` | Edit Organization |
-| `organizations.enterOrganizationDetails` | Enter organization details below |
-| `organizations.id` | ID |
-| `organizations.loadingOrganizations` | Loading organizations... |
-| `organizations.name` | Name |
-| `organizations.noOrganizationsMessage` | No organizations found. Add your first organization. |
-| `organizations.noSettingsConfigured` | No settings configured |
-| `organizations.organizationDetails` | Organization Details |
-| `organizations.rooms` | Rooms |
-| `organizations.schools` | Schools |
-| `organizations.settings` | Settings |
-| `organizations.settingsTitle` | Settings |
-| `organizations.slug` | Slug |
-| `organizations.staff` | Staff |
-| `organizations.statistics` | Statistics |
-| `organizations.students` | Students |
-| `organizations.subtitle` | Manage organizations in your multi-tenant system |
-| `organizations.title` | Organizations Management |
-| `organizations.update` | Update |
-| `organizations.updateOrganizationInfo` | Update organization information |
-| `organizations.users` | Users |
-| `organizations.viewCompleteInfo` | View complete organization information |
 
 ### `pages/permissions/permissions.ar.ts` (AR)
 
@@ -2121,79 +1339,17 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 |-----|-------|
 | `permissions.actions` | Actions |
 
-### `pages/permissions/permissions.fa.ts` (FA)
+### `pages/platform/platform.ar.ts` (AR)
 
 | Key | Value |
 |-----|-------|
-| `permissions.accessDenied` | Access Denied |
-| `permissions.action` | Action |
-| `permissions.actions` | Actions |
-| `permissions.cancel` | Cancel |
-| `permissions.createDialogTitle` | Create Permission |
-| `permissions.creating` | Creating... |
-| `permissions.delete` | Delete |
-| `permissions.description` | Description |
-| `permissions.descriptionPlaceholder` | Enter permission description (optional) |
-| `permissions.failedToUpdate` | Failed to update permission roles |
-| `permissions.fromRole` | From Role |
-| `permissions.loadingPermissions` | Loading permissions... |
-| `permissions.managingPermissionsFor` | Managing permissions for |
-| `permissions.noDescription` | No description |
-| `permissions.noPermissionMessage` | You do not have permission to manage permissions |
-| `permissions.resource` | Resource |
-| `permissions.resources` | Resources |
-| `permissions.roles` | Roles |
-| `permissions.save` | Save |
-| `permissions.subtitle` | View and manage permissions and assign them to roles |
-| `permissions.title` | Permissions Management |
-| `permissions.userSpecific` | User Specific |
-| `permissions.viewGlobalAndManage` | You can view global permissions but can only manage your organization's permi... |
+| `platform.loginAudit.columns.ip` | IP |
 
-### `pages/phone-book/phoneBook.fa.ts` (FA)
+### `pages/platform/platform.ps.ts` (PS)
 
 | Key | Value |
 |-----|-------|
-| `phoneBook.allEntries` | All Phone Book Entries |
-| `phoneBook.allEntriesDescription` | View all phone numbers from students, staff, donors, and guests |
-| `phoneBook.contactPerson` | Contact Person |
-| `phoneBook.donor` | Donor |
-| `phoneBook.donorContacts` | Donor Contacts |
-| `phoneBook.donorContactsDescription` | Phone numbers from all donors |
-| `phoneBook.donors` | Donors |
-| `phoneBook.guest` | Guest |
-| `phoneBook.guestCode` | Guest Code |
-| `phoneBook.guestContacts` | Guest Contacts |
-| `phoneBook.guestContactsDescription` | Phone numbers from event guests |
-| `phoneBook.guests` | Guests |
-| `phoneBook.relation` | Relation |
-| `phoneBook.staffContacts` | Staff Contacts |
-| `phoneBook.staffContactsDescription` | Phone numbers from all staff members |
-| `phoneBook.student` | Student |
-| `phoneBook.studentContacts` | Student Contacts |
-| `phoneBook.studentContactsDescription` | Phone numbers from student guardians, emergency contacts, and zamin |
-| `phoneBook.studentEmergency` | Student Emergency |
-| `phoneBook.studentGuardian` | Student Guardian |
-| `phoneBook.studentZamin` | Student Zamin |
-
-### `pages/profile-management/profileManagement.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `profileManagement.allProfiles` | All Profiles |
-| `profileManagement.editMyProfile` | Edit My Profile |
-| `profileManagement.editProfile` | Edit Profile |
-| `profileManagement.fullNameRequired` | Full name is required |
-| `profileManagement.loadingProfile` | Loading profile... |
-| `profileManagement.loadingProfiles` | Loading profiles... |
-| `profileManagement.loadingRoles` | Loading roles... |
-| `profileManagement.noEmail` | No email |
-| `profileManagement.noName` | No name |
-| `profileManagement.noProfilesFound` | No profiles found. |
-| `profileManagement.phoneMaxLength` | Phone number must be 50 characters or less |
-| `profileManagement.superAdmin` | Super Admin |
-| `profileManagement.unknownOrg` | Unknown Org |
-| `profileManagement.updateOwnProfileDescription` | Update your profile information below. |
-| `profileManagement.updateProfileDescription` | Update the profile information below. |
+| `platform.loginAudit.columns.ip` | IP |
 
 ### `pages/question-bank/questionBank.ar.ts` (AR)
 
@@ -2235,51 +1391,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `questionBank.totalQuestions` | Question Bank |
 | `questionBank.viewQuestion` | Question Bank |
 
-### `pages/question-bank/questionBank.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `questionBank.academicYear` | Academic Year |
-| `questionBank.activate` | Activate |
-| `questionBank.addOption` | Add Option |
-| `questionBank.classAcademicYear` | Class (Optional) |
-| `questionBank.classSubject` | Subject |
-| `questionBank.correct` | Correct |
-| `questionBank.correctAnswer` | Model Answer |
-| `questionBank.correctAnswerPlaceholder` | Enter model answer (optional)... |
-| `questionBank.createDescription` | Add a new question to the question bank |
-| `questionBank.deactivate` | Deactivate |
-| `questionBank.deleteConfirmMessage` | Are you sure you want to delete this question? This action cannot be undone. |
-| `questionBank.editDescription` | Update the question details |
-| `questionBank.filterAcademicYear` | Academic Year |
-| `questionBank.filterClass` | Class |
-| `questionBank.filterDifficulty` | Difficulty |
-| `questionBank.filterSchool` | School |
-| `questionBank.filterSubject` | Subject |
-| `questionBank.filterType` | Type |
-| `questionBank.marks` | Marks |
-| `questionBank.noQuestions` | No questions found |
-| `questionBank.noQuestionsFound` | No questions found. Create your first question to get started. |
-| `questionBank.optionPlaceholder` | Option text... |
-| `questionBank.options` | Options |
-| `questionBank.questionsList` | Questions |
-| `questionBank.questionText` | Question Text |
-| `questionBank.questionTextPlaceholder` | Enter question text... |
-| `questionBank.reference` | Reference |
-| `questionBank.referencePlaceholder` | e.g., Chapter 5, Page 120 |
-| `questionBank.school` | School |
-| `questionBank.selectAcademicYear` | Select academic year |
-| `questionBank.selectAcademicYearFirst` | Select academic year first |
-| `questionBank.selectSubject` | Select subject |
-| `questionBank.subject` | Subject |
-| `questionBank.totalQuestions` | {count} question(s) found |
-| `questionBank.type.descriptive` | Descriptive |
-| `questionBank.type.essay` | Essay |
-| `questionBank.type.mcq` | Multiple Choice |
-| `questionBank.type.short` | Short Answer |
-| `questionBank.type.true_false` | True/False |
-| `questionBank.viewQuestion` | View Question |
-
 ### `pages/reports/reports.ar.ts` (AR)
 
 | Key | Value |
@@ -2304,103 +1415,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `reportTemplates.selectWatermark` | Select watermark (optional) |
 | `reportTemplates.useDefaultWatermark` | Use Default Watermark (from Branding) |
 | `reportTemplates.watermarkDescription` | Select a watermark to display on this report template. If not selected, the d... |
-
-### `pages/reports/reports.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `reports.generatingReport` | Report generation in progress |
-| `reportTemplates.title` | Report Templates |
-| `reportTemplates.subtitle` | Manage custom report layouts, headers, and footers |
-| `reportTemplates.aboveSchoolName` | Above School Name |
-| `reportTemplates.addNewReportTemplate` | Add New Report Template |
-| `reportTemplates.addTemplate` | Add Template |
-| `reportTemplates.advancedOptions` | Advanced Options (HTML) |
-| `reportTemplates.advancedOptionsDescription` | For advanced users: Custom HTML for header and footer (optional) |
-| `reportTemplates.belowSchoolName` | Below School Name |
-| `reportTemplates.configureHeaderFooter` | Configure the header and footer for your report template. |
-| `reportTemplates.deleteConfirmDescription` | This action will soft delete the report template |
-| `reportTemplates.deleteConfirmTitle` | Are you sure? |
-| `reportTemplates.editReportTemplate` | Edit Report Template |
-| `reportTemplates.enterFooterHtml` | Enter footer HTML (rich content) |
-| `reportTemplates.enterFooterText` | Enter footer text (plain text) |
-| `reportTemplates.enterHeaderHtml` | Enter header HTML (rich content) |
-| `reportTemplates.enterHeaderText` | Enter header text (plain text) |
-| `reportTemplates.enterTemplateName` | Enter template name |
-| `reportTemplates.filterBySchool` | Filter by School |
-| `reportTemplates.footerHtml` | Footer HTML |
-| `reportTemplates.footerHtmlDescription` | Custom HTML for footer (overrides footer text if provided) |
-| `reportTemplates.footerText` | Footer Text |
-| `reportTemplates.footerTextDescription` | Add a short note or message to display in the footer area of your reports. |
-| `reportTemplates.headerHtml` | Header HTML |
-| `reportTemplates.headerHtmlDescription` | Custom HTML for header (overrides header text if provided) |
-| `reportTemplates.headerText` | Header Text |
-| `reportTemplates.headerTextDescription` | Add a short note or message to display in the header area of your reports. |
-| `reportTemplates.headerTextPosition` | Header Text Position |
-| `reportTemplates.loadingReportTemplates` | Loading report templates... |
-| `reportTemplates.ministryLogo` | Ministry Logo |
-| `reportTemplates.noTemplatesMessage` | No templates found. Add your first template. |
-| `reportTemplates.noWatermark` | No Watermark |
-| `reportTemplates.previewDescription` | Preview how this template will look in reports |
-| `reportTemplates.previewTemplate` | Preview Template |
-| `reportTemplates.primaryLogo` | Primary Logo |
-| `reportTemplates.reportFontSize` | Report Font Size |
-| `reportTemplates.reportLogoSettings` | Report logo settings |
-| `reportTemplates.reportLogoSettingsDesc` | Report logo settings desc |
-| `reportTemplates.school` | School |
-| `reportTemplates.schoolRequired` | School * |
-| `reportTemplates.secondaryLogo` | Secondary Logo |
-| `reportTemplates.selectHeaderPosition` | Select position |
-| `reportTemplates.selectSchoolFirst` | Please select a school first to see available watermarks |
-| `reportTemplates.selectTemplateType` | Select template type |
-| `reportTemplates.selectWatermark` | Select watermark (optional) |
-| `reportTemplates.setAsDefaultTemplate` | Set as Default Template |
-| `reportTemplates.showGenerationDate` | Show Generation Date |
-| `reportTemplates.showPageNumbers` | Show Page Numbers |
-| `reportTemplates.tableAlternatingColors` | Table Alternating Colors |
-| `reportTemplates.templateName` | Template Name |
-| `reportTemplates.templateTypeRequired` | Template Type * |
-| `reportTemplates.updateTemplateConfig` | Update the report template configuration below. |
-| `reportTemplates.useDefaultWatermark` | Use Default Watermark (from Branding) |
-| `reportTemplates.watermarkDescription` | Select a watermark to display on this report template. If not selected, the d... |
-| `reportTemplates.student_report` | Student Report |
-| `reportTemplates.attendance_report` | Attendance Report |
-| `reportTemplates.fee_report` | Fee Report |
-| `reportTemplates.exam_report` | Exam Report |
-| `reportTemplates.class_report` | Class Report |
-| `reportTemplates.buildings` | Buildings Report |
-| `reportTemplates.general_report` | General Report |
-
-### `pages/roles/roles.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `roles.actions` | Actions |
-| `roles.cancel` | Cancel |
-| `roles.create` | Create |
-| `roles.createNewRole` | Create a new role |
-| `roles.createRole` | Create Role |
-| `roles.createRoleDialog` | Create Role |
-| `roles.delete` | Delete |
-| `roles.deleteRole` | Delete Role |
-| `roles.description` | Description |
-| `roles.edit` | Edit |
-| `roles.editRole` | Edit Role |
-| `roles.global` | Global |
-| `roles.name` | Name |
-| `roles.noRolesFound` | No roles found matching your search |
-| `roles.noRolesMessage` | No roles found. Create your first role. |
-| `roles.organization` | Organization |
-| `roles.organizationRoles` | Organization Roles |
-| `roles.organizationSpecific` | Organization Specific |
-| `roles.roleNameCannotChange` | Role name cannot be changed |
-| `roles.roleNamePlaceholder` | Enter role name |
-| `roles.roleNameRequired` | Role name is required |
-| `roles.subtitle` | Manage user roles within your organization |
-| `roles.title` | Roles Management |
-| `roles.totalRoles` | Total Roles |
-| `roles.update` | Update |
-| `roles.updateRoleInfo` | Update role information |
 
 ### `pages/schools/schools.ar.ts` (AR)
 
@@ -2475,147 +1489,10 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `settings.rooms.title` | Settings |
 | `settings.rooms.update` | Settings |
 
-### `pages/settings/settings.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `settings.building` | Building |
-| `settings.buildings.addBuilding` | Add Building |
-| `settings.buildings.buildingName` | Building Name |
-| `settings.buildings.create` | Create |
-| `settings.buildings.createdAt` | Created At |
-| `settings.buildings.deleteConfirm` | This action cannot be undone. This will permanently delete the building |
-| `settings.buildings.deleteConfirmRooms` | . If this building has rooms assigned, the deletion will fail. |
-| `settings.buildings.editBuilding` | Edit Building |
-| `settings.buildings.enterBuildingName` | Enter building name |
-| `settings.buildings.exportErrorExcel` | Failed to export Excel |
-| `settings.buildings.exportErrorNoBuildings` | No buildings to export. |
-| `settings.buildings.exportErrorNoSchool` | Please configure school branding first to export reports. |
-| `settings.buildings.exportErrorPdf` | Failed to export PDF |
-| `settings.buildings.exportSuccessExcel` | Excel export started |
-| `settings.buildings.exportSuccessPdf` | PDF export started |
-| `settings.buildings.loadingBuildings` | Loading buildings... |
-| `settings.buildings.management` | Buildings Management |
-| `settings.buildings.na` | N/A |
-| `settings.buildings.noBuildingsFound` | No buildings found matching your search |
-| `settings.buildings.noBuildingsMessage` | No buildings found. Add your first building. |
-| `settings.buildings.reportBuildingName` | Building Name |
-| `settings.buildings.reportCreatedAt` | Created At |
-| `settings.buildings.reportOrganization` | Organization |
-| `settings.buildings.reportRoomsCount` | Rooms |
-| `settings.buildings.reportSchoolName` | School Name |
-| `settings.buildings.reportTitle` | Buildings Report |
-| `settings.buildings.room` | room |
-| `settings.buildings.rooms` | Rooms |
-| `settings.buildings.school` | School |
-| `settings.buildings.schoolRequired` | Please select a school |
-| `settings.buildings.searchPlaceholder` | Search buildings... |
-| `settings.buildings.selectSchool` | Select school |
-| `settings.buildings.title` | Buildings Management |
-| `settings.buildings.unknownSchool` | Unknown School |
-| `settings.buildings.update` | Update |
-| `settings.buildings.viewAll` | View All |
-| `settings.roomNumber` | Room Number |
-| `settings.rooms.addRoom` | Add Room |
-| `settings.rooms.building` | Building |
-| `settings.rooms.create` | Create |
-| `settings.rooms.createdAt` | Created At |
-| `settings.rooms.deleteConfirm` | This action cannot be undone. This will permanently delete the room |
-| `settings.rooms.deleteConfirmRooms` | . If this room is in use, the deletion will fail. |
-| `settings.rooms.editRoom` | Edit Room |
-| `settings.rooms.exportErrorExcel` | Export error excel |
-| `settings.rooms.exportErrorNoRooms` | Export error no rooms |
-| `settings.rooms.exportErrorNoSchool` | Export error no school |
-| `settings.rooms.exportErrorPdf` | Export error pdf |
-| `settings.rooms.exportSuccessExcel` | Export success excel |
-| `settings.rooms.exportSuccessPdf` | Export success pdf |
-| `settings.rooms.loadingRooms` | Loading rooms... |
-| `settings.rooms.management` | Rooms Management |
-| `settings.rooms.na` | N/A |
-| `settings.rooms.noRoomsFound` | No rooms found matching your search |
-| `settings.rooms.noRoomsMessage` | No rooms found. Add your first room. |
-| `settings.rooms.noStaffAssigned` | No staff assigned |
-| `settings.rooms.reportTitle` | Rooms Report |
-| `settings.rooms.roomNumber` | Room Number |
-| `settings.rooms.searchPlaceholder` | Search by room number, building, or staff... |
-| `settings.rooms.selectBuilding` | Select a building |
-| `settings.rooms.selectStaff` | Select staff member (optional) |
-| `settings.rooms.staffWarden` | Staff/Warden |
-| `settings.rooms.staffWardenOptional` | Staff/Warden (Optional) |
-| `settings.rooms.title` | Rooms Management |
-| `settings.rooms.update` | Update |
-| `settings.staff` | Staff |
-| `settings.userSettings.changePassword` | Change Password |
-| `settings.userSettings.changePasswordDescription` | Update your password to keep your account secure |
-| `settings.userSettings.description` | Manage your account preferences and security settings |
-| `settings.userSettings.preferences` | Preferences |
-| `settings.userSettings.security` | Security |
-| `settings.userSettings.title` | User Settings |
-| `settings.datePreferences.title` | Date Format Preferences |
-| `settings.datePreferences.description` | Choose your preferred calendar system. All dates throughout the application w... |
-| `settings.datePreferences.calendarSystem` | Calendar System |
-| `settings.datePreferences.gregorian.label` | Gregorian Calendar |
-| `settings.datePreferences.gregorian.description` | Standard international calendar (January, February, March...) |
-| `settings.datePreferences.hijriShamsi.label` | Hijri Shamsi (Solar) |
-| `settings.datePreferences.hijriShamsi.description` | Afghan/Iranian solar calendar (Hamal, Sawr, Jawza...) |
-| `settings.datePreferences.hijriQamari.label` | Hijri Qamari (Lunar) |
-| `settings.datePreferences.hijriQamari.description` | Islamic lunar calendar (Muharram, Safar, Rabi...) |
-| `settings.datePreferences.preview` | Preview: |
-| `settings.datePreferences.date` | Date: |
-| `settings.datePreferences.dateTime` | Date & Time: |
-| `settings.datePreferences.note` | Note: |
-| `settings.datePreferences.noteText` | Your date preference is saved locally and will persist across sessions. This ... |
-| `settings.activityLogs.title` | Activity Logs |
-| `settings.activityLogs.description` | View all system activities and audit trails. |
-| `settings.activityLogs.dateTime` | Date & Time |
-| `settings.activityLogs.logName` | Log Name |
-| `settings.activityLogs.selectLogName` | Select log name |
-| `settings.activityLogs.event` | Event |
-| `settings.activityLogs.selectEvent` | Select event type |
-| `settings.activityLogs.user` | User |
-| `settings.activityLogs.method` | Method |
-| `settings.activityLogs.status` | Status |
-| `settings.activityLogs.searchPlaceholder` | Search description or route... |
-| `settings.activityLogs.startDate` | Start Date |
-| `settings.activityLogs.endDate` | End Date |
-| `settings.activityLogs.noLogs` | No activity logs found |
-| `settings.activityLogs.todayLogs` | Logs Today |
-| `settings.activityLogs.weekLogs` | Logs This Week |
-| `settings.activityLogs.uniqueUsersToday` | Unique Users Today |
-| `settings.activityLogs.topEvent` | Top Event |
-| `settings.activityLogs.logDetails` | Activity Log Details |
-| `settings.activityLogs.requestInfo` | Request Information |
-| `settings.activityLogs.subjectInfo` | Subject Information |
-| `settings.activityLogs.subjectType` | Subject Type |
-| `settings.activityLogs.subjectId` | Subject ID |
-| `settings.activityLogs.properties` | Properties |
-| `settings.activityLogs.ipAddress` | IP Address |
-| `settings.activityLogs.route` | Route |
-| `settings.activityLogs.userAgent` | User Agent |
-| `settings.activityLogs.previousValue` | Previous |
-| `settings.activityLogs.newValue` | New |
-| `settings.warden` | Warden |
-
 ### `pages/short-term-courses/shortTermCourses.ar.ts` (AR)
 
 | Key | Value |
 |-----|-------|
-| `shortTermCourses.completionDate` | Completion date |
-| `shortTermCourses.courseDocuments` | Course documents |
-| `shortTermCourses.deleteDocument` | Delete document |
-| `shortTermCourses.deleteDocumentConfirm` | Delete document confirm |
-| `shortTermCourses.documentType` | Document type |
-| `shortTermCourses.noDocuments` | No documents |
-| `shortTermCourses.size` | Size |
-| `shortTermCourses.student` | Student |
-| `shortTermCourses.uploadDocument` | Upload document |
-| `shortTermCourses.uploaded` | Uploaded |
-
-### `pages/short-term-courses/shortTermCourses.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `shortTermCourses.subtitle` | Manage short-term courses and enrollments |
 | `shortTermCourses.completionDate` | Completion date |
 | `shortTermCourses.courseDocuments` | Course documents |
 | `shortTermCourses.deleteDocument` | Delete document |
@@ -2643,147 +1520,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `staff.religiousInstitution` | Staff |
 | `staff.reportTitle` | Staff |
 | `staff.teacherCount` | Staff |
-
-### `pages/staff/staff.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `staff.profileSubtitle` | Update your personal and professional profile information |
-| `staff.acrossSelected` | Across selected organization |
-| `staff.actions` | Actions |
-| `staff.active` | Active |
-| `staff.activeStaff` | Active staff members |
-| `staff.sonOf` | son of |
-| `staff.additionalInformation` | Additional Information |
-| `staff.addStaff` | Add Staff |
-| `staff.adminCount` | Administrative staff |
-| `staff.admins` | Admins |
-| `staff.allStaffTypes` | All Staff Types |
-| `staff.allTypes` | All Types |
-| `staff.allStatus` | All Status |
-| `staff.basicInformationDescription` | Core employee identification and status information |
-| `staff.birthDate` | Birth Date |
-| `staff.birthYear` | Birth Year |
-| `staff.civilId` | Civil ID / Tazkira Number |
-| `staff.civilIdHelper` | National identification number (Tazkira) |
-| `staff.clear` | Clear |
-| `staff.code` | Code |
-| `staff.contact` | Contact |
-| `staff.contactInformation` | Contact Information |
-| `staff.contactLocation` | Contact & Location |
-| `staff.contactLocationDescription` | Contact information and addresses |
-| `staff.createEmployee` | Create Employee |
-| `staff.createEmployeeDescription` | Fill in the employee information step by step. All required fields are marked... |
-| `staff.creating` | Creating... |
-| `staff.currentDistrict` | Current District |
-| `staff.currentLocation` | Current Location |
-| `staff.currentProvince` | Current Province |
-| `staff.currentVillage` | Current Village |
-| `staff.dateOfBirth` | Date of Birth |
-| `staff.dateOfBirthHelper` | Employee must be at least 18 years old |
-| `staff.deleteConfirmDescription` | This action cannot be undone. |
-| `staff.deleteConfirmMessage` | Are you sure you want to delete this staff member? |
-| `staff.department` | Department |
-| `staff.district` | District |
-| `staff.duty` | Duty |
-| `staff.editEmployee` | Edit Employee |
-| `staff.editEmployeeDescription` | Update the employee information step by step. All required fields are marked ... |
-| `staff.education` | Education |
-| `staff.educationDescription` | Educational background and qualifications |
-| `staff.educationInformation` | Education Information |
-| `staff.educationLevel` | Education Level |
-| `staff.email` | Email |
-| `staff.employeeCode` | Employee Code |
-| `staff.employeeCodeHelper` | Unique identifier for the employee (e.g., EMP-001) |
-| `staff.employeeCodePlaceholder` | e.g., EMP-001 |
-| `staff.employment` | Employment |
-| `staff.employmentDescription` | Employment details and position information |
-| `staff.employmentInformation` | Employment Information |
-| `staff.employmentStatus` | Employment Status |
-| `staff.failedToCreate` | Failed to create staff member. Please try again. |
-| `staff.failedToExport` | Failed to export the report. Please try again. |
-| `staff.filters` | Filters |
-| `staff.graduationYear` | Graduation Year |
-| `staff.grandfatherName` | Grandfather Name |
-| `staff.homeAddress` | Home Address |
-| `staff.id` | ID |
-| `staff.list` | Staff List |
-| `staff.listDescription` | Search, filter and manage staff members. |
-| `staff.loadingStaff` | Loading staff... |
-| `staff.locationInformation` | Location Information |
-| `staff.management` | Staff Management |
-| `staff.modernDepartment` | Modern Department |
-| `staff.modernEducation` | Modern Education |
-| `staff.modernEducationSection` | Modern Education |
-| `staff.modernGraduationYear` | Modern Graduation Year |
-| `staff.modernInstitution` | Modern Institution |
-| `staff.modernSchoolUniversity` | Modern School/University |
-| `staff.name` | Name |
-| `staff.next` | Next |
-| `staff.noPermissionToView` | You don't have permission to view staff |
-| `staff.noSchool` | No school |
-| `staff.noStaffFound` | No staff found |
-| `staff.noStaffMembersAvailable` | No staff members available |
-| `staff.noStaffMembersFound` | No staff members found matching your filters |
-| `staff.notes` | Notes |
-| `staff.notesPlaceholder` | Additional notes about this staff member... |
-| `staff.onLeave` | On Leave |
-| `staff.onLeaveStaff` | Staff on leave |
-| `staff.organization` | Organization |
-| `staff.originDistrict` | Origin District |
-| `staff.originLocation` | Origin Location |
-| `staff.originProvince` | Origin Province |
-| `staff.originVillage` | Origin Village |
-| `staff.personalDetails` | Personal Details |
-| `staff.personalDetailsDescription` | Personal information and identification |
-| `staff.personalInformation` | Personal Information |
-| `staff.phoneNumber` | Phone Number |
-| `staff.photo` | Photo |
-| `staff.pictureHelper` | Upload a profile picture (max 5MB, jpg, png, gif, webp) |
-| `staff.pleaseSelectStaffType` | Please select a staff type |
-| `staff.pleaseWait` | Please wait for your profile to load... |
-| `staff.position` | Position |
-| `staff.previous` | Previous |
-| `staff.province` | Province |
-| `staff.registrationReport` | Registration Report |
-| `staff.religiousDepartment` | Religious Department |
-| `staff.religiousEducation` | Religious Education |
-| `staff.religiousEducationSection` | Religious Education |
-| `staff.religiousGraduationYear` | Religious Graduation Year |
-| `staff.religiousInstitution` | Religious Institution |
-| `staff.reportExportedAs` | Report exported as |
-| `staff.reports` | Reports |
-| `staff.reportTitle` | Staff Report |
-| `staff.salary` | Salary |
-| `staff.school` | School |
-| `staff.schoolRequiredForExport` | A school is required to export the report. |
-| `staff.searchByNamePlaceholder` | Search by name, employee ID, staff code... |
-| `staff.selectedSchoolNotBelong` | Selected school does not belong to your organization. |
-| `staff.selectStaffType` | Select staff type |
-| `staff.selectStaffTypePlaceholder` | Select a type |
-| `staff.staffCode` | Staff Code |
-| `staff.staffRegistrationReport` | Staff Registration Report |
-| `staff.staffRegistrationReportDescription` | View and export staff registration data with detailed information |
-| `staff.staffType` | Staff Type |
-| `staff.status` | Status |
-| `staff.statusActive` | Active |
-| `staff.statusInactive` | Inactive |
-| `staff.statusOnLeave` | On Leave |
-| `staff.statusSuspended` | Suspended |
-| `staff.statusTerminated` | Terminated |
-| `staff.subtitle` | Manage staff members and information |
-| `staff.tazkiraNumber` | Tazkira Number |
-| `staff.teacherCount` | Teaching staff |
-| `staff.teachers` | Teachers |
-| `staff.teachingSection` | Teaching Section |
-| `staff.title` | Staff Management |
-| `staff.viewAll` | View All |
-| `staff.totalStaff` | Total Staff |
-| `staff.type` | Type |
-| `staff.universityInstitution` | University/Institution |
-| `staff.updateStaff` | Update Staff |
-| `staff.updating` | Updating... |
-| `staff.village` | Village |
 
 ### `pages/student-history/studentHistory.ar.ts` (AR)
 
@@ -2831,224 +1567,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `studentHistory.author` | author |
 | `studentHistory.noEventsFound` | no Events Found |
 
-### `pages/student-history/studentHistory.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `studentHistory.description` | View complete student history including admissions, academic records, and more |
-| `studentHistory.lifetimeHistory` | Student Lifetime History |
-| `studentHistory.loadError` | Failed to load student history |
-| `studentHistory.admissionNo` | Admission No |
-| `studentHistory.admissionDate` | Admission Date |
-| `studentHistory.class` | Class |
-| `studentHistory.phone` | Phone |
-| `studentHistory.present` | Present |
-| `studentHistory.assigned` | Assigned |
-| `studentHistory.status` | Status |
-| `studentHistory.feePaid` | Fee Paid |
-| `studentHistory.returned` | Returned |
-| `studentHistory.of` | of |
-| `studentHistory.certificates` | Certificates |
-| `studentHistory.dob` | DOB |
-| `studentHistory.generatedAt` | Generated at |
-| `studentHistory.records` | records |
-| `studentHistory.sections` | Sections |
-| `studentHistory.timeline` | Timeline |
-| `studentHistory.charts` | Charts |
-| `studentHistory.fullDetails` | Full Student Details |
-| `studentHistory.personalInformation` | Personal Information |
-| `studentHistory.contactInformation` | Contact Information |
-| `studentHistory.locationInformation` | Location Information |
-| `studentHistory.originLocation` | Origin Location |
-| `studentHistory.currentLocation` | Current Location |
-| `studentHistory.guardianInformation` | Guardian Information |
-| `studentHistory.zaminInformation` | Zamin (Guarantor) Information |
-| `studentHistory.academicInformation` | Academic Information |
-| `studentHistory.financialInformation` | Financial Information |
-| `studentHistory.systemInformation` | System Information |
-| `studentHistory.totalAcademicYears` | Total Academic Years |
-| `studentHistory.yearsEnrolled` | Years Enrolled |
-| `studentHistory.currentClass` | Current Class |
-| `studentHistory.attendanceRate` | Attendance Rate |
-| `studentHistory.averageScore` | Average Score |
-| `studentHistory.exams` | Exams |
-| `studentHistory.outstandingFees` | Outstanding Fees |
-| `studentHistory.pending` | Pending |
-| `studentHistory.cleared` | Cleared |
-| `studentHistory.libraryBooks` | Library Books |
-| `studentHistory.totalLoans` | Total Loans |
-| `studentHistory.admissions` | Admissions |
-| `studentHistory.attendance` | Attendance |
-| `studentHistory.fees` | Fees |
-| `studentHistory.library` | Library |
-| `studentHistory.idCards` | ID Cards |
-| `studentHistory.courses` | Courses |
-| `studentHistory.graduations` | Graduations |
-| `studentHistory.unknownClass` | Unknown Class |
-| `studentHistory.current` | Current |
-| `studentHistory.academicYear` | Academic Year |
-| `studentHistory.school` | School |
-| `studentHistory.residencyType` | Residency Type |
-| `studentHistory.shift` | Shift |
-| `studentHistory.feePayments` | Fee Payments |
-| `studentHistory.libraryLoans` | Library Loans |
-| `studentHistory.events` | Events |
-| `studentHistory.feeTimeline` | Fee Timeline |
-| `studentHistory.paid` | Paid |
-| `studentHistory.remaining` | Remaining |
-| `studentHistory.absent` | Absent |
-| `studentHistory.late` | Late |
-| `studentHistory.noAttendanceRecords` | No attendance records found |
-| `studentHistory.totalExams` | Total Exams |
-| `studentHistory.totalMarks` | Total Marks |
-| `studentHistory.maxPossible` | Max Possible |
-| `studentHistory.noExamRecords` | No exam records found |
-| `studentHistory.totalCards` | Total Cards |
-| `studentHistory.printed` | Printed |
-| `studentHistory.pendingPrint` | Pending Print |
-| `studentHistory.idCardHistory` | ID Card History |
-| `studentHistory.template` | Template |
-| `studentHistory.printStatus` | Print Status |
-| `studentHistory.feeStatus` | Fee Status |
-| `studentHistory.issuedDate` | Issued Date |
-| `studentHistory.unpaid` | Unpaid |
-| `studentHistory.currentlyBorrowed` | Currently Borrowed |
-| `studentHistory.overdue` | Overdue |
-| `studentHistory.returnRate` | Return Rate |
-| `studentHistory.booksReturned` | books returned |
-| `studentHistory.noLibraryRecords` | No library records found |
-| `studentHistory.totalAssigned` | Total Assigned |
-| `studentHistory.totalPaid` | Total Paid |
-| `studentHistory.outstanding` | Outstanding |
-| `studentHistory.totalDiscount` | Total Discount |
-| `studentHistory.paymentProgress` | Payment Progress |
-| `studentHistory.feeAssignments` | Fee Assignments |
-| `studentHistory.feeStructure` | Fee Structure |
-| `studentHistory.dueDate` | Due Date |
-| `studentHistory.totalCourses` | Total Courses |
-| `studentHistory.completed` | Completed |
-| `studentHistory.enrolled` | Enrolled |
-| `studentHistory.dropped` | Dropped |
-| `studentHistory.noCourseRecords` | No course records found |
-| `studentHistory.totalGraduations` | Total Graduations |
-| `studentHistory.passed` | Passed |
-| `studentHistory.conditional` | Conditional |
-| `studentHistory.failed` | Failed |
-| `studentHistory.noGraduationRecords` | No graduation records found |
-| `studentHistory.searchTimeline` | Search timeline... |
-| `studentHistory.noAdmissions` | no Admissions |
-| `studentHistory.boarder` | boarder |
-| `studentHistory.monthlyBreakdown` | monthly Breakdown |
-| `studentHistory.month` | month |
-| `studentHistory.rate` | rate |
-| `studentHistory.recentRecords` | recent Records |
-| `studentHistory.note` | note |
-| `studentHistory.completionRate` | completion Rate |
-| `studentHistory.courseHistory` | course History |
-| `studentHistory.courseName` | course Name |
-| `studentHistory.registrationDate` | registration Date |
-| `studentHistory.certificate` | certificate |
-| `studentHistory.fee` | fee |
-| `studentHistory.completedOn` | completed On |
-| `studentHistory.unknownExam` | unknown Exam |
-| `studentHistory.subject` | subject |
-| `studentHistory.obtained` | obtained |
-| `studentHistory.maxMarks` | max Marks |
-| `studentHistory.percentage` | percentage |
-| `studentHistory.remarks` | remarks |
-| `studentHistory.overallProgress` | overall Progress |
-| `studentHistory.paymentHistory` | payment History |
-| `studentHistory.feeType` | fee Type |
-| `studentHistory.amount` | amount |
-| `studentHistory.method` | method |
-| `studentHistory.reference` | reference |
-| `studentHistory.receivedBy` | received By |
-| `studentHistory.noFeeRecords` | no Fee Records |
-| `studentHistory.unknownBatch` | unknown Batch |
-| `studentHistory.recordedOn` | recorded On |
-| `studentHistory.noChartData` | no Chart Data |
-| `studentHistory.attendanceTrend` | attendance Trend |
-| `studentHistory.examPerformance` | exam Performance |
-| `studentHistory.subjectAveragePerformance` | subject Average Performance |
-| `studentHistory.averagePercentage` | average Percentage |
-| `studentHistory.subjectPerformanceOverTime` | subject Performance Over Time |
-| `studentHistory.printedOn` | printed On |
-| `studentHistory.noIdCardRecords` | no Id Card Records |
-| `studentHistory.author` | author |
-| `studentHistory.noEventsFound` | no Events Found |
-
-### `pages/student-report/studentReport.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `studentReport.academicInformation` | Academic Information |
-| `studentReport.additionalInformation` | Additional Information |
-| `studentReport.admissionFeeStatus` | Admission Fee Status |
-| `studentReport.admissionLabel` | Admission # |
-| `studentReport.admissionYear` | Admission Year |
-| `studentReport.admitted` | Admitted |
-| `studentReport.age` | Age |
-| `studentReport.allGenders` | All Genders |
-| `studentReport.applied` | Applied |
-| `studentReport.applyingGrade` | Applying Grade |
-| `studentReport.birthDate` | Birth Date |
-| `studentReport.birthYear` | Birth Year |
-| `studentReport.cardLabel` | Card # |
-| `studentReport.contactPhone` | Contact Phone |
-| `studentReport.currentLocation` | Current Location |
-| `studentReport.disabilityStatus` | Disability Status |
-| `studentReport.emergencyContact` | Emergency Contact |
-| `studentReport.exportFailed` | Failed to export the report. Please try again. |
-| `studentReport.female` | Female |
-| `studentReport.gender` | Gender |
-| `studentReport.guardianInformation` | Guardian Information |
-| `studentReport.guardianName` | Guardian Name |
-| `studentReport.guardianPhone` | Guardian Phone |
-| `studentReport.homeAddress` | Home Address |
-| `studentReport.idLabel` | ID |
-| `studentReport.isOrphan` | Is Orphan |
-| `studentReport.loadingStudents` | Loading students... |
-| `studentReport.locationInformation` | Location Information |
-| `studentReport.male` | Male |
-| `studentReport.nationality` | Nationality |
-| `studentReport.noStudentsFound` | No students found. |
-| `studentReport.originLocation` | Origin Location |
-| `studentReport.personalInformation` | Personal Information |
-| `studentReport.previousSchool` | Previous School |
-| `studentReport.relation` | Relation |
-| `studentReport.reportExported` | Report exported as |
-| `studentReport.school` | School |
-| `studentReport.schoolRequired` | A school is required to export the report. |
-| `studentReport.studentId` | ID |
-| `studentReport.withdrawn` | Withdrawn |
-| `studentReportCard.academicPerformance` | Academic Performance |
-| `studentReportCard.achievements` | Achievements & Awards |
-| `studentReportCard.admissionDate` | Admission Date |
-| `studentReportCard.certificates` | Certificates |
-| `studentReportCard.classTeacher` | Class Teacher |
-| `studentReportCard.dateIssued` | Date of Issue |
-| `studentReportCard.dateOfBirth` | Date of Birth |
-| `studentReportCard.generating` | Generating Report Card... |
-| `studentReportCard.grade` | Grade |
-| `studentReportCard.grandTotal` | Grand Total |
-| `studentReportCard.maxMarks` | Max Marks |
-| `studentReportCard.motherName` | Mother's Name |
-| `studentReportCard.noExamsFound` | No exams found for this student |
-| `studentReportCard.noRemarks` | No remarks provided |
-| `studentReportCard.overallGrade` | Overall Grade |
-| `studentReportCard.overallPercentage` | Overall Percentage |
-| `studentReportCard.overallResult` | Overall Result |
-| `studentReportCard.parent` | Parent/Guardian |
-| `studentReportCard.percentage` | Percentage |
-| `studentReportCard.principal` | Principal |
-| `studentReportCard.printCard` | Print Report Card |
-| `studentReportCard.selectStudentPrompt` | Choose a student to generate their report card |
-| `studentReportCard.selectTemplate` | Select Template |
-| `studentReportCard.signatures` | Signatures |
-| `studentReportCard.studentPhoto` | Student Photo |
-| `studentReportCard.subjectName` | Subject Name |
-| `studentReportCard.teacherRemarks` | Class Teacher's Remarks |
-
 ### `pages/students/students.ar.ts` (AR)
 
 | Key | Value |
@@ -3094,289 +1612,7 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `students.studentCode` | student Code |
 | `students.validate` | validate |
 
-### `pages/students/students.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `students.academicInfo` | Academic Information |
-| `students.academicYear` | Academic Year |
-| `students.academicYearOptional` | Academic year (optional) |
-| `students.academicYearRequiredForClassTemplates` | Academic year is required when selecting classes. |
-| `students.achievements` | Achievements |
-| `students.achievementsPlaceholder` | Any achievements or awards |
-| `students.acrossSelected` | Across selected organization |
-| `students.actions` | Actions |
-| `students.actionTaken` | Action Taken |
-| `students.actionTakenPlaceholder` | What action was taken |
-| `students.active` | Active |
-| `students.add` | Register Student |
-| `students.addDescription` | Capture admission details with guardian and residency information. |
-| `students.addDisciplineRecord` | Add Record |
-| `students.addHistory` | Add History |
-| `students.address` | Address |
-| `students.addressInfo` | Address Information |
-| `students.dateOfBirth` | Date of Birth |
-| `students.admissionDefaults` | Admission defaults (per class sheet) |
-| `students.admissionDefaultsHint` | These will be applied automatically during import so users don’t need to ente... |
-| `students.admissionFeeStatus` | Admission Fee Status |
-| `students.admissionFields` | Admission fields |
-| `students.admissionFieldsHint` | For class-specific templates, class + academic-year context is embedded autom... |
-| `students.admissionInfo` | Admission Information |
-| `students.admissionNumber` | Admission # |
-| `students.admissionYear` | Admission Year |
-| `students.admitted` | Admitted |
-| `students.age` | Age |
-| `students.allClasses` | All Classes |
-| `students.allGenders` | All Genders |
-| `students.allSchools` | All Schools |
-| `students.applied` | Applied |
-| `students.applyingGrade` | Applying Grade |
-| `students.approvalAdmission` | The mentioned student was admitted to grade |
-| `students.approvalDate` | Admission Date: |
-| `students.approvalFee` | Admission Fee: |
-| `students.approvalSignature` | Administrator Signature: |
-| `students.approvalStamp` | Stamp |
-| `students.approvalTitle` | Approval |
-| `students.backToStudents` | Back to Students |
-| `students.birthDate` | Birth Date |
-| `students.birthYear` | Birth Year |
-| `students.class` | Class |
-| `students.classSection` | Class/Section |
-| `students.classTemplates` | Class templates (optional) |
-| `students.cnic` | CNIC |
-| `students.commitmentsTitle` | Commitments, Guarantee & Approval |
-| `students.commitmentText1` | I will follow all school rules |
-| `students.commitmentText2` | I will follow Islamic laws in addition to school rules |
-| `students.commitmentText3` | I will respect all teachers and staff and protect school property |
-| `students.commitmentText4` | I accept any decision by the administration for violations or absences |
-| `students.commitmentText5` | I will follow school rules regarding mobile phones, and the school has the ri... |
-| `students.commitmentText6` | I authorize the school principal or deputy to act on my behalf in zakat, char... |
-| `students.commitmentTitle` | Commitment |
-| `students.contact` | Contact |
-| `students.currentAddress` | Current Address |
-| `students.currentDistrict` | Current District |
-| `students.currentProvince` | Current Province |
-| `students.currentVillage` | Current Village |
-| `students.defaultResidencyType` | Default Residency Type |
-| `students.defaultRoom` | Default Room |
-| `students.deleteDisciplineConfirm` | Are you sure you want to delete this discipline record? This action cannot be... |
-| `students.deleteDisciplineRecord` | Delete Discipline Record |
-| `students.deleteDocument` | Delete Document |
-| `students.deleteDocumentConfirm` | Are you sure you want to delete this document? This action cannot be undone. |
-| `students.deleteHistory` | Delete Educational History |
-| `students.deleteHistoryConfirm` | Are you sure you want to delete this educational history record? This action ... |
-| `students.deleteStudent` | Delete |
-| `students.deleteStudentDescription` | Removing this student will keep the audit trail but hide it from admissions l... |
-| `students.deleteStudentRecord` | Delete student record? |
-| `students.description` | Description |
-| `students.disabilityStatus` | Disability Status |
-| `students.disciplineDescriptionPlaceholder` | Describe the incident |
-| `students.disciplinePending` | Pending |
-| `students.disciplineRecordFormDescription` | Enter the discipline record details |
-| `students.disciplineRecords` | Discipline Records |
-| `students.disciplineRecordsDescription` | View and manage discipline records for |
-| `students.documents` | Documents |
-| `students.documentsDescription` | Manage documents for |
-| `students.documentType` | Document Type |
-| `students.documentTypePlaceholder` | e.g., Birth Certificate, Tazkira |
-| `students.downloadDocumentError` | Failed to download document |
-| `students.downloadTemplate` | Download Template |
-| `students.editDisciplineRecord` | Edit Discipline Record |
-| `students.editHistory` | Edit Educational History |
-| `students.editStudent` | Edit Student |
-| `students.educationalHistory` | Educational History |
-| `students.educationalHistoryDescription` | View and manage educational history for |
-| `students.educationalHistoryFormDescription` | Enter the educational history details |
-| `students.email` | Email |
-| `students.emergencyContactName` | Emergency Contact Name |
-| `students.emergencyContactPhone` | Emergency Contact Phone |
-| `students.emergencyInfo` | Emergency & Special Information |
-| `students.enrolledStudents` | Enrolled Students |
-| `students.enrollmentStatus` | Enrollment Status |
-| `students.familyIncome` | Family Income / Support Details |
-| `students.father` | Father |
-| `students.fee` | Fee |
-| `students.feeStatus` | Fee status |
-| `students.female` | Female |
-| `students.field` | Field |
-| `students.fileName` | File Name |
-| `students.fileSize` | Size |
-| `students.financialInfo` | Financial & Support Information |
-| `students.gender` | Gender |
-| `students.grade` | Grade |
-| `students.gradeLevel` | Grade Level |
-| `students.graduated` | Graduated |
-| `students.grandfatherName` | Grandfather Name |
-| `students.guaranteeText` | The mentioned conditions and regulations are correct according to my knowledg... |
-| `students.guaranteeTitle` | Guarantee |
-| `students.guarantorInfo` | Guarantor (Zamin) Information |
-| `students.guarantorSignature` | Guarantor Signature |
-| `students.guardian` | Guardian |
-| `students.guardianInfo` | Guardian Information |
-| `students.guardianName` | Guardian Name |
-| `students.guardianPhone` | Guardian Phone |
-| `students.guardianPhoto` | Guardian Photo |
-| `students.guardianPicturePath` | Guardian Picture Path |
-| `students.guardianTazkira` | Guardian Tazkira |
-| `students.hasParents` | Has parents |
-| `students.health` | Health Information |
-| `students.homeAddress` | Home Address |
-| `students.hostel` | Hostel |
-| `students.idNumber` | ID Number |
-| `students.imageLoadError` | Failed to load image |
-| `students.importLimited` | Your file contains {validRows} valid rows, but only {remaining} student slot(... |
-| `students.importNow` | Import |
-| `students.importRulesHint` | If admission_no is blank, the system will auto-generate student_code and use ... |
-| `students.importSubtitle` | Create a template, fill it in Excel, then upload to import students in bulk. |
-| `students.importTitle` | Bulk Import Students |
-| `students.inactive` | Inactive |
-| `students.incidentDate` | Incident Date |
-| `students.incidentType` | Incident Type |
-| `students.incidentTypePlaceholder` | e.g., Tardiness, Fighting |
-| `students.institutionName` | Institution Name |
-| `students.institutionPlaceholder` | School or institution name |
-| `students.invalid` | Invalid |
-| `students.limitReached` | Student limit reached. Please upgrade your plan to import more students. |
-| `students.limitWarning` | Warning: Only {remaining} student slot(s) remaining. Only the first {remainin... |
-| `students.list` | Student Registrations |
-| `students.listDescription` | Search, filter and update admissions. |
-| `students.male` | Male |
-| `students.management` | Students Management |
-| `students.markResolved` | Mark Resolved |
-| `students.message` | Message |
-| `students.name` | Name |
-| `students.nationality` | Nationality |
-| `students.needingSpecial` | Needing special care |
-| `students.noClassesForYear` | No classes/sections found for this academic year. |
-| `students.noCurrentAddress` | No current address recorded |
-| `students.noDataFound` | No data found. |
-| `students.noDisciplineRecords` | No discipline records |
-| `students.noDocuments` | No documents uploaded yet |
-| `students.noDocumentToView` | No document to view |
-| `students.noEducationalHistory` | No educational history recorded |
-| `students.noEmergencyInfo` | No emergency information recorded |
-| `students.noFinancialInfo` | No financial information recorded |
-| `students.noGuarantorInfo` | No guarantor information recorded |
-| `students.noGuardianInfo` | No guardian information recorded |
-| `students.noImage` | No Image |
-| `students.noOriginAddress` | No origin address recorded |
-| `students.noStudents` | No students |
-| `students.noStudentsFound` | No students found |
-| `students.notes` | Notes |
-| `students.notesPlaceholder` | Additional notes |
-| `students.organization` | Organization |
-| `students.originAddress` | Origin Address |
-| `students.originDistrict` | Origin District |
-| `students.originProvince` | Origin Province |
-| `students.originVillage` | Origin Village |
-| `students.orphan` | Orphan |
-| `students.orphans` | Orphans |
-| `students.orphanStatus` | Orphan Status |
-| `students.otherInfo` | Other Information |
-| `students.paid` | Paid |
-| `students.partial` | Partial |
-| `students.pdfLoadError` | Failed to load PDF |
-| `students.pending` | Pending |
-| `students.period` | Period |
-| `students.personalInfo` | Personal Information |
-| `students.phone` | Phone |
-| `students.picture` | Picture |
-| `students.potentialDuplicate` | Potential duplicate found |
-| `students.preferredLanguage` | Preferred Language |
-| `students.previousSchool` | Previous School |
-| `students.printProfile` | Print Profile |
-| `students.printTitle` | Print title |
-| `students.proceedCreate` | Do you still want to proceed creating a new record? |
-| `students.registeredFemale` | Registered female students |
-| `students.registeredMale` | Registered male students |
-| `students.registrationNumber` | Registration number |
-| `students.relation` | Relation |
-| `students.resolved` | Resolved |
-| `students.results` | results |
-| `students.rollNo` | Roll No. |
-| `students.rollNumber` | Roll Number |
-| `students.row` | Row |
-| `students.rows` | Rows |
-| `students.school` | School |
-| `students.section` | Section |
-| `students.selectAcademicYear` | Select academic year |
-| `students.selectAcademicYearForClasses` | Select an academic year to load class sections. |
-| `students.selectGender` | Select gender |
-| `students.selectPicture` | Select Picture |
-| `students.selectXlsx` | Select .xlsx file |
-| `students.severity` | Severity |
-| `students.severityMajor` | Major |
-| `students.severityMinor` | Minor |
-| `students.severityModerate` | Moderate |
-| `students.severitySevere` | Severe |
-| `students.sheet` | Sheet |
-| `students.stamp` | Stamp |
-| `students.student` | Student |
-| `students.studentDocuments` | Student Documents |
-| `students.studentFields` | Student fields |
-| `students.studentId` | Student ID |
-| `students.studentPicture` | Student Picture |
-| `students.studentProfile` | Student Profile |
-| `students.students` | Students |
-| `students.subtitle` | Manage admissions with complete Afghan student records |
-| `students.suspended` | Suspended |
-| `students.tazkiraNumber` | Tazkira Number |
-| `students.templateBuilder` | Template Builder |
-| `students.templateFieldsHint` | Choose which columns you want. The downloaded Excel will use friendly column ... |
-| `students.title` | Students |
-| `students.total` | Total Students |
-| `students.viewAll` | View All |
-| `students.totalStudents` | Total Students |
-| `students.transferred` | Transferred |
-| `students.unsupportedFileType` | This file type cannot be previewed. Please download to view. |
-| `students.updateDescription` | Update registration and guardian details. |
-| `students.uploadDate` | Upload Date |
-| `students.uploadDisabled` | File upload is disabled because the student limit has been reached. |
-| `students.uploadDocument` | Upload Document |
-| `students.uploadDocumentDescription` | Upload a document for this student |
-| `students.uploadImport` | Upload & Import |
-| `students.uploadImportHint` | Validate first to see errors, then import. |
-| `students.valid` | Valid |
-| `students.validateFile` | Validate |
-| `students.validationSummary` | Validation summary |
-| `students.validRows` | Valid rows |
-| `students.viewDocumentDescription` | View document details and content |
-| `students.viewDocumentError` | Failed to load document |
-| `students.viewHistory` | View History |
-| `students.viewProfile` | View Profile |
-| `students.waived` | Waived |
-| `students.wasAdmitted` | was admitted. |
-| `students.willBeUploadedOnSave` | (will be uploaded on save) |
-| `students.withdrawn` | Withdrawn |
-| `students.zaminAddress` | Zamin Address |
-| `students.zaminName` | Zamin/Guarantor Name |
-| `students.zaminPhone` | Zamin Phone |
-| `students.zaminTazkira` | Zamin Tazkira |
-| `students.isOrphan` | is Orphan |
-| `students.province` | province |
-| `students.district` | district |
-| `students.village` | village |
-| `students.guardianRelation` | guardian Relation |
-| `students.studentCode` | student Code |
-| `students.validate` | validate |
-| `students.fullName` | Full Name |
-| `students.firstName` | First Name |
-| `students.lastName` | Last Name |
-| `students.fatherName` | Father Name |
-| `students.motherName` | Mother Name |
-| `students.cardNumber` | Card Number |
-| `students.searchPlaceholder` | Search students... |
-| `students.status` | Status |
-
 ### `pages/subjects/subjects.ar.ts` (AR)
-
-| Key | Value |
-|-----|-------|
-| `subjects.all` | all |
-| `subjects.subject` | subject |
-| `subjects.noSubjects` | no Subjects |
-
-### `pages/subjects/subjects.fa.ts` (FA)
 
 | Key | Value |
 |-----|-------|
@@ -3390,225 +1626,10 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 |-----|-------|
 | `subscription.enterpriseContact.contactEmailPlaceholder` | your@email.com |
 
-### `pages/subscription/subscription.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `subscription.accountBlocked` | Account Blocked |
-| `subscription.approachingLimit` | Approaching Limit |
-| `subscription.approachingLimits` | You are approaching some usage limits. |
-| `subscription.cannotCreateMore` | You have reached the maximum limit for this resource. Upgrade your plan to cr... |
-| `subscription.cannotMakeChanges` | You can view data but cannot make changes. Renew your subscription to restore... |
-| `subscription.currentPlan` | Current plan |
-| `subscription.daysLeftToRenew` | days left to renew. |
-| `subscription.featureNotAvailable` | Feature Not Available |
-| `subscription.featureNotAvailableMessage` | This feature is not available on your current plan. |
-| `subscription.genericError` | A subscription error occurred. Please check your subscription status. |
-| `subscription.gracePeriod` | Grace Period |
-| `subscription.isNotIncluded` | is not included in your current plan. |
-| `subscription.limitReached` | Limit Reached |
-| `subscription.limitReachedCantCreate` | Limit reached. Cannot create more. |
-| `subscription.limitReachedMessage` | You have reached the limit for this resource. Please upgrade your plan. |
-| `subscription.manageSubscription` | Manage |
-| `subscription.noSubscription` | No active subscription. Please subscribe to access this feature. |
-| `subscription.purchaseAddon` | Purchase Add-on |
-| `subscription.readAccessDenied` | Your subscription has expired. Please renew to access your data. |
-| `subscription.readOnlyMode` | Read-Only Mode |
-| `subscription.renewNow` | Renew now to continue full access. |
-| `subscription.subscriptionExpired` | Your subscription has expired. |
-| `subscription.trialEnding` | Your trial is ending soon. Upgrade to continue. |
-| `subscription.trialEndsIn` | Trial ends in |
-| `subscription.trialPeriod` | Trial Period |
-| `subscription.upgrade` | Upgrade |
-| `subscription.upgradePlan` | Upgrade Plan |
-| `subscription.upgradeToKeepAccess` | Upgrade to keep full access. |
-| `subscription.usageLimitsWarning` | Usage Limits Warning |
-| `subscription.usageWarningMessage` | You are approaching the usage limit for this resource. |
-| `subscription.used` | used |
-| `subscription.viewFeatures` | View Features |
-| `subscription.writeAccessDenied` | Your subscription does not allow write access. Please renew to make changes. |
-| `subscription.subscriptionManagement` | Subscription Management |
-| `subscription.yourSubscriptionStatus` | Your subscription status and billing information |
-| `subscription.licenseFee` | License Fee |
-| `subscription.licenseFeeDescription` | One-time license fee required to access the software |
-| `subscription.licenseFeeStatus` | License Fee Status |
-| `subscription.licenseUnpaid` | License Unpaid |
-| `subscription.licenseUnpaidDescription` | You need to pay the license fee to access the software. Please contact your p... |
-| `subscription.licensePaymentHistory` | History of your license fee payments |
-| `subscription.payLicense` | Pay License Fee |
-| `subscription.status` | Status |
-| `subscription.viewLicenseHistory` | View License History |
-| `subscription.maintenanceFee` | Maintenance Fee |
-| `subscription.maintenanceFeeDescription` | Annual maintenance fee for software updates and support |
-| `subscription.maintenanceFees` | Maintenance Fees |
-| `subscription.maintenanceFeeStatus` | Maintenance Fee Status |
-| `subscription.nextMaintenanceDue` | Next Maintenance Due |
-| `subscription.noMaintenanceDue` | No Maintenance Due |
-| `subscription.daysUntilDue` | Days Until Due |
-| `subscription.lastPaid` | Last Paid |
-| `subscription.lastMaintenancePaid` | Last Maintenance Paid |
-| `subscription.billingPeriod` | Billing Period |
-| `subscription.viewMaintenanceInvoices` | View Maintenance Invoices |
-| `subscription.maintenanceInvoices` | Maintenance Invoices |
-| `subscription.maintenanceInvoicesDescription` | View and manage your maintenance fee invoices |
-| `subscription.paymentHistory` | Payment History |
-| `subscription.maintenancePaymentHistory` | Maintenance Payment History |
-| `subscription.noInvoices` | No invoices found |
-| `subscription.noPaymentHistory` | No payment history found |
-| `subscription.enterpriseContact.title` | Contact Us for Enterprise Plan |
-| `subscription.enterpriseContact.description` | Fill out the form below and our team will contact you to discuss your Enterpr... |
-| `subscription.enterpriseContact.organizationName` | Organization Name |
-| `subscription.enterpriseContact.organizationNamePlaceholder` | Your organization name |
-| `subscription.enterpriseContact.schoolName` | School Name |
-| `subscription.enterpriseContact.schoolNamePlaceholder` | Main school name |
-| `subscription.enterpriseContact.contactName` | Contact Person Name |
-| `subscription.enterpriseContact.contactNamePlaceholder` | Your full name |
-| `subscription.enterpriseContact.contactEmail` | Email Address |
-| `subscription.enterpriseContact.contactEmailPlaceholder` | your@email.com |
-| `subscription.enterpriseContact.contactPhone` | Phone Number |
-| `subscription.enterpriseContact.contactWhatsApp` | WhatsApp Number |
-| `subscription.enterpriseContact.contactPosition` | Position |
-| `subscription.enterpriseContact.contactPositionPlaceholder` | e.g., Principal, Administrator |
-| `subscription.enterpriseContact.numberOfSchools` | Number of Schools |
-| `subscription.enterpriseContact.studentCount` | Estimated Student Count |
-| `subscription.enterpriseContact.staffCount` | Estimated Staff Count |
-| `subscription.enterpriseContact.city` | City |
-| `subscription.enterpriseContact.cityPlaceholder` | Your city |
-| `subscription.enterpriseContact.country` | Country |
-| `subscription.enterpriseContact.countryPlaceholder` | Your country |
-| `subscription.enterpriseContact.organizationNeeds` | Organization Needs & Requirements |
-| `subscription.enterpriseContact.organizationNeedsPlaceholder` | Please describe your organization's specific needs, requirements, and any que... |
-| `subscription.enterpriseContact.submit` | Submit Request |
-| `subscription.enterpriseContact.submitting` | Submitting... |
-| `subscription.enterpriseContact.submitted` | Thank you! We will contact you soon. |
-| `subscription.enterpriseContact.submitFailed` | Failed to submit request. Please try again. |
-
-### `pages/teacher-subject-assignments/teacherSubjectAssignments.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `teacherSubjectAssignments.title` | Teacher Subject Assignments |
-| `teacherSubjectAssignments.subtitle` | Assign teachers to subjects for specific classes |
-| `teacherSubjectAssignments.academicYear` | Academic Year |
-| `teacherSubjectAssignments.academicYearRequired` | Academic year is required |
-| `teacherSubjectAssignments.allTeachers` | All Teachers |
-| `teacherSubjectAssignments.assignmentDetailsReadOnly` | Assignment details are read-only. To change teacher, class, or academic year,... |
-| `teacherSubjectAssignments.classesRequired` | At least one class is required |
-| `teacherSubjectAssignments.createAssignment` | Create Assignment |
-| `teacherSubjectAssignments.createAssignments` | Create Assignments |
-| `teacherSubjectAssignments.deleteAssignment` | Delete Assignment |
-| `teacherSubjectAssignments.editDialogTitle` | Edit Teacher Assignment |
-| `teacherSubjectAssignments.errorLoadingStaff` | Error loading staff |
-| `teacherSubjectAssignments.filterByAcademicYear` | Filter by Academic Year |
-| `teacherSubjectAssignments.filterByTeacher` | Filter by Teacher |
-| `teacherSubjectAssignments.loadingAssignments` | Loading assignments... |
-| `teacherSubjectAssignments.loadingStaff` | Loading staff... |
-| `teacherSubjectAssignments.noActiveStaff` | No active staff found |
-| `teacherSubjectAssignments.noActiveStaffMessage` | No active staff members found. Please add staff members first. |
-| `teacherSubjectAssignments.noAssignmentsAvailable` | No assignments available. Create your first assignment. |
-| `teacherSubjectAssignments.noAssignmentsFound` | No assignments found matching your search |
-| `teacherSubjectAssignments.noClassesFound` | No classes found for the selected academic year |
-| `teacherSubjectAssignments.noScheduleSlotsFound` | No schedule slots found |
-| `teacherSubjectAssignments.noStaffData` | No staff data available |
-| `teacherSubjectAssignments.noSubjectsFound` | No subjects found |
-| `teacherSubjectAssignments.notesOptional` | Notes (Optional) |
-| `teacherSubjectAssignments.notesPlaceholder` | Enter any additional notes... |
-| `teacherSubjectAssignments.organizationIdRequired` | Organization ID is required |
-| `teacherSubjectAssignments.pleaseCompleteStep1` | Please complete Step 1 first |
-| `teacherSubjectAssignments.pleaseSelectAcademicYear` | Please select an academic year |
-| `teacherSubjectAssignments.pleaseSelectAtLeastOneClass` | Please select at least one class |
-| `teacherSubjectAssignments.pleaseSelectAtLeastOneClassAndSlot` | Please select at least one class and schedule slot |
-| `teacherSubjectAssignments.pleaseSelectAtLeastOneScheduleSlot` | Please select at least one schedule slot |
-| `teacherSubjectAssignments.pleaseSelectAtLeastOneSubject` | Please select at least one subject |
-| `teacherSubjectAssignments.pleaseSelectAtLeastOneSubjectToAssign` | Please select at least one subject to assign |
-| `teacherSubjectAssignments.pleaseSelectTeacher` | Please select a teacher |
-| `teacherSubjectAssignments.scheduleSlots` | Schedule Slots |
-| `teacherSubjectAssignments.scheduleSlotsRequired` | At least one schedule slot is required |
-| `teacherSubjectAssignments.schoolOptional` | School (Optional) |
-| `teacherSubjectAssignments.selectAcademicYear` | Select academic year |
-| `teacherSubjectAssignments.selectSubjects` | Select Subjects |
-| `teacherSubjectAssignments.selectSubjectsDescription` | Choose the subjects to assign to this teacher for the selected classes |
-| `teacherSubjectAssignments.selectTeacher` | Select teacher |
-| `teacherSubjectAssignments.subject` | Subject |
-| `teacherSubjectAssignments.teacher` | Teacher |
-| `teacherSubjectAssignments.teacherAndClasses` | Teacher and Classes |
-| `teacherSubjectAssignments.teacherAndClassesDescription` | Select a teacher and the classes they will teach |
-| `teacherSubjectAssignments.teacherRequired` | Teacher is required |
-| `teacherSubjectAssignments.unknownClass` | Unknown Class |
-| `teacherSubjectAssignments.unknownSubject` | Unknown Subject |
-| `teacherSubjectAssignments.unknownYear` | Unknown Year |
-| `teacherSubjectAssignments.updateAssignment` | Update Assignment |
-| `teacherSubjectAssignments.updateAssignmentDetails` | Update Assignment Details |
-
 ### `pages/timetable/timetable.ar.ts` (AR)
 
 | Key | Value |
 |-----|-------|
-| `timetable.period` | period |
-| `timetable.time` | time |
-| `timetable.subject` | subject |
-
-### `pages/timetable/timetable.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `timetable.academicYearLabel` | Academic Year |
-| `timetable.allYear` | All Year |
-| `timetable.class` | Class |
-| `timetable.classView` | Class View |
-| `timetable.current` | Current |
-| `timetable.description` | Description |
-| `timetable.dragToMove` | Drag to move |
-| `timetable.entries` | entries |
-| `timetable.entryMovedSuccessfully` | Timetable entry moved successfully |
-| `timetable.generate` | Generate |
-| `timetable.generatedSuccessfully` | Timetable generated successfully with {count} scheduled entries. |
-| `timetable.generatedWithUnscheduled` | Timetable generated, but {count} assignment(s) could not be scheduled. |
-| `timetable.generateFailed` | Failed to generate timetable: {error} |
-| `timetable.generatingTimetable` | Generating timetable... This may take a few seconds. |
-| `timetable.load` | Load Timetable |
-| `timetable.loadDesc` | Select a saved timetable to load. |
-| `timetable.loadedSuccessfully` | Timetable loaded successfully |
-| `timetable.loadError` | Error loading timetables: {error} |
-| `timetable.loadingTimetables` | Loading timetables... |
-| `timetable.moveConflictError` | Cannot move: This would create a conflict with another assignment |
-| `timetable.name` | Name |
-| `timetable.noAssignmentsFound` | No teacher-subject assignments found for the selected classes. Please assign ... |
-| `timetable.noAssignmentsToSchedule` | No assignments to schedule |
-| `timetable.noClassesFound` | No classes found for this academic year |
-| `timetable.noClassesWithAssignments` | No classes with teacher-subject assignments found for this academic year |
-| `timetable.noEntriesToSave` | No entries to save. Please generate a timetable first. |
-| `timetable.noSavedTimetables` | No saved timetables found for this organization. |
-| `timetable.noSlotsSelected` | No schedule slots selected. Please select periods to view the timetable. |
-| `timetable.noTimetableToPrint` | No timetable to print. Please generate a timetable first. |
-| `timetable.noValidSlotsFound` | No valid schedule slots found. Please ensure all selected slots have start an... |
-| `timetable.parseDropTargetError` | Failed to parse drop target. Please try again. |
-| `timetable.periods` | Periods |
-| `timetable.print` | Print |
-| `timetable.results` | Results |
-| `timetable.save` | Save Timetable |
-| `timetable.saveDesc` | Provide a name and optional description for this timetable. |
-| `timetable.saveFailed` | Failed to save timetable: {error} |
-| `timetable.saveValidationError` | Cannot save: {count} entry/entries have missing required fields. |
-| `timetable.selectAcademicYear` | Select Academic Year |
-| `timetable.selectAcademicYearBeforeSave` | Please select an academic year before saving. |
-| `timetable.selectAcademicYearError` | Please select an academic year |
-| `timetable.selectAcademicYearHint` | Please select an academic year to view classes |
-| `timetable.selectAtLeastOneClass` | Please select at least one class |
-| `timetable.selectAtLeastOneDay` | Please select at least one day |
-| `timetable.selectAtLeastOnePeriod` | Please select at least one period |
-| `timetable.selectClasses` | Select Classes |
-| `timetable.selectDays` | Select Days |
-| `timetable.selectPeriods` | Select Periods |
-| `timetable.selectTeacher` | Select Teacher |
-| `timetable.showOnlyClassesWithAssignments` | Show only classes with assignments |
-| `timetable.summary` | Select classes, days, and periods, then click Generate. |
-| `timetable.teacher` | Teacher |
-| `timetable.teacherPreferences` | Teacher Preferences |
-| `timetable.teacherPreferencesDesc` | Mark slots the selected teacher cannot teach (blocked periods). |
-| `timetable.teacherView` | Teacher View |
-| `timetable.title` | Timetable Generation |
-| `timetable.unscheduledNotice` | assignments could not be scheduled |
 | `timetable.period` | period |
 | `timetable.time` | time |
 | `timetable.subject` | subject |
@@ -3619,127 +1640,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 |-----|-------|
 | `userManagement.emailPlaceholder` | john@example.com |
 | `userManagement.na` | N/A |
-
-### `pages/user-management/userManagement.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `userManagement.title` | User Management |
-| `userManagement.subtitle` | Manage user accounts, roles, and permissions |
-| `userManagement.management` | User Management |
-| `userManagement.addUser` | Add User |
-| `userManagement.editUser` | Edit User |
-| `userManagement.deleteUser` | Delete User |
-| `userManagement.fullName` | Full Name |
-| `userManagement.fullNameRequired` | Full Name * |
-| `userManagement.fullNameMaxLength` | Full name must be 255 characters or less |
-| `userManagement.fullNamePlaceholder` | John Doe |
-| `userManagement.email` | Email |
-| `userManagement.emailRequired` | Email * |
-| `userManagement.emailPlaceholder` | john@example.com |
-| `userManagement.invalidEmail` | Invalid email address |
-| `userManagement.password` | Password |
-| `userManagement.passwordRequired` | Password * |
-| `userManagement.passwordMinLength` | Password must be at least 8 characters |
-| `userManagement.passwordPlaceholder` | Minimum 8 characters |
-| `userManagement.role` | Role |
-| `userManagement.roleRequired` | Role * |
-| `userManagement.selectRole` | Select role |
-| `userManagement.defaultSchool` | Default School |
-| `userManagement.selectOne` | (Select one) |
-| `userManagement.autoSelected` | (Auto-selected) |
-| `userManagement.selectSchool` | Select school |
-| `userManagement.noDefaultSchool` | No Default School |
-| `userManagement.defaultSchoolDescription` | User will be assigned to the selected school. When they create buildings/room... |
-| `userManagement.onlyOneSchoolDescription` | Only one school available. User will be automatically assigned to this school. |
-| `userManagement.staffMember` | Staff Member |
-| `userManagement.staffMemberOptional` | Staff Member (Optional) |
-| `userManagement.selectStaffMember` | Select staff member |
-| `userManagement.noStaffMember` | No Staff Member |
-| `userManagement.staffMemberDescription` | Link this user to a staff member. The staff member's avatar will be displayed... |
-| `userManagement.schoolsAccessAll` | Allow access to all schools in organization |
-| `userManagement.schoolsAccessAllDescription` | If checked, user can access all schools. Otherwise, access is restricted to d... |
-| `userManagement.phone` | Phone |
-| `userManagement.searchPlaceholder` | Search by name, email, or role... |
-| `userManagement.noUsersFound` | No users found |
-| `userManagement.noUsersMessage` | No users found |
-| `userManagement.userCreated` | User created successfully |
-| `userManagement.userUpdated` | User updated successfully |
-| `userManagement.userDeleted` | User deleted successfully |
-| `userManagement.deleteConfirm` | Delete User |
-| `userManagement.deleteConfirmDescription` | Are you sure you want to delete {name}? This action cannot be undone. |
-| `userManagement.resetPassword` | Reset Password |
-| `userManagement.resetPasswordConfirm` | Reset Password |
-| `userManagement.resetPasswordDescription` | Enter a new password for {name} |
-| `userManagement.resetting` | Resetting... |
-| `userManagement.newPassword` | New Password |
-| `userManagement.passwordReset` | Password reset successfully |
-| `userManagement.active` | Active |
-| `userManagement.inactive` | Inactive |
-| `userManagement.allRoles` | All Roles |
-| `userManagement.allStatus` | All Status |
-| `userManagement.allStatuses` | All Statuses |
-| `userManagement.status` | Status |
-| `userManagement.name` | Name |
-| `userManagement.actions` | Actions |
-| `userManagement.noName` | No name |
-| `userManagement.noEmail` | No email |
-| `userManagement.na` | N/A |
-| `userManagement.updateUserInformation` | Update user information |
-| `userManagement.createNewUserAccount` | Create a new user account |
-| `userManagement.createUser` | Create User |
-| `userManagement.create` | Create |
-| `userManagement.update` | Update |
-| `userManagement.cancel` | Cancel |
-| `userManagement.exportCsv` | Export CSV |
-| `userManagement.totalUsers` | Total Users |
-| `userManagement.activeUsers` | Active Users |
-| `userManagement.inactiveUsers` | Inactive Users |
-| `userManagement.roles` | Roles |
-| `userManagement.loadingUsers` | Loading users... |
-
-### `pages/user-permissions/userPermissions.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `userPermissions.title` | User Permissions |
-| `userPermissions.subtitle` | Manage roles and individual permissions for system users |
-| `userPermissions.accessDenied` | Access Denied |
-| `userPermissions.assignRole` | Assign Role |
-| `userPermissions.assignSpecificPermissions` | Assign specific permissions to this user |
-| `userPermissions.currentRoles` | Current Roles |
-| `userPermissions.directPermissions` | Direct Permissions |
-| `userPermissions.directPermissionsDescription` | Assign specific permissions directly to this user (overrides role permissions) |
-| `userPermissions.failedToAssignRole` | Failed to assign role |
-| `userPermissions.failedToRemoveRole` | Failed to remove role |
-| `userPermissions.failedToUpdate` | Failed to update permissions |
-| `userPermissions.filterByRole` | Filter by Role |
-| `userPermissions.loadingPermissions` | Loading permissions... |
-| `userPermissions.loadingUserPermissions` | Loading user permissions... |
-| `userPermissions.managePermissions` | Manage Permissions |
-| `userPermissions.managePermissionsDialogDescription` | Assign roles and direct permissions to this user |
-| `userPermissions.managePermissionsDialogTitle` | Manage Permissions for {name} |
-| `userPermissions.manageRolesDescription` | Assign or remove roles for this user |
-| `userPermissions.managingUserPermissionsFor` | Managing user permissions for {name} |
-| `userPermissions.noEmail` | No email |
-| `userPermissions.noName` | No name |
-| `userPermissions.user` | User |
-| `userPermissions.noPermissionMessage` | You do not have permission to manage user permissions |
-| `userPermissions.noPermissionsAvailable` | No permissions available |
-| `userPermissions.noRolesAssigned` | No roles assigned |
-| `userPermissions.permissionAssigned` | Permission assigned successfully |
-| `userPermissions.permissionFromRole` | Permission from role |
-| `userPermissions.permissionRemoved` | Permission removed successfully |
-| `userPermissions.removeRoleConfirm` | Are you sure you want to remove the role "{roleName}" from this user? |
-| `userPermissions.userRoles` | User Roles |
-| `userPermissions.roleStaff` | Staff |
-| `userPermissions.roleAdmin` | Admin |
-| `userPermissions.roleTeacher` | Teacher |
-| `userPermissions.roleAccountant` | Accountant |
-| `userPermissions.roleLibrarian` | Librarian |
-| `userPermissions.roleHostelManager` | Hostel Manager |
-| `userPermissions.roleAssetManager` | Asset Manager |
-| `userPermissions.searchPermissions` | Search by permission or resource... |
 
 ### `pages/watermarks/watermarks.ar.ts` (AR)
 
@@ -3759,54 +1659,7 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 
 | Key | Value |
 |-----|-------|
-| `watermarks.actions` | Actions |
-| `watermarks.active` | Active |
-| `watermarks.addFirstWatermark` | Add Your First Watermark |
-| `watermarks.addWatermark` | Add Watermark |
-| `watermarks.allReports` | All Reports |
-| `watermarks.bottomLeft` | Bottom Left |
-| `watermarks.bottomRight` | Bottom Right |
-| `watermarks.cancel` | Cancel |
-| `watermarks.center` | Center |
-| `watermarks.color` | Color |
-| `watermarks.content` | Content |
-| `watermarks.create` | Create |
-| `watermarks.delete` | Delete |
-| `watermarks.deleteConfirmDescription` | Are you sure you want to delete this watermark? This action cannot be undone. |
-| `watermarks.deleteConfirmTitle` | Delete Watermark |
-| `watermarks.editWatermark` | Edit Watermark |
-| `watermarks.enterFontFamily` | e.g., Arial, Times New Roman |
-| `watermarks.enterReportKey` | Leave empty for all reports, e.g., student_list |
-| `watermarks.enterText` | Enter watermark text |
-| `watermarks.enterWatermarkDetails` | Enter watermark details |
-| `watermarks.fontFamily` | Font Family |
-| `watermarks.image` | Image |
-| `watermarks.imageRequired` | Image is required for image watermarks |
-| `watermarks.inactive` | Inactive |
-| `watermarks.manage` | Manage Watermarks |
-| `watermarks.none` | None |
-| `watermarks.noWatermarks` | No watermarks found |
-| `watermarks.opacity` | Opacity |
-| `watermarks.position` | Position |
-| `watermarks.positionX` | Position X |
-| `watermarks.positionY` | Position Y |
-| `watermarks.repeat` | Repeat |
-| `watermarks.repeatPattern` | Repeat Pattern |
-| `watermarks.repeatX` | Repeat X |
-| `watermarks.repeatY` | Repeat Y |
-| `watermarks.reportKey` | Report |
-| `watermarks.reportKeyHint` | Leave empty to apply to all reports, or specify a report key like "student_list" |
-| `watermarks.rotation` | Rotation |
-| `watermarks.scale` | Scale |
-| `watermarks.status` | Status |
-| `watermarks.subtitle` | Manage watermarks for reports |
-| `watermarks.text` | Text |
-| `watermarks.title` | Watermarks |
-| `watermarks.topLeft` | Top Left |
-| `watermarks.topRight` | Top Right |
-| `watermarks.type` | Type |
-| `watermarks.update` | Update |
-| `watermarks.updateWatermarkInfo` | Update watermark settings |
+| `watermarks.enterFontFamily` | مثلاً: Arial، Times New Roman |
 
 ### `pages/website-admin/websiteAdmin.ar.ts` (AR)
 
@@ -4305,20 +2158,7 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 
 | Key | Value |
 |-----|-------|
-| `websiteAdmin.common.url` | URL |
-| `websiteAdmin.articles.placeholders.slug` | my-article |
-| `websiteAdmin.pages.placeholders.slug` | about-us |
-| `websiteAdmin.navigation.fields.url` | URL |
-| `websiteAdmin.navigation.placeholders.url` | /home |
-| `websiteAdmin.domains.placeholders.domain` | example.com |
 | `websiteAdmin.media.placeholders.videoUrl` | https://www.youtube.com/watch?v=... |
-| `websiteAdmin.media.placeholders.documentUrl` | https://... |
-| `websiteAdmin.fatwas.placeholders.slug` | fatwa-slug |
-| `websiteAdmin.fatwas.placeholders.categorySlug` | category-slug |
-| `websiteAdmin.gallery.placeholders.slug` | gallery-category |
-| `websiteAdmin.courses.placeholders.enrollmentLink` | https://... |
-| `websiteAdmin.library.placeholders.fileUrl` | https://...pdf |
-| `websiteAdmin.scholars.placeholders.email` | name@example.com |
 
 ### `shared/common/common.ar.ts` (AR)
 
@@ -4361,14 +2201,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `common.unread` | Unread |
 | `common.updating` | Updating... |
 | `common.verify` | Verify Certificate |
-
-### `shared/common/common.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `common.na` | N/A |
-| `common.cardView` | card View |
-| `common.tableView` | table View |
 
 ### `shared/errorBoundary/errorBoundary.ar.ts` (AR)
 
@@ -4414,26 +2246,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `footer.termsOfService` | Terms of Service |
 | `footer.trainingVideos` | Training Videos |
 
-### `shared/footer/footer.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `footer.careers` | Careers |
-| `footer.company` | Company |
-| `footer.contactSupport` | Contact Support |
-| `footer.cookiePolicy` | Cookie Policy |
-| `footer.copyright` | © 2026 Nazim School Management System. All rights reserved. |
-| `footer.features` | Features |
-| `footer.helpCenter` | Help Center |
-| `footer.pricing` | Pricing |
-| `footer.product` | Product |
-| `footer.releaseNotes` | Release Notes |
-| `footer.security` | Security |
-| `footer.support` | Support |
-| `footer.systemStatus` | System Status |
-| `footer.tagline` | Empowering educational institutions with modern technology solutions for bett... |
-| `footer.trainingVideos` | Training Videos |
-
 ### `shared/nav/nav.ar.ts` (AR)
 
 | Key | Value |
@@ -4452,198 +2264,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `nav.status.issued` | issued |
 | `nav.nav.reports` | reports |
 
-### `shared/nav/nav.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `nav.academicManagement` | Academic Management |
-| `nav.academicSettings` | Academic Settings |
-| `nav.admissions` | Admissions |
-| `nav.admissionsReport` | Admissions Report |
-| `nav.attendance` | Attendance |
-| `nav.attendanceReports` | Attendance Reports |
-| `nav.attendanceTotalsReport` | Attendance Totals Report |
-| `nav.authentication` | Authentication |
-| `nav.certificateTemplates` | Certificate Templates |
-| `nav.classes` | Classes |
-| `nav.communication` | Communication |
-| `nav.courseAttendance` | Course Attendance |
-| `nav.courseDashboard` | Course Dashboard |
-| `nav.courseDocuments` | Course Documents |
-| `nav.courseReports` | Course Reports |
-| `nav.courses` | Courses |
-| `nav.courseStudents` | Course Students |
-| `nav.dashboard` | Dashboard |
-| `nav.organizationDashboard` | Organization Dashboard |
-| `nav.documents` | Documents |
-| `nav.examAnalytics` | Exam Analytics |
-| `nav.examAttendance` | Exam Attendance |
-| `nav.examEnrollment` | Class and Subject Enrollment |
-| `nav.examInsights` | Exam Insights |
-| `nav.examManagement` | Exam Management |
-| `nav.examMarks` | Exam Marks |
-| `nav.examReports` | Exam Reports |
-| `nav.examRollNumbers` | Roll Numbers |
-| `nav.exams` | Exams |
-| `nav.examSecretNumbers` | Secret Numbers |
-| `nav.examStudentEnrollment` | Student Enrollment |
-| `nav.examTimetables` | Exam Timetables |
-| `nav.graduationCertificates` | Graduation & Certificates |
-| `nav.leaveRequests` | Leave Requests |
-| `nav.questionBank` | Question Bank |
-| `nav.questionsAndPapers` | Questions & Papers |
-| `nav.reports` | Reports |
-| `nav.searchPlaceholder` | Search menu... |
-| `nav.favorites` | Favorites |
-| `nav.recent` | Recent |
-| `nav.noResults` | No results found |
-| `nav.clearSearch` | Clear search |
-| `nav.pinItem` | Pin to favorites |
-| `nav.unpinItem` | Unpin from favorites |
-| `nav.keyboardShortcut` | Press {key} to search |
-| `nav.sections.academic` | Academic |
-| `nav.sections.admin` | Administration |
-| `nav.sections.core` | Core |
-| `nav.sections.finance` | Finance |
-| `nav.sections.operations` | Operations |
-| `nav.settings` | Settings |
-| `nav.schoolsManagement` | Schools Management |
-| `nav.shortTermCourses` | Short Term Courses |
-| `nav.staff` | Staff |
-| `nav.profileManagement` | Profile Management |
-| `nav.permissionsManagement` | Permissions Management |
-| `nav.rolesManagement` | Roles Management |
-| `nav.userPermissions` | User Permissions |
-| `nav.userManagement` | User Management |
-| `nav.reportTemplates` | Report Templates |
-| `nav.staffTypes` | Staff Types |
-| `nav.staffManagement` | Staff Management |
-| `nav.staffReports` | Staff Reports |
-| `nav.studentManagement` | Student Management |
-| `nav.studentReports` | Student Reports |
-| `nav.studentHistory` | Student History |
-| `nav.students` | Students |
-| `nav.studentsImport` | Bulk Import Students |
-| `nav.translations` | Translations |
-| `nav.phoneBook` | Phone Book |
-| `nav.markAttendance` | Mark Attendance |
-| `nav.courseCertificates` | Course Certificates |
-| `nav.leaveReports` | Leave Reports |
-| `nav.events` | Events |
-| `nav.events.all` | All Events |
-| `nav.events.checkin` | Check-in |
-| `nav.events.addGuest` | Add Guest |
-| `nav.events.types` | Event Types |
-| `nav.events.users` | Event Users |
-| `nav.events.export` | Export ID Cards |
-| `nav.websiteManager` | Website Manager |
-| `nav.websiteManager.settings` | Settings |
-| `nav.websiteManager.navigation` | Navigation |
-| `nav.websiteManager.pages` | Pages |
-| `nav.websiteManager.announcements` | Announcements |
-| `nav.websiteManager.courses` | Courses & Programs |
-| `nav.websiteManager.articles` | Articles & Blog |
-| `nav.websiteManager.library` | Library & Books |
-| `nav.websiteManager.events` | Events |
-| `nav.websiteManager.admissions` | Online Admissions |
-| `nav.websiteManager.gallery` | Gallery Albums |
-| `nav.websiteManager.media` | Media Library |
-| `nav.websiteManager.scholars` | Scholars & Staff |
-| `nav.websiteManager.graduates` | Graduates |
-| `nav.websiteManager.donations` | Donations |
-| `nav.websiteManager.fatwas` | Questions & Fatwas |
-| `nav.websiteManager.inbox` | Inbox |
-| `nav.websiteManager.seo` | SEO Tools |
-| `nav.websiteManager.users` | Users & Roles |
-| `nav.websiteManager.audit` | Audit Logs |
-| `nav.websiteManager.openPublicSite` | Open Public Site |
-| `nav.students.management` | Management |
-| `nav.assets` | Assets |
-| `nav.assets.dashboard` | Assets Dashboard |
-| `nav.assets.categories` | Asset Categories |
-| `nav.assets.management` | Asset Management |
-| `nav.assets.assignments` | Asset Assignments |
-| `nav.assets.reports` | Asset Reports |
-| `nav.finance` | Finance |
-| `nav.finance.dashboard` | Dashboard |
-| `nav.finance.accounts` | Accounts |
-| `nav.finance.income` | Income |
-| `nav.finance.incomeCategories` | Income Categories |
-| `nav.finance.expenses` | Expenses |
-| `nav.finance.expenseCategories` | Expense Categories |
-| `nav.finance.projects` | Projects |
-| `nav.finance.donors` | Donors |
-| `nav.finance.financeDocuments` | Finance Documents |
-| `nav.finance.reports` | Reports |
-| `nav.finance.settings` | Settings |
-| `nav.finance.fees` | Fees |
-| `nav.finance.fees.dashboard` | Dashboard |
-| `nav.finance.fees.structures` | Structures |
-| `nav.finance.fees.assignments` | Assignments |
-| `nav.finance.fees.payments` | Payments |
-| `nav.finance.fees.exceptions` | Exceptions |
-| `nav.finance.fees.reports` | Reports |
-| `nav.dms.dashboard` | DMS Dashboard |
-| `nav.dms.incoming` | Incoming |
-| `nav.dms.outgoing` | Outgoing |
-| `nav.dms.issueLetter` | Issue Letter |
-| `nav.dms.issueLetterNav` | Issue Letter |
-| `nav.dms.templates` | Templates |
-| `nav.dms.letterheads` | Letterheads |
-| `nav.dms.letterTypes` | Letter Types |
-| `nav.dms.departments` | Departments |
-| `nav.dms.archive` | Archive |
-| `nav.dms.reports` | Reports |
-| `nav.dms.settings` | Settings |
-| `nav.examDocuments` | Exam Documents |
-| `nav.hostel` | Hostel |
-| `nav.hostel.overview` | Hostel overview |
-| `nav.hostel.reports` | Hostel reports |
-| `nav.buildingsManagement` | Buildings Management |
-| `nav.roomsManagement` | Rooms Management |
-| `nav.library` | Library |
-| `nav.library.dashboard` | Dashboard |
-| `nav.library.categories` | Categories |
-| `nav.library.books` | Books |
-| `nav.library.distribution` | Distribution |
-| `nav.library.reports` | Reports |
-| `nav.idCards` | ID Cards |
-| `nav.idCards.templates` | ID Card Templates |
-| `nav.idCards.assignment` | ID Card Assignment |
-| `nav.idCards.assignment.description` | Assign ID card templates to students and manage card assignments |
-| `nav.idCards.assignment.confirmAssign` | Confirm Assignment |
-| `nav.idCards.assignment.assignToStudents` | Assign ID card to {count} student(s)? |
-| `nav.idCards.assignment.assignTemplate` | Assign Template |
-| `nav.idCards.assignment.regularStudents` | Regular Students |
-| `nav.idCards.assignment.courseStudents` | Course Students |
-| `nav.idCards.export` | ID Card Export |
-| `nav.graduation.batches` | Graduation Batches |
-| `nav.certificates.templates` | Certificate Templates |
-| `nav.certificates.issued` | Issued Certificates |
-| `nav.document-system` | Document System |
-| `nav.timetables` | Timetables |
-| `nav.helpCenter` | Help Center |
-| `nav.academic.classes.title` | Classes |
-| `nav.academic.subjects.title` | Subjects |
-| `nav.teacherSubjectAssignments.title` | Teacher Subject Assignments |
-| `nav.timetable.title` | Timetable Generation |
-| `nav.academic.scheduleSlots.title` | Schedule Slots |
-| `nav.academic.residencyTypes.title` | Residency Types |
-| `nav.academic.academicYears.title` | Academic Years |
-| `nav.examTypes` | Exam Types |
-| `nav.grades.management` | Grades Management |
-| `nav.examPapers` | Exam Papers |
-| `nav.examPaperPrintTracking` | Print Tracking |
-| `nav.consolidatedMarkSheet` | Consolidated Mark Sheet |
-| `nav.classSubjectMarkSheet` | Class Subject Mark Sheet |
-| `nav.studentReportCard` | Student Report Card |
-| `nav.examNumberReports` | Number Reports |
-| `nav.subjects.all` | all |
-| `nav.status.issued` | issued |
-| `nav.nav.reports` | reports |
-| `nav.teacherSubjectAssignments.title` | Teacher assignments |
-| `nav.timetable.title` | Timetables |
-
 ### `shared/notFound/notFound.ar.ts` (AR)
 
 | Key | Value |
@@ -4651,31 +2271,10 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `notFound.goHome` | Go Home |
 | `notFound.message` | The page you are looking for does not exist. |
 
-### `shared/notFound/notFound.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `notFound.title` | Page Not Found |
-| `notFound.goHome` | Go Home |
-| `notFound.message` | The page you are looking for does not exist. |
-
 ### `shared/pagination/pagination.ar.ts` (AR)
 
 | Key | Value |
 |-----|-------|
-| `pagination.filtered` | filtered |
-
-### `shared/pagination/pagination.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `pagination.entries` | entries |
-| `pagination.noEntries` | No entries |
-| `pagination.of` | of |
-| `pagination.rowsPerPage` | Rows per page |
-| `pagination.showing` | Showing |
-| `pagination.to` | to |
-| `pagination.total` | Total |
 | `pagination.filtered` | filtered |
 
 ### `shared/privacyPolicy/privacyPolicy.ar.ts` (AR)
@@ -4728,40 +2327,6 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `resetPassword.requirementUppercase` | Reset Password |
 | `resetPassword.updatePassword` | Reset Password |
 | `resetPassword.updatingPassword` | Reset Password |
-
-### `shared/resetPassword/resetPassword.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `resetPassword.subtitle` | Create a new secure password for your account |
-| `resetPassword.invalidResetLink` | Invalid reset link. Please request a new password reset. |
-| `resetPassword.passwordRequirements` | Password must contain: |
-| `resetPassword.passwordsDoNotMatch` | Passwords do not match |
-| `resetPassword.passwordStrength` | Password Strength |
-| `resetPassword.requirement8Chars` | At least 8 characters |
-| `resetPassword.requirementLowercase` | One lowercase letter |
-| `resetPassword.requirementNumber` | One number |
-| `resetPassword.requirementSpecial` | One special character |
-| `resetPassword.requirementUppercase` | One uppercase letter |
-| `resetPassword.updatePassword` | Update Password |
-| `resetPassword.updatingPassword` | Updating Password... |
-
-### `shared/search/search.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `search.academicYears` | Academic Years |
-| `search.class` | Class |
-| `search.classes` | Classes |
-| `search.code` | Code |
-| `search.employeeId` | Employee ID |
-| `search.placeholder` | Search students, classes, teachers... |
-| `search.position` | Position |
-| `search.schools` | Schools |
-| `search.staff` | Staff |
-| `search.startTyping` | Start typing to search... |
-| `search.students` | Students |
-| `search.subjects` | Subjects |
 
 ### `shared/termsOfService/termsOfService.ar.ts` (AR)
 
@@ -5159,42 +2724,4 @@ Files (ps, fa, ar) that contain string values which look like English instead of
 | `toast.reportGenerationFailed` | report Generation Failed |
 | `toast.reportDownloaded` | report Downloaded |
 | `toast.reportGenerationStarted` | report Generation Started |
-
-### `shared/ui/ui.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `ui.breadcrumb.label` | breadcrumb |
-| `ui.carousel.nextSlide` | Next slide |
-| `ui.sidebar.toggle` | Toggle Sidebar |
-
-### `shared/validation/validation.fa.ts` (FA)
-
-| Key | Value |
-|-----|-------|
-| `validation.ageMax` | Age must be realistic for school |
-| `validation.ageMin` | Age must be at least {min} |
-| `validation.atLeastOneEntryRequired` | At least one entry is required |
-| `validation.currentPasswordRequired` | Current password is required |
-| `validation.endDateAfterStart` | End date must be after or equal to start date |
-| `validation.fieldMaxLength` | {fieldName} must be {max} characters or less |
-| `validation.fieldRequired` | {fieldName} is required |
-| `validation.fileRequired` | File is required |
-| `validation.fileSizeMax` | File size must be less than {maxMB}MB |
-| `validation.fileTypeInvalid` | File type must be one of: {types} |
-| `validation.incidentDateRequired` | Incident date is required |
-| `validation.invalidClassInstance` | Invalid class instance |
-| `validation.invalidScheduleSlot` | Invalid schedule slot |
-| `validation.invalidScheduleSlotId` | Invalid schedule slot ID |
-| `validation.invalidSubject` | Invalid subject |
-| `validation.invalidTeacher` | Invalid teacher |
-| `validation.invalidUuid` | Invalid UUID format |
-| `validation.passwordConfirmationRequired` | Password confirmation is required |
-| `validation.passwordLowercase` | Password must contain at least one lowercase letter |
-| `validation.passwordNumber` | Password must contain at least one number |
-| `validation.passwordsDoNotMatch` | Passwords do not match |
-| `validation.passwordSpecial` | Password must contain at least one special character |
-| `validation.passwordUppercase` | Password must contain at least one uppercase letter |
-| `validation.phoneMaxLength` | Phone number must be 30 characters or less |
-| `validation.teacherRequired` | Teacher is required |
 

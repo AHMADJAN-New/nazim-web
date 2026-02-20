@@ -5,13 +5,13 @@
 
 export default {
   pagination: {
-    entries: "entries",
-    noEntries: "No entries",
-    of: "of",
-    rowsPerPage: "Rows per page",
-    showing: "Showing",
-    to: "to",
-    total: "Total",
-    filtered: "filtered"
+    entries: "مدخل‌ها",
+    noEntries: "هیچ مدخلی نیست",
+    of: "از",
+    rowsPerPage: "ردیف در صفحه",
+    showing: "نمایش",
+    to: "تا",
+    total: "مجموع",
+    filtered: "فیلتر شده"
   }
 };

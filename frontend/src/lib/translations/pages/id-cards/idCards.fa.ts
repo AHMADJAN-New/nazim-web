@@ -124,7 +124,7 @@ export default {
       feeUnpaid: "وضعیت",
       notAssigned: "وضعیت",
       printed: "وضعیت",
-      unprinted: "وضعیت"
+      unprinted: "چاپ نشده"
     },
     studentCode: "کد شاگرد",
     studentId: "شناسه شاگرد",
@@ -138,6 +138,6 @@ export default {
     totalFeeCollected: "فیس جمع‌آوری شده",
     useGlobalFont: "استفاده از فونت عمومی",
     width: "عرض (%)",
-    unprinted: "unprinted"
+    unprinted: "چاپ نشده"
   }
 };

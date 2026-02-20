@@ -1,12 +1,12 @@
 # Translation Report: Arabic (ar)
 
-**Generated:** 2026-02-17T05:01:04.279Z
+**Generated:** 2026-02-20T18:20:19.098Z
 
 ## Summary
 
 - **Modules with fewer keys than EN:** 21
 - **Total missing keys:** 214
-- **Keys with English hardcoded values:** 2368
+- **Keys with English hardcoded values:** 2369
 
 ---
 
@@ -22,10 +22,10 @@
 | `pages/exams/exams` | 519 | 517 | 2 | -2 |
 | `pages/leave/leave` | 145 | 144 | 1 | -1 |
 | `pages/misc/misc` | 40 | 11 | 29 | -29 |
-| `pages/platform/platform` | 37 | 5 | 32 | -32 |
+| `pages/platform/platform` | 80 | 48 | 32 | -32 |
 | `pages/reports/reports` | 66 | 63 | 3 | -3 |
 | `pages/schools/schools` | 86 | 83 | 3 | -3 |
-| `pages/settings/settings` | 116 | 87 | 29 | -29 |
+| `pages/settings/settings` | 119 | 90 | 29 | -29 |
 | `pages/staff/staff` | 136 | 133 | 3 | -3 |
 | `pages/teacher-subject-assignments/teacherSubjectAssignments` | 52 | 51 | 1 | -1 |
 | `pages/user-permissions/userPermissions` | 38 | 37 | 1 | -1 |
@@ -411,6 +411,7 @@
 | `shared/notFound/notFound.ar.ts` | `shared/notFound/notFound` | 2 |
 | `pages/onboarding/onboarding.ar.ts` | `pages/onboarding/onboarding` | 1 |
 | `pages/permissions/permissions.ar.ts` | `pages/permissions/permissions` | 1 |
+| `pages/platform/platform.ar.ts` | `pages/platform/platform` | 1 |
 | `pages/schools/schools.ar.ts` | `pages/schools/schools` | 1 |
 | `pages/subscription/subscription.ar.ts` | `pages/subscription/subscription` | 1 |
 | `shared/pagination/pagination.ar.ts` | `shared/pagination/pagination` | 1 |
@@ -620,4 +621,4 @@
 | `pages/events/events.ar.ts` | `events.noResults` | no Results |
 | `pages/events/events.ar.ts` | `events.notes` | notes |
 
-*... and 2168 more. See translation-report-english-hardcoded.md for full list.*
+*... and 2169 more. See translation-report-english-hardcoded.md for full list.*

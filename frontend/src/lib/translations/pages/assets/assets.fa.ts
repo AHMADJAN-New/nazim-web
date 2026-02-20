@@ -106,7 +106,7 @@ export default {
     unknownStudent: "دانش‌آموز ناشناس",
     unknownRoom: "اتاق ناشناس",
     other: "سایر",
-    notAvailable: "N/A",
+    notAvailable: "موجود نیست",
     updateAssignment: "به‌روزرسانی اختصاص",
     createAssignment: "ایجاد اختصاص",
     updateAssignmentDescription: "جزئیات اختصاص دارایی را به‌روزرسانی کنید.",

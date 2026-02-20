@@ -5,17 +5,17 @@
 
 export default {
   search: {
-    academicYears: "Academic Years",
-    class: "Class",
-    classes: "Classes",
-    code: "Code",
-    employeeId: "Employee ID",
-    placeholder: "Search students, classes, teachers...",
-    position: "Position",
-    schools: "Schools",
-    staff: "Staff",
-    startTyping: "Start typing to search...",
-    students: "Students",
-    subjects: "Subjects"
+    academicYears: "سال‌های تعلیمی",
+    class: "صنف",
+    classes: "صنف‌ها",
+    code: "کد",
+    employeeId: "شناسه کارمند",
+    placeholder: "شاگردان، صنف‌ها، معلمان را جستجو کنید...",
+    position: "بست",
+    schools: "مکاتب",
+    staff: "کارمندان",
+    startTyping: "برای جستجو تایپ کنید...",
+    students: "شاگردان",
+    subjects: "مضامین"
   }
 };

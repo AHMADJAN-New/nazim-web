@@ -1,0 +1,233 @@
+---
+description: Translate English app strings to proper Dari (fa locale) for the Nazim School Management System. Triggered when user asks to translate to Dari, generate Dari translations for a module, or fix Dari translations. Uses DARI_MANIFEST.md for tracking.
+globs:
+  - frontend/src/lib/translations/**/*.fa.ts
+  - frontend/src/lib/translations/DARI_MANIFEST.md
+  - frontend/src/lib/translations/**/*.en.ts
+---
+
+# Dari Translations Workflow
+
+You are a translator for the **Nazim School Management System** — an Islamic school management SaaS application used in Afghanistan. Your job is to translate English UI strings into **proper Afghan Dari** (Persian). The app uses the locale code `fa` for Dari; all Dari text lives in `*.fa.ts` files under `frontend/src/lib/translations/`.
+
+## Two-Phase Process
+
+**Phase 1 — English (source of truth):**
+1. Read the MANIFEST at `frontend/src/lib/translations/DARI_MANIFEST.md` to identify the target module(s).
+2. Read the corresponding English module file (e.g. `frontend/src/lib/translations/pages/students/students.en.ts`).
+3. Ensure the EN module has the same key structure you will mirror in the Dari file. Do not add or remove keys; only translate values.
+
+**Phase 2 — Dari (translation):**
+1. Translate every string value from English to Dari using the DARI TERMINOLOGY DICTIONARY and GRAMMAR AND STYLE rules below.
+2. Write or update the corresponding `*.fa.ts` file (e.g. `pages/students/students.fa.ts`) with the **exact same object structure** (same keys, same nesting). Only string values change.
+3. Preserve placeholders such as `{count}`, `{name}`, `{date}` in the translated strings.
+4. After completing a module, update `DARI_MANIFEST.md` to set the Dari (fa) status for that module (e.g. `done` or `needs_review`).
+
+---
+
+## When This Rule Applies
+
+Trigger when the user says (or similar):
+
+- "Translate to Dari"
+- "Generate Dari translations for {module}"
+- "Fix Dari translations"
+- "Dari translation workflow"
+- "Translate English to proper Dari for …"
+- "Fill in Dari translations for …"
+
+---
+
+## Workflow Steps
+
+1. **Read DARI_MANIFEST.md** — Identify which module(s) to translate (user may specify a module, or choose from `placeholder` / `needs_review` / `not_started`).
+2. **Resolve file paths** — For each module, the EN source is `frontend/src/lib/translations/{section}/{module}.en.ts` (or `website/public-en.ts` / `website/admin-en.ts`). The Dari target is the same path with `.fa.ts` and the same export shape (e.g. `shared/common/common.fa.ts` exports default object; `website/public-fa.ts` exports `websitePublicFa`).
+3. **Read the EN file** — Load the full English module to get every key and string.
+4. **Translate to Dari** — For each string value, apply the terminology dictionary and grammar rules. Keep keys and structure unchanged.
+5. **Write the fa file** — Update or create the `*.fa.ts` file. Preserve export style (default export for shared/pages, named export for website).
+6. **Update DARI_MANIFEST.md** — Set the module’s "Dari (fa) status" to `done` or `needs_review` as appropriate.
+
+---
+
+## DARI TERMINOLOGY DICTIONARY
+
+Use these standard Dari terms consistently across all modules. Prefer **Afghan Dari** usage over Iranian Farsi where they differ.
+
+| English | Dari | Notes |
+|---------|------|--------|
+| Students | شاگردان | Or محصلین; pick one and use consistently (شاگردان preferred in Afghan context). |
+| Student | شاگرد | |
+| Staff | کارمندان / کارکنان | |
+| Teacher | معلم / ښوونکی (Pashto loan in mixed contexts) — use معلم for Dari. |
+| Attendance | حاضري | |
+| Exams | امتحانات | |
+| Finance | مالی | |
+| Academic | تعلیمی | |
+| Dashboard | دشبورد | Afghan Dari spelling. |
+| Settings | تنظیمات | |
+| Library | کتابخانه | |
+| Reports | گزارشات | |
+| Classes | صنف‌ها / اقسام | Use صنف for class (grade level). |
+| Class | صنف | |
+| Subjects | مضامین / موضوعات | مضامین for school subjects. |
+| Grades | درجات / نمرات | درجات for grade level; نمرات for marks. |
+| Academic Year | سال تعلیمی | |
+| Admission | شمولیت | |
+| Admissions | شمولیت‌ها | |
+| Registration | ثبت نام | |
+| Enrollment | شمولیت | |
+| Search | جستجو | |
+| Filter | فیلتر | |
+| Table | جدول | |
+| Column | ستون | |
+| Row | ردیف | |
+| Actions | اقدامات | |
+| Create | ایجاد | |
+| Edit | ویرایش | |
+| Delete | حذف | |
+| Save | ذخیره | |
+| Cancel | لغو | |
+| Submit | ثبت | |
+| Export | صدور / صادر کردن | |
+| Import | ورود / وارد کردن | |
+| Upload | بارگذاری | |
+| Download | بارگیری | |
+| PDF | PDF | Keep as-is. |
+| Excel | اکسل | Keep as-is. |
+| Required | الزامی | |
+| Optional | اختیاری | |
+| Yes | بله | |
+| No | خیر | |
+| Status | وضعیت | |
+| Active | فعال | |
+| Inactive | غیرفعال | |
+| Pending | در انتظار | |
+| Name | نام | |
+| Full Name | نام کامل | |
+| Father Name | نام پدر | |
+| Phone | تلفون | |
+| Address | آدرس | |
+| Date | تاریخ | |
+| Gender | جنسیت | |
+| Male | مرد | |
+| Female | زن | |
+| Picture | تصویر | |
+| Document | سند | |
+| Documents | اسناد | |
+| Notes | یادداشت‌ها | |
+| Page | صفحه | |
+| Overview | خلاصه | |
+| Summary | خلاصه | |
+| Total | مجموع | |
+| Card | کارت | |
+| Button | دکمه | |
+| Click | کلیک کنید | |
+| Open | باز کنید | |
+| Close | بستن | |
+| Select | انتخاب کنید | |
+| Enter | وارد کنید | |
+| Form | فرم | |
+| Dialog | پنجره / دیالوگ | |
+| Tab | تب | |
+| Confirm | تأیید | |
+| Success | موفقیت | |
+| Error | خطا | |
+| Warning | هشدار | |
+| School | مکتب | Afghan usage (مکتب not مدرسه). |
+| Organization | سازمان | |
+| Permission | اجازه | |
+| Role | نقش | |
+| Fees | فیس / fees | |
+| Income | عاید | |
+| Expense | مصارف | |
+| Account | حساب | |
+| Donor | donor / خیر | |
+| Certificate | تصدیق‌نامه | |
+| Graduation | فراغت | |
+| ID Card | کارت شناسایی | |
+| Leave | رخصتی | |
+| Hostel | خوابگاه | |
+| Asset | دارایی | |
+| Event | رویداد | |
+| Template | قالب | |
+| Profile | پروفایل | |
+| Guardian | سرپرست | |
+| Tazkira | تذکره | |
+| Province | ولایت | |
+| District | ولسوالی | |
+| Village | قریه | |
+| Residency | اقامت | |
+| Building | ساختمان | |
+| Room | اتاق | |
+| Course | کورس | |
+| Subscription | اشتراک | |
+| Plan | پلان | |
+| Renewal | تمدید | |
+| Timetable | جدول زمانی | |
+| Schedule | برنامه | |
+| Discipline | انضباط | |
+| History | تاریخچه | |
+| Tips | راهنما | |
+| Best Practices | روش‌های بهتر | |
+| Related | مرتبط | |
+| Loading | در حال بارگذاری | |
+| No results found | نتیجه‌ای یافت نشد | |
+| Not found | یافت نشد | |
+| Invalid | نامعتبر | |
+| Successfully | با موفقیت | |
+
+---
+
+## GRAMMAR AND STYLE
+
+1. **Formal written Dari (Afghan standard)** — Use formal register suitable for school administrators and staff.
+2. **Second person** — Use شما (you, formal) in instructions and UI copy; avoid تو.
+3. **Imperatives** — For button/instruction text, use polite imperative: e.g. "ذخیره کنید" (Save), "انتخاب کنید" (Select). Short labels may use infinitive/verbal noun: "ذخیره", "لغو".
+4. **RTL** — All Dari text is right-to-left; do not force LTR. Keep placeholders like `{count}` unchanged.
+5. **Afghan conventions** — Prefer سال تعلیمی (academic year), صنف (class), مکتب (school), ولایت/ولسوالی (province/district). Avoid Iranian-only idioms or vocabulary that differs in Afghanistan.
+6. **Consistency** — Use the same term for the same concept in every module (see dictionary).
+7. **Technical terms** — Leave terms such as PDF, Excel, ID Card as-is or use the dictionary. For "Dashboard" use دشبورد.
+
+---
+
+## File and Export Conventions
+
+- **Shared and pages modules** — Use **default export**: `export default { ... };` and the file is imported as e.g. `shared_common_fa` from `./shared/common/common.fa`.
+- **Website modules** — Use **named export**: `export const websitePublicFa = { ... };` and `export const websiteAdminFa = { ... };` from `website/public-fa.ts` and `website/admin-fa.ts`.
+- **Structure** — The `fa` object must have the same top-level keys and nesting as the corresponding `en` file. Only string values are translated; key names stay in English (they are translation keys).
+
+---
+
+## QUALITY CHECKLIST
+
+Before marking a module as done in the manifest, verify:
+
+- [ ] Every key from the EN module exists in the fa module with the same structure.
+- [ ] Every string value is in Dari (no leftover English), using the terminology dictionary.
+- [ ] Placeholders like `{count}`, `{name}` are preserved in the translated strings.
+- [ ] Grammar and style rules are applied (شما, formal register, Afghan conventions).
+- [ ] Export style matches (default vs named) the existing fa file or en file for that module.
+- [ ] DARI_MANIFEST.md is updated with the new status for the translated module(s).
+
+---
+
+## WORKFLOW WHEN USER ASKS "Translate to Dari" or "Fix Dari translations"
+
+1. **Read DARI_MANIFEST.md** — See which modules are `placeholder`, `needs_review`, or `not_started`.
+2. **If user specified a module** — Translate only that module. Otherwise, ask or pick one or more modules from the manifest.
+3. **For each target module:**
+   - Read the corresponding `*.en.ts` file.
+   - Translate all string values to Dari using the dictionary and grammar rules.
+   - Write or update the `*.fa.ts` file with the same structure.
+   - Update DARI_MANIFEST.md for that module.
+4. **Remind the user** — After changing `*.fa.ts` files, the app will use the new strings when the user selects "دری" (fa). No rebuild step is required for development if using HMR; for production, a frontend build is needed.
+
+---
+
+## IMPORTANT REMINDERS
+
+1. **Do not add or remove keys** — The fa file must mirror the en file’s key structure exactly.
+2. **Do not translate key names** — Keys like `common.save` stay as-is; only their string values are in Dari.
+3. **Use the dictionary** — Consistent terminology across the app is critical for a professional Dari experience.
+4. **Afghan Dari, not Iranian Farsi** — Prefer مکتب over مدرسه, and other Afghan conventions where they differ.
+5. **Update the manifest** — After each module translation, update DARI_MANIFEST.md so progress is trackable.

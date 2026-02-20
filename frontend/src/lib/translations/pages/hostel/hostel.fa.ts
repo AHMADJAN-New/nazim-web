@@ -117,7 +117,7 @@ export default {
     totalRooms: "مجموع اتاق‌ها",
     unassigned: "بدون اتاق",
     warden: "نگران / سرپرست",
-    overview: "overview",
+    overview: "خلاصه",
     loadingHostelData: "در حال بارگذاری اطلاعات لیلیه...",
     loadingHostelOccupancy: "در حال بارگذاری اشغال لیلیه و اختصاصات...",
     monitorOccupancyAssignments: "اشغال لیلیه، اختصاص اتاق‌ها و پوشش نگران را نظارت کنید.",

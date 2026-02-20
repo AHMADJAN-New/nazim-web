@@ -1988,6 +1988,10 @@ frontend/src/lib/
     └── ar.ts                  # Arabic translations
 ```
 
+### Dari Translations (fa locale)
+- **Dari** is the Afghan variety of Persian; the app uses the **`fa`** locale for Dari (UI label: "دری").
+- When translating or fixing Dari strings, use the **Dari translation workflow rule** (`.cursor/rules/dari-translations-workflow.mdc`) and the **DARI_MANIFEST** (`frontend/src/lib/translations/DARI_MANIFEST.md`) for systematic English-to-Dari translation, consistent terminology, and grammar. The rule defines trigger phrases, a two-phase process (EN as source, then translate to Dari), a terminology dictionary, and quality checklist; the manifest tracks per-module translation status.
+
 **File Organization Benefits:**
 - Each language in its own file for easier maintenance
 - Type definitions separated from translations

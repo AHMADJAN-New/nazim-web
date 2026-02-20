@@ -4,10 +4,18 @@
  */
 
 export default {
+  status: {
+    issued: "صادر شده",
+    approved: "تأیید شده",
+    draft: "مسوده"
+  },
+  table: {
+    students: "شاگردان"
+  },
   buildings: {
-    buildingCreated: "building Created",
-    buildingUpdated: "building Updated",
-    buildingDeleted: "building Deleted",
+    buildingCreated: "ساختمان ایجاد شد",
+    buildingUpdated: "ساختمان به‌روزرسانی شد",
+    buildingDeleted: "ساختمان حذف شد",
     viewAll: "مشاهده همه"
   },
   classes: {
@@ -32,5 +40,16 @@ export default {
   generatingReport: "در حال تولید گزارش",
   goBack: "بازگشت",
   goHome: "رفتن به خانه",
+  message: "صفحه‌ای که به دنبال آن هستید وجود ندارد.",
+  noArticleFound: "هیچ مقاله راهنمایی برای این صفحه یافت نشد. در حال باز کردن مرکز راهنما...",
+  noDocuments: "هیچ سندی نیست",
+  pleaseWait: "لطفاً منتظر بمانید...",
+  reportGeneration: "تولید گزارش",
+  size: "حجم",
+  student: "شاگرد",
+  title: "صفحه یافت نشد",
+  uploadDocument: "بارگذاری سند",
+  uploaded: "بارگذاری شده",
+  viewFullArticle: "مشاهده کامل مقاله",
   failed: "ناموفق بود"
 };

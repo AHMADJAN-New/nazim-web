@@ -12,7 +12,7 @@ export default {
     actions: {
       takeTour: "مشاهده راهنما",
       skip: "رد کردن",
-      initialSetup: "initial Setup"
+      initialSetup: "تنظیم اولیه"
     },
     tour: {
       dashboard: "داشبورد",
