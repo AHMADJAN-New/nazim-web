@@ -11,8 +11,7 @@ class LoginLockout extends Model
 
     protected $connection = 'pgsql';
 
-    /** Resolved via search_path (public,nazim_logs) so schema-qualified name is not quoted as one identifier */
-    protected $table = 'login_lockouts';
+    protected $table = 'nazim_logs.login_lockouts';
 
     public $incrementing = false;
 

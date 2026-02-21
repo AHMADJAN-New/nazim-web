@@ -166,7 +166,7 @@ class AuthController extends Controller
         $this->loginAttemptService->clearLockout($email, 'login_success');
 
         try {
-            $this->checkAndNotifyNewDevice($user, $request);
+            $this->checkAndNotifyNewDevice($user, $request, $profile);
         } catch (\Exception $e) {
             Log::warning('Failed to check new device login', ['user_id' => $user->id, 'error' => $e->getMessage()]);
         }
@@ -421,7 +421,7 @@ class AuthController extends Controller
     /**
      * Check if login is from a new device and notify user
      */
-    private function checkAndNotifyNewDevice(User $user, Request $request): void
+    private function checkAndNotifyNewDevice(User $user, Request $request, ?object $profile = null): void
     {
         // Get device fingerprint (user agent + IP)
         $userAgent = $request->userAgent() ?? 'Unknown';
@@ -455,24 +455,28 @@ class AuthController extends Controller
                 Log::debug('User devices table might not exist: '.$e->getMessage());
             }
 
-            // Parse user agent for better device info
-            $deviceInfo = $this->parseUserAgent($userAgent);
-            $deviceName = $deviceInfo['name'] ?? 'Unknown Device';
-            $loginTime = now()->format('Y-m-d H:i:s');
+            // NotificationService requires organization_id. Skip for platform admins with no org.
+            $organizationId = $profile->organization_id ?? null;
+            if ($organizationId) {
+                // Parse user agent for better device info
+                $deviceInfo = $this->parseUserAgent($userAgent);
+                $deviceName = $deviceInfo['name'] ?? 'Unknown Device';
+                $loginTime = now()->format('Y-m-d H:i:s');
 
-            // Notify user about new device login
-            $this->notificationService->notify(
-                'security.new_device_login',
-                $user,
-                $user, // Actor is the user themselves
-                [
-                    'title' => '🆕 New Device Login Detected',
-                    'body' => "Login from {$deviceName} ({$ipAddress}) at {$loginTime}. If this wasn't you, please secure your account immediately.",
-                    'url' => '/settings/security',
-                    'level' => 'critical',
-                    'exclude_actor' => false, // User should see their own security notifications
-                ]
-            );
+                $this->notificationService->notify(
+                    'security.new_device_login',
+                    $user,
+                    $user, // Actor is the user themselves
+                    [
+                        'organization_id' => $organizationId,
+                        'title' => '🆕 New Device Login Detected',
+                        'body' => "Login from {$deviceName} ({$ipAddress}) at {$loginTime}. If this wasn't you, please secure your account immediately.",
+                        'url' => '/settings/security',
+                        'level' => 'critical',
+                        'exclude_actor' => false, // User should see their own security notifications
+                    ]
+                );
+            }
         } else {
             // Update last seen time for known device
             try {
