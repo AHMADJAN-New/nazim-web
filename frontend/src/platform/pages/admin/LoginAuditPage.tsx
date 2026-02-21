@@ -97,15 +97,29 @@ export default function LoginAuditPage() {
   const [page, setPage] = useState(1);
   const [alertsExpanded, setAlertsExpanded] = useState(true);
 
-  const effectiveFilters = {
-    ...filters,
+  // Build API params: only include non-empty values so backend filters correctly
+  const effectiveFilters: LoginAuditApi.LoginAttemptFilters = {
+    start_date: filters.start_date || undefined,
+    end_date: filters.end_date || undefined,
+    success: filters.success === '' ? undefined : filters.success,
+    email: filters.email?.trim() || undefined,
+    organization_id: organizationId || filters.organization_id || undefined,
+    ip_address: filters.ip_address?.trim() || undefined,
+    login_context: filters.login_context || undefined,
+    user_id: userId,
     page,
     per_page: filters.per_page ?? 50,
-    user_id: userId,
-    organization_id: organizationId || filters.organization_id || undefined,
   };
 
-  const { data: attemptsData, isLoading, isError, error } = useLoginAttempts(effectiveFilters);
+  const { data: attemptsData, isLoading, isError, error, refetch } = useLoginAttempts(effectiveFilters);
+
+  const handleFilterChange = <K extends keyof LoginAuditApi.LoginAttemptFilters>(
+    key: K,
+    value: LoginAuditApi.LoginAttemptFilters[K]
+  ) => {
+    setFilters((f) => ({ ...f, [key]: value }));
+    setPage(1);
+  };
   const { data: alertsData } = useLoginAlerts();
   const { data: lockedData } = useLockedAccounts();
   const unlockMutation = useUnlockAccount();
@@ -129,24 +143,26 @@ export default function LoginAuditPage() {
   const to = total > 0 ? Math.min(currentPage * perPage, total) : 0;
 
   const handleApplyUserFilter = (uid: string | null) => {
+    const next = new URLSearchParams(searchParams);
     if (uid) {
-      searchParams.set('user_id', uid);
-      searchParams.delete('organization_id');
+      next.set('user_id', uid);
+      next.delete('organization_id');
     } else {
-      searchParams.delete('user_id');
+      next.delete('user_id');
     }
-    setSearchParams(searchParams);
+    setSearchParams(next);
     setPage(1);
   };
 
   const handleApplyOrgFilter = (orgId: string | null) => {
+    const next = new URLSearchParams(searchParams);
     if (orgId) {
-      searchParams.set('organization_id', orgId);
-      searchParams.delete('user_id');
+      next.set('organization_id', orgId);
+      next.delete('user_id');
     } else {
-      searchParams.delete('organization_id');
+      next.delete('organization_id');
     }
-    setSearchParams(searchParams);
+    setSearchParams(next);
     setPage(1);
   };
 
@@ -183,9 +199,11 @@ export default function LoginAuditPage() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                searchParams.delete('user_id');
-                searchParams.delete('organization_id');
-                setSearchParams(searchParams);
+                const next = new URLSearchParams(searchParams);
+                next.delete('user_id');
+                next.delete('organization_id');
+                setSearchParams(next);
+                setFilters((f) => ({ ...f, organization_id: '', email: '' }));
                 setPage(1);
               }}
             >
@@ -238,7 +256,9 @@ export default function LoginAuditPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setFilters((f) => ({ ...f, ip_address: a.ip_address ?? '' }))}
+                        onClick={() => {
+                          handleFilterChange('ip_address', a.ip_address ?? '');
+                        }}
                       >
                         {t('platform.loginAudit.viewInTable') ?? 'View in table'}
                       </Button>
@@ -255,7 +275,9 @@ export default function LoginAuditPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setFilters((f) => ({ ...f, email: a.email ?? '' }))}
+                        onClick={() => {
+                          handleFilterChange('email', a.email ?? '');
+                        }}
                       >
                         {t('platform.loginAudit.viewInTable') ?? 'View in table'}
                       </Button>
@@ -349,96 +371,108 @@ export default function LoginAuditPage() {
             </Alert>
           )}
           {/* Filters */}
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <Label>{t('platform.loginAudit.filters.dateRange') ?? 'Date range'}</Label>
-              <div className="flex gap-2 mt-1">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 flex-1">
+              <div>
+                <Label>{t('platform.loginAudit.filters.dateRange') ?? 'Date range'}</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    type="date"
+                    value={filters.start_date ?? ''}
+                    onChange={(e) => handleFilterChange('start_date', e.target.value || '')}
+                  />
+                  <Input
+                    type="date"
+                    value={filters.end_date ?? ''}
+                    onChange={(e) => handleFilterChange('end_date', e.target.value || '')}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>{t('platform.loginAudit.filters.status') ?? 'Status'}</Label>
+                <Select
+                  value={filters.success === '' || filters.success === undefined ? 'all' : String(filters.success)}
+                  onValueChange={(v) =>
+                    handleFilterChange('success', v === 'all' ? '' : v === 'true')
+                  }
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder={t('platform.loginAudit.filters.statusAll') ?? 'All'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('platform.loginAudit.filters.statusAll') ?? 'All'}</SelectItem>
+                    <SelectItem value="true">{t('platform.loginAudit.filters.statusSuccess') ?? 'Success'}</SelectItem>
+                    <SelectItem value="false">{t('platform.loginAudit.filters.statusFailure') ?? 'Failure'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>{t('platform.loginAudit.filters.email') ?? 'Email'}</Label>
                 <Input
-                  type="date"
-                  value={filters.start_date ?? ''}
-                  onChange={(e) => setFilters((f) => ({ ...f, start_date: e.target.value || undefined }))}
-                />
-                <Input
-                  type="date"
-                  value={filters.end_date ?? ''}
-                  onChange={(e) => setFilters((f) => ({ ...f, end_date: e.target.value || undefined }))}
+                  className="mt-1"
+                  placeholder="Search by email"
+                  value={filters.email ?? ''}
+                  onChange={(e) => handleFilterChange('email', e.target.value || '')}
+                  onKeyDown={(e) => e.key === 'Enter' && handleFilterChange('email', (e.target as HTMLInputElement).value)}
                 />
               </div>
+              <div>
+                <Label>{t('platform.loginAudit.filters.organization') ?? 'Organization'}</Label>
+                <Select
+                  value={(organizationId || filters.organization_id) || 'all'}
+                  onValueChange={(v) => handleFilterChange('organization_id', v === 'all' ? '' : v)}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder={t('platform.loginAudit.filters.statusAll') ?? 'All'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('platform.loginAudit.filters.statusAll') ?? 'All'}</SelectItem>
+                    {organizations?.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>{t('platform.loginAudit.filters.ipAddress') ?? 'IP address'}</Label>
+                <Input
+                  className="mt-1"
+                  placeholder="Search by IP"
+                  value={filters.ip_address ?? ''}
+                  onChange={(e) => handleFilterChange('ip_address', e.target.value || '')}
+                  onKeyDown={(e) => e.key === 'Enter' && handleFilterChange('ip_address', (e.target as HTMLInputElement).value)}
+                />
+              </div>
+              <div>
+                <Label>{t('platform.loginAudit.filters.context') ?? 'Login context'}</Label>
+                <Select
+                  value={filters.login_context || 'all'}
+                  onValueChange={(v) => handleFilterChange('login_context', v === 'all' ? '' : v)}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder={t('platform.loginAudit.filters.statusAll') ?? 'All'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('platform.loginAudit.filters.statusAll') ?? 'All'}</SelectItem>
+                    <SelectItem value="main_app">{t('platform.loginAudit.filters.contextMain') ?? 'Main app'}</SelectItem>
+                    <SelectItem value="platform_admin">{t('platform.loginAudit.filters.contextPlatform') ?? 'Platform admin'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label>{t('platform.loginAudit.filters.status') ?? 'Status'}</Label>
-              <Select
-                value={filters.success === '' || filters.success === undefined ? 'all' : String(filters.success)}
-                onValueChange={(v) =>
-                  setFilters((f) => ({
-                    ...f,
-                    success: v === 'all' ? '' : v === 'true',
-                  }))
-                }
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder={t('platform.loginAudit.filters.statusAll') ?? 'All'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('platform.loginAudit.filters.statusAll') ?? 'All'}</SelectItem>
-                  <SelectItem value="true">{t('platform.loginAudit.filters.statusSuccess') ?? 'Success'}</SelectItem>
-                  <SelectItem value="false">{t('platform.loginAudit.filters.statusFailure') ?? 'Failure'}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>{t('platform.loginAudit.filters.email') ?? 'Email'}</Label>
-              <Input
-                className="mt-1"
-                placeholder="Search by email"
-                value={filters.email ?? ''}
-                onChange={(e) => setFilters((f) => ({ ...f, email: e.target.value || undefined }))}
-              />
-            </div>
-            <div>
-              <Label>{t('platform.loginAudit.filters.organization') ?? 'Organization'}</Label>
-              <Select
-                value={filters.organization_id || 'all'}
-                onValueChange={(v) => setFilters((f) => ({ ...f, organization_id: v === 'all' ? undefined : v }))}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder={t('platform.loginAudit.filters.statusAll') ?? 'All'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('platform.loginAudit.filters.statusAll') ?? 'All'}</SelectItem>
-                  {organizations?.map((org) => (
-                    <SelectItem key={org.id} value={org.id}>
-                      {org.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>{t('platform.loginAudit.filters.ipAddress') ?? 'IP address'}</Label>
-              <Input
-                className="mt-1"
-                placeholder="Search by IP"
-                value={filters.ip_address ?? ''}
-                onChange={(e) => setFilters((f) => ({ ...f, ip_address: e.target.value || undefined }))}
-              />
-            </div>
-            <div>
-              <Label>{t('platform.loginAudit.filters.context') ?? 'Login context'}</Label>
-              <Select
-                value={filters.login_context || 'all'}
-                onValueChange={(v) => setFilters((f) => ({ ...f, login_context: v === 'all' ? undefined : v }))}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder={t('platform.loginAudit.filters.statusAll') ?? 'All'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('platform.loginAudit.filters.statusAll') ?? 'All'}</SelectItem>
-                  <SelectItem value="main_app">{t('platform.loginAudit.filters.contextMain') ?? 'Main app'}</SelectItem>
-                  <SelectItem value="platform_admin">{t('platform.loginAudit.filters.contextPlatform') ?? 'Platform admin'}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isLoading}
+              className="flex-shrink-0"
+              aria-label={t('common.refresh') ?? 'Refresh'}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline ml-2">{t('common.refresh') ?? 'Refresh'}</span>
+            </Button>
           </div>
 
           {isLoading ? (
@@ -516,8 +550,8 @@ export default function LoginAuditPage() {
                 </Table>
               </div>
 
-              {/* Pagination */}
-              {lastPage > 1 && (
+              {/* Pagination & results summary */}
+              {total > 0 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="flex items-center gap-2">
@@ -527,9 +561,7 @@ export default function LoginAuditPage() {
                       <Select
                         value={String(filters.per_page ?? 50)}
                         onValueChange={(value) => {
-                          const size = Number(value);
-                          setFilters((f) => ({ ...f, per_page: size }));
-                          setPage(1);
+                          handleFilterChange('per_page', Number(value));
                         }}
                       >
                         <SelectTrigger className="w-24">
@@ -545,14 +577,13 @@ export default function LoginAuditPage() {
                       </Select>
                     </div>
 
-                    {total > 0 && (
-                      <span className="text-sm text-muted-foreground">
-                        {t('pagination.showing') || 'Showing'} {from} {t('pagination.to') || 'to'} {to}{' '}
-                        {t('pagination.of') || 'of'} {total} {t('pagination.entries') || 'entries'}
-                      </span>
-                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {t('pagination.showing') || 'Showing'} {from} {t('pagination.to') || 'to'} {to}{' '}
+                      {t('pagination.of') || 'of'} {total} {t('pagination.entries') || 'entries'}
+                    </span>
                   </div>
 
+                  {lastPage > 1 && (
                   <div className={isRTL ? 'dir-rtl' : 'dir-ltr'}>
                     <Pagination>
                       <PaginationContent>
@@ -620,6 +651,7 @@ export default function LoginAuditPage() {
                       </PaginationContent>
                     </Pagination>
                   </div>
+                  )}
                 </div>
               )}
             </>

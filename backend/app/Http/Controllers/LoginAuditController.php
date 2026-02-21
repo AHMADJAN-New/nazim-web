@@ -50,14 +50,19 @@ class LoginAuditController extends Controller
         $query = LoginAttempt::query()->orderByDesc('attempted_at');
 
         if ($request->filled('start_date')) {
-            $query->where('attempted_at', '>=', $request->input('start_date'));
+            $start = Carbon::parse($request->input('start_date'))->startOfDay();
+            $query->where('attempted_at', '>=', $start);
         }
         if ($request->filled('end_date')) {
             $end = Carbon::parse($request->input('end_date'))->endOfDay();
             $query->where('attempted_at', '<=', $end);
         }
-        if ($request->has('success') && $request->input('success') !== '') {
-            $query->where('success', filter_var($request->input('success'), FILTER_VALIDATE_BOOLEAN));
+        $successParam = $request->input('success');
+        if ($successParam !== null && $successParam !== '') {
+            $success = filter_var($successParam, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($success !== null) {
+                $query->where('success', $success);
+            }
         }
         if ($request->filled('email')) {
             $query->where('email', 'ilike', '%'.$request->input('email').'%');
@@ -119,8 +124,12 @@ class LoginAuditController extends Controller
         $query = LoginAttempt::where('organization_id', $organizationId)->orderByDesc('attempted_at');
 
         $this->applyDateFilters($query, $request);
-        if ($request->has('success') && $request->input('success') !== '') {
-            $query->where('success', filter_var($request->input('success'), FILTER_VALIDATE_BOOLEAN));
+        $successParam = $request->input('success');
+        if ($successParam !== null && $successParam !== '') {
+            $success = filter_var($successParam, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($success !== null) {
+                $query->where('success', $success);
+            }
         }
         $perPage = min((int) $request->input('per_page', 25), 500);
         $paginated = $query->paginate($perPage);
@@ -229,14 +238,19 @@ class LoginAuditController extends Controller
         $query = LoginAttempt::query()->orderByDesc('attempted_at');
 
         if ($request->filled('start_date')) {
-            $query->where('attempted_at', '>=', $request->input('start_date'));
+            $start = Carbon::parse($request->input('start_date'))->startOfDay();
+            $query->where('attempted_at', '>=', $start);
         }
         if ($request->filled('end_date')) {
             $end = Carbon::parse($request->input('end_date'))->endOfDay();
             $query->where('attempted_at', '<=', $end);
         }
-        if ($request->has('success') && $request->input('success') !== '') {
-            $query->where('success', filter_var($request->input('success'), FILTER_VALIDATE_BOOLEAN));
+        $successParam = $request->input('success');
+        if ($successParam !== null && $successParam !== '') {
+            $success = filter_var($successParam, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($success !== null) {
+                $query->where('success', $success);
+            }
         }
         if ($request->filled('email')) {
             $query->where('email', 'ilike', '%'.$request->input('email').'%');
@@ -291,7 +305,8 @@ class LoginAuditController extends Controller
     private function applyDateFilters($query, Request $request): void
     {
         if ($request->filled('start_date')) {
-            $query->where('attempted_at', '>=', $request->input('start_date'));
+            $start = Carbon::parse($request->input('start_date'))->startOfDay();
+            $query->where('attempted_at', '>=', $start);
         }
         if ($request->filled('end_date')) {
             $end = Carbon::parse($request->input('end_date'))->endOfDay();
