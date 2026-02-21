@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
   FileSpreadsheet,
@@ -11,6 +12,8 @@ import {
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +23,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Collapsible,
   CollapsibleContent,
@@ -28,13 +30,6 @@ import {
 } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Pagination,
   PaginationContent,
@@ -45,6 +40,13 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -54,11 +56,9 @@ import {
 } from '@/components/ui/table';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDateTime } from '@/lib/utils';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { LoadingSpinner } from '@/components/ui/loading';
+import { LoginAttemptDetailSheet } from '@/platform/components/LoginAttemptDetailSheet';
 import { useLoginAttempts, useLoginAlerts, useLockedAccounts, useUnlockAccount, useExportLoginAudit } from '@/platform/hooks/useLoginAudit';
 import { platformApi } from '@/platform/lib/platformApi';
-import { useQuery } from '@tanstack/react-query';
 import type * as LoginAuditApi from '@/types/api/loginAudit';
 
 const FAILURE_REASON_KEYS: Record<string, string> = {
@@ -96,6 +96,8 @@ export default function LoginAuditPage() {
   });
   const [page, setPage] = useState(1);
   const [alertsExpanded, setAlertsExpanded] = useState(true);
+  const [selectedAttempt, setSelectedAttempt] = useState<LoginAuditApi.LoginAttempt | null>(null);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 
   // Build API params: only include non-empty values so backend filters correctly
   const effectiveFilters: LoginAuditApi.LoginAttemptFilters = {
@@ -174,6 +176,11 @@ export default function LoginAuditPage() {
     if (!reason) return '-';
     const key = FAILURE_REASON_KEYS[reason];
     return key ? t(key) : reason;
+  };
+
+  const handleRowClick = (attempt: LoginAuditApi.LoginAttempt) => {
+    setSelectedAttempt(attempt);
+    setDetailSheetOpen(true);
   };
 
   const drillDownLabel = userId
@@ -504,13 +511,20 @@ export default function LoginAuditPage() {
                       </TableRow>
                     ) : (
                       attempts.map((a) => (
-                        <TableRow key={a.id}>
+                        <TableRow
+                          key={a.id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => handleRowClick(a)}
+                        >
                           <TableCell>{formatDateTime(a.attempted_at)}</TableCell>
-                          <TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
                               className="text-primary hover:underline"
-                              onClick={() => a.user_id && handleApplyUserFilter(a.user_id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (a.user_id) handleApplyUserFilter(a.user_id);
+                              }}
                             >
                               {a.email}
                             </button>
@@ -521,12 +535,15 @@ export default function LoginAuditPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>{getFailureReasonLabel(a.failure_reason)}</TableCell>
-                          <TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
                             {a.organization_id ? (
                               <button
                                 type="button"
                                 className="text-primary hover:underline"
-                                onClick={() => handleApplyOrgFilter(a.organization_id ?? null)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleApplyOrgFilter(a.organization_id ?? null);
+                                }}
                               >
                                 {organizations?.find((o) => o.id === a.organization_id)?.name ?? a.organization_id}
                               </button>
@@ -658,6 +675,32 @@ export default function LoginAuditPage() {
           )}
         </CardContent>
       </Card>
+
+      <LoginAttemptDetailSheet
+        attempt={selectedAttempt}
+        open={detailSheetOpen}
+        onOpenChange={setDetailSheetOpen}
+        organizationName={selectedAttempt?.organization_id ? organizations?.find((o) => o.id === selectedAttempt.organization_id)?.name : undefined}
+        organizations={organizations}
+        lockedAccounts={lockedAccounts}
+        onFilterByEmail={(email) => {
+          const next = new URLSearchParams(searchParams);
+          next.delete('user_id');
+          next.delete('organization_id');
+          setSearchParams(next);
+          handleFilterChange('email', email);
+          setDetailSheetOpen(false);
+        }}
+        onFilterByOrg={(orgId) => {
+          handleApplyOrgFilter(orgId);
+          setDetailSheetOpen(false);
+        }}
+        onAttemptSelect={(a) => setSelectedAttempt(a)}
+        onReportSuspicious={() => {
+          // Flagged state is handled inside the sheet; optional: persist to backend later
+        }}
+        getFailureReasonLabel={getFailureReasonLabel}
+      />
     </div>
   );
 }

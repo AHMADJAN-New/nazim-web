@@ -57,3 +57,18 @@ export interface LoginAttemptsPaginatedResponse {
   per_page: number;
   total: number;
 }
+
+export interface IpInfoResponse {
+  ip: string;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  countryCode: string | null;
+  isp: string | null;
+  org: string | null;
+  timezone: string | null;
+  lat: number | null;
+  lon: number | null;
+  private?: boolean;
+  error?: string;
+}

@@ -538,6 +538,9 @@ export const platformApi = {
     export: async (params?: LoginAuditApi.LoginAttemptFilters) => {
       return apiClient.requestFile('/platform/login-audit/export', { method: 'GET', params });
     },
+    getIpInfo: async (ip: string) => {
+      return apiClient.get<LoginAuditApi.IpInfoResponse>('/platform/login-audit/ip-info', { ip });
+    },
   },
 
   planRequests: {

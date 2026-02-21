@@ -1736,6 +1736,7 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     // Login audit (platform admin)
     Route::prefix('login-audit')->group(function () {
         Route::get('/', [LoginAuditController::class, 'index']);
+        Route::get('/ip-info', [LoginAuditController::class, 'ipInfo']);
         Route::get('/users/{userId}', [LoginAuditController::class, 'showByUser']);
         Route::get('/organizations/{organizationId}', [LoginAuditController::class, 'showByOrganization']);
         Route::get('/alerts', [LoginAuditController::class, 'alerts']);

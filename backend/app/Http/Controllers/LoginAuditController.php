@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\LoginAttempt;
-use App\Models\Organization;
 use App\Services\LoginAttemptService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LoginAuditController extends Controller
@@ -300,6 +301,107 @@ class LoginAuditController extends Controller
             });
             fclose($handle);
         }, 200, $headers);
+    }
+
+    /**
+     * Get IP geolocation info for login audit detail panel.
+     * Uses ip-api.com (free tier, 45 req/min). Results cached 24h per IP.
+     */
+    public function ipInfo(Request $request)
+    {
+        $this->enforcePlatformAdmin($request);
+
+        $ip = $request->input('ip');
+        if (! is_string($ip) || trim($ip) === '') {
+            return response()->json(['error' => 'IP address required'], 400);
+        }
+
+        $ip = trim($ip);
+
+        // Skip lookup for private/local IPs
+        if (preg_match('/^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|127\.|::1|fe80:)/i', $ip)) {
+            return response()->json([
+                'ip' => $ip,
+                'city' => null,
+                'region' => null,
+                'country' => 'Private/Local',
+                'countryCode' => null,
+                'isp' => null,
+                'org' => null,
+                'timezone' => null,
+                'lat' => null,
+                'lon' => null,
+                'private' => true,
+            ]);
+        }
+
+        $cacheKey = 'login_audit_ip_'.md5($ip);
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return response()->json($cached);
+        }
+
+        try {
+            $response = Http::timeout(5)->get("http://ip-api.com/json/{$ip}", [
+                'fields' => 'status,country,countryCode,region,regionName,city,zip,lat,lon,isp,org,timezone,query',
+            ]);
+
+            if (! $response->successful()) {
+                return response()->json(['ip' => $ip, 'error' => 'Lookup failed'], 502);
+            }
+
+            $data = $response->json();
+            if (($data['status'] ?? '') === 'fail') {
+                return response()->json([
+                    'ip' => $ip,
+                    'city' => null,
+                    'region' => null,
+                    'country' => null,
+                    'countryCode' => null,
+                    'isp' => null,
+                    'org' => null,
+                    'timezone' => null,
+                    'lat' => null,
+                    'lon' => null,
+                    'private' => false,
+                ]);
+            }
+
+            $result = [
+                'ip' => $data['query'] ?? $ip,
+                'city' => $data['city'] ?? null,
+                'region' => $data['regionName'] ?? $data['region'] ?? null,
+                'country' => $data['country'] ?? null,
+                'countryCode' => $data['countryCode'] ?? null,
+                'isp' => $data['isp'] ?? null,
+                'org' => $data['org'] ?? null,
+                'timezone' => $data['timezone'] ?? null,
+                'lat' => $data['lat'] ?? null,
+                'lon' => $data['lon'] ?? null,
+                'private' => false,
+            ];
+
+            Cache::put($cacheKey, $result, now()->addHours(24));
+
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            \Log::warning('Login audit IP lookup failed: '.$e->getMessage(), ['ip' => $ip]);
+
+            return response()->json([
+                'ip' => $ip,
+                'error' => 'Lookup failed',
+                'city' => null,
+                'region' => null,
+                'country' => null,
+                'countryCode' => null,
+                'isp' => null,
+                'org' => null,
+                'timezone' => null,
+                'lat' => null,
+                'lon' => null,
+                'private' => false,
+            ], 502);
+        }
     }
 
     private function applyDateFilters($query, Request $request): void
