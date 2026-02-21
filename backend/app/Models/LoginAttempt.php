@@ -11,7 +11,8 @@ class LoginAttempt extends Model
 
     protected $connection = 'pgsql';
 
-    protected $table = 'nazim_logs.login_attempts';
+    /** Resolved via search_path (public,nazim_logs) so schema-qualified name is not quoted as one identifier */
+    protected $table = 'login_attempts';
 
     public $incrementing = false;
 
