@@ -72,12 +72,32 @@ class ActivityLogService
             $activity->user_agent = $request->userAgent();
             $activity->request_method = $request->method();
             $activity->route = $request->route()?->getName() ?? $request->path();
-            $activity->session_id = $request->session()?->getId();
+            // Support both: session-based requests (web, pre–login-audit sessions) and API/token (no session)
+            $activity->session_id = $this->getRequestSessionId($request);
             $activity->request_id = (string) \Illuminate\Support\Str::uuid();
             $activity->save();
         }
 
         return $activity;
+    }
+
+    /**
+     * Get session ID from request when available (session-based auth).
+     * Returns null for API/token requests (no session store) so login audit works for both
+     * pre–login-audit sessions and stateless token auth.
+     */
+    private function getRequestSessionId(Request $request): ?string
+    {
+        try {
+            if (! $request->hasSession()) {
+                return null;
+            }
+            $session = $request->session();
+
+            return $session ? $session->getId() : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
