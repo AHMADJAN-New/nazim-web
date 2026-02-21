@@ -201,15 +201,20 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 $statusCode = 500;
                 
-                // Try to get status code from exception
+                // Try to get status code from exception (must be int for JsonResponse)
                 if (method_exists($e, 'getStatusCode')) {
-                    $statusCode = $e->getStatusCode();
-                } elseif (method_exists($e, 'getCode') && $e->getCode() >= 400 && $e->getCode() < 600) {
-                    $statusCode = $e->getCode();
+                    $statusCode = (int) $e->getStatusCode();
+                } elseif (method_exists($e, 'getCode')) {
+                    $code = $e->getCode();
+                    $codeInt = is_numeric($code) ? (int) $code : 500;
+                    if ($codeInt >= 400 && $codeInt < 600) {
+                        $statusCode = $codeInt;
+                    }
                 }
                 
                 // Client errors (400-499): Show message in production (usually safe)
                 // Server errors (500+): Hide details in production (may contain sensitive info)
+                $statusCode = (int) $statusCode;
                 if ($statusCode >= 400 && $statusCode < 500) {
                     // Client errors - safe to show in production
                     return response()->json([

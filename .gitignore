@@ -29,3 +29,6 @@ frontend/certs/*.key
 *.njsproj
 *.sln
 *.sw?
+
+# Maintenance script state (per-environment, do not commit)
+docker/.update-app-state

@@ -345,13 +345,12 @@ class DesktopReleaseController extends Controller
 
     /**
      * Download a release file (public, increments counter).
+     * Allows download when download_available is true (direct link), even if not published to public page.
      * Uses X-Accel-Redirect when available so nginx serves the file directly for full download speed.
      */
     public function downloadRelease(string $id): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\JsonResponse
     {
-        $release = DesktopRelease::whereNull('deleted_at')
-            ->where('status', 'published')
-            ->findOrFail($id);
+        $release = DesktopRelease::whereNull('deleted_at')->findOrFail($id);
 
         if (! $release->download_available) {
             return response()->json(['error' => 'Download not available for this release'], 403);

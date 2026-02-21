@@ -35,10 +35,14 @@ Use for bug fixes, small changes, and regular deploys. Keeps database, Redis, an
 - Restarts php, queue, scheduler, nginx only
 - Installs composer deps for bind-mounted code
 - Runs migrations and optimize
-- Syncs default role permissions
+- Optionally syncs default role permissions (only when `--sync-permissions` is passed)
 
 ```bash
+# Normal update (skips permission sync)
 bash docker/scripts/maintenance/update-app.sh
+
+# Include permission sync when needed (e.g., after adding new roles or permissions)
+bash docker/scripts/maintenance/update-app.sh --sync-permissions
 ```
 
 ### Full update (use sparingly)
