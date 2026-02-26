@@ -49,6 +49,7 @@ import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 
 const academicYearSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -129,11 +130,11 @@ export function AcademicYearsManagement() {
       if (year) {
         // Convert Date objects to YYYY-MM-DD format for date inputs
         const startDate = year.startDate instanceof Date 
-          ? year.startDate.toISOString().split('T')[0] 
-          : year.startDate ? new Date(year.startDate).toISOString().split('T')[0] : '';
+          ? dateToLocalYYYYMMDD(year.startDate instanceof Date ? year.startDate : new Date(year.startDate))
+          : year.startDate ? dateToLocalYYYYMMDD(new Date(year.startDate)) : '';
         const endDate = year.endDate instanceof Date
-          ? year.endDate.toISOString().split('T')[0]
-          : year.endDate ? new Date(year.endDate).toISOString().split('T')[0] : '';
+          ? dateToLocalYYYYMMDD(year.endDate instanceof Date ? year.endDate : new Date(year.endDate))
+          : year.endDate ? dateToLocalYYYYMMDD(new Date(year.endDate)) : '';
         
         reset({
           name: year.name || '',

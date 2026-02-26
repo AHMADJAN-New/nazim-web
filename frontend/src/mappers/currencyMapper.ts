@@ -1,5 +1,6 @@
 import type * as CurrencyApi from '@/types/api/currency';
 import type { Currency, ExchangeRate } from '@/types/domain/currency';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 
 /**
  * Convert API Currency model to Domain Currency model
@@ -69,8 +70,8 @@ export function mapExchangeRateDomainToInsert(domain: Partial<ExchangeRate>): Cu
         to_currency_id: domain.toCurrencyId || '',
         rate: domain.rate ?? 0,
         effective_date: domain.effectiveDate instanceof Date 
-            ? domain.effectiveDate.toISOString().split('T')[0]
-            : domain.effectiveDate || new Date().toISOString().split('T')[0],
+            ? dateToLocalYYYYMMDD(domain.effectiveDate)
+            : domain.effectiveDate || dateToLocalYYYYMMDD(new Date()),
         notes: domain.notes ?? null,
         is_active: domain.isActive ?? true,
     };

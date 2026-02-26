@@ -44,6 +44,7 @@ import { useHasPermission } from '@/hooks/usePermissions';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useClassSubjects } from '@/hooks/useSubjects';
 import { formatDate, formatDateTime, cn } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import type { Exam, ExamClass, ExamSubject } from '@/types/domain/exam';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -410,12 +411,12 @@ function ExamClassCard({
                         <div>
                           <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('events.date') || 'Date'}</Label>
                           <CalendarDatePicker
-                            date={draft.scheduledAt ? new Date(draft.scheduledAt) : undefined}
-                            onDateChange={(date) => onDraftChange(subject.id, { ...draft, scheduledAt: date ? date.toISOString().slice(0, 10) : '' })}
+                            date={draft.scheduledAt ? parseLocalDate(draft.scheduledAt) : undefined}
+                            onDateChange={(date) => onDraftChange(subject.id, { ...draft, scheduledAt: date ? dateToLocalYYYYMMDD(date) : '' })}
                             disabled={!hasAssign}
                             className="h-8 text-sm"
-                            minDate={exam?.startDate ? new Date(exam.startDate) : undefined}
-                            maxDate={exam?.endDate ? new Date(exam.endDate) : undefined}
+                            minDate={exam?.startDate ?? undefined}
+                            maxDate={exam?.endDate ?? undefined}
                           />
                         </div>
                         <div className="flex items-end">

@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 import { useCourseStudentPictureUpload } from '@/hooks/useCourseStudentPictureUpload';
 import { useCreateCourseStudent, useUpdateCourseStudent } from '@/hooks/useCourseStudents';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -94,7 +95,7 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
     defaultValues: {
       courseId: courseId || '',
       admissionNo: '',
-      registrationDate: new Date().toISOString().split('T')[0],
+      registrationDate: dateToLocalYYYYMMDD(new Date()),
       fullName: '',
       tazkiraNumber: '',
       phone: '',
@@ -141,7 +142,7 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
       reset({
         courseId: student.courseId || '',
         admissionNo: student.admissionNo || '',
-        registrationDate: student.registrationDate || new Date().toISOString().split('T')[0],
+        registrationDate: student.registrationDate || dateToLocalYYYYMMDD(new Date()),
         fullName: student.fullName || '',
         tazkiraNumber: student.tazkiraNumber || '',
         phone: student.phone || '',
@@ -174,7 +175,7 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
       reset({
         courseId: courseId || '',
         admissionNo: '',
-        registrationDate: new Date().toISOString().split('T')[0],
+        registrationDate: dateToLocalYYYYMMDD(new Date()),
         fullName: '',
         tazkiraNumber: '',
         phone: '',

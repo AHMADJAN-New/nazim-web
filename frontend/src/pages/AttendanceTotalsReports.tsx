@@ -22,6 +22,7 @@ import { useMemo, useState, useEffect } from 'react';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -518,11 +519,11 @@ export default function AttendanceTotalsReports() {
                             <>
                                 <div className="space-y-2">
                                     <Label>{t('library.fromDate') || 'From date'}</Label>
-                                    <CalendarDatePicker date={filters.dateFrom || '' ? new Date(filters.dateFrom || '') : undefined} onDateChange={(date) => handleFilterChange("dateFrom", date ? date.toISOString().split("T")[0] : "")} />
+                                    <CalendarDatePicker date={filters.dateFrom || '' ? parseLocalDate(filters.dateFrom || '') : undefined} onDateChange={(date) => handleFilterChange("dateFrom", date ? dateToLocalYYYYMMDD(date) : "")} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>{t('library.toDate') || 'To date'}</Label>
-                                    <CalendarDatePicker date={filters.dateTo || '' ? new Date(filters.dateTo || '') : undefined} onDateChange={(date) => handleFilterChange("dateTo", date ? date.toISOString().split("T")[0] : "")} />
+                                    <CalendarDatePicker date={filters.dateTo || '' ? parseLocalDate(filters.dateTo || '') : undefined} onDateChange={(date) => handleFilterChange("dateTo", date ? dateToLocalYYYYMMDD(date) : "")} />
                                 </div>
                             </>
                         )}

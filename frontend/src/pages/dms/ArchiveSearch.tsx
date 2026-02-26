@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { dmsApi } from "@/lib/api/client";
-import { formatDate, getShortDescription } from "@/lib/dateUtils";
+import { formatDate, getShortDescription, dateToLocalYYYYMMDD, parseLocalDate } from "@/lib/dateUtils";
 import type { IncomingDocument, OutgoingDocument } from "@/types/dms";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -496,12 +496,12 @@ export default function ArchiveSearch() {
 
             <div className="space-y-2">
               <Label>{t('dms.archiveSearch.fromDate')}</Label>
-              <CalendarDatePicker date={filters.from_date ? new Date(filters.from_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, from_date: date ? date.toISOString().split("T")[0] : "" }))} />
+              <CalendarDatePicker date={filters.from_date ? parseLocalDate(filters.from_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, from_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
             </div>
 
             <div className="space-y-2">
               <Label>{t('dms.archiveSearch.toDate')}</Label>
-              <CalendarDatePicker date={filters.to_date ? new Date(filters.to_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, to_date: date ? date.toISOString().split("T")[0] : "" }))} />
+              <CalendarDatePicker date={filters.to_date ? parseLocalDate(filters.to_date) : undefined} onDateChange={(date) => setFilters((s) => ({ ...s, to_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
             </div>
           </div>
         </div>

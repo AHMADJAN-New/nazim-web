@@ -270,16 +270,26 @@ class ApiClient {
           }
           
           let errorMessage = firstErrorMessage || error.message || error.error || 'Validation failed';
-          // Login lockout: show user-friendly message with locked_until if present
+          // Login lockout: show user-friendly message; keep backend message if it includes "minute(s)" so user sees countdown
           if (endpoint.includes('/auth/login') && error.locked_until) {
-            try {
-              const until = new Date(error.locked_until);
-              errorMessage = `Account locked until ${until.toLocaleString()}. Use Forgot password to reset.`;
-            } catch {
-              errorMessage = error.message || error.error || 'Account locked. Use Forgot password to reset.';
+            const backendHasTime = (error.message || '').toLowerCase().includes('minute');
+            if (backendHasTime) {
+              errorMessage = error.message || error.error || errorMessage;
+            } else {
+              try {
+                const until = new Date(error.locked_until);
+                errorMessage = `Account locked until ${until.toLocaleString()}. Use Forgot password to reset.`;
+              } catch {
+                errorMessage = error.message || error.error || 'Account locked. Use Forgot password to reset.';
+              }
             }
           }
           const validationError = new Error(errorMessage);
+
+          // Attach locked_until for UI (e.g. show "try again in X minutes")
+          if (endpoint.includes('/auth/login') && error.locked_until) {
+            (validationError as any).locked_until = error.locked_until;
+          }
           
           // Attach errors object so hooks can access it
           (validationError as any).errors = validationErrors || {};

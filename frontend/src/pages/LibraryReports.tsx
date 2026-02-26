@@ -10,6 +10,7 @@ import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import type { LibraryLoan, LibraryBook } from '@/types/domain/library';
@@ -688,11 +689,11 @@ export default function LibraryReports() {
                                 <div className="flex flex-col md:flex-row gap-4 items-end">
                                     <div className="space-y-2">
                                         <Label htmlFor="date-from">From Date</Label>
-                                        <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
+                                        <CalendarDatePicker date={dateFrom ? parseLocalDate(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? dateToLocalYYYYMMDD(date) : "")} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="date-to">To Date</Label>
-                                        <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
+                                        <CalendarDatePicker date={dateTo ? parseLocalDate(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? dateToLocalYYYYMMDD(date) : "")} />
                                     </div>
                                     {hasActiveFilters && (
                                         <div className="w-full md:w-auto">

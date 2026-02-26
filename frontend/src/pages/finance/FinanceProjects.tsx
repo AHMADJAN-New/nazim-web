@@ -53,6 +53,7 @@ import {
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 
 export default function FinanceProjects() {
     const { t } = useLanguage();
@@ -113,8 +114,8 @@ export default function FinanceProjects() {
             name: project.name ?? '',
             description: project.description ?? '',
             currencyId: project.currencyId || null,
-            startDate: project.startDate ? project.startDate.toISOString().split('T')[0] : null,
-            endDate: project.endDate ? project.endDate.toISOString().split('T')[0] : null,
+            startDate: project.startDate ? (project.startDate instanceof Date ? dateToLocalYYYYMMDD(project.startDate) : project.startDate) : null,
+            endDate: project.endDate ? (project.endDate instanceof Date ? dateToLocalYYYYMMDD(project.endDate) : project.endDate) : null,
             budgetAmount: project.budgetAmount,
             isActive: project.isActive,
         });
@@ -157,11 +158,11 @@ export default function FinanceProjects() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="startDate">{t('events.startDate') || 'Start Date'}</Label>
-                    <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData({ ...formData, startDate: date ? date.toISOString().split('T')[0] : null })} />
+                    <CalendarDatePicker date={formData.startDate ? parseLocalDate(formData.startDate) : undefined} onDateChange={(date) => setFormData({ ...formData, startDate: date ? dateToLocalYYYYMMDD(date) : null })} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="endDate">{t('events.endDate') || 'End Date'}</Label>
-                    <CalendarDatePicker date={formData.endDate ? new Date(formData.endDate) : undefined} onDateChange={(date) => setFormData({ ...formData, endDate: date ? date.toISOString().split('T')[0] : null })} />
+                    <CalendarDatePicker date={formData.endDate ? parseLocalDate(formData.endDate) : undefined} onDateChange={(date) => setFormData({ ...formData, endDate: date ? dateToLocalYYYYMMDD(date) : null })} />
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

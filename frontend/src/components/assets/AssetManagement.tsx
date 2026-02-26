@@ -38,6 +38,7 @@ import { useSchools } from '@/hooks/useSchools';
 import { useStaff } from '@/hooks/useStaff';
 import { useStudents } from '@/hooks/useStudents';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 import type { Asset, AssetAssignmentDomain, AssetMaintenanceDomain } from '@/types/domain/asset';
 import { LoadingSpinner } from '@/components/ui/loading';
 
@@ -187,8 +188,8 @@ export function AssetManagement() {
       category: asset.category || '',
       serialNumber: asset.serialNumber || '',
       purchasePrice: asset.purchasePrice ?? null,
-      purchaseDate: asset.purchaseDate ? asset.purchaseDate.toISOString().split('T')[0] : null,
-      warrantyExpiry: asset.warrantyExpiry ? asset.warrantyExpiry.toISOString().split('T')[0] : null,
+      purchaseDate: asset.purchaseDate ? dateToLocalYYYYMMDD(asset.purchaseDate instanceof Date ? asset.purchaseDate : new Date(asset.purchaseDate)) : null,
+      warrantyExpiry: asset.warrantyExpiry ? dateToLocalYYYYMMDD(asset.warrantyExpiry instanceof Date ? asset.warrantyExpiry : new Date(asset.warrantyExpiry)) : null,
       vendor: asset.vendor || '',
       notes: asset.notes || '',
       schoolId: asset.schoolId || undefined,

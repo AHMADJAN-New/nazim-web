@@ -13,6 +13,7 @@ import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useDatePreference } from '@/hooks/useDatePreference';
 import { leaveRequestsApi, apiClient } from '@/lib/api/client';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import type { LeaveRequest } from '@/types/domain/leave';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -312,11 +313,11 @@ export default function LeaveReports() {
               </div>
               <div className="space-y-2">
                 <Label>{t('events.from')}</Label>
-                <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
+                <CalendarDatePicker date={dateFrom ? parseLocalDate(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? dateToLocalYYYYMMDD(date) : "")} placeholder="Select date" />
               </div>
               <div className="space-y-2">
                 <Label>{t('events.to')}</Label>
-                <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
+                <CalendarDatePicker date={dateTo ? parseLocalDate(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? dateToLocalYYYYMMDD(date) : "")} placeholder="Select date" />
               </div>
               <div className="space-y-2">
                 <Label>{t('leave.rowsPerPage')}</Label>

@@ -29,6 +29,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 
 const statusOrder: AdmissionStatus[] = ['active', 'admitted', 'pending', 'inactive', 'suspended', 'withdrawn', 'graduated'];
 
@@ -356,11 +357,11 @@ const StudentAdmissionsReport = () => {
           </div>
           <div className="space-y-2">
             <Label>{t('library.fromDate') || 'From date'}</Label>
-            <CalendarDatePicker date={filters.fromDate || '' ? new Date(filters.fromDate || '') : undefined} onDateChange={(date) => handleFilterChange("fromDate", date ? date.toISOString().split("T")[0] : "")} />
+            <CalendarDatePicker date={filters.fromDate || '' ? parseLocalDate(filters.fromDate || '') : undefined} onDateChange={(date) => handleFilterChange("fromDate", date ? dateToLocalYYYYMMDD(date) : "")} />
           </div>
           <div className="space-y-2">
             <Label>{t('library.toDate') || 'To date'}</Label>
-            <CalendarDatePicker date={filters.toDate || '' ? new Date(filters.toDate || '') : undefined} onDateChange={(date) => handleFilterChange("toDate", date ? date.toISOString().split("T")[0] : "")} />
+            <CalendarDatePicker date={filters.toDate || '' ? parseLocalDate(filters.toDate || '') : undefined} onDateChange={(date) => handleFilterChange("toDate", date ? dateToLocalYYYYMMDD(date) : "")} />
           </div>
           <div className="flex items-center justify-between rounded-lg border px-4 py-3 md:col-span-2">
             <div className="space-y-1">

@@ -92,6 +92,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
@@ -1092,7 +1093,7 @@ export default function CourseAttendance() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-sm md:text-base">{t('courses.attendance.date')}</Label>
-              <CalendarDatePicker date={sessionDate ? new Date(sessionDate) : undefined} onDateChange={(date) => setSessionDate(date ? date.toISOString().split("T")[0] : "")} />
+              <CalendarDatePicker date={sessionDate ? parseLocalDate(sessionDate) : undefined} onDateChange={(date) => setSessionDate(date ? dateToLocalYYYYMMDD(date) : "")} />
             </div>
             <div className="space-y-2">
               <Label className="text-sm md:text-base">{t('courses.attendance.titleOptional')}</Label>

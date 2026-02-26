@@ -32,6 +32,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { showToast } from '@/lib/toast';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { leaveRequestsApi, studentAdmissionsApi } from '@/lib/api/client';
 import type { LeaveRequest, LeaveRequestInsert } from '@/types/domain/leave';
 import { mapLeaveRequestApiToDomain } from '@/mappers/leaveMapper';
@@ -842,11 +843,11 @@ export default function LeaveManagement() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Label htmlFor="start-date">{t('events.startDate')} <span className="text-destructive">*</span></Label>
-                    <CalendarDatePicker date={startDate ? new Date(startDate) : undefined} onDateChange={(date) => setStartDate(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={startDate ? parseLocalDate(startDate) : undefined} onDateChange={(date) => setStartDate(date ? dateToLocalYYYYMMDD(date) : "")} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="end-date">{t('events.endDate')} <span className="text-destructive">*</span></Label>
-                    <CalendarDatePicker date={endDate ? new Date(endDate) : undefined} onDateChange={(date) => setEndDate(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={endDate ? parseLocalDate(endDate) : undefined} onDateChange={(date) => setEndDate(date ? dateToLocalYYYYMMDD(date) : "")} />
                   </div>
                 </div>
               </div>

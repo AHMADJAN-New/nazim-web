@@ -1,5 +1,6 @@
 import type * as LeaveApi from '@/types/api/leaveRequest';
 import type { LeaveRequest, LeaveRequestInsert, LeaveRequestUpdate } from '@/types/domain/leave';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 
 export const mapLeaveRequestApiToDomain = (api: LeaveApi.LeaveRequest): LeaveRequest => ({
   id: api.id,
@@ -41,8 +42,8 @@ export const mapLeaveRequestDomainToInsert = (payload: LeaveRequestInsert): any 
   school_id: payload.schoolId ?? null,
   academic_year_id: payload.academicYearId ?? null,
   leave_type: payload.leaveType,
-  start_date: payload.startDate.toISOString().split('T')[0],
-  end_date: payload.endDate.toISOString().split('T')[0],
+  start_date: dateToLocalYYYYMMDD(payload.startDate),
+  end_date: dateToLocalYYYYMMDD(payload.endDate),
   start_time: payload.startTime ?? null,
   end_time: payload.endTime ?? null,
   reason: payload.reason,
@@ -54,8 +55,8 @@ export const mapLeaveRequestDomainToUpdate = (payload: LeaveRequestUpdate): any 
   school_id: payload.schoolId,
   academic_year_id: payload.academicYearId,
   leave_type: payload.leaveType,
-  start_date: payload.startDate ? payload.startDate.toISOString().split('T')[0] : undefined,
-  end_date: payload.endDate ? payload.endDate.toISOString().split('T')[0] : undefined,
+  start_date: payload.startDate ? dateToLocalYYYYMMDD(payload.startDate) : undefined,
+  end_date: payload.endDate ? dateToLocalYYYYMMDD(payload.endDate) : undefined,
   start_time: payload.startTime,
   end_time: payload.endTime,
   reason: payload.reason,

@@ -23,6 +23,7 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { attendanceSessionsApi, apiClient } from '@/lib/api/client';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
 import type { Student } from '@/types/domain/student';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -486,11 +487,11 @@ export default function AttendanceReports() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">{t('library.fromDate') || 'From Date'}</label>
-            <CalendarDatePicker date={filters.dateFrom ? new Date(filters.dateFrom) : undefined} onDateChange={(date) => handleFilterChange('dateFrom', date ? date.toISOString().split("T")[0] : "")} />
+            <CalendarDatePicker date={filters.dateFrom ? parseLocalDate(filters.dateFrom) : undefined} onDateChange={(date) => handleFilterChange('dateFrom', date ? dateToLocalYYYYMMDD(date) : "")} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">{t('library.toDate') || 'To Date'}</label>
-            <CalendarDatePicker date={filters.dateTo ? new Date(filters.dateTo) : undefined} onDateChange={(date) => handleFilterChange('dateTo', date ? date.toISOString().split("T")[0] : "")} />
+            <CalendarDatePicker date={filters.dateTo ? parseLocalDate(filters.dateTo) : undefined} onDateChange={(date) => handleFilterChange('dateTo', date ? dateToLocalYYYYMMDD(date) : "")} />
           </div>
         </div>
       </FilterPanel>

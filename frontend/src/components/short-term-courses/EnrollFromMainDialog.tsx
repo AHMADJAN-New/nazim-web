@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useEnrollFromMain } from '@/hooks/useCourseStudents';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents } from '@/hooks/useStudents';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 
 interface EnrollFromMainDialogProps {
@@ -42,7 +43,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>(course?.id || '');
-  const [registrationDate, setRegistrationDate] = useState(new Date().toISOString().split('T')[0]);
+  const [registrationDate, setRegistrationDate] = useState(dateToLocalYYYYMMDD(new Date()));
   const [feePaid, setFeePaid] = useState(false);
   
   // Update selectedCourseId when course prop changes
@@ -213,7 +214,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="registrationDate">{t('courses.enrollFromMainDialog.registrationDate')}</Label>
-              <CalendarDatePicker date={registrationDate ? new Date(registrationDate) : undefined} onDateChange={(date) => setRegistrationDate(date ? date.toISOString().split("T")[0] : "")} />
+              <CalendarDatePicker date={registrationDate ? parseLocalDate(registrationDate) : undefined} onDateChange={(date) => setRegistrationDate(date ? dateToLocalYYYYMMDD(date) : "")} />
             </div>
             <div className="flex items-center space-x-2 pt-6">
               <Checkbox

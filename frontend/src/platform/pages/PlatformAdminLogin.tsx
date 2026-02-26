@@ -155,8 +155,12 @@ export function PlatformAdminLogin() {
       window.location.href = '/platform/dashboard';
     } catch (err: any) {
       const errorMessage = err.message || 'Login failed. Please check your credentials.';
-      setError(errorMessage);
-      showToast.error(errorMessage);
+      const isLocked = errorMessage.toLowerCase().includes('locked') || err.locked_until;
+      const displayMessage = isLocked
+        ? (err.locked_until ? errorMessage : t('auth.accountLocked'))
+        : errorMessage;
+      setError(displayMessage);
+      showToast.error(displayMessage);
       // Clean up on error
       localStorage.removeItem('is_platform_admin_session');
       const mainAppTokenBackup = localStorage.getItem('main_app_token_backup');

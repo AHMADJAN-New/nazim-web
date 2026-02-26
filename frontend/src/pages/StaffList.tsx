@@ -44,6 +44,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { formatStaffName } from '@/lib/utils/formatStaffName';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { cn } from '@/lib/utils';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 import { StaffProfile } from '@/components/staff/StaffProfile';
 import { StaffPictureUpload } from '@/components/staff/StaffPictureUpload';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -78,8 +79,7 @@ const staffSchema = z.object({
         .transform((val) => {
             if (!val) return null;
             if (val instanceof Date) {
-                // Convert Date to ISO string format (YYYY-MM-DD)
-                return val.toISOString().split('T')[0];
+                return dateToLocalYYYYMMDD(val);
             }
             return val;
         }),

@@ -28,6 +28,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { dmsApi } from "@/lib/api/client";
 import { formatDate } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { renderLetterToDataUrl } from "@/services/dms/LetterCanvasRenderer";
 import { generateLetterPdf } from "@/services/dms/LetterPdfGenerator";
 import type { LetterTemplate, TemplateVariable, OutgoingDocument } from "@/types/dms";
@@ -1016,7 +1017,7 @@ export default function IssueLetter() {
                     </Label>
                     <SecurityBadge level={payload.security_level_key} />
                   </div>
-                  <CalendarDatePicker date={payload.issue_date ? new Date(payload.issue_date) : undefined} onDateChange={(date) => setPayload(date ? date.toISOString().split("T")[0] : "")} />
+                  <CalendarDatePicker date={payload.issue_date ? parseLocalDate(payload.issue_date) : undefined} onDateChange={(date) => setPayload((prev) => ({ ...prev, issue_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
                 </div>
 
                 {/* Template Variables - Individual Fields with Better UX */}

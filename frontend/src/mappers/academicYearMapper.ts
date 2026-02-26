@@ -2,6 +2,7 @@
 
 import type * as AcademicYearApi from '@/types/api/academicYear';
 import type { AcademicYear } from '@/types/domain/academicYear';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 
 /**
  * Convert API AcademicYear model to Domain AcademicYear model
@@ -29,8 +30,8 @@ export function mapAcademicYearDomainToInsert(domain: Partial<AcademicYear>): Ac
     return {
         organization_id: domain.organizationId || null,
         name: domain.name || '',
-        start_date: domain.startDate ? domain.startDate.toISOString().split('T')[0] : '',
-        end_date: domain.endDate ? domain.endDate.toISOString().split('T')[0] : '',
+        start_date: domain.startDate ? dateToLocalYYYYMMDD(domain.startDate) : '',
+        end_date: domain.endDate ? dateToLocalYYYYMMDD(domain.endDate) : '',
         is_current: domain.isCurrent ?? false,
         description: domain.description || null,
         status: domain.status || 'active',

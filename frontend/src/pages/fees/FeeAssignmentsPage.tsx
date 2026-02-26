@@ -51,6 +51,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { formatDate, formatCurrency } from '@/lib/utils';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   Sheet,
@@ -364,12 +365,12 @@ export default function FeeAssignmentsPage() {
       academic_year_id: assignment.academicYearId,
       class_academic_year_id: assignment.classAcademicYearId || '',
       assigned_amount: assignment.assignedAmount,
-      due_date: assignment.dueDate ? new Date(assignment.dueDate).toISOString().split('T')[0] : '',
+      due_date: assignment.dueDate ? dateToLocalYYYYMMDD(new Date(assignment.dueDate)) : '',
       payment_period_start: assignment.paymentPeriodStart
-        ? new Date(assignment.paymentPeriodStart).toISOString().split('T')[0]
+        ? dateToLocalYYYYMMDD(new Date(assignment.paymentPeriodStart))
         : '',
       payment_period_end: assignment.paymentPeriodEnd
-        ? new Date(assignment.paymentPeriodEnd).toISOString().split('T')[0]
+        ? dateToLocalYYYYMMDD(new Date(assignment.paymentPeriodEnd))
         : '',
       notes: assignment.notes || '',
       school_id: assignment.schoolId || '',

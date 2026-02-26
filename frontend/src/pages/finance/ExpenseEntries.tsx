@@ -60,6 +60,7 @@ import {
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 
 export default function ExpenseEntries() {
     const { t } = useLanguage();
@@ -91,7 +92,7 @@ export default function ExpenseEntries() {
         currencyId: null,
         projectId: null,
         amount: 0,
-        date: new Date().toISOString().split('T')[0],
+        date: dateToLocalYYYYMMDD(new Date()),
         referenceNo: '',
         description: '',
         paidTo: '',
@@ -106,7 +107,7 @@ export default function ExpenseEntries() {
             currencyId: null,
             projectId: null,
             amount: 0,
-            date: new Date().toISOString().split('T')[0],
+            date: dateToLocalYYYYMMDD(new Date()),
             referenceNo: '',
             description: '',
             paidTo: '',
@@ -142,7 +143,7 @@ export default function ExpenseEntries() {
             currencyId: entry.currencyId || null,
             projectId: entry.projectId || null,
             amount: entry.amount,
-            date: entry.date.toISOString().split('T')[0],
+            date: dateToLocalYYYYMMDD(entry.date),
             referenceNo: entry.referenceNo || '',
             description: entry.description || '',
             paidTo: entry.paidTo || '',
@@ -163,9 +164,9 @@ export default function ExpenseEntries() {
             const matchesStatus = filterStatus === 'all' || entry.status === filterStatus;
 
             // Date range filter
-            const entryDate = new Date(entry.date);
-            const matchesDateFrom = !dateFrom || entryDate >= new Date(dateFrom);
-            const matchesDateTo = !dateTo || entryDate <= new Date(dateTo);
+            const entryDate = entry.date instanceof Date ? entry.date : parseLocalDate(entry.date);
+            const matchesDateFrom = !dateFrom || entryDate >= parseLocalDate(dateFrom);
+            const matchesDateTo = !dateTo || entryDate <= parseLocalDate(dateTo);
 
             return matchesSearch && matchesCategory && matchesAccount && matchesStatus && matchesDateFrom && matchesDateTo;
         });
@@ -298,7 +299,7 @@ export default function ExpenseEntries() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="date">{t('events.date') || 'Date'} *</Label>
-                    <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={formData.date ? parseLocalDate(formData.date) : undefined} onDateChange={(date) => setFormData(date ? dateToLocalYYYYMMDD(date) : "")} />
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -520,14 +521,14 @@ export default function ExpenseEntries() {
                             <Calendar className="inline h-3 w-3 mr-1" />
                             {t('events.from') || 'From'}
                         </Label>
-                        <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
+                        <CalendarDatePicker date={dateFrom ? parseLocalDate(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? dateToLocalYYYYMMDD(date) : "")} />
                     </div>
                     <div className="min-w-[150px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
                             <Calendar className="inline h-3 w-3 mr-1" />
                             {t('events.to') || 'To'}
                         </Label>
-                        <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
+                        <CalendarDatePicker date={dateTo ? parseLocalDate(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? dateToLocalYYYYMMDD(date) : "")} />
                     </div>
                     <div className="min-w-[140px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">

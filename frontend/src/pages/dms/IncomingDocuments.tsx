@@ -36,7 +36,7 @@ import { useAcademicYears, useCurrentAcademicYear } from "@/hooks/useAcademicYea
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
-import { formatDate, formatDateForInput, getShortDescription } from "@/lib/dateUtils";
+import { formatDate, formatDateForInput, getShortDescription, dateToLocalYYYYMMDD, parseLocalDate } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
@@ -847,7 +847,7 @@ export default function IncomingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t('dms.forms.incoming.receivedDate') || 'Received Date'} <span className="text-destructive">*</span></Label>
-                    <CalendarDatePicker date={newDoc.received_date ? new Date(newDoc.received_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, received_date: date ? date.toISOString().split("T")[0] : "" }))} />
+                    <CalendarDatePicker date={newDoc.received_date ? parseLocalDate(newDoc.received_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, received_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -971,7 +971,7 @@ export default function IncomingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t('dms.forms.incoming.externalDocDate') || 'External Document Date'}</Label>
-                    <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? date.toISOString().split("T")[0] : "" }))} />
+                    <CalendarDatePicker date={newDoc.external_doc_date ? parseLocalDate(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
                   </div>
                 </div>
                 <div className="space-y-2">

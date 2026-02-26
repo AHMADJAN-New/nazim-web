@@ -16,15 +16,16 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/calendarAdapter';
 import { convertToCalendar, gregorianToHijriShamsi, gregorianToHijriQamari, hijriShamsiToGregorian } from '@/lib/calendarConverter';
 import { calendarState } from '@/lib/calendarState';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { MONTH_NAMES } from '@/lib/datePreferences';
 import type { CalendarType } from '@/lib/datePreferences';
 import { cn } from '@/lib/utils';
 
 interface CalendarDatePickerProps {
   /**
-   * The selected date (always in Gregorian format for storage)
+   * The selected date (always in Gregorian format for storage; Date or YYYY-MM-DD string)
    */
-  date?: Date;
+  date?: Date | string;
 
   /**
    * Callback when date is selected (receives Gregorian date)
@@ -106,16 +107,14 @@ export function CalendarDatePicker({
   const [isOpen, setIsOpen] = React.useState(false);
   const [currentCalendar, setCurrentCalendar] = React.useState<CalendarType>(calendarState.get());
   
-  // Normalize date prop: convert string to Date if needed
+  // Normalize date prop: convert string to Date if needed (use local date to avoid timezone bugs)
   const normalizedDate = React.useMemo(() => {
     if (!date) return undefined;
     if (date instanceof Date) {
-      // Check if it's a valid Date
       return isNaN(date.getTime()) ? undefined : date;
     }
-    // If it's a string, try to convert it
     if (typeof date === 'string') {
-      const parsed = new Date(date);
+      const parsed = parseLocalDate(date);
       return isNaN(parsed.getTime()) ? undefined : parsed;
     }
     return undefined;
@@ -253,39 +252,22 @@ export function CalendarDatePicker({
   }, [currentCalendar, language, month instanceof Date ? month.getFullYear() : undefined, month instanceof Date ? month.getMonth() : undefined, month instanceof Date ? month.getDate() : undefined]);
 
   // Memoize year options to improve performance
+  // For Gregorian: value and label are the same. For Shamsi/Qamari: value is Gregorian year (for setMonth), label is calendar year so the dropdown shows 1404 not 2025.
   const yearOptions = React.useMemo(() => {
+    const years: Array<{ value: number; label: string | number }> = [];
     if (currentCalendar === 'gregorian') {
-      const years: Array<{ value: number; label: number }> = [];
       for (let year = 1900; year <= new Date().getFullYear() + 10; year++) {
         years.push({ value: year, label: year });
       }
       return years;
     }
-
-    // For non-Gregorian calendars, generate unique years
-    const yearsSet = new Set<number>();
+    // Non-Gregorian: use a fixed Gregorian month (July, index 6) to map gYear -> calendar year for stable labels
     for (let gYear = 1900; gYear <= new Date().getFullYear() + 10; gYear++) {
-      const testDate = new Date(gYear, 6, 15); // Use July 15 as a stable reference point
-      const conv = getCachedConversion(testDate, currentCalendar);
-      yearsSet.add(conv.year);
+      const refDate = new Date(gYear, 6, 15);
+      const converted = getCachedConversion(refDate, currentCalendar);
+      years.push({ value: gYear, label: converted.year });
     }
-    const uniqueYears = Array.from(yearsSet).sort((a, b) => a - b);
-
-    // Build year options mapping calendar years to Gregorian years
-    const options: Array<{ value: number; label: number }> = [];
-    uniqueYears.forEach((calendarYear) => {
-      // Find Gregorian year for this calendar year
-      for (let gYear = 1900; gYear <= new Date().getFullYear() + 10; gYear++) {
-        const testDate = new Date(gYear, 6, 15);
-        const conv = getCachedConversion(testDate, currentCalendar);
-        if (conv.year === calendarYear) {
-          options.push({ value: gYear, label: calendarYear });
-          break;
-        }
-      }
-    });
-
-    return options;
+    return years;
   }, [currentCalendar]);
 
   // Get weekday names based on language
@@ -381,7 +363,7 @@ export function CalendarDatePicker({
         <Button
           variant="outline"
           className={cn(
-            'w-full justify-start text-left font-normal',
+            'justify-start text-left font-normal px-2.5',
             !date && 'text-muted-foreground',
             className
           )}
@@ -582,8 +564,8 @@ export function CalendarInput({
  * ```
  */
 interface CalendarDateRangePickerProps {
-  startDate?: Date;
-  endDate?: Date;
+  startDate?: Date | string;
+  endDate?: Date | string;
   onStartDateChange?: (date: Date | undefined) => void;
   onEndDateChange?: (date: Date | undefined) => void;
   startPlaceholder?: string;
@@ -591,6 +573,9 @@ interface CalendarDateRangePickerProps {
   disabled?: boolean;
   className?: string;
 }
+
+/** Date range type for react-day-picker range mode */
+type DateRange = { from?: Date; to?: Date };
 
 export function CalendarDateRangePicker({
   startDate,
@@ -602,24 +587,157 @@ export function CalendarDateRangePicker({
   disabled = false,
   className,
 }: CalendarDateRangePickerProps) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [currentCalendar, setCurrentCalendar] = React.useState<CalendarType>(calendarState.get());
+  const { language, t } = useLanguage();
+
+  const fromDate = React.useMemo(() => {
+    if (!startDate) return undefined;
+    if (startDate instanceof Date) return isNaN(startDate.getTime()) ? undefined : startDate;
+    const parsed = parseLocalDate(startDate);
+    return isNaN(parsed.getTime()) ? undefined : parsed;
+  }, [startDate]);
+
+  const toDate = React.useMemo(() => {
+    if (!endDate) return undefined;
+    if (endDate instanceof Date) return isNaN(endDate.getTime()) ? undefined : endDate;
+    const parsed = parseLocalDate(endDate);
+    return isNaN(parsed.getTime()) ? undefined : parsed;
+  }, [endDate]);
+
+  const dateRange: DateRange = React.useMemo(
+    () => ({ from: fromDate, to: toDate }),
+    [fromDate, toDate]
+  );
+
+  React.useEffect(() => {
+    const unsub = calendarState.subscribe(setCurrentCalendar);
+    return unsub;
+  }, []);
+
+  const today = React.useMemo(() => {
+    const n = new Date();
+    n.setHours(0, 0, 0, 0);
+    return n;
+  }, []);
+  const todayConverted = React.useMemo(() => getCachedConversion(today, currentCalendar), [today, currentCalendar]);
+
+  const weekdayNames = React.useMemo(() => {
+    const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    if (language === 'en') return ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    return days.map((day) => t(`academic.timetable.days.${day}`));
+  }, [t, language]);
+
+  const formatters = React.useMemo(() => {
+    const base = {
+      formatWeekdayName: (date: Date) => {
+        const dayIndex = date.getDay();
+        const idx = dayIndex === 6 ? 0 : dayIndex + 1;
+        return weekdayNames[idx] ?? weekdayNames[0];
+      },
+      formatMonthDropdown: () => '',
+      formatYearDropdown: () => '',
+    };
+    if (currentCalendar === 'gregorian') return base;
+    const monthNames = MONTH_NAMES[currentCalendar][language] ?? MONTH_NAMES[currentCalendar]['en'];
+    return {
+      ...base,
+      formatCaption: (date: Date) => {
+        const c = getCachedConversion(date, currentCalendar);
+        return `${monthNames[c.month - 1]} ${c.year}`;
+      },
+      formatDay: (date: Date) => String(getCachedConversion(date, currentCalendar).day),
+    };
+  }, [currentCalendar, language, weekdayNames]);
+
+  const modifiers = React.useMemo(() => {
+    const base: Record<string, Date | ((d: Date) => boolean)> = {
+      friday: (d: Date) => d.getDay() === 5,
+    };
+    if (currentCalendar === 'gregorian') {
+      return { ...base, today };
+    }
+    return {
+      ...base,
+      today: (d: Date) => {
+        const c = getCachedConversion(d, currentCalendar);
+        return c.year === todayConverted.year && c.month === todayConverted.month && c.day === todayConverted.day;
+      },
+    };
+  }, [currentCalendar, today, todayConverted]);
+
+  const modifierClassNames = React.useMemo(() => ({ friday: 'bg-red-50 text-red-700 hover:bg-red-100' }), []);
+
+  const buttonLabel = React.useMemo(() => {
+    if (fromDate && toDate) return `${formatDate(fromDate)} - ${formatDate(toDate)}`;
+    if (fromDate) return formatDate(fromDate);
+    return startPlaceholder;
+  }, [fromDate, toDate, startPlaceholder]);
+
+  const handleSelect = (range: DateRange | undefined) => {
+    if (range?.from) onStartDateChange?.(range.from);
+    else onStartDateChange?.(undefined);
+    if (range?.to) onEndDateChange?.(range.to);
+    else onEndDateChange?.(undefined);
+    if (range?.from && range?.to) setIsOpen(false);
+  };
+
   return (
-    <div className={cn('flex gap-2', className)}>
-      <CalendarDatePicker
-        date={startDate}
-        onDateChange={onStartDateChange}
-        placeholder={startPlaceholder}
-        disabled={disabled}
-        maxDate={endDate}
-        className="flex-1"
-      />
-      <CalendarDatePicker
-        date={endDate}
-        onDateChange={onEndDateChange}
-        placeholder={endPlaceholder}
-        disabled={disabled}
-        minDate={startDate}
-        className="flex-1"
-      />
-    </div>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            'justify-start text-left font-normal px-2.5',
+            !fromDate && 'text-muted-foreground',
+            className
+          )}
+          disabled={disabled}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+          {buttonLabel}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="range"
+          selected={dateRange}
+          onSelect={handleSelect}
+          defaultMonth={fromDate ?? toDate ?? new Date()}
+          numberOfMonths={2}
+          pagedNavigation
+          disabled={(date) => {
+            if (fromDate && !toDate && date < fromDate) return true;
+            return false;
+          }}
+          formatters={formatters}
+          modifiers={modifiers}
+          modifiersClassNames={modifierClassNames}
+          weekStartsOn={6}
+          className="p-2"
+          classNames={{
+            months: "flex flex-col sm:flex-row space-y-3 sm:space-x-3 sm:space-y-0",
+            month: "space-y-2",
+            caption: "flex justify-center pt-0.5 relative items-center gap-2",
+            table: "w-full border-collapse space-y-0.5",
+            head_cell:
+              "text-muted-foreground rounded w-10 min-w-[2.5rem] font-normal text-[0.7rem] px-0.5 truncate",
+            row: "flex w-full mt-1",
+            cell: "h-8 w-10 min-w-[2.5rem] text-center text-xs p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+            day: "h-8 w-10 min-w-[2.5rem] p-0 text-xs font-normal rounded-md aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            day_range_end: "day-range-end",
+            day_selected:
+              "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+            day_today: "bg-accent text-accent-foreground",
+            day_outside:
+              "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+            day_disabled: "text-muted-foreground opacity-50",
+            day_range_middle:
+              "aria-selected:bg-accent aria-selected:text-accent-foreground",
+            day_hidden: "invisible",
+          }}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }

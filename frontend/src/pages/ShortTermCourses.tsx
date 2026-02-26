@@ -61,6 +61,7 @@ import {
   useReopenCourse,
 } from '@/hooks/useShortTermCourses';
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import type { CourseStudent } from '@/types/domain/courseStudent';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 
@@ -334,11 +335,11 @@ const ShortTermCourses = () => {
             </div>
             <div className="space-y-2">
               <Label>{t('courses.startFrom')}</Label>
-              <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
+              <CalendarDatePicker date={dateFrom ? parseLocalDate(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? dateToLocalYYYYMMDD(date) : "")} />
             </div>
             <div className="space-y-2">
               <Label>{t('courses.startTo')}</Label>
-              <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
+              <CalendarDatePicker date={dateTo ? parseLocalDate(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? dateToLocalYYYYMMDD(date) : "")} />
             </div>
             <div className="flex items-end">
               <Button variant="outline" className="w-full" onClick={() => {

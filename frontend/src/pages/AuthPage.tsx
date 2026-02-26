@@ -166,7 +166,8 @@ export default function AuthPage() {
       }
       // Check for account lockout
       if (errorMessage.toLowerCase().includes('locked') || error.locked_until) {
-        toast.error(t('auth.accountLocked') || errorMessage);
+        const hasCountdown = errorMessage.toLowerCase().includes('minute');
+        toast.error(hasCountdown ? errorMessage : (t('auth.accountLocked') || errorMessage));
         return;
       }
       // Check if error is related to credentials (case-insensitive)

@@ -27,6 +27,7 @@ import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useStaff } from '@/hooks/useStaff';
 import { useProfile } from '@/hooks/useProfiles';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import type { LibraryBook } from '@/types/domain/library';
 
 const defaultLoanDate = format(new Date(), 'yyyy-MM-dd');
@@ -436,11 +437,11 @@ export default function Library() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label>Loan Date</Label>
-                      <CalendarDatePicker date={loanForm.loan_date ? new Date(loanForm.loan_date) : undefined} onDateChange={(date) => setLoanForm(date ? date.toISOString().split("T")[0] : "")} />
+                      <CalendarDatePicker date={loanForm.loan_date ? parseLocalDate(loanForm.loan_date) : undefined} onDateChange={(date) => setLoanForm((prev) => ({ ...prev, loan_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
                     </div>
                     <div>
                       <Label>Due Date</Label>
-                      <CalendarDatePicker date={loanForm.due_date ? new Date(loanForm.due_date) : undefined} onDateChange={(date) => setLoanForm(date ? date.toISOString().split("T")[0] : "")} />
+                      <CalendarDatePicker date={loanForm.due_date ? parseLocalDate(loanForm.due_date) : undefined} onDateChange={(date) => setLoanForm((prev) => ({ ...prev, due_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
                     </div>
                   </div>
                   <div>

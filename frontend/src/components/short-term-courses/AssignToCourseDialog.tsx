@@ -22,6 +22,7 @@ import { useCourseStudents } from '@/hooks/useCourseStudents';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { courseStudentsApi } from '@/lib/api/client';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 import { mapCourseStudentApiToDomain } from '@/mappers/courseStudentMapper';
 import type * as Api from '@/types/api/courseStudent';
 import type { CourseStudent } from '@/types/domain/courseStudent';
@@ -61,7 +62,7 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
     defaultValues: {
       studentId: '',
       courseId: '',
-      registrationDate: new Date().toISOString().split('T')[0],
+      registrationDate: dateToLocalYYYYMMDD(new Date()),
       feePaid: false,
       feeAmount: undefined,
     },

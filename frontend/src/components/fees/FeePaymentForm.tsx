@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/hooks/useLanguage';
 import { feePaymentSchema, type FeePaymentFormData } from '@/lib/validations/fees';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 
 
 interface Option {
@@ -55,7 +56,7 @@ export function FeePaymentForm({
   const { t } = useLanguage();
 
   // Set default payment date to today
-  const today = new Date().toISOString().split('T')[0];
+  const today = dateToLocalYYYYMMDD(new Date());
 
   const form = useForm<FeePaymentFormData>({
     resolver: zodResolver(feePaymentSchema),

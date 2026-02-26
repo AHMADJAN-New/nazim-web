@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { useAttendanceSessions } from '@/hooks/useAttendance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 
 
 export default function AttendanceDashboard() {
@@ -20,8 +21,8 @@ export default function AttendanceDashboard() {
   const navigate = useNavigate();
   
   // Limit to last 30 days for dashboard performance
-  const dateTo = new Date().toISOString().split('T')[0];
-  const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const dateTo = dateToLocalYYYYMMDD(new Date());
+  const dateFrom = dateToLocalYYYYMMDD(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
   
   // Use pagination with larger page size for dashboard (100 sessions for better stats)
   const { sessions: attendanceSessions = [], isLoading, pageSize, setPageSize } = useAttendanceSessions(

@@ -1,5 +1,6 @@
 import type * as AssetApi from '@/types/api/asset';
 import type { Asset, AssetAssignmentDomain, AssetMaintenanceDomain, AssetHistoryDomain, AssetCopyDomain } from '@/types/domain/asset';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 
 export const mapAssetApiToDomain = (api: AssetApi.Asset): Asset => ({
   id: api.id,
@@ -114,13 +115,13 @@ export const mapAssetDomainToInsert = (domain: Partial<Asset>): AssetApi.AssetIn
   asset_tag: domain.assetTag || '',
   category: domain.category ?? null,
   serial_number: domain.serialNumber ?? null,
-  purchase_date: domain.purchaseDate ? domain.purchaseDate.toISOString().split('T')[0] : null,
+  purchase_date: domain.purchaseDate ? dateToLocalYYYYMMDD(domain.purchaseDate) : null,
   purchase_price: domain.purchasePrice ?? null,
   total_copies: domain.totalCopies ?? 1,
   status: domain.status,
   condition: domain.condition ?? null,
   vendor: domain.vendor ?? null,
-  warranty_expiry: domain.warrantyExpiry ? domain.warrantyExpiry.toISOString().split('T')[0] : null,
+  warranty_expiry: domain.warrantyExpiry ? dateToLocalYYYYMMDD(domain.warrantyExpiry) : null,
   location_notes: domain.locationNotes ?? null,
   notes: domain.notes ?? null,
   school_id: domain.schoolId && domain.schoolId !== 'none' ? domain.schoolId : null,
@@ -135,12 +136,12 @@ export const mapAssetDomainToUpdate = (domain: Partial<Asset>): AssetApi.AssetUp
   asset_tag: domain.assetTag,
   category: domain.category,
   serial_number: domain.serialNumber,
-  purchase_date: domain.purchaseDate ? domain.purchaseDate.toISOString().split('T')[0] : null,
+  purchase_date: domain.purchaseDate ? dateToLocalYYYYMMDD(domain.purchaseDate) : null,
   purchase_price: domain.purchasePrice ?? null,
   status: domain.status,
   condition: domain.condition,
   vendor: domain.vendor,
-  warranty_expiry: domain.warrantyExpiry ? domain.warrantyExpiry.toISOString().split('T')[0] : null,
+  warranty_expiry: domain.warrantyExpiry ? dateToLocalYYYYMMDD(domain.warrantyExpiry) : null,
   location_notes: domain.locationNotes,
   notes: domain.notes,
   school_id: domain.schoolId && domain.schoolId !== 'none' ? domain.schoolId : null,
@@ -155,9 +156,9 @@ export const mapAssetAssignmentDomainToInsert = (
 ): AssetApi.AssetAssignmentInsert => ({
   assigned_to_type: assignment.assignedToType || 'other',
   assigned_to_id: assignment.assignedToId,
-  assigned_on: assignment.assignedOn ? assignment.assignedOn.toISOString().split('T')[0] : null,
+  assigned_on: assignment.assignedOn ? dateToLocalYYYYMMDD(assignment.assignedOn) : null,
   expected_return_date: assignment.expectedReturnDate
-    ? assignment.expectedReturnDate.toISOString().split('T')[0]
+    ? dateToLocalYYYYMMDD(assignment.expectedReturnDate)
     : null,
   notes: assignment.notes,
 });
@@ -166,11 +167,11 @@ export const mapAssetAssignmentDomainToUpdate = (
   assignment: Partial<AssetAssignmentDomain>
 ): AssetApi.AssetAssignmentUpdate => ({
   status: assignment.status,
-  assigned_on: assignment.assignedOn ? assignment.assignedOn.toISOString().split('T')[0] : null,
+  assigned_on: assignment.assignedOn ? dateToLocalYYYYMMDD(assignment.assignedOn) : null,
   expected_return_date: assignment.expectedReturnDate
-    ? assignment.expectedReturnDate.toISOString().split('T')[0]
+    ? dateToLocalYYYYMMDD(assignment.expectedReturnDate)
     : null,
-  returned_on: assignment.returnedOn ? assignment.returnedOn.toISOString().split('T')[0] : null,
+  returned_on: assignment.returnedOn ? dateToLocalYYYYMMDD(assignment.returnedOn) : null,
   notes: assignment.notes,
 });
 
@@ -179,8 +180,8 @@ export const mapAssetMaintenanceDomainToInsert = (
 ): AssetApi.AssetMaintenanceInsert => ({
   maintenance_type: maintenance.maintenanceType ?? null,
   status: maintenance.status,
-  performed_on: maintenance.performedOn ? maintenance.performedOn.toISOString().split('T')[0] : null,
-  next_due_date: maintenance.nextDueDate ? maintenance.nextDueDate.toISOString().split('T')[0] : null,
+  performed_on: maintenance.performedOn ? dateToLocalYYYYMMDD(maintenance.performedOn) : null,
+  next_due_date: maintenance.nextDueDate ? dateToLocalYYYYMMDD(maintenance.nextDueDate) : null,
   cost: maintenance.cost !== undefined && maintenance.cost !== null ? Number(maintenance.cost) : 0,
   vendor: maintenance.vendor ?? null,
   notes: maintenance.notes ?? null,
@@ -191,8 +192,8 @@ export const mapAssetMaintenanceDomainToUpdate = (
 ): AssetApi.AssetMaintenanceUpdate => ({
   maintenance_type: maintenance.maintenanceType ?? null,
   status: maintenance.status,
-  performed_on: maintenance.performedOn ? maintenance.performedOn.toISOString().split('T')[0] : null,
-  next_due_date: maintenance.nextDueDate ? maintenance.nextDueDate.toISOString().split('T')[0] : null,
+  performed_on: maintenance.performedOn ? dateToLocalYYYYMMDD(maintenance.performedOn) : null,
+  next_due_date: maintenance.nextDueDate ? dateToLocalYYYYMMDD(maintenance.nextDueDate) : null,
   cost: maintenance.cost !== undefined && maintenance.cost !== null ? Number(maintenance.cost) : 0,
   vendor: maintenance.vendor ?? null,
   notes: maintenance.notes ?? null,

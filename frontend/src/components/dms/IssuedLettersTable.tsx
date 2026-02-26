@@ -20,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
-import { getShortDescription } from "@/lib/dateUtils";
+import { getShortDescription, dateToLocalYYYYMMDD, parseLocalDate } from "@/lib/dateUtils";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -186,15 +186,15 @@ export function IssuedLettersTable({ onRowClick }: IssuedLettersTableProps) {
               <div>
                 <Label htmlFor="from-date">{t("dms.issueLetter.issuedLetters.fromDate") || "From"}</Label>
                 <CalendarDatePicker
-                  date={fromDate ? new Date(fromDate) : undefined}
-                  onDateChange={(date) => setFromDate(date ? date.toISOString().split("T")[0] : "")}
+                  date={fromDate ? parseLocalDate(fromDate) : undefined}
+                  onDateChange={(date) => setFromDate(date ? dateToLocalYYYYMMDD(date) : "")}
                 />
               </div>
               <div>
                 <Label htmlFor="to-date">{t("dms.issueLetter.issuedLetters.toDate") || "To"}</Label>
                 <CalendarDatePicker
-                  date={toDate ? new Date(toDate) : undefined}
-                  onDateChange={(date) => setToDate(date ? date.toISOString().split("T")[0] : "")}
+                  date={toDate ? parseLocalDate(toDate) : undefined}
+                  onDateChange={(date) => setToDate(date ? dateToLocalYYYYMMDD(date) : "")}
                 />
               </div>
             </div>

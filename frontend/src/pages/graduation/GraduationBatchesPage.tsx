@@ -37,6 +37,7 @@ import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { graduationBatchSchema, type GraduationBatchFormData } from '@/lib/validations/graduation';
 
 // Status Badge Component
@@ -1075,7 +1076,7 @@ export default function GraduationBatchesPage() {
                       render={({ field }) => (
                         <CalendarDatePicker
                           date={field.value ? new Date(field.value) : undefined}
-                          onDateChange={(date) => field.onChange(date ? date.toISOString().split("T")[0] : '')}
+                          onDateChange={(date) => field.onChange(date ? dateToLocalYYYYMMDD(date) : '')}
                           placeholder={t('courses.pickDate') || t('events.pickDate') || 'Pick a date'}
                         />
                       )}
@@ -1258,11 +1259,11 @@ export default function GraduationBatchesPage() {
             </div>
             <div>
               <Label>{t('toast.graduation.filters.dateFrom') || 'From Date'}</Label>
-              <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
+              <CalendarDatePicker date={dateFrom ? parseLocalDate(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? dateToLocalYYYYMMDD(date) : "")} />
             </div>
             <div>
               <Label>{t('toast.graduation.filters.dateTo') || 'To Date'}</Label>
-              <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
+              <CalendarDatePicker date={dateTo ? parseLocalDate(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? dateToLocalYYYYMMDD(date) : "")} />
             </div>
           </div>
         </div>
@@ -2085,7 +2086,7 @@ export default function GraduationBatchesPage() {
                   render={({ field }) => (
                     <CalendarDatePicker
                       date={field.value ? new Date(field.value) : undefined}
-                      onDateChange={(date) => field.onChange(date ? date.toISOString().split("T")[0] : '')}
+                      onDateChange={(date) => field.onChange(date ? dateToLocalYYYYMMDD(date) : '')}
                       placeholder={t('courses.pickDate') || t('events.pickDate') || 'Pick a date'}
                     />
                   )}

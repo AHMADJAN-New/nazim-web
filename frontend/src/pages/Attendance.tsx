@@ -17,6 +17,7 @@ import { useClasses } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useSchools } from '@/hooks/useSchools';
 import { cn } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
 import type { AttendanceSessionInsert } from '@/types/domain/attendance';
 
@@ -138,7 +139,7 @@ export default function Attendance() {
           </div>
           <div className="space-y-3">
             <Label>{t('attendancePage.dateLabel')}</Label>
-            <CalendarDatePicker date={sessionDate ? new Date(sessionDate) : undefined} onDateChange={(date) => setSessionDate(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
+            <CalendarDatePicker date={sessionDate ? parseLocalDate(sessionDate) : undefined} onDateChange={(date) => setSessionDate(date ? dateToLocalYYYYMMDD(date) : "")} placeholder="Select date" />
           </div>
           <div className="space-y-3">
             <Label>{t('attendancePage.methodLabel')}</Label>

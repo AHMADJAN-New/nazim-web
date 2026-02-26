@@ -49,6 +49,7 @@ import { useHasPermission } from '@/hooks/usePermissions';
 import { useFinanceAccounts } from '@/hooks/useFinance';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 import type { Asset } from '@/types/domain/asset';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
@@ -197,8 +198,8 @@ export default function AssetListTab() {
       serialNumber: asset.serialNumber || '',
       purchasePrice: asset.purchasePrice ?? null,
       totalCopies: asset.totalCopies ?? 1,
-      purchaseDate: asset.purchaseDate ? asset.purchaseDate.toISOString().split('T')[0] : null,
-      warrantyExpiry: asset.warrantyExpiry ? asset.warrantyExpiry.toISOString().split('T')[0] : null,
+      purchaseDate: asset.purchaseDate ? dateToLocalYYYYMMDD(asset.purchaseDate instanceof Date ? asset.purchaseDate : new Date(asset.purchaseDate)) : null,
+      warrantyExpiry: asset.warrantyExpiry ? dateToLocalYYYYMMDD(asset.warrantyExpiry instanceof Date ? asset.warrantyExpiry : new Date(asset.warrantyExpiry)) : null,
       vendor: asset.vendor || '',
       notes: asset.notes || '',
       schoolId: asset.schoolId || undefined,
@@ -847,7 +848,7 @@ export default function AssetListTab() {
                     <CalendarDatePicker
                       date={field.value ? (typeof field.value === 'string' ? new Date(field.value) : field.value) : undefined}
                       onDateChange={(date) => {
-                        field.onChange(date ? date.toISOString().slice(0, 10) : '');
+                        field.onChange(date ? dateToLocalYYYYMMDD(date) : '');
                       }}
                       placeholder={t('assets.purchaseDate')}
                     />
@@ -866,7 +867,7 @@ export default function AssetListTab() {
                     <CalendarDatePicker
                       date={field.value ? (typeof field.value === 'string' ? new Date(field.value) : field.value) : undefined}
                       onDateChange={(date) => {
-                        field.onChange(date ? date.toISOString().slice(0, 10) : null);
+                        field.onChange(date ? dateToLocalYYYYMMDD(date) : null);
                       }}
                       placeholder={t('assets.warrantyExpiry')}
                     />

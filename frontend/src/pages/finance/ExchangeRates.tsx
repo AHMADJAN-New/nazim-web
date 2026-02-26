@@ -52,6 +52,7 @@ import {
     type ExchangeRateFormData,
 } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { formatDate } from '@/lib/utils';
 
 export default function ExchangeRates() {
@@ -70,7 +71,7 @@ export default function ExchangeRates() {
         fromCurrencyId: '',
         toCurrencyId: '',
         rate: 0,
-        effectiveDate: new Date().toISOString().split('T')[0],
+        effectiveDate: dateToLocalYYYYMMDD(new Date()),
         notes: '',
         isActive: true,
     });
@@ -80,7 +81,7 @@ export default function ExchangeRates() {
             fromCurrencyId: '',
             toCurrencyId: '',
             rate: 0,
-            effectiveDate: new Date().toISOString().split('T')[0],
+            effectiveDate: dateToLocalYYYYMMDD(new Date()),
             notes: '',
             isActive: true,
         });
@@ -112,7 +113,7 @@ export default function ExchangeRates() {
             fromCurrencyId: rate.fromCurrencyId,
             toCurrencyId: rate.toCurrencyId,
             rate: rate.rate,
-            effectiveDate: rate.effectiveDate.toISOString().split('T')[0],
+            effectiveDate: rate.effectiveDate instanceof Date ? dateToLocalYYYYMMDD(rate.effectiveDate) : rate.effectiveDate,
             notes: rate.notes || '',
             isActive: rate.isActive,
         });
@@ -192,11 +193,11 @@ export default function ExchangeRates() {
                 <div className="space-y-2">
                     <Label htmlFor="effectiveDate">{t('finance.effectiveDate') || 'Effective Date'} *</Label>
                     <CalendarDatePicker
-                        date={formData.effectiveDate ? new Date(formData.effectiveDate) : undefined}
+                        date={formData.effectiveDate ? parseLocalDate(formData.effectiveDate) : undefined}
                         onDateChange={(date) =>
                             setFormData({
                                 ...formData,
-                                effectiveDate: date ? date.toISOString().split('T')[0] : '',
+                                effectiveDate: date ? dateToLocalYYYYMMDD(date) : '',
                             })
                         }
                     />

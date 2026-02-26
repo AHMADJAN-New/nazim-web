@@ -33,7 +33,7 @@ import { showToast } from "@/lib/toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademicYears, useCurrentAcademicYear } from "@/hooks/useAcademicYears";
-import { formatDate, getShortDescription } from "@/lib/dateUtils";
+import { formatDate, getShortDescription, dateToLocalYYYYMMDD, parseLocalDate } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
@@ -854,7 +854,7 @@ export default function OutgoingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>Issue Date <span className="text-destructive">*</span></Label>
-                    <CalendarDatePicker date={newDoc.issue_date ? new Date(newDoc.issue_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, issue_date: date ? date.toISOString().split("T")[0] : "" }))} />
+                    <CalendarDatePicker date={newDoc.issue_date ? parseLocalDate(newDoc.issue_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, issue_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label>Subject <span className="text-destructive">*</span></Label>
@@ -995,7 +995,7 @@ export default function OutgoingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>External Document Date</Label>
-                    <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? date.toISOString().split("T")[0] : "" }))} />
+                    <CalendarDatePicker date={newDoc.external_doc_date ? parseLocalDate(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
                   </div>
                   <div className="space-y-2">
                     <Label>Security Level</Label>
@@ -1382,7 +1382,7 @@ export default function OutgoingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>Issue Date <span className="text-destructive">*</span></Label>
-                    <CalendarDatePicker date={newDoc.issue_date ? new Date(newDoc.issue_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, issue_date: date ? date.toISOString().split("T")[0] : "" }))} />
+                    <CalendarDatePicker date={newDoc.issue_date ? parseLocalDate(newDoc.issue_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, issue_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label>Subject <span className="text-destructive">*</span></Label>
@@ -1523,7 +1523,7 @@ export default function OutgoingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>External Document Date</Label>
-                    <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? date.toISOString().split("T")[0] : "" }))} />
+                    <CalendarDatePicker date={newDoc.external_doc_date ? parseLocalDate(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc((s) => ({ ...s, external_doc_date: date ? dateToLocalYYYYMMDD(date) : "" }))} />
                   </div>
                   <div className="space-y-2">
                     <Label>Security Level</Label>

@@ -43,6 +43,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
 import {
   usePlatformRenewalRequest,
@@ -71,7 +72,7 @@ export default function RenewalReviewPage() {
     currency: 'AFN' as 'AFN' | 'USD',
     payment_method: 'cash' as 'bank_transfer' | 'cash' | 'check' | 'mobile_money' | 'other',
     payment_reference: '',
-    payment_date: new Date().toISOString().split('T')[0],
+    payment_date: dateToLocalYYYYMMDD(new Date()),
     notes: '',
   });
 
@@ -177,7 +178,7 @@ export default function RenewalReviewPage() {
           currency: 'AFN',
           payment_method: 'cash',
           payment_reference: '',
-          payment_date: new Date().toISOString().split('T')[0],
+          payment_date: dateToLocalYYYYMMDD(new Date()),
           notes: '',
         });
         navigate('/platform/dashboard');
@@ -644,7 +645,7 @@ export default function RenewalReviewPage() {
                         setPaymentData({
                           ...paymentData,
                           payment_date: date
-                            ? date.toISOString().split('T')[0]
+                            ? dateToLocalYYYYMMDD(date)
                             : '',
                         })
                       }

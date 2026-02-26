@@ -4,6 +4,7 @@
  */
 
 import type * as SubscriptionApi from '@/types/api/subscription';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 import type {
   SubscriptionPlan,
   SubscriptionInfo,
@@ -328,7 +329,7 @@ export function mapMaintenancePaymentToApi(
     currency: data.currency,
     payment_method: data.paymentMethod,
     payment_reference: data.paymentReference,
-    payment_date: data.paymentDate.toISOString().split('T')[0],
+    payment_date: dateToLocalYYYYMMDD(data.paymentDate),
     notes: data.notes,
   };
 }
@@ -353,7 +354,7 @@ export function mapLicensePaymentToApi(
     currency: data.currency,
     payment_method: data.paymentMethod,
     payment_reference: data.paymentReference,
-    payment_date: data.paymentDate.toISOString().split('T')[0],
+    payment_date: dateToLocalYYYYMMDD(data.paymentDate),
     notes: data.notes,
   };
 }

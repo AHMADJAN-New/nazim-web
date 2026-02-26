@@ -76,6 +76,7 @@ import {
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
@@ -86,8 +87,8 @@ export default function FinanceReports() {
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
     const [dateRange, setDateRange] = useState({
-        startDate: firstDayOfMonth.toISOString().split('T')[0],
-        endDate: today.toISOString().split('T')[0],
+        startDate: dateToLocalYYYYMMDD(firstDayOfMonth),
+        endDate: dateToLocalYYYYMMDD(today),
     });
 
     const { data: cashbook, isLoading: cashbookLoading } = useDailyCashbook(dateRange.endDate);
@@ -99,14 +100,23 @@ export default function FinanceReports() {
     const DateRangePicker = () => (
         <FilterPanel title={t('events.filters') || 'Search & Filter'}>
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
-                <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <Label htmlFor="startDate">{t('events.from') || 'From'}</Label>
-                    <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor="date-from">{t('events.from') || 'From'}</Label>
+                    <CalendarDatePicker
+                        date={dateRange.startDate ? parseLocalDate(dateRange.startDate) : undefined}
+                        onDateChange={(date) => setDateRange((prev) => ({ ...prev, startDate: date ? dateToLocalYYYYMMDD(date) : "" }))}
+                        placeholder={t('events.from') || 'From'}
+                        className="max-w-[200px]"
+                    />
                 </div>
-                <div className="flex items-center gap-2">
-                    <Label htmlFor="endDate">{t('events.to') || 'To'}</Label>
-                    <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor="date-to">{t('events.to') || 'To'}</Label>
+                    <CalendarDatePicker
+                        date={dateRange.endDate ? parseLocalDate(dateRange.endDate) : undefined}
+                        onDateChange={(date) => setDateRange((prev) => ({ ...prev, endDate: date ? dateToLocalYYYYMMDD(date) : "" }))}
+                        placeholder={t('events.to') || 'To'}
+                        className="max-w-[200px]"
+                    />
                 </div>
             </div>
         </FilterPanel>
@@ -403,7 +413,7 @@ export default function FinanceReports() {
 
             // Process income entries
             incomeEntries.forEach(entry => {
-                const dateKey = entry.date.toISOString().split('T')[0];
+                const dateKey = dateToLocalYYYYMMDD(entry.date);
                 const existing = dateMap.get(dateKey) || { date: dateKey, income: 0, expense: 0 };
                 existing.income += entry.amount;
                 dateMap.set(dateKey, existing);
@@ -411,7 +421,7 @@ export default function FinanceReports() {
 
             // Process expense entries
             expenseEntries.forEach(entry => {
-                const dateKey = entry.date.toISOString().split('T')[0];
+                const dateKey = dateToLocalYYYYMMDD(entry.date);
                 const existing = dateMap.get(dateKey) || { date: dateKey, income: 0, expense: 0 };
                 existing.expense += entry.amount;
                 dateMap.set(dateKey, existing);

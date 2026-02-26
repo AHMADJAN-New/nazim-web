@@ -45,6 +45,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { showToast } from '@/lib/toast';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { ExamTime, ExamClass, ExamSubject } from '@/types/domain/exam';
 
@@ -486,7 +487,7 @@ export function ExamTimetablePage() {
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2 flex-1">
-                <CalendarDatePicker date={selectedDateFilter ? new Date(selectedDateFilter) : undefined} onDateChange={(date) => setSelectedDateFilter(date ? date.toISOString().split("T")[0] : "")} />
+                <CalendarDatePicker date={selectedDateFilter ? parseLocalDate(selectedDateFilter) : undefined} onDateChange={(date) => setSelectedDateFilter(date ? dateToLocalYYYYMMDD(date) : "")} />
                 {selectedDateFilter && (
                   <Button variant="ghost" size="sm" onClick={() => setSelectedDateFilter('')} className="flex-shrink-0">
                     {t('events.clear') || 'Clear'}
@@ -737,7 +738,7 @@ export function ExamTimetablePage() {
             </div>
             <div>
               <Label>{t('events.date') || 'Date'} *</Label>
-              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+              <CalendarDatePicker date={formData.date ? parseLocalDate(formData.date) : undefined} onDateChange={(date) => setFormData(date ? dateToLocalYYYYMMDD(date) : "")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -829,7 +830,7 @@ export function ExamTimetablePage() {
             )}
             <div>
               <Label>{t('events.date') || 'Date'} *</Label>
-              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+              <CalendarDatePicker date={formData.date ? parseLocalDate(formData.date) : undefined} onDateChange={(date) => setFormData(date ? dateToLocalYYYYMMDD(date) : "")} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

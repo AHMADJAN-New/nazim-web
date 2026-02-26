@@ -47,6 +47,7 @@ import {
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useCurrencies, useConvertCurrency } from '@/hooks/useCurrencies';
+import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import {
     useIncomeEntries,
     useCreateIncomeEntry,
@@ -94,7 +95,7 @@ export default function IncomeEntries() {
         projectId: null,
         donorId: null,
         amount: 0,
-        date: new Date().toISOString().split('T')[0],
+        date: dateToLocalYYYYMMDD(new Date()),
         referenceNo: '',
         description: '',
         paymentMethod: 'cash',
@@ -108,7 +109,7 @@ export default function IncomeEntries() {
             projectId: null,
             donorId: null,
             amount: 0,
-            date: new Date().toISOString().split('T')[0],
+            date: dateToLocalYYYYMMDD(new Date()),
             referenceNo: '',
             description: '',
             paymentMethod: 'cash',
@@ -143,7 +144,7 @@ export default function IncomeEntries() {
             projectId: entry.projectId || null,
             donorId: entry.donorId || null,
             amount: entry.amount,
-            date: entry.date.toISOString().split('T')[0],
+            date: dateToLocalYYYYMMDD(entry.date),
             referenceNo: entry.referenceNo || '',
             description: entry.description || '',
             paymentMethod: entry.paymentMethod || 'cash',
@@ -261,7 +262,7 @@ export default function IncomeEntries() {
             const mostRecentDate = filteredEntries.length > 0
                 ? new Date(Math.max(...filteredEntries.map(e => new Date(e.date).getTime())))
                 : new Date();
-            const conversionDate = mostRecentDate.toISOString().split('T')[0];
+            const conversionDate = dateToLocalYYYYMMDD(mostRecentDate);
             
             for (const [currencyId, data] of Object.entries(totalsByCurrency)) {
                 if (isCancelled) break;
@@ -408,7 +409,7 @@ export default function IncomeEntries() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="date">{t('events.date') || 'Date'} *</Label>
-                    <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={formData.date ? parseLocalDate(formData.date) : undefined} onDateChange={(date) => setFormData(date ? dateToLocalYYYYMMDD(date) : "")} />
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -628,14 +629,14 @@ export default function IncomeEntries() {
                             <Calendar className="inline h-3 w-3 mr-1" />
                             {t('events.from') || 'From'}
                         </Label>
-                        <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
+                        <CalendarDatePicker date={dateFrom ? parseLocalDate(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? dateToLocalYYYYMMDD(date) : "")} />
                     </div>
                     <div className="min-w-[150px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
                             <Calendar className="inline h-3 w-3 mr-1" />
                             {t('events.to') || 'To'}
                         </Label>
-                        <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
+                        <CalendarDatePicker date={dateTo ? parseLocalDate(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? dateToLocalYYYYMMDD(date) : "")} />
                     </div>
                     <div className="min-w-[160px]">
                         <Label className="text-xs text-muted-foreground mb-1 block">
