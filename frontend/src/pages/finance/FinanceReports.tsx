@@ -102,11 +102,11 @@ export default function FinanceReports() {
                 <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
                     <Label htmlFor="startDate">{t('events.from') || 'From'}</Label>
-                    <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(prev => ({ ...prev, startDate: date ? date.toISOString().split("T")[0] : prev.startDate }))} />
                 </div>
                 <div className="flex items-center gap-2">
                     <Label htmlFor="endDate">{t('events.to') || 'To'}</Label>
-                    <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(prev => ({ ...prev, endDate: date ? date.toISOString().split("T")[0] : prev.endDate }))} />
                 </div>
             </div>
         </FilterPanel>
