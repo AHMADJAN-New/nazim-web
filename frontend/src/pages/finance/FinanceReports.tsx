@@ -27,9 +27,7 @@ import {
     Cell,
     AreaChart,
     Area,
-    ChartSkeleton,
-} from '@/components/charts/LazyChart';
-import { Suspense } from 'react';
+} from 'recharts';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -1299,23 +1297,21 @@ export default function FinanceReports() {
                     </TabsTrigger>
                 </TabsList>
 
-                <Suspense fallback={<ChartSkeleton />}>
-                    <TabsContent value="cashbook">
-                        <DailyCashbookTab />
-                    </TabsContent>
-                    <TabsContent value="income-expense">
-                        <IncomeVsExpenseTab />
-                    </TabsContent>
-                    <TabsContent value="projects">
-                        <ProjectSummaryTab />
-                    </TabsContent>
-                    <TabsContent value="donors">
-                        <DonorSummaryTab />
-                    </TabsContent>
-                    <TabsContent value="accounts">
-                        <AccountBalancesTab />
-                    </TabsContent>
-                </Suspense>
+                <TabsContent value="cashbook">
+                    <DailyCashbookTab />
+                </TabsContent>
+                <TabsContent value="income-expense">
+                    <IncomeVsExpenseTab />
+                </TabsContent>
+                <TabsContent value="projects">
+                    <ProjectSummaryTab />
+                </TabsContent>
+                <TabsContent value="donors">
+                    <DonorSummaryTab />
+                </TabsContent>
+                <TabsContent value="accounts">
+                    <AccountBalancesTab />
+                </TabsContent>
             </Tabs>
         </div>
     );
