@@ -175,6 +175,9 @@ compose up -d queue scheduler
 echo "[bootstrap] Starting pgAdmin (database administration)..."
 compose up -d pgadmin
 
+echo "[bootstrap] Starting FileBrowser (storage file manager)..."
+compose up -d filebrowser
+
 echo "[bootstrap] Starting nginx..."
 compose up -d nginx
 
@@ -224,4 +227,5 @@ echo "[bootstrap] Grafana: http://$(hostname -I | awk '{print $1}'):3000 (admin/
 # shellcheck disable=SC1090
 source "${COMPOSE_ENV}"
 echo "[bootstrap] pgAdmin: http://localhost:${PGADMIN_PORT:-5050} (${PGADMIN_EMAIL:-admin@nazim.cloud}/${PGADMIN_PASSWORD:-admin})"
+echo "[bootstrap] FileBrowser: http://127.0.0.1:${FILEBROWSER_PORT:-8081} (${FILEBROWSER_USER:-admin}/<password>)"
 

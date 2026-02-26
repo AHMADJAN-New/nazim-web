@@ -718,7 +718,12 @@ class UsageTrackingService
             foreach ($limitDefinitions as $definition) {
                 try {
                     $check = $this->canCreate($organizationId, $definition->resource_key);
-                    
+
+                    // For single-school orgs (limit 1), do not show "limit reached" for schools
+                    if ($definition->resource_key === 'schools' && (int) $check['limit'] === 1) {
+                        continue;
+                    }
+
                     if ($check['warning'] || !$check['allowed']) {
                         $warnings[] = [
                             'resource_key' => $definition->resource_key,

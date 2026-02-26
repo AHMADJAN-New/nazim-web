@@ -11,15 +11,14 @@ use App\Models\OrganizationFeatureAddon;
 use App\Models\OrganizationSubscription;
 use App\Models\PaymentRecord;
 use App\Models\RenewalRequest;
+use App\Models\SchoolBranding;
 use App\Models\SubscriptionHistory;
 use App\Models\SubscriptionPlan;
 use App\Models\UsageSnapshot;
 use App\Models\User;
-use App\Models\SchoolBranding;
 use App\Services\Subscription\FeatureGateService;
-use Illuminate\Validation\ValidationException;
+use App\Services\Subscription\FeaturePermissionRevokeService;
 use App\Services\Subscription\SubscriptionService;
-use Spatie\Permission\Models\Role;
 use App\Services\Subscription\UsageTrackingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -28,13 +27,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class SubscriptionAdminController extends Controller
 {
     public function __construct(
         private SubscriptionService $subscriptionService,
         private FeatureGateService $featureGateService,
-        private UsageTrackingService $usageTrackingService
+        private UsageTrackingService $usageTrackingService,
+        private FeaturePermissionRevokeService $featurePermissionRevokeService
     ) {}
 
     /**
@@ -45,7 +47,7 @@ class SubscriptionAdminController extends Controller
     private function checkSubscriptionAdminPermission(Request $request): bool
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -55,11 +57,12 @@ class SubscriptionAdminController extends Controller
             // in model_has_permissions, but the permission itself has organization_id = NULL
             $platformOrgId = '00000000-0000-0000-0000-000000000000';
             setPermissionsTeamId($platformOrgId);
-            
+
             // Check for subscription.admin permission (global)
             return $user->hasPermissionTo('subscription.admin');
         } catch (\Exception $e) {
-            \Log::warning("Permission check failed for subscription.admin: " . $e->getMessage());
+            \Log::warning('Permission check failed for subscription.admin: '.$e->getMessage());
+
             return false;
         }
     }
@@ -69,7 +72,7 @@ class SubscriptionAdminController extends Controller
      */
     private function enforceSubscriptionAdmin(Request $request): void
     {
-        if (!$this->checkSubscriptionAdminPermission($request)) {
+        if (! $this->checkSubscriptionAdminPermission($request)) {
             abort(403, 'You do not have permission to access subscription administration');
         }
     }
@@ -171,10 +174,10 @@ class SubscriptionAdminController extends Controller
                 ->toArray();
 
             // Ensure default values for currencies
-            if (!isset($revenueThisYear['AFN'])) {
+            if (! isset($revenueThisYear['AFN'])) {
                 $revenueThisYear['AFN'] = 0;
             }
-            if (!isset($revenueThisYear['USD'])) {
+            if (! isset($revenueThisYear['USD'])) {
                 $revenueThisYear['USD'] = 0;
             }
 
@@ -198,13 +201,13 @@ class SubscriptionAdminController extends Controller
             // Ensure all payment types have default values
             $paymentTypes = [PaymentRecord::TYPE_LICENSE, PaymentRecord::TYPE_MAINTENANCE, PaymentRecord::TYPE_RENEWAL];
             foreach ($paymentTypes as $type) {
-                if (!isset($revenueByType[$type])) {
+                if (! isset($revenueByType[$type])) {
                     $revenueByType[$type] = ['AFN' => 0, 'USD' => 0];
                 } else {
-                    if (!isset($revenueByType[$type]['AFN'])) {
+                    if (! isset($revenueByType[$type]['AFN'])) {
                         $revenueByType[$type]['AFN'] = 0;
                     }
-                    if (!isset($revenueByType[$type]['USD'])) {
+                    if (! isset($revenueByType[$type]['USD'])) {
                         $revenueByType[$type]['USD'] = 0;
                     }
                 }
@@ -264,9 +267,10 @@ class SubscriptionAdminController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            \Log::error('Subscription dashboard error: ' . $e->getMessage(), [
+            \Log::error('Subscription dashboard error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json([
                 'error' => 'Failed to load dashboard data',
                 'message' => $e->getMessage(),
@@ -296,6 +300,7 @@ class SubscriptionAdminController extends Controller
                 $data = $this->serializePlan($plan);
                 $data['features_count'] = count($data['features']);
                 $data['subscriptions_count'] = $plan->subscriptions_count ?? 0;
+
                 return $data;
             }),
         ]);
@@ -394,6 +399,7 @@ class SubscriptionAdminController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -453,10 +459,10 @@ class SubscriptionAdminController extends Controller
             // Update features - ensure disabled features are explicitly set to false
             if ($request->has('features')) {
                 $requestedFeatures = $request->features;
-                
+
                 // Get all feature definitions that exist for this plan (or all if updating)
                 $existingPlanFeatures = $plan->features()->pluck('feature_key')->toArray();
-                
+
                 // Update/create features from request
                 foreach ($requestedFeatures as $featureKey => $isEnabled) {
                     $plan->features()->updateOrCreate(
@@ -464,14 +470,14 @@ class SubscriptionAdminController extends Controller
                         ['is_enabled' => (bool) $isEnabled]
                     );
                 }
-                
+
                 // CRITICAL: For features that exist in the plan but are NOT in the request,
                 // explicitly set them to disabled (false). This handles the case where
                 // a feature was previously enabled but the frontend didn't include it in the update.
                 // Note: We only disable existing plan features, not all feature definitions,
                 // to avoid auto-disabling newly added feature definitions.
                 foreach ($existingPlanFeatures as $featureKey) {
-                    if (!isset($requestedFeatures[$featureKey])) {
+                    if (! isset($requestedFeatures[$featureKey])) {
                         // Feature exists in plan but not in request - explicitly disable it
                         $plan->features()->where('feature_key', $featureKey)
                             ->update(['is_enabled' => false]);
@@ -499,6 +505,7 @@ class SubscriptionAdminController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -720,7 +727,7 @@ class SubscriptionAdminController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         $user = $request->user();
-        if (!$user || !$user->id) {
+        if (! $user || ! $user->id) {
             return response()->json(['error' => 'User not authenticated'], 401);
         }
 
@@ -729,27 +736,43 @@ class SubscriptionAdminController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$featureDef) {
+        if (! $featureDef) {
             return response()->json(['error' => 'Feature not found or inactive'], 404);
         }
 
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
         $expiresAt = $subscription?->expires_at;
 
-        // Check if feature is currently enabled via addon (we only toggle addons)
         $currentAddon = OrganizationFeatureAddon::where('organization_id', $organizationId)
             ->where('feature_key', $featureKey)
             ->whereNull('deleted_at')
             ->first();
 
-        $isCurrentlyEnabled = $currentAddon && $currentAddon->is_enabled && 
-            (!$currentAddon->expires_at || $currentAddon->expires_at->isFuture());
+        $enabledFeatures = $this->featureGateService->getEnabledFeatures($organizationId);
+        $isCurrentlyEnabled = in_array($featureKey, $enabledFeatures, true);
 
         if ($isCurrentlyEnabled) {
-            // Disable the feature
+            // Disable the feature (addon or plan override)
             if ($currentAddon) {
                 $currentAddon->update(['is_enabled' => false]);
+            } else {
+                // Plan feature: create addon with is_enabled = false to override (disable for this org only)
+                OrganizationFeatureAddon::updateOrCreate(
+                    [
+                        'organization_id' => $organizationId,
+                        'feature_key' => $featureKey,
+                    ],
+                    [
+                        'is_enabled' => false,
+                        'started_at' => now(),
+                        'expires_at' => $expiresAt,
+                        'price_paid' => 0,
+                        'currency' => 'AFN',
+                    ]
+                );
             }
+
+            $this->featurePermissionRevokeService->revokePermissionsForFeature($organizationId, $featureKey);
 
             SubscriptionHistory::log(
                 $organizationId,
@@ -766,46 +789,51 @@ class SubscriptionAdminController extends Controller
 
             Cache::forget("subscription:enabled-features:v1:{$organizationId}");
 
+            $addonAfter = OrganizationFeatureAddon::where('organization_id', $organizationId)
+                ->where('feature_key', $featureKey)
+                ->whereNull('deleted_at')
+                ->first();
+
             return response()->json([
-                'data' => $currentAddon->fresh(),
+                'data' => $addonAfter,
                 'message' => 'Feature disabled',
             ]);
-        } else {
-            // Enable the feature
-            $addon = OrganizationFeatureAddon::updateOrCreate(
-                [
-                    'organization_id' => $organizationId,
-                    'feature_key' => $featureKey,
-                ],
-                [
-                    'is_enabled' => true,
-                    'started_at' => now(),
-                    'expires_at' => $expiresAt,
-                    'price_paid' => 0, // Free admin override
-                    'currency' => 'AFN',
-                ]
-            );
-
-            SubscriptionHistory::log(
-                $organizationId,
-                SubscriptionHistory::ACTION_ADDON_ADDED,
-                $subscription?->id,
-                null,
-                null,
-                null,
-                null,
-                $user->id,
-                "Feature enabled: {$featureKey}",
-                ['feature_key' => $featureKey]
-            );
-
-            Cache::forget("subscription:enabled-features:v1:{$organizationId}");
-
-            return response()->json([
-                'data' => $addon,
-                'message' => 'Feature enabled',
-            ]);
         }
+
+        // Enable the feature (addon or re-enable after override)
+        $addon = OrganizationFeatureAddon::updateOrCreate(
+            [
+                'organization_id' => $organizationId,
+                'feature_key' => $featureKey,
+            ],
+            [
+                'is_enabled' => true,
+                'started_at' => now(),
+                'expires_at' => $expiresAt,
+                'price_paid' => 0, // Free admin override
+                'currency' => 'AFN',
+            ]
+        );
+
+        SubscriptionHistory::log(
+            $organizationId,
+            SubscriptionHistory::ACTION_ADDON_ADDED,
+            $subscription?->id,
+            null,
+            null,
+            null,
+            null,
+            $user->id,
+            "Feature enabled: {$featureKey}",
+            ['feature_key' => $featureKey]
+        );
+
+        Cache::forget("subscription:enabled-features:v1:{$organizationId}");
+
+        return response()->json([
+            'data' => $addon,
+            'message' => 'Feature enabled',
+        ]);
     }
 
     // =====================================================
@@ -842,7 +870,7 @@ class SubscriptionAdminController extends Controller
                 $payment = PaymentRecord::where('id', $paymentId)->lockForUpdate()->firstOrFail();
 
                 // Idempotent: already processed
-                if (!$payment->isPending()) {
+                if (! $payment->isPending()) {
                     return [
                         'payment' => $payment->fresh(),
                         'message' => 'Payment already processed',
@@ -855,7 +883,7 @@ class SubscriptionAdminController extends Controller
                     ->first();
 
                 // Fallback: if exactly one pending request exists for this org, use it
-                if (!$renewalRequest) {
+                if (! $renewalRequest) {
                     $pendingForOrg = RenewalRequest::where('organization_id', $payment->organization_id)
                         ->pending()
                         ->lockForUpdate()
@@ -895,7 +923,7 @@ class SubscriptionAdminController extends Controller
                 'message' => $result['message'],
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to confirm payment: ' . $e->getMessage(), [
+            \Log::error('Failed to confirm payment: '.$e->getMessage(), [
                 'payment_id' => $paymentId,
                 'user_id' => $user?->id,
                 'trace' => $e->getTraceAsString(),
@@ -923,7 +951,7 @@ class SubscriptionAdminController extends Controller
         $payment = PaymentRecord::findOrFail($paymentId);
         $user = $request->user();
 
-        if (!$payment->isPending()) {
+        if (! $payment->isPending()) {
             return response()->json(['error' => 'Payment is not pending'], 400);
         }
 
@@ -931,7 +959,7 @@ class SubscriptionAdminController extends Controller
             'status' => PaymentRecord::STATUS_REJECTED,
             'confirmed_by' => $user->id,
             'confirmed_at' => now(),
-            'notes' => ($payment->notes ? $payment->notes . "\n" : '') . "Rejected: " . $request->reason,
+            'notes' => ($payment->notes ? $payment->notes."\n" : '').'Rejected: '.$request->reason,
         ]);
 
         // Reject associated renewal request
@@ -962,12 +990,12 @@ class SubscriptionAdminController extends Controller
 
         $renewals = RenewalRequest::pending()
             ->with([
-                'organization', 
-                'subscription' => function($query) {
+                'organization',
+                'subscription' => function ($query) {
                     $query->with('plan');
                 },
-                'requestedPlan', 
-                'paymentRecord'
+                'requestedPlan',
+                'paymentRecord',
             ])
             ->orderBy('requested_at', 'asc')
             ->paginate($request->per_page ?? 20);
@@ -975,7 +1003,7 @@ class SubscriptionAdminController extends Controller
         // If subscription is missing for some renewals, load current subscriptions in bulk (avoid N+1)
         $collection = $renewals->getCollection();
         $missingOrgIds = $collection
-            ->filter(fn ($r) => !$r->subscription && !empty($r->organization_id))
+            ->filter(fn ($r) => ! $r->subscription && ! empty($r->organization_id))
             ->pluck('organization_id')
             ->unique()
             ->values();
@@ -989,17 +1017,17 @@ class SubscriptionAdminController extends Controller
 
             $currentByOrg = [];
             foreach ($subs as $sub) {
-                if (!isset($currentByOrg[$sub->organization_id])) {
+                if (! isset($currentByOrg[$sub->organization_id])) {
                     $currentByOrg[$sub->organization_id] = $sub;
                 }
             }
 
             $collection->transform(function ($renewal) use ($currentByOrg) {
-                if ($renewal->subscription && !$renewal->subscription->relationLoaded('plan')) {
+                if ($renewal->subscription && ! $renewal->subscription->relationLoaded('plan')) {
                     $renewal->subscription->load('plan');
                 }
 
-                if (!$renewal->subscription && $renewal->organization_id && isset($currentByOrg[$renewal->organization_id])) {
+                if (! $renewal->subscription && $renewal->organization_id && isset($currentByOrg[$renewal->organization_id])) {
                     $renewal->setRelation('subscription', $currentByOrg[$renewal->organization_id]);
                 }
 
@@ -1055,7 +1083,7 @@ class SubscriptionAdminController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         $user = $request->user();
-        if (!$user || !$user->id) {
+        if (! $user || ! $user->id) {
             return response()->json(['error' => 'User not authenticated'], 401);
         }
 
@@ -1069,7 +1097,7 @@ class SubscriptionAdminController extends Controller
         $paymentRecordId = $renewal->payment_record_id;
 
         // If no payment record exists, create one from request data
-        if (!$paymentRecordId) {
+        if (! $paymentRecordId) {
             $validator = Validator::make($request->all(), [
                 'amount' => 'required|numeric|min:0',
                 'currency' => 'required|in:AFN,USD',
@@ -1096,7 +1124,7 @@ class SubscriptionAdminController extends Controller
 
             $subscription = $this->subscriptionService->getCurrentSubscription($renewal->organization_id);
             $plan = SubscriptionPlan::findOrFail($renewal->requested_plan_id);
-            if (!$plan->is_active) {
+            if (! $plan->is_active) {
                 return response()->json(['error' => 'Selected plan is not active'], 422);
             }
 
@@ -1141,11 +1169,12 @@ class SubscriptionAdminController extends Controller
                 'message' => 'Renewal request approved successfully',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to approve renewal request: ' . $e->getMessage(), [
+            \Log::error('Failed to approve renewal request: '.$e->getMessage(), [
                 'renewal_id' => $renewalId,
                 'user_id' => $user->id,
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => $e->getMessage()], 400);
         }
     }
@@ -1158,7 +1187,7 @@ class SubscriptionAdminController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         $user = $request->user();
-        if (!$user || !$user->id) {
+        if (! $user || ! $user->id) {
             return response()->json(['error' => 'User not authenticated'], 401);
         }
 
@@ -1189,11 +1218,12 @@ class SubscriptionAdminController extends Controller
                 'message' => 'Renewal request rejected',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to reject renewal request: ' . $e->getMessage(), [
+            \Log::error('Failed to reject renewal request: '.$e->getMessage(), [
                 'renewal_id' => $renewalId,
                 'user_id' => $user->id,
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => $e->getMessage()], 400);
         }
     }
@@ -1228,7 +1258,7 @@ class SubscriptionAdminController extends Controller
                 ->whereNull('organization_id')
                 ->first();
 
-            if (!$permission) {
+            if (! $permission) {
                 return response()->json([
                     'data' => [],
                 ]);
@@ -1259,7 +1289,7 @@ class SubscriptionAdminController extends Controller
                 $user = $usersById->get($userId);
                 $profile = $profilesById->get($userId);
 
-                if (!$user || !$profile) {
+                if (! $user || ! $profile) {
                     return null;
                 }
 
@@ -1279,9 +1309,10 @@ class SubscriptionAdminController extends Controller
                 'data' => $users,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to list platform users: ' . $e->getMessage(), [
+            \Log::error('Failed to list platform users: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to fetch platform users'], 500);
         }
     }
@@ -1315,23 +1346,23 @@ class SubscriptionAdminController extends Controller
 
             // Create a test organization for the platform admin user
             // Using Organization::create() so OrganizationObserver fires and creates roles/permissions
-            $organizationName = $request->full_name . "'s Test Organization";
-            
+            $organizationName = $request->full_name."'s Test Organization";
+
             // Generate unique slug (max 100 chars, ensure uniqueness)
-            $baseSlug = 'test-' . strtolower(preg_replace('/[^a-zA-Z0-9-]/', '-', substr($request->full_name, 0, 30)));
+            $baseSlug = 'test-'.strtolower(preg_replace('/[^a-zA-Z0-9-]/', '-', substr($request->full_name, 0, 30)));
             $baseSlug = preg_replace('/-+/', '-', $baseSlug); // Remove multiple dashes
             $baseSlug = trim($baseSlug, '-'); // Remove leading/trailing dashes
             $uniqueId = substr((string) Str::uuid(), 0, 8);
-            $organizationSlug = substr($baseSlug . '-' . $uniqueId, 0, 100); // Ensure max 100 chars
-            
+            $organizationSlug = substr($baseSlug.'-'.$uniqueId, 0, 100); // Ensure max 100 chars
+
             // Ensure slug is unique
             $counter = 1;
             $originalSlug = $organizationSlug;
             while (DB::table('organizations')->where('slug', $organizationSlug)->exists()) {
-                $organizationSlug = substr($originalSlug . '-' . $counter, 0, 100);
+                $organizationSlug = substr($originalSlug.'-'.$counter, 0, 100);
                 $counter++;
             }
-            
+
             $organization = Organization::create([
                 'name' => $organizationName,
                 'slug' => $organizationSlug,
@@ -1375,7 +1406,7 @@ class SubscriptionAdminController extends Controller
             // Assign admin role to user for the organization (gives all permissions)
             setPermissionsTeamId($organizationId);
             $userModel = User::find($userId);
-            
+
             // Find or create admin role for this organization
             $adminRole = Role::firstOrCreate(
                 [
@@ -1384,22 +1415,22 @@ class SubscriptionAdminController extends Controller
                     'guard_name' => 'web',
                 ],
                 [
-                    'description' => 'Administrator - Full access to organization resources'
+                    'description' => 'Administrator - Full access to organization resources',
                 ]
             );
 
             // Assign role to user
             setPermissionsTeamId($organizationId);
             $userModel->assignRole($adminRole);
-            
+
             // CRITICAL: Assign tours to user (especially initialSetup tour)
             // Do this AFTER role assignment so user has permissions
             try {
                 $tourService = app(\App\Services\TourAssignmentService::class);
-                
+
                 // Always assign initialSetup tour first (no permissions required)
                 $tourService->assignInitialSetupTour($userId);
-                
+
                 // Then assign other tours based on permissions
                 if ($userModel) {
                     // Set organization context for permission checks (global helper, not User method)
@@ -1407,17 +1438,17 @@ class SubscriptionAdminController extends Controller
 
                     // Get user's permissions (from roles and direct assignments)
                     $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
-                    
+
                     // Assign other tours based on permissions
                     $assignedTours = $tourService->assignToursForUser($userId, $userPermissions);
-                    
-                    if (!empty($assignedTours) && config('app.debug')) {
-                        Log::info("Assigned tours to platform user {$userId}: " . implode(', ', $assignedTours));
+
+                    if (! empty($assignedTours) && config('app.debug')) {
+                        Log::info("Assigned tours to platform user {$userId}: ".implode(', ', $assignedTours));
                     }
                 }
             } catch (\Exception $e) {
                 // Don't fail user creation if tour assignment fails
-                Log::warning("Failed to assign tours to platform user {$userId}: " . $e->getMessage());
+                Log::warning("Failed to assign tours to platform user {$userId}: ".$e->getMessage());
             }
 
             // Ensure organization_id is set in model_has_roles
@@ -1426,8 +1457,8 @@ class SubscriptionAdminController extends Controller
                 ->where('model_type', 'App\\Models\\User')
                 ->where('role_id', $adminRole->id)
                 ->first();
-            
-            if ($roleAssignment && !$roleAssignment->organization_id) {
+
+            if ($roleAssignment && ! $roleAssignment->organization_id) {
                 DB::table('model_has_roles')
                     ->where('model_id', $userId)
                     ->where('model_type', 'App\\Models\\User')
@@ -1452,7 +1483,7 @@ class SubscriptionAdminController extends Controller
                     ->where('id', $platformOrgId)
                     ->first();
 
-                if (!$platformOrg) {
+                if (! $platformOrg) {
                     // Create platform organization (special system organization for global permissions)
                     DB::table('organizations')->insert([
                         'id' => $platformOrgId,
@@ -1498,10 +1529,11 @@ class SubscriptionAdminController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Failed to create platform user: ' . $e->getMessage(), [
+            \Log::error('Failed to create platform user: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to create platform user: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to create platform user: '.$e->getMessage()], 500);
         }
     }
 
@@ -1513,19 +1545,19 @@ class SubscriptionAdminController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         $request->validate([
-            'email' => ['sometimes', 'email', 'max:255', 'unique:users,email,' . $id],
+            'email' => ['sometimes', 'email', 'max:255', 'unique:users,email,'.$id],
             'full_name' => 'sometimes|string|max:255',
             'phone' => 'nullable|string|max:20',
         ]);
 
         try {
             $user = User::find($id);
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'User not found'], 404);
             }
 
             $profile = DB::table('profiles')->where('id', $id)->whereNull('deleted_at')->first();
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
@@ -1545,7 +1577,7 @@ class SubscriptionAdminController extends Controller
                     ->where('organization_id', $platformOrgId) // Use platform org UUID
                     ->exists();
 
-                if (!$hasPermission) {
+                if (! $hasPermission) {
                     return response()->json(['error' => 'User is not a platform admin'], 403);
                 }
             }
@@ -1567,7 +1599,7 @@ class SubscriptionAdminController extends Controller
             }
             $updateData['updated_at'] = now();
 
-            if (!empty($updateData)) {
+            if (! empty($updateData)) {
                 DB::table('profiles')
                     ->where('id', $id)
                     ->update($updateData);
@@ -1596,10 +1628,11 @@ class SubscriptionAdminController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Failed to update platform user: ' . $e->getMessage(), [
+            \Log::error('Failed to update platform user: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to update platform user: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to update platform user: '.$e->getMessage()], 500);
         }
     }
 
@@ -1612,7 +1645,7 @@ class SubscriptionAdminController extends Controller
 
         try {
             $user = User::find($id);
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'User not found'], 404);
             }
 
@@ -1632,7 +1665,7 @@ class SubscriptionAdminController extends Controller
                     ->where('organization_id', $platformOrgId) // Use platform org UUID
                     ->exists();
 
-                if (!$hasPermission) {
+                if (! $hasPermission) {
                     return response()->json(['error' => 'User is not a platform admin'], 403);
                 }
             }
@@ -1653,10 +1686,11 @@ class SubscriptionAdminController extends Controller
 
             return response()->noContent();
         } catch (\Exception $e) {
-            \Log::error('Failed to delete platform user: ' . $e->getMessage(), [
+            \Log::error('Failed to delete platform user: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to delete platform user: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to delete platform user: '.$e->getMessage()], 500);
         }
     }
 
@@ -1673,7 +1707,7 @@ class SubscriptionAdminController extends Controller
 
         try {
             $user = User::find($id);
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'User not found'], 404);
             }
 
@@ -1693,7 +1727,7 @@ class SubscriptionAdminController extends Controller
                     ->where('organization_id', $platformOrgId) // Use platform org UUID
                     ->exists();
 
-                if (!$hasPermission) {
+                if (! $hasPermission) {
                     return response()->json(['error' => 'User is not a platform admin'], 403);
                 }
             }
@@ -1709,10 +1743,11 @@ class SubscriptionAdminController extends Controller
 
             return response()->json(['message' => 'Password reset successfully']);
         } catch (\Exception $e) {
-            \Log::error('Failed to reset platform user password: ' . $e->getMessage(), [
+            \Log::error('Failed to reset platform user password: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to reset password: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to reset password: '.$e->getMessage()], 500);
         }
     }
 
@@ -1730,7 +1765,7 @@ class SubscriptionAdminController extends Controller
 
         try {
             $user = User::find($id);
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'User not found'], 404);
             }
 
@@ -1747,10 +1782,11 @@ class SubscriptionAdminController extends Controller
 
             return response()->json(['message' => 'Password reset successfully']);
         } catch (\Exception $e) {
-            \Log::error('Failed to reset user password: ' . $e->getMessage(), [
+            \Log::error('Failed to reset user password: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to reset password: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to reset password: '.$e->getMessage()], 500);
         }
     }
 
@@ -1988,6 +2024,7 @@ class SubscriptionAdminController extends Controller
 
             $subscriptions->getCollection()->transform(function ($subscription) use ($maintenanceFeeService) {
                 $currency = $subscription->currency ?? 'AFN';
+
                 return [
                     'subscription_id' => $subscription->id,
                     'organization_id' => $subscription->organization_id,
@@ -2008,9 +2045,10 @@ class SubscriptionAdminController extends Controller
 
             return response()->json($subscriptions);
         } catch (\Exception $e) {
-            \Log::error('Failed to list maintenance fees: ' . $e->getMessage(), [
+            \Log::error('Failed to list maintenance fees: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to list maintenance fees'], 500);
         }
     }
@@ -2030,9 +2068,10 @@ class SubscriptionAdminController extends Controller
                 'data' => $overdue,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to list overdue maintenance fees: ' . $e->getMessage(), [
+            \Log::error('Failed to list overdue maintenance fees: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to list overdue maintenance fees'], 500);
         }
     }
@@ -2055,7 +2094,7 @@ class SubscriptionAdminController extends Controller
         try {
             $maintenanceFeeService = app(\App\Services\Subscription\MaintenanceFeeService::class);
             $daysBeforeDue = $request->days_before_due ?? 30;
-            
+
             $invoices = $maintenanceFeeService->generateInvoices($daysBeforeDue);
 
             return response()->json([
@@ -2075,10 +2114,11 @@ class SubscriptionAdminController extends Controller
                 'message' => "Generated {$invoices->count()} maintenance invoice(s)",
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to generate maintenance invoices: ' . $e->getMessage(), [
+            \Log::error('Failed to generate maintenance invoices: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to generate invoices: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to generate invoices: '.$e->getMessage()], 500);
         }
     }
 
@@ -2142,9 +2182,10 @@ class SubscriptionAdminController extends Controller
 
             return response()->json($invoices);
         } catch (\Exception $e) {
-            \Log::error('Failed to list maintenance invoices: ' . $e->getMessage(), [
+            \Log::error('Failed to list maintenance invoices: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to list maintenance invoices'], 500);
         }
     }
@@ -2165,7 +2206,7 @@ class SubscriptionAdminController extends Controller
                 return response()->json(['error' => 'Payment is not a maintenance fee payment'], 400);
             }
 
-            if (!$payment->isPending()) {
+            if (! $payment->isPending()) {
                 return response()->json(['error' => 'Payment is not pending'], 400);
             }
 
@@ -2177,11 +2218,12 @@ class SubscriptionAdminController extends Controller
                 'message' => 'Maintenance payment confirmed successfully',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to confirm maintenance payment: ' . $e->getMessage(), [
+            \Log::error('Failed to confirm maintenance payment: '.$e->getMessage(), [
                 'payment_id' => $paymentId,
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to confirm payment: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to confirm payment: '.$e->getMessage()], 500);
         }
     }
 
@@ -2304,9 +2346,10 @@ class SubscriptionAdminController extends Controller
                 'data' => $unpaid,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to list unpaid license fees: ' . $e->getMessage(), [
+            \Log::error('Failed to list unpaid license fees: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to list unpaid license fees'], 500);
         }
     }
@@ -2421,7 +2464,7 @@ class SubscriptionAdminController extends Controller
                 return response()->json(['error' => 'Payment is not a license fee payment'], 400);
             }
 
-            if (!$payment->isPending()) {
+            if (! $payment->isPending()) {
                 return response()->json(['error' => 'Payment is not pending'], 400);
             }
 
@@ -2433,11 +2476,12 @@ class SubscriptionAdminController extends Controller
                 'message' => 'License payment confirmed successfully',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to confirm license payment: ' . $e->getMessage(), [
+            \Log::error('Failed to confirm license payment: '.$e->getMessage(), [
                 'payment_id' => $paymentId,
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to confirm payment: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to confirm payment: '.$e->getMessage()], 500);
         }
     }
 
@@ -2486,9 +2530,10 @@ class SubscriptionAdminController extends Controller
 
             return response()->json($payments);
         } catch (\Exception $e) {
-            \Log::error('Failed to list license payments: ' . $e->getMessage(), [
+            \Log::error('Failed to list license payments: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to list license payments'], 500);
         }
     }
@@ -2502,7 +2547,7 @@ class SubscriptionAdminController extends Controller
 
         try {
             $organization = Organization::find($organizationId);
-            if (!$organization) {
+            if (! $organization) {
                 return response()->json(['error' => 'Organization not found'], 404);
             }
 
@@ -2542,7 +2587,7 @@ class SubscriptionAdminController extends Controller
 
                 // Group by year
                 $year = $confirmedAt->format('Y');
-                if (!isset($paymentsByYear[$year])) {
+                if (! isset($paymentsByYear[$year])) {
                     $paymentsByYear[$year] = ['AFN' => 0, 'USD' => 0, 'count' => 0];
                 }
                 $paymentsByYear[$year][$currency] += $netAmount;
@@ -2550,7 +2595,7 @@ class SubscriptionAdminController extends Controller
 
                 // Group by month
                 $monthKey = $confirmedAt->format('Y-m');
-                if (!isset($paymentsByMonth[$monthKey])) {
+                if (! isset($paymentsByMonth[$monthKey])) {
                     $paymentsByMonth[$monthKey] = ['AFN' => 0, 'USD' => 0, 'count' => 0];
                 }
                 $paymentsByMonth[$monthKey][$currency] += $netAmount;
@@ -2598,9 +2643,10 @@ class SubscriptionAdminController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to get organization revenue history: ' . $e->getMessage(), [
+            \Log::error('Failed to get organization revenue history: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to get organization revenue history'], 500);
         }
     }

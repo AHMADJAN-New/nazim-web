@@ -20,17 +20,17 @@ class PdfReportService
     /**
      * Generate PDF report
      *
-     * @param ReportConfig $config Report configuration
-     * @param array $context Template context
-     * @param callable|null $progressCallback Progress callback
-     * @param string $organizationId Organization ID for file storage (REQUIRED)
-     * @param string $schoolId School ID for file storage (REQUIRED)
+     * @param  ReportConfig  $config  Report configuration
+     * @param  array  $context  Template context
+     * @param  callable|null  $progressCallback  Progress callback
+     * @param  string  $organizationId  Organization ID for file storage (REQUIRED)
+     * @param  string  $schoolId  School ID for file storage (REQUIRED)
      * @return array Result with path, filename, and size
      */
     public function generate(
         ReportConfig $config,
         array $context,
-        ?callable $progressCallback = null,
+        ?callable $progressCallback,
         string $organizationId,
         string $schoolId
     ): array {
@@ -59,7 +59,7 @@ class PdfReportService
 
         // Check if view exists
         $viewExists = View::exists($viewName);
-        if (!$viewExists) {
+        if (! $viewExists) {
             \Log::warning("Template not found: {$viewName}, falling back to table_a4_portrait", [
                 'requested_template' => $templateName,
                 'view_name' => $viewName,
@@ -72,7 +72,7 @@ class PdfReportService
         }
 
         // Log font settings being passed to template
-        \Log::debug("PdfReportService: Rendering HTML with font settings", [
+        \Log::debug('PdfReportService: Rendering HTML with font settings', [
             'font_family' => $context['FONT_FAMILY'] ?? 'N/A',
             'font_size' => $context['FONT_SIZE'] ?? 'N/A',
             'template_name' => $viewName,
@@ -82,13 +82,13 @@ class PdfReportService
         ]);
 
         $html = View::make($viewName, $context)->render();
-        
+
         // Log a snippet of the rendered HTML to verify fonts are included and student-history sections are present
         if (config('app.debug')) {
             $fontFaceSnippet = substr($html, strpos($html, '@font-face') ?: 0, 500);
             $hasStudentInfoMarker = strpos($html, 'NAZIM_STUDENT_HISTORY_DETAILS_MARKER') !== false;
             $hasPersonalInfoHeading = (strpos($html, 'Personal Information') !== false) || (strpos($html, 'personalInfo') !== false);
-            \Log::debug("PdfReportService: Font-face snippet from rendered HTML", [
+            \Log::debug('PdfReportService: Font-face snippet from rendered HTML', [
                 'has_font_face' => strpos($html, '@font-face') !== false,
                 'font_face_snippet' => $fontFaceSnippet ?: 'NOT FOUND',
                 'html_length' => strlen($html),
@@ -96,7 +96,7 @@ class PdfReportService
                 'has_personal_info_heading' => $hasPersonalInfoHeading,
             ]);
         }
-        
+
         return $html;
     }
 
@@ -108,10 +108,10 @@ class PdfReportService
     {
         // Generate unique filename
         $filename = $this->generateFilename($config);
-        
+
         // Create temporary file for Browsershot (it needs a file path)
         $tempDir = sys_get_temp_dir();
-        $tempPath = $tempDir . '/' . $filename;
+        $tempPath = $tempDir.'/'.$filename;
 
         // Get page settings
         $pageSize = $context['page_size'] ?? 'A4';
@@ -159,7 +159,7 @@ class PdfReportService
 
         // Set Puppeteer cache directory (required for Browsershot)
         $defaultCacheDir = PHP_OS_FAMILY === 'Windows'
-            ? (getenv('USERPROFILE') ?: getenv('HOMEDRIVE') . getenv('HOMEPATH')) . DIRECTORY_SEPARATOR . '.cache' . DIRECTORY_SEPARATOR . 'puppeteer'
+            ? (getenv('USERPROFILE') ?: getenv('HOMEDRIVE').getenv('HOMEPATH')).DIRECTORY_SEPARATOR.'.cache'.DIRECTORY_SEPARATOR.'puppeteer'
             : '/var/www/.cache/puppeteer';
         $puppeteerCacheDir = env('PUPPETEER_CACHE_DIR') ?: getenv('PUPPETEER_CACHE_DIR') ?: $defaultCacheDir;
         if (is_dir($puppeteerCacheDir)) {
@@ -182,7 +182,7 @@ class PdfReportService
             \Log::info("Using Chrome path: {$chromePath}");
             $browsershot->setChromePath($chromePath);
         } else {
-            \Log::warning("Chrome not found, Browsershot will try to find it automatically");
+            \Log::warning('Chrome not found, Browsershot will try to find it automatically');
         }
 
         // Set orientation
@@ -191,7 +191,7 @@ class PdfReportService
         }
 
         // Add header and footer if configured
-        if (!empty($context['show_page_numbers']) || !empty($context['show_generation_date'])) {
+        if (! empty($context['show_page_numbers']) || ! empty($context['show_generation_date'])) {
             $footerHtml = $this->buildFooterHtml($context);
             $browsershot->footerHtml($footerHtml);
             $browsershot->showBrowserHeaderAndFooter();
@@ -210,7 +210,7 @@ class PdfReportService
         }
 
         // Verify file was created
-        if (!file_exists($tempPath)) {
+        if (! file_exists($tempPath)) {
             throw new \RuntimeException("PDF file was not created at: {$tempPath}");
         }
 
@@ -243,7 +243,10 @@ class PdfReportService
     private function generateFilename(ReportConfig $config): string
     {
         $baseName = $config->title ?: $config->reportKey;
-        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $baseName);
+        $safeName = trim(preg_replace('/[^a-zA-Z0-9_-]/', '_', $baseName), '_');
+        if ($safeName === '') {
+            $safeName = $config->reportKey ?: 'report';
+        }
         $timestamp = now()->format('Y-m-d_His');
         $uuid = Str::uuid()->toString();
 
@@ -338,6 +341,7 @@ HTML;
         if ($envChromePath && is_file($envChromePath)) {
             if (PHP_OS_FAMILY === 'Windows' || is_executable($envChromePath)) {
                 \Log::info("Using Chrome from PUPPETEER_CHROME_PATH: {$envChromePath}");
+
                 return $envChromePath;
             }
         }
@@ -346,16 +350,16 @@ HTML;
         $possibleCacheDirs = [];
 
         if (PHP_OS_FAMILY === 'Windows') {
-            $userProfile = getenv('USERPROFILE') ?: (getenv('HOMEDRIVE') . getenv('HOMEPATH'));
+            $userProfile = getenv('USERPROFILE') ?: (getenv('HOMEDRIVE').getenv('HOMEPATH'));
             if ($userProfile) {
-                $possibleCacheDirs[] = $userProfile . $sep . '.cache' . $sep . 'puppeteer';
+                $possibleCacheDirs[] = $userProfile.$sep.'.cache'.$sep.'puppeteer';
             }
             $possibleCacheDirs[] = getenv('PUPPETEER_CACHE_DIR') ?: null;
         } else {
             $possibleCacheDirs = [
                 '/home/nazim/.cache/puppeteer',
                 '/var/www/.cache/puppeteer',
-                getenv('HOME') ? getenv('HOME') . '/.cache/puppeteer' : null,
+                getenv('HOME') ? getenv('HOME').'/.cache/puppeteer' : null,
                 '/root/.cache/puppeteer',
             ];
         }
@@ -365,13 +369,13 @@ HTML;
         $chromePathPatterns = [];
         foreach ($possibleCacheDirs as $cache) {
             if (PHP_OS_FAMILY === 'Windows') {
-                $chromePathPatterns[] = $cache . $sep . 'chrome-headless-shell' . $sep . 'win32-*' . $sep . 'chrome-headless-shell' . $sep . 'chrome-headless-shell.exe';
-                $chromePathPatterns[] = $cache . $sep . 'chrome-headless-shell' . $sep . 'win64-*' . $sep . 'chrome-headless-shell' . $sep . 'chrome-headless-shell.exe';
-                $chromePathPatterns[] = $cache . $sep . 'chrome' . $sep . 'win64-*' . $sep . 'chrome-win64' . $sep . 'chrome.exe';
-                $chromePathPatterns[] = $cache . $sep . 'chrome' . $sep . 'win32-*' . $sep . 'chrome-win' . $sep . 'chrome.exe';
+                $chromePathPatterns[] = $cache.$sep.'chrome-headless-shell'.$sep.'win32-*'.$sep.'chrome-headless-shell'.$sep.'chrome-headless-shell.exe';
+                $chromePathPatterns[] = $cache.$sep.'chrome-headless-shell'.$sep.'win64-*'.$sep.'chrome-headless-shell'.$sep.'chrome-headless-shell.exe';
+                $chromePathPatterns[] = $cache.$sep.'chrome'.$sep.'win64-*'.$sep.'chrome-win64'.$sep.'chrome.exe';
+                $chromePathPatterns[] = $cache.$sep.'chrome'.$sep.'win32-*'.$sep.'chrome-win'.$sep.'chrome.exe';
             } else {
-                $chromePathPatterns[] = $cache . '/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell';
-                $chromePathPatterns[] = $cache . '/chrome/linux-*/chrome-linux64/chrome';
+                $chromePathPatterns[] = $cache.'/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell';
+                $chromePathPatterns[] = $cache.'/chrome/linux-*/chrome-linux64/chrome';
             }
         }
 
@@ -382,7 +386,7 @@ HTML;
                 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
             ];
             if ($localAppData) {
-                $systemChromePaths[] = $localAppData . $sep . 'Google' . $sep . 'Chrome' . $sep . 'Application' . $sep . 'chrome.exe';
+                $systemChromePaths[] = $localAppData.$sep.'Google'.$sep.'Chrome'.$sep.'Application'.$sep.'chrome.exe';
             }
             $chromePathPatterns = array_merge($chromePathPatterns, $systemChromePaths);
         } else {
@@ -405,6 +409,7 @@ HTML;
                 foreach ($matches as $chromePath) {
                     if (is_file($chromePath) && (PHP_OS_FAMILY === 'Windows' || is_executable($chromePath))) {
                         \Log::info("Found Chrome at: {$chromePath}");
+
                         return $chromePath;
                     }
                 }

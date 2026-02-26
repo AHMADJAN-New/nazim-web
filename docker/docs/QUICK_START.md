@@ -39,6 +39,10 @@ LETSENCRYPT_EMAIL=admin@your-domain.com
 POSTGRES_PASSWORD=your-secure-password
 HTTP_PORT=80
 HTTPS_PORT=443
+# Optional: FileBrowser (storage file manager, localhost only)
+FILEBROWSER_USER=admin
+FILEBROWSER_PASSWORD=your-strong-password
+FILEBROWSER_PORT=8081
 ```
 
 ### 2. `backend/.env`
@@ -129,7 +133,7 @@ sudo bash docker/scripts/prod/setup.sh
 
 **Warning:** The cleanup script preserves volumes (database, storage, SSL certificates). To remove volumes as well:
 ```bash
-docker volume rm nazim_pg_data nazim_redis_data nazim_backend_storage nazim_letsencrypt nazim_certbot_www
+docker volume rm nazim_pg_data nazim_redis_data nazim_backend_storage nazim_letsencrypt nazim_certbot_www nazim_pgadmin_data nazim_filebrowser_data
 ```
 
 ## Troubleshooting
@@ -185,6 +189,16 @@ sudo bash docker/scripts/prod/setup-firewall.sh
 - Wait a few minutes for Let's Encrypt to verify
 - Check certbot logs: `docker compose logs certbot`
 
+## FileBrowser (storage file manager)
+
+FileBrowser is included to browse **private** and **public** backend storage (images, PDFs, etc.) with in-browser preview. It is **read-only** and bound to **localhost** for security.
+
+- **URL:** `http://127.0.0.1:8081` (or the port set in `FILEBROWSER_PORT`)
+- **Login:** Use `FILEBROWSER_USER` and `FILEBROWSER_PASSWORD` from `docker/env/compose.prod.env`
+- **Remote access:** Use an SSH tunnel: `ssh -L 8081:127.0.0.1:8081 user@your-server`
+
+Do not expose FileBrowser directly to the internet; keep it on localhost or behind VPN. If login fails, some image versions expect a hashed password: run `docker run --rm filebrowser/filebrowser filebrowser hash` and set `FILEBROWSER_PASSWORD` to the hash in `docker/env/compose.prod.env`.
+
 ## Next Steps
 
 - [ ] Configure email settings in `backend/.env` (MAIL_*)
@@ -192,4 +206,5 @@ sudo bash docker/scripts/prod/setup-firewall.sh
 - [ ] Configure monitoring and alerts
 - [ ] Review security settings
 - [ ] Set up automated SSL renewal
+- [ ] Set a strong `FILEBROWSER_PASSWORD` in `docker/env/compose.prod.env`
 

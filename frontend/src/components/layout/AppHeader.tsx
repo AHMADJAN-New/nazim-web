@@ -30,6 +30,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useSchoolContext } from "@/contexts/SchoolContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useHasAnyWebsitePermissionAndFeature } from "@/hooks/usePermissions";
 import { useNotificationCount } from "@/hooks/useNotifications";
 import { useSchools } from "@/hooks/useSchools";
 import { useFeatures } from "@/hooks/useSubscription";
@@ -66,9 +67,10 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
   const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
   const { data: features } = useFeatures();
+  const hasWebsitePermissionAndFeature = useHasAnyWebsitePermissionAndFeature();
 
-  // Check if website feature is enabled
-  const hasWebsiteFeature = features?.some(f => f.featureKey === 'public_website') ?? false;
+  // Show website button only when org has the feature AND user has at least one website permission
+  const hasWebsiteFeature = (features?.some(f => f.featureKey === 'public_website') ?? false) && (hasWebsitePermissionAndFeature === true);
 
   // Tour system
   const { startTour, isTourCompleted } = useTour();

@@ -57,6 +57,7 @@ Main deployment script:
 - Starts PHP-FPM service
 - Runs Laravel migrations
 - Starts queue worker and scheduler
+- Starts pgAdmin and FileBrowser (storage file manager)
 - Starts Nginx
 - Sets up SSL certificates
 
@@ -144,6 +145,8 @@ Docker Compose environment variables:
 - `HTTPS_PORT` - HTTPS port (default: 443)
 - `LETSENCRYPT_EMAIL` - Email for SSL certificates
 - `POSTGRES_PASSWORD` - Database password
+- `PGADMIN_EMAIL`, `PGADMIN_PASSWORD`, `PGADMIN_PORT` - pgAdmin (database admin UI)
+- `FILEBROWSER_USER`, `FILEBROWSER_PASSWORD`, `FILEBROWSER_PORT` - FileBrowser (storage file manager; localhost only)
 
 ### `backend/.env`
 Laravel environment variables:

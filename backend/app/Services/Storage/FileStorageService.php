@@ -2,14 +2,13 @@
 
 namespace App\Services\Storage;
 
-use App\Services\Storage\ImageCompressionService;
 use App\Services\Subscription\UsageTrackingService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Centralized File Storage Service
@@ -24,6 +23,7 @@ class FileStorageService
 {
     // Storage disks
     private const DISK_PRIVATE = 'local';
+
     private const DISK_PUBLIC = 'public';
 
     public function __construct(
@@ -33,14 +33,23 @@ class FileStorageService
 
     // Resource type paths
     private const PATH_STUDENTS = 'students';
+
     private const PATH_STAFF = 'staff';
+
     private const PATH_COURSES = 'courses';
+
     private const PATH_EXAMS = 'exams';
+
     private const PATH_DMS = 'dms';
+
     private const PATH_EVENTS = 'events';
+
     private const PATH_ADMISSIONS = 'admissions';
+
     private const PATH_TEMPLATES = 'templates';
+
     private const PATH_REPORTS = 'reports';
+
     private const PATH_WEBSITE = 'website';
 
     // ==============================================
@@ -365,8 +374,10 @@ class FileStorageService
         // Check storage limit before storing
         $this->checkStorageLimit($file, $organizationId);
 
-        $subPath = $documentType ? "finance/{$documentType}" : 'finance';
-        $path = $this->buildPath($organizationId, $schoolId, $subPath);
+        $safeType = $this->sanitizePathSegment($documentType ?? '');
+        $path = $safeType !== ''
+            ? $this->buildPath($organizationId, $schoolId, 'finance', $safeType)
+            : $this->buildPath($organizationId, $schoolId, 'finance');
         $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
 
         // Update storage usage after successful storage
@@ -465,7 +476,7 @@ class FileStorageService
         // Check storage limit before storing
         $contentSizeInGB = strlen($content) / 1073741824;
         $check = $this->usageTrackingService->canStoreFile($organizationId, $contentSizeInGB);
-        if (!$check['allowed']) {
+        if (! $check['allowed']) {
             // Use HttpException so Laravel properly handles 402 status code
             throw new HttpException(
                 Response::HTTP_PAYMENT_REQUIRED,
@@ -483,7 +494,7 @@ class FileStorageService
         }
 
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'guests', $guestId);
-        $fullPath = $path . '/' . $filename;
+        $fullPath = $path.'/'.$filename;
         Storage::disk(self::DISK_PUBLIC)->put($fullPath, $content);
 
         // Update storage usage after successful storage
@@ -507,7 +518,7 @@ class FileStorageService
         // Check storage limit before storing
         $contentSizeInGB = strlen($content) / 1073741824;
         $check = $this->usageTrackingService->canStoreFile($organizationId, $contentSizeInGB);
-        if (!$check['allowed']) {
+        if (! $check['allowed']) {
             // Use HttpException so Laravel properly handles 402 status code
             throw new HttpException(
                 Response::HTTP_PAYMENT_REQUIRED,
@@ -525,7 +536,7 @@ class FileStorageService
         }
 
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_EVENTS, $eventId, 'guests', $guestId, 'thumbs');
-        $fullPath = $path . '/' . $filename;
+        $fullPath = $path.'/'.$filename;
         Storage::disk(self::DISK_PUBLIC)->put($fullPath, $content);
 
         // Update storage usage after successful storage
@@ -585,6 +596,7 @@ class FileStorageService
     /**
      * Store website image (PUBLIC - for display on public website)
      * CRITICAL: Website files are school-scoped and MUST include schoolId
+     *
      * @deprecated Use storeWebsiteLibraryCover, storeWebsiteMediaItem, storeWebsiteCourseCover, etc. for new uploads
      */
     public function storeWebsiteImage(
@@ -607,6 +619,7 @@ class FileStorageService
     /**
      * Store website document (PUBLIC - e.g. PDF for library)
      * CRITICAL: Website files are school-scoped and MUST include schoolId
+     *
      * @deprecated Use storeWebsiteLibraryPdf, storeWebsiteForm, etc. for new uploads
      */
     public function storeWebsiteDocument(
@@ -637,6 +650,7 @@ class FileStorageService
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'library', 'covers');
         $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
         $this->updateStorageUsage($file, $organizationId);
+
         return $filePath;
     }
 
@@ -653,6 +667,7 @@ class FileStorageService
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'library', 'pdfs');
         $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
         $this->updateStorageUsage($file, $organizationId);
+
         return $filePath;
     }
 
@@ -670,6 +685,7 @@ class FileStorageService
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'media', 'categories', $categoryId);
         $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
         $this->updateStorageUsage($file, $organizationId);
+
         return $filePath;
     }
 
@@ -693,6 +709,7 @@ class FileStorageService
         }
         $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
         $this->updateStorageUsage($file, $organizationId);
+
         return $filePath;
     }
 
@@ -710,6 +727,7 @@ class FileStorageService
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'courses', $courseId);
         $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
         $this->updateStorageUsage($file, $organizationId);
+
         return $filePath;
     }
 
@@ -727,6 +745,7 @@ class FileStorageService
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'pages', $pageId);
         $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
         $this->updateStorageUsage($file, $organizationId);
+
         return $filePath;
     }
 
@@ -744,6 +763,7 @@ class FileStorageService
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'scholars', $scholarId);
         $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
         $this->updateStorageUsage($file, $organizationId);
+
         return $filePath;
     }
 
@@ -760,6 +780,7 @@ class FileStorageService
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_WEBSITE, 'forms');
         $filePath = $this->storeFile($file, $path, self::DISK_PUBLIC);
         $this->updateStorageUsage($file, $organizationId);
+
         return $filePath;
     }
 
@@ -836,7 +857,7 @@ class FileStorageService
         // Check storage limit before storing
         $contentSizeInGB = strlen($content) / 1073741824;
         $check = $this->usageTrackingService->canStoreFile($organizationId, $contentSizeInGB);
-        if (!$check['allowed']) {
+        if (! $check['allowed']) {
             // Use HttpException so Laravel properly handles 402 status code
             throw new HttpException(
                 Response::HTTP_PAYMENT_REQUIRED,
@@ -854,7 +875,7 @@ class FileStorageService
         }
 
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_REPORTS, $reportType);
-        $fullPath = $path . '/' . $filename;
+        $fullPath = $path.'/'.$filename;
 
         Storage::disk(self::DISK_PRIVATE)->put($fullPath, $content);
 
@@ -909,7 +930,7 @@ class FileStorageService
                 $organizationId = $this->extractOrganizationIdFromPath($path);
             }
         } catch (\Exception $e) {
-            \Log::warning("Failed to get file size before deletion: " . $e->getMessage());
+            \Log::warning('Failed to get file size before deletion: '.$e->getMessage());
         }
 
         // Delete file
@@ -924,7 +945,7 @@ class FileStorageService
                 $fileSizeInGB = $fileSize / 1073741824; // Convert bytes to GB
                 $this->usageTrackingService->decrementStorageUsage($organizationId, $fileSizeInGB);
             } catch (\Exception $e) {
-                \Log::error("Failed to decrement storage usage after file deletion: " . $e->getMessage());
+                \Log::error('Failed to decrement storage usage after file deletion: '.$e->getMessage());
                 // Don't throw - file is already deleted
             }
         }
@@ -945,7 +966,7 @@ class FileStorageService
      */
     public function getFile(string $path, string $disk = self::DISK_PRIVATE): ?string
     {
-        if (!$this->fileExists($path, $disk)) {
+        if (! $this->fileExists($path, $disk)) {
             return null;
         }
 
@@ -966,6 +987,7 @@ class FileStorageService
     public function getPrivateDownloadUrl(string $path): string
     {
         $encodedPath = base64_encode($path);
+
         return "/api/storage/download/{$encodedPath}";
     }
 
@@ -978,6 +1000,7 @@ class FileStorageService
         string $disk = self::DISK_PRIVATE
     ): StreamedResponse {
         $filename = $filename ?? basename($path);
+
         return Storage::disk($disk)->download($path, $filename);
     }
 
@@ -994,7 +1017,7 @@ class FileStorageService
      */
     public function getMimeType(string $path, string $disk = self::DISK_PRIVATE): ?string
     {
-        if (!$this->fileExists($path, $disk)) {
+        if (! $this->fileExists($path, $disk)) {
             return null;
         }
 
@@ -1006,7 +1029,7 @@ class FileStorageService
      */
     public function getFileSize(string $path, string $disk = self::DISK_PRIVATE): ?int
     {
-        if (!$this->fileExists($path, $disk)) {
+        if (! $this->fileExists($path, $disk)) {
             return null;
         }
 
@@ -1079,6 +1102,7 @@ class FileStorageService
         string $toDisk = self::DISK_PRIVATE
     ): bool {
         $contents = Storage::disk($fromDisk)->get($fromPath);
+
         return Storage::disk($toDisk)->put($toPath, $contents);
     }
 
@@ -1115,12 +1139,26 @@ class FileStorageService
         }
 
         foreach ($segments as $segment) {
-            if (!empty($segment)) {
+            if ($segment !== '') {
                 $path .= "/{$segment}";
             }
         }
 
         return $path;
+    }
+
+    /**
+     * Sanitize a path segment for storage (avoids trailing dots, slashes, invalid chars).
+     * Prevents "Unable to create a directory" on paths like "invoice." or "foo/bar".
+     */
+    private function sanitizePathSegment(string $segment): string
+    {
+        $trimmed = trim($segment, " \t\n\r\0\x0B./\\");
+        if ($trimmed === '') {
+            return '';
+        }
+
+        return preg_replace('/[^a-zA-Z0-9_\-]/', '_', $trimmed) ?: '';
     }
 
     /**
@@ -1134,7 +1172,7 @@ class FileStorageService
 
             $check = $this->usageTrackingService->canStoreFile($organizationId, $fileSizeInGB);
 
-            if (!$check['allowed']) {
+            if (! $check['allowed']) {
                 // Use HttpException so Laravel properly handles 402 status code
                 throw new HttpException(
                     Response::HTTP_PAYMENT_REQUIRED,
@@ -1155,7 +1193,7 @@ class FileStorageService
             throw $e;
         } catch (\Exception $e) {
             // Log other errors but don't block
-            \Log::warning("Failed to check storage limit: " . $e->getMessage());
+            \Log::warning('Failed to check storage limit: '.$e->getMessage());
         }
     }
 
@@ -1170,7 +1208,7 @@ class FileStorageService
 
             $this->usageTrackingService->incrementStorageUsage($organizationId, $fileSizeInGB);
         } catch (\Exception $e) {
-            \Log::error("Failed to update storage usage: " . $e->getMessage());
+            \Log::error('Failed to update storage usage: '.$e->getMessage());
             // Don't throw - file is already stored, just log the error
         }
     }
@@ -1186,7 +1224,7 @@ class FileStorageService
 
             $this->usageTrackingService->incrementStorageUsage($organizationId, $fileSizeInGB);
         } catch (\Exception $e) {
-            \Log::error("Failed to update storage usage for content: " . $e->getMessage());
+            \Log::error('Failed to update storage usage for content: '.$e->getMessage());
         }
     }
 
@@ -1199,6 +1237,7 @@ class FileStorageService
         if (preg_match('/^organizations\/([^\/]+)/', $path, $matches)) {
             return $matches[1];
         }
+
         return null;
     }
 
@@ -1216,7 +1255,7 @@ class FileStorageService
                 }
             } catch (\Exception $e) {
                 // Log error but continue with original file
-                \Log::warning("ImageCompressionService: Failed to compress image, using original", [
+                \Log::warning('ImageCompressionService: Failed to compress image, using original', [
                     'filename' => $file->getClientOriginalName(),
                     'error' => $e->getMessage(),
                 ]);
@@ -1224,7 +1263,7 @@ class FileStorageService
         }
 
         $extension = strtolower($file->getClientOriginalExtension());
-        $filename = Str::uuid() . '.' . $extension;
+        $filename = Str::uuid().'.'.$extension;
 
         return Storage::disk($disk)->putFileAs($path, $file, $filename);
     }
@@ -1235,7 +1274,8 @@ class FileStorageService
     private function isImage(UploadedFile $file): bool
     {
         $mimeType = $file->getMimeType();
-        return str_starts_with($mimeType, 'image/') && 
+
+        return str_starts_with($mimeType, 'image/') &&
                in_array(strtolower($file->getClientOriginalExtension()), $this->getAllowedImageExtensions());
     }
 
@@ -1313,6 +1353,7 @@ class FileStorageService
     public function isAllowedExtension(string $filename, array $allowedExtensions): bool
     {
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
         return in_array($extension, $allowedExtensions);
     }
 

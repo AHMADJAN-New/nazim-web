@@ -591,6 +591,34 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'leave_requests.update': 'leave_management',
   'leave_requests.delete': 'leave_management',
 
+  // Public website feature
+  'website_settings.read': 'public_website',
+  'website_settings.update': 'public_website',
+  'website_pages.read': 'public_website',
+  'website_pages.create': 'public_website',
+  'website_pages.update': 'public_website',
+  'website_pages.delete': 'public_website',
+  'website_posts.read': 'public_website',
+  'website_posts.create': 'public_website',
+  'website_posts.update': 'public_website',
+  'website_posts.delete': 'public_website',
+  'website_events.read': 'public_website',
+  'website_events.create': 'public_website',
+  'website_events.update': 'public_website',
+  'website_events.delete': 'public_website',
+  'website_media.read': 'public_website',
+  'website_media.create': 'public_website',
+  'website_media.update': 'public_website',
+  'website_media.delete': 'public_website',
+  'website_domains.read': 'public_website',
+  'website_domains.create': 'public_website',
+  'website_domains.update': 'public_website',
+  'website_domains.delete': 'public_website',
+  'website_menus.read': 'public_website',
+  'website_menus.create': 'public_website',
+  'website_menus.update': 'public_website',
+  'website_menus.delete': 'public_website',
+
   // Legacy finance permissions (backward compatibility)
   'finance_income.read': 'finance',
   'finance_income.create': 'finance',
@@ -783,6 +811,25 @@ export const useHasPermissionAndFeature = (permissionName: string): boolean | un
   }
   
   return true;
+};
+
+/** Permission names that grant website/portal access (all gated by public_website feature). */
+const WEBSITE_PERMISSION_NAMES = [
+  'website_settings.read',
+  'website_settings.update',
+  'website_pages.read',
+  'website_posts.read',
+  'website_events.read',
+  'website_media.read',
+  'website_menus.read',
+] as const;
+
+/**
+ * True if the user has at least one website permission AND the public_website feature.
+ * Use for "Open Website" button and Website nav section visibility.
+ */
+export const useHasAnyWebsitePermissionAndFeature = (): boolean | undefined => {
+  return useHasAnyPermissionAndFeature([...WEBSITE_PERMISSION_NAMES]);
 };
 
 /**

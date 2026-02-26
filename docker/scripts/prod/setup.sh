@@ -54,6 +54,9 @@ if [[ ! -f "${COMPOSE_ENV}" ]]; then
   echo -e "   - PGADMIN_EMAIL (pgAdmin login email, default: admin@nazim.cloud)"
   echo -e "   - PGADMIN_PASSWORD (pgAdmin login password, default: admin)"
   echo -e "   - PGADMIN_PORT (pgAdmin web port, default: 5050)"
+  echo -e "   - FILEBROWSER_USER (FileBrowser login, default: admin)"
+  echo -e "   - FILEBROWSER_PASSWORD (FileBrowser login — set a strong password)"
+  echo -e "   - FILEBROWSER_PORT (FileBrowser port, default: 8081, localhost only)"
   echo ""
   read -p "Press Enter after editing the file to continue..."
 fi
@@ -164,6 +167,7 @@ echo -e "2. Access your application at: ${YELLOW}https://${DOMAIN:-your-domain.c
 echo -e "3. Monitor services: ${YELLOW}docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml ps${NC}"
 echo -e "4. Access Grafana (monitoring): ${YELLOW}http://$(hostname -I | awk '{print $1}'):3000${NC} (admin/admin)"
 echo -e "5. Access pgAdmin (database admin): ${YELLOW}http://localhost:${PGADMIN_PORT:-5050}${NC} (${PGADMIN_EMAIL:-admin@nazim.cloud}/${PGADMIN_PASSWORD:-admin})"
+echo -e "6. Access FileBrowser (storage file manager): ${YELLOW}http://127.0.0.1:${FILEBROWSER_PORT:-8081}${NC} (${FILEBROWSER_USER:-admin}/<your password>) — localhost only; use SSH tunnel for remote"
 echo ""
 echo -e "${BLUE}Useful commands:${NC}"
 echo -e "- View logs: ${YELLOW}docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml logs -f [service]${NC}"

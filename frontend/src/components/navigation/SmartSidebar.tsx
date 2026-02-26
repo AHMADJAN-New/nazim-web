@@ -162,7 +162,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
-import { useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
+import { useHasAnyWebsitePermissionAndFeature, useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
 import { useProfile } from "@/hooks/useProfiles";
 import { useSubscriptionGateStatus, type SubscriptionGateStatus } from "@/hooks/useSubscription";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -259,10 +259,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const role = roleFromAuth || roleFromHook;
   const { data: currentOrg } = useCurrentOrganization();
   const { data: permissions, isLoading: permissionsLoading } = useUserPermissions();
-  const hasWebsiteAccess = useMemo(() => {
-    if (!permissions || permissions.length === 0) return false;
-    return permissions.some((permission) => permission.startsWith('website_'));
-  }, [permissions]);
+  const hasWebsiteAccess = useHasAnyWebsitePermissionAndFeature() === true;
   const websiteOnlyUser = useMemo(() => {
     if (!permissions || permissions.length === 0) return false;
     const hasWebsitePermission = permissions.some((permission) => permission.startsWith('website_'));

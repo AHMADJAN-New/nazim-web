@@ -7,7 +7,6 @@ use App\Models\OrganizationFeatureAddon;
 use App\Models\OrganizationSubscription;
 use App\Models\PlanFeature;
 use App\Models\SubscriptionPlan;
-use App\Services\Subscription\UsageTrackingService;
 use Illuminate\Support\Facades\Cache;
 
 class FeatureGateService
@@ -50,6 +49,7 @@ class FeatureGateService
     {
         $canonical = $this->normalizeFeatureKey($featureKey);
         $catalog = $this->getFeatureCatalog();
+
         return $catalog[$canonical] ?? [];
     }
 
@@ -58,7 +58,7 @@ class FeatureGateService
         $metadata = $this->getFeatureMetadata($featureKey);
         $dependencies = $metadata['dependencies'] ?? [];
 
-        if (!empty($metadata['parent'])) {
+        if (! empty($metadata['parent'])) {
             $dependencies[] = $metadata['parent'];
         }
 
@@ -68,6 +68,7 @@ class FeatureGateService
     private function getFeatureParent(string $featureKey): ?string
     {
         $metadata = $this->getFeatureMetadata($featureKey);
+
         return $metadata['parent'] ?? null;
     }
 
@@ -118,7 +119,7 @@ class FeatureGateService
 
         foreach ($order as $slug) {
             $plan = $plans->get($slug);
-            if (!$plan) {
+            if (! $plan) {
                 continue;
             }
 
@@ -136,7 +137,7 @@ class FeatureGateService
         $metadata = $subscription->metadata ?? [];
         $locked = $metadata['locked_features'] ?? [];
 
-        if (!is_array($locked)) {
+        if (! is_array($locked)) {
             return [];
         }
 
@@ -157,13 +158,14 @@ class FeatureGateService
         foreach ($this->getFeatureDependencies($canonical) as $dependency) {
             $dependencyKey = $this->normalizeFeatureKey($dependency);
 
-            if (!in_array($dependencyKey, $enabledFeatures, true)) {
+            if (! in_array($dependencyKey, $enabledFeatures, true)) {
                 $missing[] = $dependencyKey;
+
                 continue;
             }
 
             $childMissing = $this->getMissingDependencies($dependencyKey, $enabledFeatures, $visited);
-            if (!empty($childMissing)) {
+            if (! empty($childMissing)) {
                 $missing = array_merge($missing, $childMissing);
             }
         }
@@ -198,7 +200,7 @@ class FeatureGateService
     ): array {
         $canonical = $this->normalizeFeatureKey($featureKey);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return [
                 'allowed' => false,
                 'access_level' => 'none',
@@ -220,11 +222,12 @@ class FeatureGateService
             ];
         }
 
-        if (!$subscription->relationLoaded('plan')) {
+        if (! $subscription->relationLoaded('plan')) {
             try {
                 $subscription->load('plan');
             } catch (\Exception $e) {
-                \Log::warning('Failed to load plan relationship in feature access resolver: ' . $e->getMessage());
+                \Log::warning('Failed to load plan relationship in feature access resolver: '.$e->getMessage());
+
                 return [
                     'allowed' => false,
                     'access_level' => 'none',
@@ -243,7 +246,7 @@ class FeatureGateService
         if ($isEnabled) {
             $missingDependencies = $this->getMissingDependencies($canonical, $enabledFeatures);
 
-            if (!empty($missingDependencies)) {
+            if (! empty($missingDependencies)) {
                 return [
                     'allowed' => false,
                     'access_level' => 'none',
@@ -293,6 +296,7 @@ class FeatureGateService
     public function hasFeature(string $organizationId, string $featureKey): bool
     {
         $access = $this->getFeatureAccessStatus($organizationId, $featureKey);
+
         return $access['allowed'] ?? false;
     }
 
@@ -301,10 +305,10 @@ class FeatureGateService
      */
     public function assertFeature(string $organizationId, string $featureKey): void
     {
-        if (!$this->hasFeature($organizationId, $featureKey)) {
+        if (! $this->hasFeature($organizationId, $featureKey)) {
             $definition = FeatureDefinition::where('feature_key', $featureKey)->first();
             $featureName = $definition?->name ?? $featureKey;
-            
+
             throw new \Exception("{$featureName} is not available on your current plan. Please upgrade to access this feature.");
         }
     }
@@ -323,7 +327,7 @@ class FeatureGateService
             // Get plan features
             if ($subscription) {
                 // Load plan relationship if not already loaded
-                if (!$subscription->relationLoaded('plan')) {
+                if (! $subscription->relationLoaded('plan')) {
                     $subscription->load('plan');
                 }
 
@@ -347,6 +351,16 @@ class FeatureGateService
             // Addons override plan features - merge and deduplicate
             $enabledFeatures = array_unique(array_merge($enabledFeatures, $addonFeatures));
 
+            // Org-level disable: exclude features that have an addon row with is_enabled = false
+            $disabledOverrides = OrganizationFeatureAddon::where('organization_id', $organizationId)
+                ->where('is_enabled', false)
+                ->whereNull('deleted_at')
+                ->pluck('feature_key')
+                ->toArray();
+            if (! empty($disabledOverrides)) {
+                $enabledFeatures = array_values(array_diff($enabledFeatures, $disabledOverrides));
+            }
+
             $normalizedFeatures = [];
             foreach ($enabledFeatures as $featureKey) {
                 $normalizedFeatures = array_merge($normalizedFeatures, $this->getFeatureKeyVariants($featureKey));
@@ -363,11 +377,11 @@ class FeatureGateService
     public function getAllFeaturesStatus(string $organizationId): array
     {
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
-        if ($subscription && !$subscription->relationLoaded('plan')) {
+        if ($subscription && ! $subscription->relationLoaded('plan')) {
             try {
                 $subscription->load('plan');
             } catch (\Exception $e) {
-                \Log::warning('Failed to load plan relationship in getAllFeaturesStatus: ' . $e->getMessage());
+                \Log::warning('Failed to load plan relationship in getAllFeaturesStatus: '.$e->getMessage());
             }
         }
 
@@ -393,7 +407,7 @@ class FeatureGateService
                 $enabledFeatures
             );
             $parentFeature = $this->getFeatureParent($feature->feature_key);
-            
+
             // Check if it's from addon (including disabled addons for display)
             $addon = $addonsByKey->get($feature->feature_key);
             $isAddon = $addon !== null;
@@ -410,7 +424,7 @@ class FeatureGateService
                 'required_plan' => $access['required_plan'] ?? null,
                 'parent_feature' => $parentFeature,
                 'is_addon' => $isAddon,
-                'can_purchase_addon' => $feature->is_addon && !$isEnabled,
+                'can_purchase_addon' => $feature->is_addon && ! $isEnabled,
                 'addon_price_afn' => $feature->addon_price_yearly_afn,
                 'addon_price_usd' => $feature->addon_price_yearly_usd,
             ];
@@ -440,6 +454,7 @@ class FeatureGateService
             // Always include storage_gb (no feature required)
             if ($resourceKey === 'storage_gb') {
                 $filtered[$resourceKey] = $info;
+
                 continue;
             }
 
@@ -460,7 +475,7 @@ class FeatureGateService
                     }
                 }
 
-                if (!$hasAny) {
+                if (! $hasAny) {
                     continue;
                 }
             }
@@ -488,7 +503,7 @@ class FeatureGateService
 
         foreach ($warnings as $warning) {
             $resourceKey = $warning['resource_key'] ?? null;
-            if (!$resourceKey) {
+            if (! $resourceKey) {
                 continue;
             }
 
@@ -497,6 +512,7 @@ class FeatureGateService
             // Always include storage_gb warnings (no feature required)
             if ($resourceKey === 'storage_gb') {
                 $filtered[] = $warning;
+
                 continue;
             }
 
@@ -517,7 +533,7 @@ class FeatureGateService
                     }
                 }
 
-                if (!$hasAny) {
+                if (! $hasAny) {
                     continue;
                 }
             }
@@ -583,7 +599,7 @@ class FeatureGateService
     {
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return 'none';
         }
 
@@ -618,6 +634,7 @@ class FeatureGateService
     public function canWrite(string $organizationId): bool
     {
         $accessLevel = $this->getAccessLevel($organizationId);
+
         return in_array($accessLevel, ['full', 'grace']);
     }
 
@@ -627,6 +644,7 @@ class FeatureGateService
     public function canRead(string $organizationId): bool
     {
         $accessLevel = $this->getAccessLevel($organizationId);
+
         return in_array($accessLevel, ['full', 'grace', 'readonly']);
     }
 
@@ -637,7 +655,7 @@ class FeatureGateService
     {
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return [
                 'status' => 'none',
                 'message' => 'No active subscription',
@@ -651,44 +669,44 @@ class FeatureGateService
 
         // Load plan relationship if not already loaded
         try {
-            if (!$subscription->relationLoaded('plan')) {
+            if (! $subscription->relationLoaded('plan')) {
                 $subscription->load('plan');
             }
         } catch (\Exception $e) {
             // If plan loading fails, continue without plan
-            \Log::warning('Failed to load plan relationship in getSubscriptionStatus: ' . $e->getMessage());
+            \Log::warning('Failed to load plan relationship in getSubscriptionStatus: '.$e->getMessage());
         }
-        
+
         $plan = $subscription->plan;
         $accessLevel = $this->getAccessLevel($organizationId);
 
         // Build message based on status and payment issues
         $message = match ($subscription->status) {
             OrganizationSubscription::STATUS_TRIAL => "Trial period - {$subscription->trialDaysLeft()} days left",
-            OrganizationSubscription::STATUS_ACTIVE => "Active subscription",
-            OrganizationSubscription::STATUS_PENDING_RENEWAL => "Subscription expired - please renew",
-            OrganizationSubscription::STATUS_GRACE_PERIOD => "Grace period - please renew to continue",
-            OrganizationSubscription::STATUS_READONLY => "Read-only mode - please renew to regain full access",
-            OrganizationSubscription::STATUS_EXPIRED => "Subscription expired - please renew",
-            OrganizationSubscription::STATUS_SUSPENDED => "Account suspended: " . ($subscription->suspension_reason ?? 'Contact support'),
-            OrganizationSubscription::STATUS_CANCELLED => "Subscription cancelled",
-            default => "Unknown status",
+            OrganizationSubscription::STATUS_ACTIVE => 'Active subscription',
+            OrganizationSubscription::STATUS_PENDING_RENEWAL => 'Subscription expired - please renew',
+            OrganizationSubscription::STATUS_GRACE_PERIOD => 'Grace period - please renew to continue',
+            OrganizationSubscription::STATUS_READONLY => 'Read-only mode - please renew to regain full access',
+            OrganizationSubscription::STATUS_EXPIRED => 'Subscription expired - please renew',
+            OrganizationSubscription::STATUS_SUSPENDED => 'Account suspended: '.($subscription->suspension_reason ?? 'Contact support'),
+            OrganizationSubscription::STATUS_CANCELLED => 'Subscription cancelled',
+            default => 'Unknown status',
         };
 
         // Override message if payment issues exist (takes precedence)
         if ($subscription->shouldBeSuspendedForPayment()) {
             $reasons = [];
-            
+
             if ($subscription->isMaintenanceOverdue()) {
                 $daysOverdue = $subscription->daysMaintenanceOverdue();
                 $reasons[] = "Maintenance fee overdue ({$daysOverdue} day(s))";
             }
-            
+
             if ($subscription->isLicenseFeePending()) {
-                $reasons[] = "License fee not paid";
+                $reasons[] = 'License fee not paid';
             }
-            
-            $message = "Account suspended: " . implode(", ", $reasons) . ". Please make payment to restore access.";
+
+            $message = 'Account suspended: '.implode(', ', $reasons).'. Please make payment to restore access.';
         }
 
         return [

@@ -21,6 +21,7 @@ PROTECTED_VOLUMES=(
     "nazim_redis_data"         # Redis data
     "nazim_letsencrypt"        # SSL certificates - CRITICAL!
     "nazim_certbot_www"        # Certbot webroot
+    "nazim_filebrowser_data"  # FileBrowser config and user database
 )
 
 echo "=========================================="
