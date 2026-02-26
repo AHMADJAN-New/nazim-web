@@ -27,9 +27,7 @@ import {
     Cell,
     AreaChart,
     Area,
-    ChartSkeleton,
-} from '@/components/charts/LazyChart';
-import { Suspense } from 'react';
+} from 'recharts';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -90,11 +88,65 @@ export default function FinanceReports() {
         endDate: today.toISOString().split('T')[0],
     });
 
+    const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
+
     const { data: cashbook, isLoading: cashbookLoading } = useDailyCashbook(dateRange.endDate);
     const { data: incomeVsExpense, isLoading: iveLoading } = useIncomeVsExpenseReport(dateRange.startDate, dateRange.endDate);
     const { data: projectSummary, isLoading: projectLoading } = useProjectSummaryReport();
     const { data: donorSummary, isLoading: donorLoading } = useDonorSummaryReport(dateRange.startDate, dateRange.endDate);
     const { data: accountBalances, isLoading: accountLoading } = useAccountBalancesReport();
+
+    const { data: incomeEntries } = useIncomeEntries({
+        dateFrom: dateRange.startDate,
+        dateTo: dateRange.endDate,
+    });
+    const { data: expenseEntries } = useExpenseEntries({
+        dateFrom: dateRange.startDate,
+        dateTo: dateRange.endDate,
+        status: 'approved',
+    });
+
+    const timeSeriesData = useMemo(() => {
+        if (!incomeEntries || !expenseEntries) return [];
+
+        const dateMap = new Map<string, { date: string; income: number; expense: number }>();
+
+        incomeEntries.forEach(entry => {
+            const dateKey = entry.date instanceof Date ? entry.date.toISOString().split('T')[0] : String(entry.date).split('T')[0];
+            const existing = dateMap.get(dateKey) || { date: dateKey, income: 0, expense: 0 };
+            existing.income += entry.amount;
+            dateMap.set(dateKey, existing);
+        });
+
+        expenseEntries.forEach(entry => {
+            const dateKey = entry.date instanceof Date ? entry.date.toISOString().split('T')[0] : String(entry.date).split('T')[0];
+            const existing = dateMap.get(dateKey) || { date: dateKey, income: 0, expense: 0 };
+            existing.expense += entry.amount;
+            dateMap.set(dateKey, existing);
+        });
+
+        const data = Array.from(dateMap.values()).sort((a, b) =>
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        if (data.length === 0) return [];
+
+        const referenceDate = new Date(data[data.length - 1].date);
+        let daysToSubtract = 90;
+        if (timeRange === '30d') {
+            daysToSubtract = 30;
+        } else if (timeRange === '7d') {
+            daysToSubtract = 7;
+        }
+
+        const startDate = new Date(referenceDate);
+        startDate.setDate(startDate.getDate() - daysToSubtract);
+
+        return data.filter(item => {
+            const itemDate = new Date(item.date);
+            return itemDate >= startDate;
+        });
+    }, [incomeEntries, expenseEntries, timeRange]);
 
     const DateRangePicker = () => (
         <FilterPanel title={t('events.filters') || 'Search & Filter'}>
@@ -102,11 +154,11 @@ export default function FinanceReports() {
                 <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
                     <Label htmlFor="startDate">{t('events.from') || 'From'}</Label>
-                    <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={dateRange.startDate ? new Date(dateRange.startDate) : undefined} onDateChange={(date) => setDateRange(prev => ({ ...prev, startDate: date ? date.toISOString().split("T")[0] : prev.startDate }))} />
                 </div>
                 <div className="flex items-center gap-2">
                     <Label htmlFor="endDate">{t('events.to') || 'To'}</Label>
-                    <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(date ? date.toISOString().split("T")[0] : "")} />
+                    <CalendarDatePicker date={dateRange.endDate ? new Date(dateRange.endDate) : undefined} onDateChange={(date) => setDateRange(prev => ({ ...prev, endDate: date ? date.toISOString().split("T")[0] : prev.endDate }))} />
                 </div>
             </div>
         </FilterPanel>
@@ -381,67 +433,6 @@ export default function FinanceReports() {
 
     // Income vs Expense Tab
     const IncomeVsExpenseTab = () => {
-        const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
-
-        // Fetch income and expense entries for time-series chart
-        const { data: incomeEntries } = useIncomeEntries({
-            dateFrom: dateRange.startDate,
-            dateTo: dateRange.endDate,
-        });
-        const { data: expenseEntries } = useExpenseEntries({
-            dateFrom: dateRange.startDate,
-            dateTo: dateRange.endDate,
-            status: 'approved',
-        });
-
-        // Aggregate entries by date for area chart
-        const timeSeriesData = useMemo(() => {
-            if (!incomeEntries || !expenseEntries) return [];
-
-            // Create a map to aggregate by date
-            const dateMap = new Map<string, { date: string; income: number; expense: number }>();
-
-            // Process income entries
-            incomeEntries.forEach(entry => {
-                const dateKey = entry.date.toISOString().split('T')[0];
-                const existing = dateMap.get(dateKey) || { date: dateKey, income: 0, expense: 0 };
-                existing.income += entry.amount;
-                dateMap.set(dateKey, existing);
-            });
-
-            // Process expense entries
-            expenseEntries.forEach(entry => {
-                const dateKey = entry.date.toISOString().split('T')[0];
-                const existing = dateMap.get(dateKey) || { date: dateKey, income: 0, expense: 0 };
-                existing.expense += entry.amount;
-                dateMap.set(dateKey, existing);
-            });
-
-            // Convert to array and sort by date
-            const data = Array.from(dateMap.values()).sort((a, b) =>
-                new Date(a.date).getTime() - new Date(b.date).getTime()
-            );
-
-            // Filter by time range
-            if (data.length === 0) return [];
-
-            const referenceDate = new Date(data[data.length - 1].date);
-            let daysToSubtract = 90;
-            if (timeRange === '30d') {
-                daysToSubtract = 30;
-            } else if (timeRange === '7d') {
-                daysToSubtract = 7;
-            }
-
-            const startDate = new Date(referenceDate);
-            startDate.setDate(startDate.getDate() - daysToSubtract);
-
-            return data.filter(item => {
-                const itemDate = new Date(item.date);
-                return itemDate >= startDate;
-            });
-        }, [incomeEntries, expenseEntries, timeRange]);
-
         const chartConfig = {
             income: {
                 label: t('finance.income') || 'Income',
