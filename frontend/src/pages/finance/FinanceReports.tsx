@@ -71,9 +71,11 @@ import {
     useAccountBalancesReport,
     useIncomeEntries,
     useExpenseEntries,
+    useFinanceBaseCurrency,
+    useFinanceAccounts,
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getAccountCurrencyCode } from '@/lib/utils';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 
 
@@ -81,6 +83,16 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 
 export default function FinanceReports() {
     const { t } = useLanguage();
+    const baseCurrency = useFinanceBaseCurrency();
+    const currencyCode = baseCurrency?.code ?? 'AFN';
+    const { data: accounts } = useFinanceAccounts();
+    const accountIdToCurrencyCode = useMemo(() => {
+        const map = new Map<string, string>();
+        accounts?.forEach((a) => {
+            if (a.currency?.code) map.set(a.id, a.currency.code);
+        });
+        return map;
+    }, [accounts]);
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
@@ -216,13 +228,14 @@ export default function FinanceReports() {
                                     <span className="font-semibold truncate">{cb.account.name}</span>
                                 </div>
                                 <span className="text-xs opacity-80">
-                                    {formatCurrency(cb.closingBalance)}
+                                    {formatCurrency(cb.closingBalance, accountIdToCurrencyCode.get(cb.account.id) ?? currencyCode)}
                                 </span>
                             </TabsTrigger>
                         ))}
                     </TabsList>
 
                     {cashbook.cashbook.map((cb) => {
+                        const accountCurrencyCode = accountIdToCurrencyCode.get(cb.account.id) ?? currencyCode;
                         // Combine income and expenses into a single entries array for display
                         const allEntries = [
                             ...cb.income.map(e => ({ ...e, type: 'income' as const, categoryName: e.incomeCategory?.name || '-' })),
@@ -266,7 +279,7 @@ export default function FinanceReports() {
                                                     <DollarSign className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                                                 </div>
                                             </div>
-                                            <div className="text-2xl font-bold">{formatCurrency(cb.openingBalance)}</div>
+                                            <div className="text-2xl font-bold">{formatCurrency(cb.openingBalance, accountCurrencyCode)}</div>
                                         </CardContent>
                                     </Card>
 
@@ -281,7 +294,7 @@ export default function FinanceReports() {
                                                 </div>
                                             </div>
                                             <div className="text-2xl font-bold text-green-600">
-                                                +{formatCurrency(cb.totalIncome)}
+                                                +{formatCurrency(cb.totalIncome, accountCurrencyCode)}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -297,7 +310,7 @@ export default function FinanceReports() {
                                                 </div>
                                             </div>
                                             <div className="text-2xl font-bold text-red-600">
-                                                -{formatCurrency(cb.totalExpense)}
+                                                -{formatCurrency(cb.totalExpense, accountCurrencyCode)}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -313,7 +326,7 @@ export default function FinanceReports() {
                                                 </div>
                                             </div>
                                             <div className={`text-2xl font-bold ${cb.closingBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                {formatCurrency(cb.closingBalance)}
+                                                {formatCurrency(cb.closingBalance, accountCurrencyCode)}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -352,8 +365,8 @@ export default function FinanceReports() {
                                                         category: entry.categoryName,
                                                         description: entry.description || '-',
                                                         amount: entry.type === 'income'
-                                                            ? `+${formatCurrency(entry.amount)}`
-                                                            : `-${formatCurrency(entry.amount)}`,
+                                                            ? `+${formatCurrency(entry.amount, accountCurrencyCode)}`
+                                                            : `-${formatCurrency(entry.amount, accountCurrencyCode)}`,
                                                     }))
                                                 }
                                                 buildFiltersSummary={() =>
@@ -413,7 +426,7 @@ export default function FinanceReports() {
                                                                         : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                                                                         }`}
                                                                 >
-                                                                    {entry.type === 'income' ? '+' : '-'}{formatCurrency(entry.amount)}
+                                                                    {entry.type === 'income' ? '+' : '-'}{formatCurrency(entry.amount, accountCurrencyCode)}
                                                                 </Badge>
                                                             </TableCell>
                                                         </TableRow>
@@ -577,7 +590,7 @@ export default function FinanceReports() {
                             data.map((item) => ({
                                 type: item.type,
                                 category: item.category,
-                                amount: formatCurrency(item.amount),
+                                amount: formatCurrency(item.amount, currencyCode),
                             }))
                         }
                         buildFiltersSummary={() => `${dateRange.startDate} - ${dateRange.endDate}`}
@@ -596,20 +609,20 @@ export default function FinanceReports() {
                             <Card>
                                 <CardContent className="pt-6">
                                     <div className="text-sm text-muted-foreground">{t('finance.totalIncome') || 'Total Income'}</div>
-                                    <div className="text-2xl font-bold text-green-600">{formatCurrency(incomeVsExpense.summary.totalIncome)}</div>
+                                    <div className="text-2xl font-bold text-green-600">{formatCurrency(incomeVsExpense.summary.totalIncome, currencyCode)}</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="pt-6">
                                     <div className="text-sm text-muted-foreground">{t('finance.totalExpenses') || 'Total Expenses'}</div>
-                                    <div className="text-2xl font-bold text-red-600">{formatCurrency(incomeVsExpense.summary.totalExpense)}</div>
+                                    <div className="text-2xl font-bold text-red-600">{formatCurrency(incomeVsExpense.summary.totalExpense, currencyCode)}</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="pt-6">
                                     <div className="text-sm text-muted-foreground">{t('finance.netBalance') || 'Net Balance'}</div>
                                     <div className={`text-2xl font-bold ${incomeVsExpense.summary.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {formatCurrency(incomeVsExpense.summary.net)}
+                                        {formatCurrency(incomeVsExpense.summary.net, currencyCode)}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -704,7 +717,7 @@ export default function FinanceReports() {
                                                             });
                                                         }}
                                                         indicator="dot"
-                                                        formatter={(value: number) => formatCurrency(value)}
+                                                        formatter={(value: number) => formatCurrency(value, currencyCode)}
                                                     />
                                                 }
                                             />
@@ -768,7 +781,7 @@ export default function FinanceReports() {
                                                 <ChartTooltip
                                                     content={
                                                         <ChartTooltipContent
-                                                            formatter={(value: number) => formatCurrency(value)}
+                                                            formatter={(value: number) => formatCurrency(value, currencyCode)}
                                                         />
                                                     }
                                                 />
@@ -818,7 +831,7 @@ export default function FinanceReports() {
                                                 <ChartTooltip
                                                     content={
                                                         <ChartTooltipContent
-                                                            formatter={(value: number) => formatCurrency(value)}
+                                                            formatter={(value: number) => formatCurrency(value, currencyCode)}
                                                         />
                                                     }
                                                 />
@@ -860,9 +873,9 @@ export default function FinanceReports() {
                     transformData={(data) =>
                         data.map((item) => ({
                             name: item.project.name,
-                            income: formatCurrency(item.totalIncome),
-                            expense: formatCurrency(item.totalExpense),
-                            balance: formatCurrency(item.balance),
+                            income: formatCurrency(item.totalIncome, currencyCode),
+                            expense: formatCurrency(item.totalExpense, currencyCode),
+                            balance: formatCurrency(item.balance, currencyCode),
                         }))
                     }
                     buildFiltersSummary={() => `${dateRange.startDate} - ${dateRange.endDate}`}
@@ -888,7 +901,7 @@ export default function FinanceReports() {
                             <CardContent className="pt-6">
                                 <div className="text-sm text-muted-foreground">{t('finance.totalProjectIncome') || 'Total Income'}</div>
                                 <div className="text-2xl font-bold text-green-600">
-                                    {formatCurrency(projectSummary.projects.reduce((sum, p) => sum + p.totalIncome, 0))}
+                                    {formatCurrency(projectSummary.projects.reduce((sum, p) => sum + p.totalIncome, 0), currencyCode)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -896,7 +909,7 @@ export default function FinanceReports() {
                             <CardContent className="pt-6">
                                 <div className="text-sm text-muted-foreground">{t('finance.totalProjectExpense') || 'Total Expense'}</div>
                                 <div className="text-2xl font-bold text-red-600">
-                                    {formatCurrency(projectSummary.projects.reduce((sum, p) => sum + p.totalExpense, 0))}
+                                    {formatCurrency(projectSummary.projects.reduce((sum, p) => sum + p.totalExpense, 0), currencyCode)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -923,12 +936,12 @@ export default function FinanceReports() {
                                             <TableCell className="font-medium">{item.project.name}</TableCell>
                                             <TableCell className="text-right">
                                                 <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-semibold">
-                                                    {formatCurrency(item.totalIncome)}
+                                                    {formatCurrency(item.totalIncome, currencyCode)}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Badge variant="outline" className="bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 font-semibold">
-                                                    {formatCurrency(item.totalExpense)}
+                                                    {formatCurrency(item.totalExpense, currencyCode)}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -939,7 +952,7 @@ export default function FinanceReports() {
                                                         : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                                                         }`}
                                                 >
-                                                    {formatCurrency(item.balance)}
+                                                    {formatCurrency(item.balance, currencyCode)}
                                                 </Badge>
                                             </TableCell>
                                         </TableRow>
@@ -1008,7 +1021,7 @@ export default function FinanceReports() {
                                         cursor={false}
                                         content={
                                             <ChartTooltipContent
-                                                formatter={(value: number) => formatCurrency(value)}
+                                                formatter={(value: number) => formatCurrency(value, currencyCode)}
                                             />
                                         }
                                     />
@@ -1073,7 +1086,7 @@ export default function FinanceReports() {
                             name: item.donor.name,
                             type: item.donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('students.organization') || 'Organization',
                             donationCount: item.donationCount.toString(),
-                            totalDonated: formatCurrency(item.totalDonated),
+                            totalDonated: formatCurrency(item.totalDonated, currencyCode),
                         }))
                     }
                     buildFiltersSummary={() => `${dateRange.startDate} - ${dateRange.endDate}`}
@@ -1099,7 +1112,7 @@ export default function FinanceReports() {
                             <CardContent className="pt-6">
                                 <div className="text-sm text-muted-foreground">{t('finance.totalDonations') || 'Total Donations'}</div>
                                 <div className="text-2xl font-bold text-green-600">
-                                    {formatCurrency(donorSummary.donors.reduce((sum, d) => sum + d.totalDonated, 0))}
+                                    {formatCurrency(donorSummary.donors.reduce((sum, d) => sum + d.totalDonated, 0), currencyCode)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -1143,7 +1156,7 @@ export default function FinanceReports() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-semibold">
-                                                    {formatCurrency(item.totalDonated)}
+                                                    {formatCurrency(item.totalDonated, currencyCode)}
                                                 </Badge>
                                             </TableCell>
                                         </TableRow>
@@ -1164,7 +1177,7 @@ export default function FinanceReports() {
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis type="number" />
                                     <YAxis dataKey="name" type="category" width={150} />
-                                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                    <Tooltip formatter={(value: number) => formatCurrency(value, currencyCode)} />
                                     <Bar dataKey="totalDonated" name={t('finance.donated') || 'Donated'} fill="#22c55e" />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -1200,8 +1213,8 @@ export default function FinanceReports() {
                         data.map((item) => ({
                             name: item.account.name,
                             type: item.account.type === 'cash' ? t('finance.cash') || 'Cash' : t('finance.fund') || 'Fund',
-                            openingBalance: formatCurrency(item.openingBalance),
-                            currentBalance: formatCurrency(item.currentBalance),
+                            openingBalance: formatCurrency(item.openingBalance, getAccountCurrencyCode(item.account, currencyCode)),
+                            currentBalance: formatCurrency(item.currentBalance, getAccountCurrencyCode(item.account, currencyCode)),
                         }))
                     }
                     templateType="finance_account_balances"
@@ -1219,7 +1232,7 @@ export default function FinanceReports() {
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle>{t('finance.totalBalance') || 'Total Balance'}</CardTitle>
-                                <span className="text-3xl font-bold">{formatCurrency(accountBalances.totalBalance)}</span>
+                                <span className="text-3xl font-bold">{formatCurrency(accountBalances.totalBalance, currencyCode)}</span>
                             </div>
                         </CardHeader>
                     </Card>
@@ -1257,7 +1270,7 @@ export default function FinanceReports() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Badge variant="outline" className="bg-slate-50 dark:bg-slate-950/30 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 font-medium">
-                                                    {formatCurrency(item.openingBalance)}
+                                                    {formatCurrency(item.openingBalance, getAccountCurrencyCode(item.account, currencyCode))}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -1268,7 +1281,7 @@ export default function FinanceReports() {
                                                         : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                                                         }`}
                                                 >
-                                                    {formatCurrency(item.currentBalance)}
+                                                    {formatCurrency(item.currentBalance, getAccountCurrencyCode(item.account, currencyCode))}
                                                 </Badge>
                                             </TableCell>
                                         </TableRow>
@@ -1311,7 +1324,7 @@ export default function FinanceReports() {
                                     <ChartTooltip
                                         content={
                                             <ChartTooltipContent
-                                                formatter={(value: number) => formatCurrency(value)}
+                                                formatter={(value: number) => formatCurrency(value, currencyCode)}
                                             />
                                         }
                                     />

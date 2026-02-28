@@ -46,7 +46,7 @@ import {
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
-import { useFinanceDashboard } from '@/hooks/useFinance';
+import { useFinanceDashboard, useFinanceBaseCurrency, useFinanceAccounts } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -65,7 +65,17 @@ const calculatePercentageChange = (current: number, previous: number = 0): numbe
 export default function FinanceDashboard() {
     const { t } = useLanguage();
     const navigate = useNavigate();
+    const baseCurrency = useFinanceBaseCurrency();
+    const currencyCode = baseCurrency?.code ?? 'AFN';
     const { data: dashboard, isLoading, error } = useFinanceDashboard();
+    const { data: accounts } = useFinanceAccounts();
+    const accountIdToCurrencyCode = useMemo(() => {
+        const map = new Map<string, string>();
+        accounts?.forEach((a) => {
+            if (a.currency?.code) map.set(a.id, a.currency.code);
+        });
+        return map;
+    }, [accounts]);
     const [includeAssetsAndBooks, setIncludeAssetsAndBooks] = useState(true);
 
     // Calculate totals and percentages
@@ -178,7 +188,8 @@ export default function FinanceDashboard() {
                                 {formatCurrency(
                                     includeAssetsAndBooks 
                                         ? dashboard.summary.totalBalance 
-                                        : (dashboard.summary.totalCashBalance ?? dashboard.summary.totalBalance - dashboard.summary.totalAssetsValue - (dashboard.totalLibraryBooksValue || 0))
+                                        : (dashboard.summary.totalCashBalance ?? dashboard.summary.totalBalance - dashboard.summary.totalAssetsValue - (dashboard.totalLibraryBooksValue || 0)),
+                                    currencyCode
                                 )}
                             </div>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -204,7 +215,7 @@ export default function FinanceDashboard() {
                                     <span className="text-muted-foreground">{t('finance.cashBalance') || 'Cash Balance'}</span>
                                 </div>
                                 <span className="font-medium">
-                                    {formatCurrency(dashboard.summary.totalCashBalance ?? dashboard.summary.totalBalance - dashboard.summary.totalAssetsValue - (dashboard.totalLibraryBooksValue || 0))}
+                                    {formatCurrency(dashboard.summary.totalCashBalance ?? dashboard.summary.totalBalance - dashboard.summary.totalAssetsValue - (dashboard.totalLibraryBooksValue || 0), currencyCode)}
                                 </span>
                             </div>
                             {dashboard.summary.totalAssetsValue > 0 && (
@@ -215,7 +226,7 @@ export default function FinanceDashboard() {
                                     </div>
                                     <span className={`font-medium ${includeAssetsAndBooks ? 'text-amber-600' : 'text-muted-foreground'}`}>
                                         {includeAssetsAndBooks ? <Plus className="h-3 w-3 inline mr-1" /> : <Minus className="h-3 w-3 inline mr-1" />}
-                                        {formatCurrency(dashboard.summary.totalAssetsValue)}
+                                        {formatCurrency(dashboard.summary.totalAssetsValue, currencyCode)}
                                     </span>
                                 </div>
                             )}
@@ -227,7 +238,7 @@ export default function FinanceDashboard() {
                                     </div>
                                     <span className={`font-medium ${includeAssetsAndBooks ? 'text-blue-600' : 'text-muted-foreground'}`}>
                                         {includeAssetsAndBooks ? <Plus className="h-3 w-3 inline mr-1" /> : <Minus className="h-3 w-3 inline mr-1" />}
-                                        {formatCurrency(dashboard.totalLibraryBooksValue || 0)}
+                                        {formatCurrency(dashboard.totalLibraryBooksValue || 0, currencyCode)}
                                     </span>
                                 </div>
                             )}
@@ -270,7 +281,7 @@ export default function FinanceDashboard() {
                     </CardHeader>
                     <CardContent className="pb-3">
                         <div className={`text-2xl sm:text-3xl font-bold mb-2 break-words ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                            {isPositive ? '+' : ''}{formatCurrency(netThisMonth)}
+                            {isPositive ? '+' : ''}{formatCurrency(netThisMonth, currencyCode)}
                         </div>
                         <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                             <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
@@ -297,7 +308,7 @@ export default function FinanceDashboard() {
                     </CardHeader>
                     <CardContent className="pb-3">
                         <div className="text-2xl sm:text-3xl font-bold mb-2 text-amber-600 break-words">
-                            {formatCurrency(dashboard.summary.totalAssetsValue)}
+                            {formatCurrency(dashboard.summary.totalAssetsValue, currencyCode)}
                         </div>
                         <div className="text-xs text-muted-foreground mb-2 break-words">
                             {dashboard.assetsByAccount.length > 0 && (
@@ -331,7 +342,7 @@ export default function FinanceDashboard() {
                     </CardHeader>
                     <CardContent className="pb-3">
                         <div className="text-2xl sm:text-3xl font-bold mb-2 text-blue-600 break-words">
-                            {formatCurrency(dashboard.totalLibraryBooksValue || dashboard.summary.totalLibraryBooksValue || 0)}
+                            {formatCurrency(dashboard.totalLibraryBooksValue || dashboard.summary.totalLibraryBooksValue || 0, currencyCode)}
                         </div>
                         <div className="text-xs text-muted-foreground mb-2 break-words">
                             {dashboard.libraryBooksByAccount && dashboard.libraryBooksByAccount.length > 0 && (
@@ -365,7 +376,7 @@ export default function FinanceDashboard() {
                     </CardHeader>
                     <CardContent className="pb-3">
                         <div className="text-2xl sm:text-3xl font-bold mb-2 text-red-600 break-words">
-                            {formatCurrency(dashboard.summary.currentMonthExpense)}
+                            {formatCurrency(dashboard.summary.currentMonthExpense, currencyCode)}
                         </div>
                         <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                             <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 flex-shrink-0" />
@@ -412,7 +423,7 @@ export default function FinanceDashboard() {
                         <div>
                             <CardTitle className="text-lg">{t('finance.incomeByCategory') || 'Income Sources'}</CardTitle>
                             <CardDescription className="mt-1 hidden sm:block">
-                                Total: <span className="font-semibold text-foreground">{formatCurrency(incomeTotal)}</span>
+                                Total: <span className="font-semibold text-foreground">{formatCurrency(incomeTotal, currencyCode)}</span>
                             </CardDescription>
                         </div>
                         <Button variant="ghost" size="icon" className="hidden sm:flex">
@@ -447,7 +458,7 @@ export default function FinanceDashboard() {
                                         <span className="text-xs sm:text-sm font-medium truncate">{item.name}</span>
                                     </div>
                                     <div className="text-right flex-shrink-0 ml-2">
-                                        <div className="text-xs sm:text-sm font-semibold">{formatCurrency(item.total)}</div>
+                                        <div className="text-xs sm:text-sm font-semibold">{formatCurrency(item.total, currencyCode)}</div>
                                         <div className="text-xs text-muted-foreground">{item.percentage.toFixed(1)}%</div>
                                     </div>
                                 </div>
@@ -515,7 +526,7 @@ export default function FinanceDashboard() {
                                 <ChartTooltip
                                     content={
                                         <ChartTooltipContent
-                                            formatter={(value: number) => formatCurrency(value)}
+                                            formatter={(value: number) => formatCurrency(value, currencyCode)}
                                         />
                                     }
                                 />
@@ -583,7 +594,7 @@ export default function FinanceDashboard() {
                                     <ChartTooltip
                                         content={
                                             <ChartTooltipContent
-                                                formatter={(value: number) => formatCurrency(value)}
+                                                formatter={(value: number) => formatCurrency(value, currencyCode)}
                                             />
                                         }
                                     />
@@ -706,7 +717,7 @@ export default function FinanceDashboard() {
                                                         : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                                                 }`}
                                             >
-                                                {isIncome ? '+' : '-'}{formatCurrency(entry.amount)}
+                                                {isIncome ? '+' : '-'}{formatCurrency(entry.amount, currencyCode)}
                                             </Badge>
                                             <Badge variant="outline" className="text-xs">
                                                 {isIncome ? (t('finance.income') || 'Income') : (t('finance.expenses') || 'Expenses')}
@@ -764,7 +775,7 @@ export default function FinanceDashboard() {
                                     {account.name}
                                 </div>
                                 <div className="text-2xl font-bold">
-                                    {formatCurrency(account.currentBalance)}
+                                    {formatCurrency(account.currentBalance, accountIdToCurrencyCode.get(account.id) ?? currencyCode)}
                                 </div>
                             </div>
                         ))}
@@ -805,7 +816,7 @@ export default function FinanceDashboard() {
                                                     <div className="text-xs text-muted-foreground">{item.currencyCode}</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="font-semibold">{formatCurrency(item.totalValue)}</div>
+                                                    <div className="font-semibold">{formatCurrency(item.totalValue, item.currencyCode)}</div>
                                                 </div>
                                             </div>
                                         ))}
@@ -825,11 +836,11 @@ export default function FinanceDashboard() {
                                                 <div>
                                                     <div className="font-medium">{item.currencyCode}</div>
                                                     <div className="text-xs text-muted-foreground">
-                                                        {t('finance.originalValue') || 'Original'}: {formatCurrency(item.totalValue)}
+                                                        {t('finance.originalValue') || 'Original'}: {formatCurrency(item.totalValue, item.currencyCode)}
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="font-semibold">{formatCurrency(item.convertedValue)}</div>
+                                                    <div className="font-semibold">{formatCurrency(item.convertedValue, currencyCode)}</div>
                                                     <div className="text-xs text-muted-foreground">
                                                         {t('finance.convertedValue') || 'Converted'}
                                                     </div>
@@ -868,7 +879,7 @@ export default function FinanceDashboard() {
                                                     <div className="text-xs text-muted-foreground">{item.currencyCode}</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="font-semibold">{formatCurrency(item.totalValue)}</div>
+                                                    <div className="font-semibold">{formatCurrency(item.totalValue, item.currencyCode)}</div>
                                                 </div>
                                             </div>
                                         ))}
@@ -888,11 +899,11 @@ export default function FinanceDashboard() {
                                                 <div>
                                                     <div className="font-medium">{item.currencyCode}</div>
                                                     <div className="text-xs text-muted-foreground">
-                                                        {t('finance.originalValue') || 'Original'}: {formatCurrency(item.totalValue)}
+                                                        {t('finance.originalValue') || 'Original'}: {formatCurrency(item.totalValue, item.currencyCode)}
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="font-semibold">{formatCurrency(item.convertedValue)}</div>
+                                                    <div className="font-semibold">{formatCurrency(item.convertedValue, currencyCode)}</div>
                                                     <div className="text-xs text-muted-foreground">
                                                         {t('finance.converted') || 'Converted'}
                                                     </div>

@@ -185,6 +185,7 @@ export default function ExpenseEntries() {
     const baseCurrency = useMemo(() => {
         return currencies?.find(c => c.isBase && c.isActive) || null;
     }, [currencies]);
+    const currencyCode = baseCurrency?.code ?? 'AFN';
 
     const selectedAccount = useMemo(() => {
         return accounts?.find(a => a.id === formData.accountId) || null;
@@ -260,7 +261,7 @@ export default function ExpenseEntries() {
                         <SelectContent>
                             {activeAccounts.map((account) => (
                                 <SelectItem key={account.id} value={account.id}>
-                                    {account.name} ({formatCurrency(account.currentBalance)})
+                                    {account.name} ({formatCurrency(account.currentBalance, account.currency?.code ?? currencyCode)})
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -460,7 +461,7 @@ export default function ExpenseEntries() {
                                 accountName: entry.account?.name || '-',
                                 paidTo: entry.paidTo || '-',
                                 projectName: entry.project?.name || '-',
-                                amount: formatCurrency(entry.amount),
+                                amount: formatCurrency(entry.amount, entry.currency?.code ?? currencyCode),
                                 paymentMethod: entry.paymentMethod?.replace('_', ' ').toUpperCase() || '-',
                                 status: entry.status.charAt(0).toUpperCase() + entry.status.slice(1),
                                 referenceNo: entry.referenceNo || '-',
@@ -601,7 +602,7 @@ export default function ExpenseEntries() {
                             {t('finance.totalExpenses') || 'Total Expenses'}
                         </CardTitle>
                         <span className="text-2xl font-bold text-red-600">
-                            {formatCurrency(totalExpense)}
+                            {formatCurrency(totalExpense, currencyCode)}
                         </span>
                     </div>
                     <CardDescription>
@@ -672,7 +673,7 @@ export default function ExpenseEntries() {
                                     <TableCell>{getStatusBadge(entry.status)}</TableCell>
                                     <TableCell className="text-right">
                                         <Badge variant="outline" className="bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 font-semibold">
-                                            -{formatCurrency(entry.amount)}
+                                            -{formatCurrency(entry.amount, entry.currency?.code ?? currencyCode)}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -758,7 +759,7 @@ export default function ExpenseEntries() {
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">{t('finance.amount') || 'Amount'}</p>
                                             <p className="text-lg font-semibold text-red-600">
-                                                -{formatCurrency(viewingEntry.amount)}
+                                                -{formatCurrency(viewingEntry.amount, viewingEntry.currency?.code ?? viewingEntry.account?.currency?.code ?? currencyCode)}
                                             </p>
                                         </div>
                                         <div>
@@ -828,7 +829,7 @@ export default function ExpenseEntries() {
                                                 <div className="col-span-2">
                                                     <p className="text-sm font-medium text-muted-foreground">{t('finance.currentBalance') || 'Current Balance'}</p>
                                                     <p className="text-2xl font-bold text-emerald-600 mt-1">
-                                                        {formatCurrency(viewingEntry.account.currentBalance)}
+                                                        {formatCurrency(viewingEntry.account.currentBalance, viewingEntry.account.currency?.code ?? currencyCode)}
                                                     </p>
                                                 </div>
                                                 {viewingEntry.account.code && (
@@ -894,13 +895,13 @@ export default function ExpenseEntries() {
                                                 {viewingEntry.project.budgetAmount && (
                                                     <div>
                                                         <p className="text-sm font-medium text-muted-foreground">{t('finance.budgetAmount') || 'Budget Amount'}</p>
-                                                        <p className="text-sm font-medium">{formatCurrency(viewingEntry.project.budgetAmount)}</p>
+                                                        <p className="text-sm font-medium">{formatCurrency(viewingEntry.project.budgetAmount, currencies?.find(c => c.id === viewingEntry.project?.currencyId)?.code ?? currencyCode)}</p>
                                                     </div>
                                                 )}
                                                 {viewingEntry.project.balance !== undefined && (
                                                     <div>
                                                         <p className="text-sm font-medium text-muted-foreground">{t('finance.projectBalance') || 'Project Balance'}</p>
-                                                        <p className="text-sm font-medium">{formatCurrency(viewingEntry.project.balance)}</p>
+                                                        <p className="text-sm font-medium">{formatCurrency(viewingEntry.project.balance, currencies?.find(c => c.id === viewingEntry.project?.currencyId)?.code ?? currencyCode)}</p>
                                                     </div>
                                                 )}
                                             </div>

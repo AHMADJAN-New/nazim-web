@@ -48,6 +48,7 @@ import {
     useCreateFinanceProject,
     useUpdateFinanceProject,
     useDeleteFinanceProject,
+    useFinanceBaseCurrency,
     type FinanceProject,
     type FinanceProjectFormData,
 } from '@/hooks/useFinance';
@@ -59,9 +60,13 @@ export default function FinanceProjects() {
     const { t } = useLanguage();
     const { data: projects, isLoading } = useFinanceProjects();
     const { data: currencies } = useCurrencies({ isActive: true });
+    const baseCurrency = useFinanceBaseCurrency();
+    const baseCode = baseCurrency?.code ?? 'AFN';
     const createProject = useCreateFinanceProject();
     const updateProject = useUpdateFinanceProject();
     const deleteProject = useDeleteFinanceProject();
+
+    const projectCurrencyCode = (p: FinanceProject) => currencies?.find(c => c.id === p.currencyId)?.code ?? baseCode;
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editProject, setEditProject] = useState<FinanceProject | null>(null);
@@ -252,10 +257,10 @@ export default function FinanceProjects() {
                                 description: project.description || '-',
                                 startDate: project.startDate ? formatDate(project.startDate) : '-',
                                 endDate: project.endDate ? formatDate(project.endDate) : '-',
-                                budgetAmount: project.budgetAmount ? formatCurrency(project.budgetAmount) : '-',
-                                totalIncome: formatCurrency(project.totalIncome),
-                                totalExpense: formatCurrency(project.totalExpense),
-                                balance: formatCurrency(project.totalIncome - project.totalExpense),
+                                budgetAmount: project.budgetAmount ? formatCurrency(project.budgetAmount, projectCurrencyCode(project)) : '-',
+                                totalIncome: formatCurrency(project.totalIncome, projectCurrencyCode(project)),
+                                totalExpense: formatCurrency(project.totalExpense, projectCurrencyCode(project)),
+                                balance: formatCurrency(project.totalIncome - project.totalExpense, projectCurrencyCode(project)),
                                 isActive: project.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive',
                             }))
                         }
@@ -320,8 +325,8 @@ export default function FinanceProjects() {
                                             </div>
                                             <Progress value={progress} />
                                             <div className="flex justify-between text-xs text-muted-foreground">
-                                                <span>{formatCurrency(project.totalIncome)}</span>
-                                                <span>{t('events.of') || 'of'} {formatCurrency(project.budgetAmount!)}</span>
+                                                <span>{formatCurrency(project.totalIncome, projectCurrencyCode(project))}</span>
+                                                <span>{t('events.of') || 'of'} {formatCurrency(project.budgetAmount!, projectCurrencyCode(project))}</span>
                                             </div>
                                         </div>
                                     )}
@@ -334,7 +339,7 @@ export default function FinanceProjects() {
                                                 <span className="text-xs font-medium text-muted-foreground">{t('finance.income') || 'Income'}</span>
                                             </div>
                                             <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-3 py-1.5 text-sm font-semibold">
-                                                {formatCurrency(project.totalIncome)}
+                                                {formatCurrency(project.totalIncome, projectCurrencyCode(project))}
                                             </Badge>
                                         </div>
                                         <div className="flex flex-col items-center gap-2">
@@ -343,7 +348,7 @@ export default function FinanceProjects() {
                                                 <span className="text-xs font-medium text-muted-foreground">{t('finance.expense') || 'Expense'}</span>
                                             </div>
                                             <Badge variant="outline" className="bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-1.5 text-sm font-semibold">
-                                                {formatCurrency(project.totalExpense)}
+                                                {formatCurrency(project.totalExpense, projectCurrencyCode(project))}
                                             </Badge>
                                         </div>
                                         <div className="flex flex-col items-center gap-2">
@@ -359,7 +364,7 @@ export default function FinanceProjects() {
                                                         : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                                                 }`}
                                             >
-                                                {formatCurrency(netBalance)}
+                                                {formatCurrency(netBalance, projectCurrencyCode(project))}
                                             </Badge>
                                         </div>
                                     </div>

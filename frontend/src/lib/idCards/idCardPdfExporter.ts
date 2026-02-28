@@ -112,9 +112,24 @@ try {
 }
 
 
-// CR80 dimensions in mm for PDF
+// CR80 dimensions in mm for PDF (1mm = 2.83465pt)
 const CR80_WIDTH_MM = 85.6;
 const CR80_HEIGHT_MM = 53.98;
+const MM_TO_PT = 2.83465;
+const CARD_WIDTH_PT = CR80_WIDTH_MM * MM_TO_PT;
+const CARD_HEIGHT_PT = CR80_HEIGHT_MM * MM_TO_PT;
+
+// A4 portrait in points
+const A4_WIDTH_PT = 595.28;
+const A4_HEIGHT_PT = 841.89;
+
+/** Grid layout for cards per page: [cols, rows], or null for single card-sized page */
+function getGridLayout(cardsPerPage: number): { cols: number; rows: number } | null {
+  if (cardsPerPage <= 1) return null;
+  if (cardsPerPage <= 4) return { cols: 2, rows: 2 };
+  if (cardsPerPage <= 8) return { cols: 2, rows: 4 };
+  return { cols: 2, rows: 4 }; // cap at 8
+}
 
 /**
  * Export single ID card to PDF
@@ -190,18 +205,18 @@ export async function exportIdCardToPdf(
     }
   );
 
-  // Single card PDF - image only, no A4 page background (like short-term course certificates)
+  // Single card PDF - image only, no A4 page background (for card printers)
   const docDefinition = {
     pageSize: {
-      width: CR80_WIDTH_MM * 2.83465, // Convert mm to points (1mm = 2.83465pt)
-      height: CR80_HEIGHT_MM * 2.83465,
+      width: CARD_WIDTH_PT,
+      height: CARD_HEIGHT_PT,
     },
     pageMargins: [0, 0, 0, 0],
     content: [
       {
         image: cardImageDataUrl,
-        width: CR80_WIDTH_MM * 2.83465,
-        height: CR80_HEIGHT_MM * 2.83465,
+        width: CARD_WIDTH_PT,
+        height: CARD_HEIGHT_PT,
         absolutePosition: { x: 0, y: 0 },
       },
     ],
@@ -212,27 +227,22 @@ export async function exportIdCardToPdf(
 }
 
 /**
- * Export multiple ID cards to PDF (multiple cards per page)
+ * Export multiple ID cards to PDF (multiple cards per page or single card per page for card printers)
  * @param cards - Array of { template, student, side } objects
- * @param cardsPerPage - Number of cards per page (default: 6 = 3x2 grid)
+ * @param cardsPerPage - 1 = one card per card-sized page (card printer), 4 = 2x2 on A4, 8 = 2x4 on A4
  * @param filename - Optional filename (without extension)
  * @returns Promise that resolves when PDF is downloaded
  */
 export async function exportBulkIdCardsToPdf(
   cards: Array<{ template: IdCardTemplate; student: Student; side: 'front' | 'back'; notes?: string | null; expiryDate?: Date | string | null }>,
-  cardsPerPage: number = 1, // Each card gets its own page
+  cardsPerPage: number = 8,
   filename?: string,
   quality: 'standard' | 'high' = 'high'
 ): Promise<void> {
   // Get the actual pdfMake instance with fallback - try all possible sources
   let pdfMakeInstance = getPdfMakeInstance();
-  
-  // If getPdfMakeInstance returned null, try pdfMake directly
-  if (!pdfMakeInstance) {
-    pdfMakeInstance = pdfMake;
-  }
-  
-  // If still null, try accessing the module directly
+
+  if (!pdfMakeInstance) pdfMakeInstance = pdfMake;
   if (!pdfMakeInstance || typeof pdfMakeInstance.createPdf !== 'function') {
     if (pdfMakeModule && typeof (pdfMakeModule as any).createPdf === 'function') {
       pdfMakeInstance = pdfMakeModule;
@@ -240,8 +250,6 @@ export async function exportBulkIdCardsToPdf(
       pdfMakeInstance = (pdfMakeModule as any).default;
     }
   }
-  
-  // Final check
   if (!pdfMakeInstance || typeof pdfMakeInstance.createPdf !== 'function') {
     throw new Error('pdfMake.createPdf is not available. Please check pdfmake-arabic import.');
   }
@@ -255,90 +263,15 @@ export async function exportBulkIdCardsToPdf(
   const printRenderSize = getDefaultPrintRenderSize();
   const renderSize = renderQuality === 'print' ? printRenderSize : screenRenderSize;
 
-  // Calculate grid layout
-  const cols = Math.ceil(Math.sqrt(cardsPerPage));
-  const rows = Math.ceil(cardsPerPage / cols);
-  const cardWidth = CR80_WIDTH_MM * 2.83465; // Convert mm to points
-  const cardHeight = CR80_HEIGHT_MM * 2.83465;
-  
-  // Calculate spacing
-  const pageWidth = 595; // A4 portrait width in points
-  const pageHeight = 842; // A4 portrait height in points
-  const totalCardsWidth = cols * cardWidth;
-  const totalCardsHeight = rows * cardHeight;
-  const horizontalSpacing = (pageWidth - totalCardsWidth) / (cols + 1);
-  const verticalSpacing = (pageHeight - totalCardsHeight) / (rows + 1);
+  const grid = getGridLayout(cardsPerPage);
+  const perPage = grid ? Math.min(cardsPerPage, grid.cols * grid.rows) : 1;
 
-  const pages: any[] = [];
-
-  // Process cards in batches
-  for (let i = 0; i < cards.length; i += cardsPerPage) {
-    const pageCards = cards.slice(i, i + cardsPerPage);
-    const pageContent: any[] = [];
-
-    // Create rows
-    for (let row = 0; row < rows; row++) {
-      const rowContent: any[] = [];
-      for (let col = 0; col < cols; col++) {
-        const index = row * cols + col;
-        if (index < pageCards.length) {
-          const { template, student, side, notes, expiryDate } = pageCards[index];
-          
-          // Render card to image using shared render metrics
-          const cardImageDataUrl = await renderIdCardToDataUrl(
-            template,
-            student,
-            side,
-            { 
-              quality: renderQuality,
-              renderWidthPx: renderSize.width,
-              renderHeightPx: renderSize.height,
-              paddingPx: DEFAULT_ID_CARD_PADDING_PX,
-              scale: 1,
-              mimeType: 'image/jpeg', 
-              jpegQuality: 0.95, 
-              notes, 
-              expiryDate 
-            }
-          );
-          
-          rowContent.push({
-            image: cardImageDataUrl,
-            width: cardWidth,
-            height: cardHeight,
-            margin: [horizontalSpacing / 2, verticalSpacing / 2, horizontalSpacing / 2, verticalSpacing / 2],
-          });
-        } else {
-          // Empty cell
-          rowContent.push({ text: '', width: cardWidth, margin: [horizontalSpacing / 2, verticalSpacing / 2] });
-        }
-      }
-      pageContent.push({
-        columns: rowContent,
-        columnGap: 0,
-      });
-    }
-
-    pages.push({
-      content: pageContent,
-      pageSize: 'A4',
-      pageOrientation: 'portrait' as const,
-      pageMargins: [0, 0, 0, 0],
-    });
-  }
-
-  // Multiple cards PDF - each card gets its own page (no A4 grid layout)
-  const content: any[] = [];
-
-  for (let index = 0; index < cards.length; index++) {
-    const { template, student, side, notes, expiryDate } = cards[index];
-
-    // Render each card individually using shared render metrics
-    const cardImageDataUrl = await renderIdCardToDataUrl(
-      template,
-      student,
-      side,
-      {
+  if (!grid) {
+    // cardsPerPage === 1: one card per card-sized page (for card printers)
+    const content: any[] = [];
+    for (let index = 0; index < cards.length; index++) {
+      const { template, student, side, notes, expiryDate } = cards[index];
+      const cardImageDataUrl = await renderIdCardToDataUrl(template, student, side, {
         quality: renderQuality,
         renderWidthPx: renderSize.width,
         renderHeightPx: renderSize.height,
@@ -347,29 +280,80 @@ export async function exportBulkIdCardsToPdf(
         mimeType: 'image/jpeg',
         jpegQuality: 0.95,
         notes,
-        expiryDate
+        expiryDate,
+      });
+      content.push({
+        image: cardImageDataUrl,
+        width: CARD_WIDTH_PT,
+        height: CARD_HEIGHT_PT,
+        absolutePosition: { x: 0, y: 0 },
+      });
+      if (index < cards.length - 1) {
+        content.push({ text: '', pageBreak: 'after' });
       }
-    );
-
-    content.push({
-      image: cardImageDataUrl,
-      width: CR80_WIDTH_MM * 2.83465,
-      height: CR80_HEIGHT_MM * 2.83465,
-      absolutePosition: { x: 0, y: 0 },
-    });
-
-    // Add page break between cards (except for the last one)
-    if (index < cards.length - 1) {
-      content.push({ text: '', pageBreak: 'after' });
     }
+    const docDefinition = {
+      content,
+      pageSize: { width: CARD_WIDTH_PT, height: CARD_HEIGHT_PT },
+      pageMargins: [0, 0, 0, 0],
+    };
+    const defaultFilename = filename || `id-cards-${Date.now()}`;
+    pdfMakeInstance.createPdf(docDefinition).download(`${defaultFilename}.pdf`);
+    return;
+  }
+
+  // A4 grid: place cards with absolutePosition (2x2 or 2x4)
+  const cols = grid.cols;
+  const rows = grid.rows;
+  const topMarginPt = 15 * MM_TO_PT; // 15mm top margin like user's template
+  const hGapPt = (A4_WIDTH_PT - cols * CARD_WIDTH_PT) / (cols + 1);
+  const vGapPt = (A4_HEIGHT_PT - topMarginPt - rows * CARD_HEIGHT_PT) / (rows + 1);
+
+  const allPages: any[] = [];
+
+  for (let pageStart = 0; pageStart < cards.length; pageStart += perPage) {
+    const pageCards = cards.slice(pageStart, pageStart + perPage);
+    const pageContent: any[] = [];
+
+    for (let i = 0; i < pageCards.length; i++) {
+      const { template, student, side, notes, expiryDate } = pageCards[i];
+      const cardImageDataUrl = await renderIdCardToDataUrl(template, student, side, {
+        quality: renderQuality,
+        renderWidthPx: renderSize.width,
+        renderHeightPx: renderSize.height,
+        paddingPx: DEFAULT_ID_CARD_PADDING_PX,
+        scale: 1,
+        mimeType: 'image/jpeg',
+        jpegQuality: 0.95,
+        notes,
+        expiryDate,
+      });
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = hGapPt + col * (CARD_WIDTH_PT + hGapPt);
+      const y = topMarginPt + row * (CARD_HEIGHT_PT + vGapPt);
+      pageContent.push({
+        image: cardImageDataUrl,
+        width: CARD_WIDTH_PT,
+        height: CARD_HEIGHT_PT,
+        absolutePosition: { x, y },
+      });
+    }
+
+    allPages.push({
+      content: pageContent,
+      pageSize: 'A4',
+      pageOrientation: 'portrait' as const,
+      pageMargins: [0, 0, 0, 0],
+    });
   }
 
   const docDefinition = {
-    content,
-    pageSize: {
-      width: CR80_WIDTH_MM * 2.83465,
-      height: CR80_HEIGHT_MM * 2.83465,
-    },
+    content: allPages.flatMap((page, idx) =>
+      idx === 0 ? page.content : [{ text: '', pageBreak: 'after' as const }, ...page.content]
+    ),
+    pageSize: 'A4',
+    pageOrientation: 'portrait' as const,
     pageMargins: [0, 0, 0, 0],
   };
 

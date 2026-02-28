@@ -312,6 +312,30 @@ export async function renderIdCardToCanvas(
     return { x, y, width: w, height: h };
   };
 
+  // Default positions when layout has enabled field but no position saved (e.g. from layout editor)
+  const DEFAULT_FIELD_POSITIONS: Record<string, { x: number; y: number; width?: number; height?: number }> = {
+    studentNamePosition: { x: 50, y: 40 },
+    fatherNamePosition: { x: 50, y: 50 },
+    studentCodePosition: { x: 50, y: 55 },
+    admissionNumberPosition: { x: 50, y: 60 },
+    classPosition: { x: 50, y: 70 },
+    schoolNamePosition: { x: 50, y: 30 },
+    cardNumberPosition: { x: 50, y: 80 },
+    expiryDatePosition: { x: 50, y: 60 },
+    notesPosition: { x: 50, y: 90 },
+    studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 },
+    qrCodePosition: { x: 80, y: 50, width: 10, height: 10 },
+  };
+  const getPositionOrDefault = (
+    fieldKey: keyof typeof DEFAULT_FIELD_POSITIONS,
+    layoutPos?: { x: number; y: number; width?: number; height?: number } | null
+  ) => {
+    if (layoutPos && typeof layoutPos.x === 'number' && typeof layoutPos.y === 'number') {
+      return layoutPos;
+    }
+    return DEFAULT_FIELD_POSITIONS[fieldKey];
+  };
+
   ctx.textBaseline = 'middle';
   ctx.direction = isRtl ? 'rtl' : 'ltr';
 
@@ -330,7 +354,7 @@ export async function renderIdCardToCanvas(
 
   // Draw enabled fields - render all enabled fields even if data is missing
   if (layout.enabledFields?.includes('studentName')) {
-    const pos = getPixelPosition(layout.studentNamePosition);
+    const pos = getPixelPosition(getPositionOrDefault('studentNamePosition', layout.studentNamePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
       const studentNameValue = layout.fieldValues?.studentName || student.fullName;
@@ -350,7 +374,7 @@ export async function renderIdCardToCanvas(
   }
 
   if (layout.enabledFields?.includes('fatherName')) {
-    const pos = getPixelPosition(layout.fatherNamePosition);
+    const pos = getPixelPosition(getPositionOrDefault('fatherNamePosition', layout.fatherNamePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
       const fatherNameValue = layout.fieldValues?.fatherName || student.fatherName;
@@ -370,7 +394,7 @@ export async function renderIdCardToCanvas(
   }
 
   if (layout.enabledFields?.includes('studentCode')) {
-    const pos = getPixelPosition(layout.studentCodePosition);
+    const pos = getPixelPosition(getPositionOrDefault('studentCodePosition', layout.studentCodePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
       const studentCodeValue = layout.fieldValues?.studentCode || student.studentCode;
@@ -390,7 +414,7 @@ export async function renderIdCardToCanvas(
   }
 
   if (layout.enabledFields?.includes('admissionNumber')) {
-    const pos = getPixelPosition(layout.admissionNumberPosition);
+    const pos = getPixelPosition(getPositionOrDefault('admissionNumberPosition', layout.admissionNumberPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
       const admissionNumberValue = layout.fieldValues?.admissionNumber || student.admissionNumber;
@@ -410,7 +434,7 @@ export async function renderIdCardToCanvas(
   }
 
   if (layout.enabledFields?.includes('class')) {
-    const pos = getPixelPosition(layout.classPosition);
+    const pos = getPixelPosition(getPositionOrDefault('classPosition', layout.classPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
       const classValue = layout.fieldValues?.class || student.currentClass?.name;
@@ -430,7 +454,7 @@ export async function renderIdCardToCanvas(
   }
 
   if (layout.enabledFields?.includes('schoolName')) {
-    const pos = getPixelPosition(layout.schoolNamePosition);
+    const pos = getPixelPosition(getPositionOrDefault('schoolNamePosition', layout.schoolNamePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student's school name
       const schoolNameValue = layout.fieldValues?.schoolName || student.school?.schoolName;
@@ -451,7 +475,7 @@ export async function renderIdCardToCanvas(
 
   // Card Number
   if (layout.enabledFields?.includes('cardNumber')) {
-    const pos = getPixelPosition(layout.cardNumberPosition);
+    const pos = getPixelPosition(getPositionOrDefault('cardNumberPosition', layout.cardNumberPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
       const cardNumberValue = layout.fieldValues?.cardNumber || student.cardNumber || (student as any).cardNumber;
@@ -472,7 +496,7 @@ export async function renderIdCardToCanvas(
 
   // Expiry Date
   if (layout.enabledFields?.includes('expiryDate')) {
-    const pos = getPixelPosition(layout.expiryDatePosition);
+    const pos = getPixelPosition(getPositionOrDefault('expiryDatePosition', layout.expiryDatePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use passed expiryDate
       const expiryDateValue = layout.fieldValues?.expiryDate;
@@ -517,7 +541,7 @@ export async function renderIdCardToCanvas(
 
   // Notes
   if (layout.enabledFields?.includes('notes')) {
-    const pos = getPixelPosition(layout.notesPosition);
+    const pos = getPixelPosition(getPositionOrDefault('notesPosition', layout.notesPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use passed notes
       const notesValue = layout.fieldValues?.notes || notes;
@@ -538,7 +562,7 @@ export async function renderIdCardToCanvas(
 
   // Student photo
   if (layout.enabledFields?.includes('studentPhoto')) {
-    const pos = getPixelPosition(layout.studentPhotoPosition);
+    const pos = getPixelPosition(getPositionOrDefault('studentPhotoPosition', layout.studentPhotoPosition));
     if (pos && pos.width && pos.height) {
       try {
         // Use authenticated API request for student picture
@@ -576,7 +600,7 @@ export async function renderIdCardToCanvas(
 
   // QR Code
   if (layout.enabledFields?.includes('qrCode')) {
-    const pos = getPixelPosition(layout.qrCodePosition);
+    const pos = getPixelPosition(getPositionOrDefault('qrCodePosition', layout.qrCodePosition));
     if (pos && pos.width && pos.height) {
       try {
         // Use smaller dimension for square QR code
@@ -646,22 +670,27 @@ export async function renderIdCardToCanvas(
       ctx.arc(position.x, position.y, 3, 0, Math.PI * 2);
       ctx.fill();
     };
-    const drawFieldAnchor = (fieldId: string, position?: { x: number; y: number; width?: number; height?: number }) => {
+    const drawFieldAnchor = (
+      fieldId: string,
+      fieldKey: keyof typeof DEFAULT_FIELD_POSITIONS,
+      position?: { x: number; y: number; width?: number; height?: number } | null
+    ) => {
       if (!layout.enabledFields?.includes(fieldId)) return;
-      drawAnchor(getPixelPosition(position));
+      const pos = getPositionOrDefault(fieldKey, position);
+      drawAnchor(getPixelPosition(pos));
     };
 
-    drawFieldAnchor('studentName', layout.studentNamePosition);
-    drawFieldAnchor('fatherName', layout.fatherNamePosition);
-    drawFieldAnchor('studentCode', layout.studentCodePosition);
-    drawFieldAnchor('admissionNumber', layout.admissionNumberPosition);
-    drawFieldAnchor('class', layout.classPosition);
-    drawFieldAnchor('schoolName', layout.schoolNamePosition);
-    drawFieldAnchor('cardNumber', layout.cardNumberPosition);
-    drawFieldAnchor('expiryDate', layout.expiryDatePosition);
-    drawFieldAnchor('notes', layout.notesPosition);
-    drawFieldAnchor('studentPhoto', layout.studentPhotoPosition);
-    drawFieldAnchor('qrCode', layout.qrCodePosition);
+    drawFieldAnchor('studentName', 'studentNamePosition', layout.studentNamePosition);
+    drawFieldAnchor('fatherName', 'fatherNamePosition', layout.fatherNamePosition);
+    drawFieldAnchor('studentCode', 'studentCodePosition', layout.studentCodePosition);
+    drawFieldAnchor('admissionNumber', 'admissionNumberPosition', layout.admissionNumberPosition);
+    drawFieldAnchor('class', 'classPosition', layout.classPosition);
+    drawFieldAnchor('schoolName', 'schoolNamePosition', layout.schoolNamePosition);
+    drawFieldAnchor('cardNumber', 'cardNumberPosition', layout.cardNumberPosition);
+    drawFieldAnchor('expiryDate', 'expiryDatePosition', layout.expiryDatePosition);
+    drawFieldAnchor('notes', 'notesPosition', layout.notesPosition);
+    drawFieldAnchor('studentPhoto', 'studentPhotoPosition', layout.studentPhotoPosition);
+    drawFieldAnchor('qrCode', 'qrCodePosition', layout.qrCodePosition);
     ctx.restore();
   }
 

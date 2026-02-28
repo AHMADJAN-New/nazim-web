@@ -53,8 +53,8 @@ export default {
       exportAll: "ټول فلټر شوي صادر کړئ",
       exportSelected: "ټاکل شوي صادر کړئ",
       format: "د صادرولو بڼه",
-      includeUnpaid: "نغدي نه شوي کارتونه شامل کړئ",
-      includeUnprinted: "چاپ نه شوي کارتونه شامل کړئ",
+      includeUnpaid: "له فیس پرته  کارتونه شامل کړئ",
+      includeUnprinted: "نا چاپ کارتونه شامل کړئ",
       options: "د صادرولو غوراوي",
       quality: "کیفیت",
       sides: "د کارت خواوې",
@@ -91,7 +91,7 @@ export default {
     notAssigned: "نه دی ورکړل شوی",
     notesDescription: "ځانګړی متن چې ښودل کیږي. د اصلي یادښتونو کارولو لپاره خالي پریږدئ.",
     notesPlaceholder: "یادښتونه ولیکئ...",
-    noUnprintedCards: "چاپ نه شوي کارتونه ونه موندل شول",
+    noUnprintedCards: "نا چاپ کارتونه ونه موندل شول",
     photoSize: "د انځور اندازه (د کارت %)",
     previewFailed: "مخکتنه ناکامه شوه",
     previewPlaceholder: "د مخکتنې ځای",
@@ -115,7 +115,7 @@ export default {
     selectStudentForPreview: "زده کوونکی وټاکئ",
     selectStudents: "زده کوونکي وټاکئ",
     selectTemplatePlaceholder: "قالب وټاکئ",
-    selectUnprinted: "چاپ نه شوي وټاکئ",
+    selectUnprinted: "نا چاپ وټاکئ",
     selectUseGlobalFont: "د عمومي فونټ کارولو لپاره \"Use Global Font\" وټاکئ",
     sizeDescription: "ارزښتونه د کارت سلنه ده. د اصلي اندازې لپاره خالي پریږدئ.",
     status: {
@@ -124,7 +124,7 @@ export default {
       feeUnpaid: "فیس باقي",
       notAssigned: "نه دی ورکړل شوی",
       printed: "چاپ شوی",
-      unprinted: "چاپ نه شوی"
+      unprinted: "نا چاپ "
     },
     studentCode: "د زده کوونکي کوډ",
     studentId: "د زده کوونکي ID",
@@ -138,6 +138,6 @@ export default {
     totalFeeCollected: "راټول شوی فیس",
     useGlobalFont: "عمومي فونټ وکاروئ",
     width: "سور (%)",
-    unprinted: "چاپ نه شوی"
+    unprinted: "نا چاپ "
   }
 };

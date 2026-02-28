@@ -4,17 +4,14 @@ import {
   FileText,
   CheckSquare,
   Square,
-  Filter,
-  Search,
-  TrendingUp,
-  Printer,
-  DollarSign,
 } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
 
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,7 +46,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -131,7 +127,7 @@ export default function IdCardExport() {
   // Export options
   const [exportFormat, setExportFormat] = useState<'zip' | 'pdf'>(savedSettings.exportFormat || 'zip');
   const [exportSides, setExportSides] = useState<'front' | 'back' | 'both'>(savedSettings.exportSides || 'both');
-  const [cardsPerPage, setCardsPerPage] = useState<number>(savedSettings.cardsPerPage || 6);
+  const [cardsPerPage, setCardsPerPage] = useState<number>(savedSettings.cardsPerPage || 8);
   const [quality, setQuality] = useState<'standard' | 'high'>(savedSettings.quality || 'high');
   const [includeUnprinted, setIncludeUnprinted] = useState<boolean>(savedSettings.includeUnprinted !== undefined ? savedSettings.includeUnprinted : true);
   const [includeUnpaid, setIncludeUnpaid] = useState<boolean>(savedSettings.includeUnpaid !== undefined ? savedSettings.includeUnpaid : true);
@@ -327,72 +323,66 @@ export default function IdCardExport() {
   };
 
   return (
-    <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('events.export') || 'ID Card Export'}</CardTitle>
-          <CardDescription>
-            {t('idCards.export.description') || 'Export ID cards as ZIP or PDF files'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Student Type Selector */}
-          <Tabs value={studentType} onValueChange={(value) => setStudentType(value as 'regular' | 'course')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="regular">
-                {t('idCards.assignment.regularStudents') || 'Regular Students'}
-              </TabsTrigger>
-              <TabsTrigger value="course">
-                {t('idCards.assignment.courseStudents') || 'Course Students'}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('events.export') || 'ID Card Export'}
+        description={t('idCards.export.description') || 'Export ID cards as ZIP or PDF files'}
+        icon={<FileArchive className="h-5 w-5" />}
+      />
 
-          {/* Statistics Dashboard */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-4">
-                <div className="text-2xl font-bold">{statistics.total}</div>
-                <div className="text-sm text-muted-foreground">
-                  {t('idCards.totalCards') || 'Total Cards'}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4">
-                <div className="text-2xl font-bold">{statistics.printed}</div>
-                <div className="text-sm text-muted-foreground">
-                  {t('idCards.printed') || 'Printed'} ({statistics.printedPercentage}%)
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4">
-                <div className="text-2xl font-bold">{statistics.feePaid}</div>
-                <div className="text-sm text-muted-foreground">
-                  {t('courses.feePaid') || 'Fee Paid'} ({statistics.feePaidPercentage}%)
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4">
-                <div className="text-2xl font-bold">
-                  {(Number(statistics.totalFeeCollected) || 0).toFixed(2)}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {t('idCards.totalFeeCollected') || 'Fee Collected'}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+      {/* Student Type Tabs */}
+      <Tabs value={studentType} onValueChange={(value) => setStudentType(value as 'regular' | 'course')}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="regular">
+            {t('idCards.assignment.regularStudents') || 'Regular Students'}
+          </TabsTrigger>
+          <TabsTrigger value="course">
+            {t('idCards.assignment.courseStudents') || 'Course Students'}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
-          {/* Filter Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t('events.filters') || 'Filters'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Statistics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xl sm:text-2xl font-bold">{statistics.total}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {t('idCards.totalCards') || 'Total Cards'}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xl sm:text-2xl font-bold">{statistics.printed}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {t('idCards.printed') || 'Printed'} ({statistics.printedPercentage}%)
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xl sm:text-2xl font-bold">{statistics.feePaid}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {t('courses.feePaid') || 'Fee Paid'} ({statistics.feePaidPercentage}%)
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xl sm:text-2xl font-bold truncate" title={String(Number(statistics.totalFeeCollected) || 0)}>
+              {(Number(statistics.totalFeeCollected) || 0).toFixed(2)}
+            </div>
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {t('idCards.totalFeeCollected') || 'Fee Collected'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <FilterPanel title={t('events.filters') || 'Filters'} defaultOpenDesktop={true} defaultOpenMobile={false}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 <div>
                   <Label>{t('academic.academicYears.academicYear') || 'Academic Year'}</Label>
                   <Select value={academicYearId} onValueChange={setAcademicYearId}>
@@ -521,7 +511,7 @@ export default function IdCardExport() {
                   </Select>
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2 xl:col-span-1">
                   <Label>{t('events.search') || 'Search'}</Label>
                   <Input
                     placeholder={t('events.search') || 'Search students...'}
@@ -530,17 +520,16 @@ export default function IdCardExport() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+      </FilterPanel>
 
-          {/* Main Content: Export Options + Student Selection */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Export Options (Left) */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="text-lg">{t('idCards.export.options') || 'Export Options'}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+      {/* Export Options + Student Selection */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Export Options */}
+        <Card className="lg:col-span-1 order-2 lg:order-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg">{t('idCards.export.options') || 'Export Options'}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
                 <div>
                   <Label>{t('idCards.export.format') || 'Export Format'}</Label>
                   <Select value={exportFormat} onValueChange={(value: 'zip' | 'pdf') => setExportFormat(value)}>
@@ -580,21 +569,22 @@ export default function IdCardExport() {
 
                 {exportFormat === 'pdf' && (
                   <div>
-                    <Label>{t('idCards.export.cardsPerPage') || 'Cards Per Page (Each card gets its own page)'}</Label>
+                    <Label>{t('idCards.export.cardsPerPage') || 'Cards Per Page'}</Label>
                     <Select
                       value={cardsPerPage.toString()}
                       onValueChange={(value) => setCardsPerPage(parseInt(value))}
-                      disabled
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">1 (Each card on separate page)</SelectItem>
+                        <SelectItem value="1">1 (Card printer – one card per page)</SelectItem>
+                        <SelectItem value="4">4 (A4 – 2×2 grid)</SelectItem>
+                        <SelectItem value="8">8 (A4 – 2×4 grid, for cutting)</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Each ID card will be placed on its own page without A4 background
+                      Use 1 for card printers; use 4 or 8 to print multiple cards on A4 for cutting.
                     </p>
                   </div>
                 )}
@@ -637,49 +627,41 @@ export default function IdCardExport() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+        </Card>
 
-            {/* Student Selection (Center) */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
-                    {t('idCards.export.studentSelection') || 'Student Selection'} ({filteredCards.length})
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={selectAllCards}>
-                      {selectedCardIds.size === filteredCards.length ? (
-                        <>
-                          <Square className="h-4 w-4 mr-1" />
-                          {t('events.deselectAll') || 'Deselect All'}
-                        </>
-                      ) : (
-                        <>
-                          <CheckSquare className="h-4 w-4 mr-1" />
-                          {t('events.selectAll') || 'Select All'}
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => selectByStatus('printed')}
-                    >
-                      {t('idCards.selectPrinted') || 'Select Printed'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => selectByStatus('unprinted')}
-                    >
-                      {t('idCards.selectUnprinted') || 'Select Unprinted'}
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[500px]">
-                  <Table>
+        {/* Student Selection */}
+        <Card className="lg:col-span-2 order-1 lg:order-2">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3">
+              <CardTitle className="text-base sm:text-lg">
+                {t('idCards.export.studentSelection') || 'Student Selection'} ({filteredCards.length})
+              </CardTitle>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={selectAllCards} className="shrink-0">
+                  {selectedCardIds.size === filteredCards.length ? (
+                    <>
+                      <Square className="h-4 w-4 mr-1 shrink-0" />
+                      <span className="hidden sm:inline">{t('events.deselectAll') || 'Deselect All'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare className="h-4 w-4 mr-1 shrink-0" />
+                      <span className="hidden sm:inline">{t('events.selectAll') || 'Select All'}</span>
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => selectByStatus('printed')} className="shrink-0">
+                  {t('idCards.selectPrinted') || 'Printed'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => selectByStatus('unprinted')} className="shrink-0">
+                  {t('idCards.selectUnprinted') || 'Unprinted'}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-auto rounded-md border max-h-[min(500px,60vh)]">
+              <Table className="min-w-[640px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12">
@@ -752,7 +734,7 @@ export default function IdCardExport() {
                       )}
                     </TableBody>
                   </Table>
-                </ScrollArea>
+            </div>
                 {selectedCardIds.size > 0 && (
                   <div className="mt-4 text-sm text-muted-foreground">
                     {t('idCards.selectedCards', { count: selectedCardIds.size }) ||
@@ -763,30 +745,30 @@ export default function IdCardExport() {
             </Card>
           </div>
 
-          {/* Export Actions */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleExportAll}
-                  disabled={filteredCards.length === 0 || exportCards.isPending}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {t('idCards.export.exportAll') || 'Export All Filtered'}
-                </Button>
-                <Button
-                  onClick={handleExportSelected}
-                  disabled={selectedCardIds.size === 0 || exportCards.isPending}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {exportCards.isPending
-                    ? t('events.processing') || 'Processing...'
-                    : t('idCards.export.exportSelected') || `Export Selected (${selectedCardIds.size})`}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Export Actions */}
+      <Card>
+        <CardContent className="pt-4 sm:pt-6">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportAll}
+              disabled={filteredCards.length === 0 || exportCards.isPending}
+              className="w-full sm:w-auto"
+            >
+              <Download className="h-4 w-4 mr-2 shrink-0" />
+              {t('idCards.export.exportAll') || 'Export All Filtered'}
+            </Button>
+            <Button
+              onClick={handleExportSelected}
+              disabled={selectedCardIds.size === 0 || exportCards.isPending}
+              className="w-full sm:w-auto"
+            >
+              <Download className="h-4 w-4 mr-2 shrink-0" />
+              {exportCards.isPending
+                ? t('events.processing') || 'Processing...'
+                : t('idCards.export.exportSelected') || `Export Selected (${selectedCardIds.size})`}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

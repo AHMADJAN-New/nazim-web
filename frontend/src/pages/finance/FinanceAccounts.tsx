@@ -57,15 +57,18 @@ import {
     useUpdateFinanceAccount,
     useDeleteFinanceAccount,
     useAccountTransactions,
+    useFinanceBaseCurrency,
     type FinanceAccount,
     type FinanceAccountFormData,
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
-import { formatDate, formatCurrency } from '@/lib/utils';
+import { formatDate, formatCurrency, getAccountCurrencyCode } from '@/lib/utils';
 
 export default function FinanceAccounts() {
     const { t } = useLanguage();
     const [searchParams, setSearchParams] = useSearchParams();
+    const baseCurrency = useFinanceBaseCurrency();
+    const baseCode = baseCurrency?.code ?? 'AFN';
     const { data: accounts, isLoading } = useFinanceAccounts();
     const { data: currencies } = useCurrencies({ isActive: true });
     const createAccount = useCreateFinanceAccount();
@@ -288,8 +291,8 @@ export default function FinanceAccounts() {
                                 name: account.name,
                                 code: account.code || '-',
                                 type: account.type === 'cash' ? t('finance.cash') || 'Cash' : t('finance.fund') || 'Fund',
-                                openingBalance: formatCurrency(account.openingBalance),
-                                currentBalance: formatCurrency(account.currentBalance),
+                                openingBalance: formatCurrency(account.openingBalance, getAccountCurrencyCode(account, baseCode)),
+                                currentBalance: formatCurrency(account.currentBalance, getAccountCurrencyCode(account, baseCode)),
                                 isActive: account.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive',
                             }))
                         }
@@ -366,7 +369,7 @@ export default function FinanceAccounts() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Badge variant="outline" className="bg-slate-50 dark:bg-slate-950/30 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 font-medium">
-                                            {formatCurrency(account.openingBalance)}
+                                            {formatCurrency(account.openingBalance, getAccountCurrencyCode(account, baseCode))}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -378,7 +381,7 @@ export default function FinanceAccounts() {
                                                     : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                                             }`}
                                         >
-                                            {formatCurrency(account.currentBalance)}
+                                            {formatCurrency(account.currentBalance, getAccountCurrencyCode(account, baseCode))}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
@@ -459,6 +462,7 @@ export default function FinanceAccounts() {
             {/* Side Panel for Account Details */}
             <AccountDetailsPanel
                 account={selectedAccount}
+                baseCode={baseCode}
                 open={sidePanelOpen}
                 onOpenChange={setSidePanelOpen}
                 onEdit={(account) => {
@@ -477,13 +481,14 @@ export default function FinanceAccounts() {
 // Account Details Panel Component
 interface AccountDetailsPanelProps {
     account: FinanceAccount | null;
+    baseCode: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onEdit: (account: FinanceAccount) => void;
     onDelete: (accountId: string) => void;
 }
 
-function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: AccountDetailsPanelProps) {
+function AccountDetailsPanel({ account, baseCode, open, onOpenChange, onEdit, onDelete }: AccountDetailsPanelProps) {
     const { t } = useLanguage();
     const transactions = useAccountTransactions(account?.id);
 
@@ -537,7 +542,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                             )}
                             <div>
                                 <p className="text-sm text-muted-foreground">{t('finance.openingBalance') || 'Opening Balance'}</p>
-                                <p className="font-medium">{formatCurrency(account.openingBalance)}</p>
+                                <p className="font-medium">{formatCurrency(account.openingBalance, getAccountCurrencyCode(account, baseCode))}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">{t('finance.currentBalance') || 'Current Balance'}</p>
@@ -549,7 +554,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                             : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                                     }`}
                                 >
-                                    {formatCurrency(account.currentBalance)}
+                                    {formatCurrency(account.currentBalance, getAccountCurrencyCode(account, baseCode))}
                                 </Badge>
                             </div>
                             <div>
@@ -605,7 +610,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                     </div>
                                     <p className="font-semibold text-lg">
                                         {transactions.latestTransaction.type === 'income' ? '+' : '-'}
-                                        {formatCurrency(transactions.latestTransaction.amount)}
+                                        {formatCurrency(transactions.latestTransaction.amount, getAccountCurrencyCode(account, baseCode))}
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -654,18 +659,18 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="border rounded-lg p-4">
                                     <p className="text-sm text-muted-foreground">{t('finance.totalIncome') || 'Total Income'}</p>
-                                    <p className="text-lg font-semibold text-green-600">{formatCurrency(transactions.totalIncome)}</p>
+                                    <p className="text-lg font-semibold text-green-600">{formatCurrency(transactions.totalIncome, getAccountCurrencyCode(account, baseCode))}</p>
                                 </div>
                                 <div className="border rounded-lg p-4">
                                     <p className="text-sm text-muted-foreground">{t('finance.totalExpense') || 'Total Expense'}</p>
-                                    <p className="text-lg font-semibold text-red-600">{formatCurrency(transactions.totalExpense)}</p>
+                                    <p className="text-lg font-semibold text-red-600">{formatCurrency(transactions.totalExpense, getAccountCurrencyCode(account, baseCode))}</p>
                                 </div>
                                 <div className="border rounded-lg p-4">
                                     <p className="text-sm text-muted-foreground">{t('finance.netBalance') || 'Net Balance'}</p>
                                     <p className={`text-lg font-semibold ${
                                         transactions.netBalance >= 0 ? 'text-green-600' : 'text-red-600'
                                     }`}>
-                                        {formatCurrency(transactions.netBalance)}
+                                        {formatCurrency(transactions.netBalance, getAccountCurrencyCode(account, baseCode))}
                                     </p>
                                 </div>
                                 <div className="border rounded-lg p-4">
@@ -701,7 +706,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                             transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                                         }`}>
                                             {transaction.type === 'income' ? '+' : '-'}
-                                            {formatCurrency(transaction.amount)}
+                                            {formatCurrency(transaction.amount, getAccountCurrencyCode(account, baseCode))}
                                         </p>
                                     </div>
                                 ))}

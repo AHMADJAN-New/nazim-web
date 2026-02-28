@@ -135,7 +135,6 @@ export default defineConfig({
       // Include recharts in optimizeDeps to ensure proper initialization
       // It will still be code-split via manualChunks
       'recharts',
-      // Removed 'jszip' - will be lazy loaded to reduce initial bundle size
       // Removed 'xlsx' - will be lazy loaded to reduce initial bundle size
       'shepherd.js',
       'date-fns', // Pre-bundle date-fns to avoid circular dependency issues
@@ -143,7 +142,6 @@ export default defineConfig({
     exclude: [
       'pdfmake-arabic',
       'pdfmake',
-      'jszip', // Exclude jszip to allow for lazy loading
       'xlsx', // Exclude xlsx to allow for lazy loading
     ],
     esbuildOptions: {

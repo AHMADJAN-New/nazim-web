@@ -28,6 +28,17 @@ export function formatCurrency(
 }
 
 /**
+ * Resolve currency code for an account: use account's currency when set, otherwise base.
+ * Use this so account currency is kept intact wherever amounts are account-scoped.
+ */
+export function getAccountCurrencyCode(
+  account: { currency?: { code: string } | null } | null | undefined,
+  baseCode: string
+): string {
+  return account?.currency?.code ?? baseCode;
+}
+
+/**
  * Format a date for display
  * Now uses the calendar adapter to respect user's calendar preference
  * @param date The date to format (Date object or string)

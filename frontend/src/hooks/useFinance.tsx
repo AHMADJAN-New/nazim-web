@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
+import { useCurrencies } from './useCurrencies';
 
 import {
     financeAccountsApi,
@@ -87,6 +88,15 @@ export type {
     ProjectSummaryReport,
     DonorSummaryReport,
     AccountBalancesReport,
+};
+
+/** Base currency for the organization (used for finance display when no account/project currency applies). */
+export const useFinanceBaseCurrency = () => {
+    const { data: currencies } = useCurrencies({ isActive: true });
+    return useMemo(
+        () => currencies?.find((c) => c.isBase && c.isActive) || currencies?.[0] || null,
+        [currencies]
+    );
 };
 
 // ============================================
@@ -485,6 +495,7 @@ export const useDonors = (params?: { type?: string; isActive?: boolean; search?:
         },
         enabled: !!user && !!profile?.organization_id,
         staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: true,
     });
 };
 
@@ -504,6 +515,7 @@ export const useCreateDonor = () => {
             void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
             void queryClient.invalidateQueries({ queryKey: ['donor-summary-report'] });
             void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            void queryClient.refetchQueries({ queryKey: ['donors'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to create donor');
@@ -527,6 +539,7 @@ export const useUpdateDonor = () => {
             void queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
             void queryClient.invalidateQueries({ queryKey: ['donor-summary-report'] });
             void queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+            void queryClient.refetchQueries({ queryKey: ['donors'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to update donor');

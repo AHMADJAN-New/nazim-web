@@ -48,6 +48,7 @@ import {
     useCreateDonor,
     useUpdateDonor,
     useDeleteDonor,
+    useFinanceBaseCurrency,
     type Donor,
     type DonorFormData,
 } from '@/hooks/useFinance';
@@ -56,6 +57,8 @@ import { formatCurrency } from '@/lib/utils';
 
 export default function Donors() {
     const { t } = useLanguage();
+    const baseCurrency = useFinanceBaseCurrency();
+    const currencyCode = baseCurrency?.code ?? 'AFN';
     const { data: donors, isLoading } = useDonors();
     const createDonor = useCreateDonor();
     const updateDonor = useUpdateDonor();
@@ -266,7 +269,7 @@ export default function Donors() {
                                 type: donor.type === 'individual' ? t('finance.individual') || 'Individual' : t('students.organization') || 'Organization',
                                 phone: donor.phone || '-',
                                 email: donor.email || '-',
-                                totalDonated: formatCurrency(donor.totalDonated),
+                                totalDonated: formatCurrency(donor.totalDonated, currencyCode),
                                 isActive: donor.isActive ? t('events.active') || 'Active' : t('events.inactive') || 'Inactive',
                             }))
                         }
@@ -322,7 +325,7 @@ export default function Donors() {
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">{t('finance.totalDonated') || 'Total Donated'}</p>
-                            <p className="text-2xl font-bold text-green-600">{formatCurrency(totalDonated)}</p>
+                            <p className="text-2xl font-bold text-green-600">{formatCurrency(totalDonated, currencyCode)}</p>
                         </div>
                     </div>
                 </CardHeader>
@@ -377,7 +380,7 @@ export default function Donors() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right font-medium text-green-600">
-                                        {formatCurrency(donor.totalDonated)}
+                                        {formatCurrency(donor.totalDonated, currencyCode)}
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={donor.isActive ? 'default' : 'secondary'}>
