@@ -26,6 +26,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
+import {
+  useMaintenanceFees,
+  useLicenseFees,
+} from '@/hooks/useMaintenanceLicenseFees';
 import { 
   useSubscriptionStatus, 
   useSubscriptionGateStatus,
@@ -34,10 +38,6 @@ import {
   usePaymentHistory,
   useSubscriptionHistory,
 } from '@/hooks/useSubscription';
-import { 
-  useMaintenanceFees,
-  useLicenseFees,
-} from '@/hooks/useMaintenanceLicenseFees';
 import { formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -53,6 +53,8 @@ export default function SubscriptionPage() {
   const { data: licenseStatus, isLoading: licenseLoading } = useLicenseFees();
 
   const [activeTab, setActiveTab] = useState('overview');
+  const [usageViewTab, setUsageViewTab] = useState('all');
+  const [featureViewTab, setFeatureViewTab] = useState('all');
   
   // Determine subscription status for messaging
   const subscriptionAlert = useMemo(() => {
@@ -134,7 +136,7 @@ export default function SubscriptionPage() {
     }
     
     return null;
-  }, [gateStatus, t]);
+  }, [gateStatus, t, tUnsafe]);
 
   const groupedFeatures = features?.reduce((acc, feature) => {
     if (!acc[feature.category]) {
@@ -143,6 +145,43 @@ export default function SubscriptionPage() {
     acc[feature.category].push(feature);
     return acc;
   }, {} as Record<string, typeof features>);
+
+  const usageItems = usageData?.usage ?? [];
+  const warningUsageItems = usageItems.filter(
+    (item) => !item.isUnlimited && (item.isWarning || item.percentage >= 75)
+  );
+  const healthyUsageItems = usageItems.filter(
+    (item) => item.isUnlimited || (!item.isWarning && item.percentage < 75)
+  );
+
+  const groupedFeaturesByState = useMemo(() => {
+    const groups = groupedFeatures || {};
+    const reduceByState = (state: 'all' | 'enabled' | 'disabled') =>
+      Object.entries(groups).reduce(
+        (acc, [category, categoryFeatures]) => {
+          const filtered = categoryFeatures.filter((feature) => {
+            if (state === 'enabled') return feature.isEnabled;
+            if (state === 'disabled') return !feature.isEnabled;
+            return true;
+          });
+
+          if (filtered.length > 0) {
+            acc[category] = filtered;
+          }
+          return acc;
+        },
+        {} as Record<string, typeof features>
+      );
+
+    return {
+      all: groups,
+      enabled: reduceByState('enabled'),
+      disabled: reduceByState('disabled'),
+    };
+  }, [groupedFeatures]);
+
+  const enabledFeatureCount = features?.filter((feature) => feature.isEnabled).length ?? 0;
+  const disabledFeatureCount = (features?.length ?? 0) - enabledFeatureCount;
 
   const getPaymentStatusBadge = (paymentStatus: string) => {
     switch (paymentStatus) {
@@ -252,8 +291,9 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 md:w-auto md:inline-flex">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <div className="overflow-x-auto pb-1">
+        <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-4 md:w-auto">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
             <span className="hidden md:inline">Overview</span>
@@ -271,6 +311,7 @@ export default function SubscriptionPage() {
             <span className="hidden md:inline">History</span>
           </TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
@@ -507,9 +548,23 @@ export default function SubscriptionPage() {
                     </div>
                   ))}
                 </div>
-              ) : usageData?.usage && usageData.usage.length > 0 ? (
-                <div className="space-y-6">
-                  {usageData.usage.map((item) => (
+              ) : usageItems.length > 0 ? (
+                <Tabs value={usageViewTab} onValueChange={setUsageViewTab} className="space-y-4">
+                  <div className="overflow-x-auto pb-1">
+                    <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-3">
+                      <TabsTrigger value="all">All ({usageItems.length})</TabsTrigger>
+                      <TabsTrigger value="warning">Near Limit ({warningUsageItems.length})</TabsTrigger>
+                      <TabsTrigger value="healthy">Healthy ({healthyUsageItems.length})</TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  {[
+                    { key: 'all', rows: usageItems },
+                    { key: 'warning', rows: warningUsageItems },
+                    { key: 'healthy', rows: healthyUsageItems },
+                  ].map((tab) => (
+                    <TabsContent key={tab.key} value={tab.key} className="space-y-6">
+                      {tab.rows.length > 0 ? tab.rows.map((item) => (
                     <div key={item.resourceKey} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div>
@@ -536,8 +591,8 @@ export default function SubscriptionPage() {
                                 item.percentage >= 100 && 'text-red-700'
                               )}>
                                 {item.resourceKey === 'storage_gb' 
-                                  ? `${Number(item.current).toFixed(2)} / ${item.limit === -1 ? '∞' : Number(item.limit).toFixed(2)} GB`
-                                  : `${item.current.toLocaleString()} / ${item.limit === -1 ? '∞' : item.limit.toLocaleString()}${item.unit ? ` ${item.unit}` : ''}`
+                                  ? `${Number(item.current).toFixed(2)} / ${item.limit === -1 ? 'Unlimited' : Number(item.limit).toFixed(2)} GB`
+                                  : `${item.current.toLocaleString()} / ${item.limit === -1 ? 'Unlimited' : item.limit.toLocaleString()}${item.unit ? ` ${item.unit}` : ''}`
                                 }
                               </div>
                               <div className="text-sm text-muted-foreground">
@@ -554,8 +609,14 @@ export default function SubscriptionPage() {
                         />
                       )}
                     </div>
+                      )) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p>No usage items in this filter</p>
+                        </div>
+                      )}
+                    </TabsContent>
                   ))}
-                </div>
+                </Tabs>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -586,59 +647,83 @@ export default function SubscriptionPage() {
               ))}
             </div>
           ) : groupedFeatures && Object.keys(groupedFeatures).length > 0 ? (
-            Object.entries(groupedFeatures).map(([category, categoryFeatures]) => (
-              <Card key={category}>
-                <CardHeader>
-                  <CardTitle className="capitalize">{category.replace('_', ' ')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {categoryFeatures?.map((feature) => {
-                      const isReadonly = feature.accessLevel === 'readonly';
-                      const isFull = feature.accessLevel === 'full';
+            <Tabs value={featureViewTab} onValueChange={setFeatureViewTab} className="space-y-4">
+              <div className="overflow-x-auto pb-1">
+                <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-3">
+                  <TabsTrigger value="all">All ({features?.length || 0})</TabsTrigger>
+                  <TabsTrigger value="enabled">Enabled ({enabledFeatureCount})</TabsTrigger>
+                  <TabsTrigger value="disabled">Disabled ({disabledFeatureCount})</TabsTrigger>
+                </TabsList>
+              </div>
 
-                      return (
-                        <div 
-                          key={feature.featureKey}
-                          className={cn(
-                            'flex items-center justify-between p-3 rounded-lg border',
-                            isFull
-                              ? 'bg-green-50 border-green-200'
-                              : isReadonly
-                              ? 'bg-yellow-50 border-yellow-200'
-                              : 'bg-gray-50'
-                          )}
-                        >
-                          <div>
-                            <div className="font-medium">{feature.name}</div>
-                            {feature.description && (
-                              <div className="text-sm text-muted-foreground">{feature.description}</div>
-                            )}
+              {[
+                { key: 'all', groups: groupedFeaturesByState.all },
+                { key: 'enabled', groups: groupedFeaturesByState.enabled },
+                { key: 'disabled', groups: groupedFeaturesByState.disabled },
+              ].map((tab) => (
+                <TabsContent key={tab.key} value={tab.key} className="space-y-6">
+                  {Object.keys(tab.groups).length > 0 ? (
+                    Object.entries(tab.groups).map(([category, categoryFeatures]) => (
+                      <Card key={category}>
+                        <CardHeader>
+                          <CardTitle className="capitalize">{category.replace('_', ' ')}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid gap-3 md:grid-cols-2">
+                            {categoryFeatures?.map((feature) => {
+                              const isReadonly = feature.accessLevel === 'readonly';
+                              const isFull = feature.accessLevel === 'full';
+
+                              return (
+                                <div
+                                  key={feature.featureKey}
+                                  className={cn(
+                                    'flex items-center justify-between p-3 rounded-lg border',
+                                    isFull
+                                      ? 'bg-green-50 border-green-200'
+                                      : isReadonly
+                                      ? 'bg-yellow-50 border-yellow-200'
+                                      : 'bg-gray-50'
+                                  )}
+                                >
+                                  <div>
+                                    <div className="font-medium">{feature.name}</div>
+                                    {feature.description && (
+                                      <div className="text-sm text-muted-foreground">{feature.description}</div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {feature.isAddon && (
+                                      <Badge variant="outline" className="text-xs">Add-on</Badge>
+                                    )}
+                                    {isReadonly && (
+                                      <Badge variant="outline" className="text-xs text-yellow-700 border-yellow-300">
+                                        Read-only
+                                      </Badge>
+                                    )}
+                                    {isFull ? (
+                                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                    ) : isReadonly ? (
+                                      <Lock className="h-5 w-5 text-yellow-500" />
+                                    ) : (
+                                      <XCircle className="h-5 w-5 text-gray-400" />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                          <div className="flex items-center gap-2">
-                            {feature.isAddon && (
-                              <Badge variant="outline" className="text-xs">Add-on</Badge>
-                            )}
-                            {isReadonly && (
-                              <Badge variant="outline" className="text-xs text-yellow-700 border-yellow-300">
-                                Read-only
-                              </Badge>
-                            )}
-                            {isFull ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-500" />
-                            ) : isReadonly ? (
-                              <Lock className="h-5 w-5 text-yellow-500" />
-                            ) : (
-                              <XCircle className="h-5 w-5 text-gray-400" />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No features in this filter</p>
+                    </div>
+                  )}
+                </TabsContent>
+              ))}
+            </Tabs>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <Settings className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -677,7 +762,7 @@ export default function SubscriptionPage() {
                             }).format(payment.amount)}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {formatDate(payment.paymentDate)} • {payment.paymentMethod.replace('_', ' ')}
+                            {formatDate(payment.paymentDate)} - {payment.paymentMethod.replace('_', ' ')}
                           </div>
                         </div>
                         {getPaymentStatusBadge(payment.status)}
@@ -719,7 +804,7 @@ export default function SubscriptionPage() {
                           </div>
                           {entry.toPlanName && (
                             <div className="text-sm text-muted-foreground">
-                              {entry.fromPlanName ? `${entry.fromPlanName} → ` : ''}{entry.toPlanName}
+                              {entry.fromPlanName ? `${entry.fromPlanName} -> ` : ''}{entry.toPlanName}
                             </div>
                           )}
                           {entry.notes && (

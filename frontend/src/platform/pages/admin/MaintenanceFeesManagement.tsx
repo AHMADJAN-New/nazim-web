@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -43,7 +44,9 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
 import { platformApi } from '@/platform/lib/platformApi';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { usePlatformPendingPayments } from '@/platform/hooks/usePlatformAdmin';
 import { showToast } from '@/lib/toast';
+import { FeeRecordSidePanel } from '@/platform/components/FeeRecordSidePanel';
 import type * as SubscriptionApi from '@/types/api/subscription';
 
 export default function MaintenanceFeesManagement() {
@@ -51,9 +54,17 @@ export default function MaintenanceFeesManagement() {
   const queryClient = useQueryClient();
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<string>('all');
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [selectedOrgName, setSelectedOrgName] = useState('');
 
   const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
   const hasPlatformAdmin = Array.isArray(permissions) && permissions.includes('subscription.admin');
+
+  const { data: pendingPaymentsResponse } = usePlatformPendingPayments();
+  const pendingMaintenancePayments = (pendingPaymentsResponse?.data ?? []).filter(
+    (p: { payment_type?: string }) => p.payment_type === 'maintenance'
+  );
 
   // Fetch maintenance fees list
   const { data: maintenanceFees, isLoading: feesLoading } = useQuery({
@@ -245,6 +256,46 @@ export default function MaintenanceFeesManagement() {
         </Alert>
       )}
 
+      {/* Pending maintenance payments (recorded but not yet confirmed) */}
+      {pendingMaintenancePayments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Pending Maintenance Payments</CardTitle>
+            <CardDescription>
+              Recorded maintenance payments awaiting confirmation. Click Review to confirm or reject.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Organization</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingMaintenancePayments.map((p: { id: string; organization?: { name: string }; amount: number; currency: string; payment_date?: string; created_at?: string }) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.organization?.name ?? '-'}</TableCell>
+                      <TableCell className="text-right">{p.amount?.toLocaleString()} {p.currency}</TableCell>
+                      <TableCell>{p.payment_date ? formatDate(new Date(p.payment_date)) : p.created_at ? formatDate(new Date(p.created_at)) : '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/platform/payments/${p.id}`}>Review</Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
@@ -317,7 +368,15 @@ export default function MaintenanceFeesManagement() {
                   </TableHeader>
                 <TableBody>
                   {maintenanceFees.map((fee) => (
-                    <TableRow key={fee.subscription_id}>
+                    <TableRow
+                      key={fee.subscription_id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => {
+                        setSelectedOrgId(fee.organization_id);
+                        setSelectedOrgName(fee.organization_name ?? '');
+                        setSidePanelOpen(true);
+                      }}
+                    >
                       <TableCell className="font-medium">
                         <div>
                           {fee.organization_name}
@@ -350,8 +409,8 @@ export default function MaintenanceFeesManagement() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            // Navigate to organization subscription detail
+                          onClick={(e) => {
+                            e.stopPropagation();
                             window.location.href = `/platform/organizations/${fee.organization_id}/subscription`;
                           }}
                           className="flex-shrink-0"
@@ -370,6 +429,14 @@ export default function MaintenanceFeesManagement() {
         </CardContent>
       </Card>
 
+      <FeeRecordSidePanel
+        open={sidePanelOpen}
+        onOpenChange={setSidePanelOpen}
+        organizationId={selectedOrgId}
+        organizationName={selectedOrgName}
+        type="maintenance"
+      />
+
       {/* Invoices Table */}
       <Card>
         <CardHeader>
@@ -385,8 +452,18 @@ export default function MaintenanceFeesManagement() {
           {invoicesLoading ? (
             <div className="text-center py-8 text-muted-foreground px-4 sm:px-0">Loading...</div>
           ) : !invoicesData || invoicesData.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground px-4 sm:px-0">
-              {t('subscription.noInvoices') || 'No invoices found'}
+            <div className="text-center py-10 px-4 sm:px-0">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground/60 mb-3" />
+              <p className="text-muted-foreground font-medium mb-1">
+                {t('subscription.noInvoices') || 'No invoices found'}
+              </p>
+              <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+                {t('subscription.noInvoicesHint') || 'Generate maintenance invoices for organizations with due or overdue fees to see them here.'}
+              </p>
+              <Button onClick={() => setIsGenerateDialogOpen(true)}>
+                <FileText className="mr-2 h-4 w-4" />
+                {t('subscription.generateInvoices') || 'Generate Invoices'}
+              </Button>
             </div>
           ) : (
             <div className="overflow-x-auto -mx-4 sm:mx-0">

@@ -121,6 +121,7 @@ export default {
     yes: "هو",
     selectLanguage: "ژبه غوره کړئ",
     schoolManagement: "ناظم د دیني مدارسو د مالي او اداري چارو د تنظیم سیستم",
-    toggleSidebar: "د سایډبار بدلول"
+    toggleSidebar: "د سایډبار بدلول",
+    organization: "اداره"
   }
 };

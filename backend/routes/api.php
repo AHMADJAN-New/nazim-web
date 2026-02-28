@@ -1629,6 +1629,7 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
 
     // Payments & renewals
     Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);
+    Route::get('/payments/{paymentId}', [SubscriptionAdminController::class, 'showPayment']);
     Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmPayment']);
     Route::post('/payments/{paymentId}/reject', [SubscriptionAdminController::class, 'rejectPayment']);
     Route::get('/renewals/pending', [SubscriptionAdminController::class, 'listPendingRenewals']);
@@ -1841,6 +1842,7 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription'
 
     // Payments & renewals
     Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);
+    Route::get('/payments/{paymentId}', [SubscriptionAdminController::class, 'showPayment']);
     Route::post('/payments/{paymentId}/confirm', [SubscriptionAdminController::class, 'confirmPayment']);
     Route::post('/payments/{paymentId}/reject', [SubscriptionAdminController::class, 'rejectPayment']);
     Route::get('/renewals/pending', [SubscriptionAdminController::class, 'listPendingRenewals']);

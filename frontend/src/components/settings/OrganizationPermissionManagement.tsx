@@ -15,8 +15,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -25,7 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useLanguage } from '@/hooks/useLanguage';
 import { organizationsApi } from '@/lib/api/client';
 import { platformApi } from '@/platform/lib/platformApi';
 import { showToast } from '@/lib/toast';
@@ -58,12 +57,12 @@ export function OrganizationPermissionManagement({
   organizationId,
   usePlatformAdminApi = false,
 }: OrganizationPermissionManagementProps) {
-  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [permissionStatusTab, setPermissionStatusTab] = useState('all');
 
   // Use platform admin API if specified, otherwise use regular API
   const permissionsApi = usePlatformAdminApi
@@ -115,6 +114,15 @@ export function OrganizationPermissionManagement({
 
   const permissions = data?.permissions || [];
   const roles = data?.roles || [];
+  const enabledPermissionNames = useMemo(
+    () =>
+      new Set(
+        roles.flatMap((role: any) =>
+          Array.isArray(role.permissions) ? role.permissions : []
+        )
+      ),
+    [roles]
+  );
 
   const filteredPermissions = useMemo(() => {
     if (!searchQuery) return permissions;
@@ -126,6 +134,22 @@ export function OrganizationPermissionManagement({
       p.description?.toLowerCase().includes(query)
     );
   }, [permissions, searchQuery]);
+
+  const enabledPermissions = useMemo(
+    () =>
+      filteredPermissions.filter((permission: any) =>
+        enabledPermissionNames.has(permission.name)
+      ),
+    [filteredPermissions, enabledPermissionNames]
+  );
+
+  const disabledPermissions = useMemo(
+    () =>
+      filteredPermissions.filter(
+        (permission: any) => !enabledPermissionNames.has(permission.name)
+      ),
+    [filteredPermissions, enabledPermissionNames]
+  );
 
   const handleEditRole = (roleName: string) => {
     const role = roles.find((r: any) => r.name === roleName);
@@ -223,49 +247,91 @@ export function OrganizationPermissionManagement({
 
           {/* Permissions List */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">
-                All Permissions ({permissions.length})
-              </h3>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search permissions..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 w-64"
-                  />
-                </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+              <h3 className="font-semibold">Permissions ({filteredPermissions.length})</h3>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search permissions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
               </div>
             </div>
 
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Resource</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Description</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPermissions.map((permission: any) => (
-                    <TableRow key={permission.id}>
-                      <TableCell>
-                        <Badge variant="outline">{permission.resource}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge>{permission.action}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {permission.description || permission.name}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <Tabs value={permissionStatusTab} onValueChange={setPermissionStatusTab} className="space-y-3">
+              <div className="overflow-x-auto pb-1">
+                <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-3">
+                  <TabsTrigger value="all" className="flex-shrink-0">
+                    All ({filteredPermissions.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="enabled" className="flex-shrink-0">
+                    Enabled ({enabledPermissions.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="disabled" className="flex-shrink-0">
+                    Disabled ({disabledPermissions.length})
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {[
+                { key: 'all', rows: filteredPermissions },
+                { key: 'enabled', rows: enabledPermissions },
+                { key: 'disabled', rows: disabledPermissions },
+              ].map((tab) => (
+                <TabsContent key={tab.key} value={tab.key}>
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Resource</TableHead>
+                          <TableHead>Action</TableHead>
+                          <TableHead>Description</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {tab.rows.length > 0 ? (
+                          tab.rows.map((permission: any) => (
+                            <TableRow key={permission.id}>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    enabledPermissionNames.has(permission.name)
+                                      ? 'default'
+                                      : 'secondary'
+                                  }
+                                >
+                                  {enabledPermissionNames.has(permission.name)
+                                    ? 'Enabled'
+                                    : 'Disabled'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{permission.resource}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge>{permission.action}</Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {permission.description || permission.name}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                              No permissions found
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
           </div>
         </CardContent>
       </Card>

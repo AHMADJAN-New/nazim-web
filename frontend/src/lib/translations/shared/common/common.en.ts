@@ -121,6 +121,7 @@ export default {
     yes: "Yes",
     selectLanguage: "Select Language",
     schoolManagement: "School Management",
-    toggleSidebar: "Toggle Sidebar"
+    toggleSidebar: "Toggle Sidebar",
+    organization: "Organization"
   }
 };

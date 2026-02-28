@@ -561,7 +561,7 @@ class SubscriptionAdminController extends Controller
 
         return response()->json([
             'data' => [
-                'subscription' => $subscription?->load(['plan', 'payments']),
+                'subscription' => $subscription?->load(['plan', 'payments', 'licensePayment']),
                 'status' => $status,
                 'usage' => $usage,
                 'features' => $features,
@@ -853,6 +853,53 @@ class SubscriptionAdminController extends Controller
             ->paginate($request->per_page ?? 20);
 
         return response()->json($payments);
+    }
+
+    /**
+     * Show a single payment (for review page)
+     */
+    public function showPayment(Request $request, string $paymentId)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $payment = PaymentRecord::with(['organization', 'subscription.plan', 'confirmedByUser'])
+            ->find($paymentId);
+
+        if (! $payment) {
+            return response()->json(['error' => 'Payment not found'], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'id' => $payment->id,
+                'organization_id' => $payment->organization_id,
+                'subscription_id' => $payment->subscription_id,
+                'organization' => $payment->organization ? [
+                    'id' => $payment->organization->id,
+                    'name' => $payment->organization->name,
+                ] : null,
+                'subscription' => $payment->subscription ? [
+                    'id' => $payment->subscription->id,
+                    'plan' => $payment->subscription->plan ? [
+                        'id' => $payment->subscription->plan->id,
+                        'name' => $payment->subscription->plan->name,
+                    ] : null,
+                ] : null,
+                'amount' => (float) $payment->amount,
+                'currency' => $payment->currency,
+                'payment_method' => $payment->payment_method,
+                'payment_reference' => $payment->payment_reference,
+                'payment_date' => $payment->payment_date?->toDateString(),
+                'payment_type' => $payment->payment_type ?? PaymentRecord::TYPE_RENEWAL,
+                'status' => $payment->status,
+                'discount_amount' => (float) $payment->discount_amount,
+                'notes' => $payment->notes,
+                'confirmed_at' => $payment->confirmed_at?->toISOString(),
+                'confirmed_by' => $payment->confirmedByUser?->email,
+                'created_at' => $payment->created_at?->toISOString(),
+                'updated_at' => $payment->updated_at?->toISOString(),
+            ],
+        ]);
     }
 
     /**
@@ -2332,7 +2379,8 @@ class SubscriptionAdminController extends Controller
     // =====================================================
 
     /**
-     * Get all unpaid license fees (platform-wide)
+     * Get all unpaid license fees (platform-wide).
+     * Returns all subscriptions with license fee status (paid, pending, unpaid) for the management page.
      */
     public function listUnpaidLicenseFees(Request $request)
     {
@@ -2340,10 +2388,10 @@ class SubscriptionAdminController extends Controller
 
         try {
             $licenseFeeService = app(\App\Services\Subscription\LicenseFeeService::class);
-            $unpaid = $licenseFeeService->getUnpaidLicenseFees();
+            $rows = $licenseFeeService->getAllLicenseFeeStatus();
 
             return response()->json([
-                'data' => $unpaid,
+                'data' => $rows->values()->all(),
             ]);
         } catch (\Exception $e) {
             \Log::error('Failed to list unpaid license fees: '.$e->getMessage(), [
@@ -2551,15 +2599,22 @@ class SubscriptionAdminController extends Controller
                 return response()->json(['error' => 'Organization not found'], 404);
             }
 
-            // Get all confirmed payments for this organization
-            $payments = PaymentRecord::where('organization_id', $organizationId)
+            // Get all confirmed payments for this organization (for totals and aggregates)
+            $confirmedPayments = PaymentRecord::where('organization_id', $organizationId)
                 ->where('status', PaymentRecord::STATUS_CONFIRMED)
                 ->whereNotNull('confirmed_at')
                 ->with(['subscription.plan', 'discountCode', 'confirmedByUser'])
                 ->orderBy('confirmed_at', 'desc')
                 ->get();
 
-            // Calculate totals by payment type
+            // Get all payments (confirmed + pending) for the list, so recorded-but-unconfirmed fees appear
+            $allPayments = PaymentRecord::where('organization_id', $organizationId)
+                ->with(['subscription.plan', 'discountCode', 'confirmedByUser'])
+                ->orderByRaw('confirmed_at DESC NULLS LAST')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Calculate totals by payment type (confirmed only)
             $totalsByType = [
                 PaymentRecord::TYPE_LICENSE => ['AFN' => 0, 'USD' => 0, 'count' => 0],
                 PaymentRecord::TYPE_MAINTENANCE => ['AFN' => 0, 'USD' => 0, 'count' => 0],
@@ -2570,7 +2625,7 @@ class SubscriptionAdminController extends Controller
             $paymentsByYear = [];
             $paymentsByMonth = [];
 
-            foreach ($payments as $payment) {
+            foreach ($confirmedPayments as $payment) {
                 $netAmount = $payment->getNetAmount();
                 $currency = $payment->currency;
                 $paymentType = $payment->payment_type ?? PaymentRecord::TYPE_RENEWAL;
@@ -2602,8 +2657,8 @@ class SubscriptionAdminController extends Controller
                 $paymentsByMonth[$monthKey]['count']++;
             }
 
-            // Transform payments for response
-            $paymentList = $payments->map(function ($payment) {
+            // Transform all payments (confirmed + pending) for response, with status
+            $paymentList = $allPayments->map(function ($payment) {
                 return [
                     'id' => $payment->id,
                     'subscription_id' => $payment->subscription_id,
@@ -2620,7 +2675,9 @@ class SubscriptionAdminController extends Controller
                     'billing_period' => $payment->billing_period,
                     'billing_period_label' => $payment->getBillingPeriodLabel(),
                     'is_recurring' => $payment->is_recurring,
+                    'status' => $payment->status,
                     'confirmed_at' => $payment->confirmed_at?->toISOString(),
+                    'created_at' => $payment->created_at?->toISOString(),
                     'confirmed_by' => $payment->confirmedByUser?->email,
                     'discount_code' => $payment->discountCode?->code,
                     'notes' => $payment->notes,
@@ -2639,7 +2696,7 @@ class SubscriptionAdminController extends Controller
                     'payments_by_year' => $paymentsByYear,
                     'payments_by_month' => $paymentsByMonth,
                     'payments' => $paymentList,
-                    'total_payments' => $payments->count(),
+                    'total_payments' => $allPayments->count(),
                 ],
             ]);
         } catch (\Exception $e) {

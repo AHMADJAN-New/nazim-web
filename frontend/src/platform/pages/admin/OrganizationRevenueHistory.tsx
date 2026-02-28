@@ -395,9 +395,13 @@ export default function OrganizationRevenueHistory() {
                                     if (paymentTypeFilter !== 'all' && payment.payment_type !== paymentTypeFilter) {
                                       return false;
                                     }
-                                    if (yearFilter !== 'all' && payment.confirmed_at) {
-                                      const paymentYear = new Date(payment.confirmed_at).getFullYear().toString();
-                                      if (paymentYear !== yearFilter) return false;
+                                    if (yearFilter !== 'all') {
+                                      const dateForYear = payment.status === 'pending' && payment.created_at
+                                        ? new Date(payment.created_at)
+                                        : payment.confirmed_at
+                                        ? new Date(payment.confirmed_at)
+                                        : null;
+                                      if (!dateForYear || dateForYear.getFullYear().toString() !== yearFilter) return false;
                                     }
                                     return true;
                                   })
@@ -408,13 +412,22 @@ export default function OrganizationRevenueHistory() {
                                           ? formatDate(new Date(payment.confirmed_at))
                                           : payment.payment_date
                                           ? formatDate(new Date(payment.payment_date))
+                                          : payment.created_at
+                                          ? formatDate(new Date(payment.created_at))
                                           : '-'}
                                       </TableCell>
                                       <TableCell>
-                                        <Badge variant="outline" className="text-xs">
-                                          <span className="hidden sm:inline">{payment.payment_type_label}</span>
-                                          <span className="sm:hidden">{payment.payment_type_label.split(' ')[0]}</span>
-                                        </Badge>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <Badge variant="outline" className="text-xs">
+                                            <span className="hidden sm:inline">{payment.payment_type_label}</span>
+                                            <span className="sm:hidden">{payment.payment_type_label.split(' ')[0]}</span>
+                                          </Badge>
+                                          {payment.status === 'pending' && (
+                                            <Badge variant="secondary" className="text-xs bg-amber-500/20 text-amber-800 dark:text-amber-200">
+                                              Pending
+                                            </Badge>
+                                          )}
+                                        </div>
                                       </TableCell>
                                       <TableCell className="hidden md:table-cell">{payment.plan_name || '-'}</TableCell>
                                       <TableCell className="text-right">

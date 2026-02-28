@@ -6,7 +6,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -30,19 +30,29 @@ import {
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
 import { platformApi } from '@/platform/lib/platformApi';
+import { usePlatformPendingPayments } from '@/platform/hooks/usePlatformAdmin';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
+import { FeeRecordSidePanel } from '@/platform/components/FeeRecordSidePanel';
 
 export default function LicenseFeesManagement() {
   const { t, isRTL } = useLanguage();
   const [filterStatus, setFilterStatus] = useState<'all' | 'unpaid' | 'paid' | 'pending'>('unpaid');
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [selectedOrgName, setSelectedOrgName] = useState('');
 
   const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
   const hasPlatformAdmin = Array.isArray(permissions) && permissions.includes('subscription.admin');
 
-  // Fetch unpaid license fees
-  const { data: unpaidLicenseFees, isLoading: unpaidLoading } = useQuery({
+  const { data: pendingPaymentsResponse } = usePlatformPendingPayments();
+  const pendingLicensePayments = (pendingPaymentsResponse?.data ?? []).filter(
+    (p: { payment_type?: string }) => p.payment_type === 'license'
+  );
+
+  // Fetch all license fee statuses (paid, pending, unpaid)
+  const { data: licenseFeeList, isLoading: unpaidLoading } = useQuery({
     queryKey: ['platform-license-fees-unpaid'],
-    enabled: !permissionsLoading && hasPlatformAdmin && (filterStatus === 'all' || filterStatus === 'unpaid'),
+    enabled: !permissionsLoading && hasPlatformAdmin,
     queryFn: async () => {
       const response = await platformApi.licenseFees.unpaid();
       return response.data || [];
@@ -50,6 +60,19 @@ export default function LicenseFeesManagement() {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  const filteredList = (() => {
+    const list = licenseFeeList ?? [];
+    if (filterStatus === 'all') return list;
+    if (filterStatus === 'unpaid') return list.filter((f: { license_paid?: boolean; license_pending?: boolean }) => !f.license_paid && !f.license_pending);
+    if (filterStatus === 'paid') return list.filter((f: { license_paid?: boolean }) => f.license_paid);
+    if (filterStatus === 'pending') return list.filter((f: { license_pending?: boolean }) => f.license_pending);
+    return list;
+  })();
+
+  const unpaidCount = licenseFeeList?.filter((f: { license_paid?: boolean; license_pending?: boolean }) => !f.license_paid && !f.license_pending).length ?? 0;
+  const pendingCount = licenseFeeList?.filter((f: { license_pending?: boolean }) => f.license_pending).length ?? 0;
+  const paidCount = licenseFeeList?.filter((f: { license_paid?: boolean }) => f.license_paid).length ?? 0;
 
   if (permissionsLoading) {
     return (
@@ -88,10 +111,6 @@ export default function LicenseFeesManagement() {
     );
   };
 
-  const unpaidCount = unpaidLicenseFees?.filter(fee => !fee.license_paid && !fee.license_pending).length || 0;
-  const pendingCount = unpaidLicenseFees?.filter(fee => fee.license_pending).length || 0;
-  const paidCount = unpaidLicenseFees?.filter(fee => fee.license_paid).length || 0;
-
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -117,6 +136,46 @@ export default function LicenseFeesManagement() {
         </Alert>
       )}
 
+      {/* Pending license payments (recorded but not yet confirmed) */}
+      {pendingLicensePayments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Pending License Payments</CardTitle>
+            <CardDescription>
+              Recorded license payments awaiting confirmation. Click Review to confirm or reject.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Organization</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingLicensePayments.map((p: { id: string; organization?: { name: string }; amount: number; currency: string; payment_date?: string; created_at?: string }) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.organization?.name ?? '-'}</TableCell>
+                      <TableCell className="text-right">{p.amount?.toLocaleString()} {p.currency}</TableCell>
+                      <TableCell>{p.payment_date ? formatDate(new Date(p.payment_date)) : p.created_at ? formatDate(new Date(p.created_at)) : '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/platform/payments/${p.id}`}>Review</Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
@@ -127,7 +186,7 @@ export default function LicenseFeesManagement() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{unpaidLicenseFees?.length || 0}</div>
+            <div className="text-2xl font-bold">{licenseFeeList?.length ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -156,19 +215,35 @@ export default function LicenseFeesManagement() {
 
       {/* License Fees Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            {t('subscription.licenseFees') || 'License Fees'}
-          </CardTitle>
-          <CardDescription>
-            {t('subscription.licenseFeesListDescription') || 'List of all organizations with license fee status'}
-          </CardDescription>
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                {t('subscription.licenseFees') || 'License Fees'}
+              </CardTitle>
+              <CardDescription>
+                {t('subscription.licenseFeesListDescription') || 'List of all organizations with license fee status'}
+              </CardDescription>
+            </div>
+            <div className="flex gap-1 p-1 rounded-lg bg-muted/50">
+              {(['all', 'unpaid', 'pending', 'paid'] as const).map((status) => (
+                <Button
+                  key={status}
+                  variant={filterStatus === status ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setFilterStatus(status)}
+                >
+                  {status === 'all' ? (t('common.all') || 'All') : status === 'unpaid' ? (t('subscription.unpaidCount') || 'Unpaid') : status === 'pending' ? (t('subscription.pendingCount') || 'Pending') : (t('subscription.licensePaid') || 'Paid')}
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {unpaidLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
-          ) : !unpaidLicenseFees || unpaidLicenseFees.length === 0 ? (
+          ) : !filteredList.length ? (
             <div className="text-center py-8 text-muted-foreground">
               {t('subscription.noLicenseFees') || 'No license fees found'}
             </div>
@@ -185,9 +260,17 @@ export default function LicenseFeesManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {unpaidLicenseFees.map((fee) => (
-                    <TableRow key={fee.subscription_id}>
-                      <TableCell className="font-medium">{fee.organization_name}</TableCell>
+                  {filteredList.map((fee: { subscription_id: string; organization_id: string; organization_name?: string; license_amount?: number; currency?: string; license_paid_at?: string; license_paid?: boolean; license_pending?: boolean }) => (
+                    <TableRow
+                      key={fee.subscription_id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => {
+                        setSelectedOrgId(fee.organization_id);
+                        setSelectedOrgName(fee.organization_name ?? '');
+                        setSidePanelOpen(true);
+                      }}
+                    >
+                      <TableCell className="font-medium">{fee.organization_name ?? '-'}</TableCell>
                       <TableCell className="text-right">
                         {fee.license_amount ? (
                           <>
@@ -207,8 +290,8 @@ export default function LicenseFeesManagement() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            // Navigate to organization subscription detail
+                          onClick={(e) => {
+                            e.stopPropagation();
                             window.location.href = `/platform/organizations/${fee.organization_id}/subscription`;
                           }}
                           className="flex-shrink-0"
@@ -225,6 +308,13 @@ export default function LicenseFeesManagement() {
           )}
         </CardContent>
       </Card>
+      <FeeRecordSidePanel
+        open={sidePanelOpen}
+        onOpenChange={setSidePanelOpen}
+        organizationId={selectedOrgId}
+        organizationName={selectedOrgName}
+        type="license"
+      />
     </div>
   );
 }

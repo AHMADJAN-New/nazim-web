@@ -203,6 +203,7 @@ import {
   PlansManagement,
   OrganizationSubscriptionDetail,
   RenewalReviewPage,
+  PaymentReviewPage,
   DiscountCodesManagement,
   MaintenanceFeesManagement,
   LicenseFeesManagement,
@@ -640,7 +641,7 @@ const App = () => (
                     } />
                     <Route path="payments/:paymentId" element={
                       <Suspense fallback={<PageSkeleton />}>
-                        <SubscriptionAdminDashboard />
+                        <PaymentReviewPage />
                       </Suspense>
                     } />
                     <Route path="renewals/:renewalId" element={

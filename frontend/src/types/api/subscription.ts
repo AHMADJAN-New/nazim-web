@@ -80,6 +80,8 @@ export interface OrganizationSubscription {
   next_maintenance_due_at: string | null;
   last_maintenance_paid_at: string | null;
   plan?: SubscriptionPlan;
+  /** When license is paid, the actual payment record (amount/currency) */
+  license_payment?: { amount: number; currency: string };
   organization?: {
     id: string;
     name: string;
@@ -259,6 +261,34 @@ export interface PaymentRecord {
   updated_at: string;
 }
 
+/** Single payment detail (GET /platform/payments/:id) */
+export interface PaymentDetail {
+  id: string;
+  organization_id: string;
+  subscription_id: string | null;
+  organization: { id: string; name: string } | null;
+  subscription: { id: string; plan: { id: string; name: string } | null } | null;
+  amount: number;
+  currency: 'AFN' | 'USD';
+  payment_method: string;
+  payment_reference: string | null;
+  payment_date: string | null;
+  payment_type: string;
+  status: 'pending' | 'confirmed' | 'rejected';
+  discount_amount: number;
+  notes: string | null;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/** Item from GET /platform/payments/pending (paginated) */
+export interface PendingPayment extends PaymentRecord {
+  organization?: { id: string; name: string };
+  subscription?: { id: string; plan?: { id: string; name: string } };
+}
+
 export interface SubscriptionHistory {
   id: string;
   organization_id: string;
@@ -378,7 +408,9 @@ export interface OrganizationRevenuePayment {
   billing_period: BillingPeriod | null;
   billing_period_label: string;
   is_recurring: boolean;
+  status?: 'pending' | 'confirmed' | 'rejected';
   confirmed_at: string | null;
+  created_at?: string | null;
   confirmed_by: string | null;
   discount_code: string | null;
   notes: string | null;

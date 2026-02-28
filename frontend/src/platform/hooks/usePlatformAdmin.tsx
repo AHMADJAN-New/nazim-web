@@ -252,6 +252,22 @@ export const usePlatformPendingPayments = () => {
 };
 
 /**
+ * Get a single payment (platform admin - for review page)
+ */
+export const usePlatformPayment = (paymentId: string | null) => {
+  return useQuery({
+    queryKey: ['platform-payment', paymentId],
+    queryFn: async () => {
+      if (!paymentId) return null;
+      const response = await platformApi.payments.get(paymentId);
+      return response.data;
+    },
+    enabled: !!paymentId,
+    staleTime: 1 * 60 * 1000,
+  });
+};
+
+/**
  * Get pending renewals (platform admin)
  */
 export const usePlatformPendingRenewals = () => {

@@ -2,13 +2,12 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle,
-  Clock,
   Package,
   RefreshCw,
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 
 import { OrganizationPermissionManagement } from '@/components/settings/OrganizationPermissionManagement';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
@@ -64,6 +64,8 @@ export default function OrganizationSubscriptionDetail() {
 
   const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false);
   const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
+  const [managementTab, setManagementTab] = useState('limits');
+  const [featureStateTab, setFeatureStateTab] = useState('all');
   const [activateFormData, setActivateFormData] = useState({
     plan_id: '',
     currency: 'AFN' as 'AFN' | 'USD',
@@ -115,7 +117,7 @@ export default function OrganizationSubscriptionDetail() {
     );
   }
 
-  const { subscription, status, usage, features } = data;
+  const { subscription, usage, features } = data;
 
   const handleActivate = () => {
     if (!activateFormData.plan_id) {
@@ -170,6 +172,52 @@ export default function OrganizationSubscriptionDetail() {
   };
 
   const selectedPlan = plans?.find((p) => p.id === activateFormData.plan_id);
+  const featuresByCategory = features.reduce((acc, feature) => {
+    const category = feature.category || 'other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(feature);
+    return acc;
+  }, {} as Record<string, typeof features>);
+
+  const enabledFeaturesCount = features.filter((feature) => feature.isEnabled).length;
+  const disabledFeaturesCount = features.length - enabledFeaturesCount;
+
+  const categoryLabels: Record<string, string> = {
+    core: 'Core Features',
+    academic: 'Academic',
+    finance: 'Finance',
+    documents: 'Documents',
+    events: 'Events',
+    library: 'Library',
+    hostel: 'Hostel',
+    hr: 'Human Resources',
+    id_cards: 'ID Cards',
+    templates: 'Templates',
+    courses: 'Courses',
+    enterprise: 'Enterprise',
+    branding: 'Branding',
+    storage: 'Storage',
+    assets: 'Assets',
+    other: 'Other',
+  };
+
+  const getFeaturesByState = (state: 'all' | 'enabled' | 'disabled') =>
+    Object.entries(featuresByCategory).reduce(
+      (acc, [category, categoryFeatures]) => {
+        const filtered = categoryFeatures.filter((feature) => {
+          if (state === 'enabled') return feature.isEnabled;
+          if (state === 'disabled') return !feature.isEnabled;
+          return true;
+        });
+        if (filtered.length > 0) {
+          acc[category] = filtered;
+        }
+        return acc;
+      },
+      {} as Record<string, typeof features>
+    );
 
   return (
     <div className="space-y-6 p-6">
@@ -373,10 +421,20 @@ export default function OrganizationSubscriptionDetail() {
         </CardContent>
       </Card>
 
+      <Tabs value={managementTab} onValueChange={setManagementTab} className="space-y-4">
+        <div className="overflow-x-auto pb-1">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-3">
+            <TabsTrigger value="limits">Limits</TabsTrigger>
+            <TabsTrigger value="features">Features</TabsTrigger>
+            <TabsTrigger value="permissions">Permissions</TabsTrigger>
+          </TabsList>
+        </div>
+
+      <TabsContent value="limits">
       {/* Usage Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Usage Statistics</CardTitle>
+          <CardTitle>Limits & Usage</CardTitle>
           <CardDescription>
             Current usage across all tracked metrics
           </CardDescription>
@@ -394,7 +452,7 @@ export default function OrganizationSubscriptionDetail() {
                       {key.replace(/_/g, ' ')}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {info.current} / {info.limit || '∞'}
+                      {info.current} / {info.limit || 'Unlimited'}
                     </div>
                   </div>
                   <div className="w-32">
@@ -431,7 +489,9 @@ export default function OrganizationSubscriptionDetail() {
           )}
         </CardContent>
       </Card>
+      </TabsContent>
 
+      <TabsContent value="features">
       {/* Features Card */}
       <Card>
         <CardHeader>
@@ -441,59 +501,89 @@ export default function OrganizationSubscriptionDetail() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {features && features.length > 0 ? (
-            <div className="space-y-3">
-              {features.map((feature) => (
-                <div
-                  key={feature.featureKey}
-                  className={cn(
-                    'flex items-center justify-between rounded-lg border p-4 transition-colors',
-                    feature.isEnabled
-                      ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
-                      : 'bg-muted/50'
-                  )}
-                >
-                  <div className="flex-1">
-                    <div className="font-medium capitalize">
-                      {feature.name.replace(/_/g, ' ')}
-                    </div>
-                    {feature.description && (
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {feature.description}
+          {features.length > 0 ? (
+            <Tabs value={featureStateTab} onValueChange={setFeatureStateTab} className="space-y-4">
+              <div className="overflow-x-auto pb-1">
+                <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-3">
+                  <TabsTrigger value="all">All ({features.length})</TabsTrigger>
+                  <TabsTrigger value="enabled">Enabled ({enabledFeaturesCount})</TabsTrigger>
+                  <TabsTrigger value="disabled">Disabled ({disabledFeaturesCount})</TabsTrigger>
+                </TabsList>
+              </div>
+
+              {(['all', 'enabled', 'disabled'] as const).map((state) => {
+                const stateFeaturesByCategory = getFeaturesByState(state);
+                const hasResults = Object.keys(stateFeaturesByCategory).length > 0;
+
+                return (
+                  <TabsContent key={state} value={state} className="space-y-4">
+                    {hasResults ? (
+                      Object.entries(stateFeaturesByCategory).map(([category, categoryFeatures]) => (
+                        <div key={category}>
+                          <h3 className="text-sm font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                            {categoryLabels[category] || category}
+                          </h3>
+                          <div className="space-y-3">
+                            {categoryFeatures.map((feature) => (
+                              <div
+                                key={feature.featureKey}
+                                className={cn(
+                                  'flex items-center justify-between rounded-lg border p-4 transition-colors',
+                                  feature.isEnabled
+                                    ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
+                                    : 'bg-muted/50'
+                                )}
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium">{feature.name}</div>
+                                  {feature.description && (
+                                    <div className="text-sm text-muted-foreground mt-1">
+                                      {feature.description}
+                                    </div>
+                                  )}
+                                  {feature.isAddon && (
+                                    <Badge variant="outline" className="mt-2 text-xs">
+                                      Add-on
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 ml-4">
+                                  <Badge
+                                    variant={feature.isEnabled ? 'default' : 'secondary'}
+                                    className={cn(
+                                      feature.isEnabled && 'bg-green-500',
+                                      !feature.isEnabled && 'bg-muted'
+                                    )}
+                                  >
+                                    {feature.isEnabled ? 'Enabled' : 'Disabled'}
+                                  </Badge>
+                                  <Switch
+                                    checked={feature.isEnabled}
+                                    onCheckedChange={() => {
+                                      if (organizationId) {
+                                        toggleFeature.mutate({
+                                          organizationId,
+                                          featureKey: feature.featureKey,
+                                        });
+                                      }
+                                    }}
+                                    disabled={toggleFeature.isPending}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-8 text-center text-muted-foreground">
+                        No features in this filter
                       </div>
                     )}
-                    {feature.isAddon && (
-                      <Badge variant="outline" className="mt-2 text-xs">
-                        Add-on
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 ml-4">
-                    <Badge
-                      variant={feature.isEnabled ? 'default' : 'secondary'}
-                      className={cn(
-                        feature.isEnabled && 'bg-green-500',
-                        !feature.isEnabled && 'bg-muted'
-                      )}
-                    >
-                      {feature.isEnabled ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                    <Switch
-                      checked={feature.isEnabled}
-                      onCheckedChange={(checked) => {
-                        if (organizationId) {
-                          toggleFeature.mutate({
-                            organizationId,
-                            featureKey: feature.featureKey,
-                          });
-                        }
-                      }}
-                      disabled={toggleFeature.isPending}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </TabsContent>
+                );
+              })}
+            </Tabs>
           ) : (
             <div className="py-8 text-center text-muted-foreground">
               No feature data available
@@ -501,6 +591,7 @@ export default function OrganizationSubscriptionDetail() {
           )}
         </CardContent>
       </Card>
+      </TabsContent>
 
       {/* Activate Subscription Dialog */}
       <Dialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
@@ -738,12 +829,14 @@ export default function OrganizationSubscriptionDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Permissions Management */}
-      {organizationId && (
-        <div className="mt-8">
-          <OrganizationPermissionManagement organizationId={organizationId} />
-        </div>
-      )}
+      <TabsContent value="permissions">
+        {organizationId && (
+          <div className="mt-2">
+            <OrganizationPermissionManagement organizationId={organizationId} />
+          </div>
+        )}
+      </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -153,20 +153,55 @@ class LicenseFeeService
             ])
             ->orderBy('created_at')
             ->get()
-            ->map(function ($subscription) {
-                $plan = $subscription->plan;
-                return [
-                    'subscription_id' => $subscription->id,
-                    'organization_id' => $subscription->organization_id,
-                    'organization_name' => $subscription->organization?->name,
-                    'plan_name' => $plan?->name,
-                    'license_amount_afn' => $plan?->getLicenseFee('AFN') ?? 0,
-                    'license_amount_usd' => $plan?->getLicenseFee('USD') ?? 0,
-                    'currency' => $subscription->currency ?? 'AFN',
-                    'status' => $subscription->status,
-                    'started_at' => $subscription->started_at,
-                ];
-            });
+            ->map(fn ($sub) => $this->mapSubscriptionToLicenseFeeRow($sub));
+    }
+
+    /**
+     * Get all subscriptions with license fee status (for License Fees management page).
+     * Returns paid, pending, and unpaid so the UI can show the full list.
+     */
+    public function getAllLicenseFeeStatus(): Collection
+    {
+        $subscriptions = OrganizationSubscription::with(['plan', 'organization'])
+            ->whereIn('status', [
+                OrganizationSubscription::STATUS_TRIAL,
+                OrganizationSubscription::STATUS_ACTIVE,
+                OrganizationSubscription::STATUS_GRACE_PERIOD,
+            ])
+            ->whereHas('plan')
+            ->orderBy('created_at')
+            ->get();
+
+        return $subscriptions->map(fn ($sub) => $this->mapSubscriptionToLicenseFeeRow($sub));
+    }
+
+    /**
+     * Map a subscription to the license fee row shape (with license_paid, license_pending, license_amount, etc.)
+     */
+    private function mapSubscriptionToLicenseFeeRow(OrganizationSubscription $subscription): array
+    {
+        $plan = $subscription->plan;
+        $currency = $subscription->currency ?? 'AFN';
+        $licenseAmount = $plan ? $plan->getLicenseFee($currency) : 0;
+        $licensePaid = $subscription->hasLicensePaid();
+        $pendingPayments = $this->getPendingLicensePayments($subscription->organization_id);
+        $licensePending = !$licensePaid && $pendingPayments->isNotEmpty();
+
+        return [
+            'subscription_id' => $subscription->id,
+            'organization_id' => $subscription->organization_id,
+            'organization_name' => $subscription->organization?->name,
+            'plan_name' => $plan?->name,
+            'license_amount_afn' => $plan ? $plan->getLicenseFee('AFN') : 0,
+            'license_amount_usd' => $plan ? $plan->getLicenseFee('USD') : 0,
+            'license_amount' => $licenseAmount,
+            'currency' => $currency,
+            'status' => $subscription->status,
+            'started_at' => $subscription->started_at?->toISOString(),
+            'license_paid' => $licensePaid,
+            'license_pending' => $licensePending,
+            'license_paid_at' => $subscription->license_paid_at?->toISOString(),
+        ];
     }
 
     /**

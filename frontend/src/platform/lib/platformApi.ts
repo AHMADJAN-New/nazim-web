@@ -114,6 +114,9 @@ export const platformApi = {
         total: number;
       }>('/platform/payments/pending');
     },
+    get: async (paymentId: string) => {
+      return apiClient.get<{ data: SubscriptionApi.PaymentDetail }>(`/platform/payments/${paymentId}`);
+    },
     confirm: async (paymentId: string) => {
       return apiClient.post(`/platform/payments/${paymentId}/confirm`);
     },
@@ -869,6 +872,9 @@ export const platformApi = {
         last_page: number;
         total: number;
       }>('/platform/license-fees/unpaid', params);
+    },
+    confirmPayment: async (paymentId: string) => {
+      return apiClient.post(`/platform/license-fees/payments/${paymentId}/confirm`);
     },
   },
 
