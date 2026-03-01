@@ -13,6 +13,38 @@ import {
 import type { IdCardTemplate, IdCardLayoutConfig } from '@/types/domain/idCardTemplate';
 import type { Student } from '@/types/domain/student';
 
+const resolveScaledPaddingPx = (
+  paddingPx: number,
+  totalWidth: number,
+  totalHeight: number,
+  designWidth: number | undefined,
+  designHeight: number | undefined
+): number => {
+  if (!designWidth || !designHeight || designWidth <= 0 || designHeight <= 0) {
+    return paddingPx;
+  }
+  const scaleX = totalWidth / designWidth;
+  const scaleY = totalHeight / designHeight;
+  if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) {
+    return paddingPx;
+  }
+  const scaleFactor = (scaleX + scaleY) / 2;
+  return paddingPx * scaleFactor;
+};
+
+const resolveFirstNonEmptyString = (...values: Array<unknown>): string | null => {
+  for (const value of values) {
+    if (typeof value !== 'string') {
+      continue;
+    }
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return null;
+};
+
 // CR80 dimensions: 85.6mm × 53.98mm
 // At 300 DPI: 1011px × 637px
 // Screen preview uses the layout editor's default preview height (400px)
@@ -192,10 +224,18 @@ export async function renderIdCardToCanvas(
   const height = renderHeightPx ?? (quality === 'print' ? printSize.height : screenSize.height);
   const resolvedDesignWidth = designWidthPx ?? (quality === 'print' ? screenSize.width : width);
   const resolvedDesignHeight = designHeightPx ?? (quality === 'print' ? screenSize.height : height);
+  const scaledPaddingPx = resolveScaledPaddingPx(
+    paddingPx,
+    width,
+    height,
+    resolvedDesignWidth,
+    resolvedDesignHeight
+  );
+
   const metrics = createIdCardRenderMetrics({
     totalWidth: width,
     totalHeight: height,
-    paddingPx,
+    paddingPx: scaledPaddingPx,
     designWidthPx: resolvedDesignWidth,
     designHeightPx: resolvedDesignHeight,
   });
@@ -357,7 +397,11 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('studentNamePosition', layout.studentNamePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const studentNameValue = layout.fieldValues?.studentName || student.fullName;
+      const studentNameValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.studentName,
+        student.fullName,
+        `${(student as any).firstName || ''} ${(student as any).lastName || ''}`.trim()
+      );
       if (studentNameValue) {
         const fieldFont = getFieldFont('studentName', 1.2);
         ctx.fillStyle = fieldFont.textColor;
@@ -377,7 +421,11 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('fatherNamePosition', layout.fatherNamePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const fatherNameValue = layout.fieldValues?.fatherName || student.fatherName;
+      const fatherNameValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.fatherName,
+        student.fatherName,
+        (student as any).father_name
+      );
       if (fatherNameValue) {
         const fieldFont = getFieldFont('fatherName', 1.0);
         ctx.fillStyle = fieldFont.textColor;
@@ -397,7 +445,10 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('studentCodePosition', layout.studentCodePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const studentCodeValue = layout.fieldValues?.studentCode || student.studentCode;
+      const studentCodeValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.studentCode,
+        student.studentCode
+      );
       if (studentCodeValue) {
         const fieldFont = getFieldFont('studentCode', 0.9);
         ctx.fillStyle = fieldFont.textColor;
@@ -417,7 +468,10 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('admissionNumberPosition', layout.admissionNumberPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const admissionNumberValue = layout.fieldValues?.admissionNumber || student.admissionNumber;
+      const admissionNumberValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.admissionNumber,
+        student.admissionNumber
+      );
       if (admissionNumberValue) {
         const fieldFont = getFieldFont('admissionNumber', 0.9);
         ctx.fillStyle = fieldFont.textColor;
@@ -437,7 +491,14 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('classPosition', layout.classPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const classValue = layout.fieldValues?.class || student.currentClass?.name;
+      const classValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.class,
+        student.currentClass?.name,
+        (student as any).class?.name,
+        (student as any).className,
+        (student as any).sectionName,
+        (student as any).course?.name
+      );
       if (classValue) {
         const fieldFont = getFieldFont('class', 0.9);
         ctx.fillStyle = fieldFont.textColor;
@@ -457,7 +518,10 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('schoolNamePosition', layout.schoolNamePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student's school name
-      const schoolNameValue = layout.fieldValues?.schoolName || student.school?.schoolName;
+      const schoolNameValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.schoolName,
+        student.school?.schoolName
+      );
       if (schoolNameValue) {
         const fieldFont = getFieldFont('schoolName', 0.8);
         ctx.fillStyle = fieldFont.textColor;
@@ -478,7 +542,13 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('cardNumberPosition', layout.cardNumberPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const cardNumberValue = layout.fieldValues?.cardNumber || student.cardNumber || (student as any).cardNumber;
+      const cardNumberValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.cardNumber,
+        student.cardNumber,
+        (student as any).cardNumber,
+        student.admissionNumber,
+        student.studentCode
+      );
       if (cardNumberValue) {
         const fieldFont = getFieldFont('cardNumber', 0.9);
         ctx.fillStyle = fieldFont.textColor;

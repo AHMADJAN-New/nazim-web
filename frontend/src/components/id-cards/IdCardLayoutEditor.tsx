@@ -904,7 +904,7 @@ export function IdCardLayoutEditor({
                     style={{
                       aspectRatio: CARD_ASPECT_RATIO,
                       maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
-                      padding: `${DEFAULT_ID_CARD_PADDING_PX}px`,
+                      padding: 0,
                     }}
                     onClick={() => setSelectedField(null)}
                   >
@@ -1487,7 +1487,7 @@ export function IdCardLayoutEditor({
                     style={{
                       aspectRatio: CARD_ASPECT_RATIO,
                       maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
-                      padding: `${DEFAULT_ID_CARD_PADDING_PX}px`,
+                      padding: 0,
                     }}
                     onClick={() => setSelectedField(null)}
                   >
