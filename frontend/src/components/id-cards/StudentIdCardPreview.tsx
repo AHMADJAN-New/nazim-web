@@ -14,7 +14,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useStudentIdCard } from '@/hooks/useStudentIdCards';
 import { renderIdCardToCanvas, renderIdCardToDataUrl } from '@/lib/idCards/idCardCanvasRenderer';
 import { exportIdCardToPdf } from '@/lib/idCards/idCardPdfExporter';
-import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize, getDefaultScreenRenderSize } from '@/lib/idCards/idCardRenderMetrics';
+import { DEFAULT_ID_CARD_PADDING_PX, getDefaultPrintRenderSize } from '@/lib/idCards/idCardRenderMetrics';
 import { showToast } from '@/lib/toast';
 import type { IdCardTemplate } from '@/types/domain/idCardTemplate';
 import type { Student } from '@/types/domain/student';
@@ -43,7 +43,6 @@ export function StudentIdCardPreview({
   const [side, setSide] = useState<'front' | 'back'>(initialSide);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const screenRenderSize = getDefaultScreenRenderSize();
   const printRenderSize = getDefaultPrintRenderSize();
   
   // Fetch full card data if only ID is provided
@@ -73,6 +72,7 @@ export function StudentIdCardPreview({
         studentCode: null,
         cardNumber: card.cardNumber || null,
         rollNumber: null,
+        roomNumber: null,
         picturePath: courseStudent.picturePath || null,
         currentClass: courseName
           ? {
@@ -124,6 +124,7 @@ export function StudentIdCardPreview({
     // Handle regular students
     if (!card.student) return null;
     const className = card.class?.name || card.classAcademicYear?.sectionName || null;
+    const roomNumber = card.studentAdmission?.room?.roomNumber || null;
     
     const student: Student = {
       id: card.student.id,
@@ -133,6 +134,7 @@ export function StudentIdCardPreview({
       studentCode: card.student.studentCode || null,
       cardNumber: card.cardNumber || card.student.cardNumber || null,
       rollNumber: (card.student as any).rollNumber || null,
+      roomNumber,
       picturePath: card.student.picturePath || null,
       currentClass: className ? {
         id: card.class?.id || card.classAcademicYear?.id || `class-${card.id}`,
@@ -174,6 +176,7 @@ export function StudentIdCardPreview({
         admissionNumber: student.admissionNumber,
         studentCode: student.studentCode,
         currentClass: student.currentClass?.name,
+        roomNumber: student.roomNumber,
         school: student.school?.schoolName,
       });
     }
@@ -204,16 +207,15 @@ export function StudentIdCardPreview({
           URL.revokeObjectURL(previewImageUrl);
         }
 
-        // Use screen quality to match export exactly
-        // Both preview and export now use the same dimensions and font sizes
+        // Use print quality so dialog preview matches downloaded output.
         const dataUrl = await renderIdCardToDataUrl(
           actualTemplate,
           student,
           side,
           {
-            quality: 'screen', // Use screen dimensions to match export
-            renderWidthPx: screenRenderSize.width,
-            renderHeightPx: screenRenderSize.height,
+            quality: 'print',
+            renderWidthPx: printRenderSize.width,
+            renderHeightPx: printRenderSize.height,
             paddingPx: DEFAULT_ID_CARD_PADDING_PX,
             scale: 1,
             mimeType: 'image/jpeg',
@@ -378,16 +380,15 @@ export function StudentIdCardPreview({
         URL.revokeObjectURL(previewImageUrl);
       }
       
-      // Use the same quality settings as export (print quality, scale 2)
-      // This ensures preview matches exactly what will be exported
+      // Use print quality so preview matches what will be exported.
       const dataUrl = await renderIdCardToDataUrl(
         actualTemplate,
         student,
         side,
         {
-          quality: 'screen',
-          renderWidthPx: screenRenderSize.width,
-          renderHeightPx: screenRenderSize.height,
+          quality: 'print',
+          renderWidthPx: printRenderSize.width,
+          renderHeightPx: printRenderSize.height,
           paddingPx: DEFAULT_ID_CARD_PADDING_PX,
           scale: 1,
           mimeType: 'image/jpeg',

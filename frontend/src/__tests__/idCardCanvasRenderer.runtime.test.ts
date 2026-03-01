@@ -9,6 +9,7 @@ type FillTextCall = {
   text: string;
   x: number;
   y: number;
+  fillStyle: string;
 };
 
 const fillTextCalls: FillTextCall[] = [];
@@ -19,8 +20,9 @@ describe('idCardCanvasRenderer runtime alignment', () => {
     vi.restoreAllMocks();
 
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function getContextMock() {
-      return {
-        canvas: this,
+      const canvas = this as HTMLCanvasElement;
+      const context = {
+        canvas,
         fillStyle: '#000000',
         font: '12px Arial',
         textAlign: 'center',
@@ -40,14 +42,16 @@ describe('idCardCanvasRenderer runtime alignment', () => {
         fill: vi.fn(),
         fillText: (text: string, x: number, y: number) => {
           fillTextCalls.push({
-            canvasWidth: this.width,
-            canvasHeight: this.height,
+            canvasWidth: canvas.width,
+            canvasHeight: canvas.height,
             text,
             x,
             y,
+            fillStyle: String(context.fillStyle ?? '#000000'),
           });
         },
       } as unknown as CanvasRenderingContext2D;
+      return context;
     });
   });
 
@@ -201,5 +205,53 @@ describe('idCardCanvasRenderer runtime alignment', () => {
     expect(renderedTexts).toContain('نوم');
     expect(renderedTexts).toContain('کارت نمبر');
     expect(renderedTexts).toContain('ADM-300');
+  });
+
+  it('renders room label/value and honors per-field color overrides', async () => {
+    const template = {
+      id: 'template-runtime-4',
+      layoutConfigFront: {
+        enabledFields: ['roomLabel', 'room'],
+        roomLabelPosition: { x: 25, y: 45 },
+        roomPosition: { x: 65, y: 45 },
+        fontSize: 12,
+        fontFamily: 'Arial',
+        textColor: '#000000',
+        fieldFonts: {
+          room: {
+            textColor: '#ff0000',
+          },
+        },
+        rtl: true,
+      },
+      layoutConfigBack: {},
+      backgroundImagePathFront: null,
+      backgroundImagePathBack: null,
+    } as any;
+
+    const student = {
+      id: 'student-runtime-4',
+      fullName: 'Room Student',
+      fatherName: 'Room Father',
+      studentCode: 'STD-400',
+      admissionNumber: 'ADM-400',
+      cardNumber: null,
+      roomNumber: 'B-12',
+      currentClass: null,
+      school: { id: 'school-runtime-4', schoolName: 'Runtime School' },
+    } as any;
+
+    await renderIdCardToCanvas(template, student, 'front', {
+      quality: 'screen',
+      renderWidthPx: 634,
+      renderHeightPx: 400,
+      paddingPx: 20,
+    });
+
+    const roomLabelCall = fillTextCalls.find((call) => call.text === 'خونه');
+    const roomValueCall = fillTextCalls.find((call) => call.text === 'B-12');
+    expect(roomLabelCall).toBeDefined();
+    expect(roomValueCall).toBeDefined();
+    expect(roomValueCall?.fillStyle.toLowerCase()).toBe('#ff0000');
   });
 });

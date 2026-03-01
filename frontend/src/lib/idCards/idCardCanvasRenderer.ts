@@ -49,6 +49,7 @@ const DEFAULT_FIELD_LABELS: Record<string, string> = {
   studentNameLabel: 'نوم',
   fatherNameLabel: 'د پلار نوم',
   classLabel: 'درجه',
+  roomLabel: 'خونه',
   admissionNumberLabel: 'داخله نمبر',
   studentCodeLabel: 'ID',
   cardNumberLabel: 'کارت نمبر',
@@ -373,6 +374,8 @@ export async function renderIdCardToCanvas(
     admissionNumberPosition: { x: 62, y: 70 },
     classLabelPosition: { x: 30, y: 80 },
     classPosition: { x: 62, y: 80 },
+    roomLabelPosition: { x: 30, y: 88 },
+    roomPosition: { x: 62, y: 88 },
     schoolNamePosition: { x: 50, y: 30 },
     cardNumberLabelPosition: { x: 35, y: 80 },
     cardNumberPosition: { x: 68, y: 80 },
@@ -440,6 +443,7 @@ export async function renderIdCardToCanvas(
   renderLabelField('studentCodeLabel', 'studentCodeLabelPosition');
   renderLabelField('admissionNumberLabel', 'admissionNumberLabelPosition');
   renderLabelField('classLabel', 'classLabelPosition');
+  renderLabelField('roomLabel', 'roomLabelPosition');
   renderLabelField('cardNumberLabel', 'cardNumberLabelPosition');
 
   // Draw enabled fields - render all enabled fields even if data is missing
@@ -561,6 +565,32 @@ export async function renderIdCardToCanvas(
       }
     } else if (import.meta.env.DEV) {
       console.warn('[idCardCanvasRenderer] class enabled but no position found');
+    }
+  }
+
+  if (layout.enabledFields?.includes('room')) {
+    const pos = getPixelPosition(getPositionOrDefault('roomPosition', (layout as any).roomPosition));
+    if (pos) {
+      const roomValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.room,
+        student.roomNumber,
+        (student as any).room,
+        (student as any).roomNumber,
+        (student as any).room?.roomNumber,
+        (student as any).studentAdmission?.room?.roomNumber
+      );
+      if (roomValue) {
+        const fieldFont = getFieldFont('room', 0.9);
+        ctx.fillStyle = fieldFont.textColor;
+        ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(roomValue, pos.x, pos.y);
+        if (import.meta.env.DEV) {
+          console.log('[idCardCanvasRenderer] Rendered room at:', pos);
+        }
+      }
+    } else if (import.meta.env.DEV) {
+      console.warn('[idCardCanvasRenderer] room enabled but no position found');
     }
   }
 
@@ -810,6 +840,8 @@ export async function renderIdCardToCanvas(
     drawFieldAnchor('admissionNumber', 'admissionNumberPosition', layout.admissionNumberPosition);
     drawFieldAnchor('classLabel', 'classLabelPosition', layout.classLabelPosition as any);
     drawFieldAnchor('class', 'classPosition', layout.classPosition);
+    drawFieldAnchor('roomLabel', 'roomLabelPosition', (layout as any).roomLabelPosition);
+    drawFieldAnchor('room', 'roomPosition', (layout as any).roomPosition);
     drawFieldAnchor('schoolName', 'schoolNamePosition', layout.schoolNamePosition);
     drawFieldAnchor('cardNumberLabel', 'cardNumberLabelPosition', layout.cardNumberLabelPosition as any);
     drawFieldAnchor('cardNumber', 'cardNumberPosition', layout.cardNumberPosition);

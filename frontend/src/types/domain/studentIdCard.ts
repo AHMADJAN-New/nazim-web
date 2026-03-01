@@ -38,6 +38,10 @@ export interface StudentIdCard {
     enrollmentStatus: string;
     classId: string | null;
     classAcademicYearId: string | null;
+    room?: {
+      id: string;
+      roomNumber: string;
+    };
   };
   courseStudent?: {
     id: string;

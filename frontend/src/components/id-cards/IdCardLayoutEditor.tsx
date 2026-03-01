@@ -1,4 +1,4 @@
-import { GripVertical, Save, RotateCcw, Eye } from 'lucide-react';
+import { GripVertical, Save, RotateCcw, Eye, ChevronDown } from 'lucide-react';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents } from '@/hooks/useStudents';
@@ -28,7 +30,21 @@ import type { Student } from '@/types/domain/student';
 // Available fonts for ID card templates
 const AVAILABLE_FONTS = [
   { value: 'Arial', label: 'Arial' },
+  { value: 'Inter', label: 'Inter' },
+  { value: 'Roboto', label: 'Roboto' },
+  { value: 'Open Sans', label: 'Open Sans' },
+  { value: 'Poppins', label: 'Poppins' },
+  { value: 'Segoe UI', label: 'Segoe UI' },
+  { value: 'Calibri', label: 'Calibri' },
+  { value: 'Cambria', label: 'Cambria' },
   { value: 'Bahij Nassim', label: 'Bahij Nassim' },
+  { value: 'Noto Sans Arabic', label: 'Noto Sans Arabic' },
+  { value: 'Noto Naskh Arabic', label: 'Noto Naskh Arabic' },
+  { value: 'Noto Nastaliq Urdu', label: 'Noto Nastaliq Urdu' },
+  { value: 'Amiri', label: 'Amiri' },
+  { value: 'Scheherazade New', label: 'Scheherazade New' },
+  { value: 'Cairo', label: 'Cairo' },
+  { value: 'Almarai', label: 'Almarai' },
   { value: 'Times New Roman', label: 'Times New Roman' },
   { value: 'Helvetica', label: 'Helvetica' },
   { value: 'Courier New', label: 'Courier New' },
@@ -39,7 +55,6 @@ const AVAILABLE_FONTS = [
   { value: 'Comic Sans MS', label: 'Comic Sans MS' },
   { value: 'Trebuchet MS', label: 'Trebuchet MS' },
   { value: 'Impact', label: 'Impact' },
-  { value: 'Noto Sans Arabic', label: 'Noto Sans Arabic' },
   { value: 'Tahoma', label: 'Tahoma' },
   { value: 'Arial Unicode MS', label: 'Arial Unicode MS' },
 ];
@@ -59,6 +74,7 @@ const DEFAULT_LABEL_TEXTS: Record<string, string> = {
   studentNameLabel: 'نوم',
   fatherNameLabel: 'د پلار نوم',
   classLabel: 'درجه',
+  roomLabel: 'خونه',
   admissionNumberLabel: 'داخله نمبر',
   studentCodeLabel: 'ID',
   cardNumberLabel: 'کارت نمبر',
@@ -72,6 +88,8 @@ const FRONT_DEFAULT_ENABLED_FIELDS = [
   'fatherName',
   'classLabel',
   'class',
+  'roomLabel',
+  'room',
   'admissionNumberLabel',
   'admissionNumber',
   'studentCodeLabel',
@@ -99,6 +117,10 @@ const getFieldPreviewText = (
 
   if (field.id === 'studentName' && sampleStudent?.fullName) {
     return sampleStudent.fullName;
+  }
+
+  if (field.id === 'room' && sampleStudent?.roomNumber) {
+    return sampleStudent.roomNumber;
   }
 
   if (field.id === 'expiryDate' && fieldValue) {
@@ -131,11 +153,13 @@ const FRONT_FIELDS: FieldConfig[] = [
   { id: 'fatherNameLabel', label: 'Label: Father Name (د پلار نوم)', key: 'fatherNameLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.fatherNameLabel, defaultFontSize: 10 },
   { id: 'fatherName', label: 'Father Name', key: 'fatherNamePosition', sampleText: 'Mohammad', defaultFontSize: 12 },
   { id: 'classLabel', label: 'Label: Class (درجه)', key: 'classLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.classLabel, defaultFontSize: 10 },
+  { id: 'roomLabel', label: 'Label: Room (خونه)', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
   { id: 'admissionNumberLabel', label: 'Label: Admission Number (داخله نمبر)', key: 'admissionNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.admissionNumberLabel, defaultFontSize: 10 },
   { id: 'studentCodeLabel', label: 'Label: ID (ID)', key: 'studentCodeLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.studentCodeLabel, defaultFontSize: 10 },
   { id: 'studentCode', label: 'Student Code', key: 'studentCodePosition', sampleText: 'STU-2024-001', defaultFontSize: 10 },
   { id: 'admissionNumber', label: 'Admission Number', key: 'admissionNumberPosition', sampleText: 'ADM-2024-001', defaultFontSize: 10 },
   { id: 'class', label: 'Class', key: 'classPosition', sampleText: 'Grade 10 - Section A', defaultFontSize: 10 },
+  { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
   { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
   { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
@@ -148,6 +172,8 @@ const FRONT_FIELDS: FieldConfig[] = [
 // Back side fields
 const BACK_FIELDS: FieldConfig[] = [
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
+  { id: 'roomLabel', label: 'Label: Room (خونه)', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
+  { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
   { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
   { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
   { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
@@ -251,6 +277,9 @@ export function IdCardLayoutEditor({
   const [studentPhotoUrl, setStudentPhotoUrl] = useState<string | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [previewStudent, setPreviewStudent] = useState<Student | null>(null);
+  const [showFieldList, setShowFieldList] = useState(true);
+  const [showGlobalSettings, setShowGlobalSettings] = useState(true);
+  const [showFieldSettings, setShowFieldSettings] = useState(true);
   const renderMetrics = useMemo(() => {
     const width = containerDimensions.width || DEFAULT_SCREEN_WIDTH_PX;
     const height = containerDimensions.height || DEFAULT_SCREEN_HEIGHT_PX;
@@ -279,6 +308,8 @@ export function IdCardLayoutEditor({
         return 'Father Name Label';
       case 'classLabel':
         return 'Class Label';
+      case 'roomLabel':
+        return 'Room Label';
       case 'admissionNumberLabel':
         return 'Admission Number Label';
       case 'studentCodeLabel':
@@ -302,6 +333,8 @@ export function IdCardLayoutEditor({
         return 'e.g., د پلار نوم';
       case 'classLabel':
         return 'e.g., درجه';
+      case 'roomLabel':
+        return 'e.g., خونه';
       case 'admissionNumberLabel':
         return 'e.g., داخله نمبر';
       case 'studentCodeLabel':
@@ -322,6 +355,7 @@ export function IdCardLayoutEditor({
       case 'studentNameLabel':
       case 'fatherNameLabel':
       case 'classLabel':
+      case 'roomLabel':
       case 'admissionNumberLabel':
       case 'studentCodeLabel':
       case 'cardNumberLabel':
@@ -626,6 +660,8 @@ export function IdCardLayoutEditor({
       admissionNumberPosition: { x: 62, y: 70 },
       classLabelPosition: { x: 30, y: 80 },
       classPosition: { x: 62, y: 80 },
+      roomLabelPosition: { x: 30, y: 88 },
+      roomPosition: { x: 62, y: 88 },
       studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 }, // Passport-like size for ID cards
       qrCodePosition: { x: 80, y: 50, width: 10, height: 10 }, // Square
       schoolNamePosition: { x: 50, y: 30 },
@@ -1043,7 +1079,7 @@ export function IdCardLayoutEditor({
         <TabsContent value="front" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Preview Canvas */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 lg:sticky lg:top-4 self-start">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">{t('idCards.frontPreview') || 'Front Preview'}</CardTitle>
@@ -1076,7 +1112,7 @@ export function IdCardLayoutEditor({
                           <img
                             src={currentImageUrl}
                             alt="ID Card Background"
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-fill"
                             style={{ display: currentImageLoaded ? 'block' : 'none' }}
                           />
                         )}
@@ -1276,75 +1312,101 @@ export function IdCardLayoutEditor({
             </div>
 
             {/* Field List & Settings */}
-            <div className="space-y-4">
+            <ScrollArea className="h-[72vh] pr-2">
+              <div className="space-y-4">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {currentFields.map((field) => (
-                    <div key={field.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={currentConfig.enabledFields?.includes(field.id) || false}
-                        onCheckedChange={() => toggleFieldEnabled(field.id)}
-                      />
-                      <Label className="text-sm cursor-pointer">{field.label}</Label>
-                    </div>
-                  ))}
-                </CardContent>
+                <Collapsible open={showFieldList} onOpenChange={setShowFieldList}>
+                  <CardHeader className="pb-2">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="h-auto justify-between px-0">
+                        <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showFieldList ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-2">
+                      {currentFields.map((field) => (
+                        <div key={field.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={currentConfig.enabledFields?.includes(field.id) || false}
+                            onCheckedChange={() => toggleFieldEnabled(field.id)}
+                          />
+                          <Label className="text-sm cursor-pointer">{field.label}</Label>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
-                    <Input
-                      type="number"
-                      value={currentConfig.fontSize || 12}
-                      onChange={(e) => setCurrentConfig({ ...currentConfig, fontSize: parseInt(e.target.value) || 12 })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
-                    <Select
-                      value={currentConfig.fontFamily || 'Arial'}
-                      onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AVAILABLE_FONTS.map((font) => (
-                          <SelectItem key={font.value} value={font.value}>
-                            <span style={{ fontFamily: font.value }}>{font.label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
-                    <Input
-                      type="color"
-                      value={currentConfig.textColor || '#000000'}
-                      onChange={(e) => setCurrentConfig({ ...currentConfig, textColor: e.target.value })}
-                    />
-                  </div>
-                </CardContent>
+                <Collapsible open={showGlobalSettings} onOpenChange={setShowGlobalSettings}>
+                  <CardHeader className="pb-2">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="h-auto justify-between px-0">
+                        <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showGlobalSettings ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
+                        <Input
+                          type="number"
+                          value={currentConfig.fontSize || 12}
+                          onChange={(e) => setCurrentConfig({ ...currentConfig, fontSize: parseInt(e.target.value) || 12 })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                        <Select
+                          value={currentConfig.fontFamily || 'Arial'}
+                          onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {AVAILABLE_FONTS.map((font) => (
+                              <SelectItem key={font.value} value={font.value}>
+                                <span style={{ fontFamily: font.value }}>{font.label}</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
+                        <Input
+                          type="color"
+                          value={currentConfig.textColor || '#000000'}
+                          onChange={(e) => setCurrentConfig({ ...currentConfig, textColor: e.target.value })}
+                        />
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
 
               {/* Field Settings Panel - appears when a field is selected */}
               {selectedField && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">
-                      {t('idCards.fieldSettings') || 'Field Settings'} - {currentFields.find(f => f.id === selectedField)?.label || selectedField}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                  <Collapsible open={showFieldSettings} onOpenChange={setShowFieldSettings}>
+                    <CardHeader className="pb-2">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="h-auto justify-between px-0 text-left whitespace-normal">
+                          <CardTitle className="text-sm">
+                            {t('idCards.fieldSettings') || 'Field Settings'} - {currentFields.find(f => f.id === selectedField)?.label || selectedField}
+                          </CardTitle>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${showFieldSettings ? 'rotate-180' : ''}`} />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </CardHeader>
+                    <CollapsibleContent>
+                      <CardContent className="space-y-4">
                     {/* Image Field Settings (Width/Height) */}
                     {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
                       <div className="space-y-3 pt-2 border-t">
@@ -1526,6 +1588,43 @@ export function IdCardLayoutEditor({
                             {t('idCards.leaveEmptyToUseGlobal') || 'Leave empty to use global font size'}
                           </p>
                         </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs">{t('idCards.textColor') || 'Text Color'}</Label>
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              type="color"
+                              value={currentConfig.fieldFonts?.[selectedField]?.textColor || currentConfig.textColor || '#000000'}
+                              onChange={(e) => updateFieldFont(selectedField, 'textColor', e.target.value)}
+                              className="h-8 w-16 p-1 cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={currentConfig.fieldFonts?.[selectedField]?.textColor || currentConfig.textColor || '#000000'}
+                              onChange={(e) => {
+                                const value = e.target.value.trim();
+                                if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                                  updateFieldFont(selectedField, 'textColor', value);
+                                }
+                              }}
+                              placeholder="#000000"
+                              className="h-8 text-xs flex-1"
+                              maxLength={7}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => clearFieldFont(selectedField, 'textColor')}
+                              className="h-8 px-2"
+                              title={t('events.resetToDefault') || 'Reset to default'}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {t('idCards.fieldColorDescription') || 'Set custom color for this field, or reset to use global color'}
+                          </p>
+                        </div>
                       </div>
                     )}
 
@@ -1582,17 +1681,20 @@ export function IdCardLayoutEditor({
                         )}
                       </div>
                     )}
-                  </CardContent>
+                    </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </Card>
               )}
-            </div>
+              </div>
+            </ScrollArea>
           </div>
         </TabsContent>
 
         <TabsContent value="back" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Preview Canvas */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 lg:sticky lg:top-4 self-start">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">{t('idCards.backPreview') || 'Back Preview'}</CardTitle>
@@ -1625,7 +1727,7 @@ export function IdCardLayoutEditor({
                           <img
                             src={currentImageUrl}
                             alt="ID Card Background"
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-fill"
                             style={{ display: currentImageLoaded ? 'block' : 'none' }}
                           />
                         )}
@@ -1707,73 +1809,99 @@ export function IdCardLayoutEditor({
             </div>
 
             {/* Field List & Settings */}
-            <div className="space-y-4">
+            <ScrollArea className="h-[72vh] pr-2">
+              <div className="space-y-4">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {currentFields.map((field) => (
-                    <div key={field.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={currentConfig.enabledFields?.includes(field.id) || false}
-                        onCheckedChange={() => toggleFieldEnabled(field.id)}
-                      />
-                      <Label className="text-sm cursor-pointer">{field.label}</Label>
-                    </div>
-                  ))}
-                </CardContent>
+                <Collapsible open={showFieldList} onOpenChange={setShowFieldList}>
+                  <CardHeader className="pb-2">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="h-auto justify-between px-0">
+                        <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showFieldList ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-2">
+                      {currentFields.map((field) => (
+                        <div key={field.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={currentConfig.enabledFields?.includes(field.id) || false}
+                            onCheckedChange={() => toggleFieldEnabled(field.id)}
+                          />
+                          <Label className="text-sm cursor-pointer">{field.label}</Label>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
-                    <Input
-                      type="number"
-                      value={currentConfig.fontSize || 10}
-                      onChange={(e) => setCurrentConfig({ ...currentConfig, fontSize: parseInt(e.target.value) || 10 })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
-                    <Select
-                      value={currentConfig.fontFamily || 'Arial'}
-                      onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AVAILABLE_FONTS.map((font) => (
-                          <SelectItem key={font.value} value={font.value}>
-                            <span style={{ fontFamily: font.value }}>{font.label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
-                    <Input
-                      type="color"
-                      value={currentConfig.textColor || '#000000'}
-                      onChange={(e) => setCurrentConfig({ ...currentConfig, textColor: e.target.value })}
-                    />
-                  </div>
-                </CardContent>
+                <Collapsible open={showGlobalSettings} onOpenChange={setShowGlobalSettings}>
+                  <CardHeader className="pb-2">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="h-auto justify-between px-0">
+                        <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showGlobalSettings ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
+                        <Input
+                          type="number"
+                          value={currentConfig.fontSize || 10}
+                          onChange={(e) => setCurrentConfig({ ...currentConfig, fontSize: parseInt(e.target.value) || 10 })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                        <Select
+                          value={currentConfig.fontFamily || 'Arial'}
+                          onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {AVAILABLE_FONTS.map((font) => (
+                              <SelectItem key={font.value} value={font.value}>
+                                <span style={{ fontFamily: font.value }}>{font.label}</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
+                        <Input
+                          type="color"
+                          value={currentConfig.textColor || '#000000'}
+                          onChange={(e) => setCurrentConfig({ ...currentConfig, textColor: e.target.value })}
+                        />
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
 
               {/* Field-Specific Settings */}
               {selectedField && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">{t('idCards.fieldSettings') || 'Field Settings'}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                  <Collapsible open={showFieldSettings} onOpenChange={setShowFieldSettings}>
+                    <CardHeader className="pb-2">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="h-auto justify-between px-0">
+                          <CardTitle className="text-sm">{t('idCards.fieldSettings') || 'Field Settings'}</CardTitle>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${showFieldSettings ? 'rotate-180' : ''}`} />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </CardHeader>
+                    <CollapsibleContent>
+                      <CardContent className="space-y-4">
                     {/* Per-Field Font Settings */}
                     <div className="space-y-3 pt-2 border-t">
                       <div className="flex items-center justify-between">
@@ -2046,10 +2174,13 @@ export function IdCardLayoutEditor({
                         )}
                       </div>
                     )}
-                  </CardContent>
+                    </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </Card>
               )}
-            </div>
+              </div>
+            </ScrollArea>
           </div>
         </TabsContent>
       </Tabs>

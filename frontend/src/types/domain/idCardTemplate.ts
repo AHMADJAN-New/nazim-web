@@ -10,6 +10,8 @@ export interface IdCardLayoutConfig {
   fatherNamePosition?: { x: number; y: number };
   studentCodeLabelPosition?: { x: number; y: number };
   studentCodePosition?: { x: number; y: number };
+  roomLabelPosition?: { x: number; y: number };
+  roomPosition?: { x: number; y: number };
   admissionNumberLabelPosition?: { x: number; y: number };
   admissionNumberPosition?: { x: number; y: number };
   cardNumberLabelPosition?: { x: number; y: number };
