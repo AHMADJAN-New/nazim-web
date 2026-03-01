@@ -1,14 +1,20 @@
 export interface IdCardLayoutConfig {
   enabledFields?: string[];
   fieldFonts?: Record<string, { fontSize?: number; fontFamily?: string; textColor?: string }>;
-  fieldValues?: Record<string, string | null>; // Custom text/values for editable fields (notes, expiryDate, schoolName, etc.)
+  fieldValues?: Record<string, string | null>; // Custom text/values for editable fields (labels, notes, expiryDate, schoolName, etc.)
   
   // Text field positions (as percentages)
+  studentNameLabelPosition?: { x: number; y: number };
   studentNamePosition?: { x: number; y: number };
+  fatherNameLabelPosition?: { x: number; y: number };
   fatherNamePosition?: { x: number; y: number };
+  studentCodeLabelPosition?: { x: number; y: number };
   studentCodePosition?: { x: number; y: number };
+  admissionNumberLabelPosition?: { x: number; y: number };
   admissionNumberPosition?: { x: number; y: number };
+  cardNumberLabelPosition?: { x: number; y: number };
   cardNumberPosition?: { x: number; y: number };
+  classLabelPosition?: { x: number; y: number };
   classPosition?: { x: number; y: number };
   expiryDatePosition?: { x: number; y: number };
   schoolNamePosition?: { x: number; y: number };

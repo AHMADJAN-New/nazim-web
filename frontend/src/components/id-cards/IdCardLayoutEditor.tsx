@@ -55,14 +55,89 @@ interface FieldConfig {
   defaultHeight?: number;
 }
 
+const DEFAULT_LABEL_TEXTS: Record<string, string> = {
+  studentNameLabel: 'نوم',
+  fatherNameLabel: 'د پلار نوم',
+  classLabel: 'درجه',
+  admissionNumberLabel: 'داخله نمبر',
+  studentCodeLabel: 'ID',
+  cardNumberLabel: 'کارت نمبر',
+};
+
+const LABEL_FIELD_IDS = Object.keys(DEFAULT_LABEL_TEXTS);
+const FRONT_DEFAULT_ENABLED_FIELDS = [
+  'studentNameLabel',
+  'studentName',
+  'fatherNameLabel',
+  'fatherName',
+  'classLabel',
+  'class',
+  'admissionNumberLabel',
+  'admissionNumber',
+  'studentCodeLabel',
+  'studentCode',
+  'studentPhoto',
+  'qrCode',
+];
+const BACK_DEFAULT_ENABLED_FIELDS = ['schoolName', 'cardNumberLabel', 'cardNumber', 'expiryDate'];
+const EDITABLE_TEXT_FIELDS = new Set<string>(['notes', 'expiryDate', 'schoolName', ...LABEL_FIELD_IDS]);
+
+const withDefaultLabelValues = (fieldValues?: Record<string, string | null>): Record<string, string | null> => ({
+  ...DEFAULT_LABEL_TEXTS,
+  ...(fieldValues || {}),
+});
+
+const mergeEnabledFields = (enabledFields: string[] | undefined, defaults: string[]): string[] =>
+  Array.from(new Set([...(enabledFields || []), ...defaults]));
+
+const getFieldPreviewText = (
+  field: FieldConfig,
+  config: IdCardLayoutConfig,
+  sampleStudent: Student | null
+): string => {
+  const fieldValue = config.fieldValues?.[field.id];
+
+  if (field.id === 'studentName' && sampleStudent?.fullName) {
+    return sampleStudent.fullName;
+  }
+
+  if (field.id === 'expiryDate' && fieldValue) {
+    try {
+      const date = new Date(fieldValue);
+      if (!isNaN(date.getTime())) {
+        return formatDate(date);
+      }
+    } catch {
+      // Fall back to raw value below.
+    }
+    return fieldValue;
+  }
+
+  if (fieldValue) {
+    return fieldValue;
+  }
+
+  if (LABEL_FIELD_IDS.includes(field.id)) {
+    return DEFAULT_LABEL_TEXTS[field.id] || field.sampleText;
+  }
+
+  return field.sampleText;
+};
+
 // Front side fields - includes all fields from both front and back
 const FRONT_FIELDS: FieldConfig[] = [
+  { id: 'studentNameLabel', label: 'Label: Name (نوم)', key: 'studentNameLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.studentNameLabel, defaultFontSize: 10 },
   { id: 'studentName', label: 'Student Name', key: 'studentNamePosition', sampleText: 'Ahmad Mohammad', defaultFontSize: 14 },
+  { id: 'fatherNameLabel', label: 'Label: Father Name (د پلار نوم)', key: 'fatherNameLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.fatherNameLabel, defaultFontSize: 10 },
   { id: 'fatherName', label: 'Father Name', key: 'fatherNamePosition', sampleText: 'Mohammad', defaultFontSize: 12 },
+  { id: 'classLabel', label: 'Label: Class (درجه)', key: 'classLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.classLabel, defaultFontSize: 10 },
+  { id: 'admissionNumberLabel', label: 'Label: Admission Number (داخله نمبر)', key: 'admissionNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.admissionNumberLabel, defaultFontSize: 10 },
+  { id: 'studentCodeLabel', label: 'Label: ID (ID)', key: 'studentCodeLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.studentCodeLabel, defaultFontSize: 10 },
   { id: 'studentCode', label: 'Student Code', key: 'studentCodePosition', sampleText: 'STU-2024-001', defaultFontSize: 10 },
   { id: 'admissionNumber', label: 'Admission Number', key: 'admissionNumberPosition', sampleText: 'ADM-2024-001', defaultFontSize: 10 },
   { id: 'class', label: 'Class', key: 'classPosition', sampleText: 'Grade 10 - Section A', defaultFontSize: 10 },
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
+  { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
   { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
   { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
   { id: 'notes', label: 'Notes', key: 'notesPosition', sampleText: 'Additional information', defaultFontSize: 10 },
@@ -73,6 +148,7 @@ const FRONT_FIELDS: FieldConfig[] = [
 // Back side fields
 const BACK_FIELDS: FieldConfig[] = [
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
+  { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
   { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
   { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
 ];
@@ -101,23 +177,25 @@ export function IdCardLayoutEditor({
   
   const [configFront, setConfigFront] = useState<IdCardLayoutConfig>(() => ({
     ...layoutConfigFront,
-    enabledFields: layoutConfigFront.enabledFields || ['studentName', 'studentCode', 'admissionNumber', 'class', 'studentPhoto', 'qrCode'],
+    enabledFields: mergeEnabledFields(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
     fieldFonts: layoutConfigFront.fieldFonts || {},
+    fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues),
   }));
 
   const [configBack, setConfigBack] = useState<IdCardLayoutConfig>(() => ({
     ...layoutConfigBack,
-    enabledFields: layoutConfigBack.enabledFields || ['schoolName', 'expiryDate', 'cardNumber'],
+    enabledFields: mergeEnabledFields(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
     fieldFonts: layoutConfigBack.fieldFonts || {},
+    fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues),
   }));
 
   // Update configs when props change
   useEffect(() => {
     const updatedConfig = {
       ...layoutConfigFront,
-      enabledFields: layoutConfigFront.enabledFields || ['studentName', 'studentCode', 'admissionNumber', 'class', 'studentPhoto', 'qrCode'],
+      enabledFields: mergeEnabledFields(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
       fieldFonts: layoutConfigFront.fieldFonts || {},
-      fieldValues: layoutConfigFront.fieldValues || {},
+      fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues),
     };
 
     // Ensure default width/height for image fields if missing
@@ -149,9 +227,9 @@ export function IdCardLayoutEditor({
   useEffect(() => {
     setConfigBack({
       ...layoutConfigBack,
-      enabledFields: layoutConfigBack.enabledFields || ['schoolName', 'expiryDate', 'cardNumber'],
+      enabledFields: mergeEnabledFields(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
       fieldFonts: layoutConfigBack.fieldFonts || {},
-      fieldValues: layoutConfigBack.fieldValues || {},
+      fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues),
     });
   }, [layoutConfigBack]);
 
@@ -185,6 +263,73 @@ export function IdCardLayoutEditor({
     });
   }, [containerDimensions.height, containerDimensions.width]);
   const renderDebug = useMemo(() => isIdCardRenderDebugEnabled(), []);
+  const isSelectedFieldEditableText = selectedField ? EDITABLE_TEXT_FIELDS.has(selectedField) : false;
+
+  const getEditableFieldLabel = (fieldId: string): string => {
+    switch (fieldId) {
+      case 'notes':
+        return t('idCards.fieldValue') || 'Field Value';
+      case 'expiryDate':
+        return t('idCards.expiryDateValue') || 'Expiry Date';
+      case 'schoolName':
+        return t('idCards.schoolNameValue') || 'School Name';
+      case 'studentNameLabel':
+        return 'Name Label';
+      case 'fatherNameLabel':
+        return 'Father Name Label';
+      case 'classLabel':
+        return 'Class Label';
+      case 'admissionNumberLabel':
+        return 'Admission Number Label';
+      case 'studentCodeLabel':
+        return 'ID Label';
+      case 'cardNumberLabel':
+        return 'Card Number Label';
+      default:
+        return t('idCards.fieldValue') || 'Field Value';
+    }
+  };
+
+  const getEditableFieldPlaceholder = (fieldId: string): string => {
+    switch (fieldId) {
+      case 'notes':
+        return t('idCards.notesPlaceholder') || 'Enter notes text...';
+      case 'schoolName':
+        return t('idCards.schoolNamePlaceholder') || 'Enter school name...';
+      case 'studentNameLabel':
+        return 'e.g., نوم';
+      case 'fatherNameLabel':
+        return 'e.g., د پلار نوم';
+      case 'classLabel':
+        return 'e.g., درجه';
+      case 'admissionNumberLabel':
+        return 'e.g., داخله نمبر';
+      case 'studentCodeLabel':
+        return 'e.g., ID';
+      case 'cardNumberLabel':
+        return 'e.g., کارت نمبر';
+      default:
+        return '';
+    }
+  };
+
+  const getEditableFieldDescription = (fieldId: string): string => {
+    switch (fieldId) {
+      case 'notes':
+        return t('idCards.notesDescription') || 'Custom text to display. Leave empty to use card notes.';
+      case 'schoolName':
+        return t('idCards.schoolNameDescription') || 'Custom school name. Leave empty to use student\'s school name.';
+      case 'studentNameLabel':
+      case 'fatherNameLabel':
+      case 'classLabel':
+      case 'admissionNumberLabel':
+      case 'studentCodeLabel':
+      case 'cardNumberLabel':
+        return 'Custom label text. Move this label independently to align it with the database value field.';
+      default:
+        return '';
+    }
+  };
 
   // Get current config based on active tab
   const currentConfig = activeTab === 'front' ? configFront : configBack;
@@ -471,16 +616,22 @@ export function IdCardLayoutEditor({
     
     // Default positions for ID card (CR80: 85.6mm × 53.98mm)
     const defaultPositions: Record<string, { x: number; y: number; width?: number; height?: number }> = {
-      studentNamePosition: { x: 50, y: 40 },
-      fatherNamePosition: { x: 50, y: 50 },
-      studentCodePosition: { x: 50, y: 60 },
-      admissionNumberPosition: { x: 50, y: 70 },
-      classPosition: { x: 50, y: 80 },
+      studentNameLabelPosition: { x: 30, y: 40 },
+      studentNamePosition: { x: 62, y: 40 },
+      fatherNameLabelPosition: { x: 30, y: 50 },
+      fatherNamePosition: { x: 62, y: 50 },
+      studentCodeLabelPosition: { x: 30, y: 60 },
+      studentCodePosition: { x: 62, y: 60 },
+      admissionNumberLabelPosition: { x: 30, y: 70 },
+      admissionNumberPosition: { x: 62, y: 70 },
+      classLabelPosition: { x: 30, y: 80 },
+      classPosition: { x: 62, y: 80 },
       studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 }, // Passport-like size for ID cards
       qrCodePosition: { x: 80, y: 50, width: 10, height: 10 }, // Square
       schoolNamePosition: { x: 50, y: 30 },
+      cardNumberLabelPosition: { x: 35, y: 80 },
       expiryDatePosition: { x: 50, y: 60 },
-      cardNumberPosition: { x: 50, y: 80 },
+      cardNumberPosition: { x: 68, y: 80 },
     };
     
     return defaultPositions[fieldKey] || { x: 50, y: 50 };
@@ -982,30 +1133,8 @@ export function IdCardLayoutEditor({
 
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
-                      const position = getFieldPosition(field.key);
                       const isImageField = field.isImage;
-                      
-                      // Get display text: use template-defined value if available, otherwise use sample text
-                      let displayText = field.sampleText;
-                      if (field.id === 'studentName' && sampleStudent) {
-                        displayText = sampleStudent.fullName;
-                      } else if (field.id === 'notes' && currentConfig.fieldValues?.notes) {
-                        displayText = currentConfig.fieldValues.notes;
-                      } else if (field.id === 'schoolName' && currentConfig.fieldValues?.schoolName) {
-                        displayText = currentConfig.fieldValues.schoolName;
-                      } else if (field.id === 'expiryDate' && currentConfig.fieldValues?.expiryDate) {
-                        // Format expiry date using calendar conversion
-                        try {
-                          const date = new Date(currentConfig.fieldValues.expiryDate);
-                          if (!isNaN(date.getTime())) {
-                            displayText = formatDate(date);
-                          } else {
-                            displayText = currentConfig.fieldValues.expiryDate; // Use as-is if not a valid date
-                          }
-                        } catch {
-                          displayText = currentConfig.fieldValues.expiryDate;
-                        }
-                      }
+                      const displayText = getFieldPreviewText(field, currentConfig, sampleStudent);
 
                       const fieldStyle = getFieldStyle(field);
                       const isStudentName = field.id === 'studentName';
@@ -1401,12 +1530,10 @@ export function IdCardLayoutEditor({
                     )}
 
                     {/* Field Value Editor (for editable fields) */}
-                    {selectedField && ['notes', 'expiryDate', 'schoolName'].includes(selectedField) && (
+                    {selectedField && isSelectedFieldEditableText && (
                       <div className="space-y-3 pt-2 border-t">
                         <Label className="text-sm font-semibold">
-                          {selectedField === 'notes' && (t('idCards.fieldValue') || 'Field Value')}
-                          {selectedField === 'expiryDate' && (t('idCards.expiryDateValue') || 'Expiry Date')}
-                          {selectedField === 'schoolName' && (t('idCards.schoolNameValue') || 'School Name')}
+                          {getEditableFieldLabel(selectedField)}
                         </Label>
                         
                         {selectedField === 'expiryDate' ? (
@@ -1445,21 +1572,11 @@ export function IdCardLayoutEditor({
                                   },
                                 });
                               }}
-                              placeholder={
-                                selectedField === 'notes' 
-                                  ? (t('idCards.notesPlaceholder') || 'Enter notes text...')
-                                  : selectedField === 'schoolName'
-                                  ? (t('idCards.schoolNamePlaceholder') || 'Enter school name...')
-                                  : ''
-                              }
+                              placeholder={getEditableFieldPlaceholder(selectedField)}
                               className="h-8 text-xs"
                             />
                             <p className="text-xs text-muted-foreground">
-                              {selectedField === 'notes' 
-                                ? (t('idCards.notesDescription') || 'Custom text to display. Leave empty to use card notes.')
-                                : selectedField === 'schoolName'
-                                ? (t('idCards.schoolNameDescription') || 'Custom school name. Leave empty to use student\'s school name.')
-                                : ''}
+                              {getEditableFieldDescription(selectedField)}
                             </p>
                           </div>
                         )}
@@ -1565,27 +1682,7 @@ export function IdCardLayoutEditor({
 
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
-                      const position = getFieldPosition(field.key);
-                      
-                      // Get display text: use template-defined value if available, otherwise use sample text
-                      let displayText = field.sampleText;
-                      if (field.id === 'notes' && currentConfig.fieldValues?.notes) {
-                        displayText = currentConfig.fieldValues.notes;
-                      } else if (field.id === 'schoolName' && currentConfig.fieldValues?.schoolName) {
-                        displayText = currentConfig.fieldValues.schoolName;
-                      } else if (field.id === 'expiryDate' && currentConfig.fieldValues?.expiryDate) {
-                        // Format expiry date using calendar conversion
-                        try {
-                          const date = new Date(currentConfig.fieldValues.expiryDate);
-                          if (!isNaN(date.getTime())) {
-                            displayText = formatDate(date);
-                          } else {
-                            displayText = currentConfig.fieldValues.expiryDate; // Use as-is if not a valid date
-                          }
-                        } catch {
-                          displayText = currentConfig.fieldValues.expiryDate;
-                        }
-                      }
+                      const displayText = getFieldPreviewText(field, currentConfig, sampleStudent);
                       
                       return (
                         <div
@@ -1893,69 +1990,58 @@ export function IdCardLayoutEditor({
                           </div>
                         )}
 
-                        {/* Field Value Editor (for editable fields) */}
-                        {['notes', 'expiryDate', 'schoolName'].includes(selectedField) && (
-                          <div className="space-y-3 pt-2 border-t">
-                            <Label className="text-sm font-semibold">
-                              {selectedField === 'notes' && (t('idCards.fieldValue') || 'Field Value')}
-                              {selectedField === 'expiryDate' && (t('idCards.expiryDateValue') || 'Expiry Date')}
-                              {selectedField === 'schoolName' && (t('idCards.schoolNameValue') || 'School Name')}
-                            </Label>
-                            
-                            {selectedField === 'expiryDate' ? (
-                              <div className="space-y-2">
-                                <CalendarDatePicker
-                                  date={currentConfig.fieldValues?.[selectedField] ? new Date(currentConfig.fieldValues[selectedField]) : undefined}
-                                  onDateChange={(date) => {
-                                    const value = date ? date.toISOString().slice(0, 10) : null;
-                                    setCurrentConfig({
-                                      ...currentConfig,
-                                      fieldValues: {
-                                        ...(currentConfig.fieldValues || {}),
-                                        [selectedField]: value,
-                                      },
-                                    });
-                                  }}
-                                  placeholder={t('idCards.selectExpiryDate') || 'Select expiry date...'}
-                                  className="h-8 text-xs"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  {t('idCards.expiryDateDescription') || 'Set a fixed expiry date, or leave empty to use dynamic date (1 year from print date)'}
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <Input
-                                  type="text"
-                                  value={currentConfig.fieldValues?.[selectedField] || ''}
-                                  onChange={(e) => {
-                                    const value = e.target.value || null;
-                                    setCurrentConfig({
-                                      ...currentConfig,
-                                      fieldValues: {
-                                        ...(currentConfig.fieldValues || {}),
-                                        [selectedField]: value,
-                                      },
-                                    });
-                                  }}
-                                  placeholder={
-                                    selectedField === 'notes' 
-                                      ? (t('idCards.notesPlaceholder') || 'Enter notes text...')
-                                      : selectedField === 'schoolName'
-                                      ? (t('idCards.schoolNamePlaceholder') || 'Enter school name...')
-                                      : ''
-                                  }
-                                  className="h-8 text-xs"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  {selectedField === 'notes' 
-                                    ? (t('idCards.notesDescription') || 'Custom text to display. Leave empty to use card notes.')
-                                    : selectedField === 'schoolName'
-                                    ? (t('idCards.schoolNameDescription') || 'Custom school name. Leave empty to use student\'s school name.')
-                                    : ''}
-                                </p>
-                              </div>
-                            )}
+                      </div>
+                    )}
+
+                    {/* Field Value Editor (for editable fields) */}
+                    {selectedField && isSelectedFieldEditableText && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <Label className="text-sm font-semibold">
+                          {getEditableFieldLabel(selectedField)}
+                        </Label>
+
+                        {selectedField === 'expiryDate' ? (
+                          <div className="space-y-2">
+                            <CalendarDatePicker
+                              date={currentConfig.fieldValues?.[selectedField] ? new Date(currentConfig.fieldValues[selectedField]) : undefined}
+                              onDateChange={(date) => {
+                                const value = date ? date.toISOString().slice(0, 10) : null;
+                                setCurrentConfig({
+                                  ...currentConfig,
+                                  fieldValues: {
+                                    ...(currentConfig.fieldValues || {}),
+                                    [selectedField]: value,
+                                  },
+                                });
+                              }}
+                              placeholder={t('idCards.selectExpiryDate') || 'Select expiry date...'}
+                              className="h-8 text-xs"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {t('idCards.expiryDateDescription') || 'Set a fixed expiry date, or leave empty to use dynamic date (1 year from print date)'}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Input
+                              type="text"
+                              value={currentConfig.fieldValues?.[selectedField] || ''}
+                              onChange={(e) => {
+                                const value = e.target.value || null;
+                                setCurrentConfig({
+                                  ...currentConfig,
+                                  fieldValues: {
+                                    ...(currentConfig.fieldValues || {}),
+                                    [selectedField]: value,
+                                  },
+                                });
+                              }}
+                              placeholder={getEditableFieldPlaceholder(selectedField)}
+                              className="h-8 text-xs"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {getEditableFieldDescription(selectedField)}
+                            </p>
                           </div>
                         )}
                       </div>

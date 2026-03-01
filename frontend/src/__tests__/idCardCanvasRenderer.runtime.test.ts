@@ -159,4 +159,47 @@ describe('idCardCanvasRenderer runtime alignment', () => {
     expect(renderedTexts).toContain('Room A');
     expect(renderedTexts).toContain('ADM-200');
   });
+
+  it('renders movable label fields alongside database values', async () => {
+    const template = {
+      id: 'template-runtime-3',
+      layoutConfigFront: {
+        enabledFields: ['studentNameLabel', 'studentName', 'cardNumberLabel', 'cardNumber'],
+        studentNameLabelPosition: { x: 25, y: 40 },
+        studentNamePosition: { x: 65, y: 40 },
+        cardNumberLabelPosition: { x: 25, y: 58 },
+        cardNumberPosition: { x: 65, y: 58 },
+        fontSize: 12,
+        fontFamily: 'Arial',
+        textColor: '#000000',
+        rtl: true,
+      },
+      layoutConfigBack: {},
+      backgroundImagePathFront: null,
+      backgroundImagePathBack: null,
+    } as any;
+
+    const student = {
+      id: 'student-runtime-3',
+      fullName: 'Label Student',
+      fatherName: 'Label Father',
+      studentCode: 'STD-300',
+      admissionNumber: 'ADM-300',
+      cardNumber: null,
+      currentClass: null,
+      school: { id: 'school-runtime-3', schoolName: 'Runtime School' },
+    } as any;
+
+    await renderIdCardToCanvas(template, student, 'front', {
+      quality: 'screen',
+      renderWidthPx: 634,
+      renderHeightPx: 400,
+      paddingPx: 20,
+    });
+
+    const renderedTexts = fillTextCalls.map((call) => call.text);
+    expect(renderedTexts).toContain('نوم');
+    expect(renderedTexts).toContain('کارت نمبر');
+    expect(renderedTexts).toContain('ADM-300');
+  });
 });

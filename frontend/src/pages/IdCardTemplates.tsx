@@ -56,6 +56,32 @@ import {
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
 
+const DEFAULT_LABEL_FIELD_VALUES: Record<string, string> = {
+  studentNameLabel: 'نوم',
+  fatherNameLabel: 'د پلار نوم',
+  classLabel: 'درجه',
+  admissionNumberLabel: 'داخله نمبر',
+  studentCodeLabel: 'ID',
+  cardNumberLabel: 'کارت نمبر',
+};
+
+const FRONT_DEFAULT_FIELDS = [
+  'studentNameLabel',
+  'studentName',
+  'fatherNameLabel',
+  'fatherName',
+  'classLabel',
+  'class',
+  'admissionNumberLabel',
+  'admissionNumber',
+  'studentCodeLabel',
+  'studentCode',
+  'studentPhoto',
+  'qrCode',
+];
+
+const BACK_DEFAULT_FIELDS = ['schoolName', 'cardNumberLabel', 'cardNumber', 'expiryDate'];
+
 export default function IdCardTemplates() {
   const { t } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -76,14 +102,16 @@ export default function IdCardTemplates() {
     fontFamily: 'Arial',
     textColor: '#000000',
     rtl: false,
-    enabledFields: ['studentName', 'studentCode', 'admissionNumber', 'class', 'studentPhoto', 'qrCode'],
+    enabledFields: FRONT_DEFAULT_FIELDS,
+    fieldValues: DEFAULT_LABEL_FIELD_VALUES,
   });
   const [layoutConfigBack, setLayoutConfigBack] = useState<IdCardLayoutConfig>({
     fontSize: 10,
     fontFamily: 'Arial',
     textColor: '#000000',
     rtl: false,
-    enabledFields: ['schoolName', 'expiryDate', 'cardNumber'],
+    enabledFields: BACK_DEFAULT_FIELDS,
+    fieldValues: DEFAULT_LABEL_FIELD_VALUES,
   });
 
   const { data: templates = [], isLoading } = useIdCardTemplates();
@@ -104,14 +132,16 @@ export default function IdCardTemplates() {
       fontFamily: 'Arial',
       textColor: '#000000',
       rtl: false,
-      enabledFields: ['studentName', 'studentCode', 'admissionNumber', 'class', 'studentPhoto', 'qrCode'],
+      enabledFields: FRONT_DEFAULT_FIELDS,
+      fieldValues: DEFAULT_LABEL_FIELD_VALUES,
     });
     setLayoutConfigBack({
       fontSize: 10,
       fontFamily: 'Arial',
       textColor: '#000000',
       rtl: false,
-      enabledFields: ['schoolName', 'expiryDate', 'cardNumber'],
+      enabledFields: BACK_DEFAULT_FIELDS,
+      fieldValues: DEFAULT_LABEL_FIELD_VALUES,
     });
     setSelectedTemplate(null);
   };

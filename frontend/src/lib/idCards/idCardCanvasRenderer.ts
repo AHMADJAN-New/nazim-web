@@ -45,6 +45,15 @@ const resolveFirstNonEmptyString = (...values: Array<unknown>): string | null =>
   return null;
 };
 
+const DEFAULT_FIELD_LABELS: Record<string, string> = {
+  studentNameLabel: 'نوم',
+  fatherNameLabel: 'د پلار نوم',
+  classLabel: 'درجه',
+  admissionNumberLabel: 'داخله نمبر',
+  studentCodeLabel: 'ID',
+  cardNumberLabel: 'کارت نمبر',
+};
+
 // CR80 dimensions: 85.6mm × 53.98mm
 // At 300 DPI: 1011px × 637px
 // Screen preview uses the layout editor's default preview height (400px)
@@ -354,13 +363,19 @@ export async function renderIdCardToCanvas(
 
   // Default positions when layout has enabled field but no position saved (e.g. from layout editor)
   const DEFAULT_FIELD_POSITIONS: Record<string, { x: number; y: number; width?: number; height?: number }> = {
-    studentNamePosition: { x: 50, y: 40 },
-    fatherNamePosition: { x: 50, y: 50 },
-    studentCodePosition: { x: 50, y: 55 },
-    admissionNumberPosition: { x: 50, y: 60 },
-    classPosition: { x: 50, y: 70 },
+    studentNameLabelPosition: { x: 30, y: 40 },
+    studentNamePosition: { x: 62, y: 40 },
+    fatherNameLabelPosition: { x: 30, y: 50 },
+    fatherNamePosition: { x: 62, y: 50 },
+    studentCodeLabelPosition: { x: 30, y: 60 },
+    studentCodePosition: { x: 62, y: 60 },
+    admissionNumberLabelPosition: { x: 30, y: 70 },
+    admissionNumberPosition: { x: 62, y: 70 },
+    classLabelPosition: { x: 30, y: 80 },
+    classPosition: { x: 62, y: 80 },
     schoolNamePosition: { x: 50, y: 30 },
-    cardNumberPosition: { x: 50, y: 80 },
+    cardNumberLabelPosition: { x: 35, y: 80 },
+    cardNumberPosition: { x: 68, y: 80 },
     expiryDatePosition: { x: 50, y: 60 },
     notesPosition: { x: 50, y: 90 },
     studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 },
@@ -391,6 +406,41 @@ export async function renderIdCardToCanvas(
       school: student.school?.schoolName,
     });
   }
+
+  const renderLabelField = (
+    fieldId: keyof typeof DEFAULT_FIELD_LABELS,
+    positionKey: keyof typeof DEFAULT_FIELD_POSITIONS
+  ) => {
+    if (!layout.enabledFields?.includes(fieldId)) {
+      return;
+    }
+
+    const pos = getPixelPosition(getPositionOrDefault(positionKey, layout[positionKey as keyof IdCardLayoutConfig] as any));
+    if (!pos) {
+      if (import.meta.env.DEV) {
+        console.warn(`[idCardCanvasRenderer] ${fieldId} enabled but no position found`);
+      }
+      return;
+    }
+
+    const labelText = resolveFirstNonEmptyString(layout.fieldValues?.[fieldId], DEFAULT_FIELD_LABELS[fieldId]);
+    if (!labelText) {
+      return;
+    }
+
+    const fieldFont = getFieldFont(fieldId, 0.9);
+    ctx.fillStyle = fieldFont.textColor;
+    ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(labelText, pos.x, pos.y);
+  };
+
+  renderLabelField('studentNameLabel', 'studentNameLabelPosition');
+  renderLabelField('fatherNameLabel', 'fatherNameLabelPosition');
+  renderLabelField('studentCodeLabel', 'studentCodeLabelPosition');
+  renderLabelField('admissionNumberLabel', 'admissionNumberLabelPosition');
+  renderLabelField('classLabel', 'classLabelPosition');
+  renderLabelField('cardNumberLabel', 'cardNumberLabelPosition');
 
   // Draw enabled fields - render all enabled fields even if data is missing
   if (layout.enabledFields?.includes('studentName')) {
@@ -750,12 +800,18 @@ export async function renderIdCardToCanvas(
       drawAnchor(getPixelPosition(pos));
     };
 
+    drawFieldAnchor('studentNameLabel', 'studentNameLabelPosition', layout.studentNameLabelPosition as any);
     drawFieldAnchor('studentName', 'studentNamePosition', layout.studentNamePosition);
+    drawFieldAnchor('fatherNameLabel', 'fatherNameLabelPosition', layout.fatherNameLabelPosition as any);
     drawFieldAnchor('fatherName', 'fatherNamePosition', layout.fatherNamePosition);
+    drawFieldAnchor('studentCodeLabel', 'studentCodeLabelPosition', layout.studentCodeLabelPosition as any);
     drawFieldAnchor('studentCode', 'studentCodePosition', layout.studentCodePosition);
+    drawFieldAnchor('admissionNumberLabel', 'admissionNumberLabelPosition', layout.admissionNumberLabelPosition as any);
     drawFieldAnchor('admissionNumber', 'admissionNumberPosition', layout.admissionNumberPosition);
+    drawFieldAnchor('classLabel', 'classLabelPosition', layout.classLabelPosition as any);
     drawFieldAnchor('class', 'classPosition', layout.classPosition);
     drawFieldAnchor('schoolName', 'schoolNamePosition', layout.schoolNamePosition);
+    drawFieldAnchor('cardNumberLabel', 'cardNumberLabelPosition', layout.cardNumberLabelPosition as any);
     drawFieldAnchor('cardNumber', 'cardNumberPosition', layout.cardNumberPosition);
     drawFieldAnchor('expiryDate', 'expiryDatePosition', layout.expiryDatePosition);
     drawFieldAnchor('notes', 'notesPosition', layout.notesPosition);
