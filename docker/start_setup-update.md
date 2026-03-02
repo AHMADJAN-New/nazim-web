@@ -145,6 +145,31 @@ If you see `[AppHeader DEBUG] Features:` in the browser console, the frontend bu
 
 Nginx and PHP limits must allow at least 500 MB. The repo sets `client_max_body_size 512M` and `post_max_size`/`upload_max_filesize 512M`. Rebuild or restart nginx and php after changing limits.
 
+### FileBrowser: wrong credentials / cannot log in
+
+The official `filebrowser/filebrowser` image often **ignores** `FILEBROWSER_USER` / `FILEBROWSER_PASSWORD` on first run and sets a random admin password (shown once in container logs). Use the script below to set the admin password to match your `compose.prod.env`.
+
+**Recommended: run the set-password script** (from project root):
+
+```bash
+bash docker/scripts/maintenance/filebrowser-set-admin-password.sh
+```
+
+The script reads `FILEBROWSER_USER` and `FILEBROWSER_PASSWORD` from `docker/env/compose.prod.env`, stops FileBrowser, updates the user password via the CLI, and starts FileBrowser again. Then log in at `http://<server-ip>:8081` with those credentials.
+
+**Alternative: reset the database** (loses any custom FileBrowser settings). Only if the script fails (e.g. no admin user yet):
+
+1. Set `FILEBROWSER_USER` and `FILEBROWSER_PASSWORD` in `docker/env/compose.prod.env`.
+2. Stop, remove the volume, and start again:
+
+```bash
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml stop filebrowser
+docker volume rm nazim_filebrowser_data
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml up -d filebrowser
+```
+
+3. If login still fails, set the password with the script above (the new DB will have created an `admin` user).
+
 ### Slow desktop release downloads (~70 KB/s)
 
 1. **X-Accel-Redirect:** Stack uses X-Accel-Redirect so nginx serves files directly. Ensure nginx config has `internal-desktop-files/` location and `DESKTOP_USE_X_ACCEL_REDIRECT=true` in backend `.env`.

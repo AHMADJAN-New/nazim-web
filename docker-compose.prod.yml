@@ -210,8 +210,8 @@ services:
     networks:
       - nazim_network
 
-  # FileBrowser: secure read-only file manager for backend storage (private + public)
-  # Access: http://127.0.0.1:${FILEBROWSER_PORT} — bind to localhost only; use SSH tunnel for remote access
+  # FileBrowser: read-only file manager for backend storage (private + public)
+  # Access: http://<server-ip>:${FILEBROWSER_PORT} — set strong FILEBROWSER_PASSWORD; restrict with firewall if needed
   filebrowser:
     image: filebrowser/filebrowser:latest
     container_name: nazim_prod_filebrowser
@@ -219,9 +219,11 @@ services:
     environment:
       PUID: "33"
       PGID: "33"
-      # Auth (set strong FILEBROWSER_PASSWORD in docker/env/compose.prod.env)
+      # Auth — used on first run when database is created (set strong FILEBROWSER_PASSWORD in compose.prod.env)
       USERNAME: ${FILEBROWSER_USER:-admin}
       PASSWORD: ${FILEBROWSER_PASSWORD:-changeme}
+      FB_USERNAME: ${FILEBROWSER_USER:-admin}
+      FB_PASSWORD: ${FILEBROWSER_PASSWORD:-changeme}
       # Base path inside container (mounted storage root)
       PWD: /srv
       # Listen on port 80 inside container
@@ -232,8 +234,8 @@ services:
       # Persist FileBrowser config and user database
       - nazim_filebrowser_data:/database
     ports:
-      # Bind to localhost only — use SSH tunnel for remote: ssh -L 8081:127.0.0.1:8081 user@server
-      - "127.0.0.1:${FILEBROWSER_PORT:-8081}:80"
+      # Bind to all interfaces so FileBrowser is reachable at http://<server-ip>:8081
+      - "${FILEBROWSER_PORT:-8081}:80"
     logging:
       driver: "json-file"
       options:
