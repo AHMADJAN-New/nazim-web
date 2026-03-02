@@ -790,14 +790,11 @@ class StudentController extends Controller
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
             throw $e;
         } catch (\Exception $e) {
-            Log::error('Error getting student picture', [
+            Log::warning('Student picture unavailable', [
                 'student_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
             ]);
-            abort(500, 'Error getting student picture: ' . $e->getMessage());
+            abort(404, 'Picture not available');
         }
     }
 

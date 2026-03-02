@@ -222,6 +222,8 @@ export default {
     severitySevere: "Severe",
     sheet: "Sheet",
     stamp: "Stamp",
+    startDate: "Start Date",
+    endDate: "End Date",
     student: "Student",
     studentDocuments: "Student Documents",
     studentFields: "Student fields",

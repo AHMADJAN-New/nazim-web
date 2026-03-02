@@ -23,6 +23,8 @@ import type { StudentIdCard } from '@/types/domain/studentIdCard';
 interface StudentIdCardPreviewProps {
   card: StudentIdCard | null;
   template?: IdCardTemplate | null;
+  /** When card is null, pass student + template to preview before assignment */
+  student?: Student | null;
   side?: 'front' | 'back';
   showControls?: boolean;
   className?: string;
@@ -35,6 +37,7 @@ interface StudentIdCardPreviewProps {
 export function StudentIdCardPreview({
   card,
   template: providedTemplate,
+  student: studentProp,
   side: initialSide = 'front',
   showControls = true,
   className = '',
@@ -184,15 +187,16 @@ export function StudentIdCardPreview({
     return student;
   };
 
-  // Load preview image when card or side changes (auto-load on mount)
+  // Student for rendering: from card (when assigned) or from props (preview before assignment)
+  const studentForRender = actualCard ? getStudentForRenderer(actualCard) : studentProp ?? null;
+
+  // Load preview image when card/student and template are available
   useEffect(() => {
-    if (!actualCard || !actualTemplate || cardLoading || templateLoading) {
+    if (!actualTemplate || cardLoading || templateLoading) {
       setPreviewImageUrl(null);
       return;
     }
-
-    const student = getStudentForRenderer(actualCard);
-    if (!student) {
+    if (!studentForRender) {
       setPreviewImageUrl(null);
       return;
     }
@@ -210,7 +214,7 @@ export function StudentIdCardPreview({
         // Use print quality so dialog preview matches downloaded output.
         const dataUrl = await renderIdCardToDataUrl(
           actualTemplate,
-          student,
+          studentForRender,
           side,
           {
             quality: 'print',
@@ -244,10 +248,10 @@ export function StudentIdCardPreview({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [actualCard?.id, actualTemplate?.id, side, cardLoading, templateLoading]);
+  }, [actualCard?.id, actualTemplate?.id, side, cardLoading, templateLoading, studentForRender?.id]);
 
-  // Check if we have the necessary data (handles both regular and course students)
-  const hasStudentData = actualCard && (actualCard.student || actualCard.courseStudent);
+  // Check if we have the necessary data (from card or from props for preview-before-assignment)
+  const hasStudentData = (actualCard && (actualCard.student || actualCard.courseStudent)) || !!studentProp;
 
   // Use the fetched template if available
   const templateForPreview = actualTemplate || (actualCard?.template ? {
@@ -263,17 +267,11 @@ export function StudentIdCardPreview({
   } : null);
 
   const handleDownload = async () => {
-    if (!actualCard || !actualTemplate) return;
-
-    const student = getStudentForRenderer(actualCard);
-    if (!student) {
-      showToast.error(t('toast.idCardDownloadFailed') || 'Student data not available');
-      return;
-    }
+    if (!actualTemplate || !studentForRender) return;
 
     try {
       setIsLoadingPreview(true);
-      const canvas = await renderIdCardToCanvas(actualTemplate, student, side, { 
+      const canvas = await renderIdCardToCanvas(actualTemplate, studentForRender, side, { 
         quality: 'print',
         renderWidthPx: printRenderSize.width,
         renderHeightPx: printRenderSize.height,
@@ -286,10 +284,8 @@ export function StudentIdCardPreview({
       // Create download link
       const link = document.createElement('a');
       link.href = dataUrl;
-      const admissionNumber = actualCard.courseStudentId
-        ? actualCard.courseStudent?.admissionNo
-        : actualCard.student?.admissionNumber;
-      link.download = `id-card-${admissionNumber || actualCard.id}-${side}.png`;
+      const admissionNumber = studentForRender.admissionNumber;
+      link.download = `id-card-${admissionNumber || actualCard?.id || 'preview'}-${side}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -306,13 +302,7 @@ export function StudentIdCardPreview({
   };
 
   const handleDownloadPdf = async (exportSide?: 'front' | 'back' | 'both') => {
-    if (!actualCard || !actualTemplate) return;
-
-    const student = getStudentForRenderer(actualCard);
-    if (!student) {
-      showToast.error(t('toast.idCardDownloadFailed') || 'Student data not available');
-      return;
-    }
+    if (!actualTemplate || !studentForRender) return;
 
     try {
       setIsLoadingPreview(true);
@@ -334,18 +324,16 @@ export function StudentIdCardPreview({
         throw new Error('No valid card sides to export');
       }
 
-      const admissionNumber = actualCard.courseStudentId
-        ? actualCard.courseStudent?.admissionNo
-        : actualCard.student?.admissionNumber;
-      const baseFilename = `id-card-${admissionNumber || actualCard.id}`;
-      const notes = actualCard.notes || null;
-      const expiryDate = actualCard.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
+      const admissionNumber = studentForRender.admissionNumber;
+      const baseFilename = `id-card-${admissionNumber || actualCard?.id || 'preview'}`;
+      const notes = actualCard?.notes || null;
+      const expiryDate = actualCard?.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
 
       // Export each side
       for (const exportSideValue of validSides) {
         await exportIdCardToPdf(
           actualTemplate,
-          student,
+          studentForRender,
           exportSideValue,
           validSides.length > 1 ? `${baseFilename}-${exportSideValue}` : baseFilename,
           notes,
@@ -365,13 +353,7 @@ export function StudentIdCardPreview({
   };
 
   const handlePreview = async () => {
-    if (!actualCard || !actualTemplate) return;
-    
-    const student = getStudentForRenderer(actualCard);
-    if (!student) {
-      showToast.error(t('toast.idCardPreviewFailed') || 'Student data not available');
-      return;
-    }
+    if (!actualTemplate || !studentForRender) return;
 
     setIsLoadingPreview(true);
     try {
@@ -383,7 +365,7 @@ export function StudentIdCardPreview({
       // Use print quality so preview matches what will be exported.
       const dataUrl = await renderIdCardToDataUrl(
         actualTemplate,
-        student,
+        studentForRender,
         side,
         {
           quality: 'print',
@@ -421,7 +403,7 @@ export function StudentIdCardPreview({
     );
   }
 
-  if (!actualCard || !hasStudentData) {
+  if (!studentForRender || !actualTemplate) {
     return (
       <Card className={className}>
         <CardContent className="pt-6">

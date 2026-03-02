@@ -46,13 +46,13 @@ const resolveFirstNonEmptyString = (...values: Array<unknown>): string | null =>
 };
 
 const DEFAULT_FIELD_LABELS: Record<string, string> = {
-  studentNameLabel: 'نوم',
-  fatherNameLabel: 'د پلار نوم',
-  classLabel: 'درجه',
-  roomLabel: 'خونه',
-  admissionNumberLabel: 'داخله نمبر',
-  studentCodeLabel: 'ID',
-  cardNumberLabel: 'کارت نمبر',
+  studentNameLabel: 'نوم:',
+  fatherNameLabel: 'د پلار نوم:',
+  classLabel: 'درجه:',
+  roomLabel: 'خونه:',
+  admissionNumberLabel: 'داخله نمبر:',
+  studentCodeLabel: 'ID:',
+  cardNumberLabel: 'کارت نمبر:',
 };
 
 // CR80 dimensions: 85.6mm × 53.98mm
@@ -363,22 +363,23 @@ export async function renderIdCardToCanvas(
   };
 
   // Default positions when layout has enabled field but no position saved (e.g. from layout editor)
+  // RTL default: labels on the RIGHT (high x), values on the LEFT (low x). Positions are anchor points (label=right edge, value=left edge).
   const DEFAULT_FIELD_POSITIONS: Record<string, { x: number; y: number; width?: number; height?: number }> = {
-    studentNameLabelPosition: { x: 30, y: 40 },
-    studentNamePosition: { x: 62, y: 40 },
-    fatherNameLabelPosition: { x: 30, y: 50 },
-    fatherNamePosition: { x: 62, y: 50 },
-    studentCodeLabelPosition: { x: 30, y: 60 },
-    studentCodePosition: { x: 62, y: 60 },
-    admissionNumberLabelPosition: { x: 30, y: 70 },
-    admissionNumberPosition: { x: 62, y: 70 },
-    classLabelPosition: { x: 30, y: 80 },
-    classPosition: { x: 62, y: 80 },
-    roomLabelPosition: { x: 30, y: 88 },
-    roomPosition: { x: 62, y: 88 },
+    studentNameLabelPosition: { x: 72, y: 40 },
+    studentNamePosition: { x: 28, y: 40 },
+    fatherNameLabelPosition: { x: 72, y: 50 },
+    fatherNamePosition: { x: 28, y: 50 },
+    studentCodeLabelPosition: { x: 72, y: 60 },
+    studentCodePosition: { x: 28, y: 60 },
+    admissionNumberLabelPosition: { x: 72, y: 70 },
+    admissionNumberPosition: { x: 28, y: 70 },
+    classLabelPosition: { x: 72, y: 80 },
+    classPosition: { x: 28, y: 80 },
+    roomLabelPosition: { x: 72, y: 88 },
+    roomPosition: { x: 28, y: 88 },
     schoolNamePosition: { x: 50, y: 30 },
-    cardNumberLabelPosition: { x: 35, y: 80 },
-    cardNumberPosition: { x: 68, y: 80 },
+    cardNumberLabelPosition: { x: 72, y: 80 },
+    cardNumberPosition: { x: 28, y: 80 },
     expiryDatePosition: { x: 50, y: 60 },
     notesPosition: { x: 50, y: 90 },
     studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 },
@@ -430,12 +431,14 @@ export async function renderIdCardToCanvas(
     if (!labelText) {
       return;
     }
+    const labelWithColon = labelText.trim().endsWith(':') ? labelText.trim() : `${labelText.trim()}:`;
 
     const fieldFont = getFieldFont(fieldId, 0.9);
     ctx.fillStyle = fieldFont.textColor;
     ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-    ctx.textAlign = 'center';
-    ctx.fillText(labelText, pos.x, pos.y);
+    // Labels on the right: anchor at right edge of text (position = right side of card)
+    ctx.textAlign = 'right';
+    ctx.fillText(labelWithColon, pos.x, pos.y);
   };
 
   renderLabelField('studentNameLabel', 'studentNameLabelPosition');
@@ -460,7 +463,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('studentName', 1.2);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(studentNameValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered studentName at:', pos);
@@ -484,7 +487,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('fatherName', 1.0);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(fatherNameValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered fatherName at:', pos);
@@ -507,7 +510,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('studentCode', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(studentCodeValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered studentCode at:', pos);
@@ -530,7 +533,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('admissionNumber', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(admissionNumberValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered admissionNumber at:', pos);
@@ -557,7 +560,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('class', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(classValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered class at:', pos);
@@ -583,7 +586,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('room', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(roomValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered room at:', pos);
@@ -633,7 +636,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('cardNumber', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(cardNumberValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered cardNumber at:', pos);
@@ -678,7 +681,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('expiryDate', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(formattedDate, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered expiryDate at:', pos);
@@ -726,13 +729,25 @@ export async function renderIdCardToCanvas(
               ctx.save();
               ctx.lineWidth = 0;
               ctx.strokeStyle = 'transparent';
-              
-              // Center-based positioning
-              const drawX = pos.x! - pos.width! / 2;
-              const drawY = pos.y! - pos.height! / 2;
-              ctx.drawImage(photoImg, drawX, drawY, pos.width!, pos.height!);
-              
-              // Restore context state
+
+              const boxW = pos.width!;
+              const boxH = pos.height!;
+              const imgW = photoImg.naturalWidth || photoImg.width;
+              const imgH = photoImg.naturalHeight || photoImg.height;
+              if (imgW > 0 && imgH > 0) {
+                // Fit image inside box without stretching (contain): preserve aspect ratio
+                const scale = Math.min(boxW / imgW, boxH / imgH, 1);
+                const drawW = imgW * scale;
+                const drawH = imgH * scale;
+                const drawX = pos.x! - drawW / 2;
+                const drawY = pos.y! - drawH / 2;
+                ctx.drawImage(photoImg, 0, 0, imgW, imgH, drawX, drawY, drawW, drawH);
+              } else {
+                const drawX = pos.x! - boxW / 2;
+                const drawY = pos.y! - boxH / 2;
+                ctx.drawImage(photoImg, drawX, drawY, boxW, boxH);
+              }
+
               ctx.restore();
               resolve(null);
             };

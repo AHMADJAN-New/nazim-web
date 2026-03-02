@@ -85,6 +85,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
+import type { Student } from '@/types/domain/student';
 
 export default function IdCardAssignment() {
   const { t } = useLanguage();
@@ -243,6 +244,25 @@ export default function IdCardAssignment() {
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [refetchStudentAdmissions]);
+
+  // Load latest template design when assignment page gains focus (e.g. after editing template in another tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      queryClient.invalidateQueries({ queryKey: ['id-card-templates'] });
+      void refetchTemplates();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [queryClient, refetchTemplates]);
+
+  // Auto-select the default template in the assignment template dropdown when templates load
+  useEffect(() => {
+    if (templates.length === 0 || selectedTemplateForAssignment) return;
+    const defaultTemplate = templates.find((t) => t.isDefault);
+    if (defaultTemplate) {
+      setSelectedTemplateForAssignment(defaultTemplate.id);
+    }
+  }, [templates, selectedTemplateForAssignment]);
 
   // Apply pre-selection from navigation query params (e.g. from Admissions actions dropdown).
   useEffect(() => {
@@ -510,7 +530,110 @@ export default function IdCardAssignment() {
     setIsPreviewDialogOpen(true);
   };
 
-  // Filter cards for management table
+  // Preview: dropdown shows all selected students (so selecting students loads them in the dropdown)
+  const previewDropdownOptions = useMemo(() => {
+    if (studentType === 'course') {
+      return studentsWithCardStatus.filter(
+        (s) => 'courseStudent' in s && selectedCourseStudentIds.has(s.courseStudent.id)
+      );
+    } else {
+      return studentsWithCardStatus.filter(
+        (s) => 'admission' in s && selectedAdmissionIds.has(s.admission.id)
+      );
+    }
+  }, [studentsWithCardStatus, studentType, selectedAdmissionIds, selectedCourseStudentIds]);
+
+  // Resolve preview card from previewStudentId (may be card.id, studentAdmissionId, or courseStudentId)
+  const previewCard = useMemo(() => {
+    if (!previewStudentId) return null;
+    return (
+      idCards.find((c) => c.id === previewStudentId) ??
+      idCards.find((c) => c.studentAdmissionId === previewStudentId) ??
+      idCards.find((c) => c.courseStudentId === previewStudentId) ??
+      null
+    );
+  }, [idCards, previewStudentId]);
+
+  // Build minimal Student for preview when no card assigned yet (preview before assignment)
+  const previewStudentForRender = useMemo((): Student | null => {
+    if (!previewStudentId || !profile) return null;
+    const emptyAddress = { street: '', city: '', state: '', country: '', postalCode: '' };
+    const defaultDates = { createdAt: new Date(), updatedAt: new Date() };
+    const item = previewDropdownOptions.find(
+      (s) => ('admission' in s && s.admission.id === previewStudentId) || ('courseStudent' in s && s.courseStudent.id === previewStudentId)
+    );
+    if (!item) return null;
+    if ('courseStudent' in item) {
+      const cs = item.courseStudent;
+      const courseName = cs.course?.name ?? null;
+      return {
+        id: cs.id,
+        organizationId: profile?.organization_id ?? '',
+        schoolId: profile?.default_school_id ?? null,
+        fullName: cs.fullName ?? '',
+        fatherName: cs.fatherName ?? '',
+        admissionNumber: cs.admissionNo ?? '',
+        studentCode: null,
+        cardNumber: null,
+        rollNumber: null,
+        roomNumber: null,
+        picturePath: cs.picturePath ?? null,
+        currentClass: courseName ? { id: cs.course?.id ?? '', name: courseName, gradeLevel: undefined } : null,
+        school: null,
+        firstName: (cs.fullName ?? '').split(' ')[0] ?? '',
+        lastName: (cs.fullName ?? '').split(' ').slice(1).join(' ') ?? '',
+        gender: 'male',
+        status: 'active',
+        admissionFeeStatus: 'paid',
+        isOrphan: false,
+        address: emptyAddress,
+        guardians: [],
+        previousSchools: [],
+        healthInfo: {},
+        documents: [],
+        ...defaultDates,
+      } as Student;
+    }
+    if ('admission' in item && item.admission.student) {
+      const st = item.admission.student;
+      const adm = item.admission;
+      const className = adm.class?.name ?? adm.classAcademicYear?.sectionName ?? null;
+      const roomNumber = adm.room?.roomNumber ?? null;
+      return {
+        id: st.id,
+        organizationId: profile?.organization_id ?? st.organizationId ?? '',
+        schoolId: profile?.default_school_id ?? st.schoolId ?? null,
+        fullName: st.fullName ?? '',
+        fatherName: st.fatherName ?? '',
+        admissionNumber: st.admissionNumber ?? '',
+        studentCode: st.studentCode ?? null,
+        cardNumber: st.cardNumber ?? null,
+        rollNumber: (st as any).rollNumber ?? null,
+        roomNumber,
+        picturePath: st.picturePath ?? null,
+        currentClass: className ? { id: adm.class?.id ?? adm.classAcademicYear?.id ?? '', name: className, gradeLevel: adm.class?.gradeLevel } : null,
+        school: null,
+        firstName: (st.fullName ?? '').split(' ')[0] ?? '',
+        lastName: (st.fullName ?? '').split(' ').slice(1).join(' ') ?? '',
+        gender: (st.gender as any) ?? 'male',
+        status: 'active',
+        admissionFeeStatus: 'paid',
+        isOrphan: false,
+        address: emptyAddress,
+        guardians: [],
+        previousSchools: [],
+        healthInfo: {},
+        documents: [],
+        ...defaultDates,
+      } as Student;
+    }
+    return null;
+  }, [previewStudentId, profile, previewDropdownOptions]);
+
+  const selectedTemplateForPreview = useMemo(() => {
+    if (!selectedTemplateForAssignment) return null;
+    return templates.find((t) => t.id === selectedTemplateForAssignment) ?? null;
+  }, [templates, selectedTemplateForAssignment]);
   const filteredCards = useMemo(() => {
     return idCards.filter(card => {
       if (searchQuery) {
@@ -1076,34 +1199,36 @@ export default function IdCardAssignment() {
                         onValueChange={(value) => setPreviewStudentId(value || null)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t('idCards.selectStudentForPreview') || 'Select student'} />
+                          <SelectValue
+                            placeholder={
+                              previewDropdownOptions.length === 0
+                                ? (t('idCards.selectStudentsFromListFirst') || 'Select students from list first')
+                                : (t('idCards.selectStudentForPreview') || 'Select student')
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           {studentType === 'course'
-                            ? studentsWithCardStatus
-                                .filter(s => s.hasCard && 'courseStudent' in s)
-                                .map((item) => {
-                                  if ('courseStudent' in item) {
-                                    return (
-                                      <SelectItem key={item.courseStudent.id} value={item.courseStudent.id}>
-                                        {item.courseStudent.fullName}
-                                      </SelectItem>
-                                    );
-                                  }
-                                  return null;
-                                })
-                            : studentsWithCardStatus
-                                .filter(s => s.hasCard && 'admission' in s)
-                                .map((item) => {
-                                  if ('admission' in item && item.admission.student) {
-                                    return (
-                                      <SelectItem key={item.admission.id} value={item.admission.id}>
-                                        {item.admission.student.fullName}
-                                      </SelectItem>
-                                    );
-                                  }
-                                  return null;
-                                })}
+                            ? previewDropdownOptions.map((item) => {
+                                if ('courseStudent' in item) {
+                                  return (
+                                    <SelectItem key={item.courseStudent.id} value={item.courseStudent.id}>
+                                      {item.courseStudent.fullName}
+                                    </SelectItem>
+                                  );
+                                }
+                                return null;
+                              })
+                            : previewDropdownOptions.map((item) => {
+                                if ('admission' in item && item.admission.student) {
+                                  return (
+                                    <SelectItem key={item.admission.id} value={item.admission.id}>
+                                      {item.admission.student.fullName}
+                                    </SelectItem>
+                                  );
+                                }
+                                return null;
+                              })}
                         </SelectContent>
                       </Select>
                       <Select value={previewSide} onValueChange={(value: 'front' | 'back') => setPreviewSide(value)}>
@@ -1119,11 +1244,13 @@ export default function IdCardAssignment() {
                         <Button
                           variant="outline"
                           onClick={() => {
-                            const card = studentType === 'course'
-                              ? idCards.find(c => c.courseStudentId === previewStudentId)
-                              : idCards.find(c => c.studentAdmissionId === previewStudentId);
-                            if (card) handlePreview(card.id, previewSide);
+                            if (previewCard) {
+                              handlePreview(previewCard.id, previewSide);
+                            } else {
+                              setIsPreviewDialogOpen(true);
+                            }
                           }}
+                          disabled={!previewCard && !(selectedTemplateForAssignment && previewStudentForRender)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           {t('events.preview') || 'Preview'}
@@ -1618,7 +1745,9 @@ export default function IdCardAssignment() {
           </DialogHeader>
           {previewStudentId && (
             <StudentIdCardPreview
-              card={idCards.find(c => c.id === previewStudentId) || null}
+              card={previewCard}
+              template={previewCard ? undefined : selectedTemplateForPreview}
+              student={previewCard ? undefined : previewStudentForRender}
               side={previewSide}
               showControls={true}
             />

@@ -519,7 +519,7 @@ export function Students() {
                 }
                 resolve();
               },
-              onError: () => reject()
+              onError: (error: Error) => reject(error)
             }
           );
         });

@@ -1,4 +1,4 @@
-import { GripVertical, Save, RotateCcw, Eye, ChevronDown } from 'lucide-react';
+import { GripVertical, Save, RotateCcw, Eye, ChevronDown, AlignEndHorizontal, AlignStartHorizontal, Rows3, AlignStartVertical, AlignEndVertical } from 'lucide-react';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -71,13 +71,13 @@ interface FieldConfig {
 }
 
 const DEFAULT_LABEL_TEXTS: Record<string, string> = {
-  studentNameLabel: 'نوم',
-  fatherNameLabel: 'د پلار نوم',
-  classLabel: 'درجه',
-  roomLabel: 'خونه',
-  admissionNumberLabel: 'داخله نمبر',
-  studentCodeLabel: 'ID',
-  cardNumberLabel: 'کارت نمبر',
+  studentNameLabel: 'نوم:',
+  fatherNameLabel: 'د پلار نوم:',
+  classLabel: 'درجه:',
+  roomLabel: 'خونه:',
+  admissionNumberLabel: 'داخله نمبر:',
+  studentCodeLabel: 'ID:',
+  cardNumberLabel: 'کارت نمبر:',
 };
 
 const LABEL_FIELD_IDS = Object.keys(DEFAULT_LABEL_TEXTS);
@@ -198,7 +198,7 @@ export function IdCardLayoutEditor({
   onSave,
   onCancel,
 }: IdCardLayoutEditorProps) {
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState<'front' | 'back'>('front');
   
   const [configFront, setConfigFront] = useState<IdCardLayoutConfig>(() => ({
@@ -262,7 +262,13 @@ export function IdCardLayoutEditor({
   const [draggingField, setDraggingField] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
+  const didMouseMoveRef = useRef(false);
+  const suppressCanvasClickRef = useRef(false);
+  const dragStartPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const shiftLockedDirectionRef = useRef<'horizontal' | 'vertical' | null>(null);
+  const [alignmentGuides, setAlignmentGuides] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
   const [backgroundImageLoadedFront, setBackgroundImageLoadedFront] = useState(false);
   const [backgroundImageLoadedBack, setBackgroundImageLoadedBack] = useState(false);
   const [backgroundImageErrorFront, setBackgroundImageErrorFront] = useState(false);
@@ -365,14 +371,50 @@ export function IdCardLayoutEditor({
     }
   };
 
-  // Get current config based on active tab
-  const currentConfig = activeTab === 'front' ? configFront : configBack;
   const setCurrentConfig = activeTab === 'front' ? setConfigFront : setConfigBack;
+  const currentConfig = activeTab === 'front' ? configFront : configBack;
   const currentFields = activeTab === 'front' ? FRONT_FIELDS : BACK_FIELDS;
   const currentBackgroundUrl = activeTab === 'front' ? backgroundImageUrlFront : backgroundImageUrlBack;
   const currentImageUrl = activeTab === 'front' ? imageUrlFront : imageUrlBack;
   const currentImageLoaded = activeTab === 'front' ? backgroundImageLoadedFront : backgroundImageLoadedBack;
   const currentImageError = activeTab === 'front' ? backgroundImageErrorFront : backgroundImageErrorBack;
+
+  // Sync RTL from language so alignment and canvas render correctly for RTL languages
+  useEffect(() => {
+    setCurrentConfig((prev) => {
+      if (prev.rtl === isRTL) return prev;
+      return { ...prev, rtl: isRTL };
+    });
+  }, [isRTL, activeTab]);
+
+  const handleFieldClick = useCallback((e: React.MouseEvent, fieldId: string) => {
+    e.stopPropagation();
+    if (e.ctrlKey || e.metaKey) {
+      setSelectedFields((prev) => {
+        const next = new Set(prev);
+        if (next.has(fieldId)) {
+          next.delete(fieldId);
+          setSelectedField(next.size > 0 ? Array.from(next).pop()! : null);
+        } else {
+          next.add(fieldId);
+          setSelectedField(fieldId);
+        }
+        return next;
+      });
+    } else {
+      setSelectedFields(new Set([fieldId]));
+      setSelectedField(fieldId);
+    }
+  }, []);
+
+  const handleCanvasBackgroundClick = useCallback(() => {
+    if (suppressCanvasClickRef.current) {
+      return;
+    }
+    setSelectedField(null);
+    setSelectedFields(new Set());
+  }, []);
+
 
   // Fetch students for sample data
   const { data: students = [] } = useStudents();
@@ -648,26 +690,26 @@ export function IdCardLayoutEditor({
     const position = currentConfig[fieldKey] as { x: number; y: number; width?: number; height?: number } | undefined;
     if (position) return position;
     
-    // Default positions for ID card (CR80: 85.6mm × 53.98mm)
+    // Default positions for ID card (CR80). RTL: labels on the RIGHT (high x), values on the LEFT (low x).
     const defaultPositions: Record<string, { x: number; y: number; width?: number; height?: number }> = {
-      studentNameLabelPosition: { x: 30, y: 40 },
-      studentNamePosition: { x: 62, y: 40 },
-      fatherNameLabelPosition: { x: 30, y: 50 },
-      fatherNamePosition: { x: 62, y: 50 },
-      studentCodeLabelPosition: { x: 30, y: 60 },
-      studentCodePosition: { x: 62, y: 60 },
-      admissionNumberLabelPosition: { x: 30, y: 70 },
-      admissionNumberPosition: { x: 62, y: 70 },
-      classLabelPosition: { x: 30, y: 80 },
-      classPosition: { x: 62, y: 80 },
-      roomLabelPosition: { x: 30, y: 88 },
-      roomPosition: { x: 62, y: 88 },
+      studentNameLabelPosition: { x: 72, y: 40 },
+      studentNamePosition: { x: 28, y: 40 },
+      fatherNameLabelPosition: { x: 72, y: 50 },
+      fatherNamePosition: { x: 28, y: 50 },
+      studentCodeLabelPosition: { x: 72, y: 60 },
+      studentCodePosition: { x: 28, y: 60 },
+      admissionNumberLabelPosition: { x: 72, y: 70 },
+      admissionNumberPosition: { x: 28, y: 70 },
+      classLabelPosition: { x: 72, y: 80 },
+      classPosition: { x: 28, y: 80 },
+      roomLabelPosition: { x: 72, y: 88 },
+      roomPosition: { x: 28, y: 88 },
       studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 }, // Passport-like size for ID cards
       qrCodePosition: { x: 80, y: 50, width: 10, height: 10 }, // Square
       schoolNamePosition: { x: 50, y: 30 },
-      cardNumberLabelPosition: { x: 35, y: 80 },
+      cardNumberLabelPosition: { x: 72, y: 80 },
       expiryDatePosition: { x: 50, y: 60 },
-      cardNumberPosition: { x: 68, y: 80 },
+      cardNumberPosition: { x: 28, y: 80 },
     };
     
     return defaultPositions[fieldKey] || { x: 50, y: 50 };
@@ -691,32 +733,195 @@ export function IdCardLayoutEditor({
     });
   };
 
+  const LABEL_POSITION_KEYS: (keyof IdCardLayoutConfig)[] = [
+    'studentNameLabelPosition', 'fatherNameLabelPosition', 'studentCodeLabelPosition',
+    'admissionNumberLabelPosition', 'classLabelPosition', 'roomLabelPosition', 'cardNumberLabelPosition',
+  ];
+  const VALUE_POSITION_KEYS: (keyof IdCardLayoutConfig)[] = [
+    'studentNamePosition', 'fatherNamePosition', 'studentCodePosition', 'admissionNumberPosition',
+    'classPosition', 'roomPosition', 'cardNumberPosition',
+  ];
+  const LABEL_DEFAULT_Y: Record<string, number> = {
+    studentNameLabelPosition: 40, fatherNameLabelPosition: 50, studentCodeLabelPosition: 60,
+    admissionNumberLabelPosition: 70, classLabelPosition: 80, roomLabelPosition: 88, cardNumberLabelPosition: 80,
+  };
+  const VALUE_DEFAULT_Y: Record<string, number> = {
+    studentNamePosition: 40, fatherNamePosition: 50, studentCodePosition: 60, admissionNumberPosition: 70,
+    classPosition: 80, roomPosition: 88, cardNumberPosition: 80,
+  };
+
+  const alignLabelsRight = () => {
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      LABEL_POSITION_KEYS.forEach((key) => {
+        const cur = prev[key] as { x: number; y: number; width?: number; height?: number } | undefined;
+        const y = cur?.y ?? LABEL_DEFAULT_Y[key as string] ?? 50;
+        (next as any)[key] = { ...(cur || {}), x: 72, y };
+      });
+      return next;
+    });
+  };
+
+  const alignValuesLeft = () => {
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      VALUE_POSITION_KEYS.forEach((key) => {
+        const cur = prev[key] as { x: number; y: number; width?: number; height?: number } | undefined;
+        const y = cur?.y ?? VALUE_DEFAULT_Y[key as string] ?? 50;
+        (next as any)[key] = { ...(cur || {}), x: 28, y };
+      });
+      return next;
+    });
+  };
+
+  const distributeRows = () => {
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      const rowPairs: Array<{ labelKey: keyof IdCardLayoutConfig; valueKey: keyof IdCardLayoutConfig; y: number }> = [
+        { labelKey: 'studentNameLabelPosition', valueKey: 'studentNamePosition', y: 38 },
+        { labelKey: 'fatherNameLabelPosition', valueKey: 'fatherNamePosition', y: 48 },
+        { labelKey: 'studentCodeLabelPosition', valueKey: 'studentCodePosition', y: 58 },
+        { labelKey: 'admissionNumberLabelPosition', valueKey: 'admissionNumberPosition', y: 68 },
+        { labelKey: 'classLabelPosition', valueKey: 'classPosition', y: 78 },
+        { labelKey: 'roomLabelPosition', valueKey: 'roomPosition', y: 88 },
+      ];
+      rowPairs.forEach(({ labelKey, valueKey, y }) => {
+        const labelCur = (prev[labelKey] as { x: number; y: number } | undefined) || {};
+        const valueCur = (prev[valueKey] as { x: number; y: number } | undefined) || {};
+        (next as any)[labelKey] = { ...labelCur, x: (labelCur as any).x ?? 72, y };
+        (next as any)[valueKey] = { ...valueCur, x: (valueCur as any).x ?? 28, y };
+      });
+      return next;
+    });
+  };
+
+  // Get position config key for a field id
+  const getPositionKeyForFieldId = (fieldId: string): keyof IdCardLayoutConfig | null => {
+    const field = currentFields.find((f) => f.id === fieldId);
+    return field ? (field.key as keyof IdCardLayoutConfig) : null;
+  };
+
+  // Align selected fields (multi-select with Ctrl+click). Uses min/max so works correctly for RTL and LTR.
+  const selectedPositionKeys = useMemo(() => {
+    return Array.from(selectedFields)
+      .map(getPositionKeyForFieldId)
+      .filter((k): k is keyof IdCardLayoutConfig => k != null);
+  }, [selectedFields, currentFields]);
+
+  const alignSelectedToStart = () => {
+    if (selectedPositionKeys.length === 0) return;
+    const positions = selectedPositionKeys.map((key) => getFieldPosition(key));
+    const minX = Math.min(...positions.map((p) => p.x));
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      selectedPositionKeys.forEach((key) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        (next as any)[key] = { ...cur, x: minX, y: cur.y ?? 50 };
+      });
+      return next;
+    });
+  };
+
+  const alignSelectedToEnd = () => {
+    if (selectedPositionKeys.length === 0) return;
+    const positions = selectedPositionKeys.map((key) => getFieldPosition(key));
+    const maxX = Math.max(...positions.map((p) => p.x));
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      selectedPositionKeys.forEach((key) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        (next as any)[key] = { ...cur, x: maxX, y: cur.y ?? 50 };
+      });
+      return next;
+    });
+  };
+
+  const alignSelectedToTop = () => {
+    if (selectedPositionKeys.length === 0) return;
+    const positions = selectedPositionKeys.map((key) => getFieldPosition(key));
+    const minY = Math.min(...positions.map((p) => p.y));
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      selectedPositionKeys.forEach((key) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        (next as any)[key] = { ...cur, x: cur.x ?? 50, y: minY };
+      });
+      return next;
+    });
+  };
+
+  const alignSelectedToBottom = () => {
+    if (selectedPositionKeys.length === 0) return;
+    const positions = selectedPositionKeys.map((key) => getFieldPosition(key));
+    const maxY = Math.max(...positions.map((p) => p.y));
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      selectedPositionKeys.forEach((key) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        (next as any)[key] = { ...cur, x: cur.x ?? 50, y: maxY };
+      });
+      return next;
+    });
+  };
+
+  const distributeSelectedVertically = () => {
+    if (selectedPositionKeys.length < 2) return;
+    const keysWithY = selectedPositionKeys.map((key) => ({ key, y: getFieldPosition(key).y }));
+    keysWithY.sort((a, b) => a.y - b.y);
+    const minY = keysWithY[0].y;
+    const maxY = keysWithY[keysWithY.length - 1].y;
+    const step = (maxY - minY) / (keysWithY.length - 1);
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      keysWithY.forEach(({ key }, i) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        const newY = keysWithY.length === 1 ? minY : minY + i * step;
+        (next as any)[key] = { ...cur, x: cur.x ?? 50, y: newY };
+      });
+      return next;
+    });
+  };
+
   const handleMouseDown = useCallback((e: React.MouseEvent, fieldId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setDraggingField(fieldId);
+    didMouseMoveRef.current = false;
+    if (e.ctrlKey || e.metaKey) {
+      dragStartPositionRef.current = null;
+      shiftLockedDirectionRef.current = null;
+      handleFieldClick(e, fieldId);
+      return;
+    }
+    setSelectedFields(new Set([fieldId]));
     setSelectedField(fieldId);
+    setDraggingField(fieldId);
 
     const field = currentFields.find((f) => f.id === fieldId);
     if (!field || !containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
+    const totalWidth = containerRef.current.clientWidth;
+    const totalHeight = containerRef.current.clientHeight;
     const position = getFieldPosition(field.key);
     const metrics = createIdCardRenderMetrics({
-      totalWidth: rect.width,
-      totalHeight: rect.height,
+      totalWidth,
+      totalHeight,
       paddingPx: DEFAULT_ID_CARD_PADDING_PX,
       designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
       designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
     });
     const fieldX = metrics.pctToX(position.x);
     const fieldY = metrics.pctToY(position.y);
+    dragStartPositionRef.current = { x: position.x, y: position.y };
+    shiftLockedDirectionRef.current = null;
+    setAlignmentGuides({ x: null, y: null });
 
+    const borderWidth = (rect.width - totalWidth) / 2;
     setDragOffset({
-      x: e.clientX - rect.left - fieldX,
-      y: e.clientY - rect.top - fieldY,
+      x: e.clientX - rect.left - borderWidth - fieldX,
+      y: e.clientY - rect.top - borderWidth - fieldY,
     });
-  }, [currentConfig, currentFields]);
+  }, [currentConfig, currentFields, handleFieldClick]);
 
   const handleResizeStart = useCallback((e: React.MouseEvent, fieldId: string, direction?: string) => {
     e.preventDefault();
@@ -730,23 +935,27 @@ export function IdCardLayoutEditor({
     setIsResizing(true);
     setResizeHandle(direction || null);
 
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) {
+    const el = containerRef.current;
+    if (!el) {
       if (import.meta.env.DEV) {
-        console.warn('[IdCardLayoutEditor] No container rect found');
+        console.warn('[IdCardLayoutEditor] No container ref found');
       }
       return;
     }
+    const rect = el.getBoundingClientRect();
+    const totalWidth = el.clientWidth;
+    const totalHeight = el.clientHeight;
+    const borderWidth = (rect.width - totalWidth) / 2;
 
     const metrics = createIdCardRenderMetrics({
-      totalWidth: rect.width,
-      totalHeight: rect.height,
+      totalWidth,
+      totalHeight,
       paddingPx: DEFAULT_ID_CARD_PADDING_PX,
       designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
       designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
     });
-    const startX = metrics.xToPct(e.clientX - rect.left);
-    const startY = metrics.yToPct(e.clientY - rect.top);
+    const startX = metrics.xToPct(e.clientX - rect.left - borderWidth);
+    const startY = metrics.yToPct(e.clientY - rect.top - borderWidth);
 
     // Get current position and width/height
     let currentX = 20;
@@ -785,16 +994,21 @@ export function IdCardLayoutEditor({
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (isResizing && selectedField && containerRef.current) {
+        didMouseMoveRef.current = true;
+        setAlignmentGuides((prev) => (prev.x === null && prev.y === null ? prev : { x: null, y: null }));
         const rect = containerRef.current.getBoundingClientRect();
+        const totalWidth = containerRef.current.clientWidth;
+        const totalHeight = containerRef.current.clientHeight;
+        const borderWidth = (rect.width - totalWidth) / 2;
         const metrics = createIdCardRenderMetrics({
-          totalWidth: rect.width,
-          totalHeight: rect.height,
+          totalWidth,
+          totalHeight,
           paddingPx: DEFAULT_ID_CARD_PADDING_PX,
           designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
           designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
         });
-        const currentX = metrics.xToPct(e.clientX - rect.left);
-        const currentY = metrics.yToPct(e.clientY - rect.top);
+        const currentX = metrics.xToPct(e.clientX - rect.left - borderWidth);
+        const currentY = metrics.yToPct(e.clientY - rect.top - borderWidth);
 
         const deltaX = currentX - resizeStart.x;
         const deltaY = currentY - resizeStart.y;
@@ -836,34 +1050,111 @@ export function IdCardLayoutEditor({
           }));
         }
       } else if (draggingField && containerRef.current) {
+        didMouseMoveRef.current = true;
         const field = currentFields.find((f) => f.id === draggingField);
         if (!field) return;
 
         const rect = containerRef.current.getBoundingClientRect();
+        const totalWidth = containerRef.current.clientWidth;
+        const totalHeight = containerRef.current.clientHeight;
+        const borderWidth = (rect.width - totalWidth) / 2;
         const metrics = createIdCardRenderMetrics({
-          totalWidth: rect.width,
-          totalHeight: rect.height,
+          totalWidth,
+          totalHeight,
           paddingPx: DEFAULT_ID_CARD_PADDING_PX,
           designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
           designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
         });
-        const x = metrics.xToPct(e.clientX - rect.left - dragOffset.x);
-        const y = metrics.yToPct(e.clientY - rect.top - dragOffset.y);
+        const x = metrics.xToPct(e.clientX - rect.left - borderWidth - dragOffset.x);
+        const y = metrics.yToPct(e.clientY - rect.top - borderWidth - dragOffset.y);
 
         // Clamp to container bounds
         const clampedX = Math.max(0, Math.min(100, x));
         const clampedY = Math.max(0, Math.min(100, y));
+        let nextX = clampedX;
+        let nextY = clampedY;
 
-        updateFieldPosition(field.key, clampedX, clampedY);
+        // Photoshop-like Shift lock: move in a straight horizontal/vertical line.
+        const dragStart = dragStartPositionRef.current;
+        if (e.shiftKey && dragStart) {
+          if (!shiftLockedDirectionRef.current) {
+            const deltaX = Math.abs(nextX - dragStart.x);
+            const deltaY = Math.abs(nextY - dragStart.y);
+            shiftLockedDirectionRef.current = deltaX >= deltaY ? 'horizontal' : 'vertical';
+          }
+
+          if (shiftLockedDirectionRef.current === 'horizontal') {
+            nextY = dragStart.y;
+          } else {
+            nextX = dragStart.x;
+          }
+        } else {
+          shiftLockedDirectionRef.current = null;
+        }
+
+        // Smart guides + snap to other enabled fields (Photoshop/Word style alignment)
+        const SNAP_THRESHOLD = 0.8; // percent
+        const enabledIds = new Set(currentConfig.enabledFields || []);
+        const otherFieldPositions = currentFields
+          .filter((f) => f.id !== draggingField && enabledIds.has(f.id))
+          .map((f) => getFieldPosition(f.key));
+
+        let guideX: number | null = null;
+        let guideY: number | null = null;
+
+        if (otherFieldPositions.length > 0) {
+          let nearestX: number | null = null;
+          let nearestXDiff = Number.POSITIVE_INFINITY;
+          let nearestY: number | null = null;
+          let nearestYDiff = Number.POSITIVE_INFINITY;
+
+          for (const pos of otherFieldPositions) {
+            const xDiff = Math.abs(pos.x - nextX);
+            if (xDiff < nearestXDiff) {
+              nearestXDiff = xDiff;
+              nearestX = pos.x;
+            }
+
+            const yDiff = Math.abs(pos.y - nextY);
+            if (yDiff < nearestYDiff) {
+              nearestYDiff = yDiff;
+              nearestY = pos.y;
+            }
+          }
+
+          if (nearestX !== null && nearestXDiff <= SNAP_THRESHOLD) {
+            nextX = nearestX;
+            guideX = nearestX;
+          }
+
+          if (nearestY !== null && nearestYDiff <= SNAP_THRESHOLD) {
+            nextY = nearestY;
+            guideY = nearestY;
+          }
+        }
+
+        setAlignmentGuides((prev) => (prev.x === guideX && prev.y === guideY ? prev : { x: guideX, y: guideY }));
+        updateFieldPosition(field.key, nextX, nextY);
       }
     },
     [draggingField, dragOffset, isResizing, selectedField, resizeStart, resizeHandle, currentFields, currentConfig, setCurrentConfig]
   );
 
   const handleMouseUp = useCallback(() => {
+    if (didMouseMoveRef.current) {
+      suppressCanvasClickRef.current = true;
+      // Clear after the click generated by mouseup has been processed
+      setTimeout(() => {
+        suppressCanvasClickRef.current = false;
+      }, 0);
+    }
     setDraggingField(null);
     setIsResizing(false);
     setResizeHandle(null);
+    didMouseMoveRef.current = false;
+    dragStartPositionRef.current = null;
+    shiftLockedDirectionRef.current = null;
+    setAlignmentGuides({ x: null, y: null });
   }, []);
 
   useEffect(() => {
@@ -961,7 +1252,7 @@ export function IdCardLayoutEditor({
       textColor = fieldFont.textColor;
     }
     
-    const isSelected = selectedField === field.id;
+    const isSelected = selectedFields.has(field.id);
     const isDragging = draggingField === field.id;
 
     if (field.isImage) {
@@ -997,14 +1288,18 @@ export function IdCardLayoutEditor({
       };
     }
 
+    const isLabelField = LABEL_FIELD_IDS.includes(field.id);
+    const isCenterField = ['schoolName', 'notes', 'expiryDate'].includes(field.id);
+
     return {
       position: 'absolute' as const,
       left: `${renderMetrics.pctToX(position.x)}px`,
       top: `${renderMetrics.pctToY(position.y)}px`,
-      transform: 'translate(-50%, -50%)',
+      transform: isLabelField ? 'translate(-100%, -50%)' : isCenterField ? 'translate(-50%, -50%)' : 'translate(0, -50%)',
       fontSize: `${scaledFontSize}px`,
       fontFamily,
       color: textColor,
+      textAlign: isLabelField ? 'right' : isCenterField ? 'center' : ('left' as const),
       cursor: 'move',
       userSelect: 'none' as const,
       zIndex: isSelected || isDragging ? 10 : 1,
@@ -1093,7 +1388,7 @@ export function IdCardLayoutEditor({
                       maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
                       padding: 0,
                     }}
-                    onClick={() => setSelectedField(null)}
+                    onClick={handleCanvasBackgroundClick}
                   >
                     {currentImageError ? (
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -1167,6 +1462,41 @@ export function IdCardLayoutEditor({
                       </>
                     )}
 
+                    {(alignmentGuides.x !== null || alignmentGuides.y !== null) && (
+                      <>
+                        {alignmentGuides.x !== null && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: `${renderMetrics.pctToX(alignmentGuides.x)}px`,
+                              top: `${renderMetrics.paddingPx}px`,
+                              width: '1px',
+                              height: `${renderMetrics.contentHeight}px`,
+                              backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                              boxShadow: '0 0 0 1px rgba(191, 219, 254, 0.8)',
+                              pointerEvents: 'none',
+                              zIndex: 20,
+                            }}
+                          />
+                        )}
+                        {alignmentGuides.y !== null && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: `${renderMetrics.paddingPx}px`,
+                              top: `${renderMetrics.pctToY(alignmentGuides.y)}px`,
+                              width: `${renderMetrics.contentWidth}px`,
+                              height: '1px',
+                              backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                              boxShadow: '0 0 0 1px rgba(191, 219, 254, 0.8)',
+                              pointerEvents: 'none',
+                              zIndex: 20,
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
                       const isImageField = field.isImage;
@@ -1180,10 +1510,7 @@ export function IdCardLayoutEditor({
                           key={field.id}
                           style={fieldStyle}
                           onMouseDown={(e) => handleMouseDown(e, field.id)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedField(field.id);
-                          }}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {isImageField ? (
                             <div 
@@ -1201,8 +1528,8 @@ export function IdCardLayoutEditor({
                                 backgroundColor: selectedField === field.id ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
                               }}
                             >
-                              {/* Resize handles - only show when selected */}
-                              {selectedField === field.id && (
+                              {/* Resize handles - only show when a single field is selected */}
+                              {selectedField === field.id && selectedFields.size === 1 && (
                                 <>
                                   {/* Corner resize handles */}
                                   <div
@@ -1266,7 +1593,7 @@ export function IdCardLayoutEditor({
                                     style={{
                                       width: '100%',
                                       height: '100%',
-                                      objectFit: 'cover',
+                                      objectFit: 'contain',
                                       borderRadius: '4px',
                                       pointerEvents: 'none',
                                     }}
@@ -1338,6 +1665,117 @@ export function IdCardLayoutEditor({
                     </CardContent>
                   </CollapsibleContent>
                 </Collapsible>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{t('idCards.alignFields') || 'Align Fields'}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {t('idCards.alignFieldsDescription') || 'Align labels to the right and values to the left, or distribute rows evenly.'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={alignLabelsRight}
+                      title={t('idCards.alignLabelsRight') || 'Align labels right'}
+                    >
+                      <AlignEndHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignLabelsRight') || 'Labels right'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={alignValuesLeft}
+                      title={t('idCards.alignValuesLeft') || 'Align values left'}
+                    >
+                      <AlignStartHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignValuesLeft') || 'Values left'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={distributeRows}
+                      title={t('idCards.distributeRows') || 'Distribute rows evenly'}
+                    >
+                      <Rows3 className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeRows') || 'Distribute rows'}</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{t('idCards.alignSelected') || 'Align Selected'}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {t('idCards.ctrlClickToSelectMultiple') || 'Ctrl+click (Cmd+click on Mac) to select multiple fields, then align them.'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToStart}
+                      title={t('idCards.alignSelectedToStart') || 'Align selected to start (left)'}
+                    >
+                      <AlignStartHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToStart') || 'Align start'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToEnd}
+                      title={t('idCards.alignSelectedToEnd') || 'Align selected to end (right)'}
+                    >
+                      <AlignEndHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToEnd') || 'Align end'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToTop}
+                      title={t('idCards.alignSelectedToTop') || 'Align selected to top'}
+                    >
+                      <AlignStartVertical className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToTop') || 'Align top'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToBottom}
+                      title={t('idCards.alignSelectedToBottom') || 'Align selected to bottom'}
+                    >
+                      <AlignEndVertical className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToBottom') || 'Align bottom'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={distributeSelectedVertically}
+                      title={t('idCards.distributeSelectedVertically') || 'Distribute selected vertically'}
+                    >
+                      <Rows3 className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeSelectedVertically') || 'Distribute Y'}</span>
+                    </Button>
+                  </div>
+                </CardContent>
               </Card>
 
               <Card>
@@ -1708,7 +2146,7 @@ export function IdCardLayoutEditor({
                       maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
                       padding: 0,
                     }}
-                    onClick={() => setSelectedField(null)}
+                    onClick={handleCanvasBackgroundClick}
                   >
                     {currentImageError ? (
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -1782,6 +2220,41 @@ export function IdCardLayoutEditor({
                       </>
                     )}
 
+                    {(alignmentGuides.x !== null || alignmentGuides.y !== null) && (
+                      <>
+                        {alignmentGuides.x !== null && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: `${renderMetrics.pctToX(alignmentGuides.x)}px`,
+                              top: `${renderMetrics.paddingPx}px`,
+                              width: '1px',
+                              height: `${renderMetrics.contentHeight}px`,
+                              backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                              boxShadow: '0 0 0 1px rgba(191, 219, 254, 0.8)',
+                              pointerEvents: 'none',
+                              zIndex: 20,
+                            }}
+                          />
+                        )}
+                        {alignmentGuides.y !== null && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: `${renderMetrics.paddingPx}px`,
+                              top: `${renderMetrics.pctToY(alignmentGuides.y)}px`,
+                              width: `${renderMetrics.contentWidth}px`,
+                              height: '1px',
+                              backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                              boxShadow: '0 0 0 1px rgba(191, 219, 254, 0.8)',
+                              pointerEvents: 'none',
+                              zIndex: 20,
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
                       const displayText = getFieldPreviewText(field, currentConfig, sampleStudent);
@@ -1791,10 +2264,7 @@ export function IdCardLayoutEditor({
                           key={field.id}
                           style={getFieldStyle(field)}
                           onMouseDown={(e) => handleMouseDown(e, field.id)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedField(field.id);
-                          }}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex items-center gap-1">
                             <GripVertical className="h-3 w-3 opacity-50" />
@@ -1835,6 +2305,117 @@ export function IdCardLayoutEditor({
                     </CardContent>
                   </CollapsibleContent>
                 </Collapsible>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{t('idCards.alignFields') || 'Align Fields'}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {t('idCards.alignFieldsDescription') || 'Align labels to the right and values to the left, or distribute rows evenly.'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={alignLabelsRight}
+                      title={t('idCards.alignLabelsRight') || 'Align labels right'}
+                    >
+                      <AlignEndHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignLabelsRight') || 'Labels right'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={alignValuesLeft}
+                      title={t('idCards.alignValuesLeft') || 'Align values left'}
+                    >
+                      <AlignStartHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignValuesLeft') || 'Values left'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={distributeRows}
+                      title={t('idCards.distributeRows') || 'Distribute rows evenly'}
+                    >
+                      <Rows3 className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeRows') || 'Distribute rows'}</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{t('idCards.alignSelected') || 'Align Selected'}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {t('idCards.ctrlClickToSelectMultiple') || 'Ctrl+click (Cmd+click on Mac) to select multiple fields, then align them.'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToStart}
+                      title={t('idCards.alignSelectedToStart') || 'Align selected to start (left)'}
+                    >
+                      <AlignStartHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToStart') || 'Align start'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToEnd}
+                      title={t('idCards.alignSelectedToEnd') || 'Align selected to end (right)'}
+                    >
+                      <AlignEndHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToEnd') || 'Align end'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToTop}
+                      title={t('idCards.alignSelectedToTop') || 'Align selected to top'}
+                    >
+                      <AlignStartVertical className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToTop') || 'Align top'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToBottom}
+                      title={t('idCards.alignSelectedToBottom') || 'Align selected to bottom'}
+                    >
+                      <AlignEndVertical className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToBottom') || 'Align bottom'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={distributeSelectedVertically}
+                      title={t('idCards.distributeSelectedVertically') || 'Distribute selected vertically'}
+                    >
+                      <Rows3 className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeSelectedVertically') || 'Distribute Y'}</span>
+                    </Button>
+                  </div>
+                </CardContent>
               </Card>
 
               <Card>

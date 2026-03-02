@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -88,15 +89,15 @@ export function ImageCropDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl" aria-describedby="crop-description">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {t('imageCapture.cropImage') || 'Crop image'}
           </DialogTitle>
+          <DialogDescription>
+            {t('imageCapture.cropDescription') || 'Adjust the crop area, then click Done.'}
+          </DialogDescription>
         </DialogHeader>
-        <p id="crop-description" className="sr-only">
-          {t('imageCapture.cropDescription') || 'Adjust the crop area, then click Done.'}
-        </p>
         {imageUrl && (
           <div className="relative h-[min(60vh,400px)] w-full rounded-lg bg-muted">
             <Cropper

@@ -355,23 +355,28 @@ export function IdCardGenerator({
             const photoImg = new Image();
             await new Promise((resolve, reject) => {
               photoImg.onload = () => {
-                // Use saved width/height from config, or default 8% width x 12% height (ID card appropriate sizes)
-                const photoWidthPercent = photoPos?.width ?? 8;
-                const photoHeightPercent = photoPos?.height ?? 12;
-                const photoWidth = (photoWidthPercent / 100) * width;
-                const photoHeight = (photoHeightPercent / 100) * height;
+                const boxW = (photoPos?.width ?? 8) / 100 * width;
+                const boxH = (photoPos?.height ?? 12) / 100 * height;
+                const imgW = photoImg.naturalWidth || photoImg.width;
+                const imgH = photoImg.naturalHeight || photoImg.height;
 
-                // Save context state and disable stroke to prevent dark border
                 ctx.save();
                 ctx.lineWidth = 0;
                 ctx.strokeStyle = 'transparent';
-                
-                // Positions in the layout designer are CENTER-based, so draw image centered.
-                const drawX = pos.x - photoWidth / 2;
-                const drawY = pos.y - photoHeight / 2;
-                ctx.drawImage(photoImg, drawX, drawY, photoWidth, photoHeight);
-                
-                // Restore context state
+
+                if (imgW > 0 && imgH > 0) {
+                  const scale = Math.min(boxW / imgW, boxH / imgH, 1);
+                  const drawW = imgW * scale;
+                  const drawH = imgH * scale;
+                  const drawX = pos.x - drawW / 2;
+                  const drawY = pos.y - drawH / 2;
+                  ctx.drawImage(photoImg, 0, 0, imgW, imgH, drawX, drawY, drawW, drawH);
+                } else {
+                  const drawX = pos.x - boxW / 2;
+                  const drawY = pos.y - boxH / 2;
+                  ctx.drawImage(photoImg, drawX, drawY, boxW, boxH);
+                }
+
                 ctx.restore();
                 resolve(null);
               };

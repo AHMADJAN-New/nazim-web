@@ -222,6 +222,8 @@ export default {
     severitySevere: "سخت",
     sheet: "شیټ",
     stamp: "مهر",
+    startDate: "د پیل نېټه",
+    endDate: "د پای نېټه",
     status: "حالت",
     statusOptions: {
       label: "حالت",
