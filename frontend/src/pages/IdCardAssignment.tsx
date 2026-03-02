@@ -168,6 +168,21 @@ export default function IdCardAssignment() {
   const effectiveCourseId = courseId || undefined;
   const { data: courseStudents = [], refetch: refetchCourseStudents } = useCourseStudents(effectiveCourseId, false);
 
+  // Filters for ID cards (needed for useStudentIdCards, which is used in refreshAssignmentData)
+  const cardFilters: StudentIdCardFilters = useMemo(() => ({
+    academicYearId: academicYearId || undefined,
+    schoolId: schoolId || undefined,
+    classId: studentType === 'regular' ? (classId || undefined) : undefined,
+    classAcademicYearId: studentType === 'regular' ? (classAcademicYearId || undefined) : undefined,
+    courseId: studentType === 'course' ? (courseId || undefined) : undefined,
+    studentType: studentType,
+    enrollmentStatus: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
+    templateId: templateId || undefined,
+    search: searchQuery || undefined,
+  }), [academicYearId, schoolId, classId, classAcademicYearId, courseId, studentType, enrollmentStatus, templateId, searchQuery]);
+
+  const { data: idCards = [], isLoading: cardsLoading, refetch: refetchIdCards } = useStudentIdCards(cardFilters);
+
   // Set default academic year
   useEffect(() => {
     if (currentAcademicYear && !academicYearId) {
@@ -218,6 +233,17 @@ export default function IdCardAssignment() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Refetch admissions when page becomes visible (e.g. user navigates back from Admissions) so newly added students appear
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void refetchStudentAdmissions();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [refetchStudentAdmissions]);
+
   // Apply pre-selection from navigation query params (e.g. from Admissions actions dropdown).
   useEffect(() => {
     if (hasAppliedNavigationPreset) {
@@ -266,20 +292,7 @@ export default function IdCardAssignment() {
     courseStudents,
   ]);
 
-  // Filters for ID cards
-  const cardFilters: StudentIdCardFilters = useMemo(() => ({
-    academicYearId: academicYearId || undefined,
-    schoolId: schoolId || undefined,
-    classId: studentType === 'regular' ? (classId || undefined) : undefined,
-    classAcademicYearId: studentType === 'regular' ? (classAcademicYearId || undefined) : undefined,
-    courseId: studentType === 'course' ? (courseId || undefined) : undefined,
-    studentType: studentType,
-    enrollmentStatus: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
-    templateId: templateId || undefined,
-    search: searchQuery || undefined,
-  }), [academicYearId, schoolId, classId, classAcademicYearId, courseId, studentType, enrollmentStatus, templateId, searchQuery]);
-
-  const { data: idCards = [], isLoading: cardsLoading, refetch: refetchIdCards } = useStudentIdCards(cardFilters);
+  // Finance and ID card mutation hooks
   const { data: financeAccounts = [] } = useFinanceAccounts({ isActive: true });
   const { data: incomeCategories = [] } = useIncomeCategories({ isActive: true });
   const assignCards = useAssignIdCards();
@@ -991,7 +1004,7 @@ export default function IdCardAssignment() {
                   {cardFeePaid && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>{t('finance.accounts.account') || 'Account'} *</Label>
+                        <Label>{t('finance.account') || 'Account'} *</Label>
                         <Select value={accountId} onValueChange={setAccountId} required>
                           <SelectTrigger className={!accountId ? 'border-destructive' : ''}>
                             <SelectValue placeholder={t('events.select') || 'Select account'} />
@@ -1011,7 +1024,7 @@ export default function IdCardAssignment() {
                         )}
                       </div>
                       <div>
-                        <Label>{t('finance.incomeCategories.category') || 'Income Category'} *</Label>
+                        <Label>{t('finance.category') || 'Income Category'} *</Label>
                         <Select value={incomeCategoryId} onValueChange={setIncomeCategoryId} required>
                           <SelectTrigger className={!incomeCategoryId ? 'border-destructive' : ''}>
                             <SelectValue placeholder={t('events.select') || 'Select category'} />
@@ -1526,7 +1539,7 @@ export default function IdCardAssignment() {
             {cardFeePaid && (
               <>
                 <div>
-                  <Label>{t('finance.accounts.account') || 'Account'} *</Label>
+                  <Label>{t('finance.account') || 'Account'} *</Label>
                   <Select value={accountId} onValueChange={setAccountId} required>
                     <SelectTrigger className={!accountId ? 'border-destructive' : ''}>
                       <SelectValue placeholder={t('events.select') || 'Select account'} />
@@ -1546,7 +1559,7 @@ export default function IdCardAssignment() {
                   )}
                 </div>
                 <div>
-                  <Label>{t('finance.incomeCategories.category') || 'Income Category'} *</Label>
+                  <Label>{t('finance.category') || 'Income Category'} *</Label>
                   <Select value={incomeCategoryId} onValueChange={setIncomeCategoryId} required>
                     <SelectTrigger className={!incomeCategoryId ? 'border-destructive' : ''}>
                       <SelectValue placeholder={t('events.select') || 'Select category'} />

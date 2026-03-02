@@ -199,6 +199,7 @@ export const useCreateStudentAdmission = () => {
     onSuccess: () => {
       showToast.success('toast.studentAdmissions.admitted');
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      void queryClient.refetchQueries({ queryKey: ['student-admissions'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {

@@ -160,6 +160,7 @@ export const useCreateStudent = () => {
     onSuccess: () => {
       showToast.success('toast.studentRegistered');
       void queryClient.invalidateQueries({ queryKey: ['students'] });
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
       void queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
     },
     onError: (error: Error) => {

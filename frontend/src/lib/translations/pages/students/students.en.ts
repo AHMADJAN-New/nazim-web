@@ -134,6 +134,7 @@ export default {
     hostel: "Hostel",
     idNumber: "ID Number",
     imageLoadError: "Failed to load image",
+    idCardDownload: "ID Card Download",
     importLimited: "Your file contains {validRows} valid rows, but only {remaining} student slot(s) remaining. Only the first {remaining} valid row(s) will be imported.",
     importNow: "Import",
     importRulesHint: "If admission_no is blank, the system will auto-generate student_code and use it as admission_no.",

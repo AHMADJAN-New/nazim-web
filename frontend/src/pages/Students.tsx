@@ -678,8 +678,9 @@ export function Students() {
   const studentIdCardByStudentId = useMemo(() => {
     const cardsMap = new Map<string, StudentIdCard>();
     studentIdCards.forEach((card) => {
-      if (card.student?.id) {
-        cardsMap.set(card.student.id, card);
+      const studentId = card.student?.id ?? card.studentId;
+      if (studentId) {
+        cardsMap.set(studentId, card);
       }
     });
     return cardsMap;
@@ -692,7 +693,8 @@ export function Students() {
     }
 
     const refreshed = await refetchStudentIdCards();
-    return refreshed.data?.find((card) => card.student?.id === student.id) || null;
+    const list = refreshed.data ?? [];
+    return list.find((card) => (card.student?.id === student.id || card.studentId === student.id)) ?? null;
   }, [studentIdCardByStudentId, refetchStudentIdCards]);
 
   const handleViewAssignedCard = async (student: Student) => {
@@ -859,7 +861,7 @@ export function Students() {
                 disabled={exportIndividualIdCard.isPending}
               >
                 <Download className="mr-2 h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                {t('events.download') || 'Download ID Card'}
+                {t('students.idCardDownload') || 'ID Card Download'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setDocumentsDialogStudent(row.original)}>
@@ -1123,7 +1125,7 @@ export function Students() {
                                     disabled={exportIndividualIdCard.isPending}
                                   >
                                     <Download className="mr-2 h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                                    {t('events.download') || 'Download ID Card'}
+                                    {t('students.idCardDownload') || 'ID Card Download'}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => setDocumentsDialogStudent(student)}>

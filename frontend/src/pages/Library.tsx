@@ -224,7 +224,7 @@ export default function Library() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>{t('finance.accounts.account') || 'Finance Account'}</Label>
+                      <Label>{t('finance.account') || 'Finance Account'}</Label>
                       <Select
                         value={bookForm.finance_account_id || ''}
                         onValueChange={(value) => {
