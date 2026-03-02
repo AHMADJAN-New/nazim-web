@@ -277,6 +277,7 @@ function getStudentForRenderer(card: StudentIdCard): Student | null {
   // Handle course students
   if (card.courseStudentId && card.courseStudent) {
     const courseStudent = card.courseStudent;
+    const courseName = courseStudent.course?.name || null;
     return {
       id: courseStudent.id,
       fullName: courseStudent.fullName,
@@ -285,8 +286,15 @@ function getStudentForRenderer(card: StudentIdCard): Student | null {
       studentCode: null,
       cardNumber: card.cardNumber || null,
       rollNumber: null,
+      roomNumber: null,
       picturePath: courseStudent.picturePath || null,
-      currentClass: null, // Course students don't have classes
+      currentClass: courseName
+        ? {
+            id: courseStudent.course?.id || `course-${courseStudent.id}`,
+            name: courseName,
+            gradeLevel: undefined,
+          }
+        : null,
       school: card.organization ? {
         id: card.organization.id,
         schoolName: card.organization.name,
@@ -296,6 +304,8 @@ function getStudentForRenderer(card: StudentIdCard): Student | null {
 
   // Handle regular students
   if (!card.student) return null;
+  const className = card.class?.name || card.classAcademicYear?.sectionName || null;
+  const roomNumber = card.studentAdmission?.room?.roomNumber || null;
   
   return {
     id: card.student.id,
@@ -305,11 +315,12 @@ function getStudentForRenderer(card: StudentIdCard): Student | null {
     studentCode: card.student.studentCode || null,
     cardNumber: card.cardNumber || card.student.cardNumber || null,
     rollNumber: (card.student as any).rollNumber || null,
+    roomNumber,
     picturePath: card.student.picturePath || null,
-    currentClass: card.class ? {
-      id: card.class.id,
-      name: card.class.name,
-      gradeLevel: card.class.gradeLevel,
+    currentClass: className ? {
+      id: card.class?.id || card.classAcademicYear?.id || `class-${card.id}`,
+      name: className,
+      gradeLevel: card.class?.gradeLevel,
     } : null,
     school: card.organization ? {
       id: card.organization.id,

@@ -75,6 +75,8 @@ bash docker/scripts/prod/bootstrap.sh
 | Routine fix / small deploy | `bash docker/scripts/maintenance/update-app.sh` |
 | Infra change / full rebuild | `bash docker/scripts/prod/update.sh` |
 | Start stack (after full update) | `bash docker/scripts/prod/bootstrap.sh` |
+| Free disk (Docker cleanup) | `bash docker/scripts/maintenance/cleanup-docker.sh` |
+| Clean old reports in storage | `docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml exec php php artisan reports:cleanup` |
 
 ---
 
@@ -103,6 +105,32 @@ docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml
 ```
 
 Or run `bash docker/scripts/maintenance/update-app.sh`.
+
+### Cleanup (Docker and storage)
+
+**Docker cleanup (free disk space)**  
+Removes stopped containers, unused images, build cache, and truncates large container logs. **Never** removes database, backend storage, or SSL volumes.
+
+- **Script:** `docker/scripts/maintenance/cleanup-docker.sh`
+- **Run:** `bash docker/scripts/maintenance/cleanup-docker.sh`  
+  (interactive: asks for confirmation before proceeding)
+
+**Storage / old reports cleanup**  
+Deletes old generated report files inside the backend storage volume (e.g. after 7 or 30 days). Run via the PHP container:
+
+```bash
+# Default: delete reports older than 7 days (completed + failed)
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml exec php php artisan reports:cleanup
+
+# Delete reports older than 30 days
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml exec php php artisan reports:cleanup --days=30
+
+# Preview only (no deletion)
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml exec php php artisan reports:cleanup --dry-run
+
+# Only failed reports
+docker compose --env-file docker/env/compose.prod.env -f docker-compose.prod.yml exec php php artisan reports:cleanup --status=failed
+```
 
 ### Old frontend bundle (debug output in console)
 

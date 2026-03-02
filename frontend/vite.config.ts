@@ -138,6 +138,7 @@ export default defineConfig({
       // Removed 'xlsx' - will be lazy loaded to reduce initial bundle size
       'shepherd.js',
       'date-fns', // Pre-bundle date-fns to avoid circular dependency issues
+      'fflate', // ZIP export for ID cards; ensure ESM resolution in dev
     ],
     exclude: [
       'pdfmake-arabic',

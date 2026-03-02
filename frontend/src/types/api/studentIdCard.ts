@@ -38,7 +38,12 @@ export interface StudentIdCard {
   student_admission?: {
     id: string;
     enrollment_status: string;
+    class_id: string | null;
     class_academic_year_id: string | null;
+    room?: {
+      id: string;
+      room_number: string;
+    };
   };
   course_student?: {
     id: string;

@@ -3137,6 +3137,7 @@ export const TRANSLATION_KEYS = [
   "idCards.active",
   "idCards.admissionNumber",
   "idCards.assign",
+  "idCards.assignCardToPreview",
   "idCards.assigned",
   "idCards.assignedAt",
   "idCards.assignedCards",

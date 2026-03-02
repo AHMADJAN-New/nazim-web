@@ -168,7 +168,7 @@
 ## اړوند پاڼې
 
 - [ودانۍ](/help-center/s/settings/settings-buildings) — د خپل سازمان مکتبونو په منځ کې ودانۍ مدیریت کړئ.
-- [خونې](/help-center/s/settings/settings-rooms) — په ودانۍ کې خونې مدیریت کړئ.
+- [خونې](/help-center/s/settings/settings-rooms) — په ودانۍ کې اطاقونه مدیریت کړئ.
 - [پروفایل](/help-center/s/settings/settings-profile) — خپل کارن پروفایل سم کړئ او نور پروفایلونه وګورئ.
 - [اجازې](/help-center/s/settings/settings-permissions) — د خپل سازمان لپاره رولونه او اجازې مدیریت کړئ.
 

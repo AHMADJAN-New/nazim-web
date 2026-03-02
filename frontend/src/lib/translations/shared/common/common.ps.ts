@@ -93,6 +93,7 @@ export default {
     search: "لټون",
     section: "برخه",
     select: "غوره کړئ",
+    selectDate: "نیټه وټاکئ",
     selectSchool: "ښوونځی وټاکئ",
     selected: "ټاکل شوی",
     show: "وښایاست",

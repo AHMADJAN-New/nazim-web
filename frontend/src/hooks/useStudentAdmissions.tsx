@@ -38,7 +38,7 @@ export const useStudentAdmissions = (
   // Create filter key for queryKey (for proper cache invalidation)
   const filterKey = filters ? JSON.stringify(filters) : undefined;
 
-  const { data, isLoading, error } = useQuery<StudentAdmission[] | PaginatedResponse<StudentAdmissionApi.StudentAdmission>>({
+  const { data, isLoading, error, refetch } = useQuery<StudentAdmission[] | PaginatedResponse<StudentAdmissionApi.StudentAdmission>>({
     queryKey: ['student-admissions', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined, filterKey],
     queryFn: async () => {
       if (!user || !profile) return [];
@@ -150,6 +150,7 @@ export const useStudentAdmissions = (
       admissions: paginatedData?.data || [],
       isLoading,
       error,
+      refetch,
       pagination: paginatedData?.meta ?? null,
       paginationState,
       page,
@@ -163,6 +164,7 @@ export const useStudentAdmissions = (
     data: data as StudentAdmission[] | undefined,
     isLoading,
     error,
+    refetch,
   };
 };
 
@@ -197,6 +199,7 @@ export const useCreateStudentAdmission = () => {
     onSuccess: () => {
       showToast.success('toast.studentAdmissions.admitted');
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      void queryClient.refetchQueries({ queryKey: ['student-admissions'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {

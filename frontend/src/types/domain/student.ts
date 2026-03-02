@@ -98,6 +98,7 @@ export interface Student {
   studentCode?: string | null;
   cardNumber?: string | null;
   rollNumber?: string;
+  roomNumber?: string | null;
   tazkiraNumber?: string | null;
   notes?: string | null;
   

@@ -91,7 +91,7 @@ export default {
     issueCertificate: "تصدیق نامه صادره کړئ",
     loadingStudents: "زده کوونکي پورته کېږي...",
     location: "ځای",
-    locationPlaceholder: "د بیلګې په توګه: خونه ۱۰۱",
+    locationPlaceholder: "د بیلګې په توګه: اطاق ۱۰۱",
     manageDocuments: "د اسنادو مدیریت",
     manageEnrollments: "د زده کوونکو نوم لیکنې، بشپړتیا، او تصدیق نامې اداره کړئ.",
     management: "د کورسونو مدیریت",

@@ -109,6 +109,7 @@ export default {
     "websiteManager.audit": "Audit Logs",
     "websiteManager.openPublicSite": "Open Public Site",
     "students.management": "Management",
+    activityLogs: { title: "Activity Logs" },
     assets: "Assets",
     "assets.dashboard": "Assets Dashboard",
     "assets.categories": "Asset Categories",

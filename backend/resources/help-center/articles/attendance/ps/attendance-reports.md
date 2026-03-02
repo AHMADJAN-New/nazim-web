@@ -81,7 +81,7 @@
 
 - [حاضري](/help-center/s/attendance/attendance) — د حاضري سیشنونه جوړول او بندول.
 - [حاضري نښانې کول](/help-center/s/attendance/attendance-marking) — د سیشن لپاره حاضري ثبتول (لاسي یا بارکوډ).
-- [حاضري ټولیز راپورونه](/help-center/s/attendance/attendance-reports-totals) — ټولیزې، د حاضري کچه، او د ټولګي/خونې breakdown وګورئ؛ ټولیزې، د ټولګي، یا د خونې صادرول.
+- [حاضري ټولیز راپورونه](/help-center/s/attendance/attendance-reports-totals) — ټولیزې، د حاضري کچه، او د ټولګي/اطاقونه breakdown وګورئ؛ ټولیزې، د ټولګي، یا د اطاقونه صادرول.
 
 ---
 

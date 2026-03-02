@@ -1,4 +1,4 @@
-import { GripVertical, Save, RotateCcw, Eye } from 'lucide-react';
+import { GripVertical, Save, RotateCcw, Eye, ChevronDown, AlignEndHorizontal, AlignStartHorizontal, Rows3, AlignStartVertical, AlignEndVertical } from 'lucide-react';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents } from '@/hooks/useStudents';
@@ -28,7 +30,21 @@ import type { Student } from '@/types/domain/student';
 // Available fonts for ID card templates
 const AVAILABLE_FONTS = [
   { value: 'Arial', label: 'Arial' },
+  { value: 'Inter', label: 'Inter' },
+  { value: 'Roboto', label: 'Roboto' },
+  { value: 'Open Sans', label: 'Open Sans' },
+  { value: 'Poppins', label: 'Poppins' },
+  { value: 'Segoe UI', label: 'Segoe UI' },
+  { value: 'Calibri', label: 'Calibri' },
+  { value: 'Cambria', label: 'Cambria' },
   { value: 'Bahij Nassim', label: 'Bahij Nassim' },
+  { value: 'Noto Sans Arabic', label: 'Noto Sans Arabic' },
+  { value: 'Noto Naskh Arabic', label: 'Noto Naskh Arabic' },
+  { value: 'Noto Nastaliq Urdu', label: 'Noto Nastaliq Urdu' },
+  { value: 'Amiri', label: 'Amiri' },
+  { value: 'Scheherazade New', label: 'Scheherazade New' },
+  { value: 'Cairo', label: 'Cairo' },
+  { value: 'Almarai', label: 'Almarai' },
   { value: 'Times New Roman', label: 'Times New Roman' },
   { value: 'Helvetica', label: 'Helvetica' },
   { value: 'Courier New', label: 'Courier New' },
@@ -39,7 +55,6 @@ const AVAILABLE_FONTS = [
   { value: 'Comic Sans MS', label: 'Comic Sans MS' },
   { value: 'Trebuchet MS', label: 'Trebuchet MS' },
   { value: 'Impact', label: 'Impact' },
-  { value: 'Noto Sans Arabic', label: 'Noto Sans Arabic' },
   { value: 'Tahoma', label: 'Tahoma' },
   { value: 'Arial Unicode MS', label: 'Arial Unicode MS' },
 ];
@@ -55,14 +70,98 @@ interface FieldConfig {
   defaultHeight?: number;
 }
 
+const DEFAULT_LABEL_TEXTS: Record<string, string> = {
+  studentNameLabel: 'نوم:',
+  fatherNameLabel: 'د پلار نوم:',
+  classLabel: 'درجه:',
+  roomLabel: 'خونه:',
+  admissionNumberLabel: 'داخله نمبر:',
+  studentCodeLabel: 'ID:',
+  cardNumberLabel: 'کارت نمبر:',
+};
+
+const LABEL_FIELD_IDS = Object.keys(DEFAULT_LABEL_TEXTS);
+const FRONT_DEFAULT_ENABLED_FIELDS = [
+  'studentNameLabel',
+  'studentName',
+  'fatherNameLabel',
+  'fatherName',
+  'classLabel',
+  'class',
+  'roomLabel',
+  'room',
+  'admissionNumberLabel',
+  'admissionNumber',
+  'studentCodeLabel',
+  'studentCode',
+  'studentPhoto',
+  'qrCode',
+];
+const BACK_DEFAULT_ENABLED_FIELDS = ['schoolName', 'cardNumberLabel', 'cardNumber', 'expiryDate'];
+const EDITABLE_TEXT_FIELDS = new Set<string>(['notes', 'expiryDate', 'schoolName', ...LABEL_FIELD_IDS]);
+
+const withDefaultLabelValues = (fieldValues?: Record<string, string | null>): Record<string, string | null> => ({
+  ...DEFAULT_LABEL_TEXTS,
+  ...(fieldValues || {}),
+});
+
+const mergeEnabledFields = (enabledFields: string[] | undefined, defaults: string[]): string[] =>
+  Array.from(new Set([...(enabledFields || []), ...defaults]));
+
+const getFieldPreviewText = (
+  field: FieldConfig,
+  config: IdCardLayoutConfig,
+  sampleStudent: Student | null
+): string => {
+  const fieldValue = config.fieldValues?.[field.id];
+
+  if (field.id === 'studentName' && sampleStudent?.fullName) {
+    return sampleStudent.fullName;
+  }
+
+  if (field.id === 'room' && sampleStudent?.roomNumber) {
+    return sampleStudent.roomNumber;
+  }
+
+  if (field.id === 'expiryDate' && fieldValue) {
+    try {
+      const date = new Date(fieldValue);
+      if (!isNaN(date.getTime())) {
+        return formatDate(date);
+      }
+    } catch {
+      // Fall back to raw value below.
+    }
+    return fieldValue;
+  }
+
+  if (fieldValue) {
+    return fieldValue;
+  }
+
+  if (LABEL_FIELD_IDS.includes(field.id)) {
+    return DEFAULT_LABEL_TEXTS[field.id] || field.sampleText;
+  }
+
+  return field.sampleText;
+};
+
 // Front side fields - includes all fields from both front and back
 const FRONT_FIELDS: FieldConfig[] = [
+  { id: 'studentNameLabel', label: 'Label: Name (نوم)', key: 'studentNameLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.studentNameLabel, defaultFontSize: 10 },
   { id: 'studentName', label: 'Student Name', key: 'studentNamePosition', sampleText: 'Ahmad Mohammad', defaultFontSize: 14 },
+  { id: 'fatherNameLabel', label: 'Label: Father Name (د پلار نوم)', key: 'fatherNameLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.fatherNameLabel, defaultFontSize: 10 },
   { id: 'fatherName', label: 'Father Name', key: 'fatherNamePosition', sampleText: 'Mohammad', defaultFontSize: 12 },
+  { id: 'classLabel', label: 'Label: Class (درجه)', key: 'classLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.classLabel, defaultFontSize: 10 },
+  { id: 'roomLabel', label: 'Label: Room (خونه)', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
+  { id: 'admissionNumberLabel', label: 'Label: Admission Number (داخله نمبر)', key: 'admissionNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.admissionNumberLabel, defaultFontSize: 10 },
+  { id: 'studentCodeLabel', label: 'Label: ID (ID)', key: 'studentCodeLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.studentCodeLabel, defaultFontSize: 10 },
   { id: 'studentCode', label: 'Student Code', key: 'studentCodePosition', sampleText: 'STU-2024-001', defaultFontSize: 10 },
   { id: 'admissionNumber', label: 'Admission Number', key: 'admissionNumberPosition', sampleText: 'ADM-2024-001', defaultFontSize: 10 },
   { id: 'class', label: 'Class', key: 'classPosition', sampleText: 'Grade 10 - Section A', defaultFontSize: 10 },
+  { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
+  { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
   { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
   { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
   { id: 'notes', label: 'Notes', key: 'notesPosition', sampleText: 'Additional information', defaultFontSize: 10 },
@@ -73,6 +172,9 @@ const FRONT_FIELDS: FieldConfig[] = [
 // Back side fields
 const BACK_FIELDS: FieldConfig[] = [
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
+  { id: 'roomLabel', label: 'Label: Room (خونه)', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
+  { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
+  { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
   { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
   { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
 ];
@@ -96,28 +198,30 @@ export function IdCardLayoutEditor({
   onSave,
   onCancel,
 }: IdCardLayoutEditorProps) {
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState<'front' | 'back'>('front');
   
   const [configFront, setConfigFront] = useState<IdCardLayoutConfig>(() => ({
     ...layoutConfigFront,
-    enabledFields: layoutConfigFront.enabledFields || ['studentName', 'studentCode', 'admissionNumber', 'class', 'studentPhoto', 'qrCode'],
+    enabledFields: mergeEnabledFields(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
     fieldFonts: layoutConfigFront.fieldFonts || {},
+    fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues),
   }));
 
   const [configBack, setConfigBack] = useState<IdCardLayoutConfig>(() => ({
     ...layoutConfigBack,
-    enabledFields: layoutConfigBack.enabledFields || ['schoolName', 'expiryDate', 'cardNumber'],
+    enabledFields: mergeEnabledFields(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
     fieldFonts: layoutConfigBack.fieldFonts || {},
+    fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues),
   }));
 
   // Update configs when props change
   useEffect(() => {
     const updatedConfig = {
       ...layoutConfigFront,
-      enabledFields: layoutConfigFront.enabledFields || ['studentName', 'studentCode', 'admissionNumber', 'class', 'studentPhoto', 'qrCode'],
+      enabledFields: mergeEnabledFields(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
       fieldFonts: layoutConfigFront.fieldFonts || {},
-      fieldValues: layoutConfigFront.fieldValues || {},
+      fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues),
     };
 
     // Ensure default width/height for image fields if missing
@@ -149,16 +253,22 @@ export function IdCardLayoutEditor({
   useEffect(() => {
     setConfigBack({
       ...layoutConfigBack,
-      enabledFields: layoutConfigBack.enabledFields || ['schoolName', 'expiryDate', 'cardNumber'],
+      enabledFields: mergeEnabledFields(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
       fieldFonts: layoutConfigBack.fieldFonts || {},
-      fieldValues: layoutConfigBack.fieldValues || {},
+      fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues),
     });
   }, [layoutConfigBack]);
 
   const [draggingField, setDraggingField] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
+  const didMouseMoveRef = useRef(false);
+  const suppressCanvasClickRef = useRef(false);
+  const dragStartPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const shiftLockedDirectionRef = useRef<'horizontal' | 'vertical' | null>(null);
+  const [alignmentGuides, setAlignmentGuides] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
   const [backgroundImageLoadedFront, setBackgroundImageLoadedFront] = useState(false);
   const [backgroundImageLoadedBack, setBackgroundImageLoadedBack] = useState(false);
   const [backgroundImageErrorFront, setBackgroundImageErrorFront] = useState(false);
@@ -173,6 +283,9 @@ export function IdCardLayoutEditor({
   const [studentPhotoUrl, setStudentPhotoUrl] = useState<string | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [previewStudent, setPreviewStudent] = useState<Student | null>(null);
+  const [showFieldList, setShowFieldList] = useState(true);
+  const [showGlobalSettings, setShowGlobalSettings] = useState(true);
+  const [showFieldSettings, setShowFieldSettings] = useState(true);
   const renderMetrics = useMemo(() => {
     const width = containerDimensions.width || DEFAULT_SCREEN_WIDTH_PX;
     const height = containerDimensions.height || DEFAULT_SCREEN_HEIGHT_PX;
@@ -185,15 +298,123 @@ export function IdCardLayoutEditor({
     });
   }, [containerDimensions.height, containerDimensions.width]);
   const renderDebug = useMemo(() => isIdCardRenderDebugEnabled(), []);
+  const isSelectedFieldEditableText = selectedField ? EDITABLE_TEXT_FIELDS.has(selectedField) : false;
 
-  // Get current config based on active tab
-  const currentConfig = activeTab === 'front' ? configFront : configBack;
+  const getEditableFieldLabel = (fieldId: string): string => {
+    switch (fieldId) {
+      case 'notes':
+        return t('idCards.fieldValue') || 'Field Value';
+      case 'expiryDate':
+        return t('idCards.expiryDateValue') || 'Expiry Date';
+      case 'schoolName':
+        return t('idCards.schoolNameValue') || 'School Name';
+      case 'studentNameLabel':
+        return 'Name Label';
+      case 'fatherNameLabel':
+        return 'Father Name Label';
+      case 'classLabel':
+        return 'Class Label';
+      case 'roomLabel':
+        return 'Room Label';
+      case 'admissionNumberLabel':
+        return 'Admission Number Label';
+      case 'studentCodeLabel':
+        return 'ID Label';
+      case 'cardNumberLabel':
+        return 'Card Number Label';
+      default:
+        return t('idCards.fieldValue') || 'Field Value';
+    }
+  };
+
+  const getEditableFieldPlaceholder = (fieldId: string): string => {
+    switch (fieldId) {
+      case 'notes':
+        return t('idCards.notesPlaceholder') || 'Enter notes text...';
+      case 'schoolName':
+        return t('idCards.schoolNamePlaceholder') || 'Enter school name...';
+      case 'studentNameLabel':
+        return 'e.g., نوم';
+      case 'fatherNameLabel':
+        return 'e.g., د پلار نوم';
+      case 'classLabel':
+        return 'e.g., درجه';
+      case 'roomLabel':
+        return 'e.g., خونه';
+      case 'admissionNumberLabel':
+        return 'e.g., داخله نمبر';
+      case 'studentCodeLabel':
+        return 'e.g., ID';
+      case 'cardNumberLabel':
+        return 'e.g., کارت نمبر';
+      default:
+        return '';
+    }
+  };
+
+  const getEditableFieldDescription = (fieldId: string): string => {
+    switch (fieldId) {
+      case 'notes':
+        return t('idCards.notesDescription') || 'Custom text to display. Leave empty to use card notes.';
+      case 'schoolName':
+        return t('idCards.schoolNameDescription') || 'Custom school name. Leave empty to use student\'s school name.';
+      case 'studentNameLabel':
+      case 'fatherNameLabel':
+      case 'classLabel':
+      case 'roomLabel':
+      case 'admissionNumberLabel':
+      case 'studentCodeLabel':
+      case 'cardNumberLabel':
+        return 'Custom label text. Move this label independently to align it with the database value field.';
+      default:
+        return '';
+    }
+  };
+
   const setCurrentConfig = activeTab === 'front' ? setConfigFront : setConfigBack;
+  const currentConfig = activeTab === 'front' ? configFront : configBack;
   const currentFields = activeTab === 'front' ? FRONT_FIELDS : BACK_FIELDS;
   const currentBackgroundUrl = activeTab === 'front' ? backgroundImageUrlFront : backgroundImageUrlBack;
   const currentImageUrl = activeTab === 'front' ? imageUrlFront : imageUrlBack;
   const currentImageLoaded = activeTab === 'front' ? backgroundImageLoadedFront : backgroundImageLoadedBack;
   const currentImageError = activeTab === 'front' ? backgroundImageErrorFront : backgroundImageErrorBack;
+
+  // Sync RTL from language so alignment and canvas render correctly for RTL languages
+  useEffect(() => {
+    setCurrentConfig((prev) => {
+      if (prev.rtl === isRTL) return prev;
+      return { ...prev, rtl: isRTL };
+    });
+  }, [isRTL, activeTab]);
+
+  const handleFieldClick = useCallback((e: React.MouseEvent, fieldId: string) => {
+    e.stopPropagation();
+    if (e.ctrlKey || e.metaKey) {
+      setSelectedFields((prev) => {
+        const next = new Set(prev);
+        if (next.has(fieldId)) {
+          next.delete(fieldId);
+          setSelectedField(next.size > 0 ? Array.from(next).pop()! : null);
+        } else {
+          next.add(fieldId);
+          setSelectedField(fieldId);
+        }
+        return next;
+      });
+    } else {
+      setSelectedFields(new Set([fieldId]));
+      setSelectedField(fieldId);
+    }
+  }, []);
+
+  const handleCanvasBackgroundClick = useCallback(() => {
+    if (suppressCanvasClickRef.current) {
+      return;
+    }
+    setSelectedField(null);
+    setSelectedFields(new Set());
+  }, []);
+
 
   // Fetch students for sample data
   const { data: students = [] } = useStudents();
@@ -469,18 +690,26 @@ export function IdCardLayoutEditor({
     const position = currentConfig[fieldKey] as { x: number; y: number; width?: number; height?: number } | undefined;
     if (position) return position;
     
-    // Default positions for ID card (CR80: 85.6mm × 53.98mm)
+    // Default positions for ID card (CR80). RTL: labels on the RIGHT (high x), values on the LEFT (low x).
     const defaultPositions: Record<string, { x: number; y: number; width?: number; height?: number }> = {
-      studentNamePosition: { x: 50, y: 40 },
-      fatherNamePosition: { x: 50, y: 50 },
-      studentCodePosition: { x: 50, y: 60 },
-      admissionNumberPosition: { x: 50, y: 70 },
-      classPosition: { x: 50, y: 80 },
+      studentNameLabelPosition: { x: 72, y: 40 },
+      studentNamePosition: { x: 28, y: 40 },
+      fatherNameLabelPosition: { x: 72, y: 50 },
+      fatherNamePosition: { x: 28, y: 50 },
+      studentCodeLabelPosition: { x: 72, y: 60 },
+      studentCodePosition: { x: 28, y: 60 },
+      admissionNumberLabelPosition: { x: 72, y: 70 },
+      admissionNumberPosition: { x: 28, y: 70 },
+      classLabelPosition: { x: 72, y: 80 },
+      classPosition: { x: 28, y: 80 },
+      roomLabelPosition: { x: 72, y: 88 },
+      roomPosition: { x: 28, y: 88 },
       studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 }, // Passport-like size for ID cards
       qrCodePosition: { x: 80, y: 50, width: 10, height: 10 }, // Square
       schoolNamePosition: { x: 50, y: 30 },
+      cardNumberLabelPosition: { x: 72, y: 80 },
       expiryDatePosition: { x: 50, y: 60 },
-      cardNumberPosition: { x: 50, y: 80 },
+      cardNumberPosition: { x: 28, y: 80 },
     };
     
     return defaultPositions[fieldKey] || { x: 50, y: 50 };
@@ -504,32 +733,195 @@ export function IdCardLayoutEditor({
     });
   };
 
+  const LABEL_POSITION_KEYS: (keyof IdCardLayoutConfig)[] = [
+    'studentNameLabelPosition', 'fatherNameLabelPosition', 'studentCodeLabelPosition',
+    'admissionNumberLabelPosition', 'classLabelPosition', 'roomLabelPosition', 'cardNumberLabelPosition',
+  ];
+  const VALUE_POSITION_KEYS: (keyof IdCardLayoutConfig)[] = [
+    'studentNamePosition', 'fatherNamePosition', 'studentCodePosition', 'admissionNumberPosition',
+    'classPosition', 'roomPosition', 'cardNumberPosition',
+  ];
+  const LABEL_DEFAULT_Y: Record<string, number> = {
+    studentNameLabelPosition: 40, fatherNameLabelPosition: 50, studentCodeLabelPosition: 60,
+    admissionNumberLabelPosition: 70, classLabelPosition: 80, roomLabelPosition: 88, cardNumberLabelPosition: 80,
+  };
+  const VALUE_DEFAULT_Y: Record<string, number> = {
+    studentNamePosition: 40, fatherNamePosition: 50, studentCodePosition: 60, admissionNumberPosition: 70,
+    classPosition: 80, roomPosition: 88, cardNumberPosition: 80,
+  };
+
+  const alignLabelsRight = () => {
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      LABEL_POSITION_KEYS.forEach((key) => {
+        const cur = prev[key] as { x: number; y: number; width?: number; height?: number } | undefined;
+        const y = cur?.y ?? LABEL_DEFAULT_Y[key as string] ?? 50;
+        (next as any)[key] = { ...(cur || {}), x: 72, y };
+      });
+      return next;
+    });
+  };
+
+  const alignValuesLeft = () => {
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      VALUE_POSITION_KEYS.forEach((key) => {
+        const cur = prev[key] as { x: number; y: number; width?: number; height?: number } | undefined;
+        const y = cur?.y ?? VALUE_DEFAULT_Y[key as string] ?? 50;
+        (next as any)[key] = { ...(cur || {}), x: 28, y };
+      });
+      return next;
+    });
+  };
+
+  const distributeRows = () => {
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      const rowPairs: Array<{ labelKey: keyof IdCardLayoutConfig; valueKey: keyof IdCardLayoutConfig; y: number }> = [
+        { labelKey: 'studentNameLabelPosition', valueKey: 'studentNamePosition', y: 38 },
+        { labelKey: 'fatherNameLabelPosition', valueKey: 'fatherNamePosition', y: 48 },
+        { labelKey: 'studentCodeLabelPosition', valueKey: 'studentCodePosition', y: 58 },
+        { labelKey: 'admissionNumberLabelPosition', valueKey: 'admissionNumberPosition', y: 68 },
+        { labelKey: 'classLabelPosition', valueKey: 'classPosition', y: 78 },
+        { labelKey: 'roomLabelPosition', valueKey: 'roomPosition', y: 88 },
+      ];
+      rowPairs.forEach(({ labelKey, valueKey, y }) => {
+        const labelCur = (prev[labelKey] as { x: number; y: number } | undefined) || {};
+        const valueCur = (prev[valueKey] as { x: number; y: number } | undefined) || {};
+        (next as any)[labelKey] = { ...labelCur, x: (labelCur as any).x ?? 72, y };
+        (next as any)[valueKey] = { ...valueCur, x: (valueCur as any).x ?? 28, y };
+      });
+      return next;
+    });
+  };
+
+  // Get position config key for a field id
+  const getPositionKeyForFieldId = (fieldId: string): keyof IdCardLayoutConfig | null => {
+    const field = currentFields.find((f) => f.id === fieldId);
+    return field ? (field.key as keyof IdCardLayoutConfig) : null;
+  };
+
+  // Align selected fields (multi-select with Ctrl+click). Uses min/max so works correctly for RTL and LTR.
+  const selectedPositionKeys = useMemo(() => {
+    return Array.from(selectedFields)
+      .map(getPositionKeyForFieldId)
+      .filter((k): k is keyof IdCardLayoutConfig => k != null);
+  }, [selectedFields, currentFields]);
+
+  const alignSelectedToStart = () => {
+    if (selectedPositionKeys.length === 0) return;
+    const positions = selectedPositionKeys.map((key) => getFieldPosition(key));
+    const minX = Math.min(...positions.map((p) => p.x));
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      selectedPositionKeys.forEach((key) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        (next as any)[key] = { ...cur, x: minX, y: cur.y ?? 50 };
+      });
+      return next;
+    });
+  };
+
+  const alignSelectedToEnd = () => {
+    if (selectedPositionKeys.length === 0) return;
+    const positions = selectedPositionKeys.map((key) => getFieldPosition(key));
+    const maxX = Math.max(...positions.map((p) => p.x));
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      selectedPositionKeys.forEach((key) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        (next as any)[key] = { ...cur, x: maxX, y: cur.y ?? 50 };
+      });
+      return next;
+    });
+  };
+
+  const alignSelectedToTop = () => {
+    if (selectedPositionKeys.length === 0) return;
+    const positions = selectedPositionKeys.map((key) => getFieldPosition(key));
+    const minY = Math.min(...positions.map((p) => p.y));
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      selectedPositionKeys.forEach((key) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        (next as any)[key] = { ...cur, x: cur.x ?? 50, y: minY };
+      });
+      return next;
+    });
+  };
+
+  const alignSelectedToBottom = () => {
+    if (selectedPositionKeys.length === 0) return;
+    const positions = selectedPositionKeys.map((key) => getFieldPosition(key));
+    const maxY = Math.max(...positions.map((p) => p.y));
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      selectedPositionKeys.forEach((key) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        (next as any)[key] = { ...cur, x: cur.x ?? 50, y: maxY };
+      });
+      return next;
+    });
+  };
+
+  const distributeSelectedVertically = () => {
+    if (selectedPositionKeys.length < 2) return;
+    const keysWithY = selectedPositionKeys.map((key) => ({ key, y: getFieldPosition(key).y }));
+    keysWithY.sort((a, b) => a.y - b.y);
+    const minY = keysWithY[0].y;
+    const maxY = keysWithY[keysWithY.length - 1].y;
+    const step = (maxY - minY) / (keysWithY.length - 1);
+    setCurrentConfig((prev) => {
+      const next = { ...prev };
+      keysWithY.forEach(({ key }, i) => {
+        const cur = (prev[key] as { x: number; y: number; width?: number; height?: number } | undefined) || {};
+        const newY = keysWithY.length === 1 ? minY : minY + i * step;
+        (next as any)[key] = { ...cur, x: cur.x ?? 50, y: newY };
+      });
+      return next;
+    });
+  };
+
   const handleMouseDown = useCallback((e: React.MouseEvent, fieldId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setDraggingField(fieldId);
+    didMouseMoveRef.current = false;
+    if (e.ctrlKey || e.metaKey) {
+      dragStartPositionRef.current = null;
+      shiftLockedDirectionRef.current = null;
+      handleFieldClick(e, fieldId);
+      return;
+    }
+    setSelectedFields(new Set([fieldId]));
     setSelectedField(fieldId);
+    setDraggingField(fieldId);
 
     const field = currentFields.find((f) => f.id === fieldId);
     if (!field || !containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
+    const totalWidth = containerRef.current.clientWidth;
+    const totalHeight = containerRef.current.clientHeight;
     const position = getFieldPosition(field.key);
     const metrics = createIdCardRenderMetrics({
-      totalWidth: rect.width,
-      totalHeight: rect.height,
+      totalWidth,
+      totalHeight,
       paddingPx: DEFAULT_ID_CARD_PADDING_PX,
       designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
       designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
     });
     const fieldX = metrics.pctToX(position.x);
     const fieldY = metrics.pctToY(position.y);
+    dragStartPositionRef.current = { x: position.x, y: position.y };
+    shiftLockedDirectionRef.current = null;
+    setAlignmentGuides({ x: null, y: null });
 
+    const borderWidth = (rect.width - totalWidth) / 2;
     setDragOffset({
-      x: e.clientX - rect.left - fieldX,
-      y: e.clientY - rect.top - fieldY,
+      x: e.clientX - rect.left - borderWidth - fieldX,
+      y: e.clientY - rect.top - borderWidth - fieldY,
     });
-  }, [currentConfig, currentFields]);
+  }, [currentConfig, currentFields, handleFieldClick]);
 
   const handleResizeStart = useCallback((e: React.MouseEvent, fieldId: string, direction?: string) => {
     e.preventDefault();
@@ -543,23 +935,27 @@ export function IdCardLayoutEditor({
     setIsResizing(true);
     setResizeHandle(direction || null);
 
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) {
+    const el = containerRef.current;
+    if (!el) {
       if (import.meta.env.DEV) {
-        console.warn('[IdCardLayoutEditor] No container rect found');
+        console.warn('[IdCardLayoutEditor] No container ref found');
       }
       return;
     }
+    const rect = el.getBoundingClientRect();
+    const totalWidth = el.clientWidth;
+    const totalHeight = el.clientHeight;
+    const borderWidth = (rect.width - totalWidth) / 2;
 
     const metrics = createIdCardRenderMetrics({
-      totalWidth: rect.width,
-      totalHeight: rect.height,
+      totalWidth,
+      totalHeight,
       paddingPx: DEFAULT_ID_CARD_PADDING_PX,
       designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
       designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
     });
-    const startX = metrics.xToPct(e.clientX - rect.left);
-    const startY = metrics.yToPct(e.clientY - rect.top);
+    const startX = metrics.xToPct(e.clientX - rect.left - borderWidth);
+    const startY = metrics.yToPct(e.clientY - rect.top - borderWidth);
 
     // Get current position and width/height
     let currentX = 20;
@@ -598,16 +994,21 @@ export function IdCardLayoutEditor({
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (isResizing && selectedField && containerRef.current) {
+        didMouseMoveRef.current = true;
+        setAlignmentGuides((prev) => (prev.x === null && prev.y === null ? prev : { x: null, y: null }));
         const rect = containerRef.current.getBoundingClientRect();
+        const totalWidth = containerRef.current.clientWidth;
+        const totalHeight = containerRef.current.clientHeight;
+        const borderWidth = (rect.width - totalWidth) / 2;
         const metrics = createIdCardRenderMetrics({
-          totalWidth: rect.width,
-          totalHeight: rect.height,
+          totalWidth,
+          totalHeight,
           paddingPx: DEFAULT_ID_CARD_PADDING_PX,
           designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
           designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
         });
-        const currentX = metrics.xToPct(e.clientX - rect.left);
-        const currentY = metrics.yToPct(e.clientY - rect.top);
+        const currentX = metrics.xToPct(e.clientX - rect.left - borderWidth);
+        const currentY = metrics.yToPct(e.clientY - rect.top - borderWidth);
 
         const deltaX = currentX - resizeStart.x;
         const deltaY = currentY - resizeStart.y;
@@ -649,34 +1050,111 @@ export function IdCardLayoutEditor({
           }));
         }
       } else if (draggingField && containerRef.current) {
+        didMouseMoveRef.current = true;
         const field = currentFields.find((f) => f.id === draggingField);
         if (!field) return;
 
         const rect = containerRef.current.getBoundingClientRect();
+        const totalWidth = containerRef.current.clientWidth;
+        const totalHeight = containerRef.current.clientHeight;
+        const borderWidth = (rect.width - totalWidth) / 2;
         const metrics = createIdCardRenderMetrics({
-          totalWidth: rect.width,
-          totalHeight: rect.height,
+          totalWidth,
+          totalHeight,
           paddingPx: DEFAULT_ID_CARD_PADDING_PX,
           designWidthPx: DEFAULT_SCREEN_WIDTH_PX,
           designHeightPx: DEFAULT_SCREEN_HEIGHT_PX,
         });
-        const x = metrics.xToPct(e.clientX - rect.left - dragOffset.x);
-        const y = metrics.yToPct(e.clientY - rect.top - dragOffset.y);
+        const x = metrics.xToPct(e.clientX - rect.left - borderWidth - dragOffset.x);
+        const y = metrics.yToPct(e.clientY - rect.top - borderWidth - dragOffset.y);
 
         // Clamp to container bounds
         const clampedX = Math.max(0, Math.min(100, x));
         const clampedY = Math.max(0, Math.min(100, y));
+        let nextX = clampedX;
+        let nextY = clampedY;
 
-        updateFieldPosition(field.key, clampedX, clampedY);
+        // Photoshop-like Shift lock: move in a straight horizontal/vertical line.
+        const dragStart = dragStartPositionRef.current;
+        if (e.shiftKey && dragStart) {
+          if (!shiftLockedDirectionRef.current) {
+            const deltaX = Math.abs(nextX - dragStart.x);
+            const deltaY = Math.abs(nextY - dragStart.y);
+            shiftLockedDirectionRef.current = deltaX >= deltaY ? 'horizontal' : 'vertical';
+          }
+
+          if (shiftLockedDirectionRef.current === 'horizontal') {
+            nextY = dragStart.y;
+          } else {
+            nextX = dragStart.x;
+          }
+        } else {
+          shiftLockedDirectionRef.current = null;
+        }
+
+        // Smart guides + snap to other enabled fields (Photoshop/Word style alignment)
+        const SNAP_THRESHOLD = 0.8; // percent
+        const enabledIds = new Set(currentConfig.enabledFields || []);
+        const otherFieldPositions = currentFields
+          .filter((f) => f.id !== draggingField && enabledIds.has(f.id))
+          .map((f) => getFieldPosition(f.key));
+
+        let guideX: number | null = null;
+        let guideY: number | null = null;
+
+        if (otherFieldPositions.length > 0) {
+          let nearestX: number | null = null;
+          let nearestXDiff = Number.POSITIVE_INFINITY;
+          let nearestY: number | null = null;
+          let nearestYDiff = Number.POSITIVE_INFINITY;
+
+          for (const pos of otherFieldPositions) {
+            const xDiff = Math.abs(pos.x - nextX);
+            if (xDiff < nearestXDiff) {
+              nearestXDiff = xDiff;
+              nearestX = pos.x;
+            }
+
+            const yDiff = Math.abs(pos.y - nextY);
+            if (yDiff < nearestYDiff) {
+              nearestYDiff = yDiff;
+              nearestY = pos.y;
+            }
+          }
+
+          if (nearestX !== null && nearestXDiff <= SNAP_THRESHOLD) {
+            nextX = nearestX;
+            guideX = nearestX;
+          }
+
+          if (nearestY !== null && nearestYDiff <= SNAP_THRESHOLD) {
+            nextY = nearestY;
+            guideY = nearestY;
+          }
+        }
+
+        setAlignmentGuides((prev) => (prev.x === guideX && prev.y === guideY ? prev : { x: guideX, y: guideY }));
+        updateFieldPosition(field.key, nextX, nextY);
       }
     },
     [draggingField, dragOffset, isResizing, selectedField, resizeStart, resizeHandle, currentFields, currentConfig, setCurrentConfig]
   );
 
   const handleMouseUp = useCallback(() => {
+    if (didMouseMoveRef.current) {
+      suppressCanvasClickRef.current = true;
+      // Clear after the click generated by mouseup has been processed
+      setTimeout(() => {
+        suppressCanvasClickRef.current = false;
+      }, 0);
+    }
     setDraggingField(null);
     setIsResizing(false);
     setResizeHandle(null);
+    didMouseMoveRef.current = false;
+    dragStartPositionRef.current = null;
+    shiftLockedDirectionRef.current = null;
+    setAlignmentGuides({ x: null, y: null });
   }, []);
 
   useEffect(() => {
@@ -774,7 +1252,7 @@ export function IdCardLayoutEditor({
       textColor = fieldFont.textColor;
     }
     
-    const isSelected = selectedField === field.id;
+    const isSelected = selectedFields.has(field.id);
     const isDragging = draggingField === field.id;
 
     if (field.isImage) {
@@ -810,14 +1288,18 @@ export function IdCardLayoutEditor({
       };
     }
 
+    const isLabelField = LABEL_FIELD_IDS.includes(field.id);
+    const isCenterField = ['schoolName', 'notes', 'expiryDate'].includes(field.id);
+
     return {
       position: 'absolute' as const,
       left: `${renderMetrics.pctToX(position.x)}px`,
       top: `${renderMetrics.pctToY(position.y)}px`,
-      transform: 'translate(-50%, -50%)',
+      transform: isLabelField ? 'translate(-100%, -50%)' : isCenterField ? 'translate(-50%, -50%)' : 'translate(0, -50%)',
       fontSize: `${scaledFontSize}px`,
       fontFamily,
       color: textColor,
+      textAlign: isLabelField ? 'right' : isCenterField ? 'center' : ('left' as const),
       cursor: 'move',
       userSelect: 'none' as const,
       zIndex: isSelected || isDragging ? 10 : 1,
@@ -892,7 +1374,7 @@ export function IdCardLayoutEditor({
         <TabsContent value="front" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Preview Canvas */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 lg:sticky lg:top-4 self-start">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">{t('idCards.frontPreview') || 'Front Preview'}</CardTitle>
@@ -904,9 +1386,9 @@ export function IdCardLayoutEditor({
                     style={{
                       aspectRatio: CARD_ASPECT_RATIO,
                       maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
-                      padding: `${DEFAULT_ID_CARD_PADDING_PX}px`,
+                      padding: 0,
                     }}
-                    onClick={() => setSelectedField(null)}
+                    onClick={handleCanvasBackgroundClick}
                   >
                     {currentImageError ? (
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -925,7 +1407,7 @@ export function IdCardLayoutEditor({
                           <img
                             src={currentImageUrl}
                             alt="ID Card Background"
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-fill"
                             style={{ display: currentImageLoaded ? 'block' : 'none' }}
                           />
                         )}
@@ -980,32 +1462,45 @@ export function IdCardLayoutEditor({
                       </>
                     )}
 
+                    {(alignmentGuides.x !== null || alignmentGuides.y !== null) && (
+                      <>
+                        {alignmentGuides.x !== null && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: `${renderMetrics.pctToX(alignmentGuides.x)}px`,
+                              top: `${renderMetrics.paddingPx}px`,
+                              width: '1px',
+                              height: `${renderMetrics.contentHeight}px`,
+                              backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                              boxShadow: '0 0 0 1px rgba(191, 219, 254, 0.8)',
+                              pointerEvents: 'none',
+                              zIndex: 20,
+                            }}
+                          />
+                        )}
+                        {alignmentGuides.y !== null && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: `${renderMetrics.paddingPx}px`,
+                              top: `${renderMetrics.pctToY(alignmentGuides.y)}px`,
+                              width: `${renderMetrics.contentWidth}px`,
+                              height: '1px',
+                              backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                              boxShadow: '0 0 0 1px rgba(191, 219, 254, 0.8)',
+                              pointerEvents: 'none',
+                              zIndex: 20,
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
-                      const position = getFieldPosition(field.key);
                       const isImageField = field.isImage;
-                      
-                      // Get display text: use template-defined value if available, otherwise use sample text
-                      let displayText = field.sampleText;
-                      if (field.id === 'studentName' && sampleStudent) {
-                        displayText = sampleStudent.fullName;
-                      } else if (field.id === 'notes' && currentConfig.fieldValues?.notes) {
-                        displayText = currentConfig.fieldValues.notes;
-                      } else if (field.id === 'schoolName' && currentConfig.fieldValues?.schoolName) {
-                        displayText = currentConfig.fieldValues.schoolName;
-                      } else if (field.id === 'expiryDate' && currentConfig.fieldValues?.expiryDate) {
-                        // Format expiry date using calendar conversion
-                        try {
-                          const date = new Date(currentConfig.fieldValues.expiryDate);
-                          if (!isNaN(date.getTime())) {
-                            displayText = formatDate(date);
-                          } else {
-                            displayText = currentConfig.fieldValues.expiryDate; // Use as-is if not a valid date
-                          }
-                        } catch {
-                          displayText = currentConfig.fieldValues.expiryDate;
-                        }
-                      }
+                      const displayText = getFieldPreviewText(field, currentConfig, sampleStudent);
 
                       const fieldStyle = getFieldStyle(field);
                       const isStudentName = field.id === 'studentName';
@@ -1015,10 +1510,7 @@ export function IdCardLayoutEditor({
                           key={field.id}
                           style={fieldStyle}
                           onMouseDown={(e) => handleMouseDown(e, field.id)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedField(field.id);
-                          }}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {isImageField ? (
                             <div 
@@ -1036,8 +1528,8 @@ export function IdCardLayoutEditor({
                                 backgroundColor: selectedField === field.id ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
                               }}
                             >
-                              {/* Resize handles - only show when selected */}
-                              {selectedField === field.id && (
+                              {/* Resize handles - only show when a single field is selected */}
+                              {selectedField === field.id && selectedFields.size === 1 && (
                                 <>
                                   {/* Corner resize handles */}
                                   <div
@@ -1101,7 +1593,7 @@ export function IdCardLayoutEditor({
                                     style={{
                                       width: '100%',
                                       height: '100%',
-                                      objectFit: 'cover',
+                                      objectFit: 'contain',
                                       borderRadius: '4px',
                                       pointerEvents: 'none',
                                     }}
@@ -1147,75 +1639,212 @@ export function IdCardLayoutEditor({
             </div>
 
             {/* Field List & Settings */}
-            <div className="space-y-4">
+            <ScrollArea className="h-[72vh] pr-2">
+              <div className="space-y-4">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
+                <Collapsible open={showFieldList} onOpenChange={setShowFieldList}>
+                  <CardHeader className="pb-2">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="h-auto justify-between px-0">
+                        <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showFieldList ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-2">
+                      {currentFields.map((field) => (
+                        <div key={field.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={currentConfig.enabledFields?.includes(field.id) || false}
+                            onCheckedChange={() => toggleFieldEnabled(field.id)}
+                          />
+                          <Label className="text-sm cursor-pointer">{field.label}</Label>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{t('idCards.alignFields') || 'Align Fields'}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {currentFields.map((field) => (
-                    <div key={field.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={currentConfig.enabledFields?.includes(field.id) || false}
-                        onCheckedChange={() => toggleFieldEnabled(field.id)}
-                      />
-                      <Label className="text-sm cursor-pointer">{field.label}</Label>
-                    </div>
-                  ))}
+                  <p className="text-xs text-muted-foreground">
+                    {t('idCards.alignFieldsDescription') || 'Align labels to the right and values to the left, or distribute rows evenly.'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={alignLabelsRight}
+                      title={t('idCards.alignLabelsRight') || 'Align labels right'}
+                    >
+                      <AlignEndHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignLabelsRight') || 'Labels right'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={alignValuesLeft}
+                      title={t('idCards.alignValuesLeft') || 'Align values left'}
+                    >
+                      <AlignStartHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignValuesLeft') || 'Values left'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={distributeRows}
+                      title={t('idCards.distributeRows') || 'Distribute rows evenly'}
+                    >
+                      <Rows3 className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeRows') || 'Distribute rows'}</span>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{t('idCards.alignSelected') || 'Align Selected'}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
-                    <Input
-                      type="number"
-                      value={currentConfig.fontSize || 12}
-                      onChange={(e) => setCurrentConfig({ ...currentConfig, fontSize: parseInt(e.target.value) || 12 })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
-                    <Select
-                      value={currentConfig.fontFamily || 'Arial'}
-                      onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {t('idCards.ctrlClickToSelectMultiple') || 'Ctrl+click (Cmd+click on Mac) to select multiple fields, then align them.'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToStart}
+                      title={t('idCards.alignSelectedToStart') || 'Align selected to start (left)'}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AVAILABLE_FONTS.map((font) => (
-                          <SelectItem key={font.value} value={font.value}>
-                            <span style={{ fontFamily: font.value }}>{font.label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
-                    <Input
-                      type="color"
-                      value={currentConfig.textColor || '#000000'}
-                      onChange={(e) => setCurrentConfig({ ...currentConfig, textColor: e.target.value })}
-                    />
+                      <AlignStartHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToStart') || 'Align start'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToEnd}
+                      title={t('idCards.alignSelectedToEnd') || 'Align selected to end (right)'}
+                    >
+                      <AlignEndHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToEnd') || 'Align end'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToTop}
+                      title={t('idCards.alignSelectedToTop') || 'Align selected to top'}
+                    >
+                      <AlignStartVertical className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToTop') || 'Align top'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToBottom}
+                      title={t('idCards.alignSelectedToBottom') || 'Align selected to bottom'}
+                    >
+                      <AlignEndVertical className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToBottom') || 'Align bottom'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={distributeSelectedVertically}
+                      title={t('idCards.distributeSelectedVertically') || 'Distribute selected vertically'}
+                    >
+                      <Rows3 className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeSelectedVertically') || 'Distribute Y'}</span>
+                    </Button>
                   </div>
                 </CardContent>
+              </Card>
+
+              <Card>
+                <Collapsible open={showGlobalSettings} onOpenChange={setShowGlobalSettings}>
+                  <CardHeader className="pb-2">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="h-auto justify-between px-0">
+                        <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showGlobalSettings ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
+                        <Input
+                          type="number"
+                          value={currentConfig.fontSize || 12}
+                          onChange={(e) => setCurrentConfig({ ...currentConfig, fontSize: parseInt(e.target.value) || 12 })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                        <Select
+                          value={currentConfig.fontFamily || 'Arial'}
+                          onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {AVAILABLE_FONTS.map((font) => (
+                              <SelectItem key={font.value} value={font.value}>
+                                <span style={{ fontFamily: font.value }}>{font.label}</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
+                        <Input
+                          type="color"
+                          value={currentConfig.textColor || '#000000'}
+                          onChange={(e) => setCurrentConfig({ ...currentConfig, textColor: e.target.value })}
+                        />
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
 
               {/* Field Settings Panel - appears when a field is selected */}
               {selectedField && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">
-                      {t('idCards.fieldSettings') || 'Field Settings'} - {currentFields.find(f => f.id === selectedField)?.label || selectedField}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                  <Collapsible open={showFieldSettings} onOpenChange={setShowFieldSettings}>
+                    <CardHeader className="pb-2">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="h-auto justify-between px-0 text-left whitespace-normal">
+                          <CardTitle className="text-sm">
+                            {t('idCards.fieldSettings') || 'Field Settings'} - {currentFields.find(f => f.id === selectedField)?.label || selectedField}
+                          </CardTitle>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${showFieldSettings ? 'rotate-180' : ''}`} />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </CardHeader>
+                    <CollapsibleContent>
+                      <CardContent className="space-y-4">
                     {/* Image Field Settings (Width/Height) */}
                     {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
                       <div className="space-y-3 pt-2 border-t">
@@ -1397,16 +2026,51 @@ export function IdCardLayoutEditor({
                             {t('idCards.leaveEmptyToUseGlobal') || 'Leave empty to use global font size'}
                           </p>
                         </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs">{t('idCards.textColor') || 'Text Color'}</Label>
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              type="color"
+                              value={currentConfig.fieldFonts?.[selectedField]?.textColor || currentConfig.textColor || '#000000'}
+                              onChange={(e) => updateFieldFont(selectedField, 'textColor', e.target.value)}
+                              className="h-8 w-16 p-1 cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={currentConfig.fieldFonts?.[selectedField]?.textColor || currentConfig.textColor || '#000000'}
+                              onChange={(e) => {
+                                const value = e.target.value.trim();
+                                if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                                  updateFieldFont(selectedField, 'textColor', value);
+                                }
+                              }}
+                              placeholder="#000000"
+                              className="h-8 text-xs flex-1"
+                              maxLength={7}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => clearFieldFont(selectedField, 'textColor')}
+                              className="h-8 px-2"
+                              title={t('events.resetToDefault') || 'Reset to default'}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {t('idCards.fieldColorDescription') || 'Set custom color for this field, or reset to use global color'}
+                          </p>
+                        </div>
                       </div>
                     )}
 
                     {/* Field Value Editor (for editable fields) */}
-                    {selectedField && ['notes', 'expiryDate', 'schoolName'].includes(selectedField) && (
+                    {selectedField && isSelectedFieldEditableText && (
                       <div className="space-y-3 pt-2 border-t">
                         <Label className="text-sm font-semibold">
-                          {selectedField === 'notes' && (t('idCards.fieldValue') || 'Field Value')}
-                          {selectedField === 'expiryDate' && (t('idCards.expiryDateValue') || 'Expiry Date')}
-                          {selectedField === 'schoolName' && (t('idCards.schoolNameValue') || 'School Name')}
+                          {getEditableFieldLabel(selectedField)}
                         </Label>
                         
                         {selectedField === 'expiryDate' ? (
@@ -1445,37 +2109,30 @@ export function IdCardLayoutEditor({
                                   },
                                 });
                               }}
-                              placeholder={
-                                selectedField === 'notes' 
-                                  ? (t('idCards.notesPlaceholder') || 'Enter notes text...')
-                                  : selectedField === 'schoolName'
-                                  ? (t('idCards.schoolNamePlaceholder') || 'Enter school name...')
-                                  : ''
-                              }
+                              placeholder={getEditableFieldPlaceholder(selectedField)}
                               className="h-8 text-xs"
                             />
                             <p className="text-xs text-muted-foreground">
-                              {selectedField === 'notes' 
-                                ? (t('idCards.notesDescription') || 'Custom text to display. Leave empty to use card notes.')
-                                : selectedField === 'schoolName'
-                                ? (t('idCards.schoolNameDescription') || 'Custom school name. Leave empty to use student\'s school name.')
-                                : ''}
+                              {getEditableFieldDescription(selectedField)}
                             </p>
                           </div>
                         )}
                       </div>
                     )}
-                  </CardContent>
+                    </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </Card>
               )}
-            </div>
+              </div>
+            </ScrollArea>
           </div>
         </TabsContent>
 
         <TabsContent value="back" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Preview Canvas */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 lg:sticky lg:top-4 self-start">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">{t('idCards.backPreview') || 'Back Preview'}</CardTitle>
@@ -1487,9 +2144,9 @@ export function IdCardLayoutEditor({
                     style={{
                       aspectRatio: CARD_ASPECT_RATIO,
                       maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
-                      padding: `${DEFAULT_ID_CARD_PADDING_PX}px`,
+                      padding: 0,
                     }}
-                    onClick={() => setSelectedField(null)}
+                    onClick={handleCanvasBackgroundClick}
                   >
                     {currentImageError ? (
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -1508,7 +2165,7 @@ export function IdCardLayoutEditor({
                           <img
                             src={currentImageUrl}
                             alt="ID Card Background"
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-fill"
                             style={{ display: currentImageLoaded ? 'block' : 'none' }}
                           />
                         )}
@@ -1563,39 +2220,51 @@ export function IdCardLayoutEditor({
                       </>
                     )}
 
+                    {(alignmentGuides.x !== null || alignmentGuides.y !== null) && (
+                      <>
+                        {alignmentGuides.x !== null && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: `${renderMetrics.pctToX(alignmentGuides.x)}px`,
+                              top: `${renderMetrics.paddingPx}px`,
+                              width: '1px',
+                              height: `${renderMetrics.contentHeight}px`,
+                              backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                              boxShadow: '0 0 0 1px rgba(191, 219, 254, 0.8)',
+                              pointerEvents: 'none',
+                              zIndex: 20,
+                            }}
+                          />
+                        )}
+                        {alignmentGuides.y !== null && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: `${renderMetrics.paddingPx}px`,
+                              top: `${renderMetrics.pctToY(alignmentGuides.y)}px`,
+                              width: `${renderMetrics.contentWidth}px`,
+                              height: '1px',
+                              backgroundColor: 'rgba(37, 99, 235, 0.9)',
+                              boxShadow: '0 0 0 1px rgba(191, 219, 254, 0.8)',
+                              pointerEvents: 'none',
+                              zIndex: 20,
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
-                      const position = getFieldPosition(field.key);
-                      
-                      // Get display text: use template-defined value if available, otherwise use sample text
-                      let displayText = field.sampleText;
-                      if (field.id === 'notes' && currentConfig.fieldValues?.notes) {
-                        displayText = currentConfig.fieldValues.notes;
-                      } else if (field.id === 'schoolName' && currentConfig.fieldValues?.schoolName) {
-                        displayText = currentConfig.fieldValues.schoolName;
-                      } else if (field.id === 'expiryDate' && currentConfig.fieldValues?.expiryDate) {
-                        // Format expiry date using calendar conversion
-                        try {
-                          const date = new Date(currentConfig.fieldValues.expiryDate);
-                          if (!isNaN(date.getTime())) {
-                            displayText = formatDate(date);
-                          } else {
-                            displayText = currentConfig.fieldValues.expiryDate; // Use as-is if not a valid date
-                          }
-                        } catch {
-                          displayText = currentConfig.fieldValues.expiryDate;
-                        }
-                      }
+                      const displayText = getFieldPreviewText(field, currentConfig, sampleStudent);
                       
                       return (
                         <div
                           key={field.id}
                           style={getFieldStyle(field)}
                           onMouseDown={(e) => handleMouseDown(e, field.id)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedField(field.id);
-                          }}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex items-center gap-1">
                             <GripVertical className="h-3 w-3 opacity-50" />
@@ -1610,73 +2279,210 @@ export function IdCardLayoutEditor({
             </div>
 
             {/* Field List & Settings */}
-            <div className="space-y-4">
+            <ScrollArea className="h-[72vh] pr-2">
+              <div className="space-y-4">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
+                <Collapsible open={showFieldList} onOpenChange={setShowFieldList}>
+                  <CardHeader className="pb-2">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="h-auto justify-between px-0">
+                        <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showFieldList ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-2">
+                      {currentFields.map((field) => (
+                        <div key={field.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={currentConfig.enabledFields?.includes(field.id) || false}
+                            onCheckedChange={() => toggleFieldEnabled(field.id)}
+                          />
+                          <Label className="text-sm cursor-pointer">{field.label}</Label>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{t('idCards.alignFields') || 'Align Fields'}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {currentFields.map((field) => (
-                    <div key={field.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={currentConfig.enabledFields?.includes(field.id) || false}
-                        onCheckedChange={() => toggleFieldEnabled(field.id)}
-                      />
-                      <Label className="text-sm cursor-pointer">{field.label}</Label>
-                    </div>
-                  ))}
+                  <p className="text-xs text-muted-foreground">
+                    {t('idCards.alignFieldsDescription') || 'Align labels to the right and values to the left, or distribute rows evenly.'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={alignLabelsRight}
+                      title={t('idCards.alignLabelsRight') || 'Align labels right'}
+                    >
+                      <AlignEndHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignLabelsRight') || 'Labels right'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={alignValuesLeft}
+                      title={t('idCards.alignValuesLeft') || 'Align values left'}
+                    >
+                      <AlignStartHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignValuesLeft') || 'Values left'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={distributeRows}
+                      title={t('idCards.distributeRows') || 'Distribute rows evenly'}
+                    >
+                      <Rows3 className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeRows') || 'Distribute rows'}</span>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{t('idCards.alignSelected') || 'Align Selected'}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
-                    <Input
-                      type="number"
-                      value={currentConfig.fontSize || 10}
-                      onChange={(e) => setCurrentConfig({ ...currentConfig, fontSize: parseInt(e.target.value) || 10 })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
-                    <Select
-                      value={currentConfig.fontFamily || 'Arial'}
-                      onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {t('idCards.ctrlClickToSelectMultiple') || 'Ctrl+click (Cmd+click on Mac) to select multiple fields, then align them.'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToStart}
+                      title={t('idCards.alignSelectedToStart') || 'Align selected to start (left)'}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AVAILABLE_FONTS.map((font) => (
-                          <SelectItem key={font.value} value={font.value}>
-                            <span style={{ fontFamily: font.value }}>{font.label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
-                    <Input
-                      type="color"
-                      value={currentConfig.textColor || '#000000'}
-                      onChange={(e) => setCurrentConfig({ ...currentConfig, textColor: e.target.value })}
-                    />
+                      <AlignStartHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToStart') || 'Align start'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToEnd}
+                      title={t('idCards.alignSelectedToEnd') || 'Align selected to end (right)'}
+                    >
+                      <AlignEndHorizontal className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToEnd') || 'Align end'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToTop}
+                      title={t('idCards.alignSelectedToTop') || 'Align selected to top'}
+                    >
+                      <AlignStartVertical className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToTop') || 'Align top'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={alignSelectedToBottom}
+                      title={t('idCards.alignSelectedToBottom') || 'Align selected to bottom'}
+                    >
+                      <AlignEndVertical className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToBottom') || 'Align bottom'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFields.size < 2}
+                      onClick={distributeSelectedVertically}
+                      title={t('idCards.distributeSelectedVertically') || 'Distribute selected vertically'}
+                    >
+                      <Rows3 className="h-4 w-4 shrink-0" />
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeSelectedVertically') || 'Distribute Y'}</span>
+                    </Button>
                   </div>
                 </CardContent>
+              </Card>
+
+              <Card>
+                <Collapsible open={showGlobalSettings} onOpenChange={setShowGlobalSettings}>
+                  <CardHeader className="pb-2">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="h-auto justify-between px-0">
+                        <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showGlobalSettings ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
+                        <Input
+                          type="number"
+                          value={currentConfig.fontSize || 10}
+                          onChange={(e) => setCurrentConfig({ ...currentConfig, fontSize: parseInt(e.target.value) || 10 })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                        <Select
+                          value={currentConfig.fontFamily || 'Arial'}
+                          onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {AVAILABLE_FONTS.map((font) => (
+                              <SelectItem key={font.value} value={font.value}>
+                                <span style={{ fontFamily: font.value }}>{font.label}</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
+                        <Input
+                          type="color"
+                          value={currentConfig.textColor || '#000000'}
+                          onChange={(e) => setCurrentConfig({ ...currentConfig, textColor: e.target.value })}
+                        />
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
 
               {/* Field-Specific Settings */}
               {selectedField && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">{t('idCards.fieldSettings') || 'Field Settings'}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                  <Collapsible open={showFieldSettings} onOpenChange={setShowFieldSettings}>
+                    <CardHeader className="pb-2">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="h-auto justify-between px-0">
+                          <CardTitle className="text-sm">{t('idCards.fieldSettings') || 'Field Settings'}</CardTitle>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${showFieldSettings ? 'rotate-180' : ''}`} />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </CardHeader>
+                    <CollapsibleContent>
+                      <CardContent className="space-y-4">
                     {/* Per-Field Font Settings */}
                     <div className="space-y-3 pt-2 border-t">
                       <div className="flex items-center justify-between">
@@ -1893,77 +2699,69 @@ export function IdCardLayoutEditor({
                           </div>
                         )}
 
-                        {/* Field Value Editor (for editable fields) */}
-                        {['notes', 'expiryDate', 'schoolName'].includes(selectedField) && (
-                          <div className="space-y-3 pt-2 border-t">
-                            <Label className="text-sm font-semibold">
-                              {selectedField === 'notes' && (t('idCards.fieldValue') || 'Field Value')}
-                              {selectedField === 'expiryDate' && (t('idCards.expiryDateValue') || 'Expiry Date')}
-                              {selectedField === 'schoolName' && (t('idCards.schoolNameValue') || 'School Name')}
-                            </Label>
-                            
-                            {selectedField === 'expiryDate' ? (
-                              <div className="space-y-2">
-                                <CalendarDatePicker
-                                  date={currentConfig.fieldValues?.[selectedField] ? new Date(currentConfig.fieldValues[selectedField]) : undefined}
-                                  onDateChange={(date) => {
-                                    const value = date ? date.toISOString().slice(0, 10) : null;
-                                    setCurrentConfig({
-                                      ...currentConfig,
-                                      fieldValues: {
-                                        ...(currentConfig.fieldValues || {}),
-                                        [selectedField]: value,
-                                      },
-                                    });
-                                  }}
-                                  placeholder={t('idCards.selectExpiryDate') || 'Select expiry date...'}
-                                  className="h-8 text-xs"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  {t('idCards.expiryDateDescription') || 'Set a fixed expiry date, or leave empty to use dynamic date (1 year from print date)'}
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <Input
-                                  type="text"
-                                  value={currentConfig.fieldValues?.[selectedField] || ''}
-                                  onChange={(e) => {
-                                    const value = e.target.value || null;
-                                    setCurrentConfig({
-                                      ...currentConfig,
-                                      fieldValues: {
-                                        ...(currentConfig.fieldValues || {}),
-                                        [selectedField]: value,
-                                      },
-                                    });
-                                  }}
-                                  placeholder={
-                                    selectedField === 'notes' 
-                                      ? (t('idCards.notesPlaceholder') || 'Enter notes text...')
-                                      : selectedField === 'schoolName'
-                                      ? (t('idCards.schoolNamePlaceholder') || 'Enter school name...')
-                                      : ''
-                                  }
-                                  className="h-8 text-xs"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  {selectedField === 'notes' 
-                                    ? (t('idCards.notesDescription') || 'Custom text to display. Leave empty to use card notes.')
-                                    : selectedField === 'schoolName'
-                                    ? (t('idCards.schoolNameDescription') || 'Custom school name. Leave empty to use student\'s school name.')
-                                    : ''}
-                                </p>
-                              </div>
-                            )}
+                      </div>
+                    )}
+
+                    {/* Field Value Editor (for editable fields) */}
+                    {selectedField && isSelectedFieldEditableText && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <Label className="text-sm font-semibold">
+                          {getEditableFieldLabel(selectedField)}
+                        </Label>
+
+                        {selectedField === 'expiryDate' ? (
+                          <div className="space-y-2">
+                            <CalendarDatePicker
+                              date={currentConfig.fieldValues?.[selectedField] ? new Date(currentConfig.fieldValues[selectedField]) : undefined}
+                              onDateChange={(date) => {
+                                const value = date ? date.toISOString().slice(0, 10) : null;
+                                setCurrentConfig({
+                                  ...currentConfig,
+                                  fieldValues: {
+                                    ...(currentConfig.fieldValues || {}),
+                                    [selectedField]: value,
+                                  },
+                                });
+                              }}
+                              placeholder={t('idCards.selectExpiryDate') || 'Select expiry date...'}
+                              className="h-8 text-xs"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {t('idCards.expiryDateDescription') || 'Set a fixed expiry date, or leave empty to use dynamic date (1 year from print date)'}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Input
+                              type="text"
+                              value={currentConfig.fieldValues?.[selectedField] || ''}
+                              onChange={(e) => {
+                                const value = e.target.value || null;
+                                setCurrentConfig({
+                                  ...currentConfig,
+                                  fieldValues: {
+                                    ...(currentConfig.fieldValues || {}),
+                                    [selectedField]: value,
+                                  },
+                                });
+                              }}
+                              placeholder={getEditableFieldPlaceholder(selectedField)}
+                              className="h-8 text-xs"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {getEditableFieldDescription(selectedField)}
+                            </p>
                           </div>
                         )}
                       </div>
                     )}
-                  </CardContent>
+                    </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </Card>
               )}
-            </div>
+              </div>
+            </ScrollArea>
           </div>
         </TabsContent>
       </Tabs>
