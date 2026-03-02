@@ -125,7 +125,7 @@
 
 - [حاضري](/help-center/s/attendance/attendance) — د حاضري سیشنونه جوړول او بندول؛ وروستي سیشنونه لیدل.
 - [حاضري راپورونه](/help-center/s/attendance/attendance-reports) — د فلټرونو له مخې حاضري ریکارډونه لیدل او صادرول.
-- [حاضري ټولیز راپورونه](/help-center/s/attendance/attendance-reports-totals) — ټولیزې، کچې، او د ټولګي/خونې breakdown وګورئ؛ PDF/Excel صادرول.
+- [حاضري ټولیز راپورونه](/help-center/s/attendance/attendance-reports-totals) — ټولیزې، کچې، او د ټولګي/اطاقونه breakdown وګورئ؛ PDF/Excel صادرول.
 
 ---
 

@@ -93,7 +93,7 @@
 
 - [حاضري نښانې کول](/help-center/s/attendance/attendance-marking) — یو خلاص سیشن وټاکئ او زده کوونکي حاضر، غائب، وروستی، معاف، ناروغ، یا رخصتي وګورئ؛ لاسي roster یا بارکوډ سکین وکاروئ.
 - [حاضري راپورونه](/help-center/s/attendance/attendance-reports) — د زده کوونکی، ټولګي، مکتب، حالت، او نیټې له مخې حاضري ریکارډونه وګورئ او فلټر کړئ؛ PDF یا Excel صادرول.
-- [حاضري ټولیز راپورونه](/help-center/s/attendance/attendance-reports-totals) — ټولیزې، د حاضري کچه، د حالت breakdown، د ټولګي او خونې breakdown وګورئ؛ ټولیزې، د ټولګي، یا د خونې راپورونه PDF یا Excel صادرول.
+- [حاضري ټولیز راپورونه](/help-center/s/attendance/attendance-reports-totals) — ټولیزې، د حاضري کچه، د حالت breakdown، د ټولګي او اطاقونه breakdown وګورئ؛ ټولیزې، د ټولګي، یا د اطاقونه راپورونه PDF یا Excel صادرول.
 
 ---
 

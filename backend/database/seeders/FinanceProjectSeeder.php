@@ -103,7 +103,7 @@ class FinanceProjectSeeder extends Seeder
             [
                 'name' => 'نوی دفتر ودانی پروژه',
                 'code' => 'NEW_OFFICE_BUILDING',
-                'description' => 'د نوي دفتر ودانیو د جوړولو پروژه - د ادارې د فعالیتونو د پراختیا، د کارمندانو د دفترونو، او د کنفرانس خونه لپاره.',
+                'description' => 'د نوي دفتر ودانیو د جوړولو پروژه - د ادارې د فعالیتونو د پراختیا، د کارمندانو د دفترونو، او د کنفرانس اطاق لپاره.',
                 'budget_amount' => 1500000.00,
                 'status' => 'active',
                 'start_date' => $startDate,
