@@ -361,6 +361,12 @@ export function StudentAdmissions() {
               {row.original.studentId && (
                 <>
                   <DropdownMenuItem
+                    onClick={() => handleAssignIdCard(row.original)}
+                  >
+                    <UserCheck className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                    {t('idCards.assign') || 'Assign ID Card'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
                     onClick={() => navigate(`/students/${row.original.studentId}/fees`)}
                   >
                     <DollarSign className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
@@ -418,6 +424,28 @@ export function StudentAdmissions() {
   const handleEdit = (admission: StudentAdmission) => {
     setSelectedAdmission(admission);
     setIsDialogOpen(true);
+  };
+
+  const handleAssignIdCard = (admission: StudentAdmission) => {
+    const params = new URLSearchParams({
+      studentType: 'regular',
+      admissionId: admission.id,
+    });
+
+    if (admission.academicYearId) {
+      params.set('academicYearId', admission.academicYearId);
+    }
+    if (admission.schoolId) {
+      params.set('schoolId', admission.schoolId);
+    }
+    if (admission.classId) {
+      params.set('classId', admission.classId);
+    }
+    if (admission.classAcademicYearId) {
+      params.set('classAcademicYearId', admission.classAcademicYearId);
+    }
+
+    navigate(`/id-cards/assignment?${params.toString()}`);
   };
 
   const handleDelete = (admission: StudentAdmission) => {

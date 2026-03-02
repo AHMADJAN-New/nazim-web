@@ -4,8 +4,10 @@ import {
   FileText,
   CheckSquare,
   Square,
+  RefreshCw,
 } from 'lucide-react';
-import React, { useState, useMemo, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -48,6 +50,7 @@ import {
 } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'idCardExportSettings';
@@ -98,6 +101,7 @@ function saveSettings(settings: ExportSettings) {
 export default function IdCardExport() {
   const { t } = useLanguage();
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
   const organizationId = profile?.organization_id;
 
   // Load saved settings
@@ -136,13 +140,13 @@ export default function IdCardExport() {
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
 
   // Data hooks
-  const { data: academicYears = [] } = useAcademicYears(organizationId);
-  const { data: currentAcademicYear } = useCurrentAcademicYear();
+  const { data: academicYears = [], refetch: refetchAcademicYears } = useAcademicYears(organizationId);
+  const { data: currentAcademicYear, refetch: refetchCurrentAcademicYear } = useCurrentAcademicYear();
   const { data: schools = [] } = useSchools(organizationId);
   const { data: classes = [] } = useClasses(organizationId);
   const { data: classAcademicYears = [] } = useClassAcademicYears(academicYearId, organizationId);
-  const { data: courses = [] } = useShortTermCourses(organizationId);
-  const { data: templates = [] } = useIdCardTemplates(true);
+  const { data: courses = [], refetch: refetchCourses } = useShortTermCourses(organizationId);
+  const { data: templates = [], refetch: refetchTemplates } = useIdCardTemplates(true);
 
   // Set default academic year (only if not already set from saved settings)
   useEffect(() => {
@@ -188,8 +192,10 @@ export default function IdCardExport() {
     search: searchQuery || undefined,
   }), [studentType, academicYearId, schoolId, classId, classAcademicYearId, courseId, enrollmentStatus, templateId, printedStatus, feeStatus, searchQuery]);
 
-  const { data: idCards = [], isLoading: cardsLoading } = useStudentIdCards(cardFilters);
+  const { data: idCards = [], isLoading: cardsLoading, refetch: refetchIdCards } = useStudentIdCards(cardFilters);
   const exportCards = useExportIdCards();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Statistics
   const statistics = useMemo(() => {
@@ -322,6 +328,44 @@ export default function IdCardExport() {
     }
   };
 
+  const refreshExportData = useCallback(async (showSuccessToast = true) => {
+    setIsRefreshing(true);
+    try {
+      await Promise.allSettled([
+        refetchAcademicYears(),
+        refetchCurrentAcademicYear(),
+        refetchTemplates(),
+        refetchCourses(),
+        refetchIdCards(),
+        queryClient.invalidateQueries({ queryKey: ['classes'] }),
+        queryClient.refetchQueries({ queryKey: ['classes'] }),
+        queryClient.invalidateQueries({ queryKey: ['schools'] }),
+        queryClient.refetchQueries({ queryKey: ['schools'] }),
+      ]);
+
+      if (showSuccessToast) {
+        showToast.success(t('toast.refreshed') || 'ID card export data refreshed');
+      }
+    } catch (error) {
+      showToast.error(t('toast.refreshFailed') || 'Failed to refresh export data');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    queryClient,
+    refetchAcademicYears,
+    refetchCurrentAcademicYear,
+    refetchTemplates,
+    refetchCourses,
+    refetchIdCards,
+    t,
+  ]);
+
+  useEffect(() => {
+    void refreshExportData(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
@@ -329,6 +373,20 @@ export default function IdCardExport() {
         description={t('idCards.export.description') || 'Export ID cards as ZIP or PDF files'}
         icon={<FileArchive className="h-5 w-5" />}
       />
+
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void refreshExportData(true)}
+          disabled={isRefreshing}
+          className="flex-shrink-0"
+          aria-label={t('common.refresh') || 'Refresh'}
+        >
+          <RefreshCw className={cn('h-4 w-4', isRefreshing ? 'animate-spin' : '')} />
+          <span className="hidden sm:inline ml-2">{t('common.refresh') || 'Refresh'}</span>
+        </Button>
+      </div>
 
       {/* Student Type Tabs */}
       <Tabs value={studentType} onValueChange={(value) => setStudentType(value as 'regular' | 'course')}>

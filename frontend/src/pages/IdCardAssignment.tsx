@@ -10,8 +10,11 @@ import {
   Trash2,
   Edit,
   X,
+  RefreshCw,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
@@ -86,6 +89,8 @@ import { formatDate } from '@/lib/utils';
 export default function IdCardAssignment() {
   const { t } = useLanguage();
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const organizationId = profile?.organization_id;
 
   // Student type: 'regular' or 'course'
@@ -130,18 +135,28 @@ export default function IdCardAssignment() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasAppliedNavigationPreset, setHasAppliedNavigationPreset] = useState(false);
+  const presetStudentType = searchParams.get('studentType');
+  const presetAdmissionId = searchParams.get('admissionId');
+  const presetCourseStudentId = searchParams.get('courseStudentId');
+  const presetAcademicYearId = searchParams.get('academicYearId');
+  const presetSchoolId = searchParams.get('schoolId');
+  const presetClassId = searchParams.get('classId');
+  const presetClassAcademicYearId = searchParams.get('classAcademicYearId');
+  const presetCourseId = searchParams.get('courseId');
 
   // Data hooks
-  const { data: academicYears = [] } = useAcademicYears(organizationId);
-  const { data: currentAcademicYear } = useCurrentAcademicYear();
+  const { data: academicYears = [], refetch: refetchAcademicYears } = useAcademicYears(organizationId);
+  const { data: currentAcademicYear, refetch: refetchCurrentAcademicYear } = useCurrentAcademicYear();
   const { data: schools = [] } = useSchools(organizationId);
   const { data: classes = [] } = useClasses(organizationId);
   const { data: classAcademicYears = [] } = useClassAcademicYears(academicYearId, organizationId);
-  const { data: templates = [] } = useIdCardTemplates(true);
-  const { data: courses = [] } = useShortTermCourses(organizationId, false);
+  const { data: templates = [], refetch: refetchTemplates } = useIdCardTemplates(true);
+  const { data: courses = [], refetch: refetchCourses } = useShortTermCourses(organizationId, false);
   
   // Regular students (only fetch when in regular mode)
-  const { data: studentAdmissions = [] } = useStudentAdmissions(organizationId, false, {
+  const { data: studentAdmissions = [], refetch: refetchStudentAdmissions } = useStudentAdmissions(organizationId, false, {
     academic_year_id: academicYearId || undefined,
     school_id: schoolId || undefined,
     class_id: classId || undefined,
@@ -151,7 +166,7 @@ export default function IdCardAssignment() {
 
   // Course students (only fetch when in course mode)
   const effectiveCourseId = courseId || undefined;
-  const { data: courseStudents = [] } = useCourseStudents(effectiveCourseId, false);
+  const { data: courseStudents = [], refetch: refetchCourseStudents } = useCourseStudents(effectiveCourseId, false);
 
   // Set default academic year
   useEffect(() => {
@@ -159,6 +174,97 @@ export default function IdCardAssignment() {
       setAcademicYearId(currentAcademicYear.id);
     }
   }, [currentAcademicYear?.id, academicYearId]);
+
+  // Refresh data on page navigation/mount so newly admitted students appear immediately.
+  const refreshAssignmentData = useCallback(async (showSuccessToast = true) => {
+    setIsRefreshing(true);
+    try {
+      await Promise.allSettled([
+        refetchAcademicYears(),
+        refetchCurrentAcademicYear(),
+        refetchTemplates(),
+        refetchCourses(),
+        refetchStudentAdmissions(),
+        refetchCourseStudents(),
+        refetchIdCards(),
+        queryClient.invalidateQueries({ queryKey: ['classes'] }),
+        queryClient.refetchQueries({ queryKey: ['classes'] }),
+        queryClient.invalidateQueries({ queryKey: ['schools'] }),
+        queryClient.refetchQueries({ queryKey: ['schools'] }),
+      ]);
+
+      if (showSuccessToast) {
+        showToast.success(t('toast.refreshed') || 'ID card assignment data refreshed');
+      }
+    } catch (error) {
+      showToast.error(t('toast.refreshFailed') || 'Failed to refresh assignment data');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    queryClient,
+    refetchAcademicYears,
+    refetchCurrentAcademicYear,
+    refetchTemplates,
+    refetchCourses,
+    refetchStudentAdmissions,
+    refetchCourseStudents,
+    refetchIdCards,
+    t,
+  ]);
+
+  useEffect(() => {
+    void refreshAssignmentData(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Apply pre-selection from navigation query params (e.g. from Admissions actions dropdown).
+  useEffect(() => {
+    if (hasAppliedNavigationPreset) {
+      return;
+    }
+    if (!presetAdmissionId && !presetCourseStudentId) {
+      return;
+    }
+
+    if (presetStudentType === 'course') {
+      setStudentType('course');
+      if (presetAcademicYearId) setAcademicYearId(presetAcademicYearId);
+      if (presetSchoolId) setSchoolId(presetSchoolId);
+      if (presetCourseId) setCourseId(presetCourseId);
+
+      if (presetCourseStudentId) {
+        setSelectedCourseStudentIds(new Set([presetCourseStudentId]));
+      }
+
+      setHasAppliedNavigationPreset(true);
+      return;
+    }
+
+    setStudentType('regular');
+    if (presetAcademicYearId) setAcademicYearId(presetAcademicYearId);
+    if (presetSchoolId) setSchoolId(presetSchoolId);
+    if (presetClassId) setClassId(presetClassId);
+    if (presetClassAcademicYearId) setClassAcademicYearId(presetClassAcademicYearId);
+
+    if (presetAdmissionId) {
+      setSelectedAdmissionIds(new Set([presetAdmissionId]));
+    }
+
+    setHasAppliedNavigationPreset(true);
+  }, [
+    hasAppliedNavigationPreset,
+    presetAdmissionId,
+    presetCourseStudentId,
+    presetStudentType,
+    presetAcademicYearId,
+    presetSchoolId,
+    presetClassId,
+    presetClassAcademicYearId,
+    presetCourseId,
+    studentAdmissions,
+    courseStudents,
+  ]);
 
   // Filters for ID cards
   const cardFilters: StudentIdCardFilters = useMemo(() => ({
@@ -173,7 +279,7 @@ export default function IdCardAssignment() {
     search: searchQuery || undefined,
   }), [academicYearId, schoolId, classId, classAcademicYearId, courseId, studentType, enrollmentStatus, templateId, searchQuery]);
 
-  const { data: idCards = [], isLoading: cardsLoading } = useStudentIdCards(cardFilters);
+  const { data: idCards = [], isLoading: cardsLoading, refetch: refetchIdCards } = useStudentIdCards(cardFilters);
   const { data: financeAccounts = [] } = useFinanceAccounts({ isActive: true });
   const { data: incomeCategories = [] } = useIncomeCategories({ isActive: true });
   const assignCards = useAssignIdCards();
@@ -481,10 +587,24 @@ export default function IdCardAssignment() {
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t('idCards.assignment.title') || 'ID Card Assignment'}</CardTitle>
-          <CardDescription>
-            {t('idCards.assignment.description') || 'Assign ID card templates to students and manage card assignments'}
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>{t('idCards.assignment.title') || 'ID Card Assignment'}</CardTitle>
+              <CardDescription>
+                {t('idCards.assignment.description') || 'Assign ID card templates to students and manage card assignments'}
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refreshAssignmentData(true)}
+              disabled={isRefreshing}
+              className="self-start"
+            >
+              <RefreshCw className={cn('h-4 w-4', isRefreshing ? 'animate-spin' : '')} />
+              <span className="ml-2 hidden sm:inline">{t('common.refresh') || 'Refresh'}</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="assignment" className="w-full">
