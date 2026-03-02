@@ -33,6 +33,24 @@ import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 
 const statusOrder: AdmissionStatus[] = ['active', 'admitted', 'pending', 'inactive', 'suspended', 'withdrawn', 'graduated'];
 
+const statusVariant = (status: AdmissionStatus): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
+  switch (status) {
+    case 'active':
+    case 'graduated':
+      return 'success';
+    case 'admitted':
+    case 'pending':
+      return 'info';
+    case 'inactive':
+    case 'suspended':
+      return 'warning';
+    case 'withdrawn':
+      return 'destructive';
+    default:
+      return 'secondary';
+  }
+};
+
 const statusLabelMap = (
   t: ReturnType<typeof useLanguage>['t']
 ): Record<AdmissionStatus, string> => ({
@@ -461,7 +479,7 @@ const StudentAdmissionsReport = () => {
                           .map((item) => (
                             <TableRow key={item.status}>
                               <TableCell>
-                                <Badge variant="outline">{statusLabels[item.status]}</Badge>
+                                <Badge variant={statusVariant(item.status)}>{statusLabels[item.status]}</Badge>
                               </TableCell>
                               <TableCell className="text-right font-medium">{formatNumber(item.count)}</TableCell>
                             </TableRow>
@@ -601,7 +619,7 @@ const StudentAdmissionsReport = () => {
                   </p>
                 </div>
                 {report.pagination.total > 0 && (
-                  <Badge variant="outline">{formatNumber(report.pagination.total)} {t('admissions.records') || 'records'}</Badge>
+                  <Badge variant="muted">{formatNumber(report.pagination.total)} {t('admissions.records') || 'records'}</Badge>
                 )}
               </div>
             </CardHeader>
@@ -633,12 +651,12 @@ const StudentAdmissionsReport = () => {
                               <div className="font-semibold break-words">{admission.student?.fullName || t('events.notAvailable')}</div>
                               <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
                                 {admission.student?.admissionNumber && (
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="muted" className="text-xs">
                                     {t('examReports.admissionNo') || 'Adm'}: {admission.student.admissionNumber}
                                   </Badge>
                                 )}
                                 {admission.student?.cardNumber && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge variant="info" className="text-xs">
                                     {t('attendanceReports.cardNumber') || 'Card'}: {admission.student.cardNumber}
                                   </Badge>
                                 )}
@@ -666,11 +684,11 @@ const StudentAdmissionsReport = () => {
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
                             <div className="space-y-1">
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="muted" className="text-xs">
                                 {admission.residencyType?.name || '—'}
                               </Badge>
                               <div>
-                                <Badge variant={admission.isBoarder ? 'default' : 'secondary'} className="text-xs">
+                                <Badge variant={admission.isBoarder ? 'boarder' : 'muted'} className="text-xs">
                                   {admission.isBoarder ? t('admissions.boarderYes') || 'Boarder' : t('admissions.boarderNo') || 'Day'}
                                 </Badge>
                               </div>
@@ -689,7 +707,7 @@ const StudentAdmissionsReport = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className="capitalize">
+                            <Badge variant={statusVariant(admission.enrollmentStatus)} className="capitalize text-xs">
                               {statusLabels[admission.enrollmentStatus]}
                             </Badge>
                           </TableCell>

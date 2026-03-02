@@ -205,14 +205,14 @@ const cleanStudentData = (data: StudentFormData): Partial<Student> => {
   return cleaned;
 };
 
-const statusBadge = (status: Student['status']) => {
+const statusBadge = (status: Student['status']): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
   switch (status) {
     case 'active':
-      return 'default';
+      return 'success';
     case 'admitted':
-      return 'secondary';
+      return 'info';
     case 'applied':
-      return 'outline';
+      return 'warning';
     case 'withdrawn':
       return 'destructive';
     default:
@@ -753,7 +753,7 @@ export function Students() {
       accessorKey: 'gender',
       header: t('students.gender') || 'Gender',
       cell: ({ row }) => (
-        <Badge variant="outline">
+        <Badge variant={row.original.gender === 'male' ? 'info' : 'muted'}>
           {row.original.gender === 'male' ? t('students.male') : t('students.female')}
         </Badge>
       ),
@@ -1015,7 +1015,7 @@ export function Students() {
                               {schools?.find((school) => school.id === student.schoolId)?.school_name || student.school?.schoolName || '—'}
                             </TableCell>
                             <TableCell className="hidden lg:table-cell">
-                              <Badge variant="outline">
+                              <Badge variant={student.gender === 'male' ? 'info' : 'muted'}>
                                 {student.gender === 'male' ? t('students.male') : t('students.female')}
                               </Badge>
                             </TableCell>

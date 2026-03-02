@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PictureCell } from '@/components/shared/PictureCell';
 import { 
   Table, 
   TableBody, 
@@ -76,18 +76,50 @@ export default function StudentHistoryListPage() {
       });
   }, [students, searchQuery, statusFilter]);
 
+  const statusBadgeVariant = (status: Student['status']): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'admitted':
+        return 'info';
+      case 'applied':
+        return 'warning';
+      case 'withdrawn':
+        return 'destructive';
+      case 'inactive':
+        return 'warning';
+      case 'graduated':
+        return 'success';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: Student['status']) => {
+    switch (status) {
+      case 'active': return t('events.active') ?? 'Active';
+      case 'admitted': return t('students.admitted') ?? 'Admitted';
+      case 'applied': return t('students.applied') ?? 'Applied';
+      case 'withdrawn': return t('students.withdrawn') ?? 'Withdrawn';
+      case 'inactive': return t('events.inactive') ?? 'Inactive';
+      case 'graduated': return t('students.graduated') ?? 'Graduated';
+      default: return status ?? '—';
+    }
+  };
+
   // Define columns for the table
   const columns: ColumnDef<Student>[] = [
     {
       accessorKey: 'picturePath',
       header: '',
       cell: ({ row }) => (
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={row.original.picturePath || undefined} alt={row.original.fullName} />
-          <AvatarFallback>
-            {row.original.fullName.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <PictureCell
+          type="student"
+          entityId={row.original.id}
+          picturePath={row.original.picturePath}
+          alt={row.original.fullName}
+          size="sm"
+        />
       ),
     },
     {
@@ -119,12 +151,9 @@ export default function StudentHistoryListPage() {
       header: t('students.statusOptions.label') ?? t('students.status') ?? 'Status',
       cell: ({ row }) => {
         const status = row.original.status;
-        const variant = status === 'active' ? 'default' : 
-                       status === 'inactive' ? 'secondary' : 
-                       status === 'graduated' ? 'outline' : 'destructive';
         return (
-          <Badge variant={variant}>
-            {status}
+          <Badge variant={statusBadgeVariant(status)} className="shrink-0">
+            {getStatusLabel(status)}
           </Badge>
         );
       },

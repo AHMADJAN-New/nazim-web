@@ -44,20 +44,20 @@ import {
 import { AdmissionFormDialog } from '@/components/admissions/AdmissionFormDialog';
 import { AdmissionDetailsPanel } from '@/components/admissions/AdmissionDetailsPanel';
 
-const statusVariant = (status: AdmissionStatus) => {
+const statusVariant = (status: AdmissionStatus): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
   switch (status) {
     case 'active':
-      return 'default';
+      return 'success';
     case 'admitted':
     case 'pending':
-      return 'secondary';
+      return 'info';
     case 'inactive':
     case 'suspended':
-      return 'outline';
+      return 'warning';
     case 'withdrawn':
       return 'destructive';
     case 'graduated':
-      return 'default';
+      return 'success';
     default:
       return 'secondary';
   }
@@ -247,7 +247,7 @@ export function StudentAdmissions() {
                 </Badge>
               )}
               {admission.isBoarder && (
-                <Badge variant="secondary" className="shrink-0 text-xs">
+                <Badge variant="boarder" className="shrink-0 text-xs">
                   {t('admissions.boarder') || 'Boarder'}
                 </Badge>
               )}
@@ -287,7 +287,7 @@ export function StudentAdmissions() {
             <div className="space-y-1 min-w-0 sm:min-w-[150px]">
               <div className="font-medium break-words">{admission.class?.name || t('events.unknown')}</div>
               {classInfo.sectionName && (
-                <Badge variant="outline" className="text-xs shrink-0">
+                <Badge variant="muted" className="text-xs shrink-0">
                   {classInfo.sectionName}
                 </Badge>
               )}
@@ -316,7 +316,12 @@ export function StudentAdmissions() {
       header: t('admissions.room') || 'Room',
       cell: ({ row }) => {
         const room = rooms?.find((r) => r.id === row.original.roomId);
-        return room ? room.roomNumber : '—';
+        if (!room) return '—';
+        return (
+          <Badge variant="muted" className="text-xs shrink-0 font-mono">
+            {room.roomNumber}
+          </Badge>
+        );
       },
       meta: {
         className: 'hidden lg:table-cell',

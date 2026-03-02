@@ -1,12 +1,13 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { Eye, Search, X, User } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { Eye, Search, User, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { PictureCell } from '@/components/shared/PictureCell';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,14 +48,14 @@ import type { Student } from '@/types/domain/student';
 
 
 
-const statusBadgeVariant = (status?: string) => {
+const statusBadgeVariant = (status?: string): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
   switch (status) {
     case 'active':
-      return 'default';
+      return 'success';
     case 'admitted':
-      return 'secondary';
+      return 'info';
     case 'applied':
-      return 'outline';
+      return 'warning';
     case 'withdrawn':
       return 'destructive';
     default:
@@ -84,105 +85,6 @@ const formatDate = (date?: Date | string | null) => {
 const buildLocation = (province?: string | null, district?: string | null, village?: string | null) => {
   const parts = [province, district, village].filter(Boolean);
   return parts.length ? parts.join(', ') : '—';
-};
-
-// Component for authenticated student picture display
-const StudentAvatar = ({ student, size = 'md' }: { student: Student; size?: 'sm' | 'md' | 'lg' }) => {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
-
-  // Size classes
-  const sizeClasses = {
-    sm: { container: 'w-10 h-10', icon: 'h-5 w-5' },
-    md: { container: 'w-20 h-20', icon: 'h-10 w-10' },
-    lg: { container: 'w-32 h-32', icon: 'h-16 w-16' },
-  };
-
-  const classes = sizeClasses[size];
-
-  // Fetch image with authentication when component mounts
-  useEffect(() => {
-    // Only fetch if picturePath exists and is not empty
-    const hasPicture = student.picturePath && student.picturePath.trim() !== '' && student.id;
-    
-    if (hasPicture) {
-      let currentBlobUrl: string | null = null;
-
-      const fetchImage = async () => {
-        try {
-          const { apiClient } = await import('@/lib/api/client');
-          const token = apiClient.getToken();
-          const url = `/api/students/${student.id}/picture`;
-          
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Accept': 'image/*',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            },
-            credentials: 'include',
-          });
-          
-          if (!response.ok) {
-            if (response.status === 404) {
-              setImageUrl(null);
-              setImageError(false);
-              return;
-            }
-            throw new Error(`Failed to fetch image: ${response.status}`);
-          }
-          
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          currentBlobUrl = blobUrl;
-          setImageUrl(blobUrl);
-          setImageError(false);
-        } catch (error) {
-          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
-            console.error('Failed to fetch student picture:', error);
-          }
-          setImageUrl(null);
-          setImageError(true);
-        }
-      };
-      
-      fetchImage();
-      
-      return () => {
-        if (currentBlobUrl) {
-          URL.revokeObjectURL(currentBlobUrl);
-        }
-      };
-    } else {
-      // No picture path, show placeholder immediately
-      setImageUrl(null);
-      setImageError(false);
-    }
-  }, [student.id, student.picturePath]);
-
-  return (
-    <div className="relative">
-      {imageUrl && !imageError ? (
-        <img
-          src={imageUrl}
-          alt={student.fullName}
-          className={`${classes.container} rounded-full object-cover border-2 border-border`}
-          onError={() => {
-            setImageError(true);
-            if (imageUrl && imageUrl.startsWith('blob:')) {
-              URL.revokeObjectURL(imageUrl);
-            }
-            setImageUrl(null);
-          }}
-        />
-      ) : null}
-      <div 
-        className={`${classes.container} rounded-full bg-muted flex items-center justify-center border-2 border-border ${imageUrl && !imageError ? 'hidden' : 'flex'}`}
-      >
-        <User className={`${classes.icon} text-muted-foreground`} />
-      </div>
-    </div>
-  );
 };
 
 const StudentReport = () => {
@@ -311,7 +213,15 @@ const StudentReport = () => {
       header: '',
       cell: ({ row }) => {
         const student = row.original;
-        return <StudentAvatar student={student} />;
+        return (
+          <PictureCell
+            type="student"
+            entityId={student.id}
+            picturePath={student.picturePath}
+            alt={student.fullName}
+            size="md"
+          />
+        );
       },
       meta: {
         className: 'w-[60px]',
@@ -684,8 +594,14 @@ const StudentReport = () => {
             <>
               <SheetHeader className="pb-4 border-b">
                 <div className="flex items-start gap-4">
-                  {/* Student Image */}
-                  <StudentAvatar student={selectedStudent} size="md" />
+                  {/* Student Image - same PictureCell as table for consistent display and caching */}
+                  <PictureCell
+                    type="student"
+                    entityId={selectedStudent.id}
+                    picturePath={selectedStudent.picturePath}
+                    alt={selectedStudent.fullName}
+                    size="lg"
+                  />
                   <div className="flex-1">
                     <SheetTitle className="text-2xl mb-1">{selectedStudent.fullName}</SheetTitle>
                     <SheetDescription className="text-base">
@@ -721,7 +637,7 @@ const StudentReport = () => {
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
                         <span className="text-sm font-medium text-muted-foreground">{t('studentReport.gender') || 'Gender'}</span>
-                        <Badge variant="outline" className="capitalize">
+                        <Badge variant={selectedStudent.gender === 'male' ? 'info' : 'muted'} className="capitalize">
                           {selectedStudent.gender === 'male' ? (t('studentReport.male') || 'Male') : (t('studentReport.female') || 'Female')}
                         </Badge>
                       </div>
@@ -791,7 +707,9 @@ const StudentReport = () => {
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
                         <span className="text-sm font-medium text-muted-foreground">{t('studentReport.admissionFeeStatus') || 'Admission Fee Status'}</span>
-                        <Badge variant="outline">{formatStatus(selectedStudent.admissionFeeStatus)}</Badge>
+                        <Badge variant={selectedStudent.admissionFeeStatus === 'paid' ? 'success' : selectedStudent.admissionFeeStatus === 'pending' ? 'warning' : 'outline'}>
+                          {formatStatus(selectedStudent.admissionFeeStatus)}
+                        </Badge>
                       </div>
                       <div className="flex items-start justify-between py-2 border-b">
                         <span className="text-sm font-medium text-muted-foreground">{t('studentReport.previousSchool') || 'Previous School'}</span>
@@ -825,7 +743,7 @@ const StudentReport = () => {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between py-2 border-b">
                         <span className="text-sm font-medium text-muted-foreground">{t('studentReport.isOrphan') || 'Is Orphan'}</span>
-                        <Badge variant={selectedStudent.isOrphan ? 'secondary' : 'outline'}>
+                        <Badge variant={selectedStudent.isOrphan ? 'destructive' : 'outline'}>
                           {selectedStudent.isOrphan ? (t('events.yes') || 'Yes') : (t('events.no') || 'No')}
                         </Badge>
                       </div>
