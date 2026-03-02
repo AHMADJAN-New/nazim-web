@@ -10,8 +10,11 @@ import {
   Trash2,
   Edit,
   X,
+  RefreshCw,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
@@ -82,10 +85,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
+import type { Student } from '@/types/domain/student';
 
 export default function IdCardAssignment() {
   const { t } = useLanguage();
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const organizationId = profile?.organization_id;
 
   // Student type: 'regular' or 'course'
@@ -130,18 +136,28 @@ export default function IdCardAssignment() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasAppliedNavigationPreset, setHasAppliedNavigationPreset] = useState(false);
+  const presetStudentType = searchParams.get('studentType');
+  const presetAdmissionId = searchParams.get('admissionId');
+  const presetCourseStudentId = searchParams.get('courseStudentId');
+  const presetAcademicYearId = searchParams.get('academicYearId');
+  const presetSchoolId = searchParams.get('schoolId');
+  const presetClassId = searchParams.get('classId');
+  const presetClassAcademicYearId = searchParams.get('classAcademicYearId');
+  const presetCourseId = searchParams.get('courseId');
 
   // Data hooks
-  const { data: academicYears = [] } = useAcademicYears(organizationId);
-  const { data: currentAcademicYear } = useCurrentAcademicYear();
+  const { data: academicYears = [], refetch: refetchAcademicYears } = useAcademicYears(organizationId);
+  const { data: currentAcademicYear, refetch: refetchCurrentAcademicYear } = useCurrentAcademicYear();
   const { data: schools = [] } = useSchools(organizationId);
   const { data: classes = [] } = useClasses(organizationId);
   const { data: classAcademicYears = [] } = useClassAcademicYears(academicYearId, organizationId);
-  const { data: templates = [] } = useIdCardTemplates(true);
-  const { data: courses = [] } = useShortTermCourses(organizationId, false);
+  const { data: templates = [], refetch: refetchTemplates } = useIdCardTemplates(true);
+  const { data: courses = [], refetch: refetchCourses } = useShortTermCourses(organizationId, false);
   
   // Regular students (only fetch when in regular mode)
-  const { data: studentAdmissions = [] } = useStudentAdmissions(organizationId, false, {
+  const { data: studentAdmissions = [], refetch: refetchStudentAdmissions } = useStudentAdmissions(organizationId, false, {
     academic_year_id: academicYearId || undefined,
     school_id: schoolId || undefined,
     class_id: classId || undefined,
@@ -151,16 +167,9 @@ export default function IdCardAssignment() {
 
   // Course students (only fetch when in course mode)
   const effectiveCourseId = courseId || undefined;
-  const { data: courseStudents = [] } = useCourseStudents(effectiveCourseId, false);
+  const { data: courseStudents = [], refetch: refetchCourseStudents } = useCourseStudents(effectiveCourseId, false);
 
-  // Set default academic year
-  useEffect(() => {
-    if (currentAcademicYear && !academicYearId) {
-      setAcademicYearId(currentAcademicYear.id);
-    }
-  }, [currentAcademicYear?.id, academicYearId]);
-
-  // Filters for ID cards
+  // Filters for ID cards (needed for useStudentIdCards, which is used in refreshAssignmentData)
   const cardFilters: StudentIdCardFilters = useMemo(() => ({
     academicYearId: academicYearId || undefined,
     schoolId: schoolId || undefined,
@@ -173,7 +182,137 @@ export default function IdCardAssignment() {
     search: searchQuery || undefined,
   }), [academicYearId, schoolId, classId, classAcademicYearId, courseId, studentType, enrollmentStatus, templateId, searchQuery]);
 
-  const { data: idCards = [], isLoading: cardsLoading } = useStudentIdCards(cardFilters);
+  const { data: idCards = [], isLoading: cardsLoading, refetch: refetchIdCards } = useStudentIdCards(cardFilters);
+
+  // Set default academic year
+  useEffect(() => {
+    if (currentAcademicYear && !academicYearId) {
+      setAcademicYearId(currentAcademicYear.id);
+    }
+  }, [currentAcademicYear?.id, academicYearId]);
+
+  // Refresh data on page navigation/mount so newly admitted students appear immediately.
+  const refreshAssignmentData = useCallback(async (showSuccessToast = true) => {
+    setIsRefreshing(true);
+    try {
+      await Promise.allSettled([
+        refetchAcademicYears(),
+        refetchCurrentAcademicYear(),
+        refetchTemplates(),
+        refetchCourses(),
+        refetchStudentAdmissions(),
+        refetchCourseStudents(),
+        refetchIdCards(),
+        queryClient.invalidateQueries({ queryKey: ['classes'] }),
+        queryClient.refetchQueries({ queryKey: ['classes'] }),
+        queryClient.invalidateQueries({ queryKey: ['schools'] }),
+        queryClient.refetchQueries({ queryKey: ['schools'] }),
+      ]);
+
+      if (showSuccessToast) {
+        showToast.success(t('toast.refreshed') || 'ID card assignment data refreshed');
+      }
+    } catch (error) {
+      showToast.error(t('toast.refreshFailed') || 'Failed to refresh assignment data');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    queryClient,
+    refetchAcademicYears,
+    refetchCurrentAcademicYear,
+    refetchTemplates,
+    refetchCourses,
+    refetchStudentAdmissions,
+    refetchCourseStudents,
+    refetchIdCards,
+    t,
+  ]);
+
+  useEffect(() => {
+    void refreshAssignmentData(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refetch admissions when page becomes visible (e.g. user navigates back from Admissions) so newly added students appear
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void refetchStudentAdmissions();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [refetchStudentAdmissions]);
+
+  // Load latest template design when assignment page gains focus (e.g. after editing template in another tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      queryClient.invalidateQueries({ queryKey: ['id-card-templates'] });
+      void refetchTemplates();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [queryClient, refetchTemplates]);
+
+  // Auto-select the default template in the assignment template dropdown when templates load
+  useEffect(() => {
+    if (templates.length === 0 || selectedTemplateForAssignment) return;
+    const defaultTemplate = templates.find((t) => t.isDefault);
+    if (defaultTemplate) {
+      setSelectedTemplateForAssignment(defaultTemplate.id);
+    }
+  }, [templates, selectedTemplateForAssignment]);
+
+  // Apply pre-selection from navigation query params (e.g. from Admissions actions dropdown).
+  useEffect(() => {
+    if (hasAppliedNavigationPreset) {
+      return;
+    }
+    if (!presetAdmissionId && !presetCourseStudentId) {
+      return;
+    }
+
+    if (presetStudentType === 'course') {
+      setStudentType('course');
+      if (presetAcademicYearId) setAcademicYearId(presetAcademicYearId);
+      if (presetSchoolId) setSchoolId(presetSchoolId);
+      if (presetCourseId) setCourseId(presetCourseId);
+
+      if (presetCourseStudentId) {
+        setSelectedCourseStudentIds(new Set([presetCourseStudentId]));
+      }
+
+      setHasAppliedNavigationPreset(true);
+      return;
+    }
+
+    setStudentType('regular');
+    if (presetAcademicYearId) setAcademicYearId(presetAcademicYearId);
+    if (presetSchoolId) setSchoolId(presetSchoolId);
+    if (presetClassId) setClassId(presetClassId);
+    if (presetClassAcademicYearId) setClassAcademicYearId(presetClassAcademicYearId);
+
+    if (presetAdmissionId) {
+      setSelectedAdmissionIds(new Set([presetAdmissionId]));
+    }
+
+    setHasAppliedNavigationPreset(true);
+  }, [
+    hasAppliedNavigationPreset,
+    presetAdmissionId,
+    presetCourseStudentId,
+    presetStudentType,
+    presetAcademicYearId,
+    presetSchoolId,
+    presetClassId,
+    presetClassAcademicYearId,
+    presetCourseId,
+    studentAdmissions,
+    courseStudents,
+  ]);
+
+  // Finance and ID card mutation hooks
   const { data: financeAccounts = [] } = useFinanceAccounts({ isActive: true });
   const { data: incomeCategories = [] } = useIncomeCategories({ isActive: true });
   const assignCards = useAssignIdCards();
@@ -391,7 +530,110 @@ export default function IdCardAssignment() {
     setIsPreviewDialogOpen(true);
   };
 
-  // Filter cards for management table
+  // Preview: dropdown shows all selected students (so selecting students loads them in the dropdown)
+  const previewDropdownOptions = useMemo(() => {
+    if (studentType === 'course') {
+      return studentsWithCardStatus.filter(
+        (s) => 'courseStudent' in s && selectedCourseStudentIds.has(s.courseStudent.id)
+      );
+    } else {
+      return studentsWithCardStatus.filter(
+        (s) => 'admission' in s && selectedAdmissionIds.has(s.admission.id)
+      );
+    }
+  }, [studentsWithCardStatus, studentType, selectedAdmissionIds, selectedCourseStudentIds]);
+
+  // Resolve preview card from previewStudentId (may be card.id, studentAdmissionId, or courseStudentId)
+  const previewCard = useMemo(() => {
+    if (!previewStudentId) return null;
+    return (
+      idCards.find((c) => c.id === previewStudentId) ??
+      idCards.find((c) => c.studentAdmissionId === previewStudentId) ??
+      idCards.find((c) => c.courseStudentId === previewStudentId) ??
+      null
+    );
+  }, [idCards, previewStudentId]);
+
+  // Build minimal Student for preview when no card assigned yet (preview before assignment)
+  const previewStudentForRender = useMemo((): Student | null => {
+    if (!previewStudentId || !profile) return null;
+    const emptyAddress = { street: '', city: '', state: '', country: '', postalCode: '' };
+    const defaultDates = { createdAt: new Date(), updatedAt: new Date() };
+    const item = previewDropdownOptions.find(
+      (s) => ('admission' in s && s.admission.id === previewStudentId) || ('courseStudent' in s && s.courseStudent.id === previewStudentId)
+    );
+    if (!item) return null;
+    if ('courseStudent' in item) {
+      const cs = item.courseStudent;
+      const courseName = cs.course?.name ?? null;
+      return {
+        id: cs.id,
+        organizationId: profile?.organization_id ?? '',
+        schoolId: profile?.default_school_id ?? null,
+        fullName: cs.fullName ?? '',
+        fatherName: cs.fatherName ?? '',
+        admissionNumber: cs.admissionNo ?? '',
+        studentCode: null,
+        cardNumber: null,
+        rollNumber: null,
+        roomNumber: null,
+        picturePath: cs.picturePath ?? null,
+        currentClass: courseName ? { id: cs.course?.id ?? '', name: courseName, gradeLevel: undefined } : null,
+        school: null,
+        firstName: (cs.fullName ?? '').split(' ')[0] ?? '',
+        lastName: (cs.fullName ?? '').split(' ').slice(1).join(' ') ?? '',
+        gender: 'male',
+        status: 'active',
+        admissionFeeStatus: 'paid',
+        isOrphan: false,
+        address: emptyAddress,
+        guardians: [],
+        previousSchools: [],
+        healthInfo: {},
+        documents: [],
+        ...defaultDates,
+      } as Student;
+    }
+    if ('admission' in item && item.admission.student) {
+      const st = item.admission.student;
+      const adm = item.admission;
+      const className = adm.class?.name ?? adm.classAcademicYear?.sectionName ?? null;
+      const roomNumber = adm.room?.roomNumber ?? null;
+      return {
+        id: st.id,
+        organizationId: profile?.organization_id ?? st.organizationId ?? '',
+        schoolId: profile?.default_school_id ?? st.schoolId ?? null,
+        fullName: st.fullName ?? '',
+        fatherName: st.fatherName ?? '',
+        admissionNumber: st.admissionNumber ?? '',
+        studentCode: st.studentCode ?? null,
+        cardNumber: st.cardNumber ?? null,
+        rollNumber: (st as any).rollNumber ?? null,
+        roomNumber,
+        picturePath: st.picturePath ?? null,
+        currentClass: className ? { id: adm.class?.id ?? adm.classAcademicYear?.id ?? '', name: className, gradeLevel: adm.class?.gradeLevel } : null,
+        school: null,
+        firstName: (st.fullName ?? '').split(' ')[0] ?? '',
+        lastName: (st.fullName ?? '').split(' ').slice(1).join(' ') ?? '',
+        gender: (st.gender as any) ?? 'male',
+        status: 'active',
+        admissionFeeStatus: 'paid',
+        isOrphan: false,
+        address: emptyAddress,
+        guardians: [],
+        previousSchools: [],
+        healthInfo: {},
+        documents: [],
+        ...defaultDates,
+      } as Student;
+    }
+    return null;
+  }, [previewStudentId, profile, previewDropdownOptions]);
+
+  const selectedTemplateForPreview = useMemo(() => {
+    if (!selectedTemplateForAssignment) return null;
+    return templates.find((t) => t.id === selectedTemplateForAssignment) ?? null;
+  }, [templates, selectedTemplateForAssignment]);
   const filteredCards = useMemo(() => {
     return idCards.filter(card => {
       if (searchQuery) {
@@ -481,10 +723,24 @@ export default function IdCardAssignment() {
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t('idCards.assignment.title') || 'ID Card Assignment'}</CardTitle>
-          <CardDescription>
-            {t('idCards.assignment.description') || 'Assign ID card templates to students and manage card assignments'}
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>{t('idCards.assignment.title') || 'ID Card Assignment'}</CardTitle>
+              <CardDescription>
+                {t('idCards.assignment.description') || 'Assign ID card templates to students and manage card assignments'}
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refreshAssignmentData(true)}
+              disabled={isRefreshing}
+              className="self-start"
+            >
+              <RefreshCw className={cn('h-4 w-4', isRefreshing ? 'animate-spin' : '')} />
+              <span className="ml-2 hidden sm:inline">{t('common.refresh') || 'Refresh'}</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="assignment" className="w-full">
@@ -871,7 +1127,7 @@ export default function IdCardAssignment() {
                   {cardFeePaid && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>{t('finance.accounts.account') || 'Account'} *</Label>
+                        <Label>{t('finance.account') || 'Account'} *</Label>
                         <Select value={accountId} onValueChange={setAccountId} required>
                           <SelectTrigger className={!accountId ? 'border-destructive' : ''}>
                             <SelectValue placeholder={t('events.select') || 'Select account'} />
@@ -891,7 +1147,7 @@ export default function IdCardAssignment() {
                         )}
                       </div>
                       <div>
-                        <Label>{t('finance.incomeCategories.category') || 'Income Category'} *</Label>
+                        <Label>{t('finance.category') || 'Income Category'} *</Label>
                         <Select value={incomeCategoryId} onValueChange={setIncomeCategoryId} required>
                           <SelectTrigger className={!incomeCategoryId ? 'border-destructive' : ''}>
                             <SelectValue placeholder={t('events.select') || 'Select category'} />
@@ -943,34 +1199,36 @@ export default function IdCardAssignment() {
                         onValueChange={(value) => setPreviewStudentId(value || null)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t('idCards.selectStudentForPreview') || 'Select student'} />
+                          <SelectValue
+                            placeholder={
+                              previewDropdownOptions.length === 0
+                                ? (t('idCards.selectStudentsFromListFirst') || 'Select students from list first')
+                                : (t('idCards.selectStudentForPreview') || 'Select student')
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           {studentType === 'course'
-                            ? studentsWithCardStatus
-                                .filter(s => s.hasCard && 'courseStudent' in s)
-                                .map((item) => {
-                                  if ('courseStudent' in item) {
-                                    return (
-                                      <SelectItem key={item.courseStudent.id} value={item.courseStudent.id}>
-                                        {item.courseStudent.fullName}
-                                      </SelectItem>
-                                    );
-                                  }
-                                  return null;
-                                })
-                            : studentsWithCardStatus
-                                .filter(s => s.hasCard && 'admission' in s)
-                                .map((item) => {
-                                  if ('admission' in item && item.admission.student) {
-                                    return (
-                                      <SelectItem key={item.admission.id} value={item.admission.id}>
-                                        {item.admission.student.fullName}
-                                      </SelectItem>
-                                    );
-                                  }
-                                  return null;
-                                })}
+                            ? previewDropdownOptions.map((item) => {
+                                if ('courseStudent' in item) {
+                                  return (
+                                    <SelectItem key={item.courseStudent.id} value={item.courseStudent.id}>
+                                      {item.courseStudent.fullName}
+                                    </SelectItem>
+                                  );
+                                }
+                                return null;
+                              })
+                            : previewDropdownOptions.map((item) => {
+                                if ('admission' in item && item.admission.student) {
+                                  return (
+                                    <SelectItem key={item.admission.id} value={item.admission.id}>
+                                      {item.admission.student.fullName}
+                                    </SelectItem>
+                                  );
+                                }
+                                return null;
+                              })}
                         </SelectContent>
                       </Select>
                       <Select value={previewSide} onValueChange={(value: 'front' | 'back') => setPreviewSide(value)}>
@@ -986,11 +1244,13 @@ export default function IdCardAssignment() {
                         <Button
                           variant="outline"
                           onClick={() => {
-                            const card = studentType === 'course'
-                              ? idCards.find(c => c.courseStudentId === previewStudentId)
-                              : idCards.find(c => c.studentAdmissionId === previewStudentId);
-                            if (card) handlePreview(card.id, previewSide);
+                            if (previewCard) {
+                              handlePreview(previewCard.id, previewSide);
+                            } else {
+                              setIsPreviewDialogOpen(true);
+                            }
                           }}
+                          disabled={!previewCard && !(selectedTemplateForAssignment && previewStudentForRender)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           {t('events.preview') || 'Preview'}
@@ -1406,7 +1666,7 @@ export default function IdCardAssignment() {
             {cardFeePaid && (
               <>
                 <div>
-                  <Label>{t('finance.accounts.account') || 'Account'} *</Label>
+                  <Label>{t('finance.account') || 'Account'} *</Label>
                   <Select value={accountId} onValueChange={setAccountId} required>
                     <SelectTrigger className={!accountId ? 'border-destructive' : ''}>
                       <SelectValue placeholder={t('events.select') || 'Select account'} />
@@ -1426,7 +1686,7 @@ export default function IdCardAssignment() {
                   )}
                 </div>
                 <div>
-                  <Label>{t('finance.incomeCategories.category') || 'Income Category'} *</Label>
+                  <Label>{t('finance.category') || 'Income Category'} *</Label>
                   <Select value={incomeCategoryId} onValueChange={setIncomeCategoryId} required>
                     <SelectTrigger className={!incomeCategoryId ? 'border-destructive' : ''}>
                       <SelectValue placeholder={t('events.select') || 'Select category'} />
@@ -1485,7 +1745,9 @@ export default function IdCardAssignment() {
           </DialogHeader>
           {previewStudentId && (
             <StudentIdCardPreview
-              card={idCards.find(c => c.id === previewStudentId) || null}
+              card={previewCard}
+              template={previewCard ? undefined : selectedTemplateForPreview}
+              student={previewCard ? undefined : previewStudentForRender}
               side={previewSide}
               showControls={true}
             />

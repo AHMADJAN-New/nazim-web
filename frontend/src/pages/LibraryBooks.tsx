@@ -700,7 +700,7 @@ export default function LibraryBooks() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label htmlFor="finance_account_id">
-                                        {t('finance.accounts.account') || 'Finance Account'} <span className="text-destructive">*</span>
+                                        {t('finance.account') || 'Finance Account'} <span className="text-destructive">*</span>
                                     </Label>
                                     <Controller
                                         control={control}

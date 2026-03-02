@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef } from '@tanstack/react-table';
-import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign, History } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign, History, Download } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -26,6 +26,7 @@ import {
 } from '@/hooks/useStudents';
 import type { Student } from '@/types/domain/student';
 import { useStudentGuardianPictureUpload } from '@/hooks/useStudentGuardianPictureUpload';
+import { useStudentIdCards, useExportIndividualIdCard } from '@/hooks/useStudentIdCards';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,6 +56,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
 import StudentProfileView from '@/components/students/StudentProfileView';
+import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
 import { StudentDocumentsDialog } from '@/components/students/StudentDocumentsDialog';
 import { StudentEducationalHistoryDialog } from '@/components/students/StudentEducationalHistoryDialog';
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
@@ -62,6 +64,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 import { PictureCell } from '@/components/shared/PictureCell';
+import { showToast } from '@/lib/toast';
+import type { StudentIdCard } from '@/types/domain/studentIdCard';
 
 
 // Helper function to convert StudentFormData to domain Student format
@@ -253,6 +257,13 @@ export function Students() {
   } = useStudents(orgIdForQuery, true);
   const { data: stats } = useStudentStats(orgIdForQuery);
   const { data: schools } = useSchools(orgIdForQuery);
+  const {
+    data: studentIdCards = [],
+    refetch: refetchStudentIdCards,
+  } = useStudentIdCards({
+    studentType: 'regular',
+  });
+  const exportIndividualIdCard = useExportIndividualIdCard();
 
   const createStudent = useCreateStudent();
   const updateStudent = useUpdateStudent();
@@ -276,6 +287,8 @@ export function Students() {
   const [documentsDialogStudent, setDocumentsDialogStudent] = useState<Student | null>(null);
   const [historyDialogStudent, setHistoryDialogStudent] = useState<Student | null>(null);
   const [disciplineDialogStudent, setDisciplineDialogStudent] = useState<Student | null>(null);
+  const [assignedCardPreview, setAssignedCardPreview] = useState<StudentIdCard | null>(null);
+  const [isAssignedCardPreviewOpen, setIsAssignedCardPreviewOpen] = useState(false);
 
   // Debug logging removed for performance (was causing excessive re-renders)
 
@@ -506,7 +519,7 @@ export function Students() {
                 }
                 resolve();
               },
-              onError: () => reject()
+              onError: (error: Error) => reject(error)
             }
           );
         });
@@ -662,6 +675,60 @@ export function Students() {
     }
   };
 
+  const studentIdCardByStudentId = useMemo(() => {
+    const cardsMap = new Map<string, StudentIdCard>();
+    studentIdCards.forEach((card) => {
+      const studentId = card.student?.id ?? card.studentId;
+      if (studentId) {
+        cardsMap.set(studentId, card);
+      }
+    });
+    return cardsMap;
+  }, [studentIdCards]);
+
+  const findAssignedCardForStudent = useCallback(async (student: Student): Promise<StudentIdCard | null> => {
+    const existingCard = studentIdCardByStudentId.get(student.id) || null;
+    if (existingCard) {
+      return existingCard;
+    }
+
+    const refreshed = await refetchStudentIdCards();
+    const list = refreshed.data ?? [];
+    return list.find((card) => (card.student?.id === student.id || card.studentId === student.id)) ?? null;
+  }, [studentIdCardByStudentId, refetchStudentIdCards]);
+
+  const handleViewAssignedCard = async (student: Student) => {
+    try {
+      const card = await findAssignedCardForStudent(student);
+      if (!card) {
+        showToast.info(t('idCards.noCards') || 'No assigned ID card found for this student');
+        return;
+      }
+      setAssignedCardPreview(card);
+      setIsAssignedCardPreviewOpen(true);
+    } catch (error) {
+      showToast.error(t('toast.idCardPreviewFailed') || 'Failed to load assigned ID card');
+    }
+  };
+
+  const handleDownloadAssignedCard = async (student: Student) => {
+    try {
+      const card = await findAssignedCardForStudent(student);
+      if (!card) {
+        showToast.info(t('idCards.noCards') || 'No assigned ID card found for this student');
+        return;
+      }
+
+      await exportIndividualIdCard.mutateAsync({
+        id: card.id,
+        format: 'pdf',
+        side: 'both',
+      });
+    } catch (error) {
+      showToast.error(t('toast.idCardExportFailed') || 'Failed to download assigned ID card');
+    }
+  };
+
   // Client-side filtering for search
   const filteredStudents = useMemo(() => {
     const list = students || [];
@@ -784,6 +851,17 @@ export function Students() {
               <DropdownMenuItem onClick={() => handlePrint(row.original)}>
                 <Printer className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 {t('students.printProfile') || 'Print Profile'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void handleViewAssignedCard(row.original)}>
+                <Eye className="mr-2 h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                {t('idCards.assignedCards.title') || 'View Assigned ID Card'}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => void handleDownloadAssignedCard(row.original)}
+                disabled={exportIndividualIdCard.isPending}
+              >
+                <Download className="mr-2 h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                {t('students.idCardDownload') || 'ID Card Download'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setDocumentsDialogStudent(row.original)}>
@@ -1038,6 +1116,17 @@ export function Students() {
                                     <Printer className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                                     {t('students.printProfile') || 'Print Profile'}
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => void handleViewAssignedCard(student)}>
+                                    <Eye className="mr-2 h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                    {t('idCards.assignedCards.title') || 'View Assigned ID Card'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => void handleDownloadAssignedCard(student)}
+                                    disabled={exportIndividualIdCard.isPending}
+                                  >
+                                    <Download className="mr-2 h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                    {t('students.idCardDownload') || 'ID Card Download'}
+                                  </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => setDocumentsDialogStudent(student)}>
                                     <FileText className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -1120,6 +1209,27 @@ export function Students() {
         }}
         student={studentToView}
       />
+
+      <Dialog
+        open={isAssignedCardPreviewOpen}
+        onOpenChange={(open) => {
+          setIsAssignedCardPreviewOpen(open);
+          if (!open) {
+            setAssignedCardPreview(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('idCards.assignedCards.title') || 'Assigned ID Card'}</DialogTitle>
+          </DialogHeader>
+          <StudentIdCardPreview
+            card={assignedCardPreview}
+            side="front"
+            showControls={true}
+          />
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
         <AlertDialogContent>

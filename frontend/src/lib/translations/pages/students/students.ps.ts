@@ -134,6 +134,7 @@ export default {
     hostel: "لیلیه",
     idNumber: "د پېژندنې شمېره",
     imageLoadError: "د انځور په راوستلو کې پاتې راغی",
+    idCardDownload: "آی ډي کارت ډاونلوډ",
     importLimited: "ستاسو فایل {validRows} معتبر قطارونه لري، مګر یوازې {remaining} د زده کوونکي ځای(ونه) پاتې دي. یوازې لومړي {remaining} معتبر قطارونه به وارد شي.",
     importNow: "واردول",
     importRulesHint: "که د شمولیت_شمېره خالي وي، سیسټم به په خپله د زده کوونکي_کوډ جوړ کړي او د شمولیت_شمېرې په توګه به یې وکاروي.",
@@ -221,6 +222,8 @@ export default {
     severitySevere: "سخت",
     sheet: "شیټ",
     stamp: "مهر",
+    startDate: "د پیل نېټه",
+    endDate: "د پای نېټه",
     status: "حالت",
     statusOptions: {
       label: "حالت",

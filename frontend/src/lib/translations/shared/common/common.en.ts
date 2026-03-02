@@ -93,6 +93,7 @@ export default {
     search: "Search",
     section: "Section",
     select: "Select",
+    selectDate: "Select date",
     selectSchool: "Select school",
     selected: "selected",
     show: "Show",

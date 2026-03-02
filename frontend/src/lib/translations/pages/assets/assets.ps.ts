@@ -9,7 +9,7 @@ export default {
     assetReports: "د املاکو راپورونه",
     assetsByCategory: "املاک په کټګورۍ",
     assetsByFinanceAccount: "املاک په مالي حساب",
-    assigned: "وټاکل شوی",
+    assigned: "ټاکل شوی",
     assignedAssets: "تخصیص شوي ملکیتونه",
     assignments: "ټاکل شوي",
     available: "موجود",

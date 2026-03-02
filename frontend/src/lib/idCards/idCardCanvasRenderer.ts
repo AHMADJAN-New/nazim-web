@@ -13,6 +13,48 @@ import {
 import type { IdCardTemplate, IdCardLayoutConfig } from '@/types/domain/idCardTemplate';
 import type { Student } from '@/types/domain/student';
 
+const resolveScaledPaddingPx = (
+  paddingPx: number,
+  totalWidth: number,
+  totalHeight: number,
+  designWidth: number | undefined,
+  designHeight: number | undefined
+): number => {
+  if (!designWidth || !designHeight || designWidth <= 0 || designHeight <= 0) {
+    return paddingPx;
+  }
+  const scaleX = totalWidth / designWidth;
+  const scaleY = totalHeight / designHeight;
+  if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) {
+    return paddingPx;
+  }
+  const scaleFactor = (scaleX + scaleY) / 2;
+  return paddingPx * scaleFactor;
+};
+
+const resolveFirstNonEmptyString = (...values: Array<unknown>): string | null => {
+  for (const value of values) {
+    if (typeof value !== 'string') {
+      continue;
+    }
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return null;
+};
+
+const DEFAULT_FIELD_LABELS: Record<string, string> = {
+  studentNameLabel: 'نوم:',
+  fatherNameLabel: 'د پلار نوم:',
+  classLabel: 'درجه:',
+  roomLabel: 'خونه:',
+  admissionNumberLabel: 'داخله نمبر:',
+  studentCodeLabel: 'ID:',
+  cardNumberLabel: 'کارت نمبر:',
+};
+
 // CR80 dimensions: 85.6mm × 53.98mm
 // At 300 DPI: 1011px × 637px
 // Screen preview uses the layout editor's default preview height (400px)
@@ -192,10 +234,18 @@ export async function renderIdCardToCanvas(
   const height = renderHeightPx ?? (quality === 'print' ? printSize.height : screenSize.height);
   const resolvedDesignWidth = designWidthPx ?? (quality === 'print' ? screenSize.width : width);
   const resolvedDesignHeight = designHeightPx ?? (quality === 'print' ? screenSize.height : height);
+  const scaledPaddingPx = resolveScaledPaddingPx(
+    paddingPx,
+    width,
+    height,
+    resolvedDesignWidth,
+    resolvedDesignHeight
+  );
+
   const metrics = createIdCardRenderMetrics({
     totalWidth: width,
     totalHeight: height,
-    paddingPx,
+    paddingPx: scaledPaddingPx,
     designWidthPx: resolvedDesignWidth,
     designHeightPx: resolvedDesignHeight,
   });
@@ -313,14 +363,23 @@ export async function renderIdCardToCanvas(
   };
 
   // Default positions when layout has enabled field but no position saved (e.g. from layout editor)
+  // RTL default: labels on the RIGHT (high x), values on the LEFT (low x). Positions are anchor points (label=right edge, value=left edge).
   const DEFAULT_FIELD_POSITIONS: Record<string, { x: number; y: number; width?: number; height?: number }> = {
-    studentNamePosition: { x: 50, y: 40 },
-    fatherNamePosition: { x: 50, y: 50 },
-    studentCodePosition: { x: 50, y: 55 },
-    admissionNumberPosition: { x: 50, y: 60 },
-    classPosition: { x: 50, y: 70 },
+    studentNameLabelPosition: { x: 72, y: 40 },
+    studentNamePosition: { x: 28, y: 40 },
+    fatherNameLabelPosition: { x: 72, y: 50 },
+    fatherNamePosition: { x: 28, y: 50 },
+    studentCodeLabelPosition: { x: 72, y: 60 },
+    studentCodePosition: { x: 28, y: 60 },
+    admissionNumberLabelPosition: { x: 72, y: 70 },
+    admissionNumberPosition: { x: 28, y: 70 },
+    classLabelPosition: { x: 72, y: 80 },
+    classPosition: { x: 28, y: 80 },
+    roomLabelPosition: { x: 72, y: 88 },
+    roomPosition: { x: 28, y: 88 },
     schoolNamePosition: { x: 50, y: 30 },
-    cardNumberPosition: { x: 50, y: 80 },
+    cardNumberLabelPosition: { x: 72, y: 80 },
+    cardNumberPosition: { x: 28, y: 80 },
     expiryDatePosition: { x: 50, y: 60 },
     notesPosition: { x: 50, y: 90 },
     studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 },
@@ -352,17 +411,59 @@ export async function renderIdCardToCanvas(
     });
   }
 
+  const renderLabelField = (
+    fieldId: keyof typeof DEFAULT_FIELD_LABELS,
+    positionKey: keyof typeof DEFAULT_FIELD_POSITIONS
+  ) => {
+    if (!layout.enabledFields?.includes(fieldId)) {
+      return;
+    }
+
+    const pos = getPixelPosition(getPositionOrDefault(positionKey, layout[positionKey as keyof IdCardLayoutConfig] as any));
+    if (!pos) {
+      if (import.meta.env.DEV) {
+        console.warn(`[idCardCanvasRenderer] ${fieldId} enabled but no position found`);
+      }
+      return;
+    }
+
+    const labelText = resolveFirstNonEmptyString(layout.fieldValues?.[fieldId], DEFAULT_FIELD_LABELS[fieldId]);
+    if (!labelText) {
+      return;
+    }
+    const labelWithColon = labelText.trim().endsWith(':') ? labelText.trim() : `${labelText.trim()}:`;
+
+    const fieldFont = getFieldFont(fieldId, 0.9);
+    ctx.fillStyle = fieldFont.textColor;
+    ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+    // Labels on the right: anchor at right edge of text (position = right side of card)
+    ctx.textAlign = 'right';
+    ctx.fillText(labelWithColon, pos.x, pos.y);
+  };
+
+  renderLabelField('studentNameLabel', 'studentNameLabelPosition');
+  renderLabelField('fatherNameLabel', 'fatherNameLabelPosition');
+  renderLabelField('studentCodeLabel', 'studentCodeLabelPosition');
+  renderLabelField('admissionNumberLabel', 'admissionNumberLabelPosition');
+  renderLabelField('classLabel', 'classLabelPosition');
+  renderLabelField('roomLabel', 'roomLabelPosition');
+  renderLabelField('cardNumberLabel', 'cardNumberLabelPosition');
+
   // Draw enabled fields - render all enabled fields even if data is missing
   if (layout.enabledFields?.includes('studentName')) {
     const pos = getPixelPosition(getPositionOrDefault('studentNamePosition', layout.studentNamePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const studentNameValue = layout.fieldValues?.studentName || student.fullName;
+      const studentNameValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.studentName,
+        student.fullName,
+        `${(student as any).firstName || ''} ${(student as any).lastName || ''}`.trim()
+      );
       if (studentNameValue) {
         const fieldFont = getFieldFont('studentName', 1.2);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `bold ${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(studentNameValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered studentName at:', pos);
@@ -377,12 +478,16 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('fatherNamePosition', layout.fatherNamePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const fatherNameValue = layout.fieldValues?.fatherName || student.fatherName;
+      const fatherNameValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.fatherName,
+        student.fatherName,
+        (student as any).father_name
+      );
       if (fatherNameValue) {
         const fieldFont = getFieldFont('fatherName', 1.0);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(fatherNameValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered fatherName at:', pos);
@@ -397,12 +502,15 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('studentCodePosition', layout.studentCodePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const studentCodeValue = layout.fieldValues?.studentCode || student.studentCode;
+      const studentCodeValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.studentCode,
+        student.studentCode
+      );
       if (studentCodeValue) {
         const fieldFont = getFieldFont('studentCode', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(studentCodeValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered studentCode at:', pos);
@@ -417,12 +525,15 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('admissionNumberPosition', layout.admissionNumberPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const admissionNumberValue = layout.fieldValues?.admissionNumber || student.admissionNumber;
+      const admissionNumberValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.admissionNumber,
+        student.admissionNumber
+      );
       if (admissionNumberValue) {
         const fieldFont = getFieldFont('admissionNumber', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(admissionNumberValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered admissionNumber at:', pos);
@@ -437,12 +548,19 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('classPosition', layout.classPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const classValue = layout.fieldValues?.class || student.currentClass?.name;
+      const classValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.class,
+        student.currentClass?.name,
+        (student as any).class?.name,
+        (student as any).className,
+        (student as any).sectionName,
+        (student as any).course?.name
+      );
       if (classValue) {
         const fieldFont = getFieldFont('class', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(classValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered class at:', pos);
@@ -453,11 +571,40 @@ export async function renderIdCardToCanvas(
     }
   }
 
+  if (layout.enabledFields?.includes('room')) {
+    const pos = getPixelPosition(getPositionOrDefault('roomPosition', (layout as any).roomPosition));
+    if (pos) {
+      const roomValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.room,
+        student.roomNumber,
+        (student as any).room,
+        (student as any).roomNumber,
+        (student as any).room?.roomNumber,
+        (student as any).studentAdmission?.room?.roomNumber
+      );
+      if (roomValue) {
+        const fieldFont = getFieldFont('room', 0.9);
+        ctx.fillStyle = fieldFont.textColor;
+        ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
+        ctx.textAlign = 'left';
+        ctx.fillText(roomValue, pos.x, pos.y);
+        if (import.meta.env.DEV) {
+          console.log('[idCardCanvasRenderer] Rendered room at:', pos);
+        }
+      }
+    } else if (import.meta.env.DEV) {
+      console.warn('[idCardCanvasRenderer] room enabled but no position found');
+    }
+  }
+
   if (layout.enabledFields?.includes('schoolName')) {
     const pos = getPixelPosition(getPositionOrDefault('schoolNamePosition', layout.schoolNamePosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student's school name
-      const schoolNameValue = layout.fieldValues?.schoolName || student.school?.schoolName;
+      const schoolNameValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.schoolName,
+        student.school?.schoolName
+      );
       if (schoolNameValue) {
         const fieldFont = getFieldFont('schoolName', 0.8);
         ctx.fillStyle = fieldFont.textColor;
@@ -478,12 +625,18 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('cardNumberPosition', layout.cardNumberPosition));
     if (pos) {
       // Use template-defined value if available, otherwise use student data
-      const cardNumberValue = layout.fieldValues?.cardNumber || student.cardNumber || (student as any).cardNumber;
+      const cardNumberValue = resolveFirstNonEmptyString(
+        layout.fieldValues?.cardNumber,
+        student.cardNumber,
+        (student as any).cardNumber,
+        student.admissionNumber,
+        student.studentCode
+      );
       if (cardNumberValue) {
         const fieldFont = getFieldFont('cardNumber', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(cardNumberValue, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered cardNumber at:', pos);
@@ -528,7 +681,7 @@ export async function renderIdCardToCanvas(
         const fieldFont = getFieldFont('expiryDate', 0.9);
         ctx.fillStyle = fieldFont.textColor;
         ctx.font = `${fieldFont.fontSize}px ${fieldFont.fontFamily}`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillText(formattedDate, pos.x, pos.y);
         if (import.meta.env.DEV) {
           console.log('[idCardCanvasRenderer] Rendered expiryDate at:', pos);
@@ -576,13 +729,25 @@ export async function renderIdCardToCanvas(
               ctx.save();
               ctx.lineWidth = 0;
               ctx.strokeStyle = 'transparent';
-              
-              // Center-based positioning
-              const drawX = pos.x! - pos.width! / 2;
-              const drawY = pos.y! - pos.height! / 2;
-              ctx.drawImage(photoImg, drawX, drawY, pos.width!, pos.height!);
-              
-              // Restore context state
+
+              const boxW = pos.width!;
+              const boxH = pos.height!;
+              const imgW = photoImg.naturalWidth || photoImg.width;
+              const imgH = photoImg.naturalHeight || photoImg.height;
+              if (imgW > 0 && imgH > 0) {
+                // Fit image inside box without stretching (contain): preserve aspect ratio
+                const scale = Math.min(boxW / imgW, boxH / imgH, 1);
+                const drawW = imgW * scale;
+                const drawH = imgH * scale;
+                const drawX = pos.x! - drawW / 2;
+                const drawY = pos.y! - drawH / 2;
+                ctx.drawImage(photoImg, 0, 0, imgW, imgH, drawX, drawY, drawW, drawH);
+              } else {
+                const drawX = pos.x! - boxW / 2;
+                const drawY = pos.y! - boxH / 2;
+                ctx.drawImage(photoImg, drawX, drawY, boxW, boxH);
+              }
+
               ctx.restore();
               resolve(null);
             };
@@ -680,12 +845,20 @@ export async function renderIdCardToCanvas(
       drawAnchor(getPixelPosition(pos));
     };
 
+    drawFieldAnchor('studentNameLabel', 'studentNameLabelPosition', layout.studentNameLabelPosition as any);
     drawFieldAnchor('studentName', 'studentNamePosition', layout.studentNamePosition);
+    drawFieldAnchor('fatherNameLabel', 'fatherNameLabelPosition', layout.fatherNameLabelPosition as any);
     drawFieldAnchor('fatherName', 'fatherNamePosition', layout.fatherNamePosition);
+    drawFieldAnchor('studentCodeLabel', 'studentCodeLabelPosition', layout.studentCodeLabelPosition as any);
     drawFieldAnchor('studentCode', 'studentCodePosition', layout.studentCodePosition);
+    drawFieldAnchor('admissionNumberLabel', 'admissionNumberLabelPosition', layout.admissionNumberLabelPosition as any);
     drawFieldAnchor('admissionNumber', 'admissionNumberPosition', layout.admissionNumberPosition);
+    drawFieldAnchor('classLabel', 'classLabelPosition', layout.classLabelPosition as any);
     drawFieldAnchor('class', 'classPosition', layout.classPosition);
+    drawFieldAnchor('roomLabel', 'roomLabelPosition', (layout as any).roomLabelPosition);
+    drawFieldAnchor('room', 'roomPosition', (layout as any).roomPosition);
     drawFieldAnchor('schoolName', 'schoolNamePosition', layout.schoolNamePosition);
+    drawFieldAnchor('cardNumberLabel', 'cardNumberLabelPosition', layout.cardNumberLabelPosition as any);
     drawFieldAnchor('cardNumber', 'cardNumberPosition', layout.cardNumberPosition);
     drawFieldAnchor('expiryDate', 'expiryDatePosition', layout.expiryDatePosition);
     drawFieldAnchor('notes', 'notesPosition', layout.notesPosition);

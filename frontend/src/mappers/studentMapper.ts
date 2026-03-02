@@ -252,34 +252,78 @@ export function mapStudentDomainToInsert(domain: Partial<Student>): StudentApi.S
   };
 }
 
+/** Domain (camelCase) to API (snake_case) key map for partial updates */
+const DOMAIN_TO_API_KEYS: Record<string, string> = {
+  admissionNumber: 'admission_no',
+  studentCode: 'student_code',
+  fullName: 'full_name',
+  fatherName: 'father_name',
+  grandfatherName: 'grandfather_name',
+  motherName: 'mother_name',
+  gender: 'gender',
+  birthYear: 'birth_year',
+  birthDate: 'birth_date',
+  dateOfBirth: 'birth_date',
+  age: 'age',
+  admissionYear: 'admission_year',
+  origProvince: 'orig_province',
+  origDistrict: 'orig_district',
+  origVillage: 'orig_village',
+  currProvince: 'curr_province',
+  currDistrict: 'curr_district',
+  currVillage: 'curr_village',
+  nationality: 'nationality',
+  preferredLanguage: 'preferred_language',
+  previousSchool: 'previous_school',
+  guardianName: 'guardian_name',
+  guardianRelation: 'guardian_relation',
+  guardianPhone: 'guardian_phone',
+  guardianTazkira: 'guardian_tazkira',
+  guardianPicturePath: 'guardian_picture_path',
+  homeAddress: 'home_address',
+  zaminName: 'zamin_name',
+  zaminPhone: 'zamin_phone',
+  zaminTazkira: 'zamin_tazkira',
+  zaminAddress: 'zamin_address',
+  applyingGrade: 'applying_grade',
+  isOrphan: 'is_orphan',
+  admissionFeeStatus: 'admission_fee_status',
+  status: 'student_status',
+  disabilityStatus: 'disability_status',
+  emergencyContactName: 'emergency_contact_name',
+  emergencyContactPhone: 'emergency_contact_phone',
+  familyIncome: 'family_income',
+  picturePath: 'picture_path',
+  profilePhoto: 'picture_path',
+  organizationId: 'organization_id',
+  schoolId: 'school_id',
+  cardNumber: 'card_number',
+  tazkiraNumber: 'tazkira_number',
+  phone: 'phone',
+  notes: 'notes',
+};
+
 /**
- * Convert Domain Student model to API StudentUpdate payload
- * Only includes fields that are actually provided (not undefined)
+ * Convert Domain Student model to API StudentUpdate payload for PARTIAL updates.
+ * Only includes fields that are present in domain (for edit: only changed fields).
+ * Does NOT require admission_no, full_name, father_name - use for PATCH-style updates.
  */
 export function mapStudentDomainToUpdate(domain: Partial<Student>): StudentApi.StudentUpdate {
-  const insertData = mapStudentDomainToInsert(domain);
-  
-  // Filter out undefined values - only send fields that are explicitly set
   const updateData: StudentApi.StudentUpdate = {};
-  Object.entries(insertData).forEach(([key, value]) => {
-    // Include the field if it's not undefined
-    // For required fields like admission_no, full_name, father_name, if they're empty string or null, don't include them
-    if (value !== undefined) {
-      if (key === 'admission_no' && (value === '' || value === null)) {
-        // Skip empty admission_no - it's required and shouldn't be set to empty
-        return;
-      }
-      if (key === 'full_name' && (value === '' || value === null || (typeof value === 'string' && value.trim() === ''))) {
-        // Skip empty full_name - it's required and shouldn't be set to empty
-        return;
-      }
-      if (key === 'father_name' && (value === '' || value === null || (typeof value === 'string' && value.trim() === ''))) {
-        // Skip empty father_name - it's required and shouldn't be set to empty
-        return;
-      }
-      updateData[key as keyof StudentApi.StudentUpdate] = value;
+  for (const [domainKey, value] of Object.entries(domain)) {
+    if (value === undefined) continue;
+    const apiKey = DOMAIN_TO_API_KEYS[domainKey];
+    if (!apiKey) continue;
+    // Skip empty required fields so we don't overwrite with blank
+    if ((apiKey === 'admission_no' || apiKey === 'full_name' || apiKey === 'father_name') &&
+        (value === '' || value === null || (typeof value === 'string' && (value as string).trim() === ''))) {
+      continue;
     }
-  });
-  
+    if (value instanceof Date) {
+      (updateData as Record<string, unknown>)[apiKey] = value.toISOString().slice(0, 10);
+    } else {
+      (updateData as Record<string, unknown>)[apiKey] = value;
+    }
+  }
   return updateData;
 }

@@ -53,6 +53,10 @@ export function mapStudentIdCardApiToDomain(api: StudentIdCardApi.StudentIdCard)
       enrollmentStatus: api.student_admission.enrollment_status,
       classId: api.student_admission.class_id,
       classAcademicYearId: api.student_admission.class_academic_year_id,
+      room: api.student_admission.room ? {
+        id: api.student_admission.room.id,
+        roomNumber: api.student_admission.room.room_number,
+      } : undefined,
     } : undefined,
     courseStudent: api.course_student ? {
       id: api.course_student.id,

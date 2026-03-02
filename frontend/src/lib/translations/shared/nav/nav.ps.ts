@@ -109,6 +109,7 @@ export default {
     "websiteManager.audit": "د پلټنې لاګونه",
     "websiteManager.openPublicSite": "عامه وېبپاڼه پرانیستل",
     "students.management": "مدیریت",
+    activityLogs: { title: "د فعالیتونو لاګونه" },
     assets: "شتمنۍ",
     "assets.dashboard": "د شتمنیو ډشبورډ",
     "assets.categories": "د شتمنیو کټګورۍ",

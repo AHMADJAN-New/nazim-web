@@ -134,6 +134,7 @@ export default {
     hostel: "السكن الداخلي",
     idNumber: "students",
     imageLoadError: "فشل تحميل الصورة",
+    idCardDownload: "تحميل بطاقة الهوية",
     importLimited: "يحتوي ملفك على {validRows} صفوف صالحة، لكن فقط {remaining} مكان(أماكن) طالب متبقي. سيتم استيراد أول {remaining} صف(صفوف) صالحة فقط.",
     importNow: "استيراد",
     importRulesHint: "إذا كان admission_no فارغًا، سيقوم النظام بإنشاء student_code واستخدامه كـ admission_no.",

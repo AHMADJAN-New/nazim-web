@@ -268,14 +268,25 @@ export function CardPreview({
             const photoImg = new Image();
             await new Promise((resolve, reject) => {
               photoImg.onload = () => {
-                // Save context state and disable stroke to prevent dark border
                 ctx.save();
                 ctx.lineWidth = 0;
                 ctx.strokeStyle = 'transparent';
-                
-                ctx.drawImage(photoImg, pos.x! - pos.width! / 2, pos.y! - pos.height! / 2, pos.width!, pos.height!);
-                
-                // Restore context state
+
+                const boxW = pos.width!;
+                const boxH = pos.height!;
+                const imgW = photoImg.naturalWidth || photoImg.width;
+                const imgH = photoImg.naturalHeight || photoImg.height;
+                if (imgW > 0 && imgH > 0) {
+                  const scale = Math.min(boxW / imgW, boxH / imgH, 1);
+                  const drawW = imgW * scale;
+                  const drawH = imgH * scale;
+                  const drawX = pos.x! - drawW / 2;
+                  const drawY = pos.y! - drawH / 2;
+                  ctx.drawImage(photoImg, 0, 0, imgW, imgH, drawX, drawY, drawW, drawH);
+                } else {
+                  ctx.drawImage(photoImg, pos.x! - boxW / 2, pos.y! - boxH / 2, boxW, boxH);
+                }
+
                 ctx.restore();
                 resolve(null);
               };

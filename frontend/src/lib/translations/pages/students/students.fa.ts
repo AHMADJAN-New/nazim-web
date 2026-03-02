@@ -134,6 +134,7 @@ export default {
     hostel: "خوابگاه",
     idNumber: "شماره شناسایی",
     imageLoadError: "بارگذاری تصویر ناموفق بود",
+    idCardDownload: "بارگیری کارت شناسایی",
     importLimited: "فایل شما شامل {validRows} ردیف معتبر است، اما فقط {remaining} جای شاگرد باقی مانده. فقط اولین {remaining} ردیف(های) معتبر وارد خواهد شد.",
     importNow: "ورود",
     importRulesHint: "اگر admission_no خالی باشد، سیستم به صورت خودکار student_code تولید کرده و به عنوان admission_no استفاده می‌کند.",
