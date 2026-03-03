@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SchoolAdmissionRules;
-use App\Models\Student;
-use App\Models\StudentDocument;
-use App\Models\StudentEducationalHistory;
-use App\Models\StudentDisciplineRecord;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Models\SchoolAdmissionRules;
+use App\Models\Student;
+use App\Models\StudentAdmission;
+use App\Models\StudentDisciplineRecord;
+use App\Models\StudentDocument;
+use App\Models\StudentEducationalHistory;
 use App\Services\Notifications\NotificationService;
-use App\Services\Storage\FileStorageService;
-use App\Services\Reports\PdfReportService;
-use App\Services\Reports\ReportConfig;
 use App\Services\Reports\BrandingCacheService;
 use App\Services\Reports\DateConversionService;
+use App\Services\Reports\PdfReportService;
+use App\Services\Reports\ReportConfig;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -50,30 +51,31 @@ class StudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission - context already set by middleware
         try {
-            if (!$user->hasPermissionTo('students.read')) {
+            if (! $user->hasPermissionTo('students.read')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
-                    'required_permission' => 'students.read'
+                    'required_permission' => 'students.read',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.read: " . $e->getMessage());
+            Log::warning('Permission check failed for students.read: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'students.read'
+                'required_permission' => 'students.read',
             ], 403);
         }
 
@@ -114,12 +116,36 @@ class StudentController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('full_name', 'ilike', "%{$search}%")
-                  ->orWhere('father_name', 'ilike', "%{$search}%")
-                  ->orWhere('admission_no', 'ilike', "%{$search}%")
-                  ->orWhere('guardian_name', 'ilike', "%{$search}%")
-                  ->orWhere('guardian_phone', 'ilike', "%{$search}%")
-                  ->orWhere('phone', 'ilike', "%{$search}%")
-                  ->orWhere('tazkira_number', 'ilike', "%{$search}%");
+                    ->orWhere('father_name', 'ilike', "%{$search}%")
+                    ->orWhere('admission_no', 'ilike', "%{$search}%")
+                    ->orWhere('guardian_name', 'ilike', "%{$search}%")
+                    ->orWhere('guardian_phone', 'ilike', "%{$search}%")
+                    ->orWhere('phone', 'ilike', "%{$search}%")
+                    ->orWhere('tazkira_number', 'ilike', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('academic_year_id') || $request->filled('class_id')) {
+            $academicYearId = $request->input('academic_year_id');
+            $classId = $request->input('class_id');
+            $organizationId = $profile->organization_id;
+
+            $query->whereExists(function ($subQuery) use ($academicYearId, $classId, $organizationId, $currentSchoolId) {
+                $subQuery->select(DB::raw('1'))
+                    ->from('student_admissions as sa')
+                    ->whereColumn('sa.student_id', 'students.id')
+                    ->whereNull('sa.deleted_at')
+                    ->where('sa.organization_id', $organizationId)
+                    ->where('sa.school_id', $currentSchoolId)
+                    ->whereIn('sa.enrollment_status', ['active', 'admitted', 'pending']);
+
+                if (! empty($academicYearId)) {
+                    $subQuery->where('sa.academic_year_id', $academicYearId);
+                }
+
+                if (! empty($classId)) {
+                    $subQuery->where('sa.class_id', $classId);
+                }
             });
         }
 
@@ -128,50 +154,64 @@ class StudentController extends Controller
             $perPage = $request->input('per_page', 25);
             // Validate per_page is one of allowed values
             $allowedPerPage = [10, 25, 50, 100];
-            if (!in_array((int)$perPage, $allowedPerPage)) {
+            if (! in_array((int) $perPage, $allowedPerPage)) {
                 $perPage = 25; // Default to 25 if invalid
             }
-            
-            $students = $query->orderBy('created_at', 'desc')->paginate((int)$perPage);
-            
-            // Add current class information from student admissions
-            $students->getCollection()->transform(function ($student) {
-                $admission = \App\Models\StudentAdmission::where('student_id', $student->id)
-                    ->whereNull('deleted_at')
-                    ->with(['classAcademicYear.class', 'class'])
-                    ->orderBy('admission_date', 'desc')
-                    ->first();
-                
-                if ($admission) {
-                    $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
-                }
-                
-                return $student;
-            });
-            
+
+            $students = $query->orderBy('created_at', 'desc')->paginate((int) $perPage);
+
+            $students->setCollection(
+                $this->attachCurrentClassData($students->getCollection(), $profile->organization_id, $currentSchoolId)
+            );
+
             // Return paginated response in Laravel's standard format
             return response()->json($students);
         }
 
         // Return all results if no pagination requested (backward compatibility)
         $students = $query->orderBy('created_at', 'desc')->get();
-        
-        // Add current class information from student admissions
-        $students->transform(function ($student) {
-            $admission = \App\Models\StudentAdmission::where('student_id', $student->id)
-                ->whereNull('deleted_at')
-                ->with(['classAcademicYear.class', 'class'])
-                ->orderBy('admission_date', 'desc')
-                ->first();
-            
-            if ($admission) {
-                $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
-            }
-            
-            return $student;
-        });
+
+        $students = $this->attachCurrentClassData($students, $profile->organization_id, $currentSchoolId);
 
         return response()->json($students);
+    }
+
+    /**
+     * Attach current class information to each student without N+1 queries.
+     */
+    private function attachCurrentClassData($students, string $organizationId, string $schoolId)
+    {
+        $studentIds = $students->pluck('id')->filter()->unique()->values();
+        if ($studentIds->isEmpty()) {
+            return $students;
+        }
+
+        $admissions = StudentAdmission::whereIn('student_id', $studentIds)
+            ->whereNull('deleted_at')
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->with(['classAcademicYear.class', 'class', 'academicYear'])
+            ->orderByDesc('admission_date')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $latestAdmissionByStudentId = [];
+        foreach ($admissions as $admission) {
+            if (! array_key_exists($admission->student_id, $latestAdmissionByStudentId)) {
+                $latestAdmissionByStudentId[$admission->student_id] = $admission;
+            }
+        }
+
+        return $students->map(function ($student) use ($latestAdmissionByStudentId) {
+            $admission = $latestAdmissionByStudentId[$student->id] ?? null;
+            if ($admission) {
+                $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
+                $student->current_section = $admission->classAcademicYear?->section_name;
+                $student->current_academic_year = $admission->academicYear?->name;
+            }
+
+            return $student;
+        });
     }
 
     /**
@@ -182,30 +222,31 @@ class StudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission - context already set by middleware
         try {
-            if (!$user->hasPermissionTo('students.read')) {
+            if (! $user->hasPermissionTo('students.read')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
-                    'required_permission' => 'students.read'
+                    'required_permission' => 'students.read',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.read: " . $e->getMessage());
+            Log::warning('Permission check failed for students.read: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'students.read'
+                'required_permission' => 'students.read',
             ], 403);
         }
 
@@ -214,7 +255,7 @@ class StudentController extends Controller
             ->where('school_id', $this->getCurrentSchoolId($request))
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
@@ -224,7 +265,7 @@ class StudentController extends Controller
             ->with(['classAcademicYear.class', 'class'])
             ->orderBy('admission_date', 'desc')
             ->first();
-        
+
         if ($admission) {
             $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
         }
@@ -242,30 +283,31 @@ class StudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission - context already set by middleware
         try {
-            if (!$user->hasPermissionTo('students.create')) {
+            if (! $user->hasPermissionTo('students.create')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
-                    'required_permission' => 'students.create'
+                    'required_permission' => 'students.create',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.create: " . $e->getMessage());
+            Log::warning('Permission check failed for students.create: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'students.create'
+                'required_permission' => 'students.create',
             ], 403);
         }
 
@@ -275,7 +317,7 @@ class StudentController extends Controller
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Validate organization access
-        if (!in_array($organizationId, $orgIds)) {
+        if (! in_array($organizationId, $orgIds)) {
             return response()->json(['error' => 'Cannot create student for this organization'], 403);
         }
 
@@ -297,7 +339,7 @@ class StudentController extends Controller
         try {
             $studentName = $student->full_name ?? 'Student';
             $admissionNo = $student->admission_no ?? 'N/A';
-            
+
             $this->notificationService->notify(
                 'student.created',
                 $student,
@@ -327,30 +369,31 @@ class StudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission - context already set by middleware
         try {
-            if (!$user->hasPermissionTo('students.update')) {
+            if (! $user->hasPermissionTo('students.update')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
-                    'required_permission' => 'students.update'
+                    'required_permission' => 'students.update',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.update: " . $e->getMessage());
+            Log::warning('Permission check failed for students.update: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'students.update'
+                'required_permission' => 'students.update',
             ], 403);
         }
 
@@ -360,7 +403,7 @@ class StudentController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
@@ -412,21 +455,25 @@ class StudentController extends Controller
         $updateData = [];
         foreach ($validated as $key => $value) {
             // Skip null values unless they're explicitly being set to null for nullable fields
-            if ($value === null && !in_array($key, ['school_id', 'card_number', 'tazkira_number', 'phone', 'notes', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date', 'age', 'admission_year', 'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address', 'applying_grade', 'disability_status', 'emergency_contact_name', 'emergency_contact_phone', 'family_income', 'picture_path'])) {
+            if ($value === null && ! in_array($key, ['school_id', 'card_number', 'tazkira_number', 'phone', 'notes', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date', 'age', 'admission_year', 'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address', 'applying_grade', 'disability_status', 'emergency_contact_name', 'emergency_contact_phone', 'family_income', 'picture_path'])) {
                 continue;
             }
 
             // Compare with current value - only include if different
             $currentValue = $currentData[$key] ?? null;
-            
+
             // Normalize values for comparison (handle empty strings, null, etc.)
             $normalizedNew = is_string($value) ? trim($value) : $value;
             $normalizedCurrent = is_string($currentValue) ? trim($currentValue) : $currentValue;
-            
+
             // Convert empty strings to null for comparison
-            if ($normalizedNew === '') $normalizedNew = null;
-            if ($normalizedCurrent === '') $normalizedCurrent = null;
-            
+            if ($normalizedNew === '') {
+                $normalizedNew = null;
+            }
+            if ($normalizedCurrent === '') {
+                $normalizedCurrent = null;
+            }
+
             // Only add to updateData if value has actually changed
             if ($normalizedNew !== $normalizedCurrent) {
                 $updateData[$key] = $value;
@@ -442,13 +489,13 @@ class StudentController extends Controller
         ]);
 
         // Only update if there's data to update
-        if (!empty($updateData)) {
+        if (! empty($updateData)) {
             $student->update($updateData);
             Log::info('Student Update - Success', [
                 'student_id' => $id,
                 'updated_fields' => array_keys($updateData),
             ]);
-            
+
             // Notify about student update
             try {
                 $student->refresh();
@@ -456,7 +503,7 @@ class StudentController extends Controller
                 $studentName = $student->full_name ?? 'Student';
                 $admissionNo = $student->admission_no ?? 'N/A';
                 $updatedFields = implode(', ', array_keys($updateData));
-                
+
                 $this->notificationService->notify(
                     'student.updated',
                     $student,
@@ -479,7 +526,7 @@ class StudentController extends Controller
                 'message' => 'No fields changed, skipping update',
             ]);
         }
-        
+
         $student->load(['organization', 'school']);
 
         // Activity is logged by Student model's LogsActivityWithContext trait
@@ -494,30 +541,31 @@ class StudentController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission - context already set by middleware
         try {
-            if (!$user->hasPermissionTo('students.delete')) {
+            if (! $user->hasPermissionTo('students.delete')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
-                    'required_permission' => 'students.delete'
+                    'required_permission' => 'students.delete',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for students.delete: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'students.delete'
+                'required_permission' => 'students.delete',
             ], 403);
         }
 
@@ -526,7 +574,7 @@ class StudentController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($id);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
@@ -536,7 +584,7 @@ class StudentController extends Controller
         try {
             $studentName = $student->full_name ?? 'Student';
             $admissionNo = $student->admission_no ?? 'N/A';
-            
+
             $this->notificationService->notify(
                 'student.deleted',
                 $student,
@@ -544,7 +592,7 @@ class StudentController extends Controller
                 [
                     'title' => '🗑️ Student Record Deleted',
                     'body' => "Student '{$studentName}' (Admission No: {$admissionNo}) has been deleted.",
-                    'url' => "/students",
+                    'url' => '/students',
                     'level' => 'warning',
                 ]
             );
@@ -572,7 +620,7 @@ class StudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
@@ -616,13 +664,13 @@ class StudentController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
@@ -631,18 +679,18 @@ class StudentController extends Controller
                 ->where('school_id', $currentSchoolId)
                 ->find($id);
 
-            if (!$student) {
+            if (! $student) {
                 return response()->json(['error' => 'Student not found'], 404);
             }
 
             // Org access is enforced by organization middleware + school scope.
 
-            if (!$request->hasFile('file')) {
+            if (! $request->hasFile('file')) {
                 return response()->json(['error' => 'No file provided'], 422);
             }
 
             $file = $request->file('file');
-            if (!$file) {
+            if (! $file) {
                 return response()->json(['error' => 'No file provided'], 422);
             }
 
@@ -654,7 +702,7 @@ class StudentController extends Controller
 
             // Check extension
             $extension = strtolower($file->getClientOriginalExtension());
-            if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
+            if (! $this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                 return response()->json(['error' => 'The file must be an image (jpg, jpeg, png, gif, or webp).'], 422);
             }
 
@@ -693,16 +741,18 @@ class StudentController extends Controller
                 'errors' => $e->errors(),
                 'student_id' => $id,
             ]);
+
             return response()->json([
                 'error' => 'Validation failed',
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error uploading student picture: ' . $e->getMessage(), [
+            Log::error('Error uploading student picture: '.$e->getMessage(), [
                 'student_id' => $id,
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to upload picture: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to upload picture: '.$e->getMessage()], 500);
         }
     }
 
@@ -713,34 +763,35 @@ class StudentController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 abort(401, 'Unauthorized');
             }
 
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 abort(404, 'Profile not found');
             }
 
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             try {
-                if (!$user->hasPermissionTo('students.read')) {
+                if (! $user->hasPermissionTo('students.read')) {
                     return response()->json([
                         'error' => 'Access Denied',
                         'message' => 'You do not have permission to access this resource.',
-                        'required_permission' => 'students.read'
+                        'required_permission' => 'students.read',
                     ], 403);
                 }
             } catch (\Exception $e) {
-                Log::warning("Permission check failed for students.read: " . $e->getMessage());
+                Log::warning('Permission check failed for students.read: '.$e->getMessage());
+
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
-                    'required_permission' => 'students.read'
+                    'required_permission' => 'students.read',
                 ], 403);
             }
 
@@ -749,19 +800,19 @@ class StudentController extends Controller
                 ->where('school_id', $currentSchoolId)
                 ->find($id);
 
-            if (!$student) {
+            if (! $student) {
                 abort(404, 'Student not found');
             }
 
             // Org access is enforced by organization middleware + school scope.
 
-            if (!$student->picture_path) {
+            if (! $student->picture_path) {
                 Log::info('Student picture requested but no picture_path', ['student_id' => $id]);
                 abort(404, 'Picture not found');
             }
 
             // Check if file exists using FileStorageService
-            if (!$this->fileStorageService->fileExists($student->picture_path)) {
+            if (! $this->fileStorageService->fileExists($student->picture_path)) {
                 Log::warning('Student picture file not found on disk', [
                     'student_id' => $id,
                     'picture_path' => $student->picture_path,
@@ -772,7 +823,7 @@ class StudentController extends Controller
             // Get file content using FileStorageService
             $file = $this->fileStorageService->getFile($student->picture_path);
 
-            if (!$file || empty($file)) {
+            if (! $file || empty($file)) {
                 Log::error('Student picture file is empty', [
                     'student_id' => $id,
                     'picture_path' => $student->picture_path,
@@ -785,7 +836,7 @@ class StudentController extends Controller
 
             return response($file, 200)
                 ->header('Content-Type', $mimeType)
-                ->header('Content-Disposition', 'inline; filename="' . basename($student->picture_path) . '"')
+                ->header('Content-Disposition', 'inline; filename="'.basename($student->picture_path).'"')
                 ->header('Cache-Control', 'private, max-age=3600');
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
             throw $e;
@@ -805,12 +856,12 @@ class StudentController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
             $profile = DB::table('profiles')->where('id', $user->id)->first();
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
@@ -819,16 +870,16 @@ class StudentController extends Controller
                 ->where('school_id', $currentSchoolId)
                 ->find($id);
 
-            if (!$student) {
+            if (! $student) {
                 return response()->json(['error' => 'Student not found'], 404);
             }
 
-            if (!$request->hasFile('file')) {
+            if (! $request->hasFile('file')) {
                 return response()->json(['error' => 'No file provided'], 422);
             }
 
             $file = $request->file('file');
-            if (!$file) {
+            if (! $file) {
                 return response()->json(['error' => 'No file provided'], 422);
             }
 
@@ -837,7 +888,7 @@ class StudentController extends Controller
                 return response()->json(['error' => 'File size exceeds maximum allowed size of 5MB'], 422);
             }
 
-            if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
+            if (! $this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                 return response()->json(['error' => 'The file must be an image (jpg, jpeg, png, gif, or webp).'], 422);
             }
 
@@ -865,11 +916,12 @@ class StudentController extends Controller
                 'guardian_picture_path' => $path,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error uploading student guardian picture: ' . $e->getMessage(), [
+            Log::error('Error uploading student guardian picture: '.$e->getMessage(), [
                 'student_id' => $id,
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to upload guardian picture: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to upload guardian picture: '.$e->getMessage()], 500);
         }
     }
 
@@ -880,32 +932,33 @@ class StudentController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 abort(401, 'Unauthorized');
             }
 
             $profile = DB::table('profiles')->where('id', $user->id)->first();
-            if (!$profile) {
+            if (! $profile) {
                 abort(404, 'Profile not found');
             }
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             try {
-                if (!$user->hasPermissionTo('students.read')) {
+                if (! $user->hasPermissionTo('students.read')) {
                     return response()->json([
                         'error' => 'Access Denied',
                         'message' => 'You do not have permission to access this resource.',
-                        'required_permission' => 'students.read'
+                        'required_permission' => 'students.read',
                     ], 403);
                 }
             } catch (\Exception $e) {
-                Log::warning("Permission check failed for students.read: " . $e->getMessage());
+                Log::warning('Permission check failed for students.read: '.$e->getMessage());
+
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
-                    'required_permission' => 'students.read'
+                    'required_permission' => 'students.read',
                 ], 403);
             }
 
@@ -914,13 +967,13 @@ class StudentController extends Controller
                 ->where('school_id', $currentSchoolId)
                 ->find($id);
 
-            if (!$student) {
+            if (! $student) {
                 abort(404, 'Student not found');
             }
-            if (!$student->guardian_picture_path) {
+            if (! $student->guardian_picture_path) {
                 abort(404, 'Guardian picture not found');
             }
-            if (!$this->fileStorageService->fileExists($student->guardian_picture_path)) {
+            if (! $this->fileStorageService->fileExists($student->guardian_picture_path)) {
                 Log::warning('Student guardian picture file not found on disk', [
                     'student_id' => $id,
                     'guardian_picture_path' => $student->guardian_picture_path,
@@ -929,7 +982,7 @@ class StudentController extends Controller
             }
 
             $file = $this->fileStorageService->getFile($student->guardian_picture_path);
-            if (!$file || empty($file)) {
+            if (! $file || empty($file)) {
                 abort(404, 'Guardian picture file is empty');
             }
 
@@ -937,7 +990,7 @@ class StudentController extends Controller
 
             return response($file, 200)
                 ->header('Content-Type', $mimeType)
-                ->header('Content-Disposition', 'inline; filename="' . basename($student->guardian_picture_path) . '"')
+                ->header('Content-Disposition', 'inline; filename="'.basename($student->guardian_picture_path).'"')
                 ->header('Cache-Control', 'private, max-age=3600');
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
             throw $e;
@@ -946,7 +999,7 @@ class StudentController extends Controller
                 'student_id' => $id,
                 'error' => $e->getMessage(),
             ]);
-            abort(500, 'Error getting guardian picture: ' . $e->getMessage());
+            abort(500, 'Error getting guardian picture: '.$e->getMessage());
         }
     }
 
@@ -958,7 +1011,7 @@ class StudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
@@ -1020,15 +1073,17 @@ class StudentController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 Log::warning('[StudentController::checkDuplicates] User not authenticated');
+
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 Log::warning('[StudentController::checkDuplicates] Profile not found for user', ['user_id' => $user->id]);
+
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
@@ -1036,6 +1091,7 @@ class StudentController extends Controller
 
             if (empty($orgIds)) {
                 Log::info('[StudentController::checkDuplicates] No accessible organizations for user', ['user_id' => $user->id]);
+
                 return response()->json([]);
             }
 
@@ -1050,8 +1106,9 @@ class StudentController extends Controller
             $results = [];
 
             // Ensure orgIds is an array and not empty before querying
-            if (!is_array($orgIds) || empty($orgIds)) {
+            if (! is_array($orgIds) || empty($orgIds)) {
                 Log::warning('[StudentController::checkDuplicates] Invalid organization IDs', ['orgIds' => $orgIds]);
+
                 return response()->json([]);
             }
 
@@ -1171,14 +1228,14 @@ class StudentController extends Controller
             foreach ($results as $rec) {
                 try {
                     $key = "{$rec['id']}:{$rec['match_reason']}";
-                    if (!in_array($key, $seen)) {
+                    if (! in_array($key, $seen)) {
                         $seen[] = $key;
                         $unique[] = $rec;
                     }
                 } catch (\Exception $e) {
                     Log::warning('[StudentController::checkDuplicates] Error processing result', [
                         'result' => $rec,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                     // Continue processing other results
                 }
@@ -1192,11 +1249,12 @@ class StudentController extends Controller
             Log::error('[StudentController::checkDuplicates] Unexpected error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
+                'request' => $request->all(),
             ]);
+
             return response()->json([
                 'error' => 'An error occurred while checking for duplicate students',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -1209,21 +1267,22 @@ class StudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('students.read')) {
+            if (! $user->hasPermissionTo('students.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.read: " . $e->getMessage());
+            Log::warning('Permission check failed for students.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -1236,7 +1295,7 @@ class StudentController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($studentId);
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
@@ -1289,6 +1348,7 @@ class StudentController extends Controller
                 ->map(function ($item) {
                     $size = $item->file_size ?? 0;
                     $sizeFormatted = $size > 0 ? $this->formatBytes($size) : '—';
+
                     return [
                         'document_type' => $item->document_type ?? '—',
                         'file_name' => $item->file_name ?? '—',
@@ -1305,9 +1365,9 @@ class StudentController extends Controller
                 try {
                     $pictureContent = Storage::disk('local')->get($student->picture_path);
                     $mimeType = $this->fileStorageService->getMimeTypeFromExtension($student->picture_path);
-                    $picturePath = 'data:' . $mimeType . ';base64,' . base64_encode($pictureContent);
+                    $picturePath = 'data:'.$mimeType.';base64,'.base64_encode($pictureContent);
                 } catch (\Exception $e) {
-                    Log::warning("Failed to load student picture for PDF: " . $e->getMessage());
+                    Log::warning('Failed to load student picture for PDF: '.$e->getMessage());
                 }
             }
 
@@ -1322,10 +1382,10 @@ class StudentController extends Controller
                         if ($this->fileStorageService->fileExists($student->guardian_picture_path)) {
                             $guardianContent = Storage::disk('local')->get($student->guardian_picture_path);
                             $guardianMimeType = $this->fileStorageService->getMimeTypeFromExtension($student->guardian_picture_path);
-                            $guardianPicturePath = 'data:' . $guardianMimeType . ';base64,' . base64_encode($guardianContent);
+                            $guardianPicturePath = 'data:'.$guardianMimeType.';base64,'.base64_encode($guardianContent);
                         }
                     } catch (\Exception $e) {
-                        Log::warning("Failed to load guardian picture for PDF: " . $e->getMessage());
+                        Log::warning('Failed to load guardian picture for PDF: '.$e->getMessage());
                     }
                 }
             }
@@ -1349,7 +1409,7 @@ class StudentController extends Controller
                 'report_key' => 'student_profile',
                 'report_type' => 'pdf',
                 'branding_id' => $currentSchoolId,
-                'title' => 'Student Profile - ' . ($student->full_name ?? 'Unknown'),
+                'title' => 'Student Profile - '.($student->full_name ?? 'Unknown'),
                 'calendar_preference' => $request->get('calendar_preference', 'jalali'),
                 'language' => $request->get('language', 'ps'),
                 'template_name' => 'student-profile',
@@ -1357,14 +1417,14 @@ class StudentController extends Controller
 
             // Load branding data
             $branding = $this->brandingCache->getBranding($currentSchoolId);
-            if (!$branding) {
+            if (! $branding) {
                 Log::warning("Branding not found for school: {$currentSchoolId}");
                 $branding = [];
             }
 
             // Load default layout
             $layout = $this->brandingCache->getDefaultLayout($currentSchoolId);
-            if (!$layout) {
+            if (! $layout) {
                 $layout = [];
             }
 
@@ -1372,7 +1432,7 @@ class StudentController extends Controller
             $context = array_merge($reportData, [
                 // Template name (required for PdfReportService)
                 'template_name' => 'student-profile',
-                
+
                 // Branding data
                 'SCHOOL_NAME' => $branding['school_name'] ?? ($student->school->school_name ?? ''),
                 'SCHOOL_NAME_PASHTO' => $branding['school_name_pashto'] ?? $branding['school_name'] ?? '',
@@ -1381,14 +1441,14 @@ class StudentController extends Controller
                 'SCHOOL_PHONE' => $branding['school_phone'] ?? '',
                 'SCHOOL_EMAIL' => $branding['school_email'] ?? '',
                 'SCHOOL_WEBSITE' => $branding['school_website'] ?? '',
-                
+
                 // Colors and fonts
                 'PRIMARY_COLOR' => $branding['primary_color'] ?? '#0b0b56',
                 'SECONDARY_COLOR' => $branding['secondary_color'] ?? '#0056b3',
                 'ACCENT_COLOR' => $branding['accent_color'] ?? '#ff6b35',
                 'FONT_FAMILY' => $layout['font_family'] ?? $branding['font_family'] ?? 'Bahij Nassim',
                 'FONT_SIZE' => $layout['font_size'] ?? $branding['report_font_size'] ?? '12px',
-                
+
                 // Logos
                 'PRIMARY_LOGO_URI' => $branding['primary_logo_uri'] ?? null,
                 'SECONDARY_LOGO_URI' => $branding['secondary_logo_uri'] ?? null,
@@ -1401,32 +1461,32 @@ class StudentController extends Controller
                 'primary_logo_position' => $branding['primary_logo_position'] ?? 'left',
                 'secondary_logo_position' => $branding['secondary_logo_position'] ?? 'right',
                 'ministry_logo_position' => $branding['ministry_logo_position'] ?? 'right',
-                
+
                 // Report settings
-                'TABLE_TITLE' => 'Student Profile - ' . ($student->full_name ?? 'Unknown'),
+                'TABLE_TITLE' => 'Student Profile - '.($student->full_name ?? 'Unknown'),
                 'show_page_numbers' => $layout['show_page_numbers'] ?? $branding['show_page_numbers'] ?? true,
                 'show_generation_date' => $layout['show_generation_date'] ?? $branding['show_generation_date'] ?? true,
-                
+
                 // Layout settings
                 'page_size' => $layout['page_size'] ?? 'A4',
                 'orientation' => $layout['orientation'] ?? 'portrait',
                 'margins' => $layout['margins'] ?? '15mm 12mm 18mm 12mm',
                 'rtl' => $layout['rtl'] ?? true,
-                
+
                 // Date/time
                 'CURRENT_DATETIME' => $this->dateService->formatDate(
                     now(),
                     $config->calendarPreference,
                     'full',
                     $config->language
-                ) . ' ' . now()->format('H:i'),
+                ).' '.now()->format('H:i'),
                 'CURRENT_DATE' => $this->dateService->formatDate(
                     now(),
                     $config->calendarPreference,
                     'full',
                     $config->language
                 ),
-                
+
                 // Watermark (if any)
                 'WATERMARK' => null,
 
@@ -1457,15 +1517,16 @@ class StudentController extends Controller
             // Return PDF as download
             return response($pdfContent, 200)
                 ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', 'inline; filename="' . $result['filename'] . '"')
+                ->header('Content-Disposition', 'inline; filename="'.$result['filename'].'"')
                 ->header('Cache-Control', 'private, max-age=0');
 
         } catch (\Exception $e) {
-            Log::error("Error generating student profile PDF: " . $e->getMessage(), [
+            Log::error('Error generating student profile PDF: '.$e->getMessage(), [
                 'student_id' => $studentId,
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to generate PDF: '.$e->getMessage()], 500);
         }
     }
 
@@ -1478,7 +1539,7 @@ class StudentController extends Controller
         $currentClass = null;
         $currentSection = null;
         $currentAcademicYear = null;
-        
+
         // Try to get current admission
         $currentAdmission = DB::table('student_admissions')
             ->where('student_id', $student->id)
@@ -1492,7 +1553,7 @@ class StudentController extends Controller
         if ($currentAdmission) {
             $class = DB::table('classes')->where('id', $currentAdmission->class_id)->first();
             $currentClass = $class->name ?? null;
-            
+
             $classAcademicYear = DB::table('class_academic_years')
                 ->where('id', $currentAdmission->class_academic_year_id)
                 ->first();
@@ -1587,6 +1648,6 @@ class StudentController extends Controller
             $unitIndex++;
         }
 
-        return round($size, 2) . ' ' . $units[$unitIndex];
+        return round($size, 2).' '.$units[$unitIndex];
     }
 }

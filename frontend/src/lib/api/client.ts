@@ -1777,6 +1777,8 @@ export const studentsApi = {
     gender?: string;
     is_orphan?: boolean;
     admission_fee_status?: string;
+    academic_year_id?: string;
+    class_id?: string;
     search?: string;
     page?: number;
     per_page?: number;
@@ -1792,6 +1794,8 @@ export const studentsApi = {
     gender?: string;
     is_orphan?: boolean;
     admission_fee_status?: string;
+    academic_year_id?: string;
+    class_id?: string;
     search?: string;
   }) => {
     return apiClient.requestFile('/students/report/export', { method: 'GET', params });
@@ -2087,6 +2091,7 @@ export const studentAdmissionsApi = {
     enrollment_status?: string;
     is_boarder?: boolean;
     residency_type_id?: string;
+    search?: string;
     school_id?: string;
     page?: number;
     per_page?: number;

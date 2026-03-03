@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ClassModel;
-use App\Models\ClassAcademicYear;
-use App\Http\Requests\StoreClassRequest;
-use App\Http\Requests\UpdateClassRequest;
 use App\Http\Requests\AssignClassToYearRequest;
 use App\Http\Requests\BulkAssignSectionsRequest;
 use App\Http\Requests\CopyClassesRequest;
+use App\Http\Requests\StoreClassRequest;
+use App\Http\Requests\UpdateClassRequest;
+use App\Models\ClassAcademicYear;
+use App\Models\ClassModel;
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +19,7 @@ class ClassController extends Controller
     public function __construct(
         private ActivityLogService $activityLogService
     ) {}
+
     /**
      * Display a listing of classes
      */
@@ -27,22 +28,23 @@ class ClassController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for classes.read: " . $e->getMessage());
+            Log::warning('Permission check failed for classes.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -56,14 +58,14 @@ class ClassController extends Controller
             $perPage = $request->input('per_page', 25);
             // Validate per_page is one of allowed values
             $allowedPerPage = [10, 25, 50, 100];
-            if (!in_array((int)$perPage, $allowedPerPage)) {
+            if (! in_array((int) $perPage, $allowedPerPage)) {
                 $perPage = 25; // Default to 25 if invalid
             }
-            
+
             $classes = $query->orderBy('grade_level', 'asc')
                 ->orderBy('name', 'asc')
-                ->paginate((int)$perPage);
-            
+                ->paginate((int) $perPage);
+
             // Return paginated response in Laravel's standard format
             return response()->json($classes);
         }
@@ -84,22 +86,23 @@ class ClassController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.create')) {
+            if (! $user->hasPermissionTo('classes.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for classes.create: " . $e->getMessage());
+            Log::warning('Permission check failed for classes.create: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -131,7 +134,7 @@ class ClassController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log class creation: ' . $e->getMessage());
+            Log::warning('Failed to log class creation: '.$e->getMessage());
         }
 
         return response()->json($class, 201);
@@ -145,22 +148,23 @@ class ClassController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for classes.read: " . $e->getMessage());
+            Log::warning('Permission check failed for classes.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -170,12 +174,12 @@ class ClassController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($id);
 
-        if (!$class) {
+        if (! $class) {
             return response()->json(['error' => 'Class not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -192,22 +196,23 @@ class ClassController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.update')) {
+            if (! $user->hasPermissionTo('classes.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for classes.update: " . $e->getMessage());
+            Log::warning('Permission check failed for classes.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -217,12 +222,12 @@ class ClassController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($id);
 
-        if (!$class) {
+        if (! $class) {
             return response()->json(['error' => 'Class not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -255,7 +260,7 @@ class ClassController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log class update: ' . $e->getMessage());
+            Log::warning('Failed to log class update: '.$e->getMessage());
         }
 
         return response()->json($class);
@@ -269,22 +274,23 @@ class ClassController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.delete')) {
+            if (! $user->hasPermissionTo('classes.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for classes.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for classes.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -294,7 +300,7 @@ class ClassController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($id);
 
-        if (!$class) {
+        if (! $class) {
             return response()->json(['error' => 'Class not found'], 404);
         }
 
@@ -324,7 +330,7 @@ class ClassController extends Controller
                 request: request()
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log class deletion: ' . $e->getMessage());
+            Log::warning('Failed to log class deletion: '.$e->getMessage());
         }
 
         return response()->noContent();
@@ -333,27 +339,28 @@ class ClassController extends Controller
     /**
      * Assign class to academic year
      */
-    public function assignToYear(AssignClassToYearRequest $request, string $class = null)
+    public function assignToYear(AssignClassToYearRequest $request, ?string $class = null)
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.assign')) {
+            if (! $user->hasPermissionTo('classes.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for classes.assign: " . $e->getMessage());
+            Log::warning('Permission check failed for classes.assign: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -369,19 +376,21 @@ class ClassController extends Controller
             Log::error('[ClassController::assignToYear] Missing class ID', [
                 'route_param' => $class,
                 'request_body' => $request->all(),
-                'user_id' => $user->id ?? 'unknown'
+                'user_id' => $user->id ?? 'unknown',
             ]);
+
             return response()->json(['error' => 'Class ID is required'], 400);
         }
 
         // Validate UUID format
         $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-        if (!preg_match($uuidPattern, $classId)) {
+        if (! preg_match($uuidPattern, $classId)) {
             Log::error('[ClassController::assignToYear] Invalid class ID format', [
                 'class_id' => $classId,
                 'route_param' => $class,
-                'user_id' => $user->id ?? 'unknown'
+                'user_id' => $user->id ?? 'unknown',
             ]);
+
             return response()->json(['error' => 'Invalid class ID format'], 400);
         }
 
@@ -391,7 +400,7 @@ class ClassController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->find($classId);
-        if (!$classModel) {
+        if (! $classModel) {
             return response()->json(['error' => 'Class not found'], 404);
         }
 
@@ -401,7 +410,7 @@ class ClassController extends Controller
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
-        if (!$academicYear) {
+        if (! $academicYear) {
             return response()->json(['error' => 'Academic year not found'], 404);
         }
 
@@ -427,15 +436,15 @@ class ClassController extends Controller
         }
 
         // Convert empty strings to NULL for nullable UUID fields
-        $roomId = !empty($request->room_id) ? $request->room_id : null;
-        $teacherId = !empty($request->teacher_id) ? $request->teacher_id : null;
-        
+        $roomId = ! empty($request->room_id) ? $request->room_id : null;
+        $teacherId = ! empty($request->teacher_id) ? $request->teacher_id : null;
+
         // Validate UUID format if provided
         $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-        if ($roomId && !preg_match($uuidPattern, $roomId)) {
+        if ($roomId && ! preg_match($uuidPattern, $roomId)) {
             return response()->json(['error' => 'Invalid room ID format'], 400);
         }
-        if ($teacherId && !preg_match($uuidPattern, $teacherId)) {
+        if ($teacherId && ! preg_match($uuidPattern, $teacherId)) {
             return response()->json(['error' => 'Invalid teacher ID format'], 400);
         }
 
@@ -467,10 +476,9 @@ class ClassController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
-
 
         // Get class to determine organization_id
         $currentSchoolId = $this->getCurrentSchoolId($request);
@@ -478,7 +486,7 @@ class ClassController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->find($request->class_id);
-        if (!$class) {
+        if (! $class) {
             return response()->json(['error' => 'Class not found'], 404);
         }
 
@@ -488,7 +496,7 @@ class ClassController extends Controller
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
-        if (!$academicYear) {
+        if (! $academicYear) {
             return response()->json(['error' => 'Academic year not found'], 404);
         }
 
@@ -507,7 +515,7 @@ class ClassController extends Controller
 
         // Filter out sections that already exist
         $newSections = array_filter($request->sections, function ($section) use ($existingSections) {
-            return !in_array(strtoupper(trim($section)), $existingSections);
+            return ! in_array(strtoupper(trim($section)), $existingSections);
         });
 
         if (empty($newSections)) {
@@ -515,11 +523,11 @@ class ClassController extends Controller
         }
 
         // Convert empty strings to NULL for nullable UUID fields
-        $roomId = !empty($request->default_room_id) ? $request->default_room_id : null;
-        
+        $roomId = ! empty($request->default_room_id) ? $request->default_room_id : null;
+
         // Validate UUID format if provided
         $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-        if ($roomId && !preg_match($uuidPattern, $roomId)) {
+        if ($roomId && ! preg_match($uuidPattern, $roomId)) {
             return response()->json(['error' => 'Invalid room ID format'], 400);
         }
 
@@ -563,22 +571,23 @@ class ClassController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for classes.update: " . $e->getMessage());
+            Log::warning('Permission check failed for classes.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -596,7 +605,7 @@ class ClassController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->find($id);
-        if (!$instance) {
+        if (! $instance) {
             return response()->json(['error' => 'Class instance not found'], 404);
         }
 
@@ -633,7 +642,7 @@ class ClassController extends Controller
             'is_active',
             'notes',
         ]);
-        
+
         // Convert empty strings to null
         if (isset($updateData['room_id']) && $updateData['room_id'] === '') {
             $updateData['room_id'] = null;
@@ -660,17 +669,16 @@ class ClassController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
-
 
         $currentSchoolId = request()->get('current_school_id');
         $instance = ClassAcademicYear::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->find($id);
-        if (!$instance) {
+        if (! $instance) {
             return response()->json(['error' => 'Class instance not found'], 404);
         }
 
@@ -695,22 +703,23 @@ class ClassController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for classes.copy: " . $e->getMessage());
+            Log::warning('Permission check failed for classes.copy: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -795,13 +804,14 @@ class ClassController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Validate class ID is a valid UUID format
-        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $class)) {
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $class)) {
             Log::warning('[ClassController::academicYears] Invalid class ID format', ['class_id' => $class]);
+
             return response()->json([]);
         }
 
@@ -824,7 +834,7 @@ class ClassController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$classData) {
+        if (! $classData) {
             return response()->json([]);
         }
 
@@ -904,21 +914,22 @@ class ClassController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for classes.read: " . $e->getMessage());
+            Log::warning('Permission check failed for classes.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -929,7 +940,7 @@ class ClassController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($id);
 
-        if (!$classAcademicYear) {
+        if (! $classAcademicYear) {
             return response()->json(['error' => 'Class academic year not found'], 404);
         }
 
@@ -945,13 +956,13 @@ class ClassController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
@@ -968,12 +979,12 @@ class ClassController extends Controller
                 ->whereNull('deleted_at')
                 ->first();
 
-            if (!$academicYear) {
+            if (! $academicYear) {
                 return response()->json([]);
             }
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
@@ -992,10 +1003,11 @@ class ClassController extends Controller
                     ->get();
 
                 // Filter invalid UUIDs in PHP (safer than PostgreSQL casting)
-                $instances = $allInstances->filter(function($instance) {
+                $instances = $allInstances->filter(function ($instance) {
                     if (empty($instance->class_id)) {
                         return false;
                     }
+
                     // Check if it's a valid UUID format using regex
                     return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $instance->class_id);
                 });
@@ -1013,6 +1025,7 @@ class ClassController extends Controller
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
+
                 return response()->json([]);
             }
 
@@ -1023,8 +1036,11 @@ class ClassController extends Controller
             // Now get class IDs and load classes separately (only valid UUIDs will be queried)
             $classIds = $instances->pluck('class_id')
                 ->unique()
-                ->filter(function($id) {
-                    if (empty($id)) return false;
+                ->filter(function ($id) {
+                    if (empty($id)) {
+                        return false;
+                    }
+
                     // Double-check UUID format in PHP as well
                     return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id);
                 })
@@ -1047,11 +1063,12 @@ class ClassController extends Controller
                     'error' => $e->getMessage(),
                     'class_ids' => $classIds->toArray(),
                 ]);
+
                 return response()->json([]);
             }
 
             // Filter instances to only those with valid classes
-            $instances = $instances->filter(function($instance) use ($classes) {
+            $instances = $instances->filter(function ($instance) use ($classes) {
                 return isset($classes[$instance->class_id]);
             });
 
@@ -1059,11 +1076,13 @@ class ClassController extends Controller
                 return response()->json([]);
             }
 
-
             // Get room data - filter out NULL and invalid UUIDs
             $roomIds = $instances->pluck('room_id')
-                ->filter(function($id) {
-                    if (empty($id)) return false;
+                ->filter(function ($id) {
+                    if (empty($id)) {
+                        return false;
+                    }
+
                     // Validate UUID format
                     return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id);
                 })
@@ -1077,7 +1096,19 @@ class ClassController extends Controller
                     ->keyBy('id');
             }
 
-            $enriched = $instances->map(function ($instance) use ($academicYear, $rooms, $classes) {
+            $instanceIds = $instances->pluck('id')->filter()->values();
+            $liveStudentCounts = collect();
+            if ($instanceIds->isNotEmpty()) {
+                $liveStudentCounts = DB::table('student_admissions')
+                    ->select('class_academic_year_id', DB::raw('COUNT(*) as total'))
+                    ->whereIn('class_academic_year_id', $instanceIds->toArray())
+                    ->whereNull('deleted_at')
+                    ->whereIn('enrollment_status', ['active', 'admitted'])
+                    ->groupBy('class_academic_year_id')
+                    ->pluck('total', 'class_academic_year_id');
+            }
+
+            $enriched = $instances->map(function ($instance) use ($academicYear, $rooms, $classes, $liveStudentCounts) {
                 $class = $classes[$instance->class_id] ?? null;
                 $room = $rooms[$instance->room_id ?? ''] ?? null;
 
@@ -1090,7 +1121,7 @@ class ClassController extends Controller
                     'teacher_id' => $instance->teacher_id,
                     'room_id' => $instance->room_id,
                     'capacity' => $instance->capacity,
-                    'current_student_count' => $instance->current_student_count,
+                    'current_student_count' => (int) ($liveStudentCounts[$instance->id] ?? 0),
                     'is_active' => $instance->is_active,
                     'notes' => $instance->notes,
                     'created_at' => $instance->created_at,
@@ -1100,6 +1131,7 @@ class ClassController extends Controller
                         'name' => $class->name,
                         'code' => $class->code,
                         'grade_level' => $class->grade_level,
+                        'default_capacity' => $class->default_capacity,
                     ] : null,
                     'academic_year' => [
                         'id' => $academicYear->id,
@@ -1121,9 +1153,8 @@ class ClassController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json([]);
         }
     }
 }
-
-

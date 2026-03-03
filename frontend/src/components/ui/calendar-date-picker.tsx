@@ -363,14 +363,14 @@ export function CalendarDatePicker({
         <Button
           variant="outline"
           className={cn(
-            'justify-start text-left font-normal px-2.5',
+            'h-10 w-full justify-between text-left font-normal px-2.5',
             !date && 'text-muted-foreground',
             className
           )}
           disabled={disabled}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {displayValue}
+          <span className="truncate">{displayValue}</span>
+          <CalendarIcon className="h-4 w-4 shrink-0" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto min-w-[380px] overflow-hidden p-0 [&_.rdp-caption_label]:hidden [&_.rdp-caption_dropdowns_*:not(select)]:hidden" align="start">
@@ -688,14 +688,14 @@ export function CalendarDateRangePicker({
         <Button
           variant="outline"
           className={cn(
-            'justify-start text-left font-normal px-2.5',
+            'h-10 w-full justify-between text-left font-normal px-2.5',
             !fromDate && 'text-muted-foreground',
             className
           )}
           disabled={disabled}
         >
-          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-          {buttonLabel}
+          <span className="truncate">{buttonLabel}</span>
+          <CalendarIcon className="h-4 w-4 shrink-0" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

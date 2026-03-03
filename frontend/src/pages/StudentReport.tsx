@@ -1,7 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { Eye, Search, User, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
@@ -41,6 +41,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
 import { showToast } from '@/lib/toast';
@@ -92,41 +94,57 @@ const StudentReport = () => {
   const { data: profile } = useProfile();
   const { selectedSchoolId } = useSchoolContext();
   const orgIdForQuery = profile?.organization_id;
-  const { data: studentsData, isLoading } = useStudents(orgIdForQuery);
   const { data: schools } = useSchools(orgIdForQuery);
-
-  // Ensure students is always an array of domain Student type
-  const students: Student[] = useMemo(() => {
-    if (!studentsData) return [];
-    if (Array.isArray(studentsData)) {
-      // TypeScript should infer this is Student[] from useStudents hook
-      return studentsData as Student[];
-    }
-    // If it's a paginated response, extract the data
-    if (typeof studentsData === 'object' && 'data' in studentsData) {
-      return ((studentsData as any).data || []) as Student[];
-    }
-    return [];
-  }, [studentsData]);
+  const { data: academicYears = [] } = useAcademicYears(orgIdForQuery);
 
   const [statusFilter, setStatusFilter] = useState<'all' | string>('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
-  const [schoolFilter, setSchoolFilter] = useState<'all' | string>('all');
+  const [academicYearFilter, setAcademicYearFilter] = useState<'all' | string>('all');
+  const [classFilter, setClassFilter] = useState<'all' | string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
+  const selectedAcademicYearId = academicYearFilter !== 'all' ? academicYearFilter : undefined;
+  const { data: classAcademicYears = [] } = useClassAcademicYears(selectedAcademicYearId, orgIdForQuery);
+  const classOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    classAcademicYears.forEach((entry) => {
+      if (entry.classId && entry.class?.name) {
+        map.set(entry.classId, entry.class.name);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [classAcademicYears]);
+
+  const studentFilters = useMemo(() => ({
+    search: searchQuery.trim() || undefined,
+    student_status: statusFilter !== 'all' ? statusFilter : undefined,
+    gender: genderFilter !== 'all' ? genderFilter : undefined,
+    academic_year_id: selectedAcademicYearId,
+    class_id: classFilter !== 'all' ? classFilter : undefined,
+  }), [searchQuery, statusFilter, genderFilter, selectedAcademicYearId, classFilter]);
+
+  const { data: studentsData, isLoading } = useStudents(orgIdForQuery, false, studentFilters);
+
+  const students: Student[] = useMemo(() => {
+    if (!studentsData) return [];
+    if (Array.isArray(studentsData)) {
+      return studentsData as Student[];
+    }
+    if (typeof studentsData === 'object' && 'data' in studentsData) {
+      return ((studentsData as any).data || []) as Student[];
+    }
+    return [];
+  }, [studentsData]);
+
   const filteredStudents = useMemo((): Student[] => {
     const list: Student[] = students || [];
     const query = searchQuery.toLowerCase();
 
     return list.filter((student: Student) => {
-      if (statusFilter !== 'all' && student.status !== statusFilter) return false;
-      if (genderFilter !== 'all' && student.gender !== genderFilter) return false;
-      if (schoolFilter !== 'all' && student.schoolId !== schoolFilter) return false;
-
       if (!query) return true;
 
       return (
@@ -137,7 +155,7 @@ const StudentReport = () => {
         (student.cardNumber || '').toLowerCase().includes(query)
       );
     });
-  }, [students, statusFilter, genderFilter, schoolFilter, searchQuery]);
+  }, [students, searchQuery]);
 
   // Pagination
   const paginatedStudents = useMemo(() => {
@@ -147,6 +165,14 @@ const StudentReport = () => {
   }, [filteredStudents, page, pageSize]);
 
   const totalPages = Math.ceil(filteredStudents.length / pageSize);
+
+  useEffect(() => {
+    setClassFilter('all');
+  }, [selectedAcademicYearId]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, genderFilter, selectedAcademicYearId, classFilter]);
 
   const handleViewDetails = (student: Student) => {
     setSelectedStudent(student);
@@ -192,10 +218,16 @@ const StudentReport = () => {
     if (genderFilter !== 'all') {
       filters.push(`Gender: ${genderFilter}`);
     }
-    if (schoolFilter !== 'all') {
-      const schoolName = schools?.find(s => s.id === schoolFilter)?.schoolName;
-      if (schoolName) {
-        filters.push(`School: ${schoolName}`);
+    if (selectedAcademicYearId) {
+      const yearName = academicYears.find((year) => year.id === selectedAcademicYearId)?.name;
+      if (yearName) {
+        filters.push(`Academic Year: ${yearName}`);
+      }
+    }
+    if (classFilter !== 'all') {
+      const className = classOptions.find((classOption) => classOption.id === classFilter)?.name;
+      if (className) {
+        filters.push(`Class: ${className}`);
       }
     }
     if (searchQuery) {
@@ -205,7 +237,7 @@ const StudentReport = () => {
   };
 
   // Get current school for export
-  const currentSchoolId = schoolFilter !== 'all' ? schoolFilter : selectedSchoolId || profile?.default_school_id;
+  const currentSchoolId = selectedSchoolId || profile?.default_school_id;
 
   const columns: ColumnDef<Student, any>[] = useMemo(() => [
     {
@@ -432,20 +464,38 @@ const StudentReport = () => {
             />
           </div>
           <Select
-            value={schoolFilter}
+            value={academicYearFilter}
             onValueChange={(value) => {
-              setSchoolFilter(value as typeof schoolFilter);
-              setPage(1);
+              setAcademicYearFilter(value as typeof academicYearFilter);
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder={t('leave.allSchools') || 'All Schools'} />
+              <SelectValue placeholder={t('admissions.academicYear') || 'Academic Year'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('leave.allSchools') || 'All Schools'}</SelectItem>
-              {schools?.map((school) => (
-                <SelectItem key={school.id} value={school.id}>
-                  {school.schoolName}
+              <SelectItem value="all">{t('common.allYears') || 'All Years'}</SelectItem>
+              {academicYears.map((year) => (
+                <SelectItem key={year.id} value={year.id}>
+                  {year.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={classFilter}
+            onValueChange={(value) => {
+              setClassFilter(value as typeof classFilter);
+            }}
+            disabled={!selectedAcademicYearId || classOptions.length === 0}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('search.class') || 'Class'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('students.allClasses') || 'All Classes'}</SelectItem>
+              {classOptions.map((classOption) => (
+                <SelectItem key={classOption.id} value={classOption.id}>
+                  {classOption.name}
                 </SelectItem>
               ))}
             </SelectContent>

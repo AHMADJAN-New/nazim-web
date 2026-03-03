@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
@@ -116,6 +117,17 @@ const StudentAdmissionsReport = () => {
     page: 1,
     perPage: 25,
   });
+  const selectedAcademicYearId = filters.academicYearId;
+  const { data: classAcademicYears = [] } = useClassAcademicYears(selectedAcademicYearId, profile?.organization_id);
+  const classOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    classAcademicYears.forEach((entry) => {
+      if (entry.classId && entry.class?.name) {
+        map.set(entry.classId, entry.class.name);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [classAcademicYears]);
 
 
   const hasInvalidRange = useMemo(() => {
@@ -142,6 +154,7 @@ const StudentAdmissionsReport = () => {
       toDate: undefined,
       schoolId: undefined,
       academicYearId: undefined,
+      classId: undefined,
       residencyTypeId: undefined,
       enrollmentStatus: undefined,
       isBoarder: undefined,
@@ -156,6 +169,7 @@ const StudentAdmissionsReport = () => {
     setFilters((prev) => ({
       ...prev,
       [key]: value === 'all' ? undefined : value,
+      ...(key === 'academicYearId' ? { classId: undefined } : {}),
     }));
     // Reset to first page when filters change
     setPage(1);
@@ -196,6 +210,12 @@ const StudentAdmissionsReport = () => {
         filterParts.push(`Academic Year: ${yearName}`);
       }
     }
+    if (filters.classId) {
+      const className = classOptions.find((item) => item.id === filters.classId)?.name;
+      if (className) {
+        filterParts.push(`Class: ${className}`);
+      }
+    }
     if (filters.enrollmentStatus) {
       filterParts.push(`Status: ${filters.enrollmentStatus}`);
     }
@@ -221,6 +241,7 @@ const StudentAdmissionsReport = () => {
     return !!(
       filters.schoolId ||
       filters.academicYearId ||
+      filters.classId ||
       filters.residencyTypeId ||
       filters.enrollmentStatus ||
       filters.isBoarder ||
@@ -283,6 +304,7 @@ const StudentAdmissionsReport = () => {
               errorExcel={t('admissions.exportFailed') || 'Failed to generate Excel report'}
               parameters={{
                 academic_year_id: filters.academicYearId || undefined,
+                class_id: filters.classId || undefined,
                 enrollment_status: filters.enrollmentStatus !== 'all' ? filters.enrollmentStatus : undefined,
                 residency_type_id: filters.residencyTypeId || undefined,
                 is_boarder: filters.isBoarder || undefined,
@@ -326,10 +348,30 @@ const StudentAdmissionsReport = () => {
                 <SelectValue placeholder={t('admissions.selectAcademicYear') || 'Select year'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                <SelectItem value="all">{t('common.allYears') || 'All Years'}</SelectItem>
                 {(academicYears || []).map((year) => (
                   <SelectItem key={year.id} value={year.id}>
                     {year.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('search.class') || 'Class'}</Label>
+            <Select
+              value={filters.classId || 'all'}
+              onValueChange={(value) => handleFilterChange('classId', value)}
+              disabled={!filters.academicYearId || classOptions.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('search.class') || 'Class'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('students.allClasses') || 'All Classes'}</SelectItem>
+                {classOptions.map((classOption) => (
+                  <SelectItem key={classOption.id} value={classOption.id}>
+                    {classOption.name}
                   </SelectItem>
                 ))}
               </SelectContent>

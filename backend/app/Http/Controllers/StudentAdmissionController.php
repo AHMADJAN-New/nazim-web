@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\StudentAdmission;
-use App\Models\Student;
 use App\Http\Requests\StoreStudentAdmissionRequest;
 use App\Http\Requests\UpdateStudentAdmissionRequest;
+use App\Models\ClassAcademicYear;
+use App\Models\Student;
+use App\Models\StudentAdmission;
+use App\Services\ActivityLogService;
+use App\Services\Notifications\NotificationService;
+use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
-use App\Services\Reports\DateConversionService;
-use App\Services\Notifications\NotificationService;
-use App\Services\ActivityLogService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
 
 class StudentAdmissionController extends Controller
 {
@@ -25,6 +26,7 @@ class StudentAdmissionController extends Controller
         private NotificationService $notificationService,
         private ActivityLogService $activityLogService
     ) {}
+
     /**
      * Get accessible organization IDs for the current user
      */
@@ -34,7 +36,7 @@ class StudentAdmissionController extends Controller
         if ($profile->organization_id) {
             return [$profile->organization_id];
         }
-        
+
         return [];
     }
 
@@ -46,7 +48,7 @@ class StudentAdmissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
@@ -68,7 +70,7 @@ class StudentAdmissionController extends Controller
             'class',
             'classAcademicYear',
             'residencyType',
-            'room'
+            'room',
         ])
             ->whereNull('deleted_at')
             ->whereIn('organization_id', $orgIds)
@@ -100,6 +102,19 @@ class StudentAdmissionController extends Controller
             $query->where('residency_type_id', $request->residency_type_id);
         }
 
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->whereHas('student', function ($studentQuery) use ($search) {
+                $studentQuery->where(function ($q) use ($search) {
+                    $q->where('full_name', 'ilike', "%{$search}%")
+                        ->orWhere('admission_no', 'ilike', "%{$search}%")
+                        ->orWhere('student_code', 'ilike', "%{$search}%")
+                        ->orWhere('card_number', 'ilike', "%{$search}%")
+                        ->orWhere('father_name', 'ilike', "%{$search}%");
+                });
+            });
+        }
+
         // Client-provided school_id is ignored; current school is enforced.
 
         // Support pagination if page and per_page parameters are provided
@@ -107,14 +122,14 @@ class StudentAdmissionController extends Controller
             $perPage = $request->input('per_page', 25);
             // Validate per_page is one of allowed values
             $allowedPerPage = [10, 25, 50, 100];
-            if (!in_array((int)$perPage, $allowedPerPage)) {
+            if (! in_array((int) $perPage, $allowedPerPage)) {
                 $perPage = 25; // Default to 25 if invalid
             }
-            
+
             $admissions = $query->orderBy('admission_date', 'desc')
                 ->orderBy('created_at', 'desc')
-                ->paginate((int)$perPage);
-            
+                ->paginate((int) $perPage);
+
             // Return paginated response in Laravel's standard format
             return response()->json($admissions);
         }
@@ -135,16 +150,17 @@ class StudentAdmissionController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         try {
-            if (!$user->hasPermissionTo('student_admissions.read')) {
+            if (! $user->hasPermissionTo('student_admissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::error("Permission check failed for student_admissions.read: " . $e->getMessage());
+            Log::error('Permission check failed for student_admissions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Permission check failed'], 500);
         }
 
@@ -156,18 +172,18 @@ class StudentAdmissionController extends Controller
             'class',
             'classAcademicYear',
             'residencyType',
-            'room'
+            'room',
         ])
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$admission) {
+        if (! $admission) {
             return response()->json(['error' => 'Student admission not found'], 404);
         }
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
-        if (!in_array($admission->organization_id, $orgIds)) {
+        if (! in_array($admission->organization_id, $orgIds)) {
             return response()->json(['error' => 'Student admission not found'], 404);
         }
 
@@ -182,22 +198,23 @@ class StudentAdmissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_admissions.read')) {
+            if (! $user->hasPermissionTo('student_admissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for student_admissions.create: " . $e->getMessage());
+            Log::warning('Permission check failed for student_admissions.create: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -211,12 +228,12 @@ class StudentAdmissionController extends Controller
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found for this school'], 404);
         }
 
         // Validate organization access
-        if (!in_array($organizationId, $orgIds)) {
+        if (! in_array($organizationId, $orgIds)) {
             return response()->json(['error' => 'Cannot create admission for this organization'], 403);
         }
 
@@ -224,6 +241,42 @@ class StudentAdmissionController extends Controller
         // Force scope fields (never trust client input)
         $validated['organization_id'] = $organizationId;
         $validated['school_id'] = $currentSchoolId;
+
+        if (! empty($validated['class_academic_year_id'])) {
+            $classAcademicYear = ClassAcademicYear::query()
+                ->with(['class:id,default_capacity'])
+                ->where('id', $validated['class_academic_year_id'])
+                ->where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (! $classAcademicYear) {
+                return response()->json(['error' => 'Class section not found for this school'], 404);
+            }
+
+            // Keep class and academic year aligned with the selected class section.
+            $validated['class_id'] = $classAcademicYear->class_id;
+            $validated['academic_year_id'] = $classAcademicYear->academic_year_id;
+
+            $effectiveCapacity = $classAcademicYear->capacity ?? $classAcademicYear->class?->default_capacity;
+            if ($effectiveCapacity !== null) {
+                $activeStudentCount = StudentAdmission::query()
+                    ->where('class_academic_year_id', $classAcademicYear->id)
+                    ->whereNull('deleted_at')
+                    ->whereIn('enrollment_status', ['active', 'admitted'])
+                    ->count();
+
+                if ($activeStudentCount >= (int) $effectiveCapacity) {
+                    return response()->json([
+                        'error' => "Class capacity reached ({$activeStudentCount}/{$effectiveCapacity}). Please increase class limit first.",
+                        'class_academic_year_id' => $classAcademicYear->id,
+                        'current_student_count' => $activeStudentCount,
+                        'capacity' => (int) $effectiveCapacity,
+                    ], 422);
+                }
+            }
+        }
 
         // Set defaults
         $validated['admission_date'] = $validated['admission_date'] ?? now()->toDateString();
@@ -242,7 +295,7 @@ class StudentAdmissionController extends Controller
             'class',
             'classAcademicYear',
             'residencyType',
-            'room'
+            'room',
         ]);
 
         // Send notification when admission is created (fast - notification service is optimized)
@@ -250,7 +303,7 @@ class StudentAdmissionController extends Controller
             $className = $admission->class->name ?? 'class';
             $academicYearName = $admission->academicYear->name ?? 'academic year';
             $studentName = $admission->student->full_name ?? 'Student';
-            
+
             $this->notificationService->notify(
                 'admission.created',
                 $admission,
@@ -258,7 +311,7 @@ class StudentAdmissionController extends Controller
                 [
                     'title' => 'Admission Created',
                     'body' => "{$studentName} has been successfully admitted to {$className} for {$academicYearName}.",
-                    'url' => "/admissions",
+                    'url' => '/admissions',
                     'exclude_actor' => false, // Include the creator so they see confirmation
                 ]
             );
@@ -287,7 +340,7 @@ class StudentAdmissionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log student admission creation: ' . $e->getMessage());
+            Log::warning('Failed to log student admission creation: '.$e->getMessage());
         }
 
         return response()->json($admission, 201);
@@ -301,39 +354,40 @@ class StudentAdmissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_admissions.read')) {
+            if (! $user->hasPermissionTo('student_admissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for student_admissions.update: " . $e->getMessage());
+            Log::warning('Permission check failed for student_admissions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $admission = StudentAdmission::whereNull('deleted_at')->find($id);
 
-        if (!$admission) {
+        if (! $admission) {
             return response()->json(['error' => 'Student admission not found'], 404);
         }
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
-        if (!in_array($admission->organization_id, $orgIds)) {
+        if (! in_array($admission->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot update admission from different organization'], 403);
         }
 
         $validated = $request->validated();
-        
+
         // Remove organization_id from update data to prevent changes
         unset($validated['organization_id']);
 
@@ -353,7 +407,7 @@ class StudentAdmissionController extends Controller
             'class',
             'classAcademicYear',
             'residencyType',
-            'room'
+            'room',
         ]);
 
         // Send notifications for status changes (fast - notification service is optimized)
@@ -361,7 +415,7 @@ class StudentAdmissionController extends Controller
             if ($oldStatus !== $newStatus) {
                 $studentName = $admission->student->full_name ?? 'Student';
                 $className = $admission->class->name ?? 'class';
-                
+
                 if ($newStatus === 'approved' || $newStatus === 'active') {
                     $this->notificationService->notify(
                         'admission.approved',
@@ -370,7 +424,7 @@ class StudentAdmissionController extends Controller
                         [
                             'title' => 'Admission Approved',
                             'body' => "{$studentName}'s admission to {$className} has been approved and is now active.",
-                            'url' => "/admissions",
+                            'url' => '/admissions',
                             'exclude_actor' => false, // Include the approver so they see confirmation
                         ]
                     );
@@ -382,7 +436,7 @@ class StudentAdmissionController extends Controller
                         [
                             'title' => 'Admission Rejected',
                             'body' => "{$studentName}'s admission to {$className} has been rejected or deactivated.",
-                            'url' => "/admissions",
+                            'url' => '/admissions',
                             'exclude_actor' => false, // Include the rejector so they see confirmation
                         ]
                     );
@@ -412,7 +466,7 @@ class StudentAdmissionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log student admission update: ' . $e->getMessage());
+            Log::warning('Failed to log student admission update: '.$e->getMessage());
         }
 
         return response()->json($admission);
@@ -426,22 +480,23 @@ class StudentAdmissionController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_admissions.read')) {
+            if (! $user->hasPermissionTo('student_admissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for student_admissions.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for student_admissions.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -449,13 +504,13 @@ class StudentAdmissionController extends Controller
             ->with(['student', 'class', 'academicYear'])
             ->find($id);
 
-        if (!$admission) {
+        if (! $admission) {
             return response()->json(['error' => 'Student admission not found'], 404);
         }
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
-        if (!in_array($admission->organization_id, $orgIds)) {
+        if (! in_array($admission->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot delete admission from different organization'], 403);
         }
 
@@ -476,20 +531,20 @@ class StudentAdmissionController extends Controller
                 request: request()
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log student admission deletion: ' . $e->getMessage());
+            Log::warning('Failed to log student admission deletion: '.$e->getMessage());
         }
 
         // Send notification when admission is deleted (fast - notification service is optimized)
         // Note: We need to create a temporary model instance for the notification since the original was deleted
         try {
             // Create a temporary model instance with the data we need for notification
-            $tempAdmission = new StudentAdmission();
+            $tempAdmission = new StudentAdmission;
             $tempAdmission->id = $id;
             $tempAdmission->organization_id = $admission->organization_id;
             $tempAdmission->student_id = $admission->student_id;
             $tempAdmission->class_id = $admission->class_id;
             $tempAdmission->academic_year_id = $admission->academic_year_id;
-            
+
             $this->notificationService->notify(
                 'admission.deleted',
                 $tempAdmission,
@@ -497,7 +552,7 @@ class StudentAdmissionController extends Controller
                 [
                     'title' => '🗑️ Admission Deleted',
                     'body' => "{$studentName}'s admission to {$className} ({$academicYearName}) has been deleted.",
-                    'url' => "/admissions",
+                    'url' => '/admissions',
                     'exclude_actor' => false, // Include the deleter so they see confirmation
                 ]
             );
@@ -548,11 +603,11 @@ class StudentAdmissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -561,11 +616,12 @@ class StudentAdmissionController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('student_admissions.report')) {
+            if (! $user->hasPermissionTo('student_admissions.report')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for student_admissions.report: ' . $e->getMessage());
+            Log::warning('Permission check failed for student_admissions.report: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -598,7 +654,7 @@ class StudentAdmissionController extends Controller
 
         $filters = $validator->validated();
 
-        if (!empty($filters['from_date']) && !empty($filters['to_date'])) {
+        if (! empty($filters['from_date']) && ! empty($filters['to_date'])) {
             $fromDate = Carbon::parse($filters['from_date']);
             $toDate = Carbon::parse($filters['to_date']);
 
@@ -616,15 +672,15 @@ class StudentAdmissionController extends Controller
             ->whereIn('student_admissions.school_id', $schoolIds);
         // organization_id / school_id filters are ignored; scope is enforced by middleware/profile.
 
-        if (!empty($filters['academic_year_id'])) {
+        if (! empty($filters['academic_year_id'])) {
             $query->where('student_admissions.academic_year_id', $filters['academic_year_id']);
         }
 
-        if (!empty($filters['class_id'])) {
+        if (! empty($filters['class_id'])) {
             $query->where('student_admissions.class_id', $filters['class_id']);
         }
 
-        if (!empty($filters['enrollment_status'])) {
+        if (! empty($filters['enrollment_status'])) {
             $query->where('student_admissions.enrollment_status', $filters['enrollment_status']);
         }
 
@@ -632,11 +688,11 @@ class StudentAdmissionController extends Controller
             $query->where('student_admissions.is_boarder', filter_var($filters['is_boarder'], FILTER_VALIDATE_BOOLEAN));
         }
 
-        if (!empty($filters['residency_type_id'])) {
+        if (! empty($filters['residency_type_id'])) {
             $query->where('student_admissions.residency_type_id', $filters['residency_type_id']);
         }
 
-        if (!empty($filters['from_date'])) {
+        if (! empty($filters['from_date'])) {
             try {
                 $parsedFrom = Carbon::parse($filters['from_date'])->toDateString();
                 $query->whereDate('student_admissions.admission_date', '>=', $parsedFrom);
@@ -645,7 +701,7 @@ class StudentAdmissionController extends Controller
             }
         }
 
-        if (!empty($filters['to_date'])) {
+        if (! empty($filters['to_date'])) {
             try {
                 $parsedTo = Carbon::parse($filters['to_date'])->toDateString();
                 $query->whereDate('student_admissions.admission_date', '<=', $parsedTo);
@@ -763,11 +819,11 @@ class StudentAdmissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -776,11 +832,12 @@ class StudentAdmissionController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('student_admissions.report')) {
+            if (! $user->hasPermissionTo('student_admissions.report')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for student_admissions.report: ' . $e->getMessage());
+            Log::warning('Permission check failed for student_admissions.report: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -821,15 +878,15 @@ class StudentAdmissionController extends Controller
             ->whereIn('student_admissions.organization_id', $orgIds)
             ->whereIn('student_admissions.school_id', $schoolIds);
 
-        if (!empty($filters['academic_year_id'])) {
+        if (! empty($filters['academic_year_id'])) {
             $query->where('student_admissions.academic_year_id', $filters['academic_year_id']);
         }
 
-        if (!empty($filters['class_id'])) {
+        if (! empty($filters['class_id'])) {
             $query->where('student_admissions.class_id', $filters['class_id']);
         }
 
-        if (!empty($filters['enrollment_status'])) {
+        if (! empty($filters['enrollment_status'])) {
             $query->where('student_admissions.enrollment_status', $filters['enrollment_status']);
         }
 
@@ -837,11 +894,11 @@ class StudentAdmissionController extends Controller
             $query->where('student_admissions.is_boarder', filter_var($filters['is_boarder'], FILTER_VALIDATE_BOOLEAN));
         }
 
-        if (!empty($filters['residency_type_id'])) {
+        if (! empty($filters['residency_type_id'])) {
             $query->where('student_admissions.residency_type_id', $filters['residency_type_id']);
         }
 
-        if (!empty($filters['from_date'])) {
+        if (! empty($filters['from_date'])) {
             try {
                 $parsedFrom = Carbon::parse($filters['from_date'])->toDateString();
                 $query->whereDate('student_admissions.admission_date', '>=', $parsedFrom);
@@ -850,7 +907,7 @@ class StudentAdmissionController extends Controller
             }
         }
 
-        if (!empty($filters['to_date'])) {
+        if (! empty($filters['to_date'])) {
             try {
                 $parsedTo = Carbon::parse($filters['to_date'])->toDateString();
                 $query->whereDate('student_admissions.admission_date', '<=', $parsedTo);
@@ -881,23 +938,23 @@ class StudentAdmissionController extends Controller
 
         // Build filter summary
         $filterSummary = [];
-        if (!empty($filters['academic_year_id'])) {
-            $filterSummary[] = 'Academic Year: ' . $filters['academic_year_id'];
+        if (! empty($filters['academic_year_id'])) {
+            $filterSummary[] = 'Academic Year: '.$filters['academic_year_id'];
         }
-        if (!empty($filters['class_id'])) {
-            $filterSummary[] = 'Class: ' . $filters['class_id'];
+        if (! empty($filters['class_id'])) {
+            $filterSummary[] = 'Class: '.$filters['class_id'];
         }
-        if (!empty($filters['enrollment_status'])) {
-            $filterSummary[] = 'Status: ' . $filters['enrollment_status'];
+        if (! empty($filters['enrollment_status'])) {
+            $filterSummary[] = 'Status: '.$filters['enrollment_status'];
         }
         if (array_key_exists('is_boarder', $filters) && $filters['is_boarder'] !== null) {
-            $filterSummary[] = 'Boarder: ' . ($filters['is_boarder'] ? 'Yes' : 'No');
+            $filterSummary[] = 'Boarder: '.($filters['is_boarder'] ? 'Yes' : 'No');
         }
-        if (!empty($filters['residency_type_id'])) {
-            $filterSummary[] = 'Residency: ' . $filters['residency_type_id'];
+        if (! empty($filters['residency_type_id'])) {
+            $filterSummary[] = 'Residency: '.$filters['residency_type_id'];
         }
-        if (!empty($filters['from_date']) && !empty($filters['to_date'])) {
-            $filterSummary[] = 'Date Range: ' . $filters['from_date'] . ' to ' . $filters['to_date'];
+        if (! empty($filters['from_date']) && ! empty($filters['to_date'])) {
+            $filterSummary[] = 'Date Range: '.$filters['from_date'].' to '.$filters['to_date'];
         }
 
         // Map admissions to report rows
@@ -944,9 +1001,9 @@ class StudentAdmissionController extends Controller
 
         // Build date range string for title
         $dateRange = null;
-        if (!empty($filters['from_date']) && !empty($filters['to_date'])) {
-            $dateRange = $this->dateService->formatDate($filters['from_date'], $calendarPreference, 'full', $language) . 
-                        ' - ' . 
+        if (! empty($filters['from_date']) && ! empty($filters['to_date'])) {
+            $dateRange = $this->dateService->formatDate($filters['from_date'], $calendarPreference, 'full', $language).
+                        ' - '.
                         $this->dateService->formatDate($filters['to_date'], $calendarPreference, 'full', $language);
         }
 
@@ -959,7 +1016,7 @@ class StudentAdmissionController extends Controller
             'calendar_preference' => $calendarPreference,
             'language' => $language,
             'parameters' => [
-                'filters_summary' => !empty($filterSummary) ? implode(' | ', $filterSummary) : null,
+                'filters_summary' => ! empty($filterSummary) ? implode(' | ', $filterSummary) : null,
                 'total_count' => count($rows),
                 'date_range' => $dateRange,
                 'show_totals' => true, // Show totals row in Excel
@@ -989,12 +1046,12 @@ class StudentAdmissionController extends Controller
                 'message' => 'Report generation started',
             ]);
         } catch (\Exception $e) {
-            Log::error('Student admissions report generation failed: ' . $e->getMessage(), [
+            Log::error('Student admissions report generation failed: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
-                'error' => 'Failed to generate report: ' . $e->getMessage(),
+                'error' => 'Failed to generate report: '.$e->getMessage(),
             ], 500);
         }
 
@@ -1002,7 +1059,7 @@ class StudentAdmissionController extends Controller
         try {
             $this->activityLogService->logEvent(
                 subject: null,
-                description: "Exported student admissions report",
+                description: 'Exported student admissions report',
                 properties: [
                     'format' => $format,
                     'filters' => $filters,
@@ -1011,7 +1068,7 @@ class StudentAdmissionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log student admissions report export: ' . $e->getMessage());
+            Log::warning('Failed to log student admissions report export: '.$e->getMessage());
         }
     }
 
@@ -1023,7 +1080,7 @@ class StudentAdmissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
@@ -1064,22 +1121,23 @@ class StudentAdmissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_admissions.update')) {
+            if (! $user->hasPermissionTo('student_admissions.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for student_admissions.bulk_deactivate: " . $e->getMessage());
+            Log::warning('Permission check failed for student_admissions.bulk_deactivate: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -1126,7 +1184,8 @@ class StudentAdmissionController extends Controller
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Bulk deactivation failed: " . $e->getMessage());
+            Log::error('Bulk deactivation failed: '.$e->getMessage());
+
             return response()->json(['error' => 'Bulk deactivation failed', 'message' => $e->getMessage()], 500);
         }
     }
@@ -1140,22 +1199,23 @@ class StudentAdmissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_admissions.update')) {
+            if (! $user->hasPermissionTo('student_admissions.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for student_admissions.bulk_deactivate_by_student_ids: " . $e->getMessage());
+            Log::warning('Permission check failed for student_admissions.bulk_deactivate_by_student_ids: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -1206,11 +1266,9 @@ class StudentAdmissionController extends Controller
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Bulk deactivation by student IDs failed: " . $e->getMessage());
+            Log::error('Bulk deactivation by student IDs failed: '.$e->getMessage());
+
             return response()->json(['error' => 'Bulk deactivation failed', 'message' => $e->getMessage()], 500);
         }
     }
 }
-
-
-

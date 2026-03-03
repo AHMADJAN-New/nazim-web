@@ -17,10 +17,13 @@ import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
 export type { StudentAdmission, StudentAdmissionInsert, StudentAdmissionUpdate, AdmissionStatus, AdmissionStats } from '@/types/domain/studentAdmission';
 
 export interface StudentAdmissionFilters {
+  search?: string;
   enrollment_status?: string;
   academic_year_id?: string;
   class_id?: string;
   class_academic_year_id?: string;
+  residency_type_id?: string;
+  is_boarder?: boolean;
   school_id?: string;
 }
 
@@ -57,6 +60,9 @@ export const useStudentAdmissions = (
           academic_year_id?: string;
           class_id?: string;
           class_academic_year_id?: string;
+          residency_type_id?: string;
+          is_boarder?: boolean;
+          search?: string;
           school_id?: string;
         } = {
           organization_id: effectiveOrgId || undefined,
@@ -81,6 +87,15 @@ export const useStudentAdmissions = (
           }
           if (filters.class_academic_year_id) {
             params.class_academic_year_id = filters.class_academic_year_id;
+          }
+          if (filters.residency_type_id) {
+            params.residency_type_id = filters.residency_type_id;
+          }
+          if (typeof filters.is_boarder === 'boolean') {
+            params.is_boarder = filters.is_boarder;
+          }
+          if (filters.search) {
+            params.search = filters.search;
           }
           if (filters.school_id) {
             params.school_id = filters.school_id;

@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useStudents } from '@/hooks/useStudents';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
 import { useRooms } from '@/hooks/useRooms';
@@ -69,6 +71,33 @@ export function StudentAdmissions() {
   const { data: profile } = useProfile();
   const orgIdForQuery = profile?.organization_id;
 
+  const [statusFilter, setStatusFilter] = useState<'all' | AdmissionStatus>('all');
+  const [residencyFilter, setResidencyFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [academicYearFilter, setAcademicYearFilter] = useState<string>('all');
+  const [classFilter, setClassFilter] = useState<string>('all');
+
+  const selectedAcademicYearId = academicYearFilter !== 'all' ? academicYearFilter : undefined;
+  const { data: academicYears = [] } = useAcademicYears(orgIdForQuery);
+  const { data: classAcademicYears = [] } = useClassAcademicYears(selectedAcademicYearId, orgIdForQuery);
+  const classOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    classAcademicYears.forEach((entry) => {
+      if (entry.classId && entry.class?.name) {
+        map.set(entry.classId, entry.class.name);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [classAcademicYears]);
+
+  const admissionFilters = useMemo(() => ({
+    search: searchQuery.trim() || undefined,
+    enrollment_status: statusFilter !== 'all' ? statusFilter : undefined,
+    residency_type_id: residencyFilter !== 'all' ? residencyFilter : undefined,
+    academic_year_id: selectedAcademicYearId,
+    class_id: classFilter !== 'all' ? classFilter : undefined,
+  }), [searchQuery, statusFilter, residencyFilter, selectedAcademicYearId, classFilter]);
+
   const { 
     admissions, 
     isLoading, 
@@ -78,15 +107,15 @@ export function StudentAdmissions() {
     pageSize,
     setPage,
     setPageSize,
-  } = useStudentAdmissions(orgIdForQuery, true);
+  } = useStudentAdmissions(orgIdForQuery, true, admissionFilters);
   
   // Debug logging
   useEffect(() => {
-    if (admissions) {
+    if (import.meta.env.DEV && admissions) {
       console.log('[StudentAdmissions] Admissions data:', admissions.length, 'records');
       console.log('[StudentAdmissions] Sample admission:', admissions[0]);
     }
-    if (admissionsError) {
+    if (import.meta.env.DEV && admissionsError) {
       console.error('[StudentAdmissions] Error:', admissionsError);
     }
   }, [admissions, admissionsError]);
@@ -109,45 +138,19 @@ export function StudentAdmissions() {
   const [admissionToDelete, setAdmissionToDelete] = useState<StudentAdmission | null>(null);
   const [selectedAdmissionIds, setSelectedAdmissionIds] = useState<Set<string>>(new Set());
   const [isBulkDeactivateDialogOpen, setIsBulkDeactivateDialogOpen] = useState(false);
-  const [schoolFilter, setSchoolFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | AdmissionStatus>('all');
-  const [residencyFilter, setResidencyFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  useEffect(() => {
+    setClassFilter('all');
+  }, [selectedAcademicYearId]);
 
-  // Client-side filtering for search
+  useEffect(() => {
+    setPage(1);
+    setSelectedAdmissionIds(new Set());
+  }, [searchQuery, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, setPage]);
+
+  // Server-side filtering returns only matching records.
   const filteredAdmissions = useMemo(() => {
-    const list = admissions || [];
-    const searchLower = (searchQuery || '').toLowerCase().trim();
-    
-    return list
-      .filter((admission) => {
-        // Apply filters
-        if (schoolFilter !== 'all' && admission.schoolId !== schoolFilter) return false;
-        if (statusFilter !== 'all' && admission.enrollmentStatus !== statusFilter) return false;
-        if (residencyFilter !== 'all' && admission.residencyTypeId !== residencyFilter) return false;
-        
-        // Apply search query
-        if (searchLower) {
-          const matchesStudentName = admission.student?.fullName?.toLowerCase().includes(searchLower);
-          const matchesAdmissionNo = admission.student?.admissionNumber?.toLowerCase().includes(searchLower);
-          const matchesAdmissionYear = admission.admissionYear?.toLowerCase().includes(searchLower);
-          const matchesClass = admission.class?.name?.toLowerCase().includes(searchLower);
-          const matchesSection = admission.classAcademicYear?.sectionName?.toLowerCase().includes(searchLower);
-          
-          if (!matchesStudentName && !matchesAdmissionNo && !matchesAdmissionYear && !matchesClass && !matchesSection) {
-            return false;
-          }
-        }
-        
-        return true;
-      })
-      .sort((a, b) => {
-        // Sort by student name
-        const nameA = a.student?.fullName || '';
-        const nameB = b.student?.fullName || '';
-        return nameA.localeCompare(nameB);
-      });
-  }, [admissions, schoolFilter, statusFilter, residencyFilter, searchQuery]);
+    return admissions || [];
+  }, [admissions]);
 
   // Component for displaying student picture in admission table cell
   // Uses centralized PictureCell component with image caching
@@ -583,15 +586,32 @@ export function StudentAdmissions() {
               className="pl-9"
             />
           </div>
-          <Select value={schoolFilter} onValueChange={setSchoolFilter}>
+          <Select value={academicYearFilter} onValueChange={setAcademicYearFilter}>
             <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder={t('admissions.school') || 'School'} />
+              <SelectValue placeholder={t('academic.academicYears.academicYear') || 'Academic Year'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('leave.allSchools') || 'All Schools'}</SelectItem>
-              {schools?.map((school) => (
-                <SelectItem key={school.id} value={school.id}>
-                  {school.school_name}
+              <SelectItem value="all">{t('common.allYears') || 'All Years'}</SelectItem>
+              {academicYears.map((year) => (
+                <SelectItem key={year.id} value={year.id}>
+                  {year.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={classFilter}
+            onValueChange={setClassFilter}
+            disabled={!selectedAcademicYearId || classOptions.length === 0}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t('search.class') || 'Class'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('students.allClasses') || 'All Classes'}</SelectItem>
+              {classOptions.map((classOption) => (
+                <SelectItem key={classOption.id} value={classOption.id}>
+                  {classOption.name}
                 </SelectItem>
               ))}
             </SelectContent>

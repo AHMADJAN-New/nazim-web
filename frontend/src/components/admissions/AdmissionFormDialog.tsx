@@ -2,10 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { User, GraduationCap, Home, FileText, AlertTriangle, Zap, CheckCircle2 } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import * as z from 'zod';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { Card, CardContent } from '@/components/ui/card';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import {
@@ -19,18 +21,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { CalendarFormField } from '@/components/ui/calendar-form-field';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
-import { useProfile } from '@/hooks/useProfiles';
-import { useSchools } from '@/hooks/useSchools';
-import { useStudents } from '@/hooks/useStudents';
 import { useClassAcademicYears } from '@/hooks/useClasses';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useProfile } from '@/hooks/useProfiles';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
 import { useRooms } from '@/hooks/useRooms';
+import { useSchools } from '@/hooks/useSchools';
 import {
   useCreateStudentAdmission,
   useUpdateStudentAdmission,
@@ -38,8 +38,8 @@ import {
   type StudentAdmissionInsert,
   type AdmissionStatus,
 } from '@/hooks/useStudentAdmissions';
+import { useStudents } from '@/hooks/useStudents';
 import { useResourceUsage } from '@/hooks/useSubscription';
-import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
 
 // Helper to convert empty strings to null for UUID fields
@@ -99,6 +99,7 @@ export function AdmissionFormDialog({
   admissions = [],
 }: AdmissionFormDialogProps) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const orgIdForQuery = profile?.organization_id;
   const isEdit = !!admission;
@@ -127,7 +128,7 @@ export function AdmissionFormDialog({
 
   // State for academic year -> classAcademicYears
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | undefined>();
-  const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYear, orgIdForQuery);
+  const { data: classAcademicYears, refetch: refetchClassAcademicYears } = useClassAcademicYears(selectedAcademicYear, orgIdForQuery);
 
   // Mutations
   const createAdmission = useCreateStudentAdmission();
@@ -384,12 +385,39 @@ export function AdmissionFormDialog({
     [classAcademicYears, classAcademicYearId]
   );
   const selectedRoom = useMemo(() => rooms?.find((r) => r.id === roomId), [rooms, roomId]);
+  const getEffectiveCapacity = (cay?: { capacity: number | null; class?: { defaultCapacity: number } }) => {
+    if (!cay) return null;
+    return cay.capacity ?? cay.class?.defaultCapacity ?? null;
+  };
+  const selectedClassCapacity = useMemo(() => {
+    if (!selectedCay) {
+      return null;
+    }
+    const effectiveCapacity = getEffectiveCapacity(selectedCay);
+    if (effectiveCapacity === null) {
+      return null;
+    }
+    const currentCount = selectedCay.currentStudentCount ?? 0;
+    return {
+      effectiveCapacity,
+      currentCount,
+      isFull: currentCount >= effectiveCapacity,
+    };
+  }, [selectedCay]);
 
   const onSubmit = (data: z.infer<typeof admissionSchema>) => {
     if (!isEdit && isLimitReached) {
       showToast.error(
         t('admissions.limitReached') ||
           `Student limit reached (${studentUsage.current}/${studentUsage.limit}). Please disable an old admission record first or upgrade your plan.`
+      );
+      return;
+    }
+
+    if (!isEdit && selectedClassCapacity?.isFull) {
+      showToast.error(
+        t('admissions.classCapacityReachedMessage') ||
+          `Class capacity reached (${selectedClassCapacity.currentCount}/${selectedClassCapacity.effectiveCapacity}). Please increase class limit first.`
       );
       return;
     }
@@ -432,7 +460,7 @@ export function AdmissionFormDialog({
     }
 
     if (admission && isEdit) {
-      const { organizationId, schoolId, ...updatePayload } = payload;
+      const { organizationId: _organizationId, schoolId: _schoolId, ...updatePayload } = payload;
       updateAdmission.mutate(
         { id: admission.id, data: updatePayload },
         {
@@ -454,6 +482,27 @@ export function AdmissionFormDialog({
 
   const isBusy = updateAdmission.isPending || createAdmission.isPending;
   const isCreateDisabled = !isEdit && !canCreateAdmission;
+  const isSubmitDisabled = isCreateDisabled || isBusy || (!isEdit && !!selectedClassCapacity?.isFull);
+
+  useEffect(() => {
+    if (!open || !selectedAcademicYear) {
+      return;
+    }
+    void refetchClassAcademicYears();
+  }, [open, selectedAcademicYear, refetchClassAcademicYears]);
+
+  useEffect(() => {
+    if (!open || !selectedAcademicYear) {
+      return;
+    }
+    const handleWindowFocus = () => {
+      void refetchClassAcademicYears();
+    };
+    window.addEventListener('focus', handleWindowFocus);
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, [open, selectedAcademicYear, refetchClassAcademicYears]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -500,6 +549,29 @@ export function AdmissionFormDialog({
           </div>
         )}
 
+        {!isEdit && selectedClassCapacity?.isFull && (
+          <div className="px-4 sm:px-6 pb-3 sm:pb-4 flex-shrink-0">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <span>
+                  {t('admissions.classCapacityReachedMessage') ||
+                    `Class capacity reached (${selectedClassCapacity.currentCount}/${selectedClassCapacity.effectiveCapacity}). Please increase class limit first.`}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => navigate('/settings/classes')}
+                >
+                  {t('admissions.goToClassesSettings') || 'Go to Classes'}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <FormProvider {...formMethods}>
           <form
             onSubmit={handleSubmit(onSubmit, (errs) => {
@@ -514,7 +586,20 @@ export function AdmissionFormDialog({
                 {/* Left: Wizard / Cards */}
                 <Card className="border overflow-hidden flex flex-col">
                   <CardContent className="p-0 sm:p-4 sm:pt-4 pt-0 flex flex-col flex-1 min-h-0">
-                    <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full flex flex-col flex-1 min-h-0">
+                    <Tabs
+                      value={tab}
+                      onValueChange={(value) => {
+                        if (
+                          value === 'basic' ||
+                          value === 'academic' ||
+                          value === 'residency' ||
+                          value === 'additional'
+                        ) {
+                          setTab(value);
+                        }
+                      }}
+                      className="w-full flex flex-col flex-1 min-h-0"
+                    >
                       <div className="px-2 sm:px-0 pb-2 sm:pb-4 sticky top-0 z-20 bg-card flex-shrink-0 border-b border-border/40">
                         <TabsList className="w-full grid grid-cols-4 bg-muted/50 z-10 h-auto py-1">
                         <TabsTrigger 
@@ -722,12 +807,26 @@ export function AdmissionFormDialog({
                                   <SelectContent>
                                     {classAcademicYears && classAcademicYears.length > 0 ? (
                                       classAcademicYears.map((cay) => (
-                                        <SelectItem key={cay.id} value={cay.id}>
+                                        <SelectItem
+                                          key={cay.id}
+                                          value={cay.id}
+                                          disabled={
+                                            !isEdit &&
+                                            (() => {
+                                              const effectiveCapacity = getEffectiveCapacity(cay);
+                                              if (effectiveCapacity === null) return false;
+                                              return (cay.currentStudentCount ?? 0) >= effectiveCapacity;
+                                            })()
+                                          }
+                                        >
                                           {cay.class?.name || cay.classId || t('search.class') || 'Class'}
                                           {cay.sectionName ? ` - ${cay.sectionName}` : ''}
-                                          {cay.capacity && cay.currentStudentCount !== undefined && (
+                                          {getEffectiveCapacity(cay) !== null && cay.currentStudentCount !== undefined && (
                                             <span className="text-xs text-muted-foreground ml-2">
-                                              ({cay.currentStudentCount}/{cay.capacity})
+                                              ({cay.currentStudentCount}/{getEffectiveCapacity(cay)})
+                                              {(cay.currentStudentCount ?? 0) >= (getEffectiveCapacity(cay) ?? Infinity)
+                                                ? ` - ${t('admissions.classFull') || 'Class full'}`
+                                                : ''}
                                             </span>
                                           )}
                                         </SelectItem>
@@ -1014,7 +1113,7 @@ export function AdmissionFormDialog({
                 <Button
                   type="submit"
                   className="flex-1 sm:flex-initial"
-                  disabled={isCreateDisabled || isBusy}
+                  disabled={isSubmitDisabled}
                 >
                   {isBusy
                     ? t('events.saving') || 'Saving...'

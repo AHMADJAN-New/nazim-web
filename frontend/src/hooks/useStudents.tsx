@@ -33,12 +33,23 @@ export type {
   StudentStats,
 } from '@/types/api/student';
 
-export const useStudents = (organizationId?: string, usePaginated?: boolean) => {
+export interface StudentFilters {
+  search?: string;
+  student_status?: string;
+  gender?: string;
+  is_orphan?: boolean;
+  admission_fee_status?: string;
+  academic_year_id?: string;
+  class_id?: string;
+}
+
+export const useStudents = (organizationId?: string, usePaginated?: boolean, filters?: StudentFilters) => {
   const { user, profile } = useAuth();
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
     initialPage: 1,
     initialPageSize: 25,
   });
+  const filterKey = filters ? JSON.stringify(filters) : undefined;
 
   const { data, isLoading, error } = useQuery<Student[] | PaginatedResponse<StudentApi.Student>>({
     queryKey: [
@@ -47,6 +58,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean) => 
       profile?.default_school_id ?? null,
       usePaginated ? page : undefined,
       usePaginated ? pageSize : undefined,
+      filterKey,
     ],
     queryFn: async () => {
       if (!user || !profile) {
@@ -56,14 +68,37 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean) => 
       try {
         const effectiveOrgId = organizationId || profile.organization_id;
 
-        const params: { organization_id?: string; page?: number; per_page?: number } = {
+        const params: {
+          organization_id?: string;
+          school_id?: string;
+          page?: number;
+          per_page?: number;
+          search?: string;
+          student_status?: string;
+          gender?: string;
+          is_orphan?: boolean;
+          admission_fee_status?: string;
+          academic_year_id?: string;
+          class_id?: string;
+        } = {
           organization_id: effectiveOrgId || undefined,
+          school_id: profile.default_school_id || undefined,
         };
 
         // Add pagination params if using pagination
         if (usePaginated) {
           params.page = page;
           params.per_page = pageSize;
+        }
+
+        if (filters) {
+          if (filters.search) params.search = filters.search;
+          if (filters.student_status) params.student_status = filters.student_status;
+          if (filters.gender) params.gender = filters.gender;
+          if (typeof filters.is_orphan === 'boolean') params.is_orphan = filters.is_orphan;
+          if (filters.admission_fee_status) params.admission_fee_status = filters.admission_fee_status;
+          if (filters.academic_year_id) params.academic_year_id = filters.academic_year_id;
+          if (filters.class_id) params.class_id = filters.class_id;
         }
 
         const apiStudents = await studentsApi.list(params);

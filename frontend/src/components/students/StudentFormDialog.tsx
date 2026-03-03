@@ -454,11 +454,11 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     </div>
                                     <div>
                                         <Label>{t('students.applyingGrade') || 'Applying Grade'}</Label>
-                                        <Input placeholder="Grade 7" {...register('applying_grade')} />
+                                        <Input placeholder="ابتدائیه" {...register('applying_grade')} />
                                     </div>
                                     <div>
                                         <Label>{t('students.admissionYear') || 'Admission Year'}</Label>
-                                        <Input placeholder="2024" {...register('admission_year')} />
+                                        <Input placeholder="1405" {...register('admission_year')} />
                                     </div>
                                 </div>
                             </TabsContent>

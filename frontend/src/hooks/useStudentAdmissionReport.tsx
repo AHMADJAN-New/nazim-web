@@ -31,6 +31,7 @@ export const useStudentAdmissionReport = (
       const params: Record<string, string | number | boolean | undefined> = {
         organization_id: normalizedFilters.organizationId,
         academic_year_id: normalizedFilters.academicYearId,
+        class_id: normalizedFilters.classId,
         enrollment_status: normalizedFilters.enrollmentStatus,
         residency_type_id: normalizedFilters.residencyTypeId,
         is_boarder: normalizedFilters.isBoarder,
