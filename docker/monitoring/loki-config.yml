@@ -33,6 +33,9 @@ ruler:
 # Retention: Keep logs for 30 days
 limits_config:
   retention_period: 720h  # 30 days
+  # Allow ingestion of logs up to 30 days old (Promtail sends historical data on first run)
+  reject_old_samples: true
+  reject_old_samples_max_age: 720h  # 30 days
   max_query_length: 721h
   max_query_parallelism: 32
   ingestion_rate_mb: 16

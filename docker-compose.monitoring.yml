@@ -43,27 +43,25 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://168.231.125.153:3000
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
       - GF_SERVER_SERVE_FROM_SUB_PATH=false
       - GF_INSTALL_PLUGINS=
       - GF_ANALYTICS_REPORTING_ENABLED=false
       - GF_ANALYTICS_CHECK_FOR_UPDATES=false
       - GF_SECURITY_DISABLE_GRAVATAR=true
       - GF_DATABASE_LOCKING_ENABLED=false
-      # Temporarily disable provisioning to allow Grafana to start
-      # Datasources will be added manually via API after Grafana is running
-      # - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     volumes:
       - nazim_grafana_data:/var/lib/grafana
-      # Temporarily disable provisioning mount to allow Grafana to start
-      # Datasources will be added manually via API after Grafana is running
-      # - ./docker/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./docker/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "0.0.0.0:3000:3000"
     depends_on:
       prometheus:
         condition: service_healthy
+      loki:
+        condition: service_started
     networks:
       - nazim_network
     healthcheck:
@@ -90,12 +88,13 @@ services:
       - "3100:3100"
     networks:
       - nazim_network
+    # Loki v3.6+ image has no wget/curl; use built-in -health (see grafana/loki#20149)
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
-      interval: 30s
-      timeout: 15s
-      retries: 5
-      start_period: 30s
+      test: ["CMD", "loki", "-health", "-config.file=/etc/loki/local-config.yaml"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
     logging:
       driver: "json-file"
       options:
@@ -117,7 +116,7 @@ services:
       - nazim_network
     depends_on:
       loki:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:9080/ready || exit 1"]
       interval: 30s

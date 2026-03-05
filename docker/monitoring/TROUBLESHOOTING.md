@@ -1,5 +1,48 @@
 # Troubleshooting Grafana Loki Setup
 
+## Issue: "This site can't be reached" / ERR_CONNECTION_TIMED_OUT
+
+### Symptoms
+- Browser cannot open `http://<server-ip>:3000`
+- Connection times out
+
+### Causes and fixes
+
+1. **Grafana container not running** (e.g. crash on startup)
+   - Check: `docker compose -f docker-compose.monitoring.yml ps`
+   - If Grafana is Exit or Restarting, check logs: `docker logs nazim_monitoring_grafana`
+   - Fix provisioning/datasource errors (see "Datasource provisioning error" below), then restart.
+
+2. **Firewall not allowing port 3000**
+   - On the server, open TCP port 3000.
+   - **UFW:** `sudo ufw allow 3000/tcp && sudo ufw reload`
+   - **firewalld:** `sudo firewall-cmd --add-port=3000/tcp --permanent && sudo firewall-cmd --reload`
+   - **Cloud (e.g. Hostinger):** In the control panel, add an inbound rule for port 3000.
+
+3. **Public URL for Grafana**
+   - If you access Grafana via `http://<server-ip>:3000`, set when starting:
+     `GRAFANA_ROOT_URL=http://168.231.125.153:3000 docker compose -f docker-compose.monitoring.yml up -d`
+   - Or in `docker/env/compose.prod.env` (if used): `GRAFANA_ROOT_URL=http://YOUR_IP:3000`
+
+---
+
+## Issue: "Datasource provisioning error: data source not found" (Grafana exits)
+
+Grafana can fail to start if datasource provisioning fails (e.g. dashboards reference a datasource that isn’t provisioned yet). We use a single `datasources.yml` with both Prometheus and Loki to avoid that.
+
+**Fix:** Reset the Grafana database and restart (clears conflicting provisioning state):
+```bash
+bash docker/monitoring/fix-grafana-provisioning.sh
+```
+Or manually:
+```bash
+docker compose -f docker-compose.monitoring.yml down
+docker volume rm nazim-web_nazim_grafana_data 2>/dev/null || true
+docker compose -f docker-compose.monitoring.yml up -d
+```
+
+---
+
 ## Issue: Loki Datasource Not Found in Grafana
 
 ### Symptoms
@@ -62,7 +105,7 @@ Look for any errors related to datasource provisioning.
 Check that the datasource file exists and is correct:
 
 ```bash
-cat docker/monitoring/grafana/provisioning/datasources/prometheus.yml
+cat docker/monitoring/grafana/provisioning/datasources/datasources.yml
 ```
 
 Should contain both Prometheus and Loki datasources.
@@ -191,6 +234,22 @@ docker exec nazim_monitoring_loki cat /etc/loki/local-config.yaml
 ```
 
 Verify the configuration is valid YAML.
+
+## Issue: Promtail "entry has timestamp too old"
+
+### Symptoms
+- Promtail logs show: `entry has timestamp too old: ... oldest acceptable timestamp is: ...`
+- Loki rejects log entries when Promtail sends historical Laravel logs
+
+### Cause
+Loki rejects samples older than its default window (~7 days). On first run, Promtail sends existing log files which may contain older entries.
+
+### Fix
+The Loki config already sets `reject_old_samples_max_age: 720h` (30 days) in `docker/monitoring/loki-config.yml`. If you still see this error:
+1. Ensure the config has `reject_old_samples_max_age: 720h` under `limits_config`
+2. Restart Loki: `docker compose -f docker-compose.monitoring.yml restart loki promtail`
+
+---
 
 ## Issue: Promtail Configuration Errors
 
