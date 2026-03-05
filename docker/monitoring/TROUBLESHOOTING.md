@@ -99,7 +99,8 @@ Should show "Starting Promtail" and no errors.
 
 ```bash
 # Check if Laravel logs exist in the volume
-docker run --rm -v nazim_backend_storage:/storage alpine ls -la /storage/logs/
+# Use the same volume name as your project (e.g. nazim-web_nazim_backend_storage when run from repo root)
+docker run --rm -v nazim-web_nazim_backend_storage:/storage alpine ls -la /storage/logs/
 ```
 
 Should show `laravel.log` or `laravel-*.log` files.

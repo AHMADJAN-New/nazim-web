@@ -23,16 +23,15 @@ Grafana (visualizes logs)
 
 ## Setup Instructions
 
+**Important:** Run the monitoring stack from the same directory (or with the same `-p` project name) as your main app so Promtail uses the same backend storage volume and can read Laravel logs. The volume is always named `nazim_backend_storage` in the compose files; Docker names it `<project>_nazim_backend_storage` (e.g. `nazim-web_nazim_backend_storage` when run from repo root). No app paths or storage names change.
+
 ### 1. Start the Monitoring Stack
 
 ```bash
 # Make sure the nazim_network exists
 docker network create nazim_network 2>/dev/null || true
 
-# Make sure the backend storage volume exists (from docker-compose.prod.yml)
-docker volume create nazim_backend_storage 2>/dev/null || true
-
-# Start the monitoring stack
+# Run from repo root so project name matches the main app (or use -p <same-name> as prod)
 docker-compose -f docker-compose.monitoring.yml up -d
 ```
 
@@ -127,7 +126,8 @@ topk(10, sum(count_over_time({job="laravel", level="ERROR"} [1h])) by (message))
 3. **Verify log file path:**
    ```bash
    # Check if Laravel logs exist in the volume
-   docker run --rm -v nazim_backend_storage:/storage alpine ls -la /storage/logs/
+   # Volume name is <project>_nazim_backend_storage (e.g. nazim-web_nazim_backend_storage when run from repo root)
+   docker run --rm -v nazim-web_nazim_backend_storage:/storage alpine ls -la /storage/logs/
    ```
 
 4. **Check Promtail configuration:**
@@ -138,7 +138,7 @@ topk(10, sum(count_over_time({job="laravel", level="ERROR"} [1h])) by (message))
 ### Promtail Can't Read Logs
 
 If Promtail can't access the logs, ensure:
-1. The `nazim_backend_storage` volume exists
+1. The backend storage volume exists and is shared (run monitoring with the same project name as prod so both use the same volume)
 2. The volume is mounted correctly in Promtail
 3. The log path in `promtail-config.yml` matches the actual log location
 

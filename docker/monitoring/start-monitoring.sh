@@ -17,11 +17,8 @@ fi
 echo "📡 Creating Docker network..."
 docker network create nazim_network 2>/dev/null || echo "Network already exists"
 
-# Create backend storage volume if it doesn't exist
-echo "💾 Creating backend storage volume..."
-docker volume create nazim_backend_storage 2>/dev/null || echo "Volume already exists"
-
-# Start monitoring stack
+# Use same project name as main app so Promtail shares the backend storage volume (Laravel logs).
+# If you start prod with -p NAME, start monitoring with the same: docker compose -p NAME -f docker-compose.monitoring.yml up -d
 echo "🔧 Starting monitoring services..."
 docker-compose -f docker-compose.monitoring.yml up -d
 

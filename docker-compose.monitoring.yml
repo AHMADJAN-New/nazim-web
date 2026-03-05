@@ -117,7 +117,13 @@ services:
       - nazim_network
     depends_on:
       loki:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9080/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     logging:
       driver: "json-file"
       options:
@@ -191,9 +197,8 @@ volumes:
   nazim_prometheus_data:
   nazim_grafana_data:
   nazim_loki_data:
+  # Same volume key as prod; use same project name when starting so both stacks share it (e.g. run from repo root: docker compose -f docker-compose.monitoring.yml up -d)
   nazim_backend_storage:
-    external: true
-    name: nazim-web_nazim_backend_storage
 
 networks:
   nazim_network:
