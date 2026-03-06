@@ -139,7 +139,7 @@ class AssetMaintenanceController extends Controller
                         $asset,
                         $user,
                         [
-                            'title' => '⚠️ Asset Maintenance Overdue',
+                            'title' => 'Asset Maintenance Overdue',
                             'body' => "Maintenance for asset '{$asset->name}' ({$asset->asset_tag}) is overdue. Next due date: {$record->next_due_date}",
                             'url' => "/assets/{$asset->id}",
                         ]
@@ -151,7 +151,7 @@ class AssetMaintenanceController extends Controller
                         $asset,
                         $user,
                         [
-                            'title' => '⚠️ Asset Maintenance Due Soon',
+                            'title' => 'Asset Maintenance Due Soon',
                             'body' => "Maintenance for asset '{$asset->name}' ({$asset->asset_tag}) is due in {$nextDueDate->diffInDays($now)} day(s).",
                             'url' => "/assets/{$asset->id}",
                         ]
@@ -270,7 +270,7 @@ class AssetMaintenanceController extends Controller
                         $asset,
                         $user,
                         [
-                            'title' => '⚠️ Asset Maintenance Overdue',
+                            'title' => 'Asset Maintenance Overdue',
                             'body' => "Maintenance for asset '{$asset->name}' ({$asset->asset_tag}) is overdue. Next due date: {$record->next_due_date}",
                             'url' => "/assets/{$asset->id}",
                         ]
@@ -282,7 +282,7 @@ class AssetMaintenanceController extends Controller
                         $asset,
                         $user,
                         [
-                            'title' => '⚠️ Asset Maintenance Due Soon',
+                            'title' => 'Asset Maintenance Due Soon',
                             'body' => "Maintenance for asset '{$asset->name}' ({$asset->asset_tag}) is due in {$nextDueDate->diffInDays($now)} day(s).",
                             'url' => "/assets/{$asset->id}",
                         ]

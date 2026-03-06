@@ -6,7 +6,9 @@ import {
   CreditCard,
   DollarSign,
   Lock,
+  Mail,
   Package,
+  Phone,
   Plus,
   RefreshCw,
   Search,
@@ -447,13 +449,13 @@ export function PlatformAdminDashboard() {
                                   )}
                                   {renewal.organization.contact_person_email && (
                                     <div className="flex items-center gap-1">
-                                      <span>📧</span>
+                                      <Mail className="h-3 w-3" />
                                       <span>{renewal.organization.contact_person_email}</span>
                                     </div>
                                   )}
                                   {renewal.organization.contact_person_phone && (
                                     <div className="flex items-center gap-1">
-                                      <span>📞</span>
+                                      <Phone className="h-3 w-3" />
                                       <span>{renewal.organization.contact_person_phone}</span>
                                     </div>
                                   )}

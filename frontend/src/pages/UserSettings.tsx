@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Settings, Eye, EyeOff, Lock, Calendar, Shield } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Settings, Eye, EyeOff, Lock, Calendar, Shield, Monitor } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -11,10 +12,16 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { authApi } from '@/lib/api/client';
+import { formatDate } from '@/lib/utils';
 import { showToast } from '@/lib/toast';
 import { passwordChangeSchema, type PasswordChangeFormData } from '@/lib/validations/passwordChange';
 
-export default function UserSettings() {
+export interface UserSettingsProps {
+  /** When set to 'security', the Security tab is selected by default (e.g. from /settings/security). */
+  defaultTab?: 'preferences' | 'security';
+}
+
+export default function UserSettings({ defaultTab = 'preferences' }: UserSettingsProps) {
   const { t } = useLanguage();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -37,6 +44,17 @@ export default function UserSettings() {
   });
 
   const newPassword = watch('new_password');
+
+  const { data: securityOverview, isLoading: securityLoading } = useQuery({
+    queryKey: ['auth', 'security-overview'],
+    queryFn: () => authApi.getSecurityOverview(),
+    staleTime: 60 * 1000,
+  });
+
+  const formatLastSeen = (iso: string | null): string => {
+    if (!iso) return '—';
+    return formatDate(new Date(iso));
+  };
 
   const getPasswordStrength = (password: string): { strength: number; label: string; color: string } => {
     if (!password) return { strength: 0, label: '', color: 'bg-gray-200' };
@@ -89,7 +107,7 @@ export default function UserSettings() {
         <p className="text-muted-foreground">{t('settings.userSettings.description')}</p>
       </div>
 
-      <Tabs defaultValue="preferences" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="preferences" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -107,7 +125,48 @@ export default function UserSettings() {
         </TabsContent>
 
         {/* Security Tab */}
-        <TabsContent value="security" className="mt-6">
+        <TabsContent value="security" className="mt-6 space-y-6">
+          {/* Recent logins */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Monitor className="h-5 w-5" />
+                <CardTitle>{t('settings.userSettings.recentLogins')}</CardTitle>
+              </div>
+              <CardDescription>
+                {t('settings.userSettings.recentLoginsDescription')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {securityLoading ? (
+                <p className="text-sm text-muted-foreground">{t('common.loading') ?? 'Loading...'}</p>
+              ) : securityOverview?.devices?.length ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 font-medium">{t('settings.userSettings.device')}</th>
+                        <th className="text-left py-2 font-medium hidden sm:table-cell">{t('settings.userSettings.ipAddress')}</th>
+                        <th className="text-left py-2 font-medium">{t('settings.userSettings.lastSeen')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {securityOverview.devices.map((d) => (
+                        <tr key={d.id} className="border-b last:border-0">
+                          <td className="py-2">{d.device_name}</td>
+                          <td className="py-2 hidden sm:table-cell text-muted-foreground">{d.ip_address ?? '—'}</td>
+                          <td className="py-2 text-muted-foreground">{formatLastSeen(d.last_seen_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('settings.userSettings.noRecentLogins')}</p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">

@@ -81,7 +81,13 @@ export default {
       description: "Manage your account preferences and security settings",
       preferences: "Preferences",
       security: "Security",
-      title: "User Settings"
+      title: "User Settings",
+      recentLogins: "Recent logins",
+      recentLoginsDescription: "Devices and locations where your account was used. If you see something unfamiliar, change your password.",
+      lastSeen: "Last seen",
+      device: "Device",
+      ipAddress: "IP address",
+      noRecentLogins: "No recent login history."
     },
     datePreferences: {
       title: "Date Format Preferences",

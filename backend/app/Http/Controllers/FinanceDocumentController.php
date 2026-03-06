@@ -187,7 +187,7 @@ class FinanceDocumentController extends Controller
                     $document,
                     $user,
                     [
-                        'title' => '📄 Invoice Document Created',
+                        'title' => 'Invoice Document Created',
                         'body' => $body,
                         'url' => "/finance/documents/{$document->id}",
                         'exclude_actor' => false, // Include the creator so they see confirmation

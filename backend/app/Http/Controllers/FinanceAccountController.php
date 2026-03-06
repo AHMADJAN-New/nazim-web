@@ -307,7 +307,7 @@ class FinanceAccountController extends Controller
                         $account,
                         $request->user(),
                         [
-                            'title' => '⚠️ Low Account Balance Warning',
+                            'title' => 'Low Account Balance Warning',
                             'body' => "Account '{$account->name}' has a low balance of {$balanceFormatted} (below threshold of {$thresholdFormatted}).",
                             'url' => "/finance/accounts/{$account->id}",
                             'level' => 'warning',

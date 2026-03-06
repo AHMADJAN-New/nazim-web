@@ -74,7 +74,7 @@ class EnforceUsageLimit
                         $organization,
                         $user,
                         [
-                            'title' => '⚠️ Usage Limit Warning',
+                            'title' => 'Usage Limit Warning',
                             'body' => $check['message'],
                             'url' => '/subscription',
                             'level' => 'warning',
@@ -111,7 +111,7 @@ class EnforceUsageLimit
                         $organization,
                         $user,
                         [
-                            'title' => '🚫 Usage Limit Reached',
+                            'title' => 'Usage Limit Reached',
                             'body' => $check['message'],
                             'url' => '/subscription',
                             'level' => 'critical',

@@ -574,7 +574,7 @@ class ExamResultController extends Controller
                     $result,
                     $user,
                     [
-                        'title' => '📝 Exam Marks Updated',
+                        'title' => 'Exam Marks Updated',
                         'body' => "Marks for {$studentName} in {$examName} - {$subjectName} have been updated. Marks: {$newMarks}/{$totalMarks}, Absent: {$isAbsent}.",
                         'url' => "/exams/{$result->exam_id}/results",
                     ]

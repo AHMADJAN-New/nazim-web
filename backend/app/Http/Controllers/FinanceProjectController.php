@@ -289,7 +289,7 @@ class FinanceProjectController extends Controller
                             $project,
                             $request->user(),
                             [
-                                'title' => '⚠️ Project Budget Warning',
+                                'title' => 'Project Budget Warning',
                                 'body' => "Project '{$project->name}' has used {$percentageUsed}% of budget ({$expenseFormatted} / {$budgetFormatted}). Remaining: {$remainingFormatted}.",
                                 'url' => "/finance/projects/{$project->id}",
                                 'level' => 'warning',
@@ -309,7 +309,7 @@ class FinanceProjectController extends Controller
                             $project,
                             $request->user(),
                             [
-                                'title' => '🚨 Project Budget Exceeded',
+                                'title' => 'Project Budget Exceeded',
                                 'body' => "Project '{$project->name}' has exceeded its budget by {$overBudget} ({$expenseFormatted} / {$budgetFormatted}).",
                                 'url' => "/finance/projects/{$project->id}",
                                 'level' => 'critical',

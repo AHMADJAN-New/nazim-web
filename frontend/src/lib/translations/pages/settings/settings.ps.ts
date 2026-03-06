@@ -77,6 +77,12 @@ export default {
     userSettings: {
       changePassword: "د پاسورډ بدلول",
       changePasswordDescription: "د خپل حساب د خوندیتوب لپاره خپل پاسورډ اوسمهال کړئ",
+      recentLogins: "وروستي ننوتنې",
+      recentLoginsDescription: "ډیوایسونه او ځایونه چې ستاسو حساب کارول شوی. که نااشنا څه وګورئ، خپل پاسورډ بدل کړئ.",
+      lastSeen: "وروستی لیدل شوی",
+      device: "ډیوایس",
+      ipAddress: "IP پته",
+      noRecentLogins: "وروستي ننوتنې نشته.",
       description: "دلته خپل د حساب غوره توبونه او امنیتي تنظیمات اداره کړئ",
       preferences: "غوره توبونه",
       security: "امنیت",

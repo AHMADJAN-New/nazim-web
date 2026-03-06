@@ -185,7 +185,7 @@ class IncomingDocumentsController extends BaseDmsController
                     $doc,
                     $user,
                     [
-                        'title' => '📄 Document Assigned',
+                        'title' => 'Document Assigned',
                         'body' => "Document '{$doc->subject}' ({$doc->full_indoc_number}) has been assigned to you.",
                         'url' => "/dms/incoming/{$doc->id}",
                     ]
@@ -273,7 +273,7 @@ class IncomingDocumentsController extends BaseDmsController
                     $doc,
                     $user,
                     [
-                        'title' => '📄 Document Assigned',
+                        'title' => 'Document Assigned',
                         'body' => "Document '{$doc->subject}' ({$doc->full_indoc_number}) has been assigned to you.",
                         'url' => "/dms/incoming/{$doc->id}",
                     ]
@@ -287,7 +287,7 @@ class IncomingDocumentsController extends BaseDmsController
                     $doc,
                     $user,
                     [
-                        'title' => '✅ Document Approved',
+                        'title' => 'Document Approved',
                         'body' => "Document '{$doc->subject}' ({$doc->full_indoc_number}) has been approved.",
                         'url' => "/dms/incoming/{$doc->id}",
                     ]
@@ -301,7 +301,7 @@ class IncomingDocumentsController extends BaseDmsController
                     $doc,
                     $user,
                     [
-                        'title' => '↩️ Document Returned',
+                        'title' => 'Document Returned',
                         'body' => "Document '{$doc->subject}' ({$doc->full_indoc_number}) has been returned.",
                         'url' => "/dms/incoming/{$doc->id}",
                     ]

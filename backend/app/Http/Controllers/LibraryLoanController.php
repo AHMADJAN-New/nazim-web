@@ -157,7 +157,7 @@ class LibraryLoanController extends Controller
                         $loan,
                         $user,
                         [
-                            'title' => '📚 Book Overdue',
+                            'title' => 'Book Overdue',
                             'body' => "The book '{$loan->book->title}' is overdue. Please return it as soon as possible.",
                             'url' => "/library/loans/{$loan->id}",
                         ]
@@ -169,7 +169,7 @@ class LibraryLoanController extends Controller
                         $loan,
                         $user,
                         [
-                            'title' => '📚 Book Due Soon',
+                            'title' => 'Book Due Soon',
                             'body' => "The book '{$loan->book->title}' is due in {$dueDate->diffInDays($now)} day(s).",
                             'url' => "/library/loans/{$loan->id}",
                         ]

@@ -78,6 +78,12 @@ export default {
     userSettings: {
       changePassword: "تغییر رمز عبور",
       changePasswordDescription: "رمز عبور خود را برای امنیت حساب به‌روز کنید",
+      recentLogins: "ورودهای اخیر",
+      recentLoginsDescription: "دستگاه‌ها و مکان‌هایی که حساب شما استفاده شده. اگر مورد ناآشنایی دیدید، رمز عبور را تغییر دهید.",
+      lastSeen: "آخرین بار دیده شده",
+      device: "دستگاه",
+      ipAddress: "نشانی IP",
+      noRecentLogins: "تاریخچه ورود اخیر وجود ندارد.",
       description: "تنظیمات حساب و امنیت خود را مدیریت کنید",
       preferences: "ترجیحات",
       security: "امنیت",

@@ -509,7 +509,7 @@ class StudentController extends Controller
                     $student,
                     $user,
                     [
-                        'title' => '✏️ Student Record Updated',
+                        'title' => 'Student Record Updated',
                         'body' => "Student '{$studentName}' (Admission No: {$admissionNo}) has been updated. Fields changed: {$updatedFields}.",
                         'url' => "/students/{$student->id}",
                     ]
@@ -590,7 +590,7 @@ class StudentController extends Controller
                 $student,
                 $user,
                 [
-                    'title' => '🗑️ Student Record Deleted',
+                    'title' => 'Student Record Deleted',
                     'body' => "Student '{$studentName}' (Admission No: {$admissionNo}) has been deleted.",
                     'url' => '/students',
                     'level' => 'warning',

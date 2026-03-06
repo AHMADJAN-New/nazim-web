@@ -634,7 +634,7 @@ export default function ExamPaperTemplates() {
                   {(templateFiles || []).map((tf) => (
                     <SelectItem key={tf.id} value={tf.id}>
                       {tf.name} ({languageConfig[tf.language].label})
-                      {tf.isDefault && ' ⭐'}
+                      {tf.isDefault && ` (${t('common.default') || 'Default'})`}
                     </SelectItem>
                   ))}
                 </SelectContent>

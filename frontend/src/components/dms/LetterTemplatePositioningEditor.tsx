@@ -12,6 +12,7 @@ import {
   EyeOff,
   Copy,
   RotateCcw,
+  FileText,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 
@@ -380,7 +381,9 @@ export function LetterTemplatePositioningEditor({
               }}
             >
               <div className="text-center text-gray-600">
-                <div className="text-5xl mb-3">📄</div>
+                <div className="flex justify-center mb-3">
+                  <FileText className="h-12 w-12" />
+                </div>
                 <div className="font-semibold">PDF Letterhead</div>
                 <div className="text-sm text-gray-500 mt-1">
                   Position: {letterheadPosition}

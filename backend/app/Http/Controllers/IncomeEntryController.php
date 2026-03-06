@@ -306,7 +306,7 @@ class IncomeEntryController extends Controller
                     $entry,
                     $user,
                     [
-                        'title' => '💰 Payment Received',
+                        'title' => 'Payment Received',
                         'body' => $body,
                         'url' => "/finance/income/{$entry->id}",
                         'exclude_actor' => false, // Include the creator so they see confirmation
@@ -587,7 +587,7 @@ class IncomeEntryController extends Controller
                         $entry,
                         $user,
                         [
-                            'title' => '📝 Payment Amount Updated',
+                            'title' => 'Payment Amount Updated',
                             'body' => "Payment amount in {$accountName} updated from {$oldAmountFormatted} to {$newAmountFormatted}.",
                             'url' => "/finance/income/{$entry->id}",
                             'exclude_actor' => false,

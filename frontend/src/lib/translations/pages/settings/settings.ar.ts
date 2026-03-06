@@ -78,6 +78,12 @@ export default {
     userSettings: {
       changePassword: "تغيير كلمة المرور",
       changePasswordDescription: "قم بتحديث كلمة المرور للحفاظ على أمان حسابك",
+      recentLogins: "تسجيلات الدخول الأخيرة",
+      recentLoginsDescription: "الأجهزة والمواقع التي تم استخدام حسابك منها. إذا رأيت شيئاً غير مألوف، غيّر كلمة المرور.",
+      lastSeen: "آخر ظهور",
+      device: "الجهاز",
+      ipAddress: "عنوان IP",
+      noRecentLogins: "لا يوجد سجل تسجيل دخول حديث.",
       description: "إدارة تفضيلات الحساب وإعدادات الأمان",
       preferences: "التفضيلات",
       security: "الأمان",

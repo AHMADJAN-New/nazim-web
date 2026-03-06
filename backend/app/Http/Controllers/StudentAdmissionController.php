@@ -550,7 +550,7 @@ class StudentAdmissionController extends Controller
                 $tempAdmission,
                 $user,
                 [
-                    'title' => '🗑️ Admission Deleted',
+                    'title' => 'Admission Deleted',
                     'body' => "{$studentName}'s admission to {$className} ({$academicYearName}) has been deleted.",
                     'url' => '/admissions',
                     'exclude_actor' => false, // Include the deleter so they see confirmation

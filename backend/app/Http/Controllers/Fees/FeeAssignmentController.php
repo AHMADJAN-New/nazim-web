@@ -160,7 +160,7 @@ class FeeAssignmentController extends Controller
                 $assignment,
                 $user,
                 [
-                    'title' => '📋 Fee Assignment Created',
+                    'title' => 'Fee Assignment Created',
                     'body' => "Fee assignment of {$amount} {$currencyCode} created for {$studentName} ({$feeStructureName}). Due date: {$dueDate}",
                     'url' => "/fees/assignments/{$assignment->id}",
                 ]
@@ -173,7 +173,7 @@ class FeeAssignmentController extends Controller
                     $assignment,
                     $user,
                     [
-                        'title' => '⚠️ Fee Overdue',
+                        'title' => 'Fee Overdue',
                         'body' => "Fee assignment for {$studentName} ({$feeStructureName}) is overdue. Amount: {$amount} {$currencyCode}",
                         'url' => "/fees/assignments/{$assignment->id}",
                     ]
@@ -300,7 +300,7 @@ class FeeAssignmentController extends Controller
                     $assignment,
                     $user,
                     [
-                        'title' => '📊 Fee Status Changed',
+                        'title' => 'Fee Status Changed',
                         'body' => "Fee assignment for {$studentName} ({$feeStructureName}) status changed from {$oldStatus} to {$assignment->status}.",
                         'url' => "/fees/assignments/{$assignment->id}",
                     ]
@@ -314,7 +314,7 @@ class FeeAssignmentController extends Controller
                     $assignment,
                     $user,
                     [
-                        'title' => '✅ Fee Fully Paid',
+                        'title' => 'Fee Fully Paid',
                         'body' => "Fee assignment for {$studentName} ({$feeStructureName}) has been fully paid.",
                         'url' => "/fees/assignments/{$assignment->id}",
                     ]
@@ -329,7 +329,7 @@ class FeeAssignmentController extends Controller
                     $assignment,
                     $user,
                     [
-                        'title' => '⚠️ Fee Overdue',
+                        'title' => 'Fee Overdue',
                         'body' => "Fee assignment for {$studentName} ({$feeStructureName}) is now overdue. Amount: {$amount} {$currencyCode}",
                         'url' => "/fees/assignments/{$assignment->id}",
                     ]
@@ -341,7 +341,7 @@ class FeeAssignmentController extends Controller
                     $assignment,
                     $user,
                     [
-                        'title' => '⚠️ Invoice Overdue',
+                        'title' => 'Invoice Overdue',
                         'body' => "Fee assignment for {$studentName} ({$feeStructureName}) is overdue. Amount: {$amount} {$currencyCode}",
                         'url' => "/fees/assignments/{$assignment->id}",
                     ]

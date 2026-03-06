@@ -208,7 +208,7 @@ class AttendanceSessionController extends Controller
                 $session,
                 $user,
                 [
-                    'title' => '📋 Attendance Session Created',
+                    'title' => 'Attendance Session Created',
                     'body' => "New attendance session created for {$classNames} on {$sessionDate} using {$method} method.",
                     'url' => "/attendance/sessions/{$session->id}",
                 ]
@@ -336,7 +336,7 @@ class AttendanceSessionController extends Controller
                     $session,
                     $user,
                     [
-                        'title' => '✅ Attendance Session Closed',
+                        'title' => 'Attendance Session Closed',
                         'body' => "Attendance session for {$classNames} on {$sessionDate} has been closed. {$recordsCount} record(s) marked.",
                         'url' => "/attendance/sessions/{$session->id}",
                     ]
@@ -404,7 +404,7 @@ class AttendanceSessionController extends Controller
                 $session,
                 $user,
                 [
-                    'title' => '✅ Attendance Session Closed',
+                    'title' => 'Attendance Session Closed',
                     'body' => "Attendance session for {$classNames} on {$sessionDate} has been closed. {$recordsCount} record(s) marked.",
                     'url' => "/attendance/sessions/{$session->id}",
                 ]

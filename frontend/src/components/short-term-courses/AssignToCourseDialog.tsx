@@ -266,7 +266,7 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
             )}
             {isAlreadyEnrolled && selectedCourse && (
               <p className="text-sm text-amber-600">
-                ⚠️ {t('courses.assignToCourseDialog.alreadyEnrolled')} "{selectedCourse.name}"
+                {t('courses.assignToCourseDialog.alreadyEnrolled')} "{selectedCourse.name}"
               </p>
             )}
           </div>

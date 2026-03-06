@@ -659,7 +659,7 @@ export default function TranslationEditor() {
                       Total: {totalKeysChanged} translation key(s) changed across {changedFiles.length} file(s)
                     </p>
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                      ⚠️ These changes will be included in the next daily build
+                      These changes will be included in the next daily build
                     </p>
                   </div>
                 </div>
@@ -1008,7 +1008,7 @@ export default function TranslationEditor() {
             {/* Unsaved changes warning */}
             {hasChanges && (
               <div className="text-sm text-amber-600 dark:text-amber-400">
-                ⚠️ You have unsaved changes. Export or copy JSON to save your work.
+                You have unsaved changes. Export or copy JSON to save your work.
               </div>
             )}
           </div>

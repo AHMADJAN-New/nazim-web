@@ -92,6 +92,7 @@ todos:
     dependencies:
       - backend-service
       - backend-controller
+isProject: false
 ---
 
 # Student
@@ -141,8 +142,6 @@ interface StudentHistoryResponse {
 }
 ```
 
-
-
 ### Database Query Strategy
 
 **Performance Optimization**:
@@ -172,8 +171,6 @@ $attendanceSummary = DB::table('attendance_records')
     ->first();
 ```
 
-
-
 ### Data Sources Mapping
 
 | Section | Source Tables | Key Fields ||---------|--------------|------------|| **Admissions** | `student_admissions` | `admission_date`, `enrollment_status`, `class_id`, `academic_year_id` || **Class Assignments** | `student_admissions` + `class_academic_years` | `roll_number`, `section_name`, `academic_year_id` || **Attendance** | `attendance_records` + `attendance_sessions` | `session_date`, `status`, `marked_at` || **Exams** | `exam_students` + `exams` + `exam_results` | `exam_id`, `marks`, `grade`, `rank` || **Library** | `library_loans` | `loan_date`, `due_date`, `returned_at`, `book_id` || **Fees** | `fee_assignments` + `fee_payments` + `fee_exceptions` | `amount`, `paid_amount`, `discount`, `fine`, `payment_date` || **ID Cards** | `student_id_cards` | `card_number`, `issued_at`, `is_printed`, `re_issued_at` || **Courses** | `course_students` + `short_term_courses` | `registration_date`, `completion_status`, `certificate_issued` || **Graduations** | `graduation_students` + `graduation_batches` | `graduation_date`, `batch_name` || **Transfers** | `student_admissions` (status changes) | `enrollment_status`, `updated_at` |
@@ -199,8 +196,6 @@ $attendanceSummary = DB::table('attendance_records')
 │                                                               │
 └─────────────────────────────────────────────────────────────┘
 ```
-
-
 
 ### Section Organization
 
@@ -262,19 +257,19 @@ Display 4-6 key metrics at the top:
 - Y-axis: Attendance percentage
 - Show present/absent/late trends over time
 
-2. **Academic Performance Chart** (Line/Bar chart)
+1. **Academic Performance Chart** (Line/Bar chart)
 
 - X-axis: Exams (chronological)
 - Y-axis: Marks/Grades
 - Show grade progression over time
 - Include class average line for comparison
 
-3. **Fee Payment Timeline** (Gantt-like chart)
+1. **Fee Payment Timeline** (Gantt-like chart)
 
 - Show fee assignments, payments, and due dates
 - Color-coded by payment status (paid/partial/overdue)
 
-4. **Library Activity Chart** (Bar chart)
+1. **Library Activity Chart** (Bar chart)
 
 - Books borrowed per month
 - Return compliance rate
@@ -329,8 +324,6 @@ CREATE TABLE student_history_audit_logs (
     created_at TIMESTAMP
 );
 ```
-
-
 
 ## Export & Compliance Features
 
@@ -422,7 +415,7 @@ CREATE INDEX idx_library_loans_student_date ON library_loans(student_id, loan_da
 
 **Query Optimization**:
 
-- Use `SELECT` only required columns (avoid `SELECT *`)
+- Use `SELECT` only required columns (avoid `SELECT `*)
 - Use `LIMIT` and `OFFSET` for pagination
 - Use `EXPLAIN` to analyze query plans
 - Consider materialized views for complex aggregations
@@ -446,7 +439,7 @@ CREATE INDEX idx_library_loans_student_date ON library_loans(student_id, loan_da
 - `exportPdf($studentId)` - PDF export
 - `exportExcel($studentId)` - Excel export
 
-2. **Service**: `backend/app/Services/StudentHistoryService.php`
+1. **Service**: `backend/app/Services/StudentHistoryService.php`
 
 - `getStudentHistory($studentId, $organizationId, $filters)` - Aggregate all data
 - `getAdmissionsHistory($studentId)` - Admissions records
@@ -459,18 +452,18 @@ CREATE INDEX idx_library_loans_student_date ON library_loans(student_id, loan_da
 - `getGraduationHistory($studentId)` - Graduations
 - `getTransferHistory($studentId)` - Transfers/promotions
 
-3. **Migration**: `backend/database/migrations/YYYY_MM_DD_HHMMSS_create_student_history_audit_logs_table.php`
-4. **Model**: `backend/app/Models/StudentHistoryAuditLog.php`
-5. **Report Template**: `backend/resources/views/reports/student_history.blade.php`
-6. **Route**: Add to `backend/routes/api.php`:
-   ```php
+1. **Migration**: `backend/database/migrations/YYYY_MM_DD_HHMMSS_create_student_history_audit_logs_table.php`
+2. **Model**: `backend/app/Models/StudentHistoryAuditLog.php`
+3. **Report Template**: `backend/resources/views/reports/student_history.blade.php`
+4. **Route**: Add to `backend/routes/api.php`:
+
+```php
             Route::get('/students/{student}/history', [StudentHistoryController::class, 'index']);
             Route::post('/students/{student}/history/export/pdf', [StudentHistoryController::class, 'exportPdf']);
             Route::post('/students/{student}/history/export/excel', [StudentHistoryController::class, 'exportExcel']);
-   ```
+   
 
-
-
+```
 
 ### Frontend Files
 
@@ -479,17 +472,17 @@ CREATE INDEX idx_library_loans_student_date ON library_loans(student_id, loan_da
 - Main page component with routing
 - Integrates all sections and views
 
-2. **Timeline Component**: `frontend/src/components/students/StudentHistoryTimeline.tsx`
+1. **Timeline Component**: `frontend/src/components/students/StudentHistoryTimeline.tsx`
 
 - Chronological timeline view
 - Event cards and filters
 
-3. **Tabbed View Component**: `frontend/src/components/students/StudentHistoryTabs.tsx`
+1. **Tabbed View Component**: `frontend/src/components/students/StudentHistoryTabs.tsx`
 
 - Tabbed interface for sectioned view
 - Individual section components
 
-4. **Section Components**:
+1. **Section Components**:
 
 - `frontend/src/components/students/history/AdmissionsSection.tsx`
 - `frontend/src/components/students/history/AttendanceSection.tsx`
@@ -500,48 +493,48 @@ CREATE INDEX idx_library_loans_student_date ON library_loans(student_id, loan_da
 - `frontend/src/components/students/history/CoursesSection.tsx`
 - `frontend/src/components/students/history/GraduationsSection.tsx`
 
-5. **Summary Cards**: `frontend/src/components/students/history/HistorySummaryCards.tsx`
+1. **Summary Cards**: `frontend/src/components/students/history/HistorySummaryCards.tsx`
 
 - Quick metrics display
 
-6. **Charts**: `frontend/src/components/students/history/HistoryCharts.tsx`
+1. **Charts**: `frontend/src/components/students/history/HistoryCharts.tsx`
 
 - Attendance trend
 - Academic performance
 - Fee timeline
 
-7. **Hook**: `frontend/src/hooks/useStudentHistory.tsx`
+1. **Hook**: `frontend/src/hooks/useStudentHistory.tsx`
 
 - Data fetching with TanStack Query
 - Export functions
 
-8. **Types**: 
+1. **Types**:
 
 - `frontend/src/types/api/studentHistory.ts` - API response types
 - `frontend/src/types/domain/studentHistory.ts` - Domain types
 
-9. **Mapper**: `frontend/src/mappers/studentHistoryMapper.ts`
+1. **Mapper**: `frontend/src/mappers/studentHistoryMapper.ts`
 
 - API to Domain conversion
 
-10. **Route**: Add to `frontend/src/App.tsx`:
-    ```typescript
+1. **Route**: Add to `frontend/src/App.tsx`:
+
+```typescript
                 <Route path="/students/:studentId/history" element={<StudentHistoryPage />} />
-    ```
+    
 
+```
 
+1. **Action Button**: Add to `frontend/src/pages/Students.tsx` Actions column:
 
-
-11. **Action Button**: Add to `frontend/src/pages/Students.tsx` Actions column:
-    ```typescript
+```typescript
                 <DropdownMenuItem onClick={() => navigate(`/students/${student.id}/history`)}>
                   <History className="mr-2 h-4 w-4" />
                   {t('students.viewHistory') || 'View History'}
                 </DropdownMenuItem>
-    ```
+    
 
-
-
+```
 
 ## Translation Keys
 
@@ -570,8 +563,6 @@ students: {
 }
 ```
 
-
-
 ## Testing Strategy
 
 1. **Unit Tests**: Test data aggregation logic in `StudentHistoryService`
@@ -590,3 +581,4 @@ students: {
 ## Success Metrics
 
 - Page load time < 2 seconds for students with 5 years of data
+

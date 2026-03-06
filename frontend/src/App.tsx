@@ -745,6 +745,11 @@ const App = () => (
                         <UserSettings />
                       </Suspense>
                     } />
+                    <Route path="/settings/security" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <UserSettings defaultTab="security" />
+                      </Suspense>
+                    } />
                     <Route path="/notifications" element={
                       <PermissionRoute permission="notifications.read">
                         <Suspense fallback={<PageSkeleton />}>

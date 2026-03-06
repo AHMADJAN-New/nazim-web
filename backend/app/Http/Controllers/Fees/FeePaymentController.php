@@ -155,7 +155,7 @@ class FeePaymentController extends Controller
                 $payment,
                 $user,
                 [
-                    'title' => '💰 Fee Payment Received',
+                    'title' => 'Fee Payment Received',
                     'body' => "Payment of {$amount} {$currencyCode} received from {$studentName} for {$feeStructureName}.",
                     'url' => "/fees/payments/{$payment->id}",
                 ]
@@ -167,7 +167,7 @@ class FeePaymentController extends Controller
                 $payment,
                 $user,
                 [
-                    'title' => '💰 Payment Received',
+                    'title' => 'Payment Received',
                     'body' => "Payment of {$amount} {$currencyCode} received for {$feeStructureName}.",
                     'url' => "/fees/payments/{$payment->id}",
                 ]
@@ -183,7 +183,7 @@ class FeePaymentController extends Controller
                         $assignment,
                         $user,
                         [
-                            'title' => '✅ Fee Fully Paid',
+                            'title' => 'Fee Fully Paid',
                             'body' => "Fee assignment for {$studentName} ({$feeStructureName}) has been fully paid.",
                             'url' => "/fees/assignments/{$assignment->id}",
                         ]
@@ -198,7 +198,7 @@ class FeePaymentController extends Controller
                         $assignment,
                         $user,
                         [
-                            'title' => '📊 Fee Status Changed',
+                            'title' => 'Fee Status Changed',
                             'body' => "Fee assignment for {$studentName} ({$feeStructureName}) status changed from {$oldStatus} to {$assignment->status}.",
                             'url' => "/fees/assignments/{$assignment->id}",
                         ]

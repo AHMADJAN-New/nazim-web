@@ -1010,7 +1010,7 @@ HTML;
             <!-- Fallback: Show warning if PDF doesn't load -->
             <div style="position: absolute; inset: 0; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; color: #999; font-size: 11px; text-align: center; padding: 20px; z-index: 2;">
                 <div>
-                    <p style="margin: 0 0 8px 0; font-weight: 500;">⚠️ PDF Letterhead</p>
+                    <p style="margin: 0 0 8px 0; font-weight: 500;">PDF Letterhead</p>
                     <p style="margin: 0; font-size: 10px; opacity: 0.8;">Imagick or Ghostscript required for PDF letterhead rendering. Letterhead may not appear in generated PDF.</p>
                 </div>
             </div>

@@ -315,7 +315,7 @@ class ExpenseEntryController extends Controller
                     $entry,
                     $user,
                     [
-                        'title' => '📄 Expense Recorded',
+                        'title' => 'Expense Recorded',
                         'body' => $body,
                         'url' => "/finance/expenses/{$entry->id}",
                         'exclude_actor' => false, // Include the creator so they see confirmation
@@ -590,7 +590,7 @@ class ExpenseEntryController extends Controller
                         $entry,
                         $user,
                         [
-                            'title' => '✅ Expense Approved',
+                            'title' => 'Expense Approved',
                             'body' => "Expense of {$amountFormatted} ({$categoryName}) from {$accountName} has been approved.",
                             'url' => "/finance/expenses/{$entry->id}",
                             'exclude_actor' => false,
@@ -607,7 +607,7 @@ class ExpenseEntryController extends Controller
                         $entry,
                         $user,
                         [
-                            'title' => '📝 Expense Amount Updated',
+                            'title' => 'Expense Amount Updated',
                             'body' => "Expense amount updated from {$oldAmountFormatted} to {$newAmountFormatted}.",
                             'url' => "/finance/expenses/{$entry->id}",
                             'exclude_actor' => false,

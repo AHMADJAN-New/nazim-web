@@ -102,7 +102,7 @@ class ProcessSubscriptionTransitions extends Command
                             $organization,
                             null, // System-triggered
                             [
-                                'title' => '⚠️ Subscription Expired - Grace Period Started',
+                                'title' => 'Subscription Expired - Grace Period Started',
                                 'body' => "Your subscription has expired. You have {$graceDays} days of grace period remaining.",
                                 'url' => '/subscription',
                                 'level' => 'critical',
@@ -154,7 +154,7 @@ class ProcessSubscriptionTransitions extends Command
                             $organization,
                             null, // System-triggered
                             [
-                                'title' => '🚫 Account Blocked',
+                                'title' => 'Account Blocked',
                                 'body' => 'Your subscription has expired and your account has been blocked. Please renew to restore access.',
                                 'url' => '/subscription',
                                 'level' => 'critical',

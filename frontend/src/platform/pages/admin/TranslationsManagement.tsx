@@ -1076,7 +1076,7 @@ export default function TranslationsManagement() {
 
             {hasChanges && (
               <div className="text-sm text-amber-600 dark:text-amber-400">
-                ⚠️ You have unsaved changes
+                You have unsaved changes
               </div>
             )}
           </div>

@@ -219,6 +219,7 @@ Route::middleware(['auth:sanctum', 'organization'])->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::get('/auth/profile', [AuthController::class, 'profile']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+    Route::get('/auth/security-overview', [AuthController::class, 'securityOverview']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 });
 

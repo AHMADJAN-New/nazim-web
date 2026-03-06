@@ -657,6 +657,11 @@ export const authApi = {
     return apiClient.post('/auth/change-password', data);
   },
 
+  /** Recent logins (devices) for the Security settings page. */
+  getSecurityOverview: async (): Promise<{ devices: Array<{ id: string; device_name: string; ip_address: string | null; last_seen_at: string | null }> }> => {
+    return apiClient.get('/auth/security-overview');
+  },
+
   register: async (data: {
     email: string;
     password: string;

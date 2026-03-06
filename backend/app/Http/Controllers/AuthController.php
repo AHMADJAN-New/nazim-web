@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -354,7 +355,7 @@ class AuthController extends Controller
                     $userModel,
                     $userModel, // Actor is the user themselves
                     [
-                        'title' => '🔒 Password Changed',
+                        'title' => 'Password Changed',
                         'body' => 'Your password was successfully changed. If you did not make this change, please contact support immediately.',
                         'url' => '/settings/security',
                         'level' => 'critical',
@@ -383,6 +384,40 @@ class AuthController extends Controller
         }
 
         return response()->json(['message' => 'Password changed successfully']);
+    }
+
+    /**
+     * Return security overview for the current user: recent logins (devices).
+     * Used by the Security settings page to show "Where you're signed in".
+     */
+    public function securityOverview(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $devices = [];
+        if (Schema::hasTable('user_devices')) {
+            $rows = DB::table('user_devices')
+                ->where('user_id', $user->id)
+                ->orderByDesc('last_seen_at')
+                ->limit(20)
+                ->get();
+
+            foreach ($rows as $row) {
+                $ua = $row->user_agent ?? 'Unknown';
+                $parsed = $this->parseUserAgent($ua);
+                $devices[] = [
+                    'id' => $row->id,
+                    'device_name' => $parsed['name'] ?? 'Unknown Device',
+                    'ip_address' => $row->ip_address ?? null,
+                    'last_seen_at' => $row->last_seen_at ? (new \DateTime($row->last_seen_at))->format(\DateTimeInterface::ATOM) : null,
+                ];
+            }
+        }
+
+        return response()->json(['devices' => $devices]);
     }
 
     /**
@@ -469,7 +504,7 @@ class AuthController extends Controller
                     $user, // Actor is the user themselves
                     [
                         'organization_id' => $organizationId,
-                        'title' => '🆕 New Device Login Detected',
+                        'title' => 'New Device Login Detected',
                         'body' => "Login from {$deviceName} ({$ipAddress}) at {$loginTime}. If this wasn't you, please secure your account immediately.",
                         'url' => '/settings/security',
                         'level' => 'critical',

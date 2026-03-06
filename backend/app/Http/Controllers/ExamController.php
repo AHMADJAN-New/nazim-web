@@ -144,7 +144,7 @@ class ExamController extends Controller
                 $exam,
                 $user,
                 [
-                    'title' => '📝 New Exam Created',
+                    'title' => 'New Exam Created',
                     'body' => "Exam '{$exam->name}' has been created for {$academicYearName}.",
                     'url' => "/exams/{$exam->id}",
                 ]
@@ -328,7 +328,7 @@ class ExamController extends Controller
                         $exam,
                         $user,
                         [
-                            'title' => '📢 Exam Published',
+                            'title' => 'Exam Published',
                             'body' => "Exam '{$exam->name}' has been published and is now visible to students.",
                             'url' => "/exams/{$exam->id}",
                         ]
@@ -342,7 +342,7 @@ class ExamController extends Controller
                         $exam,
                         $user,
                         [
-                            'title' => '✅ Exam Results Published',
+                            'title' => 'Exam Results Published',
                             'body' => "Results for exam '{$exam->name}' are now available.",
                             'url' => "/exams/{$exam->id}/results",
                         ]
@@ -586,7 +586,7 @@ class ExamController extends Controller
                     $exam,
                     $user,
                     [
-                        'title' => '📢 Exam Published',
+                        'title' => 'Exam Published',
                         'body' => "Exam '{$exam->name}' has been published and is now visible to students.",
                         'url' => "/exams/{$exam->id}",
                     ]
@@ -601,7 +601,7 @@ class ExamController extends Controller
                     $exam,
                     $user,
                     [
-                        'title' => '✅ Exam Results Published',
+                        'title' => 'Exam Results Published',
                         'body' => "Results for exam '{$exam->name}' are now available.",
                         'url' => "/exams/{$exam->id}/results",
                     ]

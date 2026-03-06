@@ -311,7 +311,6 @@ async function getOfflineResponse(request) {
       </head>
       <body>
         <div class="container">
-          <div class="icon">📚</div>
           <h1>You're Offline</h1>
           <p>GVS Portal needs an internet connection to work properly. Please check your connection and try again.</p>
           <button onclick="window.location.reload()">Try Again</button>
