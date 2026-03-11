@@ -9,7 +9,7 @@ class CodeGenerator
 {
     /**
      * Generate a student code for the given organization
-     * Format: ST-{YY}-{000000}
+ * Format: ST-{YY}-{SEQUENCE}
      * 
      * @param string $organizationId
      * @return string
@@ -24,8 +24,50 @@ class CodeGenerator
     }
 
     /**
+     * Generate multiple student codes in a single counter transaction.
+     *
+     * @param string $organizationId
+     * @param int $count
+     * @return string[]
+     */
+    public static function generateStudentCodesBatch(string $organizationId, int $count): array
+    {
+        if ($count <= 0) {
+            return [];
+        }
+
+        return DB::transaction(function () use ($organizationId, $count) {
+            $counter = OrganizationCounter::lockForUpdate()
+                ->where('organization_id', $organizationId)
+                ->where('counter_type', OrganizationCounter::COUNTER_TYPE_STUDENTS)
+                ->first();
+
+            if (!$counter) {
+                $counter = OrganizationCounter::create([
+                    'organization_id' => $organizationId,
+                    'counter_type' => OrganizationCounter::COUNTER_TYPE_STUDENTS,
+                    'last_value' => 0,
+                ]);
+            }
+
+            $start = ((int) $counter->last_value) + 1;
+            $end = $start + $count - 1;
+            $counter->update(['last_value' => $end]);
+
+            $year = date('y');
+            $codes = [];
+            for ($i = $start; $i <= $end; $i++) {
+                $sequence = self::formatStudentSequence($i);
+                $codes[] = "ST-{$year}-{$sequence}";
+            }
+
+            return $codes;
+        });
+    }
+
+    /**
      * Generate a staff code for the given organization
-     * Format: STF-{YY}-{000000}
+ * Format: STF-{YY}-{000000}
      * 
      * @param string $organizationId
      * @return string
@@ -41,7 +83,7 @@ class CodeGenerator
 
     /**
      * Generate an admission number for the given organization
-     * Format: AD-{YY}-{000000}
+ * Format: AD-{YY}-{000000}
      *
      * @param string $organizationId
      * @return string
@@ -89,11 +131,29 @@ class CodeGenerator
             // Get current year (last 2 digits)
             $year = date('y'); // e.g., 25 for 2025
 
-            // Format: {PREFIX}-{YY}-{000000} (6-digit zero-padded sequence)
-            $sequence = str_pad((string) $counter->last_value, 6, '0', STR_PAD_LEFT);
+            // Student codes use configurable padding (default: 4) to avoid overly long leading zeros.
+            // Other counters keep legacy 6-digit padding for backward compatibility.
+            if ($counterType === OrganizationCounter::COUNTER_TYPE_STUDENTS) {
+                $sequence = self::formatStudentSequence((int) $counter->last_value);
+            } else {
+                $sequence = str_pad((string) $counter->last_value, 6, '0', STR_PAD_LEFT);
+            }
 
             return "{$prefix}-{$year}-{$sequence}";
         });
+    }
+
+    /**
+     * Format student sequence with configurable zero padding.
+     * Controlled by STUDENT_CODE_PADDING env (min 1, max 10), default 4.
+     */
+    private static function formatStudentSequence(int $value): string
+    {
+        $rawPadding = env('STUDENT_CODE_PADDING', '4');
+        $padding = is_numeric($rawPadding) ? (int) $rawPadding : 4;
+        $padding = max(1, min(10, $padding));
+
+        return str_pad((string) $value, $padding, '0', STR_PAD_LEFT);
     }
 }
 

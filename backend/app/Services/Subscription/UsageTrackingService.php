@@ -68,7 +68,7 @@ class UsageTrackingService
      * Get current usage count for a resource
      * Uses cached counts for performance, with periodic refresh to ensure accuracy
      */
-    public function getUsage(string $organizationId, string $resourceKey): float|int
+    public function getUsage(string $organizationId, string $resourceKey, bool $forceFresh = false): float|int
     {
         try {
             // Special handling for storage_gb (returns float in GB)
@@ -78,7 +78,7 @@ class UsageTrackingService
 
             // Check if we need to count from database
             if (isset($this->countQueries[$resourceKey])) {
-                return $this->getCachedCount($organizationId, $resourceKey);
+                return $this->getCachedCount($organizationId, $resourceKey, $forceFresh);
             }
 
             // Otherwise, get from usage_current table (for non-database-counted resources)
@@ -113,7 +113,7 @@ class UsageTrackingService
      * Performance optimization: Uses cached count from usage_current table
      * Refreshes periodically (every 5 minutes) to catch any drift from concurrent operations
      */
-    private function getCachedCount(string $organizationId, string $resourceKey): int
+    private function getCachedCount(string $organizationId, string $resourceKey, bool $forceRefresh = false): int
     {
         try {
             // Get cached count
@@ -123,7 +123,9 @@ class UsageTrackingService
 
             // If no cache exists or cache is stale, recalculate
             $shouldRecalculate = false;
-            if (!$usage) {
+            if ($forceRefresh) {
+                $shouldRecalculate = true;
+            } elseif (!$usage) {
                 $shouldRecalculate = true;
             } elseif ($usage->last_calculated_at === null) {
                 $shouldRecalculate = true;
@@ -286,7 +288,7 @@ class UsageTrackingService
      * Check if organization can create a new resource
      * CRITICAL: Checks feature access before limit checks
      */
-    public function canCreate(string $organizationId, string $resourceKey): array
+    public function canCreate(string $organizationId, string $resourceKey, bool $forceFresh = false): array
     {
         try {
             // Special handling for storage_gb - use storage-specific logic
@@ -379,7 +381,7 @@ class UsageTrackingService
                 }
             }
 
-            $currentUsage = $this->getUsage($organizationId, $resourceKey);
+            $currentUsage = $this->getUsage($organizationId, $resourceKey, $forceFresh);
             $limit = $this->getLimit($organizationId, $resourceKey);
 
             // -1 means unlimited (unlimited access) or disabled (feature not available)

@@ -1983,6 +1983,10 @@ export const studentImportApi = {
       headers: {}, // Let browser set Content-Type with boundary
     });
   },
+
+  commitStatus: async (jobId: string) => {
+    return apiClient.get(`/student-import/commit/${jobId}/status`);
+  },
 };
 
 // Student Documents API

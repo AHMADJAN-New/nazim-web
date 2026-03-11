@@ -509,6 +509,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/student-import/templates/download', [StudentImportController::class, 'downloadTemplate']);
             Route::post('/student-import/validate', [StudentImportController::class, 'validateFile']);
             Route::post('/student-import/commit', [StudentImportController::class, 'commit'])->middleware('limit:students');
+            Route::get('/student-import/commit/{jobId}/status', [StudentImportController::class, 'commitStatus']);
             Route::post('/students/check-duplicates', [StudentController::class, 'checkDuplicates']);
             Route::post('/students/{id}/picture', [StudentController::class, 'uploadPicture']);
             Route::post('/students/{id}/guardian-picture', [StudentController::class, 'uploadGuardianPicture']);
@@ -1624,6 +1625,8 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/organizations/{organizationId}/limit-override', [SubscriptionAdminController::class, 'addLimitOverride']);
     Route::post('/organizations/{organizationId}/feature-addon', [SubscriptionAdminController::class, 'addFeatureAddon']);
     Route::get('/organizations/{organizationId}/usage-snapshots', [SubscriptionAdminController::class, 'getUsageSnapshots']);
+    Route::get('/limits/overview', [SubscriptionAdminController::class, 'getLimitsOverview']);
+    Route::get('/organizations/{organizationId}/limits/{resourceKey}/details', [SubscriptionAdminController::class, 'getOrganizationLimitDetails']);
     Route::post('/organizations/{organizationId}/recalculate-usage', [SubscriptionAdminController::class, 'recalculateUsage']);
     Route::post('/organizations/{organizationId}/maintenance-payment', [SubscriptionAdminController::class, 'recordMaintenancePayment']);
     Route::post('/organizations/{organizationId}/license-payment', [SubscriptionAdminController::class, 'recordLicensePayment']);
@@ -1839,6 +1842,8 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('admin/subscription'
     Route::post('/organizations/{organizationId}/limit-override', [SubscriptionAdminController::class, 'addLimitOverride']);
     Route::post('/organizations/{organizationId}/feature-addon', [SubscriptionAdminController::class, 'addFeatureAddon']);
     Route::get('/organizations/{organizationId}/usage-snapshots', [SubscriptionAdminController::class, 'getUsageSnapshots']);
+    Route::get('/limits/overview', [SubscriptionAdminController::class, 'getLimitsOverview']);
+    Route::get('/organizations/{organizationId}/limits/{resourceKey}/details', [SubscriptionAdminController::class, 'getOrganizationLimitDetails']);
     Route::post('/organizations/{organizationId}/recalculate-usage', [SubscriptionAdminController::class, 'recalculateUsage']);
 
     // Payments & renewals

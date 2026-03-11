@@ -104,8 +104,6 @@ const StudentReport = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
 
   const selectedAcademicYearId = academicYearFilter !== 'all' ? academicYearFilter : undefined;
   const { data: classAcademicYears = [] } = useClassAcademicYears(selectedAcademicYearId, orgIdForQuery);
@@ -127,7 +125,15 @@ const StudentReport = () => {
     class_id: classFilter !== 'all' ? classFilter : undefined,
   }), [searchQuery, statusFilter, genderFilter, selectedAcademicYearId, classFilter]);
 
-  const { data: studentsData, isLoading } = useStudents(orgIdForQuery, false, studentFilters);
+  const {
+    data: studentsData,
+    isLoading,
+    pagination,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useStudents(orgIdForQuery, true, studentFilters);
 
   const students: Student[] = useMemo(() => {
     if (!studentsData) return [];
@@ -140,31 +146,7 @@ const StudentReport = () => {
     return [];
   }, [studentsData]);
 
-  const filteredStudents = useMemo((): Student[] => {
-    const list: Student[] = students || [];
-    const query = searchQuery.toLowerCase();
-
-    return list.filter((student: Student) => {
-      if (!query) return true;
-
-      return (
-        (student.fullName || '').toLowerCase().includes(query) ||
-        (student.admissionNumber || '').toLowerCase().includes(query) ||
-        (student.fatherName || '').toLowerCase().includes(query) ||
-        (student.guardianPhone || '').toLowerCase().includes(query) ||
-        (student.cardNumber || '').toLowerCase().includes(query)
-      );
-    });
-  }, [students, searchQuery]);
-
-  // Pagination
-  const paginatedStudents = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredStudents.slice(start, end);
-  }, [filteredStudents, page, pageSize]);
-
-  const totalPages = Math.ceil(filteredStudents.length / pageSize);
+  const filteredStudents = students;
 
   useEffect(() => {
     setClassFilter('all');
@@ -373,9 +355,10 @@ const StudentReport = () => {
   ], [t]);
 
   const { table } = useDataTable<Student>({
-    data: paginatedStudents,
+    data: filteredStudents,
     columns,
-    pageCount: totalPages,
+    pageCount: pagination?.last_page ?? 1,
+    paginationMeta: pagination ?? null,
     initialState: {
       pagination: {
         pageIndex: page - 1,
@@ -389,13 +372,13 @@ const StudentReport = () => {
   });
 
   const paginationMeta = useMemo(() => ({
-    current_page: page,
-    per_page: pageSize,
-    total: filteredStudents.length,
-    last_page: totalPages,
-    from: (page - 1) * pageSize + 1,
-    to: Math.min(page * pageSize, filteredStudents.length),
-  }), [page, pageSize, filteredStudents.length, totalPages]);
+    current_page: pagination?.current_page ?? page,
+    per_page: pagination?.per_page ?? pageSize,
+    total: pagination?.total ?? filteredStudents.length,
+    last_page: pagination?.last_page ?? 1,
+    from: pagination?.from ?? (filteredStudents.length ? 1 : 0),
+    to: pagination?.to ?? filteredStudents.length,
+  }), [pagination, page, pageSize, filteredStudents.length]);
 
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
@@ -540,7 +523,7 @@ const StudentReport = () => {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('table.students') || 'Students'} ({filteredStudents.length})</CardTitle>
+          <CardTitle>{t('table.students') || 'Students'} ({paginationMeta.total})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (

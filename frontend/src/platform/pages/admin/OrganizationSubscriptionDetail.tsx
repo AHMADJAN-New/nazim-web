@@ -4,6 +4,7 @@ import {
   CheckCircle,
   Clock,
   Package,
+  Pencil,
   RefreshCw,
   XCircle,
   CreditCard,
@@ -51,6 +52,7 @@ import {
   usePlatformOrganizationSubscription,
   usePlatformActivateSubscription,
   usePlatformSuspendSubscription,
+  usePlatformAddLimitOverride,
   usePlatformToggleFeature,
 } from '@/platform/hooks/usePlatformAdminComplete';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
@@ -75,6 +77,7 @@ export default function OrganizationSubscriptionDetail() {
 
   const activateSubscription = usePlatformActivateSubscription();
   const suspendSubscription = usePlatformSuspendSubscription();
+  const addLimitOverride = usePlatformAddLimitOverride();
   const toggleFeature = usePlatformToggleFeature();
   const queryClient = useQueryClient();
 
@@ -82,8 +85,15 @@ export default function OrganizationSubscriptionDetail() {
   const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
   const [isLicensePaymentDialogOpen, setIsLicensePaymentDialogOpen] = useState(false);
   const [isMaintenancePaymentDialogOpen, setIsMaintenancePaymentDialogOpen] = useState(false);
+  const [isLimitOverrideDialogOpen, setIsLimitOverrideDialogOpen] = useState(false);
   const [managementTab, setManagementTab] = useState('limits');
   const [featureStateTab, setFeatureStateTab] = useState('all');
+  const [limitOverrideFormData, setLimitOverrideFormData] = useState({
+    resource_key: '',
+    limit_value: -1,
+    reason: '',
+    expires_at: '',
+  });
   const [activateFormData, setActivateFormData] = useState({
     plan_id: '',
     currency: 'AFN' as 'AFN' | 'USD',
@@ -293,6 +303,47 @@ export default function OrganizationSubscriptionDetail() {
       },
       {} as Record<string, typeof features>
     );
+
+  const openLimitOverrideDialog = (resourceKey: string, limitValue: number | null | undefined) => {
+    const normalizedLimit = typeof limitValue === 'number' ? limitValue : -1;
+
+    setLimitOverrideFormData({
+      resource_key: resourceKey,
+      limit_value: normalizedLimit,
+      reason: '',
+      expires_at: '',
+    });
+    setIsLimitOverrideDialogOpen(true);
+  };
+
+  const handleLimitOverrideSave = () => {
+    if (!organizationId || !limitOverrideFormData.resource_key || !limitOverrideFormData.reason.trim()) {
+      return;
+    }
+
+    addLimitOverride.mutate(
+      {
+        organizationId,
+        data: {
+          resource_key: limitOverrideFormData.resource_key,
+          limit_value: Number(limitOverrideFormData.limit_value),
+          reason: limitOverrideFormData.reason.trim(),
+          expires_at: limitOverrideFormData.expires_at || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setIsLimitOverrideDialogOpen(false);
+          setLimitOverrideFormData({
+            resource_key: '',
+            limit_value: -1,
+            reason: '',
+            expires_at: '',
+          });
+        },
+      }
+    );
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
@@ -793,6 +844,100 @@ export default function OrganizationSubscriptionDetail() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isLimitOverrideDialogOpen} onOpenChange={setIsLimitOverrideDialogOpen}>
+        <DialogContent className="w-[95vw] sm:w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Organization Limit</DialogTitle>
+            <DialogDescription>
+              Override this limit for this organization only. Use -1 for unlimited.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Resource</Label>
+              <Input value={limitOverrideFormData.resource_key} disabled />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="limit-value">
+                Limit Value <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="limit-value"
+                type="number"
+                min="-1"
+                value={limitOverrideFormData.limit_value}
+                onChange={(e) =>
+                  setLimitOverrideFormData((prev) => ({
+                    ...prev,
+                    limit_value: Number(e.target.value),
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="limit-reason">
+                Reason <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="limit-reason"
+                rows={3}
+                value={limitOverrideFormData.reason}
+                onChange={(e) =>
+                  setLimitOverrideFormData((prev) => ({
+                    ...prev,
+                    reason: e.target.value,
+                  }))
+                }
+                placeholder="Why this organization needs a custom limit override"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="limit-expires-at">Expires At (Optional)</Label>
+              <Input
+                id="limit-expires-at"
+                type="date"
+                value={limitOverrideFormData.expires_at}
+                onChange={(e) =>
+                  setLimitOverrideFormData((prev) => ({
+                    ...prev,
+                    expires_at: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsLimitOverrideDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleLimitOverrideSave}
+              disabled={
+                addLimitOverride.isPending ||
+                !limitOverrideFormData.resource_key ||
+                !limitOverrideFormData.reason.trim()
+              }
+              className="w-full sm:w-auto"
+            >
+              {addLimitOverride.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Limit Override'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Tabs value={managementTab} onValueChange={setManagementTab} className="space-y-4">
         <div className="overflow-x-auto pb-1">
           <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-3">
@@ -836,6 +981,18 @@ export default function OrganizationSubscriptionDetail() {
                     )}
                     <div className="text-xs sm:text-sm text-muted-foreground">
                       {info.current} / {info.limit || 'Unlimited'} {info.unit && `(${info.unit})`}
+                    </div>
+                    <div className="pt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                        onClick={() => openLimitOverrideDialog(key, info.limit)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="ml-2">Edit limit</span>
+                      </Button>
                     </div>
                   </div>
                   {/* Progress Bar Section - Below Usage Info */}

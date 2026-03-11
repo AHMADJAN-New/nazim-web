@@ -168,8 +168,14 @@ class StudentController extends Controller
             return response()->json($students);
         }
 
-        // Return all results if no pagination requested (backward compatibility)
-        $students = $query->orderBy('created_at', 'desc')->get();
+        // Return bounded results if no pagination requested (backward compatibility with safety cap)
+        $nonPaginatedLimitRaw = env('STUDENTS_NON_PAGINATED_LIMIT', '500');
+        $nonPaginatedLimit = is_numeric($nonPaginatedLimitRaw) ? (int) $nonPaginatedLimitRaw : 500;
+        if ($nonPaginatedLimit < 1) {
+            $nonPaginatedLimit = 500;
+        }
+
+        $students = $query->orderBy('created_at', 'desc')->limit($nonPaginatedLimit)->get();
 
         $students = $this->attachCurrentClassData($students, $profile->organization_id, $currentSchoolId);
 

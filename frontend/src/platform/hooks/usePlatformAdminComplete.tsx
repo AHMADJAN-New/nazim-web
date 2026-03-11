@@ -389,6 +389,39 @@ export const usePlatformToggleFeature = () => {
 };
 
 /**
+ * Add or update a limit override for an organization (platform admin)
+ */
+export const usePlatformAddLimitOverride = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({
+      organizationId,
+      data,
+    }: {
+      organizationId: string;
+      data: SubscriptionApi.AddLimitOverrideData;
+    }) => {
+      return platformApi.subscriptions.addLimitOverride(organizationId, data);
+    },
+    onSuccess: async (_, variables) => {
+      showToast.success(t('toast.success') || 'Limit override updated');
+      await queryClient.invalidateQueries({
+        queryKey: ['platform-org-subscription', variables.organizationId],
+      });
+      await queryClient.refetchQueries({
+        queryKey: ['platform-org-subscription', variables.organizationId],
+      });
+      await queryClient.invalidateQueries({ queryKey: ['platform-subscriptions'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.error') || 'Failed to update limit override');
+    },
+  });
+};
+
+/**
  * Create organization (platform admin)
  */
 export const usePlatformCreateOrganization = () => {
@@ -724,6 +757,38 @@ export const usePlatformLimitDefinitions = () => {
       return response.data;
     },
     staleTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
+/**
+ * Get central limits overview for all organizations (platform admin)
+ */
+export const usePlatformLimitsOverview = () => {
+  return useQuery({
+    queryKey: ['platform-limits-overview'],
+    queryFn: async () => {
+      const response = await platformApi.subscriptions.limitsOverview();
+      return response.data || [];
+    },
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+/**
+ * Get rich limit details/history for one org/resource (platform admin)
+ */
+export const usePlatformLimitDetails = (organizationId: string | null, resourceKey: string | null) => {
+  return useQuery({
+    queryKey: ['platform-limit-details', organizationId, resourceKey],
+    queryFn: async () => {
+      if (!organizationId || !resourceKey) return null;
+      const response = await platformApi.subscriptions.limitDetails(organizationId, resourceKey);
+      return response.data;
+    },
+    enabled: !!organizationId && !!resourceKey,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 

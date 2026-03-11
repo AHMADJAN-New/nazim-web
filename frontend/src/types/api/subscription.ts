@@ -490,6 +490,113 @@ export interface AddLimitOverrideData {
   expires_at?: string;
 }
 
+export interface OrganizationLimitOverviewItem {
+  resource_key: string;
+  name: string;
+  description: string | null;
+  category: string;
+  unit: 'count' | 'gb' | 'mb' | string;
+  current: number;
+  limit: number;
+  remaining: number;
+  percentage: number;
+  warning: boolean;
+  unlimited: boolean;
+  is_at_limit: boolean;
+  last_calculated_at: string | null;
+  has_override: boolean;
+  override: {
+    limit_value: number;
+    reason: string | null;
+    expires_at: string | null;
+    updated_at: string | null;
+  } | null;
+}
+
+export interface OrganizationLimitsOverviewRow {
+  organization: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  subscription: {
+    id: string | null;
+    status: string;
+    plan_name: string | null;
+    expires_at: string | null;
+  };
+  summary: {
+    tracked_limits: number;
+    warning_count: number;
+    at_limit_count: number;
+  };
+  limits: OrganizationLimitOverviewItem[];
+}
+
+export interface OrganizationLimitDetail {
+  organization: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  limit_definition: {
+    resource_key: string;
+    name: string;
+    description: string | null;
+    category: string;
+    unit: string;
+    reset_period: string;
+  };
+  current_status: {
+    current: number;
+    limit: number;
+    remaining: number;
+    percentage: number;
+    warning: boolean;
+    allowed: boolean;
+    message: string | null;
+  };
+  usage_tracking: {
+    period_start: string | null;
+    period_end: string | null;
+    last_calculated_at: string | null;
+    last_warning_sent_at: string | null;
+    updated_at: string | null;
+  };
+  active_override: {
+    id: string;
+    limit_value: number;
+    reason: string | null;
+    granted_by: string | null;
+    expires_at: string | null;
+    updated_at: string | null;
+  } | null;
+  recent_overrides: Array<{
+    id: string;
+    limit_value: number;
+    reason: string | null;
+    granted_by: string | null;
+    expires_at: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+  }>;
+  limit_history: Array<{
+    id: string;
+    action: string;
+    notes: string | null;
+    metadata: Record<string, unknown> | null;
+    performed_by: string | null;
+    created_at: string | null;
+  }>;
+  usage_snapshots: Array<{
+    snapshot_date: string | null;
+    usage: number;
+    limit: number;
+    created_at: string | null;
+  }>;
+  refreshed_at: string;
+}
+
 export interface AddFeatureAddonData {
   feature_key: string;
   price_paid: number;

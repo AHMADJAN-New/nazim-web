@@ -117,6 +117,7 @@ return [
         'nova-api*',
         'pulse*',
         '_boost*',
+        'api/student-import/*',
     ],
 
     'ignore_commands' => [

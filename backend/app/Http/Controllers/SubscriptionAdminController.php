@@ -8,12 +8,14 @@ use App\Models\LimitDefinition;
 use App\Models\MaintenanceInvoice;
 use App\Models\Organization;
 use App\Models\OrganizationFeatureAddon;
+use App\Models\OrganizationLimitOverride;
 use App\Models\OrganizationSubscription;
 use App\Models\PaymentRecord;
 use App\Models\RenewalRequest;
 use App\Models\SchoolBranding;
 use App\Models\SubscriptionHistory;
 use App\Models\SubscriptionPlan;
+use App\Models\UsageCurrent;
 use App\Models\UsageSnapshot;
 use App\Models\User;
 use App\Services\Subscription\FeatureGateService;
@@ -1993,6 +1995,222 @@ class SubscriptionAdminController extends Controller
             ->get();
 
         return response()->json(['data' => $limits]);
+    }
+
+    /**
+     * Get a central limits overview for all organizations
+     */
+    public function getLimitsOverview(Request $request)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $organizations = Organization::whereNull('deleted_at')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
+
+        $allUsageCurrent = UsageCurrent::whereIn('organization_id', $organizations->pluck('id')->all())
+            ->get(['organization_id', 'resource_key', 'last_calculated_at'])
+            ->groupBy('organization_id');
+
+        $allActiveOverrides = OrganizationLimitOverride::whereIn('organization_id', $organizations->pluck('id')->all())
+            ->active()
+            ->whereNull('deleted_at')
+            ->get(['organization_id', 'resource_key', 'limit_value', 'reason', 'expires_at', 'updated_at'])
+            ->groupBy('organization_id');
+
+        $overview = $organizations->map(function (Organization $organization) use ($allUsageCurrent, $allActiveOverrides) {
+            $subscription = $this->subscriptionService->getCurrentSubscription($organization->id);
+            $usage = $this->usageTrackingService->getAllUsage($organization->id);
+            $usage = $this->featureGateService->filterUsageByFeatures($organization->id, $usage);
+
+            $usageCurrentByResource = collect($allUsageCurrent->get($organization->id, []))
+                ->keyBy('resource_key');
+            $overridesByResource = collect($allActiveOverrides->get($organization->id, []))
+                ->keyBy('resource_key');
+
+            $limits = collect($usage)->map(function (array $item, string $resourceKey) use ($usageCurrentByResource, $overridesByResource) {
+                $current = (float) ($item['current'] ?? 0);
+                $limit = (float) ($item['limit'] ?? 0);
+                $remaining = (float) ($item['remaining'] ?? 0);
+                $percentage = (float) ($item['percentage'] ?? 0);
+
+                $override = $overridesByResource->get($resourceKey);
+                $usageCurrent = $usageCurrentByResource->get($resourceKey);
+
+                return [
+                    'resource_key' => $resourceKey,
+                    'name' => $item['name'] ?? $resourceKey,
+                    'description' => $item['description'] ?? null,
+                    'category' => $item['category'] ?? 'other',
+                    'unit' => $item['unit'] ?? 'count',
+                    'current' => $current,
+                    'limit' => $limit,
+                    'remaining' => $remaining,
+                    'percentage' => $percentage,
+                    'warning' => (bool) ($item['warning'] ?? false),
+                    'unlimited' => (bool) ($item['unlimited'] ?? false),
+                    'is_at_limit' => $limit !== -1.0 && $current >= $limit,
+                    'last_calculated_at' => optional($usageCurrent?->last_calculated_at)?->toISOString(),
+                    'has_override' => (bool) $override,
+                    'override' => $override ? [
+                        'limit_value' => (int) $override->limit_value,
+                        'reason' => $override->reason,
+                        'expires_at' => optional($override->expires_at)?->toISOString(),
+                        'updated_at' => optional($override->updated_at)?->toISOString(),
+                    ] : null,
+                ];
+            })->values();
+
+            $warningCount = $limits->where('warning', true)->count();
+            $atLimitCount = $limits->where('is_at_limit', true)->count();
+
+            return [
+                'organization' => [
+                    'id' => $organization->id,
+                    'name' => $organization->name,
+                    'slug' => $organization->slug,
+                ],
+                'subscription' => [
+                    'id' => $subscription?->id,
+                    'status' => $subscription?->status ?? 'none',
+                    'plan_name' => $subscription?->plan?->name ?? null,
+                    'expires_at' => optional($subscription?->expires_at)?->toISOString(),
+                ],
+                'summary' => [
+                    'tracked_limits' => $limits->count(),
+                    'warning_count' => $warningCount,
+                    'at_limit_count' => $atLimitCount,
+                ],
+                'limits' => $limits,
+            ];
+        })->values();
+
+        return response()->json([
+            'data' => $overview,
+            'generated_at' => now()->toISOString(),
+        ]);
+    }
+
+    /**
+     * Get rich details and history for one organization/resource limit
+     */
+    public function getOrganizationLimitDetails(Request $request, string $organizationId, string $resourceKey)
+    {
+        $this->enforceSubscriptionAdmin($request);
+
+        $organization = Organization::where('id', $organizationId)->whereNull('deleted_at')->firstOrFail();
+        $definition = LimitDefinition::where('resource_key', $resourceKey)->firstOrFail();
+
+        $check = $this->usageTrackingService->canCreate($organizationId, $resourceKey);
+        $usageCurrent = UsageCurrent::where('organization_id', $organizationId)
+            ->where('resource_key', $resourceKey)
+            ->first();
+
+        $activeOverride = OrganizationLimitOverride::where('organization_id', $organizationId)
+            ->where('resource_key', $resourceKey)
+            ->active()
+            ->whereNull('deleted_at')
+            ->latest('updated_at')
+            ->first();
+
+        $recentOverrides = OrganizationLimitOverride::query()
+            ->where('organization_id', $organizationId)
+            ->where('resource_key', $resourceKey)
+            ->whereNull('deleted_at')
+            ->orderBy('updated_at', 'desc')
+            ->limit(15)
+            ->get();
+
+        $limitHistory = SubscriptionHistory::query()
+            ->where('organization_id', $organizationId)
+            ->where('action', SubscriptionHistory::ACTION_LIMIT_OVERRIDE)
+            ->whereRaw("metadata->>'resource_key' = ?", [$resourceKey])
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        $usageSnapshots = UsageSnapshot::query()
+            ->where('organization_id', $organizationId)
+            ->orderBy('snapshot_date', 'desc')
+            ->limit(12)
+            ->get()
+            ->map(function (UsageSnapshot $snapshot) use ($resourceKey) {
+                $usageData = is_array($snapshot->usage_data) ? $snapshot->usage_data : [];
+                $limitsData = is_array($snapshot->limits_data) ? $snapshot->limits_data : [];
+
+                return [
+                    'snapshot_date' => optional($snapshot->snapshot_date)?->toDateString(),
+                    'usage' => $usageData[$resourceKey] ?? 0,
+                    'limit' => $limitsData[$resourceKey] ?? -1,
+                    'created_at' => optional($snapshot->created_at)?->toISOString(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'data' => [
+                'organization' => [
+                    'id' => $organization->id,
+                    'name' => $organization->name,
+                    'slug' => $organization->slug,
+                ],
+                'limit_definition' => [
+                    'resource_key' => $definition->resource_key,
+                    'name' => $definition->name,
+                    'description' => $definition->description,
+                    'category' => $definition->category,
+                    'unit' => $definition->unit,
+                    'reset_period' => $definition->reset_period,
+                ],
+                'current_status' => [
+                    'current' => $check['current'] ?? 0,
+                    'limit' => $check['limit'] ?? -1,
+                    'remaining' => $check['remaining'] ?? -1,
+                    'percentage' => $check['percentage'] ?? 0,
+                    'warning' => $check['warning'] ?? false,
+                    'allowed' => $check['allowed'] ?? true,
+                    'message' => $check['message'] ?? null,
+                ],
+                'usage_tracking' => [
+                    'period_start' => optional($usageCurrent?->period_start)?->toISOString(),
+                    'period_end' => optional($usageCurrent?->period_end)?->toISOString(),
+                    'last_calculated_at' => optional($usageCurrent?->last_calculated_at)?->toISOString(),
+                    'last_warning_sent_at' => optional($usageCurrent?->last_warning_sent_at)?->toISOString(),
+                    'updated_at' => optional($usageCurrent?->updated_at)?->toISOString(),
+                ],
+                'active_override' => $activeOverride ? [
+                    'id' => $activeOverride->id,
+                    'limit_value' => $activeOverride->limit_value,
+                    'reason' => $activeOverride->reason,
+                    'granted_by' => $activeOverride->granted_by,
+                    'expires_at' => optional($activeOverride->expires_at)?->toISOString(),
+                    'updated_at' => optional($activeOverride->updated_at)?->toISOString(),
+                ] : null,
+                'recent_overrides' => $recentOverrides->map(function (OrganizationLimitOverride $override) {
+                    return [
+                        'id' => $override->id,
+                        'limit_value' => $override->limit_value,
+                        'reason' => $override->reason,
+                        'granted_by' => $override->granted_by,
+                        'expires_at' => optional($override->expires_at)?->toISOString(),
+                        'created_at' => optional($override->created_at)?->toISOString(),
+                        'updated_at' => optional($override->updated_at)?->toISOString(),
+                    ];
+                })->values(),
+                'limit_history' => $limitHistory->map(function (SubscriptionHistory $history) {
+                    return [
+                        'id' => $history->id,
+                        'action' => $history->action,
+                        'notes' => $history->notes,
+                        'metadata' => $history->metadata,
+                        'performed_by' => $history->performed_by,
+                        'created_at' => optional($history->created_at)?->toISOString(),
+                    ];
+                })->values(),
+                'usage_snapshots' => $usageSnapshots,
+                'refreshed_at' => now()->toISOString(),
+            ],
+        ]);
     }
 
     // =====================================================

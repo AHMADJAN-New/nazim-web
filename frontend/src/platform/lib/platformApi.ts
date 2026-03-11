@@ -70,6 +70,14 @@ export const platformApi = {
     getUsageSnapshots: async (organizationId: string) => {
       return apiClient.get<{ data: SubscriptionApi.UsageSnapshot[] }>(`/platform/organizations/${organizationId}/usage-snapshots`);
     },
+    limitsOverview: async () => {
+      return apiClient.get<{ data: SubscriptionApi.OrganizationLimitsOverviewRow[]; generated_at: string }>('/platform/limits/overview');
+    },
+    limitDetails: async (organizationId: string, resourceKey: string) => {
+      return apiClient.get<{ data: SubscriptionApi.OrganizationLimitDetail }>(
+        `/platform/organizations/${organizationId}/limits/${encodeURIComponent(resourceKey)}/details`
+      );
+    },
     recalculateUsage: async (organizationId: string) => {
       return apiClient.post(`/platform/organizations/${organizationId}/recalculate-usage`);
     },

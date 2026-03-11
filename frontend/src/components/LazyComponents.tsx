@@ -173,6 +173,7 @@ export const DiscountCodesManagement = lazy(() => import('@/pages/subscription/a
 export const MaintenanceFeesManagement = lazy(() => import('@/platform/pages/admin/MaintenanceFeesManagement').then(module => ({ default: module.default })));
 export const LicenseFeesManagement = lazy(() => import('@/platform/pages/admin/LicenseFeesManagement').then(module => ({ default: module.default })));
 export const OrganizationRevenueHistory = lazy(() => import('@/platform/pages/admin/OrganizationRevenueHistory').then(module => ({ default: module.default })));
+export const OrganizationLimitsOverview = lazy(() => import('@/platform/pages/admin/OrganizationLimitsOverview').then(module => ({ default: module.default })));
 export const PlanRequestsPage = lazy(() => import('@/platform/pages/admin/PlanRequestsPage').then(module => ({ default: module.default })));
 export const DesktopLicenseGeneration = lazy(() => import('@/platform/pages/admin/DesktopLicenseGeneration').then(module => ({ default: module.default })));
 export const DesktopReleasesManagement = lazy(() => import('@/platform/pages/admin/DesktopReleasesManagement').then(module => ({ default: module.default })));

@@ -24,6 +24,7 @@ import {
   Key,
   AlertCircle,
   Globe,
+  BarChart3,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -45,6 +46,29 @@ import { usePlatformDashboard, usePlatformPendingPayments, usePlatformPendingRen
 
 interface PlatformAdminLayoutProps {
   children: React.ReactNode;
+}
+
+interface PlatformNavChild {
+  name: string;
+  href: string;
+  icon: any;
+}
+
+interface PlatformNavItem {
+  name: string;
+  href: string;
+  icon: any;
+  iconColor: string;
+  iconBg: string;
+  description: string;
+  badge: number | null;
+  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
+  children?: PlatformNavChild[];
+}
+
+interface PlatformNavSection {
+  name: string;
+  items: PlatformNavItem[];
 }
 
 // Language Switcher Component (without Arabic)
@@ -87,7 +111,11 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Settings']);
+  const [expandedItems, setExpandedItems] = useState<string[]>([
+    'Core',
+    'Subscriptions & Billing',
+    'Settings',
+  ]);
 
   // Fetch stats for badge counts
   const { data: dashboardData } = usePlatformDashboard();
@@ -144,7 +172,7 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
     navigate('/platform/login');
   };
 
-  const navigation = [
+  const coreItems: PlatformNavItem[] = [
     { 
       name: 'Dashboard', 
       href: '/platform/dashboard', 
@@ -190,6 +218,9 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       description: 'Manage permission groups',
       badge: null,
     },
+  ];
+
+  const subscriptionAndBillingItems: PlatformNavItem[] = [
     { 
       name: 'Subscriptions', 
       href: '/platform/subscriptions', 
@@ -200,6 +231,15 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       badge: subscriptionsIssuesCount > 0 ? subscriptionsIssuesCount : null,
       badgeVariant: 'destructive' as const,
     },
+    {
+      name: 'Limits Overview',
+      href: '/platform/limits-overview',
+      icon: BarChart3,
+      iconColor: 'text-amber-600',
+      iconBg: 'bg-amber-500/10',
+      description: 'Centralized limits and usage across organizations',
+      badge: null,
+    },
     { 
       name: 'Subscription Plans', 
       href: '/platform/plans', 
@@ -209,6 +249,45 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       description: 'Manage subscription plans',
       badge: null,
     },
+    { 
+      name: 'Discount Codes', 
+      href: '/platform/discount-codes', 
+      icon: Ticket,
+      iconColor: 'text-teal-500',
+      iconBg: 'bg-teal-500/10',
+      description: 'Manage discount codes',
+      badge: null,
+    },
+    { 
+      name: 'Maintenance Fees', 
+      href: '/platform/maintenance-fees', 
+      icon: RefreshCw,
+      iconColor: 'text-slate-500',
+      iconBg: 'bg-slate-500/10',
+      description: 'Manage maintenance fees across all organizations',
+      badge: null,
+    },
+    { 
+      name: 'License Fees', 
+      href: '/platform/license-fees', 
+      icon: Lock,
+      iconColor: 'text-gray-500',
+      iconBg: 'bg-gray-500/10',
+      description: 'Manage license fee payments across all organizations',
+      badge: null,
+    },
+    { 
+      name: 'Revenue History', 
+      href: '/platform/revenue-history', 
+      icon: DollarSign,
+      iconColor: 'text-yellow-500',
+      iconBg: 'bg-yellow-500/10',
+      description: 'View organization revenue history and breakdown',
+      badge: null,
+    },
+  ];
+
+  const operationsItems: PlatformNavItem[] = [
     { 
       name: 'Plan Requests', 
       href: '/platform/plan-requests', 
@@ -249,15 +328,6 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       badgeVariant: 'destructive' as const,
     },
     { 
-      name: 'Discount Codes', 
-      href: '/platform/discount-codes', 
-      icon: Ticket,
-      iconColor: 'text-teal-500',
-      iconBg: 'bg-teal-500/10',
-      description: 'Manage discount codes',
-      badge: null,
-    },
-    { 
       name: 'Landing Offers', 
       href: '/platform/landing-offers', 
       icon: Ticket,
@@ -267,32 +337,17 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       badge: null,
     },
     { 
-      name: 'Maintenance Fees', 
-      href: '/platform/maintenance-fees', 
-      icon: RefreshCw,
-      iconColor: 'text-slate-500',
-      iconBg: 'bg-slate-500/10',
-      description: 'Manage maintenance fees across all organizations',
+      name: 'Help Center', 
+      href: '/platform/help-center', 
+      icon: HelpCircle,
+      iconColor: 'text-blue-600',
+      iconBg: 'bg-blue-600/10',
+      description: 'Manage help center articles and categories',
       badge: null,
     },
-    { 
-      name: 'License Fees', 
-      href: '/platform/license-fees', 
-      icon: Lock,
-      iconColor: 'text-gray-500',
-      iconBg: 'bg-gray-500/10',
-      description: 'Manage license fee payments across all organizations',
-      badge: null,
-    },
-    { 
-      name: 'Revenue History', 
-      href: '/platform/revenue-history', 
-      icon: DollarSign,
-      iconColor: 'text-yellow-500',
-      iconBg: 'bg-yellow-500/10',
-      description: 'View organization revenue history and breakdown',
-      badge: null,
-    },
+  ];
+
+  const systemItems: PlatformNavItem[] = [
     { 
       name: 'Settings', 
       href: '/platform/settings',
@@ -313,15 +368,6 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
           icon: Languages,
         },
       ]
-    },
-    { 
-      name: 'Help Center', 
-      href: '/platform/help-center', 
-      icon: HelpCircle,
-      iconColor: 'text-blue-600',
-      iconBg: 'bg-blue-600/10',
-      description: 'Manage help center articles and categories',
-      badge: null,
     },
     { 
       name: 'Maintenance History', 
@@ -350,6 +396,13 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       description: 'Manage Nazim Desktop releases, updates, and prerequisites',
       badge: null,
     },
+  ];
+
+  const navigationSections: PlatformNavSection[] = [
+    { name: 'Core', items: coreItems },
+    { name: 'Subscriptions & Billing', items: subscriptionAndBillingItems },
+    { name: 'Operations', items: operationsItems },
+    { name: 'System', items: systemItems },
   ];
 
   return (
@@ -382,114 +435,152 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href || 
-                               (item.href !== '/platform/dashboard' && location.pathname.startsWith(item.href));
-              const hasChildren = item.children && item.children.length > 0;
-              const isExpanded = expandedItems.includes(item.name);
-              
-              const toggleExpanded = () => {
-                setExpandedItems(prev => 
-                  prev.includes(item.name) 
-                    ? prev.filter(name => name !== item.name)
-                    : [...prev, item.name]
-                );
-              };
-              
+            {navigationSections.map((section) => {
+              const isSectionExpanded = expandedItems.includes(section.name);
               return (
-                <div key={item.name}>
-                  {hasChildren ? (
-                    <>
-                      <button
-                        onClick={toggleExpanded}
-                        className={cn(
-                          'group w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-                          isActive
-                            ? 'bg-primary text-primary-foreground shadow-sm'
-                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                        )}
-                        title={item.description}
-                      >
-                        <div className={cn(
-                          'flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 transition-colors',
-                          isActive ? 'bg-primary-foreground/20' : item.iconBg
-                        )}>
-                          <item.icon className={cn(
-                            'h-4 w-4',
-                            isActive ? 'text-primary-foreground' : item.iconColor
-                          )} />
-                        </div>
-                        <span className="flex-1 truncate text-left">{item.name}</span>
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 flex-shrink-0" />
-                        )}
-                      </button>
-                      {isExpanded && item.children && (
-                        <div className="ml-4 mt-1 space-y-1">
-                          {item.children.map((child) => {
-                            const isChildActive = location.pathname === child.href;
-                            return (
+                <div key={section.name} className="mb-3">
+                  <button
+                    onClick={() =>
+                      setExpandedItems((prev) =>
+                        prev.includes(section.name)
+                          ? prev.filter((name) => name !== section.name)
+                          : [...prev, section.name]
+                      )
+                    }
+                    className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <span>{section.name}</span>
+                    {isSectionExpanded ? (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+
+                  {isSectionExpanded && (
+                    <div className="space-y-1 mt-1">
+                      {section.items.map((item) => {
+                        const isActive =
+                          location.pathname === item.href ||
+                          (item.href !== '/platform/dashboard' && location.pathname.startsWith(item.href));
+                        const hasChildren = item.children && item.children.length > 0;
+                        const isExpanded = expandedItems.includes(item.name);
+
+                        const toggleExpanded = () => {
+                          setExpandedItems((prev) =>
+                            prev.includes(item.name)
+                              ? prev.filter((name) => name !== item.name)
+                              : [...prev, item.name]
+                          );
+                        };
+
+                        return (
+                          <div key={item.name}>
+                            {hasChildren ? (
+                              <>
+                                <button
+                                  onClick={toggleExpanded}
+                                  className={cn(
+                                    'group w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+                                    isActive
+                                      ? 'bg-primary text-primary-foreground shadow-sm'
+                                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                  )}
+                                  title={item.description}
+                                >
+                                  <div
+                                    className={cn(
+                                      'flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 transition-colors',
+                                      isActive ? 'bg-primary-foreground/20' : item.iconBg
+                                    )}
+                                  >
+                                    <item.icon
+                                      className={cn(
+                                        'h-4 w-4',
+                                        isActive ? 'text-primary-foreground' : item.iconColor
+                                      )}
+                                    />
+                                  </div>
+                                  <span className="flex-1 truncate text-left">{item.name}</span>
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                                  )}
+                                </button>
+                                {isExpanded && item.children && (
+                                  <div className="ml-4 mt-1 space-y-1">
+                                    {item.children.map((child) => {
+                                      const isChildActive = location.pathname === child.href;
+                                      return (
+                                        <Link
+                                          key={child.name}
+                                          to={child.href}
+                                          onClick={() => setSidebarOpen(false)}
+                                          className={cn(
+                                            'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all',
+                                            isChildActive
+                                              ? 'bg-primary/10 text-primary font-medium'
+                                              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                          )}
+                                        >
+                                          <child.icon className="h-4 w-4 flex-shrink-0" />
+                                          <span className="flex-1 truncate">{child.name}</span>
+                                          {isChildActive && (
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                          )}
+                                        </Link>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
                               <Link
-                                key={child.name}
-                                to={child.href}
-                                onClick={() => setSidebarOpen(false)}
+                                to={item.href}
                                 className={cn(
-                                  'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all',
-                                  isChildActive
-                                    ? 'bg-primary/10 text-primary font-medium'
+                                  'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+                                  isActive
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
                                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                                 )}
+                                onClick={() => setSidebarOpen(false)}
+                                title={item.description}
                               >
-                                <child.icon className="h-4 w-4 flex-shrink-0" />
-                                <span className="flex-1 truncate">{child.name}</span>
-                                {isChildActive && (
-                                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                <div
+                                  className={cn(
+                                    'flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 transition-colors',
+                                    isActive ? 'bg-primary-foreground/20' : item.iconBg
+                                  )}
+                                >
+                                  <item.icon
+                                    className={cn(
+                                      'h-4 w-4',
+                                      isActive ? 'text-primary-foreground' : item.iconColor
+                                    )}
+                                  />
+                                </div>
+                                <span className="flex-1 truncate">{item.name}</span>
+                                {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
+                                  <Badge
+                                    variant={item.badgeVariant || 'default'}
+                                    className={cn(
+                                      'h-5 min-w-5 px-1.5 text-xs font-semibold flex items-center justify-center',
+                                      isActive && 'bg-primary-foreground/20 text-primary-foreground'
+                                    )}
+                                  >
+                                    {item.badge > 99 ? '99+' : item.badge}
+                                  </Badge>
+                                )}
+                                {isActive && (
+                                  <div className="absolute right-2 h-1.5 w-1.5 rounded-full bg-primary-foreground" />
                                 )}
                               </Link>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <Link
-                      to={item.href}
-                      className={cn(
-                        'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-                        isActive
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                      )}
-                      onClick={() => setSidebarOpen(false)}
-                      title={item.description}
-                    >
-                      <div className={cn(
-                        'flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 transition-colors',
-                        isActive ? 'bg-primary-foreground/20' : item.iconBg
-                      )}>
-                        <item.icon className={cn(
-                          'h-4 w-4',
-                          isActive ? 'text-primary-foreground' : item.iconColor
-                        )} />
-                      </div>
-                      <span className="flex-1 truncate">{item.name}</span>
-                      {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
-                        <Badge 
-                          variant={item.badgeVariant || 'default'} 
-                          className={cn(
-                            'h-5 min-w-5 px-1.5 text-xs font-semibold flex items-center justify-center',
-                            isActive && 'bg-primary-foreground/20 text-primary-foreground'
-                          )}
-                        >
-                          {item.badge > 99 ? '99+' : item.badge}
-                        </Badge>
-                      )}
-                      {isActive && (
-                        <div className="absolute right-2 h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-                      )}
-                    </Link>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               );

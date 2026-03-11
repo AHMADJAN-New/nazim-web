@@ -43,6 +43,22 @@ type ValidationResult = {
   sheets: ValidationSheetResult[];
 };
 
+type ImportCommitQueuedResponse = {
+  accepted?: boolean;
+  job_id?: string;
+  status?: 'queued' | 'running' | 'completed' | 'failed';
+  message?: string;
+};
+
+type ImportCommitStatusResponse = {
+  job_id: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  created_students?: number;
+  created_admissions?: number;
+  error?: string | null;
+  message?: string | null;
+};
+
 const REQUIRED_STUDENT_FIELDS = ['full_name', 'father_name'] as const;
 
 const STUDENT_FIELD_OPTIONS: string[] = [
@@ -169,6 +185,8 @@ export default function StudentsImport() {
     if (checked) return Array.from(new Set([...list, key]));
     return list.filter((k) => k !== key);
   };
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const setClassDefault = (classAcademicYearId: string, patch: ClassSheetDefaults) => {
     setClassDefaults((prev) => ({
@@ -299,20 +317,60 @@ export default function StudentsImport() {
   const onImport = async () => {
     if (!uploadFile) return;
     setIsImporting(true);
+    let loadingToastId: string | number | undefined;
     try {
-      const resp = await studentImportApi.commit(uploadFile);
-      const createdStudents = (resp as any)?.created_students ?? 0;
-      const createdAdmissions = (resp as any)?.created_admissions ?? 0;
+      const resp = (await studentImportApi.commit(uploadFile)) as ImportCommitQueuedResponse & {
+        created_students?: number;
+        created_admissions?: number;
+      };
 
-      showToast.success('toast.studentsImported', { count: createdStudents });
-      if (createdAdmissions > 0) {
-        showToast.info('toast.admissionsCreated', { count: createdAdmissions });
+      // Backward compatibility: if backend returns immediate result, keep old behavior.
+      if (!resp?.accepted || !resp?.job_id) {
+        const createdStudents = resp?.created_students ?? 0;
+        const createdAdmissions = resp?.created_admissions ?? 0;
+        showToast.success('toast.studentsImported', { count: createdStudents });
+        if (createdAdmissions > 0) {
+          showToast.info('toast.admissionsCreated', { count: createdAdmissions });
+        }
+        navigate('/students');
+        return;
       }
-      navigate('/students');
+
+      loadingToastId = showToast.loading('toast.processing');
+      const jobId = resp.job_id;
+      const maxPollAttempts = 900; // ~30 minutes (900 * 2s)
+
+      for (let attempt = 0; attempt < maxPollAttempts; attempt++) {
+        await sleep(2000);
+        const status = (await studentImportApi.commitStatus(jobId)) as ImportCommitStatusResponse;
+
+        if (status.status === 'completed') {
+          const createdStudents = status.created_students ?? 0;
+          const createdAdmissions = status.created_admissions ?? 0;
+          showToast.dismiss(loadingToastId);
+          showToast.success('toast.studentsImported', { count: createdStudents });
+          if (createdAdmissions > 0) {
+            showToast.info('toast.admissionsCreated', { count: createdAdmissions });
+          }
+          navigate('/students');
+          return;
+        }
+
+        if (status.status === 'failed') {
+          showToast.dismiss(loadingToastId);
+          throw new Error(status.error || status.message || 'Student import failed');
+        }
+      }
+
+      showToast.dismiss(loadingToastId);
+      throw new Error('Student import is taking too long. Please check again shortly.');
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       showToast.error(message || 'toast.error');
     } finally {
+      if (loadingToastId !== undefined) {
+        showToast.dismiss(loadingToastId);
+      }
       setIsImporting(false);
     }
   };

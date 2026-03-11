@@ -208,6 +208,7 @@ import {
   MaintenanceFeesManagement,
   LicenseFeesManagement,
   OrganizationRevenueHistory,
+  OrganizationLimitsOverview,
   PlanRequestsPage,
   ContactMessagesManagement,
   LoginAuditPage,
@@ -612,6 +613,11 @@ const App = () => (
                     <Route path="subscriptions" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <AllSubscriptionsPage />
+                      </Suspense>
+                    } />
+                    <Route path="limits-overview" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <OrganizationLimitsOverview />
                       </Suspense>
                     } />
                     <Route path="plans" element={

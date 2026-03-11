@@ -9,6 +9,7 @@ use App\Services\CodeGenerator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
@@ -30,11 +31,15 @@ class StudentImportService
      *   sheets: array<int, array{sheet_name:string, rows: array<int, array<string, mixed>>}>
      * }
      */
-    public function parse(UploadedFile $file): array
+    public function parse(UploadedFile|string $file): array
     {
         $reader = IOFactory::createReader('Xlsx');
         $reader->setReadDataOnly(true);
-        $spreadsheet = $reader->load($file->getRealPath());
+        $filePath = is_string($file) ? $file : $file->getRealPath();
+        if (!is_string($filePath) || trim($filePath) === '') {
+            throw new \InvalidArgumentException('Invalid import file');
+        }
+        $spreadsheet = $reader->load($filePath);
 
         $metaSheet = $spreadsheet->getSheetByName(StudentImportXlsxService::META_SHEET_NAME);
         if (!$metaSheet) {
@@ -618,11 +623,16 @@ class StudentImportService
     /**
      * Commit import (create-only) after validating.
      *
+     * @param array{
+     *   is_valid: bool,
+     *   sheets?: array<int, array{sheet_name:string, valid_row_numbers?: array<int>}>
+     * }|null $precomputedValidation
+     *
      * @return array{created_students:int, created_admissions:int}
      */
-    public function commit(array $parsed, string $organizationId, string $schoolId): array
+    public function commit(array $parsed, string $organizationId, string $schoolId, ?array $precomputedValidation = null): array
     {
-        $validation = $this->validateImport($parsed, $organizationId);
+        $validation = $precomputedValidation ?? $this->validateImport($parsed, $organizationId);
         if (!($validation['is_valid'] ?? false)) {
             throw new \RuntimeException('Import validation failed');
         }
@@ -638,14 +648,54 @@ class StudentImportService
 
         $createdStudents = 0;
         $createdAdmissions = 0;
+        $chunkSizeRaw = env('STUDENT_IMPORT_CHUNK_SIZE', '300');
+        $chunkSize = is_numeric($chunkSizeRaw) ? max(50, min(1000, (int) $chunkSizeRaw)) : 300;
 
-        DB::transaction(function () use ($parsed, $sheetsMeta, $organizationId, $schoolId, $validRowNumbersBySheet, &$createdStudents, &$createdAdmissions) {
+        DB::transaction(function () use (
+            $parsed,
+            $sheetsMeta,
+            $organizationId,
+            $schoolId,
+            $validRowNumbersBySheet,
+            &$createdStudents,
+            &$createdAdmissions,
+            $chunkSize
+        ) {
+            $studentsBatch = [];
+            $admissionsBatch = [];
+            $now = now();
+
+            // Count rows that need generated student codes once, then reserve in one DB counter transaction.
+            $codesNeeded = 0;
             foreach (($parsed['sheets'] ?? []) as $sheet) {
                 $sheetName = (string) ($sheet['sheet_name'] ?? 'Sheet');
                 $rows = is_array($sheet['rows'] ?? null) ? $sheet['rows'] : [];
-                
-                // Get valid row numbers for this sheet
+                $validRowLookup = array_fill_keys(array_map('intval', $validRowNumbersBySheet[$sheetName] ?? []), true);
+
+                foreach ($rows as $row) {
+                    $rowNumber = (int) ($row['__row'] ?? 0);
+                    if (!isset($validRowLookup[$rowNumber])) {
+                        continue;
+                    }
+                    $admissionNo = is_string($row['admission_no'] ?? null) ? trim((string) $row['admission_no']) : '';
+                    $studentCode = is_string($row['student_code'] ?? null) ? trim((string) $row['student_code']) : '';
+                    if ($admissionNo === '' && $studentCode === '') {
+                        $codesNeeded++;
+                    }
+                }
+            }
+
+            $reservedCodes = $codesNeeded > 0
+                ? CodeGenerator::generateStudentCodesBatch($organizationId, $codesNeeded)
+                : [];
+            $reservedCodeIndex = 0;
+
+            foreach (($parsed['sheets'] ?? []) as $sheet) {
+                $sheetName = (string) ($sheet['sheet_name'] ?? 'Sheet');
+                $rows = is_array($sheet['rows'] ?? null) ? $sheet['rows'] : [];
+
                 $validRowNumbers = $validRowNumbersBySheet[$sheetName] ?? [];
+                $validRowLookup = array_fill_keys(array_map('intval', $validRowNumbers), true);
 
                 $sheetMeta = $this->findSheetMeta($sheetsMeta, $sheetName);
                 $metaAcademicYearId = $sheetMeta['academic_year_id'] ?? null;
@@ -655,14 +705,25 @@ class StudentImportService
 
                 foreach ($rows as $row) {
                     $rowNumber = (int) ($row['__row'] ?? 0);
-                    
-                    // Only process rows that are in the valid row numbers list
-                    if (!in_array($rowNumber, $validRowNumbers, true)) {
+                    if (!isset($validRowLookup[$rowNumber])) {
                         continue;
                     }
-                    
-                    $studentData = $this->buildStudentInsert($row, $organizationId, $schoolId);
-                    $student = Student::create($studentData);
+
+                    $prefilledStudentCode = null;
+                    $admissionNo = is_string($row['admission_no'] ?? null) ? trim((string) $row['admission_no']) : '';
+                    $studentCode = is_string($row['student_code'] ?? null) ? trim((string) $row['student_code']) : '';
+                    if ($admissionNo === '' && $studentCode === '') {
+                        $prefilledStudentCode = $reservedCodes[$reservedCodeIndex] ?? null;
+                        $reservedCodeIndex++;
+                    }
+
+                    $studentId = (string) Str::uuid();
+                    $studentData = $this->buildStudentInsert($row, $organizationId, $schoolId, $prefilledStudentCode);
+                    $studentsBatch[] = array_merge($studentData, [
+                        'id' => $studentId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
                     $createdStudents++;
 
                     $resolvedAcademicYearId = $metaAcademicYearId ?? ($row['academic_year_id'] ?? null);
@@ -677,7 +738,7 @@ class StudentImportService
 
                         $admissionData = $this->buildAdmissionInsert(
                             $row,
-                            $student->id,
+                            $studentId,
                             $organizationId,
                             $schoolId,
                             (string) $resolvedAcademicYearId,
@@ -685,11 +746,30 @@ class StudentImportService
                             $resolvedClassAcademicYearId ? (string) $resolvedClassAcademicYearId : null,
                             $sheetDefaults,
                         );
-
-                        StudentAdmission::create($admissionData);
+                        $admissionsBatch[] = array_merge($admissionData, [
+                            'id' => (string) Str::uuid(),
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
                         $createdAdmissions++;
                     }
+
+                    if (count($studentsBatch) >= $chunkSize) {
+                        DB::table('students')->insert($studentsBatch);
+                        $studentsBatch = [];
+                    }
+                    if (count($admissionsBatch) >= $chunkSize) {
+                        DB::table('student_admissions')->insert($admissionsBatch);
+                        $admissionsBatch = [];
+                    }
                 }
+            }
+
+            if (count($studentsBatch) > 0) {
+                DB::table('students')->insert($studentsBatch);
+            }
+            if (count($admissionsBatch) > 0) {
+                DB::table('student_admissions')->insert($admissionsBatch);
             }
         });
 
@@ -699,7 +779,7 @@ class StudentImportService
         ];
     }
 
-    private function buildStudentInsert(array $row, string $organizationId, string $schoolId): array
+    private function buildStudentInsert(array $row, string $organizationId, string $schoolId, ?string $prefilledStudentCode = null): array
     {
         $fullName = is_string($row['full_name'] ?? null) ? trim((string) $row['full_name']) : '';
         $fatherName = is_string($row['father_name'] ?? null) ? trim((string) $row['father_name']) : '';
@@ -713,7 +793,7 @@ class StudentImportService
         // If admission_no is blank, generate a student_code and set admission_no = student_code
         if ($admissionNo === '') {
             if ($studentCode === '') {
-                $studentCode = CodeGenerator::generateStudentCode($organizationId);
+                $studentCode = $prefilledStudentCode ?? CodeGenerator::generateStudentCode($organizationId);
             }
             $admissionNo = $studentCode;
         }
