@@ -155,6 +155,11 @@ class PermissionSeeder extends Seeder
             'website_settings' => ['read', 'update'],
             // Activity Logs (audit trail)
             'activity_logs' => ['read'],
+            // Organization HR
+            'hr_staff' => ['read', 'create', 'update', 'delete'],
+            'hr_assignments' => ['read', 'create', 'update', 'approve'],
+            'hr_payroll' => ['read', 'create', 'run', 'approve', 'export'],
+            'hr_reports' => ['read', 'export'],
         ];
     }
 
@@ -410,6 +415,47 @@ class PermissionSeeder extends Seeder
                 'organizations.read', 'buildings.read', 'rooms.read',
                 'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
                 'website_media.read', 'website_media.create', 'website_media.update', 'website_media.delete',
+            ],
+            'organization_hr_admin' => [
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'profiles.read', 'profiles.update',
+                'notifications.read', 'notifications.update', 'notifications.manage_preferences',
+                'subscription.read',
+                'hr_staff.read', 'hr_staff.create', 'hr_staff.update', 'hr_staff.delete',
+                'hr_assignments.read', 'hr_assignments.create', 'hr_assignments.update', 'hr_assignments.approve',
+                'hr_payroll.read', 'hr_payroll.create', 'hr_payroll.run', 'hr_payroll.approve', 'hr_payroll.export',
+                'hr_reports.read', 'hr_reports.export',
+            ],
+            'hr_officer' => [
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'profiles.read', 'profiles.update',
+                'notifications.read', 'notifications.update',
+                'subscription.read',
+                'hr_staff.read', 'hr_staff.create', 'hr_staff.update',
+                'hr_assignments.read', 'hr_assignments.create', 'hr_assignments.update',
+                'hr_reports.read',
+            ],
+            'payroll_officer' => [
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'profiles.read',
+                'notifications.read', 'notifications.update',
+                'subscription.read',
+                'hr_staff.read',
+                'hr_payroll.read', 'hr_payroll.create', 'hr_payroll.run', 'hr_payroll.export',
+                'hr_reports.read', 'hr_reports.export',
+            ],
+            'principal' => [
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'profiles.read',
+                'notifications.read', 'notifications.update',
+                'subscription.read',
+                'hr_staff.read',
+                'hr_assignments.read',
+                'hr_reports.read',
             ],
         ];
     }
