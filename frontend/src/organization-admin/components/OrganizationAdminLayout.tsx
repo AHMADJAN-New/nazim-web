@@ -4,11 +4,13 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  CreditCard,
   FileSpreadsheet,
   LayoutDashboard,
   Languages,
   LogOut,
   Menu,
+  School,
   UserRound,
   Users,
   X,
@@ -85,12 +87,14 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
   const { profile, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<string[]>(['Overview', 'HR']);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['Overview', 'Management', 'HR']);
 
   const hasHrStaff = useHasPermission('hr_staff.read');
   const hasHrAssignments = useHasPermission('hr_assignments.read');
   const hasHrPayroll = useHasPermission('hr_payroll.read');
   const hasHrReports = useHasPermission('hr_reports.read');
+  const hasSchoolsRead = useHasPermission('schools.read');
+  const hasUsersRead = useHasPermission('users.read');
 
   const overviewItems: OrgAdminNavItem[] = [
     {
@@ -101,6 +105,36 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconBg: 'bg-blue-500/10',
       description: t('organizationAdmin.dashboardDesc'),
       visible: true,
+    },
+    {
+      name: t('organizationAdmin.subscription'),
+      href: '/org-admin/subscription',
+      icon: CreditCard,
+      iconColor: 'text-emerald-500',
+      iconBg: 'bg-emerald-500/10',
+      description: t('organizationAdmin.subscriptionDesc'),
+      visible: true,
+    },
+  ];
+
+  const managementItems: OrgAdminNavItem[] = [
+    {
+      name: t('organizationAdmin.schools'),
+      href: '/org-admin/schools',
+      icon: School,
+      iconColor: 'text-cyan-500',
+      iconBg: 'bg-cyan-500/10',
+      description: t('organizationAdmin.schoolsDesc'),
+      visible: hasSchoolsRead,
+    },
+    {
+      name: t('organizationAdmin.users'),
+      href: '/org-admin/users',
+      icon: Users,
+      iconColor: 'text-orange-500',
+      iconBg: 'bg-orange-500/10',
+      description: t('organizationAdmin.usersDesc'),
+      visible: hasUsersRead,
     },
   ];
 
@@ -154,6 +188,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
 
   const sections: OrgAdminNavSection[] = [
     { name: 'Overview', nameKey: 'organizationAdmin.sectionOverview', items: overviewItems },
+    { name: 'Management', nameKey: 'organizationAdmin.sectionManagement', items: managementItems },
     { name: 'HR', nameKey: 'organizationAdmin.sectionHr', items: hrItems },
   ];
 

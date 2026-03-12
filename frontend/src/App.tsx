@@ -265,6 +265,9 @@ import OrganizationHrPayrollPage from '@/pages/organization/hr/OrganizationHrPay
 import OrganizationHrReportsPage from '@/pages/organization/hr/OrganizationHrReportsPage';
 import { OrganizationAdminRoute } from '@/components/OrganizationAdminRoute';
 import { OrganizationAdminLayout } from '@/organization-admin/components/OrganizationAdminLayout';
+import OrgAdminSchoolsPage from '@/organization-admin/pages/OrgAdminSchoolsPage';
+import OrgAdminUsersPage from '@/organization-admin/pages/OrgAdminUsersPage';
+import OrgAdminSubscriptionPage from '@/organization-admin/pages/OrgAdminSubscriptionPage';
 
 // Centralized QueryClient – defaults (e.g. refetch on focus) live in @/lib/queryClient
 const queryClient = createQueryClient();
@@ -735,6 +738,9 @@ const App = () => (
                         <OrganizationDashboard />
                       </Suspense>
                     } />
+                    <Route path="schools" element={<OrgAdminSchoolsPage />} />
+                    <Route path="users" element={<OrgAdminUsersPage />} />
+                    <Route path="subscription" element={<OrgAdminSubscriptionPage />} />
                     <Route path="hr" element={<OrganizationHrHubPage />} />
                     <Route path="hr/staff" element={<OrganizationHrStaffPage />} />
                     <Route path="hr/assignments" element={<OrganizationHrAssignmentsPage />} />

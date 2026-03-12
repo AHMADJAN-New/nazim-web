@@ -420,12 +420,21 @@ class PermissionSeeder extends Seeder
                 'organizations.read', 'buildings.read', 'rooms.read',
                 'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
                 'profiles.read', 'profiles.update',
+                'users.read', 'users.create', 'users.update',
                 'notifications.read', 'notifications.update', 'notifications.manage_preferences',
                 'subscription.read',
+                // School management (read + create for org HR admins)
+                'schools.create',
+                // Full HR access
                 'hr_staff.read', 'hr_staff.create', 'hr_staff.update', 'hr_staff.delete',
                 'hr_assignments.read', 'hr_assignments.create', 'hr_assignments.update', 'hr_assignments.approve',
                 'hr_payroll.read', 'hr_payroll.create', 'hr_payroll.run', 'hr_payroll.approve', 'hr_payroll.export',
                 'hr_reports.read', 'hr_reports.export',
+                // Read-only school data for oversight
+                'students.read', 'classes.read', 'subjects.read', 'academic_years.read',
+                'attendance_sessions.read', 'exams.read', 'exams.view_reports',
+                'finance_accounts.read', 'income_entries.read', 'expense_entries.read',
+                'finance_reports.read', 'fees.read',
             ],
             'hr_officer' => [
                 'organizations.read', 'buildings.read', 'rooms.read',
@@ -436,6 +445,8 @@ class PermissionSeeder extends Seeder
                 'hr_staff.read', 'hr_staff.create', 'hr_staff.update',
                 'hr_assignments.read', 'hr_assignments.create', 'hr_assignments.update',
                 'hr_reports.read',
+                // Read-only school data
+                'students.read', 'classes.read', 'attendance_sessions.read',
             ],
             'payroll_officer' => [
                 'organizations.read', 'buildings.read', 'rooms.read',
@@ -446,6 +457,8 @@ class PermissionSeeder extends Seeder
                 'hr_staff.read',
                 'hr_payroll.read', 'hr_payroll.create', 'hr_payroll.run', 'hr_payroll.export',
                 'hr_reports.read', 'hr_reports.export',
+                // Read-only finance data for payroll context
+                'finance_accounts.read', 'finance_reports.read',
             ],
             'principal' => [
                 'organizations.read', 'buildings.read', 'rooms.read',
@@ -456,6 +469,10 @@ class PermissionSeeder extends Seeder
                 'hr_staff.read',
                 'hr_assignments.read',
                 'hr_reports.read',
+                // Read-only school data for oversight
+                'students.read', 'classes.read', 'subjects.read', 'academic_years.read',
+                'attendance_sessions.read', 'exams.read', 'exams.view_reports',
+                'finance_accounts.read', 'finance_reports.read', 'fees.read',
             ],
         ];
     }

@@ -3,16 +3,22 @@ import { useUserPermissions } from '@/hooks/usePermissions';
 import { apiClient } from '@/lib/api/client';
 import { useFeatures, type FeatureInfo } from '@/hooks/useSubscription';
 
+const ORG_LEVEL_ROLES = [
+  'organization_admin',
+  'organization_hr_admin',
+  'hr_officer',
+  'payroll_officer',
+  'principal',
+];
+
 /**
  * Get the redirect path after login based on user permissions and event user status
  * Priority:
  * 1. If user is event user -> redirect to their assigned event (only if events feature is enabled)
- * 2. If user can access org admin (Enterprise + org-wide access) -> redirect to /org-admin
- * 3. If user has dashboard permission -> redirect to dashboard
- * 4. Otherwise -> redirect to dashboard
- * 
- * CRITICAL: Only event users (is_event_user = true) are redirected to events pages.
- * Regular users with event permissions are NOT redirected to events on first login.
+ * 2. If user has an org-level role AND Enterprise plan -> redirect to /org-admin
+ * 3. If user can access org dashboard (schools_access_all) AND Enterprise -> redirect to /org-admin
+ * 4. If user has dashboard permission -> redirect to dashboard
+ * 5. Otherwise -> redirect to dashboard
  */
 export async function getPostLoginRedirectPath(
   permissions: string[], 
@@ -42,16 +48,20 @@ export async function getPostLoginRedirectPath(
     return `/events/${profile.event_id}`;
   }
 
-  const canAccessOrganizationDashboard =
-    profile?.schools_access_all === true &&
+  const isOrgLevelRole = ORG_LEVEL_ROLES.includes(profile?.role ?? '');
+
+  const canAccessOrgAdmin =
+    isOrgLevelRole ||
     (
-      profile?.role === 'organization_admin' ||
-      permissions.includes('organizations.read') ||
-      permissions.includes('dashboard.read') ||
-      permissions.includes('school_branding.read')
+      profile?.schools_access_all === true &&
+      (
+        permissions.includes('organizations.read') ||
+        permissions.includes('dashboard.read') ||
+        permissions.includes('school_branding.read')
+      )
     );
 
-  if (canAccessOrganizationDashboard) {
+  if (canAccessOrgAdmin) {
     try {
       const response = await apiClient.get('/subscription/plan-slug') as { plan_slug?: string | null };
       if (response?.plan_slug === 'enterprise') {
@@ -60,11 +70,9 @@ export async function getPostLoginRedirectPath(
     } catch {
       // Fall through to /dashboard if plan-slug fetch fails
     }
-    return '/dashboard';
   }
 
   const hasDashboardPermission = permissions.includes('dashboard.read');
-
   if (hasDashboardPermission) {
     return '/dashboard';
   }
@@ -74,7 +82,6 @@ export async function getPostLoginRedirectPath(
 
 /**
  * Hook to get redirect path after login (returns promise)
- * Note: This hook is async, use it in useEffect or async functions
  */
 export function usePostLoginRedirectPath(): Promise<string> {
   const { data: permissions = [] } = useUserPermissions();
