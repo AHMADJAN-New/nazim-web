@@ -345,6 +345,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/staff/{id}/assignments', [OrganizationHrController::class, 'staffAssignments']);
         Route::get('/assignments', [OrganizationHrController::class, 'assignmentsIndex']);
         Route::post('/assignments', [OrganizationHrController::class, 'createAssignment']);
+        Route::put('/assignments/{id}', [OrganizationHrController::class, 'updateAssignment']);
+        Route::delete('/assignments/{id}', [OrganizationHrController::class, 'deleteAssignment']);
 
         Route::get('/compensation/profiles', [OrganizationHrController::class, 'compensationIndex'])
             ->middleware(['feature:org_hr_payroll']);

@@ -115,10 +115,10 @@ export function PageHeader({
       {breadcrumbs && breadcrumbs.length > 0 ? (
         <Breadcrumb>
           <BreadcrumbList>
-            {breadcrumbs.map((crumb, index) => {
+            {breadcrumbs.flatMap((crumb, index) => {
               const isLast = index === breadcrumbs.length - 1
-              return (
-                <BreadcrumbItem key={`${crumb.label}-${index}`}>
+              return [
+                <BreadcrumbItem key={`crumb-${index}`}>
                   {crumb.href && !isLast ? (
                     <BreadcrumbLink asChild>
                       <Link to={crumb.href}>{crumb.label}</Link>
@@ -126,9 +126,9 @@ export function PageHeader({
                   ) : (
                     <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                   )}
-                  {!isLast ? <BreadcrumbSeparator /> : null}
-                </BreadcrumbItem>
-              )
+                </BreadcrumbItem>,
+                ...(isLast ? [] : [<BreadcrumbSeparator key={`sep-${index}`} />]),
+              ]
             })}
           </BreadcrumbList>
         </Breadcrumb>

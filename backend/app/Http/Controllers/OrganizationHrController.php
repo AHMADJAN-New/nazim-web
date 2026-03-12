@@ -76,29 +76,25 @@ class OrganizationHrController extends Controller
     {
         $organizationId = $this->ensurePermission($request, 'hr_staff.read');
 
+        // List all staff in the organization (no school filter on list; school is only on create/update/assignments)
         $query = DB::table('staff')
-            ->where('organization_id', $organizationId)
-            ->whereNull('deleted_at');
+            ->where('staff.organization_id', $organizationId)
+            ->whereNull('staff.deleted_at');
 
-        if ($request->filled('school_id')) {
-            $schoolId = (string) $request->input('school_id');
-            $this->ensureSchoolBelongsToOrganization($schoolId, $organizationId);
-            $query->where('school_id', $schoolId);
-        }
         if ($request->filled('status')) {
-            $query->where('status', (string) $request->input('status'));
+            $query->where('staff.status', (string) $request->input('status'));
         }
         if ($request->filled('search')) {
             $search = '%'.$request->input('search').'%';
             $query->where(function ($q) use ($search): void {
-                $q->where('first_name', 'ilike', $search)
-                    ->orWhere('father_name', 'ilike', $search)
-                    ->orWhere('employee_id', 'ilike', $search)
-                    ->orWhere('email', 'ilike', $search);
+                $q->where('staff.first_name', 'ilike', $search)
+                    ->orWhere('staff.father_name', 'ilike', $search)
+                    ->orWhere('staff.employee_id', 'ilike', $search)
+                    ->orWhere('staff.email', 'ilike', $search);
             });
         }
 
-        return response()->json($query->orderByDesc('created_at')->paginate($this->clampPerPage($request)));
+        return response()->json($query->orderByDesc('staff.created_at')->paginate($this->clampPerPage($request)));
     }
 
     public function staffShow(Request $request, string $id)
@@ -138,22 +134,40 @@ class OrganizationHrController extends Controller
         $organizationId = $this->ensurePermission($request, 'hr_assignments.read');
 
         $query = DB::table('staff_assignments')
-            ->where('organization_id', $organizationId)
-            ->whereNull('deleted_at');
+            ->leftJoin('staff', 'staff_assignments.staff_id', '=', 'staff.id')
+            ->where('staff_assignments.organization_id', $organizationId)
+            ->whereNull('staff_assignments.deleted_at')
+            ->select(
+                'staff_assignments.id',
+                'staff_assignments.organization_id',
+                'staff_assignments.staff_id',
+                'staff_assignments.school_id',
+                'staff_assignments.role_title',
+                'staff_assignments.allocation_percent',
+                'staff_assignments.is_primary',
+                'staff_assignments.start_date',
+                'staff_assignments.end_date',
+                'staff_assignments.status',
+                'staff_assignments.notes',
+                'staff_assignments.created_at',
+                'staff_assignments.updated_at',
+                'staff.first_name as staff_first_name',
+                'staff.father_name as staff_father_name'
+            );
 
         if ($request->filled('staff_id')) {
-            $query->where('staff_id', (string) $request->input('staff_id'));
+            $query->where('staff_assignments.staff_id', (string) $request->input('staff_id'));
         }
         if ($request->filled('school_id')) {
             $schoolId = (string) $request->input('school_id');
             $this->ensureSchoolBelongsToOrganization($schoolId, $organizationId);
-            $query->where('school_id', $schoolId);
+            $query->where('staff_assignments.school_id', $schoolId);
         }
         if ($request->filled('status')) {
-            $query->where('status', (string) $request->input('status'));
+            $query->where('staff_assignments.status', (string) $request->input('status'));
         }
 
-        return response()->json($query->orderByDesc('start_date')->paginate($this->clampPerPage($request)));
+        return response()->json($query->orderByDesc('staff_assignments.start_date')->paginate($this->clampPerPage($request)));
     }
 
     public function createAssignment(Request $request)
@@ -242,6 +256,136 @@ class OrganizationHrController extends Controller
         ]);
 
         return response()->json(['id' => $id], 201);
+    }
+
+    public function updateAssignment(Request $request, string $id)
+    {
+        [$user, $profile, $organizationId] = $this->getOrgContext($request);
+        $this->ensurePermission($request, 'hr_assignments.update');
+
+        $row = DB::table('staff_assignments')
+            ->where('id', $id)
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$row) {
+            return response()->json(['error' => 'Assignment not found'], 404);
+        }
+
+        $data = $request->validate([
+            'role_title' => 'nullable|string|max:120',
+            'allocation_percent' => 'sometimes|numeric|min:0|max:100',
+            'is_primary' => 'sometimes|boolean',
+            'end_date' => [
+                'nullable',
+                'date',
+                function (string $attr, $value, \Closure $fail) use ($row): void {
+                    if ($value && $row->start_date && $value < $row->start_date) {
+                        $fail('End date must be on or after start date.');
+                    }
+                },
+            ],
+            'status' => 'nullable|string|in:active,ended,suspended|max:30',
+            'notes' => 'nullable|string',
+        ]);
+
+        $startDate = (string) $row->start_date;
+        $endDate = isset($data['end_date']) ? (string) $data['end_date'] : ($row->end_date ? (string) $row->end_date : null);
+        $allocationPercent = isset($data['allocation_percent']) ? (float) $data['allocation_percent'] : (float) $row->allocation_percent;
+        $isPrimary = isset($data['is_primary']) ? (bool) $data['is_primary'] : (bool) $row->is_primary;
+
+        if (isset($data['allocation_percent']) || isset($data['is_primary']) || isset($data['end_date'])) {
+            $existingAssignments = DB::table('staff_assignments')
+                ->where('organization_id', $organizationId)
+                ->where('staff_id', $row->staff_id)
+                ->where('id', '!=', $id)
+                ->whereNull('deleted_at')
+                ->where('status', 'active')
+                ->get(['start_date', 'end_date', 'allocation_percent', 'is_primary']);
+
+            $currentAllocation = 0.0;
+            foreach ($existingAssignments as $assignment) {
+                if ($this->dateRangesOverlap(
+                    (string) $assignment->start_date,
+                    $assignment->end_date ? (string) $assignment->end_date : null,
+                    $startDate,
+                    $endDate
+                )) {
+                    $currentAllocation += (float) $assignment->allocation_percent;
+                }
+            }
+
+            $newStatus = $data['status'] ?? $row->status;
+            if ($newStatus === 'active' && ($currentAllocation + $allocationPercent) > 100.0) {
+                return response()->json(['error' => 'Total allocation cannot exceed 100%'], 422);
+            }
+
+            if ($isPrimary) {
+                foreach ($existingAssignments as $assignment) {
+                    if (!(bool) $assignment->is_primary) {
+                        continue;
+                    }
+                    if ($this->dateRangesOverlap(
+                        (string) $assignment->start_date,
+                        $assignment->end_date ? (string) $assignment->end_date : null,
+                        $startDate,
+                        $endDate
+                    )) {
+                        return response()->json(['error' => 'Overlapping primary assignment date range is not allowed'], 422);
+                    }
+                }
+            }
+        }
+
+        $update = [
+            'updated_by' => $profile->id,
+            'updated_at' => now(),
+        ];
+        if (array_key_exists('role_title', $data)) {
+            $update['role_title'] = $data['role_title'];
+        }
+        if (array_key_exists('allocation_percent', $data)) {
+            $update['allocation_percent'] = $data['allocation_percent'];
+        }
+        if (array_key_exists('is_primary', $data)) {
+            $update['is_primary'] = $data['is_primary'];
+        }
+        if (array_key_exists('end_date', $data)) {
+            $update['end_date'] = $data['end_date'];
+        }
+        if (array_key_exists('status', $data)) {
+            $update['status'] = $data['status'];
+        }
+        if (array_key_exists('notes', $data)) {
+            $update['notes'] = $data['notes'];
+        }
+
+        DB::table('staff_assignments')->where('id', $id)->update($update);
+
+        return response()->json(['id' => $id], 200);
+    }
+
+    public function deleteAssignment(Request $request, string $id)
+    {
+        $organizationId = $this->ensurePermission($request, 'hr_assignments.delete');
+
+        $row = DB::table('staff_assignments')
+            ->where('id', $id)
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$row) {
+            return response()->json(['error' => 'Assignment not found'], 404);
+        }
+
+        DB::table('staff_assignments')->where('id', $id)->update([
+            'deleted_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->noContent();
     }
 
     public function compensationIndex(Request $request)

@@ -11,16 +11,19 @@ import {
   LogOut,
   Menu,
   School,
+  Shield,
   UserRound,
   Users,
   X,
   ArrowLeft,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { apiClient } from '@/lib/api/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrentOrganization } from '@/hooks/useOrganizations';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
@@ -84,10 +88,28 @@ function LanguageSwitcherButton() {
 
 export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutProps) {
   const { t, isRTL } = useLanguage();
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const { data: organization } = useCurrentOrganization();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['Overview', 'Management', 'HR']);
+
+  const { data: platformAdminStatus } = useQuery<{ is_platform_admin: boolean }>({
+    queryKey: ['user-is-platform-admin', user?.id],
+    queryFn: async () => {
+      if (!user) return { is_platform_admin: false };
+      try {
+        const res = await apiClient.get<{ is_platform_admin: boolean }>('/auth/is-platform-admin');
+        return res ?? { is_platform_admin: false };
+      } catch {
+        return { is_platform_admin: false };
+      }
+    },
+    enabled: !!user,
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  const isPlatformAdmin = platformAdminStatus?.is_platform_admin ?? false;
 
   const hasHrStaff = useHasPermission('hr_staff.read');
   const hasHrAssignments = useHasPermission('hr_assignments.read');
@@ -95,6 +117,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
   const hasHrReports = useHasPermission('hr_reports.read');
   const hasSchoolsRead = useHasPermission('schools.read');
   const hasUsersRead = useHasPermission('users.read');
+  const hasSubscriptionRead = useHasPermission('subscription.read');
 
   const overviewItems: OrgAdminNavItem[] = [
     {
@@ -114,6 +137,15 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconBg: 'bg-emerald-500/10',
       description: t('organizationAdmin.subscriptionDesc'),
       visible: true,
+    },
+    {
+      name: t('organizationAdmin.limits'),
+      href: '/org-admin/limits',
+      icon: BarChart3,
+      iconColor: 'text-violet-500',
+      iconBg: 'bg-violet-500/10',
+      description: t('organizationAdmin.limitsDesc'),
+      visible: hasSubscriptionRead,
     },
   ];
 
@@ -321,11 +353,40 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="flex-1" />
-          <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0 flex items-center gap-3">
+            {organization?.name && (
+              <span className="text-sm font-medium text-muted-foreground truncate hidden sm:inline" title={organization.name}>
+                {organization.name}
+              </span>
+            )}
+            {profile?.full_name && (
+              <span className="text-sm text-muted-foreground truncate hidden md:inline" title={profile.full_name}>
+                {profile.full_name}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <LanguageSwitcherButton />
+            {isPlatformAdmin && (
+              <Button variant="outline" size="sm" asChild className="text-sm gap-1.5">
+                <Link to="/platform/dashboard">
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('organizationAdmin.platformAdmin') ?? 'Platform Admin'}</span>
+                </Link>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" asChild className="text-sm text-muted-foreground hover:text-foreground">
               <Link to="/dashboard">{t('organizationAdmin.mainApp')}</Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-sm text-muted-foreground hover:text-foreground gap-1.5"
+              onClick={() => signOut()}
+              aria-label={t('activityLogs.actions.logout') || 'Log out'}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('activityLogs.actions.logout') || 'Log out'}</span>
             </Button>
           </div>
         </header>

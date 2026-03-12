@@ -22,6 +22,8 @@ export interface OrgHrAssignment {
   organizationId: string;
   staffId: string;
   schoolId: string;
+  staffFirstName?: string | null;
+  staffFatherName?: string | null;
   roleTitle: string | null;
   allocationPercent: number;
   isPrimary: boolean;

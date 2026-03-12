@@ -20,11 +20,12 @@ return new class extends Migration
                     'feature_key' => $feature['feature_key'],
                     'name' => $feature['name'],
                     'description' => $feature['description'],
-                    'is_core' => false,
+                    'category' => 'org_hr',
                     'is_addon' => true,
                     'addon_price_yearly_afn' => 0,
                     'addon_price_yearly_usd' => 0,
                     'sort_order' => 300,
+                    'is_active' => true,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

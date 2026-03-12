@@ -21,7 +21,7 @@ export default function OrgAdminUsersPage() {
         ]}
       />
       <Suspense fallback={<LoadingSpinner />}>
-        <UserManagement />
+        <UserManagement showSchoolsAccessAll />
       </Suspense>
     </div>
   );

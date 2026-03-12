@@ -284,6 +284,7 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'hr_assignments.read': 'org_hr_core',
   'hr_assignments.create': 'org_hr_core',
   'hr_assignments.update': 'org_hr_core',
+  'hr_assignments.delete': 'org_hr_core',
   'hr_assignments.approve': 'org_hr_core',
   'hr_payroll.read': 'org_hr_payroll',
   'hr_payroll.create': 'org_hr_payroll',

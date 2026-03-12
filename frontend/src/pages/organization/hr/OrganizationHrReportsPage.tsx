@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { useOrgHrAnalyticsOverview } from '@/hooks/orgHr/useOrgHr';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
+import type { School } from '@/types/domain/school';
 
 export default function OrganizationHrReportsPage() {
   const { t } = useLanguage();
@@ -25,11 +26,10 @@ export default function OrganizationHrReportsPage() {
     [analytics],
   );
 
-  const schoolName = (schoolId: string) => {
-    if (!schools) return schoolId.slice(0, 8);
-    const school = (schools as { id: string; name?: string; school_name?: string }[])
-      .find(s => s.id === schoolId);
-    return school?.name || school?.school_name || schoolId.slice(0, 8);
+  const getSchoolDisplayName = (schoolId: string): string => {
+    if (!schools?.length) return schoolId;
+    const school = schools.find((s: School) => s.id === schoolId);
+    return school?.schoolName ?? schoolId;
   };
 
   return (
@@ -102,7 +102,7 @@ export default function OrganizationHrReportsPage() {
                       ) : (
                         (analytics?.headcountBySchool ?? []).map((item) => (
                           <TableRow key={item.schoolId}>
-                            <TableCell className="font-medium">{schoolName(item.schoolId)}</TableCell>
+                            <TableCell className="font-medium">{getSchoolDisplayName(item.schoolId)}</TableCell>
                             <TableCell className="text-right font-medium">{item.headcount}</TableCell>
                           </TableRow>
                         ))

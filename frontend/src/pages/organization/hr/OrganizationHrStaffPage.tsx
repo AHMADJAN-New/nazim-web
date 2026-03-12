@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { useOrgHrStaff } from '@/hooks/orgHr/useOrgHr';
 import type { OrgHrStaff } from '@/types/domain/orgHr';
 import { useSchools } from '@/hooks/useSchools';
+import type { School } from '@/types/domain/school';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useDebounce } from '@/hooks/useDebounce';
 import { formatDate } from '@/lib/utils';
@@ -33,7 +34,6 @@ export default function OrganizationHrStaffPage() {
   const { t, isRTL } = useLanguage();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [schoolFilter, setSchoolFilter] = useState('all');
   const [selectedStaff, setSelectedStaff] = useState<OrgHrStaff | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
@@ -43,7 +43,6 @@ export default function OrganizationHrStaffPage() {
   const { data, isLoading } = useOrgHrStaff({
     search: debouncedSearch || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
-    schoolId: schoolFilter !== 'all' ? schoolFilter : undefined,
   });
 
   const staffList = useMemo(() => data?.data ?? [], [data]);
@@ -53,11 +52,10 @@ export default function OrganizationHrStaffPage() {
     setDetailOpen(true);
   };
 
-  const schoolName = (schoolId: string | null) => {
-    if (!schoolId || !schools) return '—';
-    const school = (schools as { id: string; name?: string; school_name?: string }[])
-      .find(s => s.id === schoolId);
-    return school?.name || school?.school_name || schoolId.slice(0, 8);
+  const getSchoolDisplayName = (schoolId: string | null): string => {
+    if (!schoolId || !schools?.length) return '—';
+    const school = schools.find((s: School) => s.id === schoolId);
+    return school?.schoolName ?? schoolId;
   };
 
   return (
@@ -73,7 +71,7 @@ export default function OrganizationHrStaffPage() {
       />
 
       <FilterPanel title={t('organizationHr.filters')} defaultOpenDesktop defaultOpenMobile={false}>
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
           <div className="relative">
             <Search className={`absolute top-2.5 h-4 w-4 text-muted-foreground ${isRTL ? 'right-3' : 'left-3'}`} />
             <Input
@@ -93,17 +91,6 @@ export default function OrganizationHrStaffPage() {
               <SelectItem value="inactive">{t('organizationHr.statusInactive')}</SelectItem>
               <SelectItem value="on_leave">{t('organizationHr.statusOnLeave')}</SelectItem>
               <SelectItem value="terminated">{t('organizationHr.statusTerminated')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={schoolFilter} onValueChange={setSchoolFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder={t('organizationHr.allSchools')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('organizationHr.allSchools')}</SelectItem>
-              {(schools as { id: string; name?: string; school_name?: string }[] || []).map((s) => (
-                <SelectItem key={s.id} value={s.id}>{s.name || s.school_name || s.id.slice(0, 8)}</SelectItem>
-              ))}
             </SelectContent>
           </Select>
         </div>
@@ -141,7 +128,7 @@ export default function OrganizationHrStaffPage() {
                         <TableCell className="font-mono text-xs">{staff.employeeId}</TableCell>
                         <TableCell className="font-medium">{staff.firstName} {staff.fatherName}</TableCell>
                         <TableCell className="hidden md:table-cell text-muted-foreground">{staff.position || '—'}</TableCell>
-                        <TableCell className="hidden lg:table-cell text-muted-foreground">{schoolName(staff.schoolId)}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-muted-foreground">{getSchoolDisplayName(staff.schoolId)}</TableCell>
                         <TableCell>
                           <Badge variant={statusVariant(staff.status)}>{staff.status}</Badge>
                         </TableCell>
@@ -193,7 +180,7 @@ export default function OrganizationHrStaffPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">{t('organizationHr.school')}</p>
-                  <p className="font-medium">{schoolName(selectedStaff.schoolId)}</p>
+                  <p className="font-medium">{getSchoolDisplayName(selectedStaff.schoolId)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">{t('organizationHr.status')}</p>

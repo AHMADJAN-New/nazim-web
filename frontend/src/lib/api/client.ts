@@ -112,7 +112,9 @@ class ApiClient {
     // For users with schools_access_all, automatically add school_id query parameter
     // if it's stored in localStorage (set by SchoolContext)
     // This allows users to switch schools and see data from the selected school
-    if (typeof window !== 'undefined' && !options.params?.school_id) {
+    // Staff list is intentionally excluded: list shows all org staff; school is only for create/update
+    const isStaffList = endpoint === '/staff' && (options.method === 'GET' || !options.method);
+    if (typeof window !== 'undefined' && !options.params?.school_id && !isStaffList) {
       // Check if user has schools_access_all permission (stored in localStorage by SchoolContext)
       const hasSchoolsAccessAll = localStorage.getItem('has_schools_access_all') === 'true';
       const selectedSchoolId = localStorage.getItem('selected_school_id');
@@ -785,6 +787,24 @@ export const orgHrApi = {
     notes?: string | null;
   }) => {
     return apiClient.post('/org-hr/assignments', data);
+  },
+
+  updateAssignment: async (
+    id: string,
+    data: {
+      role_title?: string | null;
+      allocation_percent?: number;
+      is_primary?: boolean;
+      end_date?: string | null;
+      status?: string;
+      notes?: string | null;
+    }
+  ) => {
+    return apiClient.put(`/org-hr/assignments/${id}`, data);
+  },
+
+  deleteAssignment: async (id: string) => {
+    return apiClient.delete(`/org-hr/assignments/${id}`);
   },
 
   compensationProfiles: async (params?: { staff_id?: string; per_page?: number }) => {

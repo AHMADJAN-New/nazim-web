@@ -265,6 +265,7 @@ import OrganizationHrPayrollPage from '@/pages/organization/hr/OrganizationHrPay
 import OrganizationHrReportsPage from '@/pages/organization/hr/OrganizationHrReportsPage';
 import { OrganizationAdminRoute } from '@/components/OrganizationAdminRoute';
 import { OrganizationAdminLayout } from '@/organization-admin/components/OrganizationAdminLayout';
+import OrgAdminLimitsPage from '@/organization-admin/pages/OrgAdminLimitsPage';
 import OrgAdminSchoolsPage from '@/organization-admin/pages/OrgAdminSchoolsPage';
 import OrgAdminUsersPage from '@/organization-admin/pages/OrgAdminUsersPage';
 import OrgAdminSubscriptionPage from '@/organization-admin/pages/OrgAdminSubscriptionPage';
@@ -741,6 +742,7 @@ const App = () => (
                     <Route path="schools" element={<OrgAdminSchoolsPage />} />
                     <Route path="users" element={<OrgAdminUsersPage />} />
                     <Route path="subscription" element={<OrgAdminSubscriptionPage />} />
+                    <Route path="limits" element={<OrgAdminLimitsPage />} />
                     <Route path="hr" element={<OrganizationHrHubPage />} />
                     <Route path="hr/staff" element={<OrganizationHrStaffPage />} />
                     <Route path="hr/assignments" element={<OrganizationHrAssignmentsPage />} />

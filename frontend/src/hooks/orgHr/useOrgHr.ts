@@ -22,7 +22,7 @@ import {
 
 export type { OrgHrStaff, OrgHrAssignment, OrgHrCompensationProfile, OrgHrPayrollPeriod, OrgHrAnalyticsOverview };
 
-export const useOrgHrStaff = (params?: { search?: string; schoolId?: string; status?: string }) => {
+export const useOrgHrStaff = (params?: { search?: string; schoolId?: string; status?: string; perPage?: number }) => {
   const { profile } = useAuth();
 
   return useQuery<{ data: OrgHrStaff[]; total: number }>({
@@ -33,17 +33,19 @@ export const useOrgHrStaff = (params?: { search?: string; schoolId?: string; sta
       params?.search ?? '',
       params?.schoolId ?? '',
       params?.status ?? '',
+      params?.perPage ?? 25,
     ],
     queryFn: async () => {
-      if (!profile?.organization_id || !profile?.default_school_id) {
+      if (!profile?.organization_id) {
         return { data: [], total: 0 };
       }
 
+      // Only pass school_id when explicitly filtered (e.g. user chose a school). Do NOT default to current school so Org Admin sees all.
       const response = await orgHrApi.staff({
         search: params?.search || undefined,
-        school_id: params?.schoolId || undefined,
+        school_id: params?.schoolId ?? undefined,
         status: params?.status || undefined,
-        per_page: 25,
+        per_page: params?.perPage ?? 25,
       }) as { data?: OrgHrApi.OrgHrStaff[]; total?: number };
 
       return {
@@ -51,7 +53,7 @@ export const useOrgHrStaff = (params?: { search?: string; schoolId?: string; sta
         total: response.total ?? 0,
       };
     },
-    enabled: !!profile?.organization_id && !!profile?.default_school_id,
+    enabled: !!profile?.organization_id,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -70,13 +72,14 @@ export const useOrgHrAssignments = (params?: { staffId?: string; schoolId?: stri
       params?.status ?? '',
     ],
     queryFn: async () => {
-      if (!profile?.organization_id || !profile?.default_school_id) {
+      if (!profile?.organization_id) {
         return { data: [], total: 0 };
       }
 
+      // Only pass school_id when explicitly filtered. Do NOT default to current school so Org Admin sees all assignments.
       const response = await orgHrApi.assignments({
         staff_id: params?.staffId || undefined,
-        school_id: params?.schoolId || undefined,
+        school_id: params?.schoolId ?? undefined,
         status: params?.status || undefined,
         per_page: 50,
       }) as { data?: OrgHrApi.OrgHrAssignment[]; total?: number };
@@ -86,7 +89,7 @@ export const useOrgHrAssignments = (params?: { staffId?: string; schoolId?: stri
         total: response.total ?? 0,
       };
     },
-    enabled: !!profile?.organization_id && !!profile?.default_school_id,
+    enabled: !!profile?.organization_id,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -111,13 +114,63 @@ export const useCreateOrgHrAssignment = () => {
   });
 };
 
+export const useUpdateOrgHrAssignment = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...data
+    }: {
+      id: string;
+      role_title?: string | null;
+      allocation_percent?: number;
+      is_primary?: boolean;
+      end_date?: string | null;
+      status?: string;
+      notes?: string | null;
+    }) => {
+      return orgHrApi.updateAssignment(id, data);
+    },
+    onSuccess: async () => {
+      showToast.success(t('organizationHr.assignmentUpdated') || 'Assignment updated');
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-assignments'] });
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-analytics-overview'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('organizationHr.assignmentUpdateFailed') || 'Failed to update assignment');
+    },
+  });
+};
+
+export const useDeleteOrgHrAssignment = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await orgHrApi.deleteAssignment(id);
+    },
+    onSuccess: async () => {
+      showToast.success(t('organizationHr.assignmentDeleted') || 'Assignment removed');
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-assignments'] });
+      await queryClient.refetchQueries({ queryKey: ['org-hr-assignments'] });
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-analytics-overview'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('organizationHr.assignmentDeleteFailed') || 'Failed to remove assignment');
+    },
+  });
+};
+
 export const useOrgHrCompensation = (staffId?: string) => {
   const { profile } = useAuth();
 
   return useQuery<{ data: OrgHrCompensationProfile[]; total: number }>({
     queryKey: ['org-hr-compensation', profile?.organization_id, profile?.default_school_id ?? null, staffId ?? 'all'],
     queryFn: async () => {
-      if (!profile?.organization_id || !profile?.default_school_id) {
+      if (!profile?.organization_id) {
         return { data: [], total: 0 };
       }
 
@@ -131,7 +184,7 @@ export const useOrgHrCompensation = (staffId?: string) => {
         total: response.total ?? 0,
       };
     },
-    enabled: !!profile?.organization_id && !!profile?.default_school_id,
+    enabled: !!profile?.organization_id,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -143,7 +196,7 @@ export const useOrgHrPayrollPeriods = () => {
   return useQuery<OrgHrPayrollPeriod[]>({
     queryKey: ['org-hr-payroll-periods', profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
-      if (!profile?.organization_id || !profile?.default_school_id) {
+      if (!profile?.organization_id) {
         return [];
       }
 
@@ -152,7 +205,7 @@ export const useOrgHrPayrollPeriods = () => {
       const items = Array.isArray(response) ? response : (response.data ?? []);
       return items.map(mapOrgHrPayrollPeriodApiToDomain);
     },
-    enabled: !!profile?.organization_id && !!profile?.default_school_id,
+    enabled: !!profile?.organization_id,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -182,14 +235,14 @@ export const useOrgHrAnalyticsOverview = () => {
   return useQuery<OrgHrAnalyticsOverview>({
     queryKey: ['org-hr-analytics-overview', profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
-      if (!profile?.organization_id || !profile?.default_school_id) {
+      if (!profile?.organization_id) {
         return { headcountBySchool: [], payrollByMonth: [], pendingApprovals: 0 };
       }
 
       const response = await orgHrApi.analyticsOverview() as OrgHrApi.OrgHrAnalyticsOverview;
       return mapOrgHrAnalyticsApiToDomain(response);
     },
-    enabled: !!profile?.organization_id && !!profile?.default_school_id,
+    enabled: !!profile?.organization_id,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

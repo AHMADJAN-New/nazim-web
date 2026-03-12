@@ -219,9 +219,9 @@ class UserController extends Controller
             }
         }
 
-        // Determine default_school_id
-        $defaultSchoolId = $request->default_school_id ?? null;
-        if (!$defaultSchoolId && $organizationId) {
+        // Determine default_school_id: explicit null = no school (org-level user); omitted = auto-assign first school
+        $defaultSchoolId = $request->has('default_school_id') ? $request->default_school_id : null;
+        if ($defaultSchoolId === null && !$request->has('default_school_id') && $organizationId) {
             $school = SchoolBranding::where('organization_id', $organizationId)
                 ->whereNull('deleted_at')
                 ->orderBy('created_at', 'asc')
@@ -230,6 +230,10 @@ class UserController extends Controller
                 $defaultSchoolId = $school->id;
             }
         }
+        // When no school (org-level user), set schools_access_all so they can access Organization Admin
+        $schoolsAccessAll = $request->has('default_school_id') && $request->default_school_id === null
+            ? true
+            : $request->boolean('schools_access_all', false);
 
         // Create user in auth.users table
         $userId = (string) Str::uuid();
@@ -267,7 +271,7 @@ class UserController extends Controller
             'default_school_id' => $defaultSchoolId,
             'staff_id' => $request->staff_id ?? null,
             'phone' => $request->phone ?? null,
-            'schools_access_all' => $request->boolean('schools_access_all', false),
+            'schools_access_all' => $schoolsAccessAll,
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -396,6 +400,7 @@ class UserController extends Controller
             'phone' => 'nullable|string|max:20',
             'is_active' => 'sometimes|boolean',
             'schools_access_all' => 'nullable|boolean',
+            'default_school_id' => 'nullable|uuid',
         ]);
 
         $user = $request->user();
@@ -450,6 +455,21 @@ class UserController extends Controller
             }
         }
 
+        // Validate default_school_id when provided: null = no school (org-level); non-null = must belong to org
+        if ($request->has('default_school_id')) {
+            $newSchoolId = $request->default_school_id;
+            if ($newSchoolId !== null && $newSchoolId !== '') {
+                $schoolExists = DB::table('school_branding')
+                    ->where('id', $newSchoolId)
+                    ->where('organization_id', $targetProfile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->exists();
+                if (!$schoolExists) {
+                    return response()->json(['error' => 'Selected school does not belong to this organization'], 422);
+                }
+            }
+        }
+
         // CRITICAL: Validate role exists in the target user's organization (same as store)
         $organizationId = $targetProfile->organization_id;
         if ($request->has('role') && $request->role !== null && $request->role !== '') {
@@ -467,7 +487,7 @@ class UserController extends Controller
             }
         }
 
-        // Build update data - NEVER change organization_id or default_school_id from request (keep intact)
+        // Build update data - NEVER change organization_id from request
         $updateData = [];
         if ($request->has('full_name')) $updateData['full_name'] = $request->full_name;
         if ($request->has('phone')) $updateData['phone'] = $request->phone;
@@ -475,6 +495,14 @@ class UserController extends Controller
         if ($request->has('is_active')) $updateData['is_active'] = $request->is_active;
         if ($request->has('staff_id')) $updateData['staff_id'] = $request->staff_id;
         if ($request->has('schools_access_all')) $updateData['schools_access_all'] = $request->boolean('schools_access_all');
+        // Allow updating default_school_id (including to null for org-level users)
+        if ($request->has('default_school_id')) {
+            $updateData['default_school_id'] = $request->default_school_id ?: null;
+            // When setting to no school, set schools_access_all so they can access Organization Admin
+            if ($request->default_school_id === null || $request->default_school_id === '') {
+                $updateData['schools_access_all'] = true;
+            }
+        }
 
         // Update email in both users and profiles tables
         if ($request->has('email')) {

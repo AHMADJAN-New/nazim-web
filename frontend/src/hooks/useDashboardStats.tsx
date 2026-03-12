@@ -44,6 +44,8 @@ export const useDashboardStats = () => {
   
   // CRITICAL: Event users should not fetch dashboard stats
   const isEventUser = currentProfile?.is_event_user === true;
+  // CRITICAL: Users with no school (org-level only) should not fetch school-scoped stats (e.g. hostel) to avoid 403
+  const hasSchoolContext = !!currentProfile?.default_school_id;
 
   const query = useQuery({
     queryKey: ['dashboard-stats', currentProfile?.organization_id, currentProfile?.default_school_id ?? null],
@@ -135,7 +137,7 @@ export const useDashboardStats = () => {
         }
       };
     },
-    enabled: !!user && !!currentProfile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
+    enabled: !!user && !!currentProfile && !profileLoading && !isEventUser && hasSchoolContext, // Disable for event users, no-school (org-level) users, and until profile is ready
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     // Use refetchInterval instead of realtime subscriptions

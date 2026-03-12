@@ -9,6 +9,7 @@ import { websiteAdminEn } from './website/admin-en';
 
 import shared_common_en from './shared/common/common.en';
 import shared_nav_en from './shared/nav/nav.en';
+import shared_organization_admin_en from './shared/organizationAdmin/organizationAdmin.en';
 import shared_toast_en from './shared/toast/toast.en';
 import shared_forms_en from './shared/forms/forms.en';
 import shared_validation_en from './shared/validation/validation.en';
@@ -76,6 +77,7 @@ export const en = {
   ...websitePublicEn,
   ...shared_common_en,
   ...shared_nav_en,
+  ...shared_organization_admin_en,
   ...shared_toast_en,
   ...shared_forms_en,
   ...shared_validation_en,

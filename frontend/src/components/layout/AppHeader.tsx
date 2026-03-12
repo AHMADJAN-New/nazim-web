@@ -107,10 +107,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
   const isPlatformAdmin = platformAdminStatus?.is_platform_admin ?? false;
 
-  // Auto-select default school if user has one and no school is selected
+  // Sync school context with profile: set when user has default school, clear when user has no school (org-level)
   useEffect(() => {
-    if (authProfile?.default_school_id && !selectedSchoolId) {
-      setSelectedSchoolId(authProfile.default_school_id);
+    if (authProfile?.default_school_id) {
+      if (!selectedSchoolId) setSelectedSchoolId(authProfile.default_school_id);
+    } else {
+      // User has no school (org-level) — clear selected school so we don't show a school in the header
+      setSelectedSchoolId(null);
     }
   }, [authProfile?.default_school_id, selectedSchoolId, setSelectedSchoolId]);
 

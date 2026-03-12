@@ -581,10 +581,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
     permissions.includes('organizations.read') ||
     permissions.includes('dashboard.read') ||
     permissions.includes('school_branding.read');
+  const isOrgLevelUser = !!profile?.schools_access_all || !profile?.default_school_id || role === 'platform_admin';
   const hasOrganizationDashboardAccess =
-    !!profile?.schools_access_all &&
+    isOrgLevelUser &&
     (
       role === 'organization_admin' ||
+      role === 'platform_admin' ||
       hasOrganizationDashboardPermissionFromList ||
       hasOrganizationsPermission === true ||
       hasDashboardPermission === true ||

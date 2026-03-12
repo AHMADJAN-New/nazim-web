@@ -9,6 +9,7 @@ import { websiteAdminAr } from './website/admin-ar';
 
 import shared_common_ar from './shared/common/common.ar';
 import shared_nav_ar from './shared/nav/nav.ar';
+import shared_organization_admin_ar from './shared/organizationAdmin/organizationAdmin.ar';
 import shared_toast_ar from './shared/toast/toast.ar';
 import shared_forms_ar from './shared/forms/forms.ar';
 import shared_validation_ar from './shared/validation/validation.ar';
@@ -76,6 +77,7 @@ export const ar = {
   ...websitePublicAr,
   ...shared_common_ar,
   ...shared_nav_ar,
+  ...shared_organization_admin_ar,
   ...shared_toast_ar,
   ...shared_forms_ar,
   ...shared_validation_ar,

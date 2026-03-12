@@ -34,6 +34,8 @@ export function mapOrgHrAssignmentApiToDomain(api: OrgHrApi.OrgHrAssignment): Or
     organizationId: api.organization_id,
     staffId: api.staff_id,
     schoolId: api.school_id,
+    staffFirstName: api.staff_first_name ?? null,
+    staffFatherName: api.staff_father_name ?? null,
     roleTitle: api.role_title,
     allocationPercent: api.allocation_percent,
     isPrimary: api.is_primary,

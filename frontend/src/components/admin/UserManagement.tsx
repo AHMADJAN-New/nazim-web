@@ -69,7 +69,49 @@ const createUserSchema = (t: (key: string) => string) => z.object({
 
 type UserFormData = z.infer<ReturnType<typeof createUserSchema>>;
 
-export function UserManagement() {
+/** Display labels for roles so Organization Admin and org-level roles are clear */
+const ROLE_DISPLAY_LABELS: Record<string, string> = {
+  organization_admin: 'Organization Admin',
+  admin: 'Admin (School)',
+  organization_hr_admin: 'HR Admin (Organization)',
+  hr_officer: 'HR Officer',
+  payroll_officer: 'Payroll Officer',
+  principal: 'Principal',
+  staff: 'Staff',
+  teacher: 'Teacher',
+  accountant: 'Accountant',
+  librarian: 'Librarian',
+  hostel_manager: 'Hostel Manager',
+  website_admin: 'Website Admin',
+  website_editor: 'Website Editor',
+  website_media: 'Website Media',
+  exam_controller: 'Exam Controller',
+};
+
+function getRoleDisplayLabel(roleName: string, description?: string | null): string {
+  const label = ROLE_DISPLAY_LABELS[roleName] ?? roleName.replace(/_/g, ' ');
+  return description ? `${label} – ${description}` : label;
+}
+
+/** Sort roles: Organization Admin first, then Admin, then others */
+function sortRolesForDisplay<T extends { name: string }>(roles: T[]): T[] {
+  const order = ['organization_admin', 'admin', 'organization_hr_admin', 'hr_officer', 'payroll_officer', 'principal'];
+  return [...roles].sort((a, b) => {
+    const i = order.indexOf(a.name);
+    const j = order.indexOf(b.name);
+    if (i !== -1 && j !== -1) return i - j;
+    if (i !== -1) return -1;
+    if (j !== -1) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+export interface UserManagementProps {
+  /** When true (e.g. from Organization Admin page), show "Access all schools" so user can see all schools and org-admin. */
+  showSchoolsAccessAll?: boolean;
+}
+
+export function UserManagement({ showSchoolsAccessAll = false }: UserManagementProps) {
   const { t } = useLanguage();
   const userSchema = createUserSchema(t);
   const hasCreatePermission = useHasPermission('users.create');
@@ -205,7 +247,7 @@ export function UserManagement() {
           role: data.role,
           defaultSchoolId: data.default_school_id || null,
           staffId: data.staff_id || null,
-          schoolsAccessAll: data.schools_access_all || false,
+          schoolsAccessAll: showSchoolsAccessAll ? !!data.schools_access_all : (selectedUser.schoolsAccessAll ?? false),
           phone: data.phone || undefined,
         };
         await updateUser.mutateAsync(updateData);
@@ -222,7 +264,7 @@ export function UserManagement() {
           role: data.role,
           defaultSchoolId: data.default_school_id || null,
           staffId: data.staff_id || null,
-          schoolsAccessAll: data.schools_access_all || false,
+          schoolsAccessAll: showSchoolsAccessAll ? !!data.schools_access_all : false,
           phone: data.phone || undefined,
         };
         await createUser.mutateAsync(createData);
@@ -461,7 +503,7 @@ export function UserManagement() {
                             <span className="text-xs text-muted-foreground truncate">{user.email || t('userManagement.noEmail')}</span>
                             <div className="flex flex-wrap gap-1 mt-1">
                               <Badge variant="outline" className="text-xs">
-                                {typeof user.role === 'string' ? user.role.replace('_', ' ') : t('userManagement.na')}
+                                {typeof user.role === 'string' ? getRoleDisplayLabel(user.role) : t('userManagement.na')}
                               </Badge>
                               <Badge variant={user.isActive ? 'default' : 'secondary'} className="text-xs">
                                 {user.isActive ? t('userManagement.active') : t('userManagement.inactive')}
@@ -489,7 +531,7 @@ export function UserManagement() {
                         <TableCell className="hidden sm:table-cell truncate">{user.email || t('userManagement.noEmail')}</TableCell>
                         <TableCell className="hidden md:table-cell">
                           <Badge variant="outline">
-                            {typeof user.role === 'string' ? user.role.replace('_', ' ') : t('userManagement.na')}
+                            {typeof user.role === 'string' ? getRoleDisplayLabel(user.role) : t('userManagement.na')}
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">{user.phone || '-'}</TableCell>
@@ -611,10 +653,9 @@ export function UserManagement() {
                     <SelectValue placeholder={t('userManagement.selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {roles?.map(role => (
+                    {sortRolesForDisplay(roles ?? []).map(role => (
                       <SelectItem key={role.name} value={role.name}>
-                        {role.name.replace('_', ' ')}
-                        {role.description && ` - ${role.description}`}
+                        {getRoleDisplayLabel(role.name, role.description)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -650,9 +691,7 @@ export function UserManagement() {
                     <SelectValue placeholder={schools && schools.length === 1 ? schools[0].schoolName : t('userManagement.selectSchool')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {schools && schools.length > 1 && (
-                      <SelectItem value="none">{t('userManagement.noDefaultSchool')}</SelectItem>
-                    )}
+                    <SelectItem value="none">{t('userManagement.noDefaultSchool')}</SelectItem>
                     {schools?.map(school => (
                       <SelectItem key={school.id} value={school.id}>
                         {school.schoolName}
@@ -711,28 +750,31 @@ export function UserManagement() {
                 </p>
               </div>
             )}
-            {/* Schools Access All Checkbox */}
-            <div>
-              <div className="flex items-center space-x-2">
+            {/* Access all schools: only on Organization Admin user management; grants access to all schools and org-admin pages */}
+            {showSchoolsAccessAll && (
+              <div className="flex items-start gap-3 rounded-lg border p-4">
                 <Controller
                   control={control}
                   name="schools_access_all"
-                  render={({ field }) => (
+                  render={({ field: { value, onChange, ...field } }) => (
                     <Checkbox
                       id="schools_access_all"
-                      checked={field.value || false}
-                      onCheckedChange={field.onChange}
+                      checked={!!value}
+                      onCheckedChange={(checked) => onChange(!!checked)}
+                      {...field}
                     />
                   )}
                 />
-                <Label htmlFor="schools_access_all">
-                  {t('userManagement.schoolsAccessAll')}
-                </Label>
+                <div className="grid gap-1.5 leading-none">
+                  <Label htmlFor="schools_access_all" className="cursor-pointer font-medium">
+                    {t('userManagement.schoolsAccessAll')}
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('userManagement.schoolsAccessAllDescription')}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('userManagement.schoolsAccessAllDescription')}
-              </p>
-            </div>
+            )}
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button type="button" variant="outline" onClick={handleCloseDialog} className="w-full sm:w-auto">
                 {t('userManagement.cancel')}

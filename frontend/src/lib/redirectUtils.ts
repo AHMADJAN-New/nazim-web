@@ -5,6 +5,7 @@ import { useFeatures, type FeatureInfo } from '@/hooks/useSubscription';
 
 const ORG_LEVEL_ROLES = [
   'organization_admin',
+  'platform_admin', // Platform admins with an org can access Organization Admin
   'organization_hr_admin',
   'hr_officer',
   'payroll_officer',
@@ -21,12 +22,13 @@ const ORG_LEVEL_ROLES = [
  * 5. Otherwise -> redirect to dashboard
  */
 export async function getPostLoginRedirectPath(
-  permissions: string[], 
+  permissions: string[],
   profile?: {
     event_id?: string | null;
     is_event_user?: boolean;
     role?: string | null;
     schools_access_all?: boolean;
+    default_school_id?: string | null;
   } | null,
   features?: FeatureInfo[]
 ): Promise<string> {
@@ -49,17 +51,17 @@ export async function getPostLoginRedirectPath(
   }
 
   const isOrgLevelRole = ORG_LEVEL_ROLES.includes(profile?.role ?? '');
+  const hasNoSchool = !profile?.default_school_id;
+  const hasAllSchoolsAccess = profile?.schools_access_all === true;
+  const hasOrgPermissions =
+    permissions.includes('organizations.read') ||
+    permissions.includes('dashboard.read') ||
+    permissions.includes('school_branding.read');
 
   const canAccessOrgAdmin =
     isOrgLevelRole ||
-    (
-      profile?.schools_access_all === true &&
-      (
-        permissions.includes('organizations.read') ||
-        permissions.includes('dashboard.read') ||
-        permissions.includes('school_branding.read')
-      )
-    );
+    (hasNoSchool && hasOrgPermissions) ||
+    (hasAllSchoolsAccess && hasOrgPermissions);
 
   if (canAccessOrgAdmin) {
     try {

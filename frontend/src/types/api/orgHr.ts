@@ -33,6 +33,8 @@ export interface OrgHrAssignment {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+  staff_first_name?: string | null;
+  staff_father_name?: string | null;
 }
 
 export interface OrgHrCompensationProfile {
