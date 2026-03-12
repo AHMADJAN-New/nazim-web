@@ -307,6 +307,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasSubjectsPermission = useHasPermissionAndFeature('subjects.read');
   const hasAssetsPermission = useHasPermissionAndFeature('assets.read');
   const hasStaffPermission = useHasPermissionAndFeature('staff.read');
+  const hasOrgHrStaffPermission = useHasPermissionAndFeature('hr_staff.read');
+  const hasOrgHrAssignmentsPermission = useHasPermissionAndFeature('hr_assignments.read');
+  const hasOrgHrPayrollPermission = useHasPermissionAndFeature('hr_payroll.read');
+  const hasOrgHrReportsPermission = useHasPermissionAndFeature('hr_reports.read');
   const hasStaffReportsPermission = useHasPermissionAndFeature('staff_reports.read');
   const hasAttendanceSessionsPermission = useHasPermissionAndFeature('attendance_sessions.read');
   const hasAttendanceReportsPermission = useHasPermissionAndFeature('attendance_sessions.report');
@@ -807,6 +811,22 @@ export const SmartSidebar = memo(function SmartSidebar() {
         priority: 0.6,
         category: 'core' as NavigationCategory,
         iconColor: categoryColors.core,
+      })] : []),
+      ...((hasOrgHrStaffPermission || hasOrgHrAssignmentsPermission || hasOrgHrPayrollPermission || hasOrgHrReportsPermission) ? [asNavItem({
+        title: 'Organization HR',
+        titleKey: 'organizationHr',
+        icon: Users,
+        badge: null,
+        priority: 0.7,
+        category: 'operations' as NavigationCategory,
+        iconColor: categoryColors.operations,
+        children: [
+          ...(hasOrgHrStaffPermission ? [{ title: 'HR Hub', titleKey: 'organizationHrHub', url: '/organization/hr', icon: Building2 }] : []),
+          ...(hasOrgHrStaffPermission ? [{ title: 'Staff Master', titleKey: 'organizationHrStaff', url: '/organization/hr/staff', icon: UserRound }] : []),
+          ...(hasOrgHrAssignmentsPermission ? [{ title: 'Assignments', titleKey: 'organizationHrAssignments', url: '/organization/hr/assignments', icon: ClipboardList }] : []),
+          ...(hasOrgHrPayrollPermission ? [{ title: 'Payroll', titleKey: 'organizationHrPayroll', url: '/organization/hr/payroll', icon: FileSpreadsheet }] : []),
+          ...(hasOrgHrReportsPermission ? [{ title: 'Reports', titleKey: 'organizationHrReports', url: '/organization/hr/reports', icon: BarChart3 }] : []),
+        ],
       })] : []),
       ...((hasStaffPermission || hasStaffReportsPermission) ? [asNavItem({
         titleKey: "staffManagement",

@@ -258,6 +258,11 @@ import WebsiteUsersPage from "@/website/pages/WebsiteUsersPage";
 import PublicAdmissionsPage from "@/website/pages/PublicAdmissionsPage";
 import WebsiteAuditLogsPage from "@/website/pages/WebsiteAuditLogsPage";
 import WebsiteSeoPage from "@/website/pages/WebsiteSeoPage";
+import OrganizationHrHubPage from '@/pages/organization/hr/OrganizationHrHubPage';
+import OrganizationHrStaffPage from '@/pages/organization/hr/OrganizationHrStaffPage';
+import OrganizationHrAssignmentsPage from '@/pages/organization/hr/OrganizationHrAssignmentsPage';
+import OrganizationHrPayrollPage from '@/pages/organization/hr/OrganizationHrPayrollPage';
+import OrganizationHrReportsPage from '@/pages/organization/hr/OrganizationHrReportsPage';
 
 // Centralized QueryClient – defaults (e.g. refetch on focus) live in @/lib/queryClient
 const queryClient = createQueryClient();
@@ -740,6 +745,11 @@ const App = () => (
                         <OrganizationDashboard />
                       </Suspense>
                     } />
+                    <Route path="/organization/hr" element={<PermissionRoute permission="hr_staff.read"><OrganizationHrHubPage /></PermissionRoute>} />
+                    <Route path="/organization/hr/staff" element={<PermissionRoute permission="hr_staff.read"><OrganizationHrStaffPage /></PermissionRoute>} />
+                    <Route path="/organization/hr/assignments" element={<PermissionRoute permission="hr_assignments.read"><OrganizationHrAssignmentsPage /></PermissionRoute>} />
+                    <Route path="/organization/hr/payroll" element={<PermissionRoute permission="hr_payroll.read"><OrganizationHrPayrollPage /></PermissionRoute>} />
+                    <Route path="/organization/hr/reports" element={<PermissionRoute permission="hr_reports.read"><OrganizationHrReportsPage /></PermissionRoute>} />
                     {/* User Profile and Settings */}
                     <Route path="/profile" element={
                       <Suspense fallback={<PageSkeleton />}>

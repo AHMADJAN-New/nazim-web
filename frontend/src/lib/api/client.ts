@@ -759,6 +759,51 @@ export const organizationDashboardApi = {
 };
 
 // Profiles API
+
+export const orgHrApi = {
+  staff: async (params?: { search?: string; school_id?: string; status?: string; per_page?: number }) => {
+    return apiClient.get('/org-hr/staff', params);
+  },
+
+  staffAssignments: async (staffId: string) => {
+    return apiClient.get(`/org-hr/staff/${staffId}/assignments`);
+  },
+
+  assignments: async (params?: { staff_id?: string; school_id?: string; status?: string; per_page?: number }) => {
+    return apiClient.get('/org-hr/assignments', params);
+  },
+
+  createAssignment: async (data: {
+    staff_id: string;
+    school_id: string;
+    role_title?: string | null;
+    allocation_percent: number;
+    is_primary: boolean;
+    start_date: string;
+    end_date?: string | null;
+    status?: string;
+    notes?: string | null;
+  }) => {
+    return apiClient.post('/org-hr/assignments', data);
+  },
+
+  compensationProfiles: async (params?: { staff_id?: string; per_page?: number }) => {
+    return apiClient.get('/org-hr/compensation/profiles', params);
+  },
+
+  payrollPeriods: async () => {
+    return apiClient.get('/org-hr/payroll/periods');
+  },
+
+  createPayrollPeriod: async (data: { name: string; period_start: string; period_end: string; pay_date?: string | null }) => {
+    return apiClient.post('/org-hr/payroll/periods', data);
+  },
+
+  analyticsOverview: async () => {
+    return apiClient.get('/org-hr/analytics/overview');
+  },
+};
+
 export const profilesApi = {
   list: async (params?: { organization_id?: string }) => {
     return apiClient.get('/profiles', params);

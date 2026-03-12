@@ -49,6 +49,7 @@ use App\Http\Controllers\LibraryCopyController;
 use App\Http\Controllers\LibraryLoanController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationDashboardController;
+use App\Http\Controllers\OrganizationHrController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PlatformWebsiteConfigController;
 use App\Http\Controllers\PlatformWebsiteDomainController;
@@ -336,6 +337,25 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
 
     // Organization dashboard (organization-scoped, all schools aggregation)
     Route::get('/organization-dashboard/overview', [OrganizationDashboardController::class, 'overview']);
+
+    // Organization HR Hub APIs (organization-scoped; intentionally outside school.context)
+    Route::prefix('org-hr')->middleware(['feature:org_hr_core'])->group(function () {
+        Route::get('/staff', [OrganizationHrController::class, 'staffIndex']);
+        Route::get('/staff/{id}', [OrganizationHrController::class, 'staffShow']);
+        Route::get('/staff/{id}/assignments', [OrganizationHrController::class, 'staffAssignments']);
+        Route::get('/assignments', [OrganizationHrController::class, 'assignmentsIndex']);
+        Route::post('/assignments', [OrganizationHrController::class, 'createAssignment']);
+
+        Route::get('/compensation/profiles', [OrganizationHrController::class, 'compensationIndex'])
+            ->middleware(['feature:org_hr_payroll']);
+        Route::get('/payroll/periods', [OrganizationHrController::class, 'payrollPeriods'])
+            ->middleware(['feature:org_hr_payroll']);
+        Route::post('/payroll/periods', [OrganizationHrController::class, 'createPayrollPeriod'])
+            ->middleware(['feature:org_hr_payroll']);
+
+        Route::get('/analytics/overview', [OrganizationHrController::class, 'analyticsOverview'])
+            ->middleware(['feature:org_hr_analytics']);
+    });
 
     // Watermarks (for school branding)
     Route::get('/watermarks', [\App\Http\Controllers\WatermarkController::class, 'index']);

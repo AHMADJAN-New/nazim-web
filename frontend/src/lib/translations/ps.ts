@@ -46,6 +46,7 @@ import pages_library_ps from './pages/library/library.ps';
 import pages_maintenance_ps from './pages/maintenance/maintenance.ps';
 import pages_onboarding_ps from './pages/onboarding/onboarding.ps';
 import pages_organizations_ps from './pages/organizations/organizations.ps';
+import pages_organization_hr_ps from './pages/organization-hr/organizationHr.ps';
 import pages_permissions_ps from './pages/permissions/permissions.ps';
 import pages_phone_book_ps from './pages/phone-book/phoneBook.ps';
 import pages_profile_management_ps from './pages/profile-management/profileManagement.ps';
@@ -112,6 +113,7 @@ export const ps = {
   ...pages_maintenance_ps,
   ...pages_onboarding_ps,
   ...pages_organizations_ps,
+  ...pages_organization_hr_ps,
   ...pages_permissions_ps,
   ...pages_phone_book_ps,
   ...pages_profile_management_ps,

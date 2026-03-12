@@ -46,6 +46,7 @@ import pages_library_fa from './pages/library/library.fa';
 import pages_maintenance_fa from './pages/maintenance/maintenance.fa';
 import pages_onboarding_fa from './pages/onboarding/onboarding.fa';
 import pages_organizations_fa from './pages/organizations/organizations.fa';
+import pages_organization_hr_fa from './pages/organization-hr/organizationHr.fa';
 import pages_permissions_fa from './pages/permissions/permissions.fa';
 import pages_phone_book_fa from './pages/phone-book/phoneBook.fa';
 import pages_profile_management_fa from './pages/profile-management/profileManagement.fa';
@@ -112,6 +113,7 @@ export const fa = {
   ...pages_maintenance_fa,
   ...pages_onboarding_fa,
   ...pages_organizations_fa,
+  ...pages_organization_hr_fa,
   ...pages_permissions_fa,
   ...pages_phone_book_fa,
   ...pages_profile_management_fa,
