@@ -36,7 +36,7 @@ export default function OrganizationHrPayrollPage() {
         description={t('organizationHr.payrollPageDesc')}
         icon={<FileSpreadsheet className="h-5 w-5" />}
         breadcrumbs={[
-          { label: t('organizationHr.hubTitle'), href: '/organization/hr' },
+          { label: t('organizationHr.hubTitle'), href: '/org-admin/hr' },
           { label: t('organizationHr.payroll') },
         ]}
       />

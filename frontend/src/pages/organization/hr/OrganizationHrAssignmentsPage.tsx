@@ -50,7 +50,7 @@ export default function OrganizationHrAssignmentsPage() {
         description={t('organizationHr.assignmentsPageDesc')}
         icon={<ClipboardList className="h-5 w-5" />}
         breadcrumbs={[
-          { label: t('organizationHr.hubTitle'), href: '/organization/hr' },
+          { label: t('organizationHr.hubTitle'), href: '/org-admin/hr' },
           { label: t('organizationHr.assignments') },
         ]}
       />

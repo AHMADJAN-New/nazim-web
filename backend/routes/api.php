@@ -1583,6 +1583,9 @@ Route::post('/contact', [ContactMessageController::class, 'store']);
 
 // Authenticated subscription routes (require organization context)
 Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->group(function () {
+    // Plan slug (lightweight, no subscription.read permission needed)
+    Route::get('/plan-slug', [SubscriptionController::class, 'planSlug']);
+
     // Current subscription status (lite version - no permission required, for all users)
     // CRITICAL: This endpoint is used for frontend gating and must be accessible to ALL authenticated users
     Route::get('/status-lite', [SubscriptionController::class, 'statusLite']);

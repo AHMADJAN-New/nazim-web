@@ -39,7 +39,7 @@ export default function OrganizationHrReportsPage() {
         description={t('organizationHr.reportsPageDesc')}
         icon={<BarChart3 className="h-5 w-5" />}
         breadcrumbs={[
-          { label: t('organizationHr.hubTitle'), href: '/organization/hr' },
+          { label: t('organizationHr.hubTitle'), href: '/org-admin/hr' },
           { label: t('organizationHr.reports') },
         ]}
       />

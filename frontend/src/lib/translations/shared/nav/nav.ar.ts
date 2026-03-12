@@ -24,6 +24,7 @@ export default {
     courseStudents: "طلاب الدورة",
     dashboard: "لوحة التحكم",
     organizationDashboard: "لوحة معلومات المؤسسة",
+    organizationAdmin: "إدارة المؤسسة",
     organizationHr: "الموارد البشرية للمؤسسة",
     organizationHrHub: "مركز الموارد البشرية",
     organizationHrStaff: "السجل المركزي للموظفين",

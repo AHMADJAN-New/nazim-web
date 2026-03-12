@@ -24,6 +24,7 @@ export default {
     courseStudents: "د دوره/ کورس زده کوونکي",
     dashboard: "ډشبورډ",
     organizationDashboard: "د سازمان ډشبورډ",
+    organizationAdmin: "د سازمان اداره",
     organizationHr: "د سازمان بشري سرچینې",
     organizationHrHub: "د HR مرکز",
     organizationHrStaff: "مرکزي کارکوونکي",

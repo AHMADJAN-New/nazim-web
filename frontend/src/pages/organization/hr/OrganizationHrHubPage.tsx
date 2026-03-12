@@ -22,7 +22,7 @@ export default function OrganizationHrHubPage() {
     {
       title: t('organizationHr.staffMaster'),
       description: t('organizationHr.staffMasterDesc'),
-      path: '/organization/hr/staff',
+      path: '/org-admin/hr/staff',
       icon: UserRound,
       color: 'blue' as const,
       visible: hasStaffPerm,
@@ -30,7 +30,7 @@ export default function OrganizationHrHubPage() {
     {
       title: t('organizationHr.assignments'),
       description: t('organizationHr.assignmentsDesc'),
-      path: '/organization/hr/assignments',
+      path: '/org-admin/hr/assignments',
       icon: ClipboardList,
       color: 'green' as const,
       visible: hasAssignmentsPerm,
@@ -38,7 +38,7 @@ export default function OrganizationHrHubPage() {
     {
       title: t('organizationHr.payroll'),
       description: t('organizationHr.payrollDesc'),
-      path: '/organization/hr/payroll',
+      path: '/org-admin/hr/payroll',
       icon: FileSpreadsheet,
       color: 'purple' as const,
       visible: hasPayrollPerm,
@@ -46,7 +46,7 @@ export default function OrganizationHrHubPage() {
     {
       title: t('organizationHr.reports'),
       description: t('organizationHr.reportsDesc'),
-      path: '/organization/hr/reports',
+      path: '/org-admin/hr/reports',
       icon: BarChart3,
       color: 'amber' as const,
       visible: hasReportsPerm,

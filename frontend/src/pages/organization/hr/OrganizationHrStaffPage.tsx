@@ -67,7 +67,7 @@ export default function OrganizationHrStaffPage() {
         description={t('organizationHr.staffMasterPageDesc')}
         icon={<UserRound className="h-5 w-5" />}
         breadcrumbs={[
-          { label: t('organizationHr.hubTitle'), href: '/organization/hr' },
+          { label: t('organizationHr.hubTitle'), href: '/org-admin/hr' },
           { label: t('organizationHr.staffMaster') },
         ]}
       />

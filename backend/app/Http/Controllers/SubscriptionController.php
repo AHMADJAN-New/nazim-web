@@ -687,4 +687,32 @@ class SubscriptionController extends Controller
             'data' => $history,
         ]);
     }
+
+    /**
+     * Lightweight endpoint returning only the current organization's plan slug.
+     * No subscription.read permission required — auth + organization context is enough.
+     */
+    public function planSlug(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['plan_slug' => null]);
+        }
+
+        $subscription = OrganizationSubscription::where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$subscription || !$subscription->plan_id) {
+            return response()->json(['plan_slug' => null]);
+        }
+
+        $plan = SubscriptionPlan::find($subscription->plan_id);
+
+        return response()->json([
+            'plan_slug' => $plan?->slug ?? null,
+        ]);
+    }
 }

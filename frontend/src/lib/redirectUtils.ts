@@ -1,13 +1,13 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useUserPermissions } from '@/hooks/usePermissions';
-import { eventsApi } from '@/lib/api/client';
+import { apiClient } from '@/lib/api/client';
 import { useFeatures, type FeatureInfo } from '@/hooks/useSubscription';
 
 /**
  * Get the redirect path after login based on user permissions and event user status
  * Priority:
  * 1. If user is event user -> redirect to their assigned event (only if events feature is enabled)
- * 2. If user can access org dashboard -> redirect to organization dashboard
+ * 2. If user can access org admin (Enterprise + org-wide access) -> redirect to /org-admin
  * 3. If user has dashboard permission -> redirect to dashboard
  * 4. Otherwise -> redirect to dashboard
  * 
@@ -24,27 +24,21 @@ export async function getPostLoginRedirectPath(
   } | null,
   features?: FeatureInfo[]
 ): Promise<string> {
-  // Check if events feature is enabled
-  // Use the same pattern as useHasFeature hook: check isAccessible first, then isEnabled
   const hasEventsFeature = features?.some((f) => {
     if (f.featureKey !== 'events') return false;
-    // Check isAccessible first (more accurate), fallback to isEnabled
     return f.isAccessible ?? f.isEnabled ?? false;
   }) ?? false;
 
-  // CRITICAL: Only event users should be redirected to their assigned event (only if events feature is enabled)
   if (profile?.is_event_user && profile?.event_id && hasEventsFeature) {
     const hasCheckinPermission = permissions.includes('event_checkins.create');
     const hasGuestCreatePermission = permissions.includes('event_guests.create');
     
-    // Redirect to appropriate page based on permissions
     if (hasCheckinPermission && !hasGuestCreatePermission) {
       return `/events/${profile.event_id}/checkin`;
     }
     if (hasGuestCreatePermission && !hasCheckinPermission) {
       return `/events/${profile.event_id}/guests/add`;
     }
-    // If both or just events.read, go to event detail
     return `/events/${profile.event_id}`;
   }
 
@@ -58,17 +52,23 @@ export async function getPostLoginRedirectPath(
     );
 
   if (canAccessOrganizationDashboard) {
-    return '/organization-dashboard';
+    try {
+      const response = await apiClient.get('/subscription/plan-slug') as { plan_slug?: string | null };
+      if (response?.plan_slug === 'enterprise') {
+        return '/org-admin';
+      }
+    } catch {
+      // Fall through to /dashboard if plan-slug fetch fails
+    }
+    return '/dashboard';
   }
 
   const hasDashboardPermission = permissions.includes('dashboard.read');
 
-  // If user has dashboard permission, go to dashboard
   if (hasDashboardPermission) {
     return '/dashboard';
   }
 
-  // Default to dashboard for any other users (including non-event users with event permissions)
   return '/dashboard';
 }
 

@@ -263,6 +263,8 @@ import OrganizationHrStaffPage from '@/pages/organization/hr/OrganizationHrStaff
 import OrganizationHrAssignmentsPage from '@/pages/organization/hr/OrganizationHrAssignmentsPage';
 import OrganizationHrPayrollPage from '@/pages/organization/hr/OrganizationHrPayrollPage';
 import OrganizationHrReportsPage from '@/pages/organization/hr/OrganizationHrReportsPage';
+import { OrganizationAdminRoute } from '@/components/OrganizationAdminRoute';
+import { OrganizationAdminLayout } from '@/organization-admin/components/OrganizationAdminLayout';
 
 // Centralized QueryClient – defaults (e.g. refetch on focus) live in @/lib/queryClient
 const queryClient = createQueryClient();
@@ -719,6 +721,27 @@ const App = () => (
                     <Route path="maintenance" element={<Navigate to="maintenance-history" replace />} />
                   </Route>
 
+                  {/* Organization Admin Routes - Enterprise-gated, org-wide management */}
+                  <Route path="/org-admin" element={
+                    <OrganizationAdminRoute>
+                      <OrganizationAdminLayout>
+                        <Outlet />
+                      </OrganizationAdminLayout>
+                    </OrganizationAdminRoute>
+                  }>
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="dashboard" element={
+                      <Suspense fallback={<DashboardSkeleton />}>
+                        <OrganizationDashboard />
+                      </Suspense>
+                    } />
+                    <Route path="hr" element={<OrganizationHrHubPage />} />
+                    <Route path="hr/staff" element={<OrganizationHrStaffPage />} />
+                    <Route path="hr/assignments" element={<OrganizationHrAssignmentsPage />} />
+                    <Route path="hr/payroll" element={<OrganizationHrPayrollPage />} />
+                    <Route path="hr/reports" element={<OrganizationHrReportsPage />} />
+                  </Route>
+
                   {/* Protected routes with persistent layout */}
                   <Route element={
                     <ProtectedRoute>
@@ -735,21 +758,14 @@ const App = () => (
                         <Dashboard />
                       </Suspense>
                     } />
-                    <Route path="/organization-dashboard" element={
-                      <Suspense fallback={<DashboardSkeleton />}>
-                        <OrganizationDashboard />
-                      </Suspense>
-                    } />
-                    <Route path="/org/dashboard" element={
-                      <Suspense fallback={<DashboardSkeleton />}>
-                        <OrganizationDashboard />
-                      </Suspense>
-                    } />
-                    <Route path="/organization/hr" element={<PermissionRoute permission="hr_staff.read"><OrganizationHrHubPage /></PermissionRoute>} />
-                    <Route path="/organization/hr/staff" element={<PermissionRoute permission="hr_staff.read"><OrganizationHrStaffPage /></PermissionRoute>} />
-                    <Route path="/organization/hr/assignments" element={<PermissionRoute permission="hr_assignments.read"><OrganizationHrAssignmentsPage /></PermissionRoute>} />
-                    <Route path="/organization/hr/payroll" element={<PermissionRoute permission="hr_payroll.read"><OrganizationHrPayrollPage /></PermissionRoute>} />
-                    <Route path="/organization/hr/reports" element={<PermissionRoute permission="hr_reports.read"><OrganizationHrReportsPage /></PermissionRoute>} />
+                    {/* Legacy redirects → org-admin area */}
+                    <Route path="/organization-dashboard" element={<Navigate to="/org-admin/dashboard" replace />} />
+                    <Route path="/org/dashboard" element={<Navigate to="/org-admin/dashboard" replace />} />
+                    <Route path="/organization/hr" element={<Navigate to="/org-admin/hr" replace />} />
+                    <Route path="/organization/hr/staff" element={<Navigate to="/org-admin/hr/staff" replace />} />
+                    <Route path="/organization/hr/assignments" element={<Navigate to="/org-admin/hr/assignments" replace />} />
+                    <Route path="/organization/hr/payroll" element={<Navigate to="/org-admin/hr/payroll" replace />} />
+                    <Route path="/organization/hr/reports" element={<Navigate to="/org-admin/hr/reports" replace />} />
                     {/* User Profile and Settings */}
                     <Route path="/profile" element={
                       <Suspense fallback={<PageSkeleton />}>
