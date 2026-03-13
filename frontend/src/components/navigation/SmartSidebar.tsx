@@ -167,6 +167,7 @@ import { useProfile } from "@/hooks/useProfiles";
 import { useOrganizationPlanSlug } from "@/hooks/useOrganizationPlanSlug";
 import { useSubscriptionGateStatus, type SubscriptionGateStatus } from "@/hooks/useSubscription";
 import { useUserRole } from "@/hooks/useUserRole";
+import { canAccessOrgAdminArea } from '@/organization-admin/lib/access';
 import type { UserRole } from "@/types/auth";
 import { SecondarySidebar } from "./SecondarySidebar";
 
@@ -577,21 +578,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   // Check if user is event user (profile already declared above)
   const isEventUser = profile?.is_event_user === true;
-  const hasOrganizationDashboardPermissionFromList =
-    permissions.includes('organizations.read') ||
-    permissions.includes('dashboard.read') ||
-    permissions.includes('school_branding.read');
-  const isOrgLevelUser = !!profile?.schools_access_all || !profile?.default_school_id || role === 'platform_admin';
-  const hasOrganizationDashboardAccess =
-    isOrgLevelUser &&
-    (
-      role === 'organization_admin' ||
-      role === 'platform_admin' ||
-      hasOrganizationDashboardPermissionFromList ||
-      hasOrganizationsPermission === true ||
-      hasDashboardPermission === true ||
-      hasBrandingPermission === true
-    );
+  const hasOrganizationDashboardPermissionFromList = canAccessOrgAdminArea(profile, permissions);
+  const hasOrganizationDashboardAccess = hasOrganizationDashboardPermissionFromList;
 
   // Define category colors for icons
   const categoryColors = {

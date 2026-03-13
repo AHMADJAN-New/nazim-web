@@ -2,22 +2,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserPermissions } from '@/hooks/usePermissions';
 import { apiClient } from '@/lib/api/client';
 import { useFeatures, type FeatureInfo } from '@/hooks/useSubscription';
-
-const ORG_LEVEL_ROLES = [
-  'organization_admin',
-  'platform_admin', // Platform admins with an org can access Organization Admin
-  'organization_hr_admin',
-  'hr_officer',
-  'payroll_officer',
-  'principal',
-];
+import { shouldDefaultToOrgAdminArea } from '@/organization-admin/lib/access';
 
 /**
  * Get the redirect path after login based on user permissions and event user status
  * Priority:
  * 1. If user is event user -> redirect to their assigned event (only if events feature is enabled)
- * 2. If user has an org-level role AND Enterprise plan -> redirect to /org-admin
- * 3. If user can access org dashboard (schools_access_all) AND Enterprise -> redirect to /org-admin
+ * 2. If user can access org-admin AND has no default school on Enterprise -> redirect to /org-admin
  * 4. If user has dashboard permission -> redirect to dashboard
  * 5. Otherwise -> redirect to dashboard
  */
@@ -50,20 +41,7 @@ export async function getPostLoginRedirectPath(
     return `/events/${profile.event_id}`;
   }
 
-  const isOrgLevelRole = ORG_LEVEL_ROLES.includes(profile?.role ?? '');
-  const hasNoSchool = !profile?.default_school_id;
-  const hasAllSchoolsAccess = profile?.schools_access_all === true;
-  const hasOrgPermissions =
-    permissions.includes('organizations.read') ||
-    permissions.includes('dashboard.read') ||
-    permissions.includes('school_branding.read');
-
-  const canAccessOrgAdmin =
-    isOrgLevelRole ||
-    (hasNoSchool && hasOrgPermissions) ||
-    (hasAllSchoolsAccess && hasOrgPermissions);
-
-  if (canAccessOrgAdmin) {
+  if (shouldDefaultToOrgAdminArea(profile, permissions)) {
     try {
       const response = await apiClient.get('/subscription/plan-slug') as { plan_slug?: string | null };
       if (response?.plan_slug === 'enterprise') {

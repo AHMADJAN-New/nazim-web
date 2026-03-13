@@ -16,6 +16,12 @@ export default {
     cameraError: "Failed to start camera.",
     cameraHint: "Use \"Select Picture\" to choose a file instead.",
     cameraPreview: "Camera preview",
+    selectCamera: "Camera",
+    cameraLabel: "Camera",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    zoomHint: "Use the buttons or scroll on the preview to zoom.",
+    switchingCamera: "Switching…",
     fileTooLarge: "Image exceeds maximum size of 5MB. Please crop to a smaller area or use a lower resolution image.",
     cropFailed: "Failed to crop image. Please try again."
   }
