@@ -32,6 +32,7 @@ class ExpenseEntry extends Model
         'account_id',
         'expense_category_id',
         'project_id',
+        'payroll_run_id',
         'amount',
         'date',
         'reference_no',
