@@ -1,5 +1,5 @@
 import { ClipboardList, CheckCircle2, Plus, MoreHorizontal, Pencil, StopCircle, Trash2 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -77,19 +77,8 @@ export default function OrganizationHrAssignmentsPage() {
   const hasUpdate = useHasPermission('hr_assignments.update');
   const hasDelete = useHasPermission('hr_assignments.delete');
 
+  const effectiveSchoolFilter = schoolFilter !== 'all' ? schoolFilter : undefined;
   const { data: schools } = useSchools();
-  const { data: staffList } = useOrgHrStaff({ perPage: 150 });
-  const { data, isLoading } = useOrgHrAssignments({
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    schoolId: schoolFilter !== 'all' ? schoolFilter : undefined,
-  });
-
-  const createMutation = useCreateOrgHrAssignment();
-  const updateMutation = useUpdateOrgHrAssignment();
-  const deleteMutation = useDeleteOrgHrAssignment();
-
-  const assignments = useMemo(() => data?.data ?? [], [data]);
-  const staff = useMemo(() => staffList?.data ?? [], [staffList]);
 
   const getSchoolDisplayName = (schoolId: string): string => {
     if (!schools?.length) return schoolId;
@@ -124,10 +113,49 @@ export default function OrganizationHrAssignmentsPage() {
     },
   });
 
+  const selectedCreateSchoolId = createOpen ? createForm.watch('school_id') : '';
+  const staffScopeSchoolId = selectedCreateSchoolId || effectiveSchoolFilter;
+  const { data: staffList } = useOrgHrStaff({ perPage: 150, schoolId: staffScopeSchoolId });
+  const { data, isLoading } = useOrgHrAssignments({
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    schoolId: effectiveSchoolFilter,
+  });
+
+  const createMutation = useCreateOrgHrAssignment();
+  const updateMutation = useUpdateOrgHrAssignment();
+  const deleteMutation = useDeleteOrgHrAssignment();
+
+  const assignments = useMemo(() => data?.data ?? [], [data]);
+  const staff = useMemo(() => staffList?.data ?? [], [staffList]);
+  const staffOptions = useMemo(() => {
+    return [...staff].sort((a, b) => {
+      const nameA = [a.firstName, a.fatherName].filter(Boolean).join(' ').trim();
+      const nameB = [b.firstName, b.fatherName].filter(Boolean).join(' ').trim();
+      return nameA.localeCompare(nameB);
+    });
+  }, [staff]);
+
+  useEffect(() => {
+    if (!createOpen) {
+      return;
+    }
+
+    const currentSchoolId = createForm.getValues('school_id');
+    if (!currentSchoolId && effectiveSchoolFilter) {
+      createForm.setValue('school_id', effectiveSchoolFilter, { shouldValidate: true });
+      return;
+    }
+
+    const selectedStaffId = createForm.getValues('staff_id');
+    if (selectedStaffId && !staffOptions.some((member) => member.id === selectedStaffId)) {
+      createForm.setValue('staff_id', '', { shouldValidate: true });
+    }
+  }, [createForm, createOpen, effectiveSchoolFilter, staffOptions]);
+
   const handleCreateOpen = () => {
     createForm.reset({
       staff_id: '',
-      school_id: '',
+      school_id: effectiveSchoolFilter ?? '',
       role_title: '',
       allocation_percent: 100,
       is_primary: true,
@@ -372,12 +400,16 @@ export default function OrganizationHrAssignmentsPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {staff.map((s) => (
+                        {staffOptions.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {[s.firstName, s.fatherName].filter(Boolean).join(' ')} ({s.employeeId})
+                            {[
+                              [s.firstName, s.fatherName].filter(Boolean).join(' '),
+                              `(${s.employeeId})`,
+                              !effectiveSchoolFilter && s.schoolId ? `- ${getSchoolDisplayName(s.schoolId)}` : '',
+                            ].filter(Boolean).join(' ')}
                           </SelectItem>
                         ))}
-                        {staff.length === 0 && (
+                        {staffOptions.length === 0 && (
                           <SelectItem value="_none" disabled>No staff found</SelectItem>
                         )}
                       </SelectContent>

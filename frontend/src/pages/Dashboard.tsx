@@ -68,6 +68,7 @@ import { useRecentActivities } from "@/hooks/useRecentActivities";
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
 import { useHasAnyPermissionAndFeature, useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
 import { useUserRole } from "@/hooks/useUserRole";
+import { shouldDefaultToOrgAdminArea } from '@/organization-admin/lib/access';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 // Lazy load dashboard components for performance (only load when tab is opened)
@@ -132,22 +133,12 @@ export default function Dashboard() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { role, loading: roleLoading } = useUserRole();
+  const { loading: roleLoading } = useUserRole();
   const { isEnterprise } = useOrganizationPlanSlug();
   const { data: permissions } = useUserPermissions();
   const [activeTab, setActiveTab] = useState<string>('overview');
 
-  const hasNoSchool = !profile?.default_school_id;
-  const hasOrgPermission =
-    (permissions ?? []).includes('organizations.read') ||
-    (permissions ?? []).includes('dashboard.read') ||
-    (permissions ?? []).includes('school_branding.read') ||
-    (permissions ?? []).includes('hr_staff.read') ||
-    (permissions ?? []).includes('hr_assignments.read') ||
-    (permissions ?? []).includes('hr_payroll.read') ||
-    (permissions ?? []).includes('hr_reports.read');
-  const isOrgAdminRole = profile?.role === 'organization_admin' || profile?.role === 'platform_admin';
-  const canAccessOrgAdmin = isEnterprise && (hasNoSchool || profile?.role === 'platform_admin') && (isOrgAdminRole || hasOrgPermission);
+  const shouldRedirectToOrgAdmin = isEnterprise && shouldDefaultToOrgAdminArea(profile, permissions ?? []);
 
   const canSeeStudents = useHasPermissionAndFeature('students.read') === true;
   const canSeeStaff = useHasPermissionAndFeature('staff.read') === true;
@@ -224,15 +215,15 @@ export default function Dashboard() {
 
   // Users with no school and org-admin permissions: redirect to Organization Admin
   useEffect(() => {
-    if (canAccessOrgAdmin) {
+    if (shouldRedirectToOrgAdmin) {
       navigate('/org-admin', { replace: true });
     }
-  }, [canAccessOrgAdmin, navigate]);
+  }, [shouldRedirectToOrgAdmin, navigate]);
 
   if (profile?.is_event_user && profile?.event_id) {
     return <LoadingSpinner text="Redirecting to event..." />;
   }
-  if (canAccessOrgAdmin) {
+  if (shouldRedirectToOrgAdmin) {
     return <LoadingSpinner text={t('common.loading') || 'Loading...'} />;
   }
 

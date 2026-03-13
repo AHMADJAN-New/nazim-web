@@ -10,6 +10,8 @@ import type {
   OrgHrAssignment,
   OrgHrCompensationProfile,
   OrgHrPayrollPeriod,
+  OrgHrPayrollRun,
+  OrgHrPayrollRunItem,
   OrgHrAnalyticsOverview,
 } from '@/types/domain/orgHr';
 import {
@@ -17,10 +19,20 @@ import {
   mapOrgHrAssignmentApiToDomain,
   mapOrgHrCompensationApiToDomain,
   mapOrgHrPayrollPeriodApiToDomain,
+  mapOrgHrPayrollRunApiToDomain,
+  mapOrgHrPayrollRunItemApiToDomain,
   mapOrgHrAnalyticsApiToDomain,
 } from '@/mappers/orgHrMapper';
 
-export type { OrgHrStaff, OrgHrAssignment, OrgHrCompensationProfile, OrgHrPayrollPeriod, OrgHrAnalyticsOverview };
+export type {
+  OrgHrStaff,
+  OrgHrAssignment,
+  OrgHrCompensationProfile,
+  OrgHrPayrollPeriod,
+  OrgHrPayrollRun,
+  OrgHrPayrollRunItem,
+  OrgHrAnalyticsOverview,
+};
 
 export const useOrgHrStaff = (params?: { search?: string; schoolId?: string; status?: string; perPage?: number }) => {
   const { profile } = useAuth();
@@ -190,6 +202,57 @@ export const useOrgHrCompensation = (staffId?: string) => {
   });
 };
 
+export const useCreateOrgHrCompensation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: OrgHrApi.OrgHrCompensationProfileInsert) => {
+      return orgHrApi.createCompensationProfile(data);
+    },
+    onSuccess: async () => {
+      showToast.success('Compensation profile created');
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-compensation'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to create compensation profile');
+    },
+  });
+};
+
+export const useUpdateOrgHrCompensation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: OrgHrApi.OrgHrCompensationProfileUpdate & { id: string }) => {
+      return orgHrApi.updateCompensationProfile(id, data);
+    },
+    onSuccess: async () => {
+      showToast.success('Compensation profile updated');
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-compensation'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to update compensation profile');
+    },
+  });
+};
+
+export const useDeleteOrgHrCompensation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await orgHrApi.deleteCompensationProfile(id);
+    },
+    onSuccess: async () => {
+      showToast.success('Compensation profile removed');
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-compensation'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to remove compensation profile');
+    },
+  });
+};
+
 export const useOrgHrPayrollPeriods = () => {
   const { profile } = useAuth();
 
@@ -225,6 +288,171 @@ export const useCreateOrgHrPayrollPeriod = () => {
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('organizationHr.payrollPeriodCreateFailed') || 'Failed to create payroll period');
+    },
+  });
+};
+
+export const useOrgHrPayrollRuns = (params?: { payrollPeriodId?: string; status?: string }) => {
+  const { profile } = useAuth();
+
+  return useQuery<{ data: OrgHrPayrollRun[]; total: number }>({
+    queryKey: [
+      'org-hr-payroll-runs',
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+      params?.payrollPeriodId ?? 'all',
+      params?.status ?? '',
+    ],
+    queryFn: async () => {
+      if (!profile?.organization_id) {
+        return { data: [], total: 0 };
+      }
+
+      const response = await orgHrApi.payrollRuns({
+        payroll_period_id: params?.payrollPeriodId || undefined,
+        status: params?.status || undefined,
+        per_page: 100,
+      }) as { data?: OrgHrApi.OrgHrPayrollRun[]; total?: number };
+
+      return {
+        data: (response.data ?? []).map(mapOrgHrPayrollRunApiToDomain),
+        total: response.total ?? 0,
+      };
+    },
+    enabled: !!profile?.organization_id,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useOrgHrPayrollRun = (runId?: string | null) => {
+  const { profile } = useAuth();
+
+  return useQuery<{ run: OrgHrPayrollRun; items: OrgHrPayrollRunItem[] }>({
+    queryKey: ['org-hr-payroll-run', profile?.organization_id, runId ?? 'none'],
+    queryFn: async () => {
+      if (!profile?.organization_id || !runId) {
+        return {
+          run: {
+            id: '',
+            organizationId: profile?.organization_id ?? '',
+            payrollPeriodId: '',
+            runName: '',
+            status: 'draft',
+            approvedBy: null,
+            approvedAt: null,
+            lockedAt: null,
+            payrollPeriodName: '',
+            periodStart: '',
+            periodEnd: '',
+            payDate: null,
+            itemCount: 0,
+            totalGross: 0,
+            totalDeduction: 0,
+            totalNet: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          items: [],
+        };
+      }
+
+      const response = await orgHrApi.payrollRun(runId) as {
+        run: OrgHrApi.OrgHrPayrollRun;
+        items: OrgHrApi.OrgHrPayrollRunItem[];
+      };
+
+      return {
+        run: mapOrgHrPayrollRunApiToDomain(response.run),
+        items: (response.items ?? []).map(mapOrgHrPayrollRunItemApiToDomain),
+      };
+    },
+    enabled: !!profile?.organization_id && !!runId,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useCreateOrgHrPayrollRun = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: OrgHrApi.OrgHrPayrollRunInsert) => {
+      return orgHrApi.createPayrollRun(data);
+    },
+    onSuccess: async () => {
+      showToast.success('Payroll run created');
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-payroll-runs'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to create payroll run');
+    },
+  });
+};
+
+export const useCalculateOrgHrPayrollRun = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (runId: string) => {
+      return orgHrApi.calculatePayrollRun(runId);
+    },
+    onSuccess: async (_data, runId) => {
+      showToast.success('Payroll run calculated');
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-payroll-runs'] });
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-payroll-run'] });
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-analytics-overview'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to calculate payroll run');
+    },
+  });
+};
+
+export const useFinalizeOrgHrPayrollRun = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (runId: string) => {
+      return orgHrApi.finalizePayrollRun(runId);
+    },
+    onSuccess: async (_data, runId) => {
+      showToast.success('Payroll run finalized');
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-payroll-runs'] });
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-payroll-run'] });
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-analytics-overview'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to finalize payroll run');
+    },
+  });
+};
+
+export interface MarkPayrollRunPaidPayload {
+  runId: string;
+  account_id: string;
+  expense_category_id?: string;
+}
+
+export const useMarkOrgHrPayrollRunPaid = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: MarkPayrollRunPaidPayload) => {
+      return orgHrApi.markPayrollRunPaid(payload.runId, {
+        account_id: payload.account_id,
+        expense_category_id: payload.expense_category_id,
+      });
+    },
+    onSuccess: async () => {
+      showToast.success('Payroll run marked as paid');
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-payroll-runs'] });
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-payroll-run'] });
+      await queryClient.invalidateQueries({ queryKey: ['org-hr-analytics-overview'] });
+      await queryClient.invalidateQueries({ queryKey: ['org-finance'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to mark payroll run as paid');
     },
   });
 };

@@ -266,9 +266,22 @@ import OrganizationHrReportsPage from '@/pages/organization/hr/OrganizationHrRep
 import { OrganizationAdminRoute } from '@/components/OrganizationAdminRoute';
 import { OrganizationAdminLayout } from '@/organization-admin/components/OrganizationAdminLayout';
 import OrgAdminLimitsPage from '@/organization-admin/pages/OrgAdminLimitsPage';
+import OrgAdminPermissionsPage from '@/organization-admin/pages/OrgAdminPermissionsPage';
+import OrgAdminRolesPage from '@/organization-admin/pages/OrgAdminRolesPage';
 import OrgAdminSchoolsPage from '@/organization-admin/pages/OrgAdminSchoolsPage';
+import OrgAdminUserAccessPage from '@/organization-admin/pages/OrgAdminUserAccessPage';
 import OrgAdminUsersPage from '@/organization-admin/pages/OrgAdminUsersPage';
 import OrgAdminSubscriptionPage from '@/organization-admin/pages/OrgAdminSubscriptionPage';
+import OrgAdminFinancePage from '@/organization-admin/pages/OrgAdminFinancePage';
+import OrgAdminFinanceAccountsPage from '@/organization-admin/pages/OrgAdminFinanceAccountsPage';
+import OrgAdminFinanceIncomePage from '@/organization-admin/pages/OrgAdminFinanceIncomePage';
+import OrgAdminFinanceExpensesPage from '@/organization-admin/pages/OrgAdminFinanceExpensesPage';
+import OrgAdminFinanceTransfersPage from '@/organization-admin/pages/OrgAdminFinanceTransfersPage';
+import OrgAdminFinanceDonorsPage from '@/organization-admin/pages/OrgAdminFinanceDonorsPage';
+import OrgAdminFinanceProjectsPage from '@/organization-admin/pages/OrgAdminFinanceProjectsPage';
+import OrgAdminFinanceSettingsPage from '@/organization-admin/pages/OrgAdminFinanceSettingsPage';
+import OrgAdminFinanceDocumentsPage from '@/organization-admin/pages/OrgAdminFinanceDocumentsPage';
+import OrgAdminFinanceReportsPage from '@/organization-admin/pages/OrgAdminFinanceReportsPage';
 
 // Centralized QueryClient – defaults (e.g. refetch on focus) live in @/lib/queryClient
 const queryClient = createQueryClient();
@@ -741,8 +754,62 @@ const App = () => (
                     } />
                     <Route path="schools" element={<OrgAdminSchoolsPage />} />
                     <Route path="users" element={<OrgAdminUsersPage />} />
+                    <Route path="roles" element={<OrgAdminRolesPage />} />
+                    <Route path="permissions" element={<OrgAdminPermissionsPage />} />
+                    <Route path="access" element={<OrgAdminUserAccessPage />} />
                     <Route path="subscription" element={<OrgAdminSubscriptionPage />} />
                     <Route path="limits" element={<OrgAdminLimitsPage />} />
+                    <Route path="finance" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinancePage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/accounts" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceAccountsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/income" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceIncomePage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/expenses" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceExpensesPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/transfers" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceTransfersPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/donors" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceDonorsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/projects" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceProjectsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/settings" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceSettingsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/reports" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceReportsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/documents" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceDocumentsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/categories" element={<Navigate to="/org-admin/finance/settings" replace />} />
                     <Route path="hr" element={<OrganizationHrHubPage />} />
                     <Route path="hr/staff" element={<OrganizationHrStaffPage />} />
                     <Route path="hr/assignments" element={<OrganizationHrAssignmentsPage />} />

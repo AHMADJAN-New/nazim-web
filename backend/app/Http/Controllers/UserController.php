@@ -175,7 +175,7 @@ class UserController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.read')) {
+            if (!$user->hasPermissionTo('users.create')) {
                 return response()->json(['error' => 'Insufficient permissions to create users'], 403);
             }
         } catch (\Exception $e) {
@@ -417,7 +417,7 @@ class UserController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.read')) {
+            if (!$user->hasPermissionTo('users.update')) {
                 return response()->json(['error' => 'Insufficient permissions to update users'], 403);
             }
         } catch (\Exception $e) {
@@ -613,7 +613,7 @@ class UserController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.read')) {
+            if (!$user->hasPermissionTo('users.delete')) {
                 return response()->json(['error' => 'Insufficient permissions to delete users'], 403);
             }
         } catch (\Exception $e) {
@@ -725,6 +725,5 @@ class UserController extends Controller
         return response()->json(['message' => 'Password reset successfully']);
     }
 }
-
 
 

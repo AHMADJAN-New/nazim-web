@@ -160,6 +160,8 @@ class PermissionSeeder extends Seeder
             'hr_assignments' => ['read', 'create', 'update', 'approve'],
             'hr_payroll' => ['read', 'create', 'run', 'approve', 'export'],
             'hr_reports' => ['read', 'export'],
+            // Organization Finance (org-level accounts, categories, entries, payroll expense)
+            'org_finance' => ['read', 'create'],
         ];
     }
 
@@ -435,6 +437,7 @@ class PermissionSeeder extends Seeder
                 'attendance_sessions.read', 'exams.read', 'exams.view_reports',
                 'finance_accounts.read', 'income_entries.read', 'expense_entries.read',
                 'finance_reports.read', 'fees.read',
+                'org_finance.read', 'org_finance.create',
             ],
             'hr_officer' => [
                 'organizations.read', 'buildings.read', 'rooms.read',
@@ -459,6 +462,7 @@ class PermissionSeeder extends Seeder
                 'hr_reports.read', 'hr_reports.export',
                 // Read-only finance data for payroll context
                 'finance_accounts.read', 'finance_reports.read',
+                'org_finance.read',
             ],
             'principal' => [
                 'organizations.read', 'buildings.read', 'rooms.read',

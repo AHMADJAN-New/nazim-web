@@ -4,6 +4,8 @@ import type {
   OrgHrAssignment,
   OrgHrCompensationProfile,
   OrgHrPayrollPeriod,
+  OrgHrPayrollRun,
+  OrgHrPayrollRunItem,
   OrgHrAnalyticsOverview,
 } from '@/types/domain/orgHr';
 
@@ -61,6 +63,9 @@ export function mapOrgHrCompensationApiToDomain(api: OrgHrApi.OrgHrCompensationP
     grade: api.grade,
     step: api.step,
     status: api.status,
+    employeeId: api.employee_id ?? null,
+    staffFirstName: api.staff_first_name ?? null,
+    staffFatherName: api.staff_father_name ?? null,
     createdAt: api.created_at ? new Date(api.created_at) : new Date(),
     updatedAt: api.updated_at ? new Date(api.updated_at) : new Date(),
   };
@@ -91,5 +96,62 @@ export function mapOrgHrAnalyticsApiToDomain(api: OrgHrApi.OrgHrAnalyticsOvervie
       totalNet: typeof item.total_net === 'string' ? parseFloat(item.total_net) : item.total_net,
     })),
     pendingApprovals: api.pending_approvals ?? 0,
+  };
+}
+
+export function mapOrgHrPayrollRunApiToDomain(api: OrgHrApi.OrgHrPayrollRun): OrgHrPayrollRun {
+  return {
+    id: api.id,
+    organizationId: api.organization_id,
+    payrollPeriodId: api.payroll_period_id,
+    runName: api.run_name,
+    status: api.status,
+    approvedBy: api.approved_by,
+    approvedAt: api.approved_at,
+    lockedAt: api.locked_at,
+    payrollPeriodName: api.payroll_period_name,
+    periodStart: api.period_start,
+    periodEnd: api.period_end,
+    payDate: api.pay_date,
+    itemCount: typeof api.item_count === 'string' ? parseInt(api.item_count, 10) : api.item_count,
+    totalGross: typeof api.total_gross === 'string' ? parseFloat(api.total_gross) : api.total_gross,
+    totalDeduction: typeof api.total_deduction === 'string' ? parseFloat(api.total_deduction) : api.total_deduction,
+    totalNet: typeof api.total_net === 'string' ? parseFloat(api.total_net) : api.total_net,
+    expenseEntryId: api.expense_entry_id ?? null,
+    paidAt: api.paid_at ?? null,
+    createdAt: api.created_at ? new Date(api.created_at) : new Date(),
+    updatedAt: api.updated_at ? new Date(api.updated_at) : new Date(),
+  };
+}
+
+export function mapOrgHrPayrollRunItemApiToDomain(api: OrgHrApi.OrgHrPayrollRunItem): OrgHrPayrollRunItem {
+  let breakdown: Record<string, unknown> = {};
+  if (typeof api.breakdown === 'string') {
+    try {
+      breakdown = JSON.parse(api.breakdown) as Record<string, unknown>;
+    } catch {
+      breakdown = {};
+    }
+  } else if (api.breakdown && typeof api.breakdown === 'object') {
+    breakdown = api.breakdown as Record<string, unknown>;
+  }
+
+  return {
+    id: api.id,
+    organizationId: api.organization_id,
+    payrollRunId: api.payroll_run_id,
+    staffId: api.staff_id,
+    grossAmount: typeof api.gross_amount === 'string' ? parseFloat(api.gross_amount) : api.gross_amount,
+    deductionAmount: typeof api.deduction_amount === 'string' ? parseFloat(api.deduction_amount) : api.deduction_amount,
+    netAmount: typeof api.net_amount === 'string' ? parseFloat(api.net_amount) : api.net_amount,
+    breakdown,
+    adjustmentNotes: api.adjustment_notes,
+    employeeId: api.employee_id ?? null,
+    staffFirstName: api.staff_first_name ?? null,
+    staffFatherName: api.staff_father_name ?? null,
+    payslipNumber: api.payslip_number ?? null,
+    payslipStatus: api.payslip_status ?? null,
+    createdAt: api.created_at ? new Date(api.created_at) : new Date(),
+    updatedAt: api.updated_at ? new Date(api.updated_at) : new Date(),
   };
 }

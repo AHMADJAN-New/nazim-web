@@ -50,6 +50,18 @@ use App\Http\Controllers\LibraryLoanController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationDashboardController;
 use App\Http\Controllers\OrganizationHrController;
+use App\Http\Controllers\OrgFinanceAccountController;
+use App\Http\Controllers\OrgFinanceCurrencyController;
+use App\Http\Controllers\OrgFinanceDonorController;
+use App\Http\Controllers\OrgFinanceExchangeRateController;
+use App\Http\Controllers\OrgFinanceExpenseCategoryController;
+use App\Http\Controllers\OrgFinanceExpenseEntryController;
+use App\Http\Controllers\OrgFinanceIncomeCategoryController;
+use App\Http\Controllers\OrgFinanceIncomeEntryController;
+use App\Http\Controllers\OrgFinanceProjectController;
+use App\Http\Controllers\OrgFinanceReportController;
+use App\Http\Controllers\OrgFinanceDocumentController;
+use App\Http\Controllers\OrgFinanceTransferController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PlatformWebsiteConfigController;
 use App\Http\Controllers\PlatformWebsiteDomainController;
@@ -350,13 +362,128 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
 
         Route::get('/compensation/profiles', [OrganizationHrController::class, 'compensationIndex'])
             ->middleware(['feature:org_hr_payroll']);
+        Route::post('/compensation/profiles', [OrganizationHrController::class, 'createCompensationProfile'])
+            ->middleware(['feature:org_hr_payroll']);
+        Route::put('/compensation/profiles/{id}', [OrganizationHrController::class, 'updateCompensationProfile'])
+            ->middleware(['feature:org_hr_payroll']);
+        Route::delete('/compensation/profiles/{id}', [OrganizationHrController::class, 'deleteCompensationProfile'])
+            ->middleware(['feature:org_hr_payroll']);
         Route::get('/payroll/periods', [OrganizationHrController::class, 'payrollPeriods'])
             ->middleware(['feature:org_hr_payroll']);
         Route::post('/payroll/periods', [OrganizationHrController::class, 'createPayrollPeriod'])
             ->middleware(['feature:org_hr_payroll']);
+        Route::get('/payroll/runs', [OrganizationHrController::class, 'payrollRuns'])
+            ->middleware(['feature:org_hr_payroll']);
+        Route::post('/payroll/runs', [OrganizationHrController::class, 'createPayrollRun'])
+            ->middleware(['feature:org_hr_payroll']);
+        Route::get('/payroll/runs/{id}', [OrganizationHrController::class, 'payrollRunShow'])
+            ->middleware(['feature:org_hr_payroll']);
+        Route::post('/payroll/runs/{id}/calculate', [OrganizationHrController::class, 'calculatePayrollRun'])
+            ->middleware(['feature:org_hr_payroll']);
+        Route::post('/payroll/runs/{id}/finalize', [OrganizationHrController::class, 'finalizePayrollRun'])
+            ->middleware(['feature:org_hr_payroll']);
+        Route::post('/payroll/runs/{id}/mark-paid', [OrganizationHrController::class, 'markPayrollRunPaid'])
+            ->middleware(['feature:org_hr_payroll']);
 
         Route::get('/analytics/overview', [OrganizationHrController::class, 'analyticsOverview'])
             ->middleware(['feature:org_hr_analytics']);
+    });
+
+    // Organization Finance APIs (org-scoped; school_id = null; outside school.context)
+    Route::prefix('org-finance')->middleware(['feature:org_finance'])->group(function () {
+        Route::get('/accounts', [OrgFinanceAccountController::class, 'index']);
+        Route::get('/accounts/{id}', [OrgFinanceAccountController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/accounts', [OrgFinanceAccountController::class, 'store'])->middleware('limit:finance_accounts');
+            Route::put('/accounts/{id}', [OrgFinanceAccountController::class, 'update']);
+            Route::delete('/accounts/{id}', [OrgFinanceAccountController::class, 'destroy']);
+        });
+
+        Route::get('/income-categories', [OrgFinanceIncomeCategoryController::class, 'index']);
+        Route::get('/income-categories/{id}', [OrgFinanceIncomeCategoryController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/income-categories', [OrgFinanceIncomeCategoryController::class, 'store']);
+            Route::put('/income-categories/{id}', [OrgFinanceIncomeCategoryController::class, 'update']);
+            Route::delete('/income-categories/{id}', [OrgFinanceIncomeCategoryController::class, 'destroy']);
+        });
+
+        Route::get('/expense-categories', [OrgFinanceExpenseCategoryController::class, 'index']);
+        Route::get('/expense-categories/{id}', [OrgFinanceExpenseCategoryController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/expense-categories', [OrgFinanceExpenseCategoryController::class, 'store']);
+            Route::put('/expense-categories/{id}', [OrgFinanceExpenseCategoryController::class, 'update']);
+            Route::delete('/expense-categories/{id}', [OrgFinanceExpenseCategoryController::class, 'destroy']);
+        });
+
+        Route::get('/projects', [OrgFinanceProjectController::class, 'index']);
+        Route::get('/projects/{id}', [OrgFinanceProjectController::class, 'show']);
+        Route::get('/projects/{id}/summary', [OrgFinanceProjectController::class, 'summary']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/projects', [OrgFinanceProjectController::class, 'store']);
+            Route::put('/projects/{id}', [OrgFinanceProjectController::class, 'update']);
+            Route::delete('/projects/{id}', [OrgFinanceProjectController::class, 'destroy']);
+        });
+
+        Route::get('/donors', [OrgFinanceDonorController::class, 'index']);
+        Route::get('/donors/{id}', [OrgFinanceDonorController::class, 'show']);
+        Route::get('/donors/{id}/summary', [OrgFinanceDonorController::class, 'summary']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/donors', [OrgFinanceDonorController::class, 'store']);
+            Route::put('/donors/{id}', [OrgFinanceDonorController::class, 'update']);
+            Route::delete('/donors/{id}', [OrgFinanceDonorController::class, 'destroy']);
+        });
+
+        Route::get('/currencies', [OrgFinanceCurrencyController::class, 'index']);
+        Route::get('/currencies/{id}', [OrgFinanceCurrencyController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/currencies', [OrgFinanceCurrencyController::class, 'store']);
+            Route::put('/currencies/{id}', [OrgFinanceCurrencyController::class, 'update']);
+            Route::delete('/currencies/{id}', [OrgFinanceCurrencyController::class, 'destroy']);
+        });
+
+        Route::get('/exchange-rates', [OrgFinanceExchangeRateController::class, 'index']);
+        Route::get('/exchange-rates/{id}', [OrgFinanceExchangeRateController::class, 'show']);
+        Route::post('/exchange-rates/convert', [OrgFinanceExchangeRateController::class, 'convert']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/exchange-rates', [OrgFinanceExchangeRateController::class, 'store']);
+            Route::put('/exchange-rates/{id}', [OrgFinanceExchangeRateController::class, 'update']);
+            Route::delete('/exchange-rates/{id}', [OrgFinanceExchangeRateController::class, 'destroy']);
+        });
+
+        Route::get('/income-entries', [OrgFinanceIncomeEntryController::class, 'index']);
+        Route::get('/income-entries/{id}', [OrgFinanceIncomeEntryController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/income-entries', [OrgFinanceIncomeEntryController::class, 'store'])->middleware('limit:income_entries');
+            Route::put('/income-entries/{id}', [OrgFinanceIncomeEntryController::class, 'update']);
+            Route::delete('/income-entries/{id}', [OrgFinanceIncomeEntryController::class, 'destroy']);
+        });
+
+        Route::get('/expense-entries', [OrgFinanceExpenseEntryController::class, 'index']);
+        Route::get('/expense-entries/{id}', [OrgFinanceExpenseEntryController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/expense-entries', [OrgFinanceExpenseEntryController::class, 'store'])->middleware('limit:expense_entries');
+            Route::put('/expense-entries/{id}', [OrgFinanceExpenseEntryController::class, 'update']);
+            Route::delete('/expense-entries/{id}', [OrgFinanceExpenseEntryController::class, 'destroy']);
+        });
+
+        Route::get('/dashboard', [OrgFinanceReportController::class, 'dashboard']);
+        Route::get('/reports/daily-cashbook', [OrgFinanceReportController::class, 'dailyCashbook']);
+        Route::get('/reports/income-vs-expense', [OrgFinanceReportController::class, 'incomeVsExpense']);
+        Route::get('/reports/project-summary', [OrgFinanceReportController::class, 'projectSummary']);
+        Route::get('/reports/donor-summary', [OrgFinanceReportController::class, 'donorSummary']);
+        Route::get('/reports/account-balances', [OrgFinanceReportController::class, 'accountBalances']);
+        Route::get('/transfers', [OrgFinanceTransferController::class, 'index']);
+        Route::post('/transfers', [OrgFinanceTransferController::class, 'store']);
+        Route::get('/schools/{schoolId}/finance-accounts', [OrgFinanceTransferController::class, 'schoolAccounts']);
+        Route::get('/schools/{schoolId}/income-categories', [OrgFinanceTransferController::class, 'schoolIncomeCategories']);
+
+        Route::get('/finance-documents', [OrgFinanceDocumentController::class, 'index']);
+        Route::get('/finance-documents/{id}/download', [OrgFinanceDocumentController::class, 'download']);
+        Route::get('/finance-documents/{id}', [OrgFinanceDocumentController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/finance-documents', [OrgFinanceDocumentController::class, 'store']);
+            Route::delete('/finance-documents/{id}', [OrgFinanceDocumentController::class, 'destroy']);
+        });
     });
 
     // Watermarks (for school branding)

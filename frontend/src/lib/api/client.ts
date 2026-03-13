@@ -109,12 +109,17 @@ class ApiClient {
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
-    // For users with schools_access_all, automatically add school_id query parameter
-    // if it's stored in localStorage (set by SchoolContext)
-    // This allows users to switch schools and see data from the selected school
-    // Staff list is intentionally excluded: list shows all org staff; school is only for create/update
-    const isStaffList = endpoint === '/staff' && (options.method === 'GET' || !options.method);
-    if (typeof window !== 'undefined' && !options.params?.school_id && !isStaffList) {
+    // For school-scoped modules, automatically apply the selected school for users
+    // who can switch school context. Org-finance is organization-only (school_id=null);
+    // never add school_id to org-finance requests or the backend may 500.
+    const isOrgFinanceRoute = endpoint.startsWith('/org-finance/');
+    const isOrgHrRoute = endpoint.startsWith('/org-hr/');
+    const skipSchoolIdForOrgRoute =
+      isOrgHrRoute && (options.method === 'GET' || !options.method);
+    const shouldAutoScopeToSelectedSchool =
+      !isOrgFinanceRoute && !skipSchoolIdForOrgRoute;
+
+    if (typeof window !== 'undefined' && !options.params?.school_id && shouldAutoScopeToSelectedSchool) {
       // Check if user has schools_access_all permission (stored in localStorage by SchoolContext)
       const hasSchoolsAccessAll = localStorage.getItem('has_schools_access_all') === 'true';
       const selectedSchoolId = localStorage.getItem('selected_school_id');
@@ -811,6 +816,39 @@ export const orgHrApi = {
     return apiClient.get('/org-hr/compensation/profiles', params);
   },
 
+  createCompensationProfile: async (data: {
+    staff_id: string;
+    base_salary: number;
+    pay_frequency: 'monthly' | 'semi_monthly' | 'semimonthly' | 'biweekly' | 'weekly' | 'daily' | 'annually';
+    currency: string;
+    grade?: string | null;
+    step?: string | null;
+    effective_from: string;
+    effective_to?: string | null;
+    status?: 'active' | 'inactive';
+    legacy_salary_notes?: string | null;
+  }) => {
+    return apiClient.post('/org-hr/compensation/profiles', data);
+  },
+
+  updateCompensationProfile: async (id: string, data: {
+    base_salary?: number;
+    pay_frequency?: 'monthly' | 'semi_monthly' | 'semimonthly' | 'biweekly' | 'weekly' | 'daily' | 'annually';
+    currency?: string;
+    grade?: string | null;
+    step?: string | null;
+    effective_from?: string;
+    effective_to?: string | null;
+    status?: 'active' | 'inactive';
+    legacy_salary_notes?: string | null;
+  }) => {
+    return apiClient.put(`/org-hr/compensation/profiles/${id}`, data);
+  },
+
+  deleteCompensationProfile: async (id: string) => {
+    return apiClient.delete(`/org-hr/compensation/profiles/${id}`);
+  },
+
   payrollPeriods: async () => {
     return apiClient.get('/org-hr/payroll/periods');
   },
@@ -818,6 +856,35 @@ export const orgHrApi = {
   createPayrollPeriod: async (data: { name: string; period_start: string; period_end: string; pay_date?: string | null }) => {
     return apiClient.post('/org-hr/payroll/periods', data);
   },
+
+  payrollRuns: async (params?: { payroll_period_id?: string; status?: string; per_page?: number }) => {
+    return apiClient.get('/org-hr/payroll/runs', params);
+  },
+
+  createPayrollRun: async (data: { payroll_period_id: string; run_name?: string | null }) => {
+    return apiClient.post('/org-hr/payroll/runs', data);
+  },
+
+  payrollRun: async (id: string) => {
+    return apiClient.get(`/org-hr/payroll/runs/${id}`);
+  },
+
+  calculatePayrollRun: async (id: string) => {
+    return apiClient.post(`/org-hr/payroll/runs/${id}/calculate`, {});
+  },
+
+  finalizePayrollRun: async (id: string) => {
+    return apiClient.post(`/org-hr/payroll/runs/${id}/finalize`, {});
+  },
+
+  markPayrollRunPaid: async (
+    id: string,
+    data: { account_id: string; expense_category_id?: string }
+  ) =>
+    apiClient.post<{ id: string; expense_entry_id: string; paid_at: string }>(
+      `/org-hr/payroll/runs/${id}/mark-paid`,
+      data
+    ),
 
   analyticsOverview: async () => {
     return apiClient.get('/org-hr/analytics/overview');
@@ -3793,6 +3860,138 @@ export const financeReportsApi = {
   donorSummary: async (params?: { start_date?: string; end_date?: string }) =>
     apiClient.get('/finance/reports/donor-summary', params),
   accountBalances: async () => apiClient.get('/finance/reports/account-balances'),
+};
+
+// ============================================
+// Org Finance API (org-scoped; no school_id)
+// ============================================
+export const orgFinanceApi = {
+  accounts: {
+    list: async (params?: { type?: string; is_active?: boolean }) =>
+      apiClient.get('/org-finance/accounts', params),
+    get: async (id: string) => apiClient.get(`/org-finance/accounts/${id}`),
+    create: async (data: any) => apiClient.post('/org-finance/accounts', data),
+    update: async (id: string, data: any) => apiClient.put(`/org-finance/accounts/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/accounts/${id}`),
+  },
+  incomeCategories: {
+    list: async (params?: { is_active?: boolean }) =>
+      apiClient.get('/org-finance/income-categories', params),
+    get: async (id: string) => apiClient.get(`/org-finance/income-categories/${id}`),
+    create: async (data: any) => apiClient.post('/org-finance/income-categories', data),
+    update: async (id: string, data: any) => apiClient.put(`/org-finance/income-categories/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/income-categories/${id}`),
+  },
+  expenseCategories: {
+    list: async (params?: { is_active?: boolean }) =>
+      apiClient.get('/org-finance/expense-categories', params),
+    get: async (id: string) => apiClient.get(`/org-finance/expense-categories/${id}`),
+    create: async (data: any) => apiClient.post('/org-finance/expense-categories', data),
+    update: async (id: string, data: any) => apiClient.put(`/org-finance/expense-categories/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/expense-categories/${id}`),
+  },
+  projects: {
+    list: async (params?: { status?: string; is_active?: boolean }) =>
+      apiClient.get('/org-finance/projects', params),
+    get: async (id: string) => apiClient.get(`/org-finance/projects/${id}`),
+    summary: async (id: string) => apiClient.get(`/org-finance/projects/${id}/summary`),
+    create: async (data: any) => apiClient.post('/org-finance/projects', data),
+    update: async (id: string, data: any) => apiClient.put(`/org-finance/projects/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/projects/${id}`),
+  },
+  donors: {
+    list: async (params?: { type?: string; is_active?: boolean; search?: string }) =>
+      apiClient.get('/org-finance/donors', params),
+    get: async (id: string) => apiClient.get(`/org-finance/donors/${id}`),
+    summary: async (id: string, params?: { start_date?: string; end_date?: string }) =>
+      apiClient.get(`/org-finance/donors/${id}/summary`, params),
+    create: async (data: any) => apiClient.post('/org-finance/donors', data),
+    update: async (id: string, data: any) => apiClient.put(`/org-finance/donors/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/donors/${id}`),
+  },
+  currencies: {
+    list: async (params?: { is_active?: boolean; is_base?: boolean }) =>
+      apiClient.get('/org-finance/currencies', params),
+    get: async (id: string) => apiClient.get(`/org-finance/currencies/${id}`),
+    create: async (data: any) => apiClient.post('/org-finance/currencies', data),
+    update: async (id: string, data: any) => apiClient.put(`/org-finance/currencies/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/currencies/${id}`),
+  },
+  exchangeRates: {
+    list: async (params?: { from_currency_id?: string; to_currency_id?: string; effective_date?: string; is_active?: boolean }) =>
+      apiClient.get('/org-finance/exchange-rates', params),
+    get: async (id: string) => apiClient.get(`/org-finance/exchange-rates/${id}`),
+    convert: async (data: { from_currency_id: string; to_currency_id: string; amount: number; date?: string }) =>
+      apiClient.post('/org-finance/exchange-rates/convert', data),
+    create: async (data: any) => apiClient.post('/org-finance/exchange-rates', data),
+    update: async (id: string, data: any) => apiClient.put(`/org-finance/exchange-rates/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/exchange-rates/${id}`),
+  },
+  incomeEntries: {
+    list: async (params?: {
+      account_id?: string; income_category_id?: string; project_id?: string; donor_id?: string;
+      date_from?: string; date_to?: string; search?: string; page?: number; per_page?: number;
+    }) => apiClient.get('/org-finance/income-entries', params),
+    get: async (id: string) => apiClient.get(`/org-finance/income-entries/${id}`),
+    create: async (data: any) => apiClient.post('/org-finance/income-entries', data),
+    update: async (id: string, data: any) => apiClient.put(`/org-finance/income-entries/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/income-entries/${id}`),
+  },
+  expenseEntries: {
+    list: async (params?: {
+      account_id?: string; expense_category_id?: string; project_id?: string; status?: string;
+      date_from?: string; date_to?: string; search?: string; page?: number; per_page?: number;
+    }) => apiClient.get('/org-finance/expense-entries', params),
+    get: async (id: string) => apiClient.get(`/org-finance/expense-entries/${id}`),
+    create: async (data: any) => apiClient.post('/org-finance/expense-entries', data),
+    update: async (id: string, data: any) => apiClient.put(`/org-finance/expense-entries/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/expense-entries/${id}`),
+  },
+  dashboard: async (params?: { target_currency_id?: string }) =>
+    apiClient.get('/org-finance/dashboard', params),
+  reports: {
+    dailyCashbook: async (params: { date: string; account_id?: string; target_currency_id?: string }) =>
+      apiClient.get('/org-finance/reports/daily-cashbook', params),
+    incomeVsExpense: async (params?: { date_from?: string; date_to?: string; target_currency_id?: string }) =>
+      apiClient.get('/org-finance/reports/income-vs-expense', params),
+    projectSummary: async (params?: { status?: string; target_currency_id?: string }) =>
+      apiClient.get('/org-finance/reports/project-summary', params),
+    donorSummary: async (params?: { start_date?: string; end_date?: string; target_currency_id?: string }) =>
+      apiClient.get('/org-finance/reports/donor-summary', params),
+    accountBalances: async (params?: { target_currency_id?: string }) =>
+      apiClient.get('/org-finance/reports/account-balances', params),
+  },
+  transfers: {
+    list: async (params?: { school_id?: string; date_from?: string; date_to?: string; page?: number; per_page?: number }) =>
+      apiClient.get('/org-finance/transfers', params),
+    create: async (data: {
+      school_id: string;
+      org_account_id: string;
+      school_account_id: string;
+      amount: number;
+      transfer_date: string;
+      org_expense_category_id: string;
+      school_income_category_id: string;
+      reference_no?: string;
+      notes?: string;
+    }) => apiClient.post('/org-finance/transfers', data),
+  },
+  schoolFinanceAccounts: async (schoolId: string) =>
+    apiClient.get<Array<{ id: string; name: string; code: string | null; currency_id: string; current_balance: string }>>(
+      `/org-finance/schools/${schoolId}/finance-accounts`
+    ),
+  schoolIncomeCategories: async (schoolId: string) =>
+    apiClient.get<Array<{ id: string; name: string; code: string | null }>>(
+      `/org-finance/schools/${schoolId}/income-categories`
+    ),
+  financeDocuments: {
+    list: async (params?: Record<string, string | undefined>) =>
+      apiClient.get<Array<Record<string, unknown>>>('/org-finance/finance-documents', params),
+    get: async (id: string) => apiClient.get<Record<string, unknown>>(`/org-finance/finance-documents/${id}`),
+    create: async (formData: FormData) =>
+      apiClient.request<Record<string, unknown>>('/org-finance/finance-documents', { method: 'POST', body: formData }),
+    delete: async (id: string) => apiClient.request(`/org-finance/finance-documents/${id}`, { method: 'DELETE' }),
+  },
 };
 
 // Fees API

@@ -4,6 +4,7 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganizationPlanSlug } from '@/hooks/useOrganizationPlanSlug';
 import { useUserPermissions } from '@/hooks/usePermissions';
+import { canAccessOrgAdminArea } from '@/organization-admin/lib/access';
 
 interface OrganizationAdminRouteProps {
   children: React.ReactNode;
@@ -30,23 +31,7 @@ export function OrganizationAdminRoute({ children }: OrganizationAdminRouteProps
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Org-level user: has "access all schools" OR no school (organization management user) OR is platform_admin (can access org admin when in an org)
-  const hasAllSchoolsAccess = profile.schools_access_all === true;
-  const hasNoSchool = !profile?.default_school_id;
-  const isPlatformAdmin = profile.role === 'platform_admin';
-  const isOrgLevelUser = hasAllSchoolsAccess || hasNoSchool || isPlatformAdmin;
-
-  const isOrganizationAdmin = profile.role === 'organization_admin' || isPlatformAdmin;
-  const hasOrgPermission =
-    (permissions ?? []).includes('organizations.read') ||
-    (permissions ?? []).includes('dashboard.read') ||
-    (permissions ?? []).includes('school_branding.read') ||
-    (permissions ?? []).includes('hr_staff.read') ||
-    (permissions ?? []).includes('hr_assignments.read') ||
-    (permissions ?? []).includes('hr_payroll.read') ||
-    (permissions ?? []).includes('hr_reports.read');
-
-  if (!isOrgLevelUser || (!isOrganizationAdmin && !hasOrgPermission)) {
+  if (!canAccessOrgAdminArea(profile, permissions ?? [])) {
     return <Navigate to="/dashboard" replace />;
   }
 

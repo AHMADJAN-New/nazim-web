@@ -47,6 +47,9 @@ export interface OrgHrCompensationProfile {
   grade: string | null;
   step: string | null;
   status: string;
+  employeeId?: string | null;
+  staffFirstName?: string | null;
+  staffFatherName?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,6 +72,49 @@ export interface OrgHrAnalyticsOverview {
   pendingApprovals: number;
 }
 
+export interface OrgHrPayrollRun {
+  id: string;
+  organizationId: string;
+  payrollPeriodId: string;
+  runName: string;
+  status: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  lockedAt: string | null;
+  payrollPeriodName: string;
+  periodStart: string;
+  periodEnd: string;
+  payDate: string | null;
+  itemCount: number;
+  totalGross: number;
+  totalDeduction: number;
+  totalNet: number;
+  expenseEntryId?: string | null;
+  paidAt?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OrgHrPayrollRunItem {
+  id: string;
+  organizationId: string;
+  payrollRunId: string;
+  staffId: string;
+  grossAmount: number;
+  deductionAmount: number;
+  netAmount: number;
+  breakdown: Record<string, unknown>;
+  adjustmentNotes: string | null;
+  employeeId?: string | null;
+  staffFirstName?: string | null;
+  staffFatherName?: string | null;
+  payslipNumber?: string | null;
+  payslipStatus?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export type OrgHrStaffStatus = 'active' | 'inactive' | 'on_leave' | 'terminated' | 'suspended';
 export type OrgHrAssignmentStatus = 'active' | 'ended' | 'suspended';
 export type OrgHrPayrollPeriodStatus = 'draft' | 'processing' | 'finalized' | 'paid';
+export type OrgHrPayFrequency = 'monthly' | 'semi_monthly' | 'semimonthly' | 'biweekly' | 'weekly' | 'daily' | 'annually';

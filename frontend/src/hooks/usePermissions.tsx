@@ -293,6 +293,8 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'hr_payroll.export': 'org_hr_payroll',
   'hr_reports.read': 'org_hr_analytics',
   'hr_reports.export': 'org_hr_analytics',
+  'org_finance.read': 'org_finance',
+  'org_finance.create': 'org_finance',
   'classes.read': 'classes',
   'classes.create': 'classes',
   'classes.update': 'classes',
