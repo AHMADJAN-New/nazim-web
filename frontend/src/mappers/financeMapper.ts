@@ -282,6 +282,7 @@ export function mapExpenseEntryApiToDomain(api: FinanceApi.ExpenseEntry): Expens
         accountId: api.account_id,
         expenseCategoryId: api.expense_category_id,
         projectId: api.project_id,
+        payrollRunId: api.payroll_run_id ?? null,
         amount: parseDecimal(api.amount),
         date: new Date(api.date),
         referenceNo: api.reference_no,

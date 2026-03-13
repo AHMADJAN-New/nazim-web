@@ -363,12 +363,12 @@ class FileStorageService
 
     /**
      * Store finance document (PRIVATE)
-     * CRITICAL: Finance files are school-scoped and MUST include schoolId
+     * When $schoolId is null, stores under organization-level path (org-scoped finance).
      */
     public function storeFinanceDocument(
         UploadedFile $file,
         string $organizationId,
-        string $schoolId,
+        ?string $schoolId,
         ?string $documentType = null
     ): string {
         // Check storage limit before storing

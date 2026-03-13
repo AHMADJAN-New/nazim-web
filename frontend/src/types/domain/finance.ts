@@ -201,6 +201,7 @@ export interface ExpenseEntry {
     accountId: string;
     expenseCategoryId: string;
     projectId: string | null;
+    payrollRunId: string | null;
     amount: number;
     date: Date;
     referenceNo: string | null;

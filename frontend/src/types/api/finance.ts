@@ -207,6 +207,7 @@ export interface ExpenseEntry {
     account_id: string;
     expense_category_id: string;
     project_id: string | null;
+    payroll_run_id: string | null;
     amount: string;
     date: string;
     reference_no: string | null;
