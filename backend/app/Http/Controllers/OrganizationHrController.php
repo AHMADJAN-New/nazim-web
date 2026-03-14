@@ -57,6 +57,7 @@ class OrganizationHrController extends Controller
         foreach ($intervals as $interval) {
             if ($merged === []) {
                 $merged[] = $interval;
+
                 continue;
             }
 
@@ -69,6 +70,7 @@ class OrganizationHrController extends Controller
                 if ($interval['end'] > $last['end']) {
                     $merged[$lastIndex]['end'] = $interval['end'];
                 }
+
                 continue;
             }
 
@@ -86,13 +88,21 @@ class OrganizationHrController extends Controller
     private function getOrgContext(Request $request): array
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(401, 'Unauthenticated');
         }
 
         $profile = DB::table('profiles')->where('id', $user->id)->first();
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             abort(403, 'User must be assigned to an organization');
+        }
+
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId((string) $profile->organization_id);
+        }
+
+        if ($user->hasRole('admin')) {
+            abort(403, 'School admins cannot access organization-wide HR data.');
         }
 
         return [$user, $profile, (string) $profile->organization_id];
@@ -101,7 +111,7 @@ class OrganizationHrController extends Controller
     private function ensurePermission(Request $request, string $permission): string
     {
         [$user, , $organizationId] = $this->getOrgContext($request);
-        if (!$this->userHasPermission($user, $permission, $organizationId)) {
+        if (! $this->userHasPermission($user, $permission, $organizationId)) {
             abort(403, 'This action is unauthorized');
         }
 
@@ -116,7 +126,7 @@ class OrganizationHrController extends Controller
             ->whereNull('deleted_at')
             ->exists();
 
-        if (!$exists) {
+        if (! $exists) {
             abort(404, 'Staff not found in your organization');
         }
     }
@@ -129,7 +139,7 @@ class OrganizationHrController extends Controller
             ->whereNull('deleted_at')
             ->exists();
 
-        if (!$exists) {
+        if (! $exists) {
             abort(422, 'School does not belong to your organization');
         }
     }
@@ -356,7 +366,7 @@ class OrganizationHrController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$staff) {
+        if (! $staff) {
             return response()->json(['error' => 'Staff not found'], 404);
         }
 
@@ -465,7 +475,7 @@ class OrganizationHrController extends Controller
         if ((bool) $data['is_primary']) {
             $hasOverlappingPrimary = false;
             foreach ($existingAssignments as $assignment) {
-                if (!(bool) $assignment->is_primary) {
+                if (! (bool) $assignment->is_primary) {
                     continue;
                 }
 
@@ -518,7 +528,7 @@ class OrganizationHrController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$row) {
+        if (! $row) {
             return response()->json(['error' => 'Assignment not found'], 404);
         }
 
@@ -572,7 +582,7 @@ class OrganizationHrController extends Controller
 
             if ($isPrimary) {
                 foreach ($existingAssignments as $assignment) {
-                    if (!(bool) $assignment->is_primary) {
+                    if (! (bool) $assignment->is_primary) {
                         continue;
                     }
                     if ($this->dateRangesOverlap(
@@ -625,7 +635,7 @@ class OrganizationHrController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$row) {
+        if (! $row) {
             return response()->json(['error' => 'Assignment not found'], 404);
         }
 
@@ -1276,12 +1286,12 @@ class OrganizationHrController extends Controller
             ->where('organization_id', $organizationId)
             ->whereNull('school_id')
             ->find($validated['account_id']);
-        if (!$account) {
+        if (! $account) {
             return response()->json(['error' => 'Account must be an org-level finance account.'], 422);
         }
 
         $categoryId = $validated['expense_category_id'] ?? null;
-        if (!$categoryId) {
+        if (! $categoryId) {
             $payrollCategory = ExpenseCategory::whereNull('deleted_at')
                 ->where('organization_id', $organizationId)
                 ->whereNull('school_id')
@@ -1292,7 +1302,7 @@ class OrganizationHrController extends Controller
                 ->first();
             $categoryId = $payrollCategory?->id;
         }
-        if (!$categoryId) {
+        if (! $categoryId) {
             return response()->json(['error' => 'Expense category is required. Create an org-level "Payroll" category or pass expense_category_id.'], 422);
         }
 
@@ -1300,7 +1310,7 @@ class OrganizationHrController extends Controller
             ->where('organization_id', $organizationId)
             ->whereNull('school_id')
             ->find($categoryId);
-        if (!$category) {
+        if (! $category) {
             return response()->json(['error' => 'Expense category must be an org-level category.'], 422);
         }
 
@@ -1319,6 +1329,7 @@ class OrganizationHrController extends Controller
                     ->update(['status' => 'paid', 'updated_at' => now()]);
             });
             $runFresh = DB::table('payroll_runs')->where('id', $run->id)->first();
+
             return response()->json([
                 'id' => $run->id,
                 'expense_entry_id' => $existingExpense->id,
@@ -1329,16 +1340,16 @@ class OrganizationHrController extends Controller
         $summary = $this->getPayrollRunSummary($id, $organizationId);
         $totalNet = $summary ? (float) $summary->total_net : 0;
         $period = $this->getPayrollPeriodRecord((string) $run->payroll_period_id, $organizationId);
-        $expenseDate = $period && !empty($period->pay_date)
+        $expenseDate = $period && ! empty($period->pay_date)
             ? (string) $period->pay_date
             : now()->toDateString();
         $runName = $run->run_name ?? 'Payroll Run';
         $periodName = $period ? ($period->name ?? '') : '';
-        $description = trim("{$runName}" . ($periodName ? " – {$periodName}" : ''));
-        $referenceNo = 'PAYROLL-' . substr($run->id, 0, 8);
+        $description = trim("{$runName}".($periodName ? " – {$periodName}" : ''));
+        $referenceNo = 'PAYROLL-'.substr($run->id, 0, 8);
 
         $currencyId = $account->currency_id;
-        if (!$currencyId) {
+        if (! $currencyId) {
             $base = \App\Models\Currency::where('organization_id', $organizationId)
                 ->whereNull('school_id')
                 ->where('is_base', true)
@@ -1347,7 +1358,7 @@ class OrganizationHrController extends Controller
                 ->first();
             $currencyId = $base?->id;
         }
-        if (!$currencyId) {
+        if (! $currencyId) {
             return response()->json(['error' => 'Account must have a currency. Configure org finance base currency.'], 422);
         }
 

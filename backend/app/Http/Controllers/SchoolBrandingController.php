@@ -16,22 +16,23 @@ class SchoolBrandingController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission: school_branding.read (all users)
         try {
-            if (!$this->userHasPermission($user, 'school_branding.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'school_branding.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.read: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Permission check failed for school_branding.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -81,33 +82,39 @@ class SchoolBrandingController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission: school_branding.read (all users)
         try {
-            if (!$this->userHasPermission($user, 'school_branding.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'school_branding.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.read: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Permission check failed for school_branding.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $school = SchoolBranding::whereNull('deleted_at')->find($id);
 
-        if (!$school) {
+        if (! $school) {
             return response()->json(['error' => 'School not found'], 404);
         }
 
         // Check organization access (user's organization only)
         if ($school->organization_id !== $profile->organization_id) {
+            return response()->json(['error' => 'School not found'], 404);
+        }
+
+        $accessibleSchoolIds = $this->getAccessibleSchoolIds($profile);
+        if (! in_array($school->id, $accessibleSchoolIds, true)) {
             return response()->json(['error' => 'School not found'], 404);
         }
 
@@ -122,22 +129,23 @@ class SchoolBrandingController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission: school_branding.create (all users)
         try {
-            if (!$user->hasPermissionTo('school_branding.create')) {
+            if (! $user->hasPermissionTo('school_branding.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.create: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Permission check failed for school_branding.create: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -186,7 +194,7 @@ class SchoolBrandingController extends Controller
         $orgIds = [$profile->organization_id];
 
         // Validate organization access
-        if (!in_array($request->organization_id, $orgIds)) {
+        if (! in_array($request->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot create school for a non-accessible organization'], 403);
         }
 
@@ -240,17 +248,18 @@ class SchoolBrandingController extends Controller
 
         // Handle binary logo data separately using DB::update() for PostgreSQL BYTEA
         $binaryUpdates = [];
-        
+
         if ($request->has('primary_logo_binary') && $request->primary_logo_binary) {
             try {
                 $primaryLogoBinary = base64_decode($request->primary_logo_binary, true);
                 if ($primaryLogoBinary === false) {
                     return response()->json(['error' => 'Invalid base64 encoding for primary logo'], 400);
                 }
-                $binaryUpdates['primary_logo_binary'] = DB::raw("'\\x" . bin2hex($primaryLogoBinary) . "'::bytea");
+                $binaryUpdates['primary_logo_binary'] = DB::raw("'\\x".bin2hex($primaryLogoBinary)."'::bytea");
             } catch (\Exception $e) {
-                \Log::error("Error decoding primary logo: " . $e->getMessage());
-                return response()->json(['error' => 'Failed to decode primary logo: ' . $e->getMessage()], 400);
+                \Log::error('Error decoding primary logo: '.$e->getMessage());
+
+                return response()->json(['error' => 'Failed to decode primary logo: '.$e->getMessage()], 400);
             }
         }
 
@@ -260,10 +269,11 @@ class SchoolBrandingController extends Controller
                 if ($secondaryLogoBinary === false) {
                     return response()->json(['error' => 'Invalid base64 encoding for secondary logo'], 400);
                 }
-                $binaryUpdates['secondary_logo_binary'] = DB::raw("'\\x" . bin2hex($secondaryLogoBinary) . "'::bytea");
+                $binaryUpdates['secondary_logo_binary'] = DB::raw("'\\x".bin2hex($secondaryLogoBinary)."'::bytea");
             } catch (\Exception $e) {
-                \Log::error("Error decoding secondary logo: " . $e->getMessage());
-                return response()->json(['error' => 'Failed to decode secondary logo: ' . $e->getMessage()], 400);
+                \Log::error('Error decoding secondary logo: '.$e->getMessage());
+
+                return response()->json(['error' => 'Failed to decode secondary logo: '.$e->getMessage()], 400);
             }
         }
 
@@ -273,28 +283,29 @@ class SchoolBrandingController extends Controller
                 if ($ministryLogoBinary === false) {
                     return response()->json(['error' => 'Invalid base64 encoding for ministry logo'], 400);
                 }
-                $binaryUpdates['ministry_logo_binary'] = DB::raw("'\\x" . bin2hex($ministryLogoBinary) . "'::bytea");
+                $binaryUpdates['ministry_logo_binary'] = DB::raw("'\\x".bin2hex($ministryLogoBinary)."'::bytea");
             } catch (\Exception $e) {
-                \Log::error("Error decoding ministry logo: " . $e->getMessage());
-                return response()->json(['error' => 'Failed to decode ministry logo: ' . $e->getMessage()], 400);
+                \Log::error('Error decoding ministry logo: '.$e->getMessage());
+
+                return response()->json(['error' => 'Failed to decode ministry logo: '.$e->getMessage()], 400);
             }
         }
 
         // Update binary fields if any
-        if (!empty($binaryUpdates)) {
+        if (! empty($binaryUpdates)) {
             DB::table('school_branding')
                 ->where('id', $school->id)
                 ->update($binaryUpdates);
-            
+
             // Refresh the model to get updated data
             $school->refresh();
-            
+
             // Clear branding cache so reports use updated logos
             try {
                 $brandingCache = app(\App\Services\Reports\BrandingCacheService::class);
                 $brandingCache->clearBrandingCache($school->id);
             } catch (\Exception $e) {
-                \Log::warning("Failed to clear branding cache: " . $e->getMessage());
+                \Log::warning('Failed to clear branding cache: '.$e->getMessage());
             }
         }
 
@@ -306,7 +317,7 @@ class SchoolBrandingController extends Controller
                     'school_id' => $school->id,
                 ],
                 [
-                    'school_slug' => 'school-' . substr($school->id, 0, 8),
+                    'school_slug' => 'school-'.substr($school->id, 0, 8),
                     'default_language' => 'ps',
                     'enabled_languages' => ['ps', 'en', 'ar', 'fa'],
                     'theme' => [
@@ -328,9 +339,9 @@ class SchoolBrandingController extends Controller
 
         // Seed website pages and navigation for new school (in Pashto)
         try {
-            $seeder = new \Database\Seeders\WebsitePagesAndNavigationSeeder();
+            $seeder = new \Database\Seeders\WebsitePagesAndNavigationSeeder;
             $seeder->seedForSchool($school->organization_id, $school->id, 'ps');
-            
+
             \Log::info('Website pages and navigation seeded for new school', [
                 'organization_id' => $school->organization_id,
                 'school_id' => $school->id,
@@ -348,7 +359,7 @@ class SchoolBrandingController extends Controller
         // Seed default admission rules for new school
         try {
             \Database\Seeders\SchoolAdmissionRulesSeeder::seedForSchool($school->organization_id, $school->id);
-            
+
             \Log::info('School admission rules seeded for new school', [
                 'organization_id' => $school->organization_id,
                 'school_id' => $school->id,
@@ -373,28 +384,29 @@ class SchoolBrandingController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission: school_branding.update (all users)
         try {
-            if (!$user->hasPermissionTo('school_branding.update')) {
+            if (! $user->hasPermissionTo('school_branding.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.update: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Permission check failed for school_branding.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $school = SchoolBranding::whereNull('deleted_at')->find($id);
 
-        if (!$school) {
+        if (! $school) {
             return response()->json(['error' => 'School not found'], 404);
         }
 
@@ -446,7 +458,7 @@ class SchoolBrandingController extends Controller
         // Prepare update data - only include fields that are present in the request
         // This prevents setting fields to null if they're not in the request
         $updateData = [];
-        
+
         // Only update fields that are explicitly provided in the request
         $fieldsToUpdate = [
             'school_name',
@@ -490,7 +502,7 @@ class SchoolBrandingController extends Controller
             'calendar_preference',
             'is_active',
         ];
-        
+
         // Define nullable fields that can be set to null
         $nullableFields = [
             'school_name_arabic',
@@ -506,11 +518,11 @@ class SchoolBrandingController extends Controller
             'header_image_path',
             'footer_text',
         ];
-        
+
         foreach ($fieldsToUpdate as $field) {
             if ($request->has($field)) {
                 $value = $request->input($field);
-                
+
                 // Special handling for color fields: convert empty strings to defaults
                 if (in_array($field, ['primary_color', 'secondary_color', 'accent_color'])) {
                     if (empty($value) || trim($value) === '') {
@@ -523,7 +535,7 @@ class SchoolBrandingController extends Controller
                         $value = $defaults[$field];
                     }
                 }
-                
+
                 // Include the value if:
                 // 1. It's not null, OR
                 // 2. It's a nullable field (can be explicitly set to null)
@@ -532,24 +544,24 @@ class SchoolBrandingController extends Controller
                 }
             }
         }
-        
+
         // Special handling for logo metadata: only update if new logo binary is being uploaded
         // This prevents clearing metadata when only other fields are updated
-        if (!$request->has('primary_logo_binary') || !$request->primary_logo_binary) {
+        if (! $request->has('primary_logo_binary') || ! $request->primary_logo_binary) {
             // No new primary logo, so don't update its metadata
             unset($updateData['primary_logo_mime_type']);
             unset($updateData['primary_logo_filename']);
             unset($updateData['primary_logo_size']);
         }
-        
-        if (!$request->has('secondary_logo_binary') || !$request->secondary_logo_binary) {
+
+        if (! $request->has('secondary_logo_binary') || ! $request->secondary_logo_binary) {
             // No new secondary logo, so don't update its metadata
             unset($updateData['secondary_logo_mime_type']);
             unset($updateData['secondary_logo_filename']);
             unset($updateData['secondary_logo_size']);
         }
-        
-        if (!$request->has('ministry_logo_binary') || !$request->ministry_logo_binary) {
+
+        if (! $request->has('ministry_logo_binary') || ! $request->ministry_logo_binary) {
             // No new ministry logo, so don't update its metadata
             unset($updateData['ministry_logo_mime_type']);
             unset($updateData['ministry_logo_filename']);
@@ -557,23 +569,24 @@ class SchoolBrandingController extends Controller
         }
 
         // Update non-binary fields first (only fields that were provided)
-        if (!empty($updateData)) {
+        if (! empty($updateData)) {
             $school->update($updateData);
         }
 
         // Handle binary logo data separately using DB::update() for PostgreSQL BYTEA
         $binaryUpdates = [];
-        
+
         if ($request->has('primary_logo_binary') && $request->primary_logo_binary) {
             try {
                 $primaryLogoBinary = base64_decode($request->primary_logo_binary, true);
                 if ($primaryLogoBinary === false) {
                     return response()->json(['error' => 'Invalid base64 encoding for primary logo'], 400);
                 }
-                $binaryUpdates['primary_logo_binary'] = DB::raw("'\\x" . bin2hex($primaryLogoBinary) . "'::bytea");
+                $binaryUpdates['primary_logo_binary'] = DB::raw("'\\x".bin2hex($primaryLogoBinary)."'::bytea");
             } catch (\Exception $e) {
-                \Log::error("Error decoding primary logo: " . $e->getMessage());
-                return response()->json(['error' => 'Failed to decode primary logo: ' . $e->getMessage()], 400);
+                \Log::error('Error decoding primary logo: '.$e->getMessage());
+
+                return response()->json(['error' => 'Failed to decode primary logo: '.$e->getMessage()], 400);
             }
         }
 
@@ -583,10 +596,11 @@ class SchoolBrandingController extends Controller
                 if ($secondaryLogoBinary === false) {
                     return response()->json(['error' => 'Invalid base64 encoding for secondary logo'], 400);
                 }
-                $binaryUpdates['secondary_logo_binary'] = DB::raw("'\\x" . bin2hex($secondaryLogoBinary) . "'::bytea");
+                $binaryUpdates['secondary_logo_binary'] = DB::raw("'\\x".bin2hex($secondaryLogoBinary)."'::bytea");
             } catch (\Exception $e) {
-                \Log::error("Error decoding secondary logo: " . $e->getMessage());
-                return response()->json(['error' => 'Failed to decode secondary logo: ' . $e->getMessage()], 400);
+                \Log::error('Error decoding secondary logo: '.$e->getMessage());
+
+                return response()->json(['error' => 'Failed to decode secondary logo: '.$e->getMessage()], 400);
             }
         }
 
@@ -596,28 +610,29 @@ class SchoolBrandingController extends Controller
                 if ($ministryLogoBinary === false) {
                     return response()->json(['error' => 'Invalid base64 encoding for ministry logo'], 400);
                 }
-                $binaryUpdates['ministry_logo_binary'] = DB::raw("'\\x" . bin2hex($ministryLogoBinary) . "'::bytea");
+                $binaryUpdates['ministry_logo_binary'] = DB::raw("'\\x".bin2hex($ministryLogoBinary)."'::bytea");
             } catch (\Exception $e) {
-                \Log::error("Error decoding ministry logo: " . $e->getMessage());
-                return response()->json(['error' => 'Failed to decode ministry logo: ' . $e->getMessage()], 400);
+                \Log::error('Error decoding ministry logo: '.$e->getMessage());
+
+                return response()->json(['error' => 'Failed to decode ministry logo: '.$e->getMessage()], 400);
             }
         }
 
         // Update binary fields if any
-        if (!empty($binaryUpdates)) {
+        if (! empty($binaryUpdates)) {
             DB::table('school_branding')
                 ->where('id', $school->id)
                 ->update($binaryUpdates);
-            
+
             // Refresh the model to get updated data
             $school->refresh();
-            
+
             // Clear branding cache so reports use updated logos
             try {
                 $brandingCache = app(\App\Services\Reports\BrandingCacheService::class);
                 $brandingCache->clearBrandingCache($school->id);
             } catch (\Exception $e) {
-                \Log::warning("Failed to clear branding cache: " . $e->getMessage());
+                \Log::warning('Failed to clear branding cache: '.$e->getMessage());
             }
         }
 
@@ -632,28 +647,29 @@ class SchoolBrandingController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission: school_branding.delete (all users)
         try {
-            if (!$user->hasPermissionTo('school_branding.delete')) {
+            if (! $user->hasPermissionTo('school_branding.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.delete: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Permission check failed for school_branding.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $school = SchoolBranding::whereNull('deleted_at')->find($id);
 
-        if (!$school) {
+        if (! $school) {
             return response()->json(['error' => 'School not found'], 404);
         }
 
@@ -681,9 +697,9 @@ class SchoolBrandingController extends Controller
 
     /**
      * Get a logo for a school (with HTTP caching)
-     * 
-     * @param string $id School ID
-     * @param string $type Logo type: 'primary', 'secondary', or 'ministry'
+     *
+     * @param  string  $id  School ID
+     * @param  string  $type  Logo type: 'primary', 'secondary', or 'ministry'
      * @return \Illuminate\Http\Response
      */
     public function logo(Request $request, string $id, string $type)
@@ -691,28 +707,29 @@ class SchoolBrandingController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission: school_branding.read (all users)
         try {
-            if (!$this->userHasPermission($user, 'school_branding.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'school_branding.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.read: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Permission check failed for school_branding.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $school = SchoolBranding::whereNull('deleted_at')->find($id);
 
-        if (!$school) {
+        if (! $school) {
             return response()->json(['error' => 'School not found'], 404);
         }
 
@@ -743,7 +760,7 @@ class SchoolBrandingController extends Controller
             ],
         ];
 
-        if (!isset($logoMap[$type])) {
+        if (! isset($logoMap[$type])) {
             return response()->json(['error' => 'Invalid logo type. Must be: primary, secondary, or ministry'], 400);
         }
 
@@ -763,18 +780,18 @@ class SchoolBrandingController extends Controller
         if (is_resource($binary)) {
             $binary = stream_get_contents($binary);
         }
-        
+
         // Ensure binary is a string (handle any other edge cases)
         $binary = (string) $binary;
 
         $mimeType = $school->getAttribute($mimeField) ?: 'image/png';
         $filename = $school->getAttribute($filenameField) ?: "{$type}_logo";
-        $fileSize = (int)($school->getAttribute($sizeField) ?: strlen($binary));
+        $fileSize = (int) ($school->getAttribute($sizeField) ?: strlen($binary));
         $updatedAtTimestamp = $school->updated_at ? $school->updated_at->getTimestamp() : 0;
 
         // Generate ETag based on school ID, type, updated timestamp, size, filename, and mime type
-        $etag = '"' . sha1($school->id . '|' . $type . '|' . $updatedAtTimestamp . '|' . $fileSize . '|' . $filename . '|' . $mimeType) . '"';
-        
+        $etag = '"'.sha1($school->id.'|'.$type.'|'.$updatedAtTimestamp.'|'.$fileSize.'|'.$filename.'|'.$mimeType).'"';
+
         // Cache for 7 days, allow stale-while-revalidate for 1 day
         $cacheControl = 'private, max-age=604800, stale-while-revalidate=86400';
 
@@ -788,12 +805,9 @@ class SchoolBrandingController extends Controller
         // Return logo with proper headers
         return response($binary, 200)
             ->header('Content-Type', $mimeType)
-            ->header('Content-Length', (string)$fileSize)
-            ->header('Content-Disposition', 'inline; filename="' . addslashes($filename) . '"')
+            ->header('Content-Length', (string) $fileSize)
+            ->header('Content-Disposition', 'inline; filename="'.addslashes($filename).'"')
             ->header('ETag', $etag)
             ->header('Cache-Control', $cacheControl);
     }
 }
-
-
-

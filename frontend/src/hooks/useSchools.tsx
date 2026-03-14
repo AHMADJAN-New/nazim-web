@@ -31,7 +31,14 @@ export const useSchools = (organizationId?: string) => {
   );
 
   return useQuery<School[]>({
-    queryKey: ['schools', organizationId || profile?.organization_id, profile?.default_school_id ?? null, orgIds.join(',')],
+    queryKey: [
+      'schools',
+      user?.id ?? null,
+      organizationId || profile?.organization_id,
+      profile?.default_school_id ?? null,
+      profile?.schools_access_all ?? false,
+      orgIds.join(','),
+    ],
     queryFn: async () => {
       if (!user || !profile || orgsLoading || isEventUser) return [];
 

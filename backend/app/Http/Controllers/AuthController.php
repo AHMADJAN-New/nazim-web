@@ -281,20 +281,30 @@ class AuthController extends Controller
         ]);
 
         // Enforce school belongs to user's organization (school-scoped system)
-        if ($request->filled('default_school_id')) {
+        if ($request->has('default_school_id')) {
             $profile = DB::table('profiles')->where('id', $request->user()->id)->first();
             if (! $profile || ! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            $belongs = DB::table('school_branding')
-                ->where('id', $request->default_school_id)
-                ->where('organization_id', $profile->organization_id)
-                ->whereNull('deleted_at')
-                ->exists();
+            $hasSchoolsAccessAll = (bool) ($profile->schools_access_all ?? false);
+            if (! $hasSchoolsAccessAll && $request->input('default_school_id') !== $profile->default_school_id) {
+                return response()->json([
+                    'error' => 'You cannot switch to another school',
+                    'message' => 'Your account is restricted to its assigned default school.',
+                ], 403);
+            }
 
-            if (! $belongs) {
-                return response()->json(['error' => 'Invalid default school for this organization'], 403);
+            if ($request->filled('default_school_id')) {
+                $belongs = DB::table('school_branding')
+                    ->where('id', $request->default_school_id)
+                    ->where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                if (! $belongs) {
+                    return response()->json(['error' => 'Invalid default school for this organization'], 403);
+                }
             }
         }
 

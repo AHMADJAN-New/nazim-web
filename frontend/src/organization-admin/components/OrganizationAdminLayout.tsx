@@ -40,7 +40,8 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrentOrganization } from '@/hooks/useOrganizations';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useHasPermission, useHasPermissionAndFeature } from '@/hooks/usePermissions';
+import { useHasPermission, useHasPermissionAndFeature, useUserPermissions } from '@/hooks/usePermissions';
+import { canAccessOrgAdminDashboard } from '@/organization-admin/lib/access';
 import { cn } from '@/lib/utils';
 
 interface OrganizationAdminLayoutProps {
@@ -100,6 +101,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['Overview', 'HR', 'Finance', 'Management']);
+  const { data: permissions = [] } = useUserPermissions();
 
   const { data: platformAdminStatus } = useQuery<{ is_platform_admin: boolean }>({
     queryKey: ['user-is-platform-admin', user?.id],
@@ -132,6 +134,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
   // even while feature is loading or if only permission is granted (API may still enforce feature)
   const hasOrgFinancePermission = useHasPermission('org_finance.read');
   const showFinanceSection = hasOrgFinanceRead === true || hasOrgFinancePermission === true;
+  const canSeeDashboard = canAccessOrgAdminDashboard(profile, permissions);
 
   const overviewItems: OrgAdminNavItem[] = [
     {
@@ -141,7 +144,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-blue-500',
       iconBg: 'bg-blue-500/10',
       description: t('organizationAdmin.dashboardDesc'),
-      visible: true,
+      visible: canSeeDashboard,
     },
     {
       name: t('organizationAdmin.subscription'),

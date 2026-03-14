@@ -166,6 +166,85 @@ class PermissionSeeder extends Seeder
     }
 
     /**
+     * Flatten the canonical permission map into permission names.
+     *
+     * @return array<string>
+     */
+    public static function getAllPermissionNames(bool $includeSuperAdminOnly = false): array
+    {
+        $permissionNames = [];
+
+        foreach (self::getPermissions() as $resource => $actions) {
+            foreach ($actions as $action) {
+                $permissionNames[] = "{$resource}.{$action}";
+            }
+        }
+
+        $permissionNames = array_values(array_unique($permissionNames));
+
+        if (! $includeSuperAdminOnly) {
+            $permissionNames = array_values(array_diff(
+                $permissionNames,
+                self::getSuperAdminOnlyPermissions()
+            ));
+        }
+
+        sort($permissionNames);
+
+        return $permissionNames;
+    }
+
+    public static function isSchoolAdminRestrictedPermission(?string $permissionName): bool
+    {
+        if (! is_string($permissionName) || $permissionName === '') {
+            return false;
+        }
+
+        return $permissionName === 'schools.access_all'
+            || str_starts_with($permissionName, 'hr_staff.')
+            || str_starts_with($permissionName, 'hr_assignments.')
+            || str_starts_with($permissionName, 'hr_payroll.')
+            || str_starts_with($permissionName, 'hr_reports.')
+            || str_starts_with($permissionName, 'org_finance.');
+    }
+
+    /**
+     * Permissions that school-scoped admins must never receive.
+     *
+     * @return array<string>
+     */
+    public static function getSchoolAdminRestrictedPermissions(): array
+    {
+        return array_values(array_filter(
+            self::getAllPermissionNames(),
+            fn (string $permissionName): bool => self::isSchoolAdminRestrictedPermission($permissionName)
+        ));
+    }
+
+    /**
+     * Organization-wide administrator permissions.
+     *
+     * @return array<string>
+     */
+    public static function getOrganizationAdminPermissions(): array
+    {
+        return self::getAllPermissionNames();
+    }
+
+    /**
+     * School administrator permissions.
+     *
+     * @return array<string>
+     */
+    public static function getSchoolAdminPermissions(): array
+    {
+        return array_values(array_filter(
+            self::getOrganizationAdminPermissions(),
+            fn (string $permissionName): bool => ! self::isSchoolAdminRestrictedPermission($permissionName)
+        ));
+    }
+
+    /**
      * Default role permission assignments
      *
      * Format: 'role_name' => ['permission1', 'permission2', ...] or '*' for all permissions
@@ -176,8 +255,8 @@ class PermissionSeeder extends Seeder
     public static function getRolePermissions(): array
     {
         return [
-            'admin' => '*', // All permissions EXCEPT subscription.admin (handled in getExcludedPermissions)
-            'organization_admin' => '*', // Organization Admin - same as admin, full access EXCEPT subscription.admin
+            'admin' => self::getSchoolAdminPermissions(),
+            'organization_admin' => self::getOrganizationAdminPermissions(),
             'staff' => [
                 // Staff: general office/operational access; finance/fees/currencies read-only (see accountant for full finance)
                 // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
@@ -481,6 +560,14 @@ class PermissionSeeder extends Seeder
         ];
     }
 
+    public static function countPermissionsForRole(string $roleName): int
+    {
+        $rolePermissions = self::getRolePermissions();
+        $permissionList = $rolePermissions[$roleName] ?? [];
+
+        return is_array($permissionList) ? count($permissionList) : 0;
+    }
+
     /**
      * Permissions that should be EXCLUDED from organization-level admins.
      * These are super-admin only permissions managed by the platform owner.
@@ -539,14 +626,14 @@ class PermissionSeeder extends Seeder
                     ->whereNull('organization_id')
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     DB::table('permissions')->insert([
                         'name' => $permissionName,
                         'guard_name' => 'web',
                         'organization_id' => null, // Global permissions
                         'resource' => $resource,
                         'action' => $action,
-                        'description' => ucfirst($action) . ' ' . str_replace('_', ' ', $resource),
+                        'description' => ucfirst($action).' '.str_replace('_', ' ', $resource),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -590,14 +677,14 @@ class PermissionSeeder extends Seeder
                             ->where('organization_id', $organization->id)
                             ->exists();
 
-                        if (!$exists) {
+                        if (! $exists) {
                             DB::table('permissions')->insert([
                                 'name' => $permissionName,
                                 'guard_name' => 'web',
                                 'organization_id' => $organization->id, // Organization-specific permissions
                                 'resource' => $resource,
                                 'action' => $action,
-                                'description' => ucfirst($action) . ' ' . str_replace('_', ' ', $resource),
+                                'description' => ucfirst($action).' '.str_replace('_', ' ', $resource),
                                 'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
@@ -612,7 +699,7 @@ class PermissionSeeder extends Seeder
             }
         }
 
-        Log::info("Permission seeding completed:");
+        Log::info('Permission seeding completed:');
         Log::info("  Global permissions - Created: {$globalCreatedCount}, Skipped: {$globalSkippedCount}");
         Log::info("  Organization permissions - Created: {$orgCreatedCount}, Skipped: {$orgSkippedCount}");
 

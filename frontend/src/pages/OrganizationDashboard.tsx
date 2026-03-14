@@ -38,6 +38,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useOrganizationDashboardOverview } from '@/hooks/useOrganizationDashboardOverview';
 import { useUserPermissions } from '@/hooks/usePermissions';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
+import { canAccessOrgAdminDashboard } from '@/organization-admin/lib/access';
 
 const formatNumber = (value: number): string => {
   return new Intl.NumberFormat().format(value || 0);
@@ -58,17 +59,8 @@ export default function OrganizationDashboard() {
   const isAccessCheckLoading = loading || profileLoading || permissionsLoading;
 
   const canAccessOrganizationDashboard = useMemo(() => {
-    if (!profile?.organization_id) return false;
-
-    const hasAllSchoolsAccess = profile.schools_access_all === true;
-    const isOrganizationAdmin = profile.role === 'organization_admin';
-    const hasEquivalentPermission =
-      permissions.includes('organizations.read') ||
-      permissions.includes('dashboard.read') ||
-      permissions.includes('school_branding.read');
-
-    return hasAllSchoolsAccess && (isOrganizationAdmin || hasEquivalentPermission);
-  }, [permissions, profile?.organization_id, profile?.role, profile?.schools_access_all]);
+    return canAccessOrgAdminDashboard(profile, permissions);
+  }, [permissions, profile]);
 
   const {
     data: overview,

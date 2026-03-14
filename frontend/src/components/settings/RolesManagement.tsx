@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/table';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
+import { filterRolesForSchoolScopedAdmin } from '@/lib/access/schoolAdminRestrictions';
 
 const roleSchema = z.object({
   name: z.string().min(1, 'Role name is required').max(255, 'Role name must be 255 characters or less'),
@@ -86,12 +87,16 @@ export function RolesManagement() {
   });
 
   const isEditMode = !!selectedRole;
+  const visibleRoles = useMemo(
+    () => filterRolesForSchoolScopedAdmin(roles, profile),
+    [roles, profile],
+  );
 
   // Filter roles based on search
   const filteredRoles = useMemo(() => {
-    if (!roles) return [];
+    if (!visibleRoles) return [];
 
-    let filtered = roles;
+    let filtered = visibleRoles;
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -103,7 +108,7 @@ export function RolesManagement() {
     }
 
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [roles, searchQuery]);
+  }, [visibleRoles, searchQuery]);
 
   const handleOpenDialog = (role?: Role) => {
     if (role) {
@@ -305,7 +310,7 @@ export function RolesManagement() {
                 <CardTitle className="text-sm font-medium">{t('roles.totalRoles')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{roles.length}</div>
+                <div className="text-2xl font-bold">{visibleRoles.length}</div>
               </CardContent>
             </Card>
             <Card>
@@ -314,7 +319,7 @@ export function RolesManagement() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {roles.filter(r => r.organization_id).length}
+                  {visibleRoles.filter(r => r.organization_id).length}
                 </div>
               </CardContent>
             </Card>

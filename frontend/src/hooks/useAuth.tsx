@@ -245,6 +245,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const mainAppTokenBackup = localStorage.getItem('main_app_token_backup');
       
       if (!(isPlatformAdminSession && mainAppTokenBackup)) {
+        localStorage.removeItem('selected_school_id');
+        localStorage.removeItem('has_schools_access_all');
         apiClient.setToken(null);
         setUser(null);
         setSession(null);

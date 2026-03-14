@@ -264,6 +264,7 @@ import OrganizationHrAssignmentsPage from '@/pages/organization/hr/OrganizationH
 import OrganizationHrPayrollPage from '@/pages/organization/hr/OrganizationHrPayrollPage';
 import OrganizationHrReportsPage from '@/pages/organization/hr/OrganizationHrReportsPage';
 import { OrganizationAdminRoute } from '@/components/OrganizationAdminRoute';
+import { OrganizationAdminIndexRedirect } from '@/organization-admin/components/OrganizationAdminIndexRedirect';
 import { OrganizationAdminLayout } from '@/organization-admin/components/OrganizationAdminLayout';
 import OrgAdminLimitsPage from '@/organization-admin/pages/OrgAdminLimitsPage';
 import OrgAdminPermissionsPage from '@/organization-admin/pages/OrgAdminPermissionsPage';
@@ -747,7 +748,7 @@ const App = () => (
                       </OrganizationAdminLayout>
                     </OrganizationAdminRoute>
                   }>
-                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route index element={<OrganizationAdminIndexRedirect />} />
                     <Route path="dashboard" element={
                       <Suspense fallback={<DashboardSkeleton />}>
                         <OrganizationDashboard />

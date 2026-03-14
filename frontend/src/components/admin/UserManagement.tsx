@@ -52,6 +52,7 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStaff } from '@/hooks/useStaff';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUserPassword, type UserProfile, type CreateUserData, type UpdateUserData } from '@/hooks/useUsers';
+import { canSchoolScopedAdminManageUser, filterRolesForSchoolScopedAdmin, isSchoolScopedAdmin } from '@/lib/access/schoolAdminRestrictions';
 import { showToast } from '@/lib/toast';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
@@ -170,18 +171,39 @@ export function UserManagement({ showSchoolsAccessAll = false }: UserManagementP
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
   const resetPassword = useResetUserPassword();
+  const isSchoolAdmin = isSchoolScopedAdmin(profile);
+  const visibleRoles = useMemo(
+    () => sortRolesForDisplay(filterRolesForSchoolScopedAdmin(roles, profile)),
+    [roles, profile],
+  );
+  const selectableSchools = useMemo(() => {
+    if (!schools) return [];
+    if (!isSchoolAdmin || !profile?.default_school_id) return schools;
+    return schools.filter((school) => school.id === profile.default_school_id);
+  }, [isSchoolAdmin, profile?.default_school_id, schools]);
   
   // Auto-select first school if only one exists and no school is selected
   useEffect(() => {
-    if (schools && schools.length === 1 && !watchedSchoolId) {
-      setValue('default_school_id', schools[0].id);
+    if (isSchoolAdmin && profile?.default_school_id && watchedSchoolId !== profile.default_school_id) {
+      setValue('default_school_id', profile.default_school_id);
+      return;
     }
-  }, [schools, watchedSchoolId, setValue]);
+
+    if (selectableSchools && selectableSchools.length === 1 && !watchedSchoolId) {
+      setValue('default_school_id', selectableSchools[0].id);
+    }
+  }, [isSchoolAdmin, profile?.default_school_id, selectableSchools, watchedSchoolId, setValue]);
 
   const isEditMode = !!selectedUser;
   const watchedRole = watch('role') || 'student';
+  const selectedDefaultSchoolValue = watchedSchoolId ?? (isSchoolAdmin ? profile?.default_school_id ?? null : null);
 
   const handleOpenDialog = (user?: UserProfile) => {
+    if (user && !canSchoolScopedAdminManageUser(profile, user.role)) {
+      showToast.error(t('events.noPermission'));
+      return;
+    }
+
     if (user) {
       setSelectedUser(user);
       setValue('full_name', user.name);
@@ -433,7 +455,7 @@ export function UserManagement({ showSchoolsAccessAll = false }: UserManagementP
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('userManagement.allRoles')}</SelectItem>
-                    {roles?.map(role => (
+                    {visibleRoles.map(role => (
                       <SelectItem key={role.name} value={role.name}>
                         {role.name.replace('_', ' ')}
                       </SelectItem>
@@ -542,7 +564,7 @@ export function UserManagement({ showSchoolsAccessAll = false }: UserManagementP
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            {hasUpdatePermission && (
+                            {hasUpdatePermission && canSchoolScopedAdminManageUser(profile, user.role) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -553,7 +575,7 @@ export function UserManagement({ showSchoolsAccessAll = false }: UserManagementP
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             )}
-                            {hasResetPasswordPermission && (
+                            {hasResetPasswordPermission && canSchoolScopedAdminManageUser(profile, user.role) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -567,7 +589,7 @@ export function UserManagement({ showSchoolsAccessAll = false }: UserManagementP
                                 <KeyRound className="h-4 w-4" />
                               </Button>
                             )}
-                            {hasDeletePermission && (
+                            {hasDeletePermission && canSchoolScopedAdminManageUser(profile, user.role) && (
                               <Button
                                 size="sm"
                                 variant="destructive"
@@ -653,7 +675,7 @@ export function UserManagement({ showSchoolsAccessAll = false }: UserManagementP
                     <SelectValue placeholder={t('userManagement.selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {sortRolesForDisplay(roles ?? []).map(role => (
+                    {visibleRoles.map(role => (
                       <SelectItem key={role.name} value={role.name}>
                         {getRoleDisplayLabel(role.name, role.description)}
                       </SelectItem>
@@ -677,34 +699,35 @@ export function UserManagement({ showSchoolsAccessAll = false }: UserManagementP
               </div>
             </div>
             {/* School Selection - Show if user's organization has schools */}
-            {schools && schools.length > 0 && (
+            {selectableSchools && selectableSchools.length > 0 && (
               <div>
                 <Label htmlFor="default_school_id">
                   {t('userManagement.defaultSchool')}
-                  {schools.length > 1 ? ` ${t('userManagement.selectOne')}` : ` ${t('userManagement.autoSelected')}`}
+                  {selectableSchools.length > 1 ? ` ${t('userManagement.selectOne')}` : ` ${t('userManagement.autoSelected')}`}
                 </Label>
                 <Select
-                  value={watch('default_school_id') || 'none'}
+                  value={selectedDefaultSchoolValue ?? 'none'}
                   onValueChange={(value) => setValue('default_school_id', value === 'none' ? null : value)}
+                  disabled={isSchoolAdmin}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={schools && schools.length === 1 ? schools[0].schoolName : t('userManagement.selectSchool')} />
+                    <SelectValue placeholder={selectableSchools.length === 1 ? selectableSchools[0].schoolName : t('userManagement.selectSchool')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t('userManagement.noDefaultSchool')}</SelectItem>
-                    {schools?.map(school => (
+                    {!isSchoolAdmin && <SelectItem value="none">{t('userManagement.noDefaultSchool')}</SelectItem>}
+                    {selectableSchools.map(school => (
                       <SelectItem key={school.id} value={school.id}>
                         {school.schoolName}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {schools.length > 1 && (
+                {selectableSchools.length > 1 && !isSchoolAdmin && (
                   <p className="text-sm text-muted-foreground mt-1">
                     {t('userManagement.defaultSchoolDescription')}
                   </p>
                 )}
-                {schools.length === 1 && (
+                {selectableSchools.length === 1 && (
                   <p className="text-sm text-muted-foreground mt-1">
                     {t('userManagement.onlyOneSchoolDescription')}
                   </p>
@@ -759,8 +782,8 @@ export function UserManagement({ showSchoolsAccessAll = false }: UserManagementP
                   render={({ field: { value, onChange, ...field } }) => (
                     <Checkbox
                       id="schools_access_all"
-                      checked={!!value}
-                      onCheckedChange={(checked) => onChange(!!checked)}
+                      checked={value === true}
+                      onCheckedChange={(checked) => onChange(checked === true)}
                       {...field}
                     />
                   )}

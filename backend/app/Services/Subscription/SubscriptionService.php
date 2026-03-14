@@ -13,12 +13,17 @@ use App\Models\PlanFeature;
 use App\Models\RenewalRequest;
 use App\Models\SubscriptionHistory;
 use App\Models\SubscriptionPlan;
+use App\Services\OrganizationAdminSchoolAccessService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class SubscriptionService
 {
+    public function __construct(
+        private OrganizationAdminSchoolAccessService $organizationAdminSchoolAccessService
+    ) {}
+
     /**
      * Lock the organization row to serialize subscription state changes.
      */
@@ -58,18 +63,19 @@ class SubscriptionService
     {
         try {
             $subscription = $this->getCurrentSubscription($organizationId);
-            if (!$subscription) {
+            if (! $subscription) {
                 return null;
             }
-            
+
             // Load plan relationship if not already loaded
-            if (!$subscription->relationLoaded('plan')) {
+            if (! $subscription->relationLoaded('plan')) {
                 $subscription->load('plan');
             }
-            
+
             return $subscription->plan;
         } catch (\Exception $e) {
-            \Log::warning("Failed to get current plan for organization {$organizationId}: " . $e->getMessage());
+            \Log::warning("Failed to get current plan for organization {$organizationId}: ".$e->getMessage());
+
             return null;
         }
     }
@@ -83,7 +89,7 @@ class SubscriptionService
             ->where('is_active', true)
             ->first();
 
-        if (!$trialPlan) {
+        if (! $trialPlan) {
             throw new \Exception('Trial plan not found. Please run the subscription seeder.');
         }
 
@@ -172,13 +178,13 @@ class SubscriptionService
         $this->lockOrganizationForUpdate($organizationId);
 
         $plan = SubscriptionPlan::findOrFail($planId);
-        if (!$plan->is_active) {
+        if (! $plan->is_active) {
             throw new \Exception('Selected plan is not active');
         }
         $currentSubscription = $this->getCurrentSubscriptionLocked($organizationId);
 
         $startsAt = now();
-        
+
         // Calculate expiry based on billing period
         $billingPeriodDays = $plan->getBillingPeriodDays();
         $expiresAt = Carbon::now()->addDays($billingPeriodDays);
@@ -195,14 +201,14 @@ class SubscriptionService
             $fromStatus = $currentSubscription->status;
 
             if ($currentSubscription->plan_id !== $planId) {
-                if (!$currentSubscription->relationLoaded('plan')) {
+                if (! $currentSubscription->relationLoaded('plan')) {
                     $currentSubscription->load('plan');
                 }
                 $currentPlan = $currentSubscription->plan;
                 // Compare total costs (license + maintenance) for upgrade/downgrade determination
                 $newTotalCost = $plan->getTotalInitialCost($currency, $additionalSchools);
                 $currentTotalCost = $currentPlan ? $currentPlan->getTotalInitialCost($currency, $currentSubscription->additional_schools ?? 0) : 0;
-                
+
                 if ($currentPlan && $newTotalCost > $currentTotalCost) {
                     $action = SubscriptionHistory::ACTION_UPGRADED;
                 } elseif ($currentPlan && $newTotalCost < $currentTotalCost) {
@@ -211,7 +217,7 @@ class SubscriptionService
 
                 if ($action === SubscriptionHistory::ACTION_DOWNGRADED && $currentPlan) {
                     $lockedFeatures = $this->getRemovedFeaturesForDowngrade($organizationId, $currentPlan, $plan);
-                    if (!empty($lockedFeatures)) {
+                    if (! empty($lockedFeatures)) {
                         $metadata['locked_features'] = $lockedFeatures;
                         $metadata['locked_at'] = now()->toISOString();
                         $metadata['locked_reason'] = 'plan_downgrade';
@@ -245,7 +251,7 @@ class SubscriptionService
             'amount_paid' => $amountPaid,
             'additional_schools' => $additionalSchools,
             'notes' => $notes,
-            'metadata' => !empty($metadata) ? $metadata : null,
+            'metadata' => ! empty($metadata) ? $metadata : null,
             // New billing fields
             'billing_period' => $plan->billing_period ?? 'yearly',
             'next_maintenance_due_at' => $nextMaintenanceDueAt,
@@ -268,6 +274,10 @@ class SubscriptionService
 
         // Invalidate org-scoped entitlement caches
         Cache::forget("subscription:enabled-features:v1:{$organizationId}");
+
+        if ($plan->slug === 'enterprise') {
+            $this->organizationAdminSchoolAccessService->enableAllSchoolsForOrganizationAdmins($organizationId);
+        }
 
         return $subscription;
     }
@@ -429,7 +439,7 @@ class SubscriptionService
                     OrganizationSubscription::STATUS_READONLY,
                     OrganizationSubscription::STATUS_EXPIRED,
                     null,
-                    "Subscription expired after readonly period"
+                    'Subscription expired after readonly period'
                 );
 
                 $processed['to_expired']++;
@@ -450,13 +460,13 @@ class SubscriptionService
         ?string $notes = null
     ): RenewalRequest {
         $subscription = $this->getCurrentSubscription($organizationId);
-        
-        if (!$subscription) {
+
+        if (! $subscription) {
             throw new \Exception('No active subscription found');
         }
 
         $plan = SubscriptionPlan::findOrFail($planId);
-        if (!$plan->is_active) {
+        if (! $plan->is_active) {
             throw new \Exception('Selected plan is not active');
         }
 
@@ -509,7 +519,7 @@ class SubscriptionService
                 }
             }
 
-            if (!$request->isPending()) {
+            if (! $request->isPending()) {
                 throw new \Exception('Renewal request is not pending');
             }
 
@@ -541,7 +551,7 @@ class SubscriptionService
             // Apply discount code if used (idempotent per payment record)
             if ($request->discount_code_id) {
                 $alreadyLogged = DiscountCodeUsage::where('payment_record_id', $paymentRecord->id)->exists();
-                if (!$alreadyLogged) {
+                if (! $alreadyLogged) {
                     $discountCode = DiscountCode::find($request->discount_code_id);
                     if ($discountCode) {
                         $discountCode->incrementUsage();
@@ -566,7 +576,7 @@ class SubscriptionService
                 $performedBy,
                 "Renewed via request #{$request->id}",
                 // Preserve license payment state across renewals/upgrades
-                !empty($currentSubscription?->license_paid_at),
+                ! empty($currentSubscription?->license_paid_at),
                 $currentSubscription?->license_payment_id
             );
 
@@ -594,8 +604,8 @@ class SubscriptionService
         string $performedBy
     ): RenewalRequest {
         $request = RenewalRequest::findOrFail($requestId);
-        
-        if (!$request->isPending()) {
+
+        if (! $request->isPending()) {
             throw new \Exception('Renewal request is not pending');
         }
 
@@ -618,8 +628,8 @@ class SubscriptionService
         ?string $performedBy = null
     ): OrganizationSubscription {
         $subscription = $this->getCurrentSubscription($organizationId);
-        
-        if (!$subscription) {
+
+        if (! $subscription) {
             throw new \Exception('No active subscription found');
         }
 
@@ -655,8 +665,8 @@ class SubscriptionService
         ?string $performedBy = null
     ): OrganizationSubscription {
         $subscription = $this->getCurrentSubscription($organizationId);
-        
-        if (!$subscription) {
+
+        if (! $subscription) {
             throw new \Exception('No active subscription found');
         }
 
@@ -771,7 +781,7 @@ class SubscriptionService
 
     /**
      * Calculate price for a plan with addons and discount
-     * 
+     *
      * @deprecated Use calculatePriceWithFees() for new fee separation model
      */
     public function calculatePrice(
@@ -820,7 +830,7 @@ class SubscriptionService
 
     /**
      * Calculate price with separate license and maintenance fees
-     * 
+     *
      * This is the new fee separation model:
      * - License fee: One-time payment
      * - Maintenance fee: Recurring based on billing period
@@ -837,13 +847,13 @@ class SubscriptionService
 
         // License fee (one-time)
         $licenseFee = $includeLicenseFee ? $plan->getLicenseFee($currency) : 0;
-        
+
         // Maintenance fee (recurring per billing period)
         $maintenanceFee = $plan->getMaintenanceFee($currency);
         $perSchoolMaintenanceFee = $plan->getPerSchoolMaintenanceFee($currency);
         $schoolsMaintenanceFee = $additionalSchools * $perSchoolMaintenanceFee;
         $totalMaintenanceFee = $maintenanceFee + $schoolsMaintenanceFee;
-        
+
         // Subtotal (license + maintenance for first period)
         $subtotal = $licenseFee + $totalMaintenanceFee;
 
@@ -873,24 +883,24 @@ class SubscriptionService
             'billing_period' => $plan->billing_period ?? 'yearly',
             'billing_period_label' => $plan->getBillingPeriodLabel(),
             'billing_period_days' => $plan->getBillingPeriodDays(),
-            
+
             // License fee breakdown
             'license_fee' => $licenseFee,
             'license_fee_included' => $includeLicenseFee,
-            
+
             // Maintenance fee breakdown
             'maintenance_fee' => $maintenanceFee,
             'per_school_maintenance_fee' => $perSchoolMaintenanceFee,
             'additional_schools' => $additionalSchools,
             'schools_maintenance_fee' => $schoolsMaintenanceFee,
             'total_maintenance_fee' => $totalMaintenanceFee,
-            
+
             // Totals
             'subtotal' => $subtotal,
             'discount_amount' => $discountAmount,
             'discount_info' => $discountInfo,
             'total' => $total,
-            
+
             // Legacy fields for backward compatibility
             'base_price' => $plan->getPrice($currency),
             'schools_price' => $additionalSchools * $plan->getPerSchoolPrice($currency),
@@ -924,7 +934,7 @@ class SubscriptionService
     public function getPlanFeeBreakdown(string $planId, string $currency = 'AFN'): array
     {
         $plan = SubscriptionPlan::findOrFail($planId);
-        
+
         return [
             'plan_id' => $planId,
             'plan_name' => $plan->name,
@@ -933,17 +943,17 @@ class SubscriptionService
             'billing_period_label' => $plan->getBillingPeriodLabel(),
             'billing_period_days' => $plan->getBillingPeriodDays(),
             'custom_billing_days' => $plan->custom_billing_days,
-            
+
             'license_fee' => $plan->getLicenseFee($currency),
             'has_license_fee' => $plan->hasLicenseFee(),
-            
+
             'maintenance_fee' => $plan->getMaintenanceFee($currency),
             'per_school_maintenance_fee' => $plan->getPerSchoolMaintenanceFee($currency),
             'has_maintenance_fee' => $plan->hasMaintenanceFee(),
-            
+
             // Monthly equivalent (for display)
             'monthly_equivalent' => $plan->getMaintenanceFeeForPeriod($currency, 'monthly'),
-            
+
             // Legacy fields
             'price_yearly' => $plan->getPrice($currency),
             'per_school_price' => $plan->getPerSchoolPrice($currency),

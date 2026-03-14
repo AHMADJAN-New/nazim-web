@@ -16,12 +16,20 @@ trait OrgFinanceScope
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             abort(404, 'Profile not found');
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             abort(403, 'User must be assigned to an organization');
+        }
+
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId((string) $profile->organization_id);
+        }
+
+        if ($user->hasRole('admin')) {
+            abort(403, 'School admins cannot access organization-wide finance data.');
         }
 
         return $profile->organization_id;
@@ -34,11 +42,11 @@ trait OrgFinanceScope
     {
         $user = $request->user();
         try {
-            if (!$user->hasPermissionTo('org_finance.read')) {
+            if (! $user->hasPermissionTo('org_finance.read')) {
                 abort(403, 'This action is unauthorized');
             }
         } catch (\Exception $e) {
-            \Log::warning('Permission check failed for org_finance.read: ' . $e->getMessage());
+            \Log::warning('Permission check failed for org_finance.read: '.$e->getMessage());
             abort(403, 'This action is unauthorized');
         }
     }
@@ -50,11 +58,11 @@ trait OrgFinanceScope
     {
         $user = $request->user();
         try {
-            if (!$user->hasPermissionTo('org_finance.create')) {
+            if (! $user->hasPermissionTo('org_finance.create')) {
                 abort(403, 'This action is unauthorized');
             }
         } catch (\Exception $e) {
-            \Log::warning('Permission check failed for org_finance.create: ' . $e->getMessage());
+            \Log::warning('Permission check failed for org_finance.create: '.$e->getMessage());
             abort(403, 'This action is unauthorized');
         }
     }

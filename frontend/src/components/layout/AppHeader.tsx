@@ -117,17 +117,27 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
     }
   }, [authProfile?.default_school_id, selectedSchoolId, setSelectedSchoolId]);
 
-  // Only show school switcher if:
-  // 1. User has schools_access_all AND multiple schools, OR
-  // 2. User has a default school (to show current school even if they can't switch)
-  const showSchoolSwitcher = (hasSchoolsAccessAll && schools.length > 1) ||
-    (authProfile?.default_school_id && schools.length > 0);
+  const visibleSchools = hasSchoolsAccessAll
+    ? schools
+    : schools.filter((school) => school.id === authProfile?.default_school_id);
+  const activeSchoolId = hasSchoolsAccessAll
+    ? (selectedSchoolId ?? authProfile?.default_school_id ?? null)
+    : (authProfile?.default_school_id ?? null);
+
+  // Show the current school for restricted users, but never expose other schools in the picker.
+  const showSchoolSwitcher = (hasSchoolsAccessAll && visibleSchools.length > 1) ||
+    (!!authProfile?.default_school_id && visibleSchools.length > 0);
 
   // For users with schools_access_all: just update context (temporary switch)
   // For other users: update default_school_id permanently (only if they have permission)
   const handleSchoolChange = (schoolId: string) => {
     // Prevent reload if same school is selected
-    if (schoolId === selectedSchoolId) {
+    if (schoolId === activeSchoolId) {
+      return;
+    }
+
+    if (!hasSchoolsAccessAll && schoolId !== authProfile?.default_school_id) {
+      showToast.error('You cannot switch to another school.');
       return;
     }
 
@@ -383,13 +393,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             {/* School Switcher - Hidden on mobile (moved to avatar menu) */}
             {showSchoolSwitcher && (
               <Select
-                value={selectedSchoolId ?? authProfile?.default_school_id ?? 'none'}
+                value={activeSchoolId ?? 'none'}
                 onValueChange={(value) => {
                   if (value && value !== 'none') {
                     handleSchoolChange(value);
                   }
                 }}
-                disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
+                disabled={!hasSchoolsAccessAll || updateMySchool.isPending}
               >
                 <SelectTrigger className="hidden sm:flex w-[100px] sm:w-[200px] text-xs sm:text-sm h-8 sm:h-9">
                   <img
@@ -401,7 +411,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                   <SelectValue placeholder={t("common.selectSchool") || "Select School"} className="truncate" />
                 </SelectTrigger>
                 <SelectContent>
-                  {schools.map((s) => (
+                  {visibleSchools.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.schoolName}
                       {s.id === authProfile?.default_school_id && !hasSchoolsAccessAll && (
@@ -549,8 +559,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                     <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                       {t("common.schoolManagement") || "School"}
                     </DropdownMenuLabel>
-                    {schools.map((s) => {
-                      const isSelected = (selectedSchoolId ?? authProfile?.default_school_id) === s.id;
+                    {visibleSchools.map((s) => {
+                      const isSelected = activeSchoolId === s.id;
                       return (
                         <DropdownMenuItem
                           key={s.id}
@@ -559,7 +569,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                               handleSchoolChange(s.id);
                             }
                           }}
-                          disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
+                          disabled={!hasSchoolsAccessAll || updateMySchool.isPending}
                           className={isSelected ? "bg-accent" : ""}
                         >
                           <img

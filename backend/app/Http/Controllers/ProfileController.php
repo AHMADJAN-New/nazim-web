@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ProfileHelper;
+use App\Http\Controllers\Concerns\RestrictsSchoolScopedAdmins;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProfileController extends Controller
 {
+    use RestrictsSchoolScopedAdmins;
+
     /**
      * Display a listing of profiles
      */
@@ -43,6 +46,10 @@ class ProfileController extends Controller
 
         // Filter by organization (all users see only their org)
         $query->where('organization_id', $profile->organization_id);
+
+        if ($this->isSchoolScopedProfile($profile)) {
+            $query->where('default_school_id', $profile->default_school_id);
+        }
 
         if ($request->has('organization_id')) {
             $query->where('organization_id', $request->organization_id);
@@ -93,6 +100,16 @@ class ProfileController extends Controller
         // All users can only view profiles in their organization
         if ($profile->organization_id !== $currentProfile->organization_id) {
             return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if ($this->isSchoolScopedProfile($currentProfile)) {
+            if (! $this->canSchoolScopedProfileManageTarget($currentProfile, $profile)) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
+
+            if ($this->userHasProtectedOrganizationRole($id, $currentProfile->organization_id)) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
         }
 
         return response()->json($profile);
@@ -166,6 +183,18 @@ class ProfileController extends Controller
             if ($targetProfile->organization_id !== $currentProfile->organization_id) {
                 return response()->json(['error' => 'Cannot update profile from different organization'], 403);
             }
+
+            if ($this->isSchoolScopedProfile($currentProfile) && ! $this->canSchoolScopedProfileManageTarget($currentProfile, $targetProfile)) {
+                return response()->json(['error' => 'School admins can only manage profiles in their own school'], 403);
+            }
+
+            if ($this->isSchoolScopedProfile($currentProfile) && $this->userHasProtectedOrganizationRole($id, $currentProfile->organization_id)) {
+                return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
+            }
+        }
+
+        if (! $isOwnProfile && $this->isSchoolScopedProfile($currentProfile) && $request->has('role') && $this->isProtectedOrganizationRole($request->role)) {
+            return response()->json(['error' => 'School admins cannot assign the organization_admin role'], 403);
         }
 
         // Build update data based on permissions
@@ -300,6 +329,14 @@ class ProfileController extends Controller
         // All users can only delete profiles in their organization
         if ($targetProfile->organization_id !== $currentProfile->organization_id) {
             return response()->json(['error' => 'Cannot delete profile from different organization'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($currentProfile) && ! $this->canSchoolScopedProfileManageTarget($currentProfile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage profiles in their own school'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($currentProfile) && $this->userHasProtectedOrganizationRole($id, $currentProfile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
         }
 
         DB::table('profiles')

@@ -19,8 +19,26 @@ export const ORG_ADMIN_ENTRY_PERMISSIONS = [
   'org_finance.read',
 ] as const;
 
+export const ORG_ADMIN_DASHBOARD_PERMISSIONS = [
+  'organizations.read',
+  'dashboard.read',
+  'school_branding.read',
+] as const;
+
+export function hasOrgWideScope(profile?: OrgAdminAccessProfile | null): boolean {
+  if (!profile) {
+    return false;
+  }
+
+  return profile?.schools_access_all === true || !profile?.default_school_id;
+}
+
 export function hasOrgAdminEntryPermission(permissions: readonly string[] = []): boolean {
   return ORG_ADMIN_ENTRY_PERMISSIONS.some((permission) => permissions.includes(permission));
+}
+
+export function hasOrgAdminDashboardPermission(permissions: readonly string[] = []): boolean {
+  return ORG_ADMIN_DASHBOARD_PERMISSIONS.some((permission) => permissions.includes(permission));
 }
 
 export function canAccessOrgAdminArea(
@@ -31,11 +49,40 @@ export function canAccessOrgAdminArea(
     return false;
   }
 
+  // "admin" is the school-scoped admin role in this app, not an org-wide org-admin role.
+  if (profile?.role === 'admin') {
+    return false;
+  }
+
+  if (profile?.role === 'platform_admin' || profile?.role === 'organization_admin') {
+    return true;
+  }
+
+  if (!hasOrgWideScope(profile)) {
+    return false;
+  }
+
+  return (
+    hasOrgAdminEntryPermission(permissions)
+  );
+}
+
+export function canAccessOrgAdminDashboard(
+  profile?: OrgAdminAccessProfile | null,
+  permissions: readonly string[] = [],
+): boolean {
+  if (profile?.role === 'admin') {
+    return false;
+  }
+
+  if (!profile?.schools_access_all) {
+    return false;
+  }
+
   return (
     profile?.role === 'organization_admin' ||
     profile?.role === 'platform_admin' ||
-    profile?.role === 'admin' ||
-    hasOrgAdminEntryPermission(permissions)
+    hasOrgAdminDashboardPermission(permissions)
   );
 }
 

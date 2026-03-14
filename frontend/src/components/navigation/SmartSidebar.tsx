@@ -796,7 +796,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         category: 'core' as NavigationCategory,
         iconColor: categoryColors.core,
       },
-      ...(isEnterprise && (hasOrganizationDashboardAccess || hasOrgHrStaffPermission || hasOrgHrAssignmentsPermission || hasOrgHrPayrollPermission || hasOrgHrReportsPermission) ? [asNavItem({
+      ...(isEnterprise && hasOrganizationDashboardAccess ? [asNavItem({
         titleKey: "organizationAdmin",
         url: "/org-admin",
         icon: Building2,
