@@ -50,8 +50,14 @@ use App\Http\Controllers\LibraryLoanController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationDashboardController;
 use App\Http\Controllers\OrganizationHrController;
+use App\Http\Controllers\OrgFacilityController;
+use App\Http\Controllers\OrgFacilityDocumentController;
+use App\Http\Controllers\OrgFacilityMaintenanceController;
+use App\Http\Controllers\OrgFacilityStaffController;
+use App\Http\Controllers\OrgFacilityTypeController;
 use App\Http\Controllers\OrgFinanceAccountController;
 use App\Http\Controllers\OrgFinanceCurrencyController;
+use App\Http\Controllers\OrgFinanceDocumentController;
 use App\Http\Controllers\OrgFinanceDonorController;
 use App\Http\Controllers\OrgFinanceExchangeRateController;
 use App\Http\Controllers\OrgFinanceExpenseCategoryController;
@@ -60,7 +66,6 @@ use App\Http\Controllers\OrgFinanceIncomeCategoryController;
 use App\Http\Controllers\OrgFinanceIncomeEntryController;
 use App\Http\Controllers\OrgFinanceProjectController;
 use App\Http\Controllers\OrgFinanceReportController;
-use App\Http\Controllers\OrgFinanceDocumentController;
 use App\Http\Controllers\OrgFinanceTransferController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PlatformWebsiteConfigController;
@@ -464,6 +469,44 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/expense-entries', [OrgFinanceExpenseEntryController::class, 'store'])->middleware('limit:expense_entries');
             Route::put('/expense-entries/{id}', [OrgFinanceExpenseEntryController::class, 'update']);
             Route::delete('/expense-entries/{id}', [OrgFinanceExpenseEntryController::class, 'destroy']);
+        });
+
+        Route::get('/facility-types', [OrgFacilityTypeController::class, 'index']);
+        Route::get('/facility-types/{id}', [OrgFacilityTypeController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/facility-types', [OrgFacilityTypeController::class, 'store']);
+            Route::put('/facility-types/{id}', [OrgFacilityTypeController::class, 'update']);
+            Route::delete('/facility-types/{id}', [OrgFacilityTypeController::class, 'destroy']);
+        });
+
+        Route::get('/facilities', [OrgFacilityController::class, 'index']);
+        Route::get('/facilities/{id}', [OrgFacilityController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/facilities', [OrgFacilityController::class, 'store']);
+            Route::put('/facilities/{id}', [OrgFacilityController::class, 'update']);
+            Route::delete('/facilities/{id}', [OrgFacilityController::class, 'destroy']);
+        });
+
+        Route::get('/facilities/{facilityId}/staff', [OrgFacilityStaffController::class, 'index']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/facilities/{facilityId}/staff', [OrgFacilityStaffController::class, 'store']);
+            Route::put('/facilities/{facilityId}/staff/{id}', [OrgFacilityStaffController::class, 'update']);
+            Route::delete('/facilities/{facilityId}/staff/{id}', [OrgFacilityStaffController::class, 'destroy']);
+        });
+
+        Route::get('/facilities/{facilityId}/maintenance', [OrgFacilityMaintenanceController::class, 'index']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/facilities/{facilityId}/maintenance', [OrgFacilityMaintenanceController::class, 'store']);
+            Route::put('/facilities/{facilityId}/maintenance/{id}', [OrgFacilityMaintenanceController::class, 'update']);
+            Route::delete('/facilities/{facilityId}/maintenance/{id}', [OrgFacilityMaintenanceController::class, 'destroy']);
+        });
+
+        Route::get('/facilities/{facilityId}/documents', [OrgFacilityDocumentController::class, 'index']);
+        Route::get('/facilities/{facilityId}/documents/{id}/download', [OrgFacilityDocumentController::class, 'download']);
+        Route::get('/facilities/{facilityId}/documents/{id}', [OrgFacilityDocumentController::class, 'show']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/facilities/{facilityId}/documents', [OrgFacilityDocumentController::class, 'store']);
+            Route::delete('/facilities/{facilityId}/documents/{id}', [OrgFacilityDocumentController::class, 'destroy']);
         });
 
         Route::get('/dashboard', [OrgFinanceReportController::class, 'dashboard']);

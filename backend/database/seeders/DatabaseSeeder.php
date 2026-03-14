@@ -55,6 +55,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 2b4: Seeding DMS letter types...');
         $this->call(LetterTypeSeeder::class);
 
+        // Step 2b5: Seed facility types for all organizations (org-admin facilities / mosques)
+        $this->command->info('Step 2b5: Seeding facility types...');
+        $this->call(FacilityTypeSeeder::class);
+
         // Step 2c: Seed library categories for all organizations
         $this->command->info('Step 2c: Seeding library categories...');
         $this->call(LibraryCategorySeeder::class);

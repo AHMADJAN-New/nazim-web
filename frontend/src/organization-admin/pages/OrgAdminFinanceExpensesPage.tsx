@@ -3,7 +3,8 @@
  */
 
 import { Plus, Pencil, Trash2, TrendingDown, Search, X, Calendar, Filter } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -52,6 +53,7 @@ import {
   useUpdateOrgFinanceExpenseEntry,
   useDeleteOrgFinanceExpenseEntry,
 } from '@/hooks/useOrgFinance';
+import { useOrgFacilities } from '@/hooks/useOrgFacilities';
 import type { ExpenseEntry, ExpenseEntryFormData, ExpenseStatus } from '@/types/domain/finance';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -100,10 +102,16 @@ function getStatusBadge(status: string, t: (key: string) => string) {
 
 export default function OrgAdminFinanceExpensesPage() {
   const { t, tUnsafe } = useLanguage();
-  const { data: entries = [], isLoading } = useOrgFinanceExpenseEntries({ perPage: 100 });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filterFacility, setFilterFacility] = useState<string>('all');
+  const { data: entries = [], isLoading } = useOrgFinanceExpenseEntries({
+    perPage: 100,
+    facilityId: filterFacility === 'all' ? undefined : filterFacility,
+  });
   const { data: accounts = [] } = useOrgFinanceAccounts({ isActive: true });
   const { data: categories = [] } = useOrgFinanceExpenseCategories({ isActive: true });
   const { data: projects = [] } = useOrgFinanceProjects({ isActive: true });
+  const { data: facilities = [] } = useOrgFacilities({ isActive: true });
   const createEntry = useCreateOrgFinanceExpenseEntry();
   const updateEntry = useUpdateOrgFinanceExpenseEntry();
   const deleteEntry = useDeleteOrgFinanceExpenseEntry();
@@ -124,6 +132,7 @@ export default function OrgAdminFinanceExpensesPage() {
     expenseCategoryId: '',
     currencyId: null,
     projectId: null,
+    facilityId: null,
     amount: 0,
     date: dateToLocalYYYYMMDD(new Date()),
     referenceNo: '',
@@ -133,12 +142,27 @@ export default function OrgAdminFinanceExpensesPage() {
     status: 'approved',
   });
 
+  useEffect(() => {
+    const facilityId = searchParams.get('facility_id');
+    const accountId = searchParams.get('account_id');
+    if (facilityId || accountId) {
+      setFormData((prev) => ({
+        ...prev,
+        ...(accountId ? { accountId } : {}),
+        ...(facilityId ? { facilityId } : {}),
+      }));
+      setIsCreateOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const resetForm = () => {
     setFormData({
       accountId: '',
       expenseCategoryId: '',
       currencyId: null,
       projectId: null,
+      facilityId: null,
       amount: 0,
       date: dateToLocalYYYYMMDD(new Date()),
       referenceNo: '',
@@ -176,6 +200,7 @@ export default function OrgAdminFinanceExpensesPage() {
       expenseCategoryId: entry.expenseCategoryId,
       currencyId: entry.currencyId ?? null,
       projectId: entry.projectId ?? null,
+      facilityId: entry.facilityId ?? null,
       amount: entry.amount,
       date: dateToLocalYYYYMMDD(entry.date),
       referenceNo: entry.referenceNo ?? '',
@@ -218,21 +243,24 @@ export default function OrgAdminFinanceExpensesPage() {
     return list;
   }, [entries, searchTerm, filterCategory, filterAccount, filterStatus, dateFrom, dateTo]);
 
+  const hasActiveFilters =
+    searchTerm.trim() !== '' ||
+    filterCategory !== 'all' ||
+    filterAccount !== 'all' ||
+    filterStatus !== 'all' ||
+    filterFacility !== 'all' ||
+    !!dateFrom ||
+    !!dateTo;
+
   const clearFilters = () => {
     setSearchTerm('');
     setFilterCategory('all');
     setFilterAccount('all');
     setFilterStatus('all');
+    setFilterFacility('all');
     setDateFrom('');
     setDateTo('');
   };
-  const hasActiveFilters =
-    !!searchTerm.trim() ||
-    filterCategory !== 'all' ||
-    filterAccount !== 'all' ||
-    filterStatus !== 'all' ||
-    !!dateFrom ||
-    !!dateTo;
 
   if (isLoading) {
     return (
@@ -330,6 +358,20 @@ export default function OrgAdminFinanceExpensesPage() {
                 <SelectItem value="all">{t('subjects.all')}</SelectItem>
                 {STATUS_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{t(o.labelKey)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-w-[160px]">
+            <Label className="text-xs text-muted-foreground mb-1 block">{t('organizationAdmin.facility') ?? 'Facility'}</Label>
+            <Select value={filterFacility} onValueChange={setFilterFacility}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('subjects.all')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('subjects.all')}</SelectItem>
+                {facilities.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -481,6 +523,18 @@ export default function OrgAdminFinanceExpensesPage() {
                 <SelectContent>
                   {categoryList.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('organizationAdmin.facility') ?? 'Facility'}</Label>
+              <Select value={formData.facilityId ?? 'none'} onValueChange={(v) => setFormData({ ...formData, facilityId: v === 'none' ? null : v })}>
+                <SelectTrigger><SelectValue placeholder={t('organizationAdmin.selectFacility') ?? 'Select facility'} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">—</SelectItem>
+                  {facilities.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

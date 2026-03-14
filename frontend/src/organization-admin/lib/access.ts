@@ -34,6 +34,7 @@ export function canAccessOrgAdminArea(
   return (
     profile?.role === 'organization_admin' ||
     profile?.role === 'platform_admin' ||
+    profile?.role === 'admin' ||
     hasOrgAdminEntryPermission(permissions)
   );
 }

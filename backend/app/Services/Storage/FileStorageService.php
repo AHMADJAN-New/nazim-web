@@ -52,6 +52,8 @@ class FileStorageService
 
     private const PATH_WEBSITE = 'website';
 
+    private const PATH_FACILITIES = 'facilities';
+
     // ==============================================
     // STUDENT FILES
     // ==============================================
@@ -381,6 +383,27 @@ class FileStorageService
         $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
 
         // Update storage usage after successful storage
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    /**
+     * Store facility document (PRIVATE, org-level)
+     * Path: organizations/{orgId}/facilities/{facilityId}/documents
+     */
+    public function storeFacilityDocument(
+        UploadedFile $file,
+        string $organizationId,
+        string $facilityId,
+        ?string $documentType = null
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $safeType = $this->sanitizePathSegment($documentType ?? 'other');
+        $path = $this->buildPath($organizationId, null, self::PATH_FACILITIES, $facilityId, 'documents', $safeType);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
         $this->updateStorageUsage($file, $organizationId);
 
         return $filePath;

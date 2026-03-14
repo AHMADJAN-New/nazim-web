@@ -3929,7 +3929,7 @@ export const orgFinanceApi = {
   },
   incomeEntries: {
     list: async (params?: {
-      account_id?: string; income_category_id?: string; project_id?: string; donor_id?: string;
+      account_id?: string; income_category_id?: string; project_id?: string; facility_id?: string; donor_id?: string;
       date_from?: string; date_to?: string; search?: string; page?: number; per_page?: number;
     }) => apiClient.get('/org-finance/income-entries', params),
     get: async (id: string) => apiClient.get(`/org-finance/income-entries/${id}`),
@@ -3939,7 +3939,7 @@ export const orgFinanceApi = {
   },
   expenseEntries: {
     list: async (params?: {
-      account_id?: string; expense_category_id?: string; project_id?: string; status?: string;
+      account_id?: string; expense_category_id?: string; project_id?: string; facility_id?: string; status?: string;
       date_from?: string; date_to?: string; search?: string; page?: number; per_page?: number;
     }) => apiClient.get('/org-finance/expense-entries', params),
     get: async (id: string) => apiClient.get(`/org-finance/expense-entries/${id}`),
@@ -3984,6 +3984,54 @@ export const orgFinanceApi = {
     apiClient.get<Array<{ id: string; name: string; code: string | null }>>(
       `/org-finance/schools/${schoolId}/income-categories`
     ),
+  facilityTypes: {
+    list: async () => apiClient.get<Array<Record<string, unknown>>>('/org-finance/facility-types'),
+    get: async (id: string) => apiClient.get<Record<string, unknown>>(`/org-finance/facility-types/${id}`),
+    create: async (data: Record<string, unknown>) => apiClient.post('/org-finance/facility-types', data),
+    update: async (id: string, data: Record<string, unknown>) => apiClient.put(`/org-finance/facility-types/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/facility-types/${id}`),
+  },
+  facilities: {
+    list: async (params?: { facility_type_id?: string; is_active?: boolean }) =>
+      apiClient.get<Array<Record<string, unknown>>>('/org-finance/facilities', params),
+    get: async (id: string) => apiClient.get<Record<string, unknown>>(`/org-finance/facilities/${id}`),
+    create: async (data: Record<string, unknown>) => apiClient.post('/org-finance/facilities', data),
+    update: async (id: string, data: Record<string, unknown>) => apiClient.put(`/org-finance/facilities/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/org-finance/facilities/${id}`),
+    staff: {
+      list: async (facilityId: string) =>
+        apiClient.get<Array<Record<string, unknown>>>(`/org-finance/facilities/${facilityId}/staff`),
+      create: async (facilityId: string, data: Record<string, unknown>) =>
+        apiClient.post(`/org-finance/facilities/${facilityId}/staff`, data),
+      update: async (facilityId: string, id: string, data: Record<string, unknown>) =>
+        apiClient.put(`/org-finance/facilities/${facilityId}/staff/${id}`, data),
+      delete: async (facilityId: string, id: string) =>
+        apiClient.delete(`/org-finance/facilities/${facilityId}/staff/${id}`),
+    },
+    maintenance: {
+      list: async (facilityId: string) =>
+        apiClient.get<Array<Record<string, unknown>>>(`/org-finance/facilities/${facilityId}/maintenance`),
+      create: async (facilityId: string, data: Record<string, unknown>) =>
+        apiClient.post(`/org-finance/facilities/${facilityId}/maintenance`, data),
+      update: async (facilityId: string, id: string, data: Record<string, unknown>) =>
+        apiClient.put(`/org-finance/facilities/${facilityId}/maintenance/${id}`, data),
+      delete: async (facilityId: string, id: string) =>
+        apiClient.delete(`/org-finance/facilities/${facilityId}/maintenance/${id}`),
+    },
+    documents: {
+      list: async (facilityId: string) =>
+        apiClient.get<Array<Record<string, unknown>>>(`/org-finance/facilities/${facilityId}/documents`),
+      get: async (facilityId: string, id: string) =>
+        apiClient.get<Record<string, unknown>>(`/org-finance/facilities/${facilityId}/documents/${id}`),
+      create: async (facilityId: string, formData: FormData) =>
+        apiClient.request<Record<string, unknown>>(`/org-finance/facilities/${facilityId}/documents`, {
+          method: 'POST',
+          body: formData,
+        }),
+      delete: async (facilityId: string, id: string) =>
+        apiClient.delete(`/org-finance/facilities/${facilityId}/documents/${id}`),
+    },
+  },
   financeDocuments: {
     list: async (params?: Record<string, string | undefined>) =>
       apiClient.get<Array<Record<string, unknown>>>('/org-finance/finance-documents', params),

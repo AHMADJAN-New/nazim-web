@@ -128,6 +128,10 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
   const hasPermissionsRead = useHasPermission('permissions.read');
   const hasSubscriptionRead = useHasPermission('subscription.read');
   const hasOrgFinanceRead = useHasPermissionAndFeature('org_finance.read');
+  // Show Finance section (including Facilities) when user has permission, so the link is visible
+  // even while feature is loading or if only permission is granted (API may still enforce feature)
+  const hasOrgFinancePermission = useHasPermission('org_finance.read');
+  const showFinanceSection = hasOrgFinanceRead === true || hasOrgFinancePermission === true;
 
   const overviewItems: OrgAdminNavItem[] = [
     {
@@ -263,7 +267,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-teal-500',
       iconBg: 'bg-teal-500/10',
       description: t('organizationAdmin.financeDesc') ?? 'Organization-level overview',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
     },
     {
       name: t('organizationAdmin.financeAccounts') ?? 'Accounts',
@@ -272,7 +276,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-teal-600',
       iconBg: 'bg-teal-500/10',
       description: t('organizationAdmin.financeAccountsDesc') ?? 'Org finance accounts',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
     },
     {
       name: t('organizationAdmin.financeIncome') ?? 'Income',
@@ -281,7 +285,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-emerald-600',
       iconBg: 'bg-emerald-500/10',
       description: t('organizationAdmin.financeIncomeDesc') ?? 'Org income entries',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
     },
     {
       name: t('organizationAdmin.financeExpenses') ?? 'Expenses',
@@ -290,7 +294,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-rose-600',
       iconBg: 'bg-rose-500/10',
       description: t('organizationAdmin.financeExpensesDesc') ?? 'Org expense entries',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
     },
     {
       name: t('organizationAdmin.financeDonors') ?? 'Donors',
@@ -299,7 +303,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-indigo-600',
       iconBg: 'bg-indigo-500/10',
       description: t('organizationAdmin.financeDonorsDesc') ?? 'Org donors',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
     },
     {
       name: t('organizationAdmin.financeReports') ?? 'Reports',
@@ -308,7 +312,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-cyan-600',
       iconBg: 'bg-cyan-500/10',
       description: t('organizationAdmin.financeReportsDesc') ?? 'Finance reports',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
     },
     {
       name: t('organizationAdmin.financeProjects') ?? 'Projects',
@@ -317,7 +321,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-amber-600',
       iconBg: 'bg-amber-500/10',
       description: t('organizationAdmin.financeProjectsDesc') ?? 'Org projects',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
     },
     {
       name: t('organizationAdmin.financeSettings') ?? 'Settings',
@@ -326,7 +330,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-sky-600',
       iconBg: 'bg-sky-500/10',
       description: t('organizationAdmin.financeSettingsDesc') ?? 'Currencies, categories & exchange rates',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
     },
     {
       name: t('organizationAdmin.financeTransferToSchool') ?? 'Transfer to school',
@@ -335,7 +339,7 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-violet-600',
       iconBg: 'bg-violet-500/10',
       description: t('organizationAdmin.financeTransferDesc') ?? 'Send funds from org to a school',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
     },
     {
       name: t('organizationAdmin.financeDocuments') ?? 'Documents',
@@ -344,7 +348,16 @@ export function OrganizationAdminLayout({ children }: OrganizationAdminLayoutPro
       iconColor: 'text-slate-600',
       iconBg: 'bg-slate-500/10',
       description: t('organizationAdmin.financeDocumentsDesc') ?? 'Org-level finance documents',
-      visible: hasOrgFinanceRead === true,
+      visible: showFinanceSection,
+    },
+    {
+      name: t('organizationAdmin.facilities') ?? 'Facilities',
+      href: '/org-admin/facilities',
+      icon: Building2,
+      iconColor: 'text-amber-600',
+      iconBg: 'bg-amber-500/10',
+      description: t('organizationAdmin.facilitiesDesc') ?? 'Mosques & managed buildings',
+      visible: showFinanceSection,
     },
   ];
 

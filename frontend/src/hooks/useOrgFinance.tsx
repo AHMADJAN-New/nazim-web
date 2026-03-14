@@ -289,6 +289,7 @@ export const useOrgFinanceIncomeEntries = (params?: {
   accountId?: string;
   incomeCategoryId?: string;
   projectId?: string;
+  facilityId?: string;
   donorId?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -305,6 +306,7 @@ export const useOrgFinanceIncomeEntries = (params?: {
         account_id: params?.accountId,
         income_category_id: params?.incomeCategoryId,
         project_id: params?.projectId,
+        facility_id: params?.facilityId,
         donor_id: params?.donorId,
         date_from: params?.dateFrom,
         date_to: params?.dateTo,
@@ -324,6 +326,7 @@ export const useOrgFinanceExpenseEntries = (params?: {
   accountId?: string;
   expenseCategoryId?: string;
   projectId?: string;
+  facilityId?: string;
   status?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -340,6 +343,7 @@ export const useOrgFinanceExpenseEntries = (params?: {
         account_id: params?.accountId,
         expense_category_id: params?.expenseCategoryId,
         project_id: params?.projectId,
+        facility_id: params?.facilityId,
         status: params?.status,
         date_from: params?.dateFrom,
         date_to: params?.dateTo,

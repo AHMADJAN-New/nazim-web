@@ -3,7 +3,8 @@
  */
 
 import { Plus, Pencil, Trash2, TrendingUp, Search, X, Calendar, Filter } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -54,6 +55,7 @@ import {
   useUpdateOrgFinanceIncomeEntry,
   useDeleteOrgFinanceIncomeEntry,
 } from '@/hooks/useOrgFinance';
+import { useOrgFacilities } from '@/hooks/useOrgFacilities';
 import type { IncomeEntry, IncomeEntryFormData } from '@/types/domain/finance';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -71,12 +73,18 @@ const PAYMENT_METHODS = [
 
 export default function OrgAdminFinanceIncomePage() {
   const { t, tUnsafe } = useLanguage();
-  const { data: entries = [], isLoading } = useOrgFinanceIncomeEntries({ perPage: 100 });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filterFacility, setFilterFacility] = useState<string>('all');
+  const { data: entries = [], isLoading } = useOrgFinanceIncomeEntries({
+    perPage: 100,
+    facilityId: filterFacility === 'all' ? undefined : filterFacility,
+  });
   const { data: accounts = [] } = useOrgFinanceAccounts({ isActive: true });
   const { data: categories = [] } = useOrgFinanceIncomeCategories({ isActive: true });
   const { data: projects = [] } = useOrgFinanceProjects({ isActive: true });
   const { data: donors = [] } = useOrgFinanceDonors({ isActive: true });
   const { data: currencies = [] } = useOrgFinanceCurrencies({ isActive: true });
+  const { data: facilities = [] } = useOrgFacilities({ isActive: true });
   const createEntry = useCreateOrgFinanceIncomeEntry();
   const updateEntry = useUpdateOrgFinanceIncomeEntry();
   const deleteEntry = useDeleteOrgFinanceIncomeEntry();
@@ -96,6 +104,7 @@ export default function OrgAdminFinanceIncomePage() {
     incomeCategoryId: '',
     currencyId: null,
     projectId: null,
+    facilityId: null,
     donorId: null,
     amount: 0,
     date: dateToLocalYYYYMMDD(new Date()),
@@ -104,12 +113,27 @@ export default function OrgAdminFinanceIncomePage() {
     paymentMethod: 'cash',
   });
 
+  useEffect(() => {
+    const facilityId = searchParams.get('facility_id');
+    const accountId = searchParams.get('account_id');
+    if (facilityId || accountId) {
+      setFormData((prev) => ({
+        ...prev,
+        ...(accountId ? { accountId } : {}),
+        ...(facilityId ? { facilityId } : {}),
+      }));
+      setIsCreateOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const resetForm = () => {
     setFormData({
       accountId: '',
       incomeCategoryId: '',
       currencyId: null,
       projectId: null,
+      facilityId: null,
       donorId: null,
       amount: 0,
       date: dateToLocalYYYYMMDD(new Date()),
@@ -146,6 +170,7 @@ export default function OrgAdminFinanceIncomePage() {
       incomeCategoryId: entry.incomeCategoryId,
       currencyId: entry.currencyId ?? null,
       projectId: entry.projectId ?? null,
+      facilityId: entry.facilityId ?? null,
       donorId: entry.donorId ?? null,
       amount: entry.amount,
       date: dateToLocalYYYYMMDD(entry.date),
@@ -192,11 +217,12 @@ export default function OrgAdminFinanceIncomePage() {
     setSearchTerm('');
     setFilterCategory('all');
     setFilterAccount('all');
+    setFilterFacility('all');
     setDateFrom('');
     setDateTo('');
   };
   const hasActiveFilters =
-    !!searchTerm.trim() || filterCategory !== 'all' || filterAccount !== 'all' || !!dateFrom || !!dateTo;
+    !!searchTerm.trim() || filterCategory !== 'all' || filterAccount !== 'all' || filterFacility !== 'all' || !!dateFrom || !!dateTo;
 
   if (isLoading) {
     return (
@@ -280,6 +306,20 @@ export default function OrgAdminFinanceIncomePage() {
                 <SelectItem value="all">{t('subjects.all')}</SelectItem>
                 {accountList.map((a) => (
                   <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-w-[160px]">
+            <Label className="text-xs text-muted-foreground mb-1 block">{t('organizationAdmin.facility') ?? 'Facility'}</Label>
+            <Select value={filterFacility} onValueChange={setFilterFacility}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('subjects.all')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('subjects.all')}</SelectItem>
+                {facilities.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -443,6 +483,18 @@ export default function OrgAdminFinanceIncomePage() {
                 <SelectContent>
                   {categoryList.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('organizationAdmin.facility') ?? 'Facility'}</Label>
+              <Select value={formData.facilityId ?? 'none'} onValueChange={(v) => setFormData({ ...formData, facilityId: v === 'none' ? null : v })}>
+                <SelectTrigger><SelectValue placeholder={t('organizationAdmin.selectFacility') ?? 'Select facility'} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">—</SelectItem>
+                  {facilities.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

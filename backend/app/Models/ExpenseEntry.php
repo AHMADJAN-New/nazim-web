@@ -32,6 +32,7 @@ class ExpenseEntry extends Model
         'account_id',
         'expense_category_id',
         'project_id',
+        'facility_id',
         'payroll_run_id',
         'amount',
         'date',
@@ -157,6 +158,14 @@ class ExpenseEntry extends Model
     }
 
     /**
+     * Get the facility (optional) for org-admin managed buildings
+     */
+    public function facility()
+    {
+        return $this->belongsTo(OrgFacility::class, 'facility_id');
+    }
+
+    /**
      * Get the user who approved the expense
      */
     public function approvedBy()
@@ -202,6 +211,14 @@ class ExpenseEntry extends Model
     public function scopeForProject($query, $projectId)
     {
         return $query->where('project_id', $projectId);
+    }
+
+    /**
+     * Scope to filter by facility
+     */
+    public function scopeForFacility($query, $facilityId)
+    {
+        return $query->where('facility_id', $facilityId);
     }
 
     /**

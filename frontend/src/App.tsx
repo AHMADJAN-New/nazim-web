@@ -282,6 +282,7 @@ import OrgAdminFinanceProjectsPage from '@/organization-admin/pages/OrgAdminFina
 import OrgAdminFinanceSettingsPage from '@/organization-admin/pages/OrgAdminFinanceSettingsPage';
 import OrgAdminFinanceDocumentsPage from '@/organization-admin/pages/OrgAdminFinanceDocumentsPage';
 import OrgAdminFinanceReportsPage from '@/organization-admin/pages/OrgAdminFinanceReportsPage';
+import OrgAdminFacilitiesPage from '@/organization-admin/pages/OrgAdminFacilitiesPage';
 
 // Centralized QueryClient – defaults (e.g. refetch on focus) live in @/lib/queryClient
 const queryClient = createQueryClient();
@@ -810,6 +811,14 @@ const App = () => (
                       </PermissionRoute>
                     } />
                     <Route path="finance/categories" element={<Navigate to="/org-admin/finance/settings" replace />} />
+                    <Route path="facilities" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFacilitiesPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="facilities/new" element={<Navigate to="/org-admin/facilities" replace />} />
+                    <Route path="facilities/:id/edit" element={<Navigate to="/org-admin/facilities" replace />} />
+                    <Route path="facilities/:id" element={<Navigate to="/org-admin/facilities" replace />} />
                     <Route path="hr" element={<OrganizationHrHubPage />} />
                     <Route path="hr/staff" element={<OrganizationHrStaffPage />} />
                     <Route path="hr/assignments" element={<OrganizationHrAssignmentsPage />} />

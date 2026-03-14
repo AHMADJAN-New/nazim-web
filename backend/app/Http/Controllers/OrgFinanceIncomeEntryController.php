@@ -10,6 +10,7 @@ use App\Models\FinanceAccount;
 use App\Models\FinanceProject;
 use App\Models\IncomeCategory;
 use App\Models\IncomeEntry;
+use App\Models\OrgFacility;
 use Illuminate\Http\Request;
 
 class OrgFinanceIncomeEntryController extends Controller
@@ -25,6 +26,7 @@ class OrgFinanceIncomeEntryController extends Controller
             'account_id' => 'nullable|uuid|exists:finance_accounts,id',
             'income_category_id' => 'nullable|uuid|exists:income_categories,id',
             'project_id' => 'nullable|uuid|exists:finance_projects,id',
+            'facility_id' => 'nullable|uuid|exists:org_facilities,id',
             'donor_id' => 'nullable|uuid|exists:donors,id',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
@@ -36,27 +38,30 @@ class OrgFinanceIncomeEntryController extends Controller
         $query = IncomeEntry::whereNull('deleted_at')
             ->where('organization_id', $orgId)
             ->whereNull('school_id')
-            ->with(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency']);
+            ->with(['account', 'incomeCategory', 'project', 'facility', 'donor', 'receivedBy', 'currency']);
 
-        if (!empty($validated['account_id'])) {
+        if (! empty($validated['account_id'])) {
             $query->where('account_id', $validated['account_id']);
         }
-        if (!empty($validated['income_category_id'])) {
+        if (! empty($validated['income_category_id'])) {
             $query->where('income_category_id', $validated['income_category_id']);
         }
-        if (!empty($validated['project_id'])) {
+        if (! empty($validated['project_id'])) {
             $query->where('project_id', $validated['project_id']);
         }
-        if (!empty($validated['donor_id'])) {
+        if (! empty($validated['facility_id'])) {
+            $query->where('facility_id', $validated['facility_id']);
+        }
+        if (! empty($validated['donor_id'])) {
             $query->where('donor_id', $validated['donor_id']);
         }
-        if (!empty($validated['date_from'])) {
+        if (! empty($validated['date_from'])) {
             $query->where('date', '>=', $validated['date_from']);
         }
-        if (!empty($validated['date_to'])) {
+        if (! empty($validated['date_to'])) {
             $query->where('date', '<=', $validated['date_to']);
         }
-        if (!empty($validated['search'])) {
+        if (! empty($validated['search'])) {
             $search = $validated['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('reference_no', 'ILIKE', "%{$search}%")
@@ -84,6 +89,7 @@ class OrgFinanceIncomeEntryController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'date' => 'required|date',
             'project_id' => 'nullable|uuid|exists:finance_projects,id',
+            'facility_id' => 'nullable|uuid|exists:org_facilities,id',
             'donor_id' => 'nullable|uuid|exists:donors,id',
             'reference_no' => 'nullable|string|max:100',
             'description' => 'nullable|string',
@@ -91,26 +97,26 @@ class OrgFinanceIncomeEntryController extends Controller
         ]);
 
         $account = FinanceAccount::whereNull('deleted_at')->where('organization_id', $orgId)->whereNull('school_id')->find($validated['account_id']);
-        if (!$account) {
+        if (! $account) {
             return response()->json(['error' => 'Invalid account - must be org-level'], 400);
         }
 
         $category = IncomeCategory::whereNull('deleted_at')->where('organization_id', $orgId)->whereNull('school_id')->find($validated['income_category_id']);
-        if (!$category) {
+        if (! $category) {
             return response()->json(['error' => 'Invalid income category - must be org-level'], 400);
         }
 
         $currencyId = $validated['currency_id'] ?? $account->currency_id;
-        if (!$currencyId) {
+        if (! $currencyId) {
             $base = Currency::where('organization_id', $orgId)->whereNull('school_id')->where('is_base', true)->where('is_active', true)->whereNull('deleted_at')->first();
             $currencyId = $base?->id;
         }
-        if (!$currencyId) {
+        if (! $currencyId) {
             return response()->json(['error' => 'Currency is required. Configure a base currency for org finance.'], 400);
         }
 
         $currency = Currency::whereNull('deleted_at')->where('organization_id', $orgId)->whereNull('school_id')->find($currencyId);
-        if (!$currency) {
+        if (! $currency) {
             return response()->json(['error' => 'Invalid currency'], 400);
         }
 
@@ -121,17 +127,24 @@ class OrgFinanceIncomeEntryController extends Controller
             }
         }
 
-        if (!empty($validated['project_id'])) {
+        if (! empty($validated['project_id'])) {
             $project = FinanceProject::whereNull('deleted_at')->where('organization_id', $orgId)->whereNull('school_id')->find($validated['project_id']);
-            if (!$project) {
+            if (! $project) {
                 return response()->json(['error' => 'Invalid project - must be org-level'], 400);
             }
         }
 
-        if (!empty($validated['donor_id'])) {
+        if (! empty($validated['donor_id'])) {
             $donor = Donor::whereNull('deleted_at')->where('organization_id', $orgId)->whereNull('school_id')->find($validated['donor_id']);
-            if (!$donor) {
+            if (! $donor) {
                 return response()->json(['error' => 'Invalid donor - must be org-level'], 400);
+            }
+        }
+
+        if (! empty($validated['facility_id'])) {
+            $facility = OrgFacility::whereNull('deleted_at')->where('organization_id', $orgId)->find($validated['facility_id']);
+            if (! $facility) {
+                return response()->json(['error' => 'Invalid facility'], 400);
             }
         }
 
@@ -142,6 +155,7 @@ class OrgFinanceIncomeEntryController extends Controller
             'account_id' => $validated['account_id'],
             'income_category_id' => $validated['income_category_id'],
             'project_id' => $validated['project_id'] ?? null,
+            'facility_id' => $validated['facility_id'] ?? null,
             'donor_id' => $validated['donor_id'] ?? null,
             'amount' => $validated['amount'],
             'date' => $validated['date'],
@@ -152,6 +166,7 @@ class OrgFinanceIncomeEntryController extends Controller
         ]);
 
         $entry->load(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency']);
+
         return response()->json($entry, 201);
     }
 
@@ -166,7 +181,7 @@ class OrgFinanceIncomeEntryController extends Controller
             ->with(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency'])
             ->find($id);
 
-        if (!$entry) {
+        if (! $entry) {
             return response()->json(['error' => 'Income entry not found'], 404);
         }
 
@@ -183,7 +198,7 @@ class OrgFinanceIncomeEntryController extends Controller
             ->whereNull('school_id')
             ->find($id);
 
-        if (!$entry) {
+        if (! $entry) {
             return response()->json(['error' => 'Income entry not found'], 404);
         }
 
@@ -194,27 +209,35 @@ class OrgFinanceIncomeEntryController extends Controller
             'amount' => 'sometimes|numeric|min:0.01',
             'date' => 'sometimes|date',
             'project_id' => 'nullable|uuid|exists:finance_projects,id',
+            'facility_id' => 'nullable|uuid|exists:org_facilities,id',
             'donor_id' => 'nullable|uuid|exists:donors,id',
             'reference_no' => 'nullable|string|max:100',
             'description' => 'nullable|string',
             'payment_method' => 'nullable|in:cash,bank_transfer,cheque,other',
         ]);
 
-        if (!empty($validated['account_id'])) {
+        if (! empty($validated['account_id'])) {
             $account = FinanceAccount::whereNull('deleted_at')->where('organization_id', $orgId)->whereNull('school_id')->find($validated['account_id']);
-            if (!$account) {
+            if (! $account) {
                 return response()->json(['error' => 'Invalid account - must be org-level'], 400);
             }
         }
-        if (!empty($validated['income_category_id'])) {
+        if (! empty($validated['income_category_id'])) {
             $cat = IncomeCategory::whereNull('deleted_at')->where('organization_id', $orgId)->whereNull('school_id')->find($validated['income_category_id']);
-            if (!$cat) {
+            if (! $cat) {
                 return response()->json(['error' => 'Invalid income category - must be org-level'], 400);
+            }
+        }
+        if (array_key_exists('facility_id', $validated) && $validated['facility_id'] !== null && $validated['facility_id'] !== '') {
+            $facility = OrgFacility::whereNull('deleted_at')->where('organization_id', $orgId)->find($validated['facility_id']);
+            if (! $facility) {
+                return response()->json(['error' => 'Invalid facility'], 400);
             }
         }
 
         $entry->update($validated);
         $entry->load(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency']);
+
         return response()->json($entry);
     }
 
@@ -228,11 +251,12 @@ class OrgFinanceIncomeEntryController extends Controller
             ->whereNull('school_id')
             ->find($id);
 
-        if (!$entry) {
+        if (! $entry) {
             return response()->json(['error' => 'Income entry not found'], 404);
         }
 
         $entry->delete();
+
         return response()->noContent();
     }
 }
