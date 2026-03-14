@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\OrganizationHelper;
+use App\Helpers\ProfileHelper;
 use App\Models\User;
 use App\Services\ActivityLogService;
 use App\Services\LoginAttemptService;
@@ -190,7 +191,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => ['id' => $authUser->id, 'email' => $authUser->email],
-            'profile' => $profile,
+            'profile' => ProfileHelper::enrichWithSpatieRole($user, $profile),
             'token' => $token,
         ]);
     }
@@ -250,7 +251,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => $user,
-            'profile' => $profile,
+            'profile' => ProfileHelper::enrichWithSpatieRole($user, $profile),
         ]);
     }
 
@@ -259,11 +260,12 @@ class AuthController extends Controller
      */
     public function profile(Request $request)
     {
+        $user = $request->user();
         $profile = DB::table('profiles')
-            ->where('id', $request->user()->id)
+            ->where('id', $user->id)
             ->first();
 
-        return response()->json($profile);
+        return response()->json(ProfileHelper::enrichWithSpatieRole($user, $profile));
     }
 
     /**
@@ -307,7 +309,7 @@ class AuthController extends Controller
             ->where('id', $request->user()->id)
             ->first();
 
-        return response()->json($profile);
+        return response()->json(ProfileHelper::enrichWithSpatieRole($request->user(), $profile));
     }
 
     /**

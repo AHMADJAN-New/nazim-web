@@ -71,6 +71,8 @@ class SubscriptionSeeder extends Seeder
             ['feature_key' => 'multi_school', 'name' => 'Multi-Branch Support', 'category' => 'enterprise', 'is_addon' => false, 'sort_order' => 92],
             ['feature_key' => 'api_access', 'name' => 'API Access / Integrations', 'category' => 'enterprise', 'is_addon' => true, 'sort_order' => 93],
             ['feature_key' => 'public_website', 'name' => 'Public Website Portal', 'category' => 'enterprise', 'is_addon' => true, 'sort_order' => 94],
+            // Organization-level features (enterprise)
+            ['feature_key' => 'org_finance', 'name' => 'Organization Finance', 'category' => 'enterprise', 'is_addon' => false, 'sort_order' => 95],
         ];
 
         foreach ($features as $feature) {
@@ -465,6 +467,8 @@ class SubscriptionSeeder extends Seeder
                     'org_hr_core' => true,
                     'org_hr_payroll' => true,
                     'org_hr_analytics' => true,
+                    // Organization Finance (enabled by default on enterprise)
+                    'org_finance' => true,
                 ],
                 // Capped to prevent abuse: ~700 USD + 200/year per school; limits are org-wide
                 'limits' => [
@@ -553,22 +557,22 @@ class SubscriptionSeeder extends Seeder
     {
         // Default to unlimited for new limits until explicitly configured.
         $defaultLimit = -1;
-        
+
         // Get limit-feature mapping from config
         $limitFeatureMap = config('subscription_features.limit_feature_map', []);
-        
+
         // Get enabled features for this plan
         $enabledFeatures = $plan->features()
             ->where('is_enabled', true)
             ->pluck('feature_key')
             ->toArray();
-        
+
         $enabledFeaturesSet = array_fill_keys($enabledFeatures, true);
 
         foreach ($allLimitKeys as $resourceKey) {
             // Check if this resource requires a feature that is enabled
             $requiredFeature = $limitFeatureMap[$resourceKey] ?? null;
-            
+
             if ($requiredFeature !== null) {
                 $requiredFeatures = is_array($requiredFeature) ? $requiredFeature : [$requiredFeature];
                 $hasRequiredFeature = false;
@@ -581,7 +585,7 @@ class SubscriptionSeeder extends Seeder
                 }
 
                 // Skip limits for resources whose features are disabled
-                if (!$hasRequiredFeature) {
+                if (! $hasRequiredFeature) {
                     continue;
                 }
             }
@@ -596,7 +600,7 @@ class SubscriptionSeeder extends Seeder
                 ['limit_value' => $limitValue, 'warning_threshold' => 80]
             );
         }
-        
+
         // Remove limits for resources whose features are disabled
         // Get all resource keys that require features not enabled in this plan
         $disabledResourceKeys = [];
@@ -611,13 +615,13 @@ class SubscriptionSeeder extends Seeder
                 }
             }
 
-            if (!$hasRequiredFeature) {
+            if (! $hasRequiredFeature) {
                 $disabledResourceKeys[] = $resourceKey;
             }
         }
-        
+
         // Delete limits for disabled features
-        if (!empty($disabledResourceKeys)) {
+        if (! empty($disabledResourceKeys)) {
             PlanLimit::where('plan_id', $plan->id)
                 ->whereIn('resource_key', $disabledResourceKeys)
                 ->delete();

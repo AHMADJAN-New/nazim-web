@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ProfileHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -16,22 +17,23 @@ class ProfileController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('profiles.read')) {
+            if (! $user->hasPermissionTo('profiles.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for profiles.read: " . $e->getMessage());
+            Log::warning('Permission check failed for profiles.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -59,22 +61,23 @@ class ProfileController extends Controller
         $user = request()->user();
         $currentProfile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$currentProfile) {
+        if (! $currentProfile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$currentProfile->organization_id) {
+        if (! $currentProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('profiles.read')) {
+            if (! $user->hasPermissionTo('profiles.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for profiles.read: " . $e->getMessage());
+            Log::warning('Permission check failed for profiles.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -83,7 +86,7 @@ class ProfileController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
@@ -96,15 +99,16 @@ class ProfileController extends Controller
     }
 
     /**
-     * Get current user's profile
+     * Get current user's profile (enriched with Spatie role for correct org-admin access)
      */
     public function me(Request $request)
     {
+        $user = $request->user();
         $profile = DB::table('profiles')
-            ->where('id', $request->user()->id)
+            ->where('id', $user->id)
             ->first();
 
-        return response()->json($profile);
+        return response()->json(ProfileHelper::enrichWithSpatieRole($user, $profile));
     }
 
     /**
@@ -131,7 +135,7 @@ class ProfileController extends Controller
         $currentProfile = DB::table('profiles')->where('id', $user->id)->first();
         $targetProfile = DB::table('profiles')->where('id', $id)->first();
 
-        if (!$targetProfile) {
+        if (! $targetProfile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
@@ -139,25 +143,26 @@ class ProfileController extends Controller
         $isOwnProfile = $id === $user->id;
 
         // Require organization_id for all users
-        if (!$currentProfile->organization_id) {
+        if (! $currentProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Users can update their own profile (limited fields)
         // Users with profiles.update permission can update profiles in their organization
-        if (!$isOwnProfile) {
+        if (! $isOwnProfile) {
             try {
-                if (!$user->hasPermissionTo('profiles.read')) {
+                if (! $user->hasPermissionTo('profiles.read')) {
                     return response()->json(['error' => 'Insufficient permissions to update this profile'], 403);
                 }
             } catch (\Exception $e) {
-                Log::warning("Permission check failed for profiles.update - denying access: " . $e->getMessage());
+                Log::warning('Permission check failed for profiles.update - denying access: '.$e->getMessage());
+
                 return response()->json(['error' => 'Insufficient permissions to update this profile'], 403);
             }
         }
 
         // All users can only update profiles in their organization
-        if (!$isOwnProfile) {
+        if (! $isOwnProfile) {
             if ($targetProfile->organization_id !== $currentProfile->organization_id) {
                 return response()->json(['error' => 'Cannot update profile from different organization'], 403);
             }
@@ -168,23 +173,49 @@ class ProfileController extends Controller
 
         if ($isOwnProfile) {
             // Users can only update: full_name, phone, avatar_url, onboarding fields
-            if ($request->has('full_name')) $updateData['full_name'] = $request->full_name;
-            if ($request->has('phone')) $updateData['phone'] = $request->phone;
-            if ($request->has('avatar_url')) $updateData['avatar_url'] = $request->avatar_url;
+            if ($request->has('full_name')) {
+                $updateData['full_name'] = $request->full_name;
+            }
+            if ($request->has('phone')) {
+                $updateData['phone'] = $request->phone;
+            }
+            if ($request->has('avatar_url')) {
+                $updateData['avatar_url'] = $request->avatar_url;
+            }
             // Users can update their own onboarding status
-            if ($request->has('has_completed_onboarding')) $updateData['has_completed_onboarding'] = $request->has_completed_onboarding;
-            if ($request->has('has_completed_tour')) $updateData['has_completed_tour'] = $request->has_completed_tour;
-            if ($request->has('onboarding_completed_at')) $updateData['onboarding_completed_at'] = $request->onboarding_completed_at;
+            if ($request->has('has_completed_onboarding')) {
+                $updateData['has_completed_onboarding'] = $request->has_completed_onboarding;
+            }
+            if ($request->has('has_completed_tour')) {
+                $updateData['has_completed_tour'] = $request->has_completed_tour;
+            }
+            if ($request->has('onboarding_completed_at')) {
+                $updateData['onboarding_completed_at'] = $request->onboarding_completed_at;
+            }
             // Users can update their own calendar preference
-            if ($request->has('calendar_preference')) $updateData['calendar_preference'] = $request->calendar_preference;
+            if ($request->has('calendar_preference')) {
+                $updateData['calendar_preference'] = $request->calendar_preference;
+            }
         } else {
             // Admins can update: full_name, email, phone, avatar_url, role, is_active, organization_id
-            if ($request->has('full_name')) $updateData['full_name'] = $request->full_name;
-            if ($request->has('email')) $updateData['email'] = $request->email;
-            if ($request->has('phone')) $updateData['phone'] = $request->phone;
-            if ($request->has('avatar_url')) $updateData['avatar_url'] = $request->avatar_url;
-            if ($request->has('role')) $updateData['role'] = $request->role;
-            if ($request->has('is_active')) $updateData['is_active'] = $request->is_active;
+            if ($request->has('full_name')) {
+                $updateData['full_name'] = $request->full_name;
+            }
+            if ($request->has('email')) {
+                $updateData['email'] = $request->email;
+            }
+            if ($request->has('phone')) {
+                $updateData['phone'] = $request->phone;
+            }
+            if ($request->has('avatar_url')) {
+                $updateData['avatar_url'] = $request->avatar_url;
+            }
+            if ($request->has('role')) {
+                $updateData['role'] = $request->role;
+            }
+            if ($request->has('is_active')) {
+                $updateData['is_active'] = $request->is_active;
+            }
 
             // Only users with profiles.update permission can change organization_id
             // (and only within their organization)
@@ -198,7 +229,7 @@ class ProfileController extends Controller
                         $updateData['organization_id'] = $request->organization_id;
                     }
                 } catch (\Exception $e) {
-                    Log::warning("Permission check failed for profiles.update - denying organization_id change: " . $e->getMessage());
+                    Log::warning('Permission check failed for profiles.update - denying organization_id change: '.$e->getMessage());
                 }
             }
         }
@@ -211,7 +242,7 @@ class ProfileController extends Controller
                     ->where('organization_id', $currentProfile->organization_id)
                     ->whereNull('deleted_at')
                     ->exists();
-                if (!$belongs) {
+                if (! $belongs) {
                     return response()->json(['error' => 'Invalid default school for this organization'], 403);
                 }
             }
@@ -237,22 +268,23 @@ class ProfileController extends Controller
         $user = request()->user();
         $currentProfile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$currentProfile) {
+        if (! $currentProfile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$currentProfile->organization_id) {
+        if (! $currentProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('profiles.read')) {
+            if (! $user->hasPermissionTo('profiles.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for profiles.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for profiles.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -261,7 +293,7 @@ class ProfileController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$targetProfile) {
+        if (! $targetProfile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
@@ -277,5 +309,3 @@ class ProfileController extends Controller
         return response()->json(['message' => 'Profile deleted successfully']);
     }
 }
-
-
