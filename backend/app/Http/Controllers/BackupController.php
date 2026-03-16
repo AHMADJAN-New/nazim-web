@@ -1981,6 +1981,54 @@ class BackupController extends Controller
     }
 
     /**
+     * Recursively copy storage directory, skipping inaccessible dirs (permission denied).
+     * Uses scandir to avoid RecursiveDirectoryIterator throwing on unreadable subdirs.
+     */
+    private function copyStorageRecursive(string $sourcePath, string $destPath, string $basePath): void
+    {
+        $entries = @scandir($sourcePath);
+        if ($entries === false) {
+            \Log::warning('Backup skipped inaccessible directory: '.$sourcePath);
+
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            $sourceItem = $sourcePath.DIRECTORY_SEPARATOR.$entry;
+            $relativePath = substr($sourceItem, strlen($basePath) + 1);
+            $destItem = $destPath.DIRECTORY_SEPARATOR.$relativePath;
+
+            // Skip backups and restore_temp to avoid recursion
+            if (strpos($relativePath, 'backups') === 0 || strpos($relativePath, 'restore_temp') === 0) {
+                continue;
+            }
+
+            try {
+                if (is_dir($sourceItem)) {
+                    if (! File::exists($destItem)) {
+                        File::makeDirectory($destItem, 0775, true);
+                    }
+                    $this->copyStorageRecursive($sourceItem, $destPath, $basePath);
+                } else {
+                    $destDir = dirname($destItem);
+                    if (! File::exists($destDir)) {
+                        File::makeDirectory($destDir, 0775, true);
+                    }
+                    @copy($sourceItem, $destItem);
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Backup skipped item (permission or error): '.$sourceItem, [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
      * Backup storage directories
      */
     private function backupStorage(string $backupDir): string
@@ -2028,47 +2076,10 @@ class BackupController extends Controller
             }
         }
 
-        // CATCH_GET_CHILD (16) skips directories that cannot be opened (e.g. permission denied)
-        $iteratorFlags = \RecursiveDirectoryIterator::SKIP_DOTS | (defined('RecursiveDirectoryIterator::CATCH_GET_CHILD') ? \RecursiveDirectoryIterator::CATCH_GET_CHILD : 16);
-
         try {
-            // Copy storage/app directory, excluding backups and restore_temp to avoid recursion
-            // Use manual copy with filtering to exclude backup directories
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($sourcePath, $iteratorFlags),
-                \RecursiveIteratorIterator::SELF_FIRST
-            );
-
-            foreach ($iterator as $item) {
-                $sourceItem = $item->getPathname();
-                $relativePath = substr($sourceItem, strlen($sourcePath) + 1);
-
-                // Skip backups and restore_temp directories to avoid recursion
-                if (strpos($relativePath, 'backups') === 0 || strpos($relativePath, 'restore_temp') === 0) {
-                    continue;
-                }
-
-                $destItem = $destPath.DIRECTORY_SEPARATOR.$relativePath;
-
-                try {
-                    if ($item->isDir()) {
-                        if (! File::exists($destItem)) {
-                            File::makeDirectory($destItem, 0775, true);
-                        }
-                    } else {
-                        // Copy file
-                        $destDir = dirname($destItem);
-                        if (! File::exists($destDir)) {
-                            File::makeDirectory($destDir, 0775, true);
-                        }
-                        copy($sourceItem, $destItem);
-                    }
-                } catch (\Throwable $itemException) {
-                    \Log::warning('Backup skipped item (permission or error): '.$sourceItem, [
-                        'error' => $itemException->getMessage(),
-                    ]);
-                }
-            }
+            // Use recursive copy that skips inaccessible directories (permission denied)
+            // RecursiveDirectoryIterator can throw when opening subdirs; manual copy is more resilient
+            $this->copyStorageRecursive($sourcePath, $destPath, $sourcePath);
         } catch (\Exception $e) {
             \Log::error('Failed to copy storage directory: '.$e->getMessage(), [
                 'source' => $sourcePath,

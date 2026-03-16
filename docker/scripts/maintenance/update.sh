@@ -32,8 +32,18 @@ docker image prune -f || echo "[update] Warning: Failed to clean up images (non-
 echo "[update] Restarting services..."
 compose up -d
 
-echo "[update] Ensuring storage directories (platform files, order-form documents)..."
-compose exec -T php sh -c 'mkdir -p /var/www/backend/storage/app/private/platform/files /var/www/backend/storage/app/private/organizations && chown -R www-data:www-data /var/www/backend/storage/app/private/platform /var/www/backend/storage/app/private/organizations 2>/dev/null || true' || true
+echo "[update] Ensuring storage directories and fixing permissions..."
+compose exec -T php sh -c '
+  mkdir -p /var/www/backend/storage/app/private/platform/files \
+    /var/www/backend/storage/app/private/organizations \
+    /var/www/backend/storage/app/backups \
+    /var/www/backend/storage/app/restore_temp \
+    /var/www/backend/storage/app/temp \
+    /var/www/backend/storage/app/upload_tmp 2>/dev/null || true
+  chown -R www-data:www-data /var/www/backend/storage 2>/dev/null || true
+  find /var/www/backend/storage -type d -exec chmod 775 {} \; 2>/dev/null || true
+  find /var/www/backend/storage -type f -exec chmod 664 {} \; 2>/dev/null || true
+' || true
 
 echo "[update] Running migrations + optimize..."
 compose exec -T php sh -lc 'php artisan migrate --force && php artisan optimize || true'

@@ -97,8 +97,19 @@ fi
 # Clear Laravel caches to ensure fresh state
 compose exec -T php php artisan optimize:clear >/dev/null 2>&1 || echo -e "${YELLOW}⚠️  Cache clear completed (may have warnings)${NC}"
 
-# Ensure platform files and order-form storage directories exist (for Platform Files Management and org order-form documents)
-compose exec -T php sh -c 'mkdir -p /var/www/backend/storage/app/private/platform/files /var/www/backend/storage/app/private/organizations && chown -R www-data:www-data /var/www/backend/storage/app/private/platform /var/www/backend/storage/app/private/organizations 2>/dev/null || true' || echo -e "${YELLOW}⚠️  Storage dirs (platform/files, organizations) may already exist${NC}"
+# Ensure storage directories exist and fix permissions (reports, organizations, platform files, etc.)
+# CRITICAL: Fixes "Permission denied" when backup copies storage (e.g. reports/short_term_course_students)
+compose exec -T php sh -c '
+  mkdir -p /var/www/backend/storage/app/private/platform/files \
+    /var/www/backend/storage/app/private/organizations \
+    /var/www/backend/storage/app/backups \
+    /var/www/backend/storage/app/restore_temp \
+    /var/www/backend/storage/app/temp \
+    /var/www/backend/storage/app/upload_tmp 2>/dev/null || true
+  chown -R www-data:www-data /var/www/backend/storage 2>/dev/null || true
+  find /var/www/backend/storage -type d -exec chmod 775 {} \; 2>/dev/null || true
+  find /var/www/backend/storage -type f -exec chmod 664 {} \; 2>/dev/null || true
+' || echo -e "${YELLOW}⚠️  Storage permission fix completed (may have warnings)${NC}"
 echo ""
 
 # Step 6: Clean up old images
