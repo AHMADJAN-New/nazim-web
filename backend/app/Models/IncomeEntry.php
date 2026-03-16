@@ -32,6 +32,7 @@ class IncomeEntry extends Model
         'account_id',
         'income_category_id',
         'project_id',
+        'facility_id',
         'donor_id',
         'amount',
         'date',
@@ -158,6 +159,14 @@ class IncomeEntry extends Model
     }
 
     /**
+     * Get the facility (optional) for org-admin managed buildings
+     */
+    public function facility()
+    {
+        return $this->belongsTo(OrgFacility::class, 'facility_id');
+    }
+
+    /**
      * Get the donor (optional)
      */
     public function donor()
@@ -211,6 +220,14 @@ class IncomeEntry extends Model
     public function scopeForProject($query, $projectId)
     {
         return $query->where('project_id', $projectId);
+    }
+
+    /**
+     * Scope to filter by facility
+     */
+    public function scopeForFacility($query, $facilityId)
+    {
+        return $query->where('facility_id', $facilityId);
     }
 
     /**

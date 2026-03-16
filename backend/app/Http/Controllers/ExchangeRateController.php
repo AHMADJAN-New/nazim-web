@@ -450,15 +450,21 @@ class ExchangeRateController extends Controller
             );
 
             if ($rate === null) {
-                // Load currency names for better error message
+                // No rate found: return 200 with original amount so UI can show it without error
                 $fromCurrency = Currency::find($validated['from_currency_id']);
                 $toCurrency = Currency::find($validated['to_currency_id']);
                 $fromCurrencyName = $fromCurrency ? ($fromCurrency->name ?? $fromCurrency->code ?? 'Unknown') : 'Unknown';
                 $toCurrencyName = $toCurrency ? ($toCurrency->name ?? $toCurrency->code ?? 'Unknown') : 'Unknown';
-                
+
                 return response()->json([
-                    'error' => "Exchange rate not found for converting from {$fromCurrencyName} to {$toCurrencyName} on {$date}"
-                ], 404);
+                    'from_currency_id' => $validated['from_currency_id'],
+                    'to_currency_id' => $validated['to_currency_id'],
+                    'amount' => $validated['amount'],
+                    'rate' => null,
+                    'converted_amount' => $validated['amount'],
+                    'converted' => false,
+                    'message' => "No exchange rate found for {$fromCurrencyName} → {$toCurrencyName} on {$date}; amount shown in original currency.",
+                ]);
             }
 
             $convertedAmount = $validated['amount'] * $rate;
@@ -469,6 +475,7 @@ class ExchangeRateController extends Controller
                 'amount' => $validated['amount'],
                 'rate' => $rate,
                 'converted_amount' => $convertedAmount,
+                'converted' => true,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([

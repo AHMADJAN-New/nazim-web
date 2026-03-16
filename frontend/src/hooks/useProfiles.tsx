@@ -32,7 +32,14 @@ export const useProfiles = (organizationId?: string) => {
   const hasPermission = useHasPermission('profiles.read');
 
   return useQuery<Profile[]>({
-    queryKey: ['profiles', organizationId, orgIds.join(',')],
+    queryKey: [
+      'profiles',
+      currentProfile?.id ?? null,
+      currentProfile?.organization_id ?? null,
+      currentProfile?.default_school_id ?? null,
+      organizationId,
+      orgIds.join(','),
+    ],
     queryFn: async () => {
       if (!user || !currentProfile || orgsLoading) return [];
 
@@ -137,4 +144,3 @@ export const useUserOrganization = () => {
     error: null,
   };
 };
-

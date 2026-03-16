@@ -26,7 +26,14 @@ export const useUsers = (
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<UserProfile[]>({
-    queryKey: ['users', filters, orgIds.join(',')],
+    queryKey: [
+      'users',
+      currentProfile?.id ?? null,
+      currentProfile?.organization_id ?? null,
+      currentProfile?.default_school_id ?? null,
+      filters,
+      orgIds.join(','),
+    ],
     queryFn: async () => {
       if (!currentProfile || orgsLoading) {
         throw new Error('User not authenticated');

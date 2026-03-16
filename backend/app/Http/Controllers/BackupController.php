@@ -303,8 +303,25 @@ class BackupController extends Controller
         $this->enforceSubscriptionAdmin($request);
 
         try {
+            // Check PHP-level upload errors before validation (e.g. missing temp dir, size limits)
+            $file = $request->file('backup_file');
+            if ($file && ! $file->isValid()) {
+                $message = $this->getUploadErrorMessage($file->getError());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Upload and restore failed: '.$message,
+                    'errors' => ['backup_file' => [$message]],
+                ], 422);
+            }
+
             $request->validate([
                 'backup_file' => 'required|file|mimes:zip|max:512000', // 500MB max
+            ], [
+                'backup_file.required' => 'No backup file was selected. Please choose a ZIP file.',
+                'backup_file.file' => 'The selected backup is not a valid file.',
+                'backup_file.mimes' => 'The backup file must be a ZIP archive.',
+                'backup_file.max' => 'The backup file must not exceed 500 MB. If your backup is larger, increase upload_max_filesize and post_max_size in PHP.',
             ]);
 
             $file = $request->file('backup_file');
@@ -346,6 +363,22 @@ class BackupController extends Controller
                 'success' => true,
                 'message' => 'Backup uploaded and restored successfully',
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $message = $e->getMessage();
+            if (str_contains($message, 'failed to upload')) {
+                $message = 'The backup file could not be uploaded. Common causes: (1) Missing temp folder — set upload_tmp_dir in php.ini to a writable directory (e.g. storage/app/upload_tmp). '
+                    .'(2) File too large — set upload_max_filesize and post_max_size in php.ini to at least 512M. '
+                    .'(3) Web server cannot write to the temp directory (check permissions).';
+            }
+            \Log::error('Upload and restore validation failed: '.$message, [
+                'errors' => $e->errors(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload and restore failed: '.$message,
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             \Log::error('Upload and restore failed: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
@@ -356,6 +389,25 @@ class BackupController extends Controller
                 'message' => 'Upload and restore failed: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Return a user-friendly message for PHP upload error codes.
+     *
+     * @param  int  $code  One of UPLOAD_ERR_* constants
+     */
+    private function getUploadErrorMessage(int $code): string
+    {
+        return match ($code) {
+            UPLOAD_ERR_INI_SIZE => 'The backup file exceeds the server limit (upload_max_filesize in php.ini). Ask your administrator to set it to at least 512M.',
+            UPLOAD_ERR_FORM_SIZE => 'The backup file exceeds the maximum allowed size.',
+            UPLOAD_ERR_PARTIAL => 'The backup file was only partially uploaded. Please try again.',
+            UPLOAD_ERR_NO_FILE => 'No backup file was sent. Please select a ZIP file and try again.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Server is missing a temporary folder for uploads. Set upload_tmp_dir in php.ini to a writable directory (e.g. the path to storage/app/upload_tmp) or ensure the system temp directory exists and is writable by the web server.',
+            UPLOAD_ERR_CANT_WRITE => 'Server could not write the backup file to disk. Check that the temporary directory (upload_tmp_dir) and storage/app/backups are writable.',
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the upload. Check your server configuration.',
+            default => 'The backup file could not be uploaded (PHP error '.$code.'). Ensure upload_tmp_dir in php.ini is set and writable, and that upload_max_filesize and post_max_size are at least 512M.',
+        };
     }
 
     /**
@@ -1929,6 +1981,54 @@ class BackupController extends Controller
     }
 
     /**
+     * Recursively copy storage directory, skipping inaccessible dirs (permission denied).
+     * Uses scandir to avoid RecursiveDirectoryIterator throwing on unreadable subdirs.
+     */
+    private function copyStorageRecursive(string $sourcePath, string $destPath, string $basePath): void
+    {
+        $entries = @scandir($sourcePath);
+        if ($entries === false) {
+            \Log::warning('Backup skipped inaccessible directory: '.$sourcePath);
+
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            $sourceItem = $sourcePath.DIRECTORY_SEPARATOR.$entry;
+            $relativePath = substr($sourceItem, strlen($basePath) + 1);
+            $destItem = $destPath.DIRECTORY_SEPARATOR.$relativePath;
+
+            // Skip backups and restore_temp to avoid recursion
+            if (strpos($relativePath, 'backups') === 0 || strpos($relativePath, 'restore_temp') === 0) {
+                continue;
+            }
+
+            try {
+                if (is_dir($sourceItem)) {
+                    if (! File::exists($destItem)) {
+                        File::makeDirectory($destItem, 0775, true);
+                    }
+                    $this->copyStorageRecursive($sourceItem, $destPath, $basePath);
+                } else {
+                    $destDir = dirname($destItem);
+                    if (! File::exists($destDir)) {
+                        File::makeDirectory($destDir, 0775, true);
+                    }
+                    @copy($sourceItem, $destItem);
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Backup skipped item (permission or error): '.$sourceItem, [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
      * Backup storage directories
      */
     private function backupStorage(string $backupDir): string
@@ -1976,47 +2076,10 @@ class BackupController extends Controller
             }
         }
 
-        // CATCH_GET_CHILD (16) skips directories that cannot be opened (e.g. permission denied)
-        $iteratorFlags = \RecursiveDirectoryIterator::SKIP_DOTS | (defined('RecursiveDirectoryIterator::CATCH_GET_CHILD') ? \RecursiveDirectoryIterator::CATCH_GET_CHILD : 16);
-
         try {
-            // Copy storage/app directory, excluding backups and restore_temp to avoid recursion
-            // Use manual copy with filtering to exclude backup directories
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($sourcePath, $iteratorFlags),
-                \RecursiveIteratorIterator::SELF_FIRST
-            );
-
-            foreach ($iterator as $item) {
-                $sourceItem = $item->getPathname();
-                $relativePath = substr($sourceItem, strlen($sourcePath) + 1);
-
-                // Skip backups and restore_temp directories to avoid recursion
-                if (strpos($relativePath, 'backups') === 0 || strpos($relativePath, 'restore_temp') === 0) {
-                    continue;
-                }
-
-                $destItem = $destPath.DIRECTORY_SEPARATOR.$relativePath;
-
-                try {
-                    if ($item->isDir()) {
-                        if (! File::exists($destItem)) {
-                            File::makeDirectory($destItem, 0775, true);
-                        }
-                    } else {
-                        // Copy file
-                        $destDir = dirname($destItem);
-                        if (! File::exists($destDir)) {
-                            File::makeDirectory($destDir, 0775, true);
-                        }
-                        copy($sourceItem, $destItem);
-                    }
-                } catch (\Throwable $itemException) {
-                    \Log::warning('Backup skipped item (permission or error): '.$sourceItem, [
-                        'error' => $itemException->getMessage(),
-                    ]);
-                }
-            }
+            // Use recursive copy that skips inaccessible directories (permission denied)
+            // RecursiveDirectoryIterator can throw when opening subdirs; manual copy is more resilient
+            $this->copyStorageRecursive($sourcePath, $destPath, $sourcePath);
         } catch (\Exception $e) {
             \Log::error('Failed to copy storage directory: '.$e->getMessage(), [
                 'source' => $sourcePath,

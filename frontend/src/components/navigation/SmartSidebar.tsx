@@ -164,8 +164,10 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
 import { useHasAnyWebsitePermissionAndFeature, useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
 import { useProfile } from "@/hooks/useProfiles";
+import { useOrganizationPlanSlug } from "@/hooks/useOrganizationPlanSlug";
 import { useSubscriptionGateStatus, type SubscriptionGateStatus } from "@/hooks/useSubscription";
 import { useUserRole } from "@/hooks/useUserRole";
+import { canAccessOrgAdminArea } from '@/organization-admin/lib/access';
 import type { UserRole } from "@/types/auth";
 import { SecondarySidebar } from "./SecondarySidebar";
 
@@ -277,6 +279,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // When blocked, sidebar should show NO navigation items
   const subscriptionBlocked = isSubscriptionBlocked(gateStatus);
 
+  const { isEnterprise } = useOrganizationPlanSlug();
+
   // Check if user is on the subscription page (allowed even when blocked)
   const isOnSubscriptionPage = location.pathname.startsWith('/subscription');
   const hasSettingsPermission = useHasPermissionAndFeature('settings.read');
@@ -307,6 +311,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasSubjectsPermission = useHasPermissionAndFeature('subjects.read');
   const hasAssetsPermission = useHasPermissionAndFeature('assets.read');
   const hasStaffPermission = useHasPermissionAndFeature('staff.read');
+  const hasOrgHrStaffPermission = useHasPermissionAndFeature('hr_staff.read');
+  const hasOrgHrAssignmentsPermission = useHasPermissionAndFeature('hr_assignments.read');
+  const hasOrgHrPayrollPermission = useHasPermissionAndFeature('hr_payroll.read');
+  const hasOrgHrReportsPermission = useHasPermissionAndFeature('hr_reports.read');
   const hasStaffReportsPermission = useHasPermissionAndFeature('staff_reports.read');
   const hasAttendanceSessionsPermission = useHasPermissionAndFeature('attendance_sessions.read');
   const hasAttendanceReportsPermission = useHasPermissionAndFeature('attendance_sessions.report');
@@ -570,19 +578,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   // Check if user is event user (profile already declared above)
   const isEventUser = profile?.is_event_user === true;
-  const hasOrganizationDashboardPermissionFromList =
-    permissions.includes('organizations.read') ||
-    permissions.includes('dashboard.read') ||
-    permissions.includes('school_branding.read');
-  const hasOrganizationDashboardAccess =
-    !!profile?.schools_access_all &&
-    (
-      role === 'organization_admin' ||
-      hasOrganizationDashboardPermissionFromList ||
-      hasOrganizationsPermission === true ||
-      hasDashboardPermission === true ||
-      hasBrandingPermission === true
-    );
+  const hasOrganizationDashboardPermissionFromList = canAccessOrgAdminArea(profile, permissions);
+  const hasOrganizationDashboardAccess = hasOrganizationDashboardPermissionFromList;
 
   // Define category colors for icons
   const categoryColors = {
@@ -799,9 +796,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         category: 'core' as NavigationCategory,
         iconColor: categoryColors.core,
       },
-      ...(hasOrganizationDashboardAccess ? [asNavItem({
-        titleKey: "organizationDashboard",
-        url: "/organization-dashboard",
+      ...(isEnterprise && hasOrganizationDashboardAccess ? [asNavItem({
+        titleKey: "organizationAdmin",
+        url: "/org-admin",
         icon: Building2,
         badge: null,
         priority: 0.6,

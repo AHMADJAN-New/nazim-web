@@ -13,11 +13,16 @@ use App\Models\Currency;
 use App\Models\ExchangeRate;
 use App\Models\Asset;
 use App\Models\LibraryBook;
+use App\Services\Reports\FinanceReportingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FinanceReportController extends Controller
 {
+    public function __construct(
+        private FinanceReportingService $reportingService
+    ) {}
+
     /**
      * Finance Dashboard Stats
      */
@@ -49,402 +54,14 @@ class FinanceReportController extends Controller
             $orgId = $profile->organization_id;
             $currentSchoolId = $this->getCurrentSchoolId($request);
 
-            // Get target currency for conversion (optional)
             $validated = $request->validate([
                 'target_currency_id' => 'nullable|uuid|exists:currencies,id',
             ]);
             $targetCurrencyId = $validated['target_currency_id'] ?? null;
 
-            // Get base currency if no target specified
-            if (!$targetCurrencyId) {
-                $baseCurrency = Currency::where('organization_id', $orgId)
-                    ->where('school_id', $currentSchoolId)
-                    ->where('is_base', true)
-                    ->where('is_active', true)
-                    ->first();
-                $targetCurrencyId = $baseCurrency?->id;
-            }
+            $data = $this->reportingService->dashboard($orgId, $currentSchoolId, $targetCurrencyId);
 
-            // Get current month/year
-            $currentMonth = date('Y-m');
-            $currentMonthStart = date('Y-m-01');
-            $currentMonthEnd = date('Y-m-t');
-
-            // Total balances across all accounts (with currency conversion)
-            // Recalculate balances to include assets before calculating totals
-            $accounts = FinanceAccount::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->where('is_active', true)
-                ->get();
-            
-            $totalBalance = 0;
-            $totalCashBalance = 0; // Cash only (without assets and books)
-            foreach ($accounts as $account) {
-                // Calculate cash-only balance (opening + income - expenses)
-                $cashIncome = 0;
-                $cashExpense = 0;
-                
-                // Process income entries
-                foreach ($account->incomeEntries()->whereNull('deleted_at')->get() as $entry) {
-                    $amount = (float) $entry->amount;
-                    if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
-                    }
-                    $cashIncome += $amount;
-                }
-                
-                // Process expense entries (only approved)
-                foreach ($account->expenseEntries()->whereNull('deleted_at')->where('status', 'approved')->get() as $entry) {
-                    $amount = (float) $entry->amount;
-                    if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
-                    }
-                    $cashExpense += $amount;
-                }
-                
-                $openingBalance = (float) $account->opening_balance;
-                if ($targetCurrencyId && $account->currency_id && $account->currency_id !== $targetCurrencyId) {
-                    $openingBalance = $this->convertAmount($openingBalance, $account->currency_id, $targetCurrencyId, $orgId, $currentSchoolId);
-                }
-                
-                $cashBalance = $openingBalance + $cashIncome - $cashExpense;
-                $totalCashBalance += $cashBalance;
-                
-                // Recalculate balance to include assets and books
-                $account->recalculateBalance();
-                
-                $balance = (float) $account->current_balance;
-                if ($targetCurrencyId && $account->currency_id && $account->currency_id !== $targetCurrencyId) {
-                    $balance = $this->convertAmount($balance, $account->currency_id, $targetCurrencyId, $orgId, $currentSchoolId);
-                }
-                $totalBalance += $balance;
-            }
-
-            // Current month income (with currency conversion)
-            $incomeEntries = IncomeEntry::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
-                ->get();
-            
-            $currentMonthIncome = 0;
-            foreach ($incomeEntries as $entry) {
-                $amount = (float) $entry->amount;
-                if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                    $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
-                }
-                $currentMonthIncome += $amount;
-            }
-
-            // Current month expense (with currency conversion)
-            $expenseEntries = ExpenseEntry::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->where('status', 'approved')
-                ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
-                ->get();
-            
-            $currentMonthExpense = 0;
-            foreach ($expenseEntries as $entry) {
-                $amount = (float) $entry->amount;
-                if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                    $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
-                }
-                $currentMonthExpense += $amount;
-            }
-
-            // Account balances (with currency conversion)
-            // Recalculate balances to include assets before displaying
-            $accountBalances = FinanceAccount::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get()
-                ->map(function ($account) use ($targetCurrencyId, $orgId, $currentSchoolId) {
-                    // Recalculate balance to include assets
-                    $account->recalculateBalance();
-                    
-                    $balance = (float) $account->current_balance;
-                    if ($targetCurrencyId && $account->currency_id && $account->currency_id !== $targetCurrencyId) {
-                        $balance = $this->convertAmount($balance, $account->currency_id, $targetCurrencyId, $orgId, $currentSchoolId);
-                    }
-                    return [
-                        'id' => $account->id,
-                        'name' => $account->name,
-                        'current_balance' => $balance,
-                        'type' => $account->type,
-                    ];
-                });
-
-            // Income by category (current month) - with currency conversion
-            $incomeByCategoryRaw = IncomeEntry::whereNull('income_entries.deleted_at')
-                ->where('income_entries.organization_id', $orgId)
-                ->where('income_entries.school_id', $currentSchoolId)
-                ->whereBetween('income_entries.date', [$currentMonthStart, $currentMonthEnd])
-                ->join('income_categories', 'income_entries.income_category_id', '=', 'income_categories.id')
-                ->where('income_categories.organization_id', $orgId)
-                ->where('income_categories.school_id', $currentSchoolId)
-                ->whereNull('income_categories.deleted_at')
-                ->select('income_categories.id', 'income_categories.name', 'income_entries.amount', 'income_entries.currency_id', 'income_entries.date')
-                ->get();
-            
-            $incomeByCategory = $incomeByCategoryRaw->groupBy('id')->map(function ($group) use ($targetCurrencyId, $orgId, $currentSchoolId) {
-                $total = 0;
-                foreach ($group as $entry) {
-                    $amount = (float) $entry->amount;
-                    if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
-                    }
-                    $total += $amount;
-                }
-                return [
-                    'id' => $group->first()->id,
-                    'name' => $group->first()->name,
-                    'total' => $total,
-                ];
-            })->values()->sortByDesc('total');
-
-            // Expense by category (current month) - with currency conversion
-            $expenseByCategoryRaw = ExpenseEntry::whereNull('expense_entries.deleted_at')
-                ->where('expense_entries.organization_id', $orgId)
-                ->where('expense_entries.school_id', $currentSchoolId)
-                ->where('expense_entries.status', 'approved')
-                ->whereBetween('expense_entries.date', [$currentMonthStart, $currentMonthEnd])
-                ->join('expense_categories', 'expense_entries.expense_category_id', '=', 'expense_categories.id')
-                ->where('expense_categories.organization_id', $orgId)
-                ->where('expense_categories.school_id', $currentSchoolId)
-                ->whereNull('expense_categories.deleted_at')
-                ->select('expense_categories.id', 'expense_categories.name', 'expense_entries.amount', 'expense_entries.currency_id', 'expense_entries.date')
-                ->get();
-            
-            $expenseByCategory = $expenseByCategoryRaw->groupBy('id')->map(function ($group) use ($targetCurrencyId, $orgId, $currentSchoolId) {
-                $total = 0;
-                foreach ($group as $entry) {
-                    $amount = (float) $entry->amount;
-                    if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
-                    }
-                    $total += $amount;
-                }
-                return [
-                    'id' => $group->first()->id,
-                    'name' => $group->first()->name,
-                    'total' => $total,
-                ];
-            })->values()->sortByDesc('total');
-
-            // Active projects count
-            $activeProjects = FinanceProject::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->where('is_active', true)
-                ->where('status', 'active')
-                ->count();
-
-            // Active donors count
-            $activeDonors = Donor::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->where('is_active', true)
-                ->count();
-
-            // Calculate assets value (with currency conversion)
-            // Only include assets that are linked to finance accounts (for balance calculation)
-            $assets = Asset::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->whereIn('status', ['available', 'assigned', 'maintenance'])
-                ->whereNotNull('purchase_price')
-                ->whereNotNull('finance_account_id') // Only assets linked to accounts
-                ->with(['currency', 'financeAccount.currency'])
-                ->get();
-
-            $totalAssetsValue = 0;
-            $assetsByAccount = [];
-            $assetsByCurrency = [];
-
-            foreach ($assets as $asset) {
-                $price = (float) $asset->purchase_price;
-                if ($price <= 0) {
-                    continue;
-                }
-
-                // Assets can have multiple copies, so multiply price by total_copies
-                $copies = max(1, (int) ($asset->total_copies ?? 1)); // At least 1 copy
-                $assetValue = $price * $copies;
-
-                // Determine asset's currency
-                $assetCurrencyId = $asset->currency_id;
-                if (!$assetCurrencyId && $asset->financeAccount && $asset->financeAccount->currency_id) {
-                    // Use account's currency if asset doesn't have one
-                    $assetCurrencyId = $asset->financeAccount->currency_id;
-                }
-                if (!$assetCurrencyId) {
-                    // Use base currency if no currency found
-                    $assetCurrencyId = $targetCurrencyId;
-                }
-
-                // Convert to target currency
-                $convertedPrice = $assetValue;
-                if ($targetCurrencyId && $assetCurrencyId && $assetCurrencyId !== $targetCurrencyId) {
-                    $convertedPrice = $this->convertAmount(
-                        $assetValue,
-                        $assetCurrencyId,
-                        $targetCurrencyId,
-                        $orgId,
-                        $currentSchoolId,
-                        $asset->purchase_date ? $asset->purchase_date->toDateString() : null
-                    );
-                }
-
-                $totalAssetsValue += $convertedPrice;
-
-                // Group by account
-                if ($asset->finance_account_id) {
-                    $accountId = $asset->finance_account_id;
-                    $accountName = $asset->financeAccount ? $asset->financeAccount->name : 'Unknown';
-                    $currencyCode = $asset->currency ? $asset->currency->code : ($asset->financeAccount && $asset->financeAccount->currency ? $asset->financeAccount->currency->code : 'N/A');
-                    $currencySymbol = $asset->currency ? $asset->currency->symbol : ($asset->financeAccount && $asset->financeAccount->currency ? $asset->financeAccount->currency->symbol : 'N/A');
-
-                    if (!isset($assetsByAccount[$accountId])) {
-                        $assetsByAccount[$accountId] = [
-                            'account_id' => $accountId,
-                            'account_name' => $accountName,
-                            'total_value' => 0,
-                            'currency_code' => $currencyCode,
-                            'currency_symbol' => $currencySymbol,
-                        ];
-                    }
-                    $assetsByAccount[$accountId]['total_value'] += $convertedPrice;
-                }
-
-                // Group by currency
-                if ($assetCurrencyId) {
-                    $currencyCode = $asset->currency ? $asset->currency->code : 'N/A';
-                    if (!isset($assetsByCurrency[$assetCurrencyId])) {
-                        $assetsByCurrency[$assetCurrencyId] = [
-                            'currency_id' => $assetCurrencyId,
-                            'currency_code' => $currencyCode,
-                            'total_value' => 0,
-                            'converted_value' => 0,
-                        ];
-                    }
-                    $assetsByCurrency[$assetCurrencyId]['total_value'] += $assetValue;
-                    $assetsByCurrency[$assetCurrencyId]['converted_value'] += $convertedPrice;
-                }
-            }
-
-            // Convert arrays to indexed arrays
-            $assetsByAccountArray = array_values($assetsByAccount);
-            $assetsByCurrencyArray = array_values($assetsByCurrency);
-
-            // Calculate library books value (with currency conversion)
-            // Only include books that are linked to finance accounts (for balance calculation)
-            $libraryBooks = LibraryBook::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->where('price', '>', 0)
-                ->whereNotNull('finance_account_id') // Only books linked to accounts
-                ->with(['currency', 'financeAccount.currency'])
-                ->withCount(['copies as total_copies' => function ($builder) {
-                    $builder->whereNull('deleted_at');
-                }])
-                ->get();
-
-            $totalLibraryBooksValue = 0;
-            $libraryBooksByAccount = [];
-            $libraryBooksByCurrency = [];
-
-            foreach ($libraryBooks as $book) {
-                $totalCopies = $book->total_copies ?? 0;
-                if ($totalCopies <= 0) {
-                    continue;
-                }
-
-                $bookValue = (float) $book->price * $totalCopies;
-
-                // Determine book's currency
-                $bookCurrencyId = $book->currency_id;
-                if (!$bookCurrencyId && $book->financeAccount && $book->financeAccount->currency_id) {
-                    // Use account's currency if book doesn't have one
-                    $bookCurrencyId = $book->financeAccount->currency_id;
-                }
-                if (!$bookCurrencyId) {
-                    // Use base currency if no currency found
-                    $bookCurrencyId = $targetCurrencyId;
-                }
-
-                // Convert to target currency
-                $convertedValue = $bookValue;
-                if ($targetCurrencyId && $bookCurrencyId && $bookCurrencyId !== $targetCurrencyId) {
-                    $convertedValue = $this->convertAmount(
-                        $bookValue,
-                        $bookCurrencyId,
-                        $targetCurrencyId,
-                        $orgId,
-                        $currentSchoolId,
-                        $book->created_at ? $book->created_at->toDateString() : null
-                    );
-                }
-
-                $totalLibraryBooksValue += $convertedValue;
-
-                // Group by account
-                if ($book->finance_account_id) {
-                    $accountId = $book->finance_account_id;
-                    $accountName = $book->financeAccount ? $book->financeAccount->name : 'Unknown';
-                    $currencyCode = $book->currency ? $book->currency->code : ($book->financeAccount && $book->financeAccount->currency ? $book->financeAccount->currency->code : 'N/A');
-                    $currencySymbol = $book->currency ? $book->currency->symbol : ($book->financeAccount && $book->financeAccount->currency ? $book->financeAccount->currency->symbol : 'N/A');
-
-                    if (!isset($libraryBooksByAccount[$accountId])) {
-                        $libraryBooksByAccount[$accountId] = [
-                            'account_id' => $accountId,
-                            'account_name' => $accountName,
-                            'total_value' => 0,
-                            'currency_code' => $currencyCode,
-                            'currency_symbol' => $currencySymbol,
-                        ];
-                    }
-                    $libraryBooksByAccount[$accountId]['total_value'] += $convertedValue;
-                }
-
-                // Group by currency
-                if ($bookCurrencyId) {
-                    $currencyCode = $book->currency ? $book->currency->code : 'N/A';
-                    if (!isset($libraryBooksByCurrency[$bookCurrencyId])) {
-                        $libraryBooksByCurrency[$bookCurrencyId] = [
-                            'currency_id' => $bookCurrencyId,
-                            'currency_code' => $currencyCode,
-                            'total_value' => 0,
-                            'converted_value' => 0,
-                        ];
-                    }
-                    $libraryBooksByCurrency[$bookCurrencyId]['total_value'] += $bookValue;
-                    $libraryBooksByCurrency[$bookCurrencyId]['converted_value'] += $convertedValue;
-                }
-            }
-
-            // Convert arrays to indexed arrays
-            $libraryBooksByAccountArray = array_values($libraryBooksByAccount);
-            $libraryBooksByCurrencyArray = array_values($libraryBooksByCurrency);
-
-            // Calculate total balance as: cash + assets + books
-            // This ensures consistency since all values use the same currency conversion logic
-            // The account-based totalBalance might have slight rounding differences
-            $totalBalanceWithAssets = $totalCashBalance + $totalAssetsValue + $totalLibraryBooksValue;
-
-            // Recent income entries
-            $recentIncome = IncomeEntry::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->with(['incomeCategory', 'donor'])
-                ->orderBy('date', 'desc')
-                ->limit(5)
-                ->get();
-
-            // Recent expense entries
+            // School-scoped: add assets, library books, recent_expenses, and adjust total_balance
             $recentExpenses = ExpenseEntry::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
                 ->where('school_id', $currentSchoolId)
@@ -453,29 +70,111 @@ class FinanceReportController extends Controller
                 ->orderBy('date', 'desc')
                 ->limit(5)
                 ->get();
+            $data['recent_expenses'] = $recentExpenses->toArray();
 
-            return response()->json([
-                'summary' => [
-                    'total_balance' => $totalBalanceWithAssets,
-                    'total_cash_balance' => $totalCashBalance,
-                    'current_month_income' => $currentMonthIncome,
-                    'current_month_expense' => $currentMonthExpense,
-                    'net_this_month' => $currentMonthIncome - $currentMonthExpense,
-                    'active_projects' => $activeProjects,
-                    'active_donors' => $activeDonors,
-                    'total_assets_value' => $totalAssetsValue,
-                    'total_library_books_value' => $totalLibraryBooksValue,
-                ],
-                'account_balances' => $accountBalances->toArray(),
-                'income_by_category' => $incomeByCategory->toArray(),
-                'expense_by_category' => $expenseByCategory->toArray(),
-                'recent_income' => $recentIncome->toArray(),
-                'recent_expenses' => $recentExpenses->toArray(),
-                'assets_by_account' => $assetsByAccountArray,
-                'assets_by_currency' => $assetsByCurrencyArray,
-                'library_books_by_account' => $libraryBooksByAccountArray,
-                'library_books_by_currency' => $libraryBooksByCurrencyArray,
-            ]);
+            $totalAssetsValue = 0;
+            $totalLibraryBooksValue = 0;
+            $assetsByAccountArray = [];
+            $assetsByCurrencyArray = [];
+            $libraryBooksByAccountArray = [];
+            $libraryBooksByCurrencyArray = [];
+
+            $assets = Asset::whereNull('deleted_at')
+                ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
+                ->whereIn('status', ['available', 'assigned', 'maintenance'])
+                ->whereNotNull('purchase_price')
+                ->whereNotNull('finance_account_id')
+                ->with(['currency', 'financeAccount.currency'])
+                ->get();
+
+            $assetsByAccount = [];
+            $assetsByCurrency = [];
+            foreach ($assets as $asset) {
+                $price = (float) $asset->purchase_price;
+                if ($price <= 0) continue;
+                $copies = max(1, (int) ($asset->total_copies ?? 1));
+                $assetValue = $price * $copies;
+                $assetCurrencyId = $asset->currency_id ?? ($asset->financeAccount?->currency_id ?? null) ?? $targetCurrencyId;
+                $convertedPrice = $assetValue;
+                if ($targetCurrencyId && $assetCurrencyId && $assetCurrencyId !== $targetCurrencyId) {
+                    $convertedPrice = $this->convertAmount($assetValue, $assetCurrencyId, $targetCurrencyId, $orgId, $currentSchoolId, $asset->purchase_date ? $asset->purchase_date->toDateString() : null);
+                }
+                $totalAssetsValue += $convertedPrice;
+                if ($asset->finance_account_id) {
+                    $accountId = $asset->finance_account_id;
+                    $accountName = $asset->financeAccount ? $asset->financeAccount->name : 'Unknown';
+                    $currencyCode = $asset->currency ? $asset->currency->code : ($asset->financeAccount && $asset->financeAccount->currency ? $asset->financeAccount->currency->code : 'N/A');
+                    $currencySymbol = $asset->currency ? $asset->currency->symbol : ($asset->financeAccount && $asset->financeAccount->currency ? $asset->financeAccount->currency->symbol : 'N/A');
+                    if (!isset($assetsByAccount[$accountId])) {
+                        $assetsByAccount[$accountId] = ['account_id' => $accountId, 'account_name' => $accountName, 'total_value' => 0, 'currency_code' => $currencyCode, 'currency_symbol' => $currencySymbol];
+                    }
+                    $assetsByAccount[$accountId]['total_value'] += $convertedPrice;
+                }
+                if ($assetCurrencyId) {
+                    $currencyCode = $asset->currency ? $asset->currency->code : 'N/A';
+                    if (!isset($assetsByCurrency[$assetCurrencyId])) {
+                        $assetsByCurrency[$assetCurrencyId] = ['currency_id' => $assetCurrencyId, 'currency_code' => $currencyCode, 'total_value' => 0, 'converted_value' => 0];
+                    }
+                    $assetsByCurrency[$assetCurrencyId]['total_value'] += $assetValue;
+                    $assetsByCurrency[$assetCurrencyId]['converted_value'] += $convertedPrice;
+                }
+            }
+            $assetsByAccountArray = array_values($assetsByAccount);
+            $assetsByCurrencyArray = array_values($assetsByCurrency);
+
+            $libraryBooks = LibraryBook::whereNull('deleted_at')
+                ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
+                ->where('price', '>', 0)
+                ->whereNotNull('finance_account_id')
+                ->with(['currency', 'financeAccount.currency'])
+                ->withCount(['copies as total_copies' => function ($builder) { $builder->whereNull('deleted_at'); }])
+                ->get();
+
+            $libraryBooksByAccount = [];
+            $libraryBooksByCurrency = [];
+            foreach ($libraryBooks as $book) {
+                $totalCopies = $book->total_copies ?? 0;
+                if ($totalCopies <= 0) continue;
+                $bookValue = (float) $book->price * $totalCopies;
+                $bookCurrencyId = $book->currency_id ?? ($book->financeAccount?->currency_id ?? null) ?? $targetCurrencyId;
+                $convertedValue = $bookValue;
+                if ($targetCurrencyId && $bookCurrencyId && $bookCurrencyId !== $targetCurrencyId) {
+                    $convertedValue = $this->convertAmount($bookValue, $bookCurrencyId, $targetCurrencyId, $orgId, $currentSchoolId, $book->created_at ? $book->created_at->toDateString() : null);
+                }
+                $totalLibraryBooksValue += $convertedValue;
+                if ($book->finance_account_id) {
+                    $accountId = $book->finance_account_id;
+                    $accountName = $book->financeAccount ? $book->financeAccount->name : 'Unknown';
+                    $currencyCode = $book->currency ? $book->currency->code : ($book->financeAccount && $book->financeAccount->currency ? $book->financeAccount->currency->code : 'N/A');
+                    $currencySymbol = $book->currency ? $book->currency->symbol : ($book->financeAccount && $book->financeAccount->currency ? $book->financeAccount->currency->symbol : 'N/A');
+                    if (!isset($libraryBooksByAccount[$accountId])) {
+                        $libraryBooksByAccount[$accountId] = ['account_id' => $accountId, 'account_name' => $accountName, 'total_value' => 0, 'currency_code' => $currencyCode, 'currency_symbol' => $currencySymbol];
+                    }
+                    $libraryBooksByAccount[$accountId]['total_value'] += $convertedValue;
+                }
+                if ($bookCurrencyId) {
+                    $currencyCode = $book->currency ? $book->currency->code : 'N/A';
+                    if (!isset($libraryBooksByCurrency[$bookCurrencyId])) {
+                        $libraryBooksByCurrency[$bookCurrencyId] = ['currency_id' => $bookCurrencyId, 'currency_code' => $currencyCode, 'total_value' => 0, 'converted_value' => 0];
+                    }
+                    $libraryBooksByCurrency[$bookCurrencyId]['total_value'] += $bookValue;
+                    $libraryBooksByCurrency[$bookCurrencyId]['converted_value'] += $convertedValue;
+                }
+            }
+            $libraryBooksByAccountArray = array_values($libraryBooksByAccount);
+            $libraryBooksByCurrencyArray = array_values($libraryBooksByCurrency);
+
+            $data['summary']['total_assets_value'] = $totalAssetsValue;
+            $data['summary']['total_library_books_value'] = $totalLibraryBooksValue;
+            $data['summary']['total_balance'] = $data['summary']['total_cash_balance'] + $totalAssetsValue + $totalLibraryBooksValue;
+            $data['assets_by_account'] = $assetsByAccountArray;
+            $data['assets_by_currency'] = $assetsByCurrencyArray;
+            $data['library_books_by_account'] = $libraryBooksByAccountArray;
+            $data['library_books_by_currency'] = $libraryBooksByCurrencyArray;
+
+            return response()->json($data);
         } catch (\Exception $e) {
             \Log::error('FinanceReportController@dashboard error: ' . $e->getMessage());
             return response()->json(['error' => 'An error occurred while fetching dashboard data'], 500);
@@ -506,89 +205,20 @@ class FinanceReportController extends Controller
             $validated = $request->validate([
                 'date' => 'required|date',
                 'account_id' => 'nullable|uuid|exists:finance_accounts,id',
+                'target_currency_id' => 'nullable|uuid|exists:currencies,id',
             ]);
 
             $orgId = $profile->organization_id;
             $currentSchoolId = $this->getCurrentSchoolId($request);
-            $date = $validated['date'];
 
-            // Build query for accounts
-            $accountQuery = FinanceAccount::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->where('is_active', true);
-
-            if (!empty($validated['account_id'])) {
-                $accountQuery->where('id', $validated['account_id']);
-            }
-
-            $accounts = $accountQuery->get();
-            $cashbook = [];
-
-            foreach ($accounts as $account) {
-                // Calculate opening balance for the day
-                // Opening = account opening_balance + all income before date - all expenses before date
-                $incomeBefore = IncomeEntry::whereNull('deleted_at')
-                    ->where('organization_id', $orgId)
-                    ->where('school_id', $currentSchoolId)
-                    ->where('account_id', $account->id)
-                    ->where('date', '<', $date)
-                    ->sum('amount');
-
-                $expenseBefore = ExpenseEntry::whereNull('deleted_at')
-                    ->where('organization_id', $orgId)
-                    ->where('school_id', $currentSchoolId)
-                    ->where('account_id', $account->id)
-                    ->where('status', 'approved')
-                    ->where('date', '<', $date)
-                    ->sum('amount');
-
-                $openingBalance = $account->opening_balance + $incomeBefore - $expenseBefore;
-
-                // Get day's income
-                $dayIncome = IncomeEntry::whereNull('deleted_at')
-                    ->where('organization_id', $orgId)
-                    ->where('school_id', $currentSchoolId)
-                    ->where('account_id', $account->id)
-                    ->where('date', $date)
-                    ->with(['incomeCategory', 'donor'])
-                    ->get();
-
-                $totalDayIncome = $dayIncome->sum('amount');
-
-                // Get day's expenses
-                $dayExpenses = ExpenseEntry::whereNull('deleted_at')
-                    ->where('organization_id', $orgId)
-                    ->where('school_id', $currentSchoolId)
-                    ->where('account_id', $account->id)
-                    ->where('status', 'approved')
-                    ->where('date', $date)
-                    ->with(['expenseCategory'])
-                    ->get();
-
-                $totalDayExpense = $dayExpenses->sum('amount');
-
-                $closingBalance = $openingBalance + $totalDayIncome - $totalDayExpense;
-
-                $cashbook[] = [
-                    'account' => [
-                        'id' => $account->id,
-                        'name' => $account->name,
-                        'type' => $account->type,
-                    ],
-                    'opening_balance' => $openingBalance,
-                    'income' => $dayIncome,
-                    'total_income' => $totalDayIncome,
-                    'expenses' => $dayExpenses,
-                    'total_expense' => $totalDayExpense,
-                    'closing_balance' => $closingBalance,
-                ];
-            }
-
-            return response()->json([
-                'date' => $date,
-                'cashbook' => $cashbook,
-            ]);
+            $data = $this->reportingService->dailyCashbook(
+                $orgId,
+                $currentSchoolId,
+                $validated['date'],
+                $validated['account_id'] ?? null,
+                $validated['target_currency_id'] ?? null
+            );
+            return response()->json($data);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
@@ -629,64 +259,14 @@ class FinanceReportController extends Controller
             $orgId = $profile->organization_id;
             $currentSchoolId = $this->getCurrentSchoolId($request);
 
-            // Income by category
-            $incomeQuery = IncomeEntry::whereNull('income_entries.deleted_at')
-                ->where('income_entries.organization_id', $orgId)
-                ->where('income_entries.school_id', $currentSchoolId)
-                ->whereBetween('income_entries.date', [$validated['start_date'], $validated['end_date']]);
-
-            $incomeByCategory = $incomeQuery
-                ->join('income_categories', 'income_entries.income_category_id', '=', 'income_categories.id')
-                ->whereNull('income_categories.deleted_at')
-                ->groupBy('income_categories.id', 'income_categories.name', 'income_categories.code')
-                ->select(
-                    'income_categories.id',
-                    'income_categories.name',
-                    'income_categories.code',
-                    DB::raw('SUM(income_entries.amount) as total'),
-                    DB::raw('COUNT(income_entries.id) as count')
-                )
-                ->orderByDesc('total')
-                ->get();
-
-            $totalIncome = $incomeByCategory->sum('total');
-
-            // Expense by category
-            $expenseQuery = ExpenseEntry::whereNull('expense_entries.deleted_at')
-                ->where('expense_entries.organization_id', $orgId)
-                ->where('expense_entries.school_id', $currentSchoolId)
-                ->where('expense_entries.status', 'approved')
-                ->whereBetween('expense_entries.date', [$validated['start_date'], $validated['end_date']]);
-
-            $expenseByCategory = $expenseQuery
-                ->join('expense_categories', 'expense_entries.expense_category_id', '=', 'expense_categories.id')
-                ->whereNull('expense_categories.deleted_at')
-                ->groupBy('expense_categories.id', 'expense_categories.name', 'expense_categories.code')
-                ->select(
-                    'expense_categories.id',
-                    'expense_categories.name',
-                    'expense_categories.code',
-                    DB::raw('SUM(expense_entries.amount) as total'),
-                    DB::raw('COUNT(expense_entries.id) as count')
-                )
-                ->orderByDesc('total')
-                ->get();
-
-            $totalExpense = $expenseByCategory->sum('total');
-
-            return response()->json([
-                'period' => [
-                    'start_date' => $validated['start_date'],
-                    'end_date' => $validated['end_date'],
-                ],
-                'summary' => [
-                    'total_income' => $totalIncome,
-                    'total_expense' => $totalExpense,
-                    'net' => $totalIncome - $totalExpense,
-                ],
-                'income_by_category' => $incomeByCategory,
-                'expense_by_category' => $expenseByCategory,
-            ]);
+            $data = $this->reportingService->incomeVsExpense(
+                $orgId,
+                $currentSchoolId,
+                $validated['start_date'],
+                $validated['end_date'],
+                null
+            );
+            return response()->json($data);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
@@ -726,35 +306,8 @@ class FinanceReportController extends Controller
             $orgId = $profile->organization_id;
             $currentSchoolId = $this->getCurrentSchoolId($request);
 
-            $query = FinanceProject::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId);
-
-            if (!empty($validated['status'])) {
-                $query->where('status', $validated['status']);
-            }
-
-            $projects = $query->orderBy('name')->get();
-
-            $projectSummaries = [];
-            foreach ($projects as $project) {
-                // Recalculate totals
-                $totalIncome = $project->incomeEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId)->sum('amount');
-                $totalExpense = $project->expenseEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId)->where('status', 'approved')->sum('amount');
-
-                $projectSummaries[] = [
-                    'project' => $project,
-                    'total_income' => $totalIncome,
-                    'total_expense' => $totalExpense,
-                    'balance' => $totalIncome - $totalExpense,
-                    'budget_remaining' => $project->budget_amount ? $project->budget_amount - $totalExpense : null,
-                    'budget_utilization' => $project->budget_amount > 0 ? round(($totalExpense / $project->budget_amount) * 100, 2) : null,
-                ];
-            }
-
-            return response()->json([
-                'projects' => $projectSummaries,
-            ]);
+            $data = $this->reportingService->projectSummary($orgId, $currentSchoolId, null, $validated['status'] ?? null);
+            return response()->json($data);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
@@ -795,44 +348,14 @@ class FinanceReportController extends Controller
             $orgId = $profile->organization_id;
             $currentSchoolId = $this->getCurrentSchoolId($request);
 
-            $query = Donor::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->where('is_active', true);
-
-            $donors = $query->orderBy('name')->get();
-
-            $donorSummaries = [];
-            foreach ($donors as $donor) {
-                $incomeQuery = $donor->incomeEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId);
-
-                if (!empty($validated['start_date']) && !empty($validated['end_date'])) {
-                    $incomeQuery->whereBetween('date', [$validated['start_date'], $validated['end_date']]);
-                }
-
-                $periodTotal = $incomeQuery->sum('amount');
-                $donationCount = $incomeQuery->count();
-
-                $donorSummaries[] = [
-                    'donor' => $donor,
-                    'total_donated' => $donor->total_donated,
-                    'period_total' => $periodTotal,
-                    'donation_count' => $donationCount,
-                ];
-            }
-
-            // Sort by period total or total donated
-            usort($donorSummaries, function ($a, $b) {
-                return $b['total_donated'] <=> $a['total_donated'];
-            });
-
-            return response()->json([
-                'period' => [
-                    'start_date' => $validated['start_date'] ?? null,
-                    'end_date' => $validated['end_date'] ?? null,
-                ],
-                'donors' => $donorSummaries,
-            ]);
+            $data = $this->reportingService->donorSummary(
+                $orgId,
+                $currentSchoolId,
+                null,
+                $validated['start_date'] ?? null,
+                $validated['end_date'] ?? null
+            );
+            return response()->json($data);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
@@ -868,39 +391,8 @@ class FinanceReportController extends Controller
             $orgId = $profile->organization_id;
             $currentSchoolId = $this->getCurrentSchoolId($request);
 
-            $accounts = FinanceAccount::whereNull('deleted_at')
-                ->where('organization_id', $orgId)
-                ->where('school_id', $currentSchoolId)
-                ->orderBy('name')
-                ->get();
-
-            $accountSummaries = [];
-            $totalBalance = 0;
-
-            foreach ($accounts as $account) {
-                // Recalculate balance
-                $account->recalculateBalance();
-
-                $totalIncome = $account->incomeEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId)->sum('amount');
-                $totalExpense = $account->expenseEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId)->where('status', 'approved')->sum('amount');
-
-                $accountSummaries[] = [
-                    'account' => $account,
-                    'opening_balance' => $account->opening_balance,
-                    'total_income' => $totalIncome,
-                    'total_expense' => $totalExpense,
-                    'current_balance' => $account->current_balance,
-                ];
-
-                if ($account->is_active) {
-                    $totalBalance += $account->current_balance;
-                }
-            }
-
-            return response()->json([
-                'accounts' => $accountSummaries,
-                'total_balance' => $totalBalance,
-            ]);
+            $data = $this->reportingService->accountBalances($orgId, $currentSchoolId, null);
+            return response()->json($data);
         } catch (\Exception $e) {
             \Log::error('FinanceReportController@accountBalances error: ' . $e->getMessage());
             return response()->json(['error' => 'An error occurred while generating account balances'], 500);

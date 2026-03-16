@@ -578,7 +578,7 @@ export default {
     timetableUpdated: "مهالوېش په بریالیتوب سره تازه شو",
     userCreated: "د پیښې کاروونکی په بریالیتوب سره جوړ شو",
     userDeleted: "د پیښې کاروونکی په بریالیتوب سره غیر فعال شو",
-    userUpdated: "د پیښې کاروونکی په بریالیتوب سره تازه شو",
+    userUpdated: " کاروونکی په بریالیتوب سره تازه شو",
     watermarkCreated: "وټرمارک په بریالیتوب سره جوړ شو",
     watermarkCreateFailed: "د وټرمارک جوړول ناکام شول",
     watermarkDeleted: "وټرمارک په بریالیتوب سره ړنګ شو",

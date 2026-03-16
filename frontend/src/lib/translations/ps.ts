@@ -9,6 +9,7 @@ import { websiteAdminPs } from './website/admin-ps';
 
 import shared_common_ps from './shared/common/common.ps';
 import shared_nav_ps from './shared/nav/nav.ps';
+import shared_organization_admin_ps from './shared/organizationAdmin/organizationAdmin.ps';
 import shared_toast_ps from './shared/toast/toast.ps';
 import shared_forms_ps from './shared/forms/forms.ps';
 import shared_validation_ps from './shared/validation/validation.ps';
@@ -46,6 +47,7 @@ import pages_library_ps from './pages/library/library.ps';
 import pages_maintenance_ps from './pages/maintenance/maintenance.ps';
 import pages_onboarding_ps from './pages/onboarding/onboarding.ps';
 import pages_organizations_ps from './pages/organizations/organizations.ps';
+import pages_organization_hr_ps from './pages/organization-hr/organizationHr.ps';
 import pages_permissions_ps from './pages/permissions/permissions.ps';
 import pages_phone_book_ps from './pages/phone-book/phoneBook.ps';
 import pages_profile_management_ps from './pages/profile-management/profileManagement.ps';
@@ -75,6 +77,7 @@ export const ps = {
   ...websitePublicPs,
   ...shared_common_ps,
   ...shared_nav_ps,
+  ...shared_organization_admin_ps,
   ...shared_toast_ps,
   ...shared_forms_ps,
   ...shared_validation_ps,
@@ -112,6 +115,7 @@ export const ps = {
   ...pages_maintenance_ps,
   ...pages_onboarding_ps,
   ...pages_organizations_ps,
+  ...pages_organization_hr_ps,
   ...pages_permissions_ps,
   ...pages_phone_book_ps,
   ...pages_profile_management_ps,

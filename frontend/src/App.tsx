@@ -219,6 +219,7 @@ import {
   MaintenanceHistory,
   DesktopLicenseGeneration,
   DesktopReleasesManagement,
+  PlatformFilesManagement,
   ActivityLogsPage
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -258,6 +259,32 @@ import WebsiteUsersPage from "@/website/pages/WebsiteUsersPage";
 import PublicAdmissionsPage from "@/website/pages/PublicAdmissionsPage";
 import WebsiteAuditLogsPage from "@/website/pages/WebsiteAuditLogsPage";
 import WebsiteSeoPage from "@/website/pages/WebsiteSeoPage";
+import OrganizationHrHubPage from '@/pages/organization/hr/OrganizationHrHubPage';
+import OrganizationHrStaffPage from '@/pages/organization/hr/OrganizationHrStaffPage';
+import OrganizationHrAssignmentsPage from '@/pages/organization/hr/OrganizationHrAssignmentsPage';
+import OrganizationHrPayrollPage from '@/pages/organization/hr/OrganizationHrPayrollPage';
+import OrganizationHrReportsPage from '@/pages/organization/hr/OrganizationHrReportsPage';
+import { OrganizationAdminRoute } from '@/components/OrganizationAdminRoute';
+import { OrganizationAdminIndexRedirect } from '@/organization-admin/components/OrganizationAdminIndexRedirect';
+import { OrganizationAdminLayout } from '@/organization-admin/components/OrganizationAdminLayout';
+import OrgAdminLimitsPage from '@/organization-admin/pages/OrgAdminLimitsPage';
+import OrgAdminPermissionsPage from '@/organization-admin/pages/OrgAdminPermissionsPage';
+import OrgAdminRolesPage from '@/organization-admin/pages/OrgAdminRolesPage';
+import OrgAdminSchoolsPage from '@/organization-admin/pages/OrgAdminSchoolsPage';
+import OrgAdminUserAccessPage from '@/organization-admin/pages/OrgAdminUserAccessPage';
+import OrgAdminUsersPage from '@/organization-admin/pages/OrgAdminUsersPage';
+import OrgAdminSubscriptionPage from '@/organization-admin/pages/OrgAdminSubscriptionPage';
+import OrgAdminFinancePage from '@/organization-admin/pages/OrgAdminFinancePage';
+import OrgAdminFinanceAccountsPage from '@/organization-admin/pages/OrgAdminFinanceAccountsPage';
+import OrgAdminFinanceIncomePage from '@/organization-admin/pages/OrgAdminFinanceIncomePage';
+import OrgAdminFinanceExpensesPage from '@/organization-admin/pages/OrgAdminFinanceExpensesPage';
+import OrgAdminFinanceTransfersPage from '@/organization-admin/pages/OrgAdminFinanceTransfersPage';
+import OrgAdminFinanceDonorsPage from '@/organization-admin/pages/OrgAdminFinanceDonorsPage';
+import OrgAdminFinanceProjectsPage from '@/organization-admin/pages/OrgAdminFinanceProjectsPage';
+import OrgAdminFinanceSettingsPage from '@/organization-admin/pages/OrgAdminFinanceSettingsPage';
+import OrgAdminFinanceDocumentsPage from '@/organization-admin/pages/OrgAdminFinanceDocumentsPage';
+import OrgAdminFinanceReportsPage from '@/organization-admin/pages/OrgAdminFinanceReportsPage';
+import OrgAdminFacilitiesPage from '@/organization-admin/pages/OrgAdminFacilitiesPage';
 
 // Centralized QueryClient – defaults (e.g. refetch on focus) live in @/lib/queryClient
 const queryClient = createQueryClient();
@@ -711,7 +738,99 @@ const App = () => (
                         <DesktopReleasesManagement />
                       </Suspense>
                     } />
+                    <Route path="files" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PlatformFilesManagement />
+                      </Suspense>
+                    } />
                     <Route path="maintenance" element={<Navigate to="maintenance-history" replace />} />
+                  </Route>
+
+                  {/* Organization Admin Routes - Enterprise-gated, org-wide management */}
+                  <Route path="/org-admin" element={
+                    <OrganizationAdminRoute>
+                      <OrganizationAdminLayout>
+                        <Outlet />
+                      </OrganizationAdminLayout>
+                    </OrganizationAdminRoute>
+                  }>
+                    <Route index element={<OrganizationAdminIndexRedirect />} />
+                    <Route path="dashboard" element={
+                      <Suspense fallback={<DashboardSkeleton />}>
+                        <OrganizationDashboard />
+                      </Suspense>
+                    } />
+                    <Route path="schools" element={<OrgAdminSchoolsPage />} />
+                    <Route path="users" element={<OrgAdminUsersPage />} />
+                    <Route path="roles" element={<OrgAdminRolesPage />} />
+                    <Route path="permissions" element={<OrgAdminPermissionsPage />} />
+                    <Route path="access" element={<OrgAdminUserAccessPage />} />
+                    <Route path="subscription" element={<OrgAdminSubscriptionPage />} />
+                    <Route path="limits" element={<OrgAdminLimitsPage />} />
+                    <Route path="finance" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinancePage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/accounts" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceAccountsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/income" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceIncomePage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/expenses" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceExpensesPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/transfers" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceTransfersPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/donors" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceDonorsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/projects" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceProjectsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/settings" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceSettingsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/reports" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceReportsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/documents" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFinanceDocumentsPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="finance/categories" element={<Navigate to="/org-admin/finance/settings" replace />} />
+                    <Route path="facilities" element={
+                      <PermissionRoute permission="org_finance.read">
+                        <OrgAdminFacilitiesPage />
+                      </PermissionRoute>
+                    } />
+                    <Route path="facilities/new" element={<Navigate to="/org-admin/facilities" replace />} />
+                    <Route path="facilities/:id/edit" element={<Navigate to="/org-admin/facilities" replace />} />
+                    <Route path="facilities/:id" element={<Navigate to="/org-admin/facilities" replace />} />
+                    <Route path="hr" element={<OrganizationHrHubPage />} />
+                    <Route path="hr/staff" element={<OrganizationHrStaffPage />} />
+                    <Route path="hr/assignments" element={<OrganizationHrAssignmentsPage />} />
+                    <Route path="hr/payroll" element={<OrganizationHrPayrollPage />} />
+                    <Route path="hr/reports" element={<OrganizationHrReportsPage />} />
                   </Route>
 
                   {/* Protected routes with persistent layout */}
@@ -730,16 +849,14 @@ const App = () => (
                         <Dashboard />
                       </Suspense>
                     } />
-                    <Route path="/organization-dashboard" element={
-                      <Suspense fallback={<DashboardSkeleton />}>
-                        <OrganizationDashboard />
-                      </Suspense>
-                    } />
-                    <Route path="/org/dashboard" element={
-                      <Suspense fallback={<DashboardSkeleton />}>
-                        <OrganizationDashboard />
-                      </Suspense>
-                    } />
+                    {/* Legacy redirects → org-admin area */}
+                    <Route path="/organization-dashboard" element={<Navigate to="/org-admin/dashboard" replace />} />
+                    <Route path="/org/dashboard" element={<Navigate to="/org-admin/dashboard" replace />} />
+                    <Route path="/organization/hr" element={<Navigate to="/org-admin/hr" replace />} />
+                    <Route path="/organization/hr/staff" element={<Navigate to="/org-admin/hr/staff" replace />} />
+                    <Route path="/organization/hr/assignments" element={<Navigate to="/org-admin/hr/assignments" replace />} />
+                    <Route path="/organization/hr/payroll" element={<Navigate to="/org-admin/hr/payroll" replace />} />
+                    <Route path="/organization/hr/reports" element={<Navigate to="/org-admin/hr/reports" replace />} />
                     {/* User Profile and Settings */}
                     <Route path="/profile" element={
                       <Suspense fallback={<PageSkeleton />}>

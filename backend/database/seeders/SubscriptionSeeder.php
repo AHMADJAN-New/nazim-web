@@ -71,6 +71,8 @@ class SubscriptionSeeder extends Seeder
             ['feature_key' => 'multi_school', 'name' => 'Multi-Branch Support', 'category' => 'enterprise', 'is_addon' => false, 'sort_order' => 92],
             ['feature_key' => 'api_access', 'name' => 'API Access / Integrations', 'category' => 'enterprise', 'is_addon' => true, 'sort_order' => 93],
             ['feature_key' => 'public_website', 'name' => 'Public Website Portal', 'category' => 'enterprise', 'is_addon' => true, 'sort_order' => 94],
+            // Organization-level features (enterprise)
+            ['feature_key' => 'org_finance', 'name' => 'Organization Finance', 'category' => 'enterprise', 'is_addon' => false, 'sort_order' => 95],
         ];
 
         foreach ($features as $feature) {
@@ -191,9 +193,9 @@ class SubscriptionSeeder extends Seeder
                 ],
             ],
             [
-                'name' => 'Starter',
+                'name' => 'اساسي',
                 'slug' => 'starter',
-                'description' => 'Operational core + exams lite',
+                'description' => " د مدرسې اساسي مدیریت لپاره.\nد زده کوونکو ثبت، د کارمندانو تنظیم، حاضري او د لیلیې اداره.",
                 // New fee separation structure
                 'billing_period' => 'yearly',
                 'license_fee_afn' => 0,
@@ -259,9 +261,9 @@ class SubscriptionSeeder extends Seeder
                 ],
             ],
             [
-                'name' => 'Pro',
+                'name' => 'معیاري',
                 'slug' => 'pro',
-                'description' => 'Full academic workflow',
+                'description' => " د اساسي پلان ټول امکانات + اضافي تعلیمي تنظیم.\nد درسي پلانونو، کتابونو ثبت او د امتحاناتو ابتدایي مدیریت.",
                 // New fee separation structure
                 'billing_period' => 'yearly',
                 'license_fee_afn' => 0,
@@ -327,9 +329,9 @@ class SubscriptionSeeder extends Seeder
                 ],
             ],
             [
-                'name' => 'Complete',
+                'name' => 'مکمل',
                 'slug' => 'complete',
-                'description' => 'Administration, finance, and credentials',
+                'description' => "  د مدرسې بشپړ اداري سیسټم.\nثبت، حاضري، امتحانات، اسناد او مالي چارې په یو ځای کې.",
                 // New fee separation structure
                 'billing_period' => 'yearly',
                 'license_fee_afn' => 0,
@@ -461,13 +463,32 @@ class SubscriptionSeeder extends Seeder
                     'multi_school' => true,
                     'api_access' => true,
                     'public_website' => true,
+                    // Organization HR (enabled by default on enterprise)
+                    'org_hr_core' => true,
+                    'org_hr_payroll' => true,
+                    'org_hr_analytics' => true,
+                    // Organization Finance (enabled by default on enterprise)
+                    'org_finance' => true,
                 ],
+                // Capped to prevent abuse: ~700 USD + 200/year per school; limits are org-wide
                 'limits' => [
-                    'students' => -1, 'staff' => -1, 'users' => -1, 'schools' => -1, 'classes' => -1,
-                    'documents' => -1, 'exams' => -1, 'report_exports' => -1, 'finance_accounts' => -1,
-                    'income_entries' => -1, 'expense_entries' => -1, 'assets' => -1,
-                    'library_books' => -1, 'events' => -1, 'certificate_templates' => -1,
-                    'id_card_templates' => -1, 'storage_gb' => 200,
+                    'students' => 5000,
+                    'staff' => 500,
+                    'users' => 150,
+                    'schools' => 5,
+                    'classes' => 400,
+                    'documents' => 20000,
+                    'exams' => 500,
+                    'report_exports' => 5000,
+                    'finance_accounts' => 500,
+                    'income_entries' => 50000,
+                    'expense_entries' => 50000,
+                    'assets' => 10000,
+                    'library_books' => 20000,
+                    'events' => 1000,
+                    'certificate_templates' => 500,
+                    'id_card_templates' => 200,
+                    'storage_gb' => 200,
                 ],
             ],
         ];
@@ -536,22 +557,22 @@ class SubscriptionSeeder extends Seeder
     {
         // Default to unlimited for new limits until explicitly configured.
         $defaultLimit = -1;
-        
+
         // Get limit-feature mapping from config
         $limitFeatureMap = config('subscription_features.limit_feature_map', []);
-        
+
         // Get enabled features for this plan
         $enabledFeatures = $plan->features()
             ->where('is_enabled', true)
             ->pluck('feature_key')
             ->toArray();
-        
+
         $enabledFeaturesSet = array_fill_keys($enabledFeatures, true);
 
         foreach ($allLimitKeys as $resourceKey) {
             // Check if this resource requires a feature that is enabled
             $requiredFeature = $limitFeatureMap[$resourceKey] ?? null;
-            
+
             if ($requiredFeature !== null) {
                 $requiredFeatures = is_array($requiredFeature) ? $requiredFeature : [$requiredFeature];
                 $hasRequiredFeature = false;
@@ -564,7 +585,7 @@ class SubscriptionSeeder extends Seeder
                 }
 
                 // Skip limits for resources whose features are disabled
-                if (!$hasRequiredFeature) {
+                if (! $hasRequiredFeature) {
                     continue;
                 }
             }
@@ -579,7 +600,7 @@ class SubscriptionSeeder extends Seeder
                 ['limit_value' => $limitValue, 'warning_threshold' => 80]
             );
         }
-        
+
         // Remove limits for resources whose features are disabled
         // Get all resource keys that require features not enabled in this plan
         $disabledResourceKeys = [];
@@ -594,13 +615,13 @@ class SubscriptionSeeder extends Seeder
                 }
             }
 
-            if (!$hasRequiredFeature) {
+            if (! $hasRequiredFeature) {
                 $disabledResourceKeys[] = $resourceKey;
             }
         }
-        
+
         // Delete limits for disabled features
-        if (!empty($disabledResourceKeys)) {
+        if (! empty($disabledResourceKeys)) {
             PlanLimit::where('plan_id', $plan->id)
                 ->whereIn('resource_key', $disabledResourceKeys)
                 ->delete();

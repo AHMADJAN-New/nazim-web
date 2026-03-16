@@ -52,6 +52,8 @@ class FileStorageService
 
     private const PATH_WEBSITE = 'website';
 
+    private const PATH_FACILITIES = 'facilities';
+
     // ==============================================
     // STUDENT FILES
     // ==============================================
@@ -363,12 +365,12 @@ class FileStorageService
 
     /**
      * Store finance document (PRIVATE)
-     * CRITICAL: Finance files are school-scoped and MUST include schoolId
+     * When $schoolId is null, stores under organization-level path (org-scoped finance).
      */
     public function storeFinanceDocument(
         UploadedFile $file,
         string $organizationId,
-        string $schoolId,
+        ?string $schoolId,
         ?string $documentType = null
     ): string {
         // Check storage limit before storing
@@ -384,6 +386,76 @@ class FileStorageService
         $this->updateStorageUsage($file, $organizationId);
 
         return $filePath;
+    }
+
+    /**
+     * Store facility document (PRIVATE, org-level)
+     * Path: organizations/{orgId}/facilities/{facilityId}/documents
+     */
+    public function storeFacilityDocument(
+        UploadedFile $file,
+        string $organizationId,
+        string $facilityId,
+        ?string $documentType = null
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $safeType = $this->sanitizePathSegment($documentType ?? 'other');
+        $path = $this->buildPath($organizationId, null, self::PATH_FACILITIES, $facilityId, 'documents', $safeType);
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    /**
+     * Store an organization order form attachment (PRIVATE, org-level).
+     * Path: organizations/{orgId}/subscription/order-forms/{orderFormId}/{category}
+     */
+    public function storeOrganizationOrderFormDocument(
+        UploadedFile $file,
+        string $organizationId,
+        string $orderFormId,
+        ?string $documentCategory = null
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $safeCategory = $this->sanitizePathSegment($documentCategory ?? 'other');
+        $path = $this->buildPath(
+            $organizationId,
+            null,
+            'subscription',
+            'order-forms',
+            $orderFormId,
+            $safeCategory !== '' ? $safeCategory : 'other'
+        );
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
+    // ==============================================
+    // PLATFORM FILES (global, no organization_id)
+    // ==============================================
+
+    private const PATH_PLATFORM_FILES = 'platform/files';
+
+    /**
+     * Store platform-level file (PRIVATE).
+     * Path: platform/files/{category}/{uuid}.{ext}
+     * No storage limit or usage tracking (platform files are not tenant-scoped).
+     */
+    public function storePlatformFile(
+        UploadedFile $file,
+        string $category
+    ): string {
+        $safeCategory = $this->sanitizePathSegment($category ?: 'other');
+        $path = self::PATH_PLATFORM_FILES.'/'.($safeCategory !== '' ? $safeCategory : 'other');
+
+        return $this->storeFile($file, $path, self::DISK_PRIVATE);
     }
 
     // ==============================================

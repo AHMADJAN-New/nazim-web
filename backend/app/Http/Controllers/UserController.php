@@ -2,23 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\SchoolBranding;
-use App\Services\TourAssignmentService;
-use App\Services\ActivityLogService;
 use App\Helpers\OrganizationHelper;
+use App\Http\Controllers\Concerns\RestrictsSchoolScopedAdmins;
+use App\Models\SchoolBranding;
+use App\Models\User;
+use App\Services\ActivityLogService;
+use App\Services\OrganizationAdminSchoolAccessService;
+use App\Services\TourAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
+    use RestrictsSchoolScopedAdmins;
+
     public function __construct(
-        private ActivityLogService $activityLogService
+        private ActivityLogService $activityLogService,
+        private OrganizationAdminSchoolAccessService $organizationAdminSchoolAccessService
     ) {}
+
     /**
      * Display a listing of users
      */
@@ -27,22 +32,23 @@ class UserController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.read')) {
+            if (! $user->hasPermissionTo('users.read')) {
                 return response()->json(['error' => 'Insufficient permissions to view users'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for users.read - denying access: " . $e->getMessage());
+            Log::warning('Permission check failed for users.read - denying access: '.$e->getMessage());
+
             return response()->json(['error' => 'Insufficient permissions to view users'], 403);
         }
 
@@ -69,6 +75,7 @@ class UserController extends Controller
                 'profiles.phone',
                 'profiles.avatar_url',
                 'profiles.is_active',
+                'profiles.schools_access_all',
                 'profiles.created_at',
                 'profiles.updated_at',
                 // Staff information
@@ -78,6 +85,10 @@ class UserController extends Controller
             )
             ->whereNull('profiles.deleted_at')
             ->whereIn('profiles.organization_id', $orgIds);
+
+        if ($this->isSchoolScopedProfile($profile)) {
+            $query->where('profiles.default_school_id', $profile->default_school_id);
+        }
 
         // Apply filters
         if ($request->has('role') && $request->role) {
@@ -101,22 +112,23 @@ class UserController extends Controller
         // Transform to UserProfile format
         $users = $profiles->map(function ($p) {
             // Ensure we have valid data - check if full_name or email exist
-            $name = !empty($p->full_name) ? $p->full_name : (!empty($p->email) ? $p->email : 'No name');
-            $email = !empty($p->email) ? $p->email : 'No email';
-            
+            $name = ! empty($p->full_name) ? $p->full_name : (! empty($p->email) ? $p->email : 'No name');
+            $email = ! empty($p->email) ? $p->email : 'No email';
+
             // Use staff picture if available, otherwise use profile avatar
             $avatar = $p->staff_picture_url ?? $p->avatar_url ?? null;
-            
+
             return [
                 'id' => $p->id,
                 'name' => $name,
                 'email' => $email,
-                'role' => (string)($p->role ?? ''),
+                'role' => (string) ($p->role ?? ''),
                 'organization_id' => $p->organization_id,
                 'default_school_id' => $p->default_school_id ?? null,
                 'staff_id' => $p->staff_id ?? null,
                 'phone' => $p->phone ?? null,
                 'avatar' => $avatar,
+                'schools_access_all' => (bool) ($p->schools_access_all ?? false),
                 'is_active' => $p->is_active ?? true,
                 'created_at' => $p->created_at,
                 'updated_at' => $p->updated_at,
@@ -164,22 +176,23 @@ class UserController extends Controller
         $user = $request->user();
         $currentProfile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$currentProfile) {
+        if (! $currentProfile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$currentProfile->organization_id) {
+        if (! $currentProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.read')) {
+            if (! $user->hasPermissionTo('users.create')) {
                 return response()->json(['error' => 'Insufficient permissions to create users'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for users.create - denying access: " . $e->getMessage());
+            Log::warning('Permission check failed for users.create - denying access: '.$e->getMessage());
+
             return response()->json(['error' => 'Insufficient permissions to create users'], 403);
         }
 
@@ -190,16 +203,26 @@ class UserController extends Controller
         $organizationId = $request->organization_id ?? $currentProfile->organization_id ?? null;
 
         // If no organization_id provided, get default "ناظم" organization (cached)
-        if (!$organizationId) {
+        if (! $organizationId) {
             $organizationId = OrganizationHelper::getDefaultOrganizationId();
 
-            if (!$organizationId && !empty($orgIds)) {
+            if (! $organizationId && ! empty($orgIds)) {
                 $organizationId = $orgIds[0];
             }
         }
 
-        if ($organizationId && !in_array($organizationId, $orgIds)) {
+        if ($organizationId && ! in_array($organizationId, $orgIds)) {
             return response()->json(['error' => 'Cannot create user for a non-accessible organization'], 403);
+        }
+
+        $isSchoolScopedManager = $this->isSchoolScopedProfile($currentProfile);
+
+        if ($isSchoolScopedManager && $this->isProtectedOrganizationRole($request->role)) {
+            return response()->json(['error' => 'School admins cannot assign the organization_admin role'], 403);
+        }
+
+        if ($isSchoolScopedManager && $request->boolean('schools_access_all')) {
+            return response()->json(['error' => 'School admins cannot grant access to all schools'], 403);
         }
 
         // CRITICAL: Validate that the role exists in the organization's roles table
@@ -211,7 +234,7 @@ class UserController extends Controller
                 ->where('guard_name', 'web')
                 ->exists();
 
-            if (!$roleExists) {
+            if (! $roleExists) {
                 return response()->json([
                     'error' => 'The selected role is invalid.',
                     'message' => "Role '{$request->role}' does not exist in your organization. Please select a valid role.",
@@ -219,9 +242,9 @@ class UserController extends Controller
             }
         }
 
-        // Determine default_school_id
-        $defaultSchoolId = $request->default_school_id ?? null;
-        if (!$defaultSchoolId && $organizationId) {
+        // Determine default_school_id: explicit null = no school (org-level user); omitted = auto-assign first school
+        $defaultSchoolId = $request->has('default_school_id') ? $request->default_school_id : null;
+        if ($defaultSchoolId === null && ! $request->has('default_school_id') && $organizationId) {
             $school = SchoolBranding::where('organization_id', $organizationId)
                 ->whereNull('deleted_at')
                 ->orderBy('created_at', 'asc')
@@ -229,6 +252,31 @@ class UserController extends Controller
             if ($school) {
                 $defaultSchoolId = $school->id;
             }
+        }
+        // When no school (org-level user), set schools_access_all so they can access Organization Admin
+        $schoolsAccessAll = $request->has('default_school_id') && $request->default_school_id === null
+            ? true
+            : $request->boolean('schools_access_all', false);
+        if ($organizationId && $this->organizationAdminSchoolAccessService->shouldAutoEnableAllSchoolsForRole($organizationId, $request->role)) {
+            $schoolsAccessAll = true;
+        }
+
+        if ($isSchoolScopedManager) {
+            $managerSchoolId = $currentProfile->default_school_id ?? null;
+
+            if (! is_string($managerSchoolId) || $managerSchoolId === '') {
+                return response()->json(['error' => 'School context is required for school admins'], 403);
+            }
+
+            if ($request->has('default_school_id')) {
+                $requestedSchoolId = $request->default_school_id;
+                if (! is_string($requestedSchoolId) || $requestedSchoolId === '' || $requestedSchoolId !== $managerSchoolId) {
+                    return response()->json(['error' => 'School admins can only create users for their own school'], 403);
+                }
+            }
+
+            $defaultSchoolId = $managerSchoolId;
+            $schoolsAccessAll = false;
         }
 
         // Create user in auth.users table
@@ -251,8 +299,8 @@ class UserController extends Controller
                 ->where('organization_id', $organizationId)
                 ->whereNull('deleted_at')
                 ->first();
-            
-            if (!$staff) {
+
+            if (! $staff) {
                 return response()->json(['error' => 'Staff member not found or does not belong to your organization'], 422);
             }
         }
@@ -267,7 +315,7 @@ class UserController extends Controller
             'default_school_id' => $defaultSchoolId,
             'staff_id' => $request->staff_id ?? null,
             'phone' => $request->phone ?? null,
-            'schools_access_all' => $request->boolean('schools_access_all', false),
+            'schools_access_all' => $schoolsAccessAll,
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -290,7 +338,7 @@ class UserController extends Controller
                     ->where('organization_id', $organizationId)
                     ->exists();
 
-                if (!$hasRole) {
+                if (! $hasRole) {
                     DB::table('model_has_roles')->insert([
                         'role_id' => $role->id,
                         'model_type' => 'App\\Models\\User',
@@ -316,10 +364,10 @@ class UserController extends Controller
         // initialSetup tour should ALWAYS be assigned to all users, regardless of organization or permissions
         try {
             $tourService = app(TourAssignmentService::class);
-            
+
             // CRITICAL: Always assign initialSetup tour first (no permissions required)
             $tourService->assignInitialSetupTour($userId);
-            
+
             // Then assign other tours based on permissions (if user has organization and permissions)
             $userModel = \App\Models\User::find($userId);
             if ($userModel && $organizationId) {
@@ -328,12 +376,12 @@ class UserController extends Controller
 
                 // Get user's permissions (from roles and direct assignments)
                 $userPermissions = $userModel->getAllPermissions()->pluck('name')->toArray();
-                
+
                 // Assign other tours based on permissions (initialSetup already assigned above)
                 $assignedTours = $tourService->assignToursForUser($userId, $userPermissions);
-                
-                if (!empty($assignedTours) && config('app.debug')) {
-                    Log::info("Assigned tours to user {$userId}: " . implode(', ', $assignedTours));
+
+                if (! empty($assignedTours) && config('app.debug')) {
+                    Log::info("Assigned tours to user {$userId}: ".implode(', ', $assignedTours));
                 }
             } else {
                 // User created without organization - still assign initialSetup (already done above)
@@ -343,7 +391,7 @@ class UserController extends Controller
             }
         } catch (\Exception $e) {
             // Don't fail user creation if tour assignment fails
-            Log::warning("Failed to assign tours to user {$userId}: " . $e->getMessage());
+            Log::warning("Failed to assign tours to user {$userId}: ".$e->getMessage());
         }
 
         $createdProfile = DB::table('profiles')->where('id', $userId)->first();
@@ -355,7 +403,7 @@ class UserController extends Controller
                 ->where('id', $createdProfile->staff_id)
                 ->whereNull('deleted_at')
                 ->first();
-            
+
             if ($staff) {
                 $staffInfo = [
                     'id' => $staff->id,
@@ -371,7 +419,7 @@ class UserController extends Controller
             'id' => $userId,
             'name' => $createdProfile->full_name || $createdProfile->email || '',
             'email' => $createdProfile->email || '',
-            'role' => (string)($createdProfile->role ?? ''),
+            'role' => (string) ($createdProfile->role ?? ''),
             'organization_id' => $createdProfile->organization_id,
             'default_school_id' => $createdProfile->default_school_id ?? null,
             'staff_id' => $createdProfile->staff_id ?? null,
@@ -396,45 +444,57 @@ class UserController extends Controller
             'phone' => 'nullable|string|max:20',
             'is_active' => 'sometimes|boolean',
             'schools_access_all' => 'nullable|boolean',
+            'default_school_id' => 'nullable|uuid',
         ]);
 
         $user = $request->user();
         $currentProfile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$currentProfile) {
+        if (! $currentProfile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$currentProfile->organization_id) {
+        if (! $currentProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.read')) {
+            if (! $user->hasPermissionTo('users.update')) {
                 return response()->json(['error' => 'Insufficient permissions to update users'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for users.update - denying access: " . $e->getMessage());
+            Log::warning('Permission check failed for users.update - denying access: '.$e->getMessage());
+
             return response()->json(['error' => 'Insufficient permissions to update users'], 403);
         }
 
         // Get target user's profile
         $targetProfile = DB::table('profiles')->where('id', $id)->first();
 
-        if (!$targetProfile) {
+        if (! $targetProfile) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$currentProfile->organization_id) {
+        if (! $currentProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check organization access (all users)
         if ($targetProfile->organization_id !== $currentProfile->organization_id) {
             return response()->json(['error' => 'Cannot update user from different organization'], 403);
+        }
+
+        $isSchoolScopedManager = $this->isSchoolScopedProfile($currentProfile);
+
+        if ($isSchoolScopedManager && ! $this->canSchoolScopedProfileManageTarget($currentProfile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage users in their own school'], 403);
+        }
+
+        if ($isSchoolScopedManager && $this->userHasProtectedOrganizationRole($id, $currentProfile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
         }
 
         // Validate staff_id belongs to the same organization if provided
@@ -445,8 +505,23 @@ class UserController extends Controller
                 ->whereNull('deleted_at')
                 ->first();
 
-            if (!$staff) {
+            if (! $staff) {
                 return response()->json(['error' => 'Staff member not found or does not belong to your organization'], 422);
+            }
+        }
+
+        // Validate default_school_id when provided: null = no school (org-level); non-null = must belong to org
+        if ($request->has('default_school_id')) {
+            $newSchoolId = $request->default_school_id;
+            if ($newSchoolId !== null && $newSchoolId !== '') {
+                $schoolExists = DB::table('school_branding')
+                    ->where('id', $newSchoolId)
+                    ->where('organization_id', $targetProfile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->exists();
+                if (! $schoolExists) {
+                    return response()->json(['error' => 'Selected school does not belong to this organization'], 422);
+                }
             }
         }
 
@@ -459,7 +534,7 @@ class UserController extends Controller
                 ->where('guard_name', 'web')
                 ->exists();
 
-            if (!$roleExists) {
+            if (! $roleExists) {
                 return response()->json([
                     'error' => 'The selected role is invalid.',
                     'message' => "Role '{$request->role}' does not exist in your organization. Please select a valid role.",
@@ -467,14 +542,65 @@ class UserController extends Controller
             }
         }
 
-        // Build update data - NEVER change organization_id or default_school_id from request (keep intact)
+        if ($isSchoolScopedManager && $request->has('role') && $this->isProtectedOrganizationRole($request->role)) {
+            return response()->json(['error' => 'School admins cannot assign the organization_admin role'], 403);
+        }
+
+        if ($isSchoolScopedManager && $request->has('schools_access_all') && $request->boolean('schools_access_all')) {
+            return response()->json(['error' => 'School admins cannot grant access to all schools'], 403);
+        }
+
+        if ($isSchoolScopedManager && $request->has('default_school_id')) {
+            $managerSchoolId = $currentProfile->default_school_id ?? null;
+            $requestedSchoolId = $request->default_school_id;
+
+            if (! is_string($managerSchoolId) || $managerSchoolId === '') {
+                return response()->json(['error' => 'School context is required for school admins'], 403);
+            }
+
+            if (! is_string($requestedSchoolId) || $requestedSchoolId === '' || $requestedSchoolId !== $managerSchoolId) {
+                return response()->json(['error' => 'School admins can only assign users to their own school'], 403);
+            }
+        }
+
+        // Build update data - NEVER change organization_id from request
         $updateData = [];
-        if ($request->has('full_name')) $updateData['full_name'] = $request->full_name;
-        if ($request->has('phone')) $updateData['phone'] = $request->phone;
-        if ($request->has('role')) $updateData['role'] = $request->role;
-        if ($request->has('is_active')) $updateData['is_active'] = $request->is_active;
-        if ($request->has('staff_id')) $updateData['staff_id'] = $request->staff_id;
-        if ($request->has('schools_access_all')) $updateData['schools_access_all'] = $request->boolean('schools_access_all');
+        if ($request->has('full_name')) {
+            $updateData['full_name'] = $request->full_name;
+        }
+        if ($request->has('phone')) {
+            $updateData['phone'] = $request->phone;
+        }
+        if ($request->has('role')) {
+            $updateData['role'] = $request->role;
+        }
+        if ($request->has('is_active')) {
+            $updateData['is_active'] = $request->is_active;
+        }
+        if ($request->has('staff_id')) {
+            $updateData['staff_id'] = $request->staff_id;
+        }
+        $schoolsAccessAllExplicitlyProvided = $request->has('schools_access_all');
+        if ($schoolsAccessAllExplicitlyProvided) {
+            $updateData['schools_access_all'] = $request->boolean('schools_access_all');
+        }
+        // Allow updating default_school_id (including to null for org-level users)
+        if ($request->has('default_school_id')) {
+            $updateData['default_school_id'] = $request->default_school_id ?: null;
+            // When setting to no school, auto-enable schools_access_all so they can access Organization Admin
+            // Only apply when user did NOT explicitly set schools_access_all (respect explicit choice)
+            if (! $schoolsAccessAllExplicitlyProvided && ($request->default_school_id === null || $request->default_school_id === '')) {
+                $updateData['schools_access_all'] = true;
+            }
+        }
+        // Auto-enable schools_access_all for org-level roles (e.g. organization_admin)
+        // Only apply when user did NOT explicitly set schools_access_all (respect explicit choice)
+        if (! $schoolsAccessAllExplicitlyProvided && $organizationId) {
+            $effectiveRole = $request->has('role') ? $request->role : ($targetProfile->role ?? null);
+            if ($this->organizationAdminSchoolAccessService->shouldAutoEnableAllSchoolsForRole($organizationId, $effectiveRole)) {
+                $updateData['schools_access_all'] = true;
+            }
+        }
 
         // Update email in both users and profiles tables
         if ($request->has('email')) {
@@ -537,7 +663,7 @@ class UserController extends Controller
                 ->where('id', $updatedProfile->staff_id)
                 ->whereNull('deleted_at')
                 ->first();
-            
+
             if ($staff) {
                 $staffInfo = [
                     'id' => $staff->id,
@@ -553,7 +679,7 @@ class UserController extends Controller
             'id' => $id,
             'name' => $updatedProfile->full_name || $updatedProfile->email || '',
             'email' => $updatedProfile->email || '',
-            'role' => (string)($updatedProfile->role ?? ''),
+            'role' => (string) ($updatedProfile->role ?? ''),
             'organization_id' => $updatedProfile->organization_id,
             'default_school_id' => $updatedProfile->default_school_id ?? null,
             'staff_id' => $updatedProfile->staff_id ?? null,
@@ -574,35 +700,44 @@ class UserController extends Controller
         $user = request()->user();
         $currentProfile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$currentProfile) {
+        if (! $currentProfile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$currentProfile->organization_id) {
+        if (! $currentProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.read')) {
+            if (! $user->hasPermissionTo('users.delete')) {
                 return response()->json(['error' => 'Insufficient permissions to delete users'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for users.delete - denying access: " . $e->getMessage());
+            Log::warning('Permission check failed for users.delete - denying access: '.$e->getMessage());
+
             return response()->json(['error' => 'Insufficient permissions to delete users'], 403);
         }
 
         // Get target user's profile
         $targetProfile = DB::table('profiles')->where('id', $id)->first();
 
-        if (!$targetProfile) {
+        if (! $targetProfile) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         // Check organization access (all users)
         if ($targetProfile->organization_id !== $currentProfile->organization_id) {
             return response()->json(['error' => 'Cannot delete user from different organization'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($currentProfile) && ! $this->canSchoolScopedProfileManageTarget($currentProfile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage users in their own school'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($currentProfile) && $this->userHasProtectedOrganizationRole($id, $currentProfile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
         }
 
         // Capture user data before deletion for logging
@@ -626,7 +761,7 @@ class UserController extends Controller
                 request: request()
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log user deletion: ' . $e->getMessage());
+            Log::warning('Failed to log user deletion: '.$e->getMessage());
         }
 
         return response()->json(['message' => 'User deleted successfully']);
@@ -644,29 +779,43 @@ class UserController extends Controller
         $user = $request->user();
         $currentProfile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$currentProfile) {
+        if (! $currentProfile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$currentProfile->organization_id) {
+        if (! $currentProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.reset_password')) {
+            if (! $user->hasPermissionTo('users.reset_password')) {
                 return response()->json(['error' => 'Insufficient permissions to reset passwords'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for users.reset_password - denying access: " . $e->getMessage());
+            Log::warning('Permission check failed for users.reset_password - denying access: '.$e->getMessage());
+
             return response()->json(['error' => 'Insufficient permissions to reset passwords'], 403);
         }
 
         // Check if user exists
         $targetUser = DB::table('users')->where('id', $id)->first();
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $targetProfile = DB::table('profiles')->where('id', $id)->first();
+        if (! $targetProfile || $targetProfile->organization_id !== $currentProfile->organization_id) {
+            return response()->json(['error' => 'Cannot reset password for user in different organization'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($currentProfile) && ! $this->canSchoolScopedProfileManageTarget($currentProfile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage users in their own school'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($currentProfile) && $this->userHasProtectedOrganizationRole($id, $currentProfile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
         }
 
         // Update password
@@ -691,12 +840,9 @@ class UserController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log password reset: ' . $e->getMessage());
+            Log::warning('Failed to log password reset: '.$e->getMessage());
         }
 
         return response()->json(['message' => 'Password reset successfully']);
     }
 }
-
-
-

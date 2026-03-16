@@ -53,6 +53,7 @@ import {
 } from '@/components/ui/select';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
+import { canProfileReceivePermission, canSchoolScopedAdminManageUser, filterRolesForSchoolScopedAdmin } from '@/lib/access/schoolAdminRestrictions';
 
 /** Display labels for feature groups in the permissions dialog */
 const FEATURE_LABELS: Record<string, string> = {
@@ -119,6 +120,18 @@ export function UserPermissionsManagement() {
   const removePermission = useRemovePermissionFromUser();
   const assignRole = useAssignRoleToUser();
   const removeRole = useRemoveRoleFromUser();
+  const visibleRoles = useMemo(
+    () => filterRolesForSchoolScopedAdmin(roles, profile),
+    [roles, profile],
+  );
+  const visibleUsers = useMemo(() => {
+    if (!allUsers) return [];
+    return allUsers.filter((user) => canSchoolScopedAdminManageUser(profile, user.role));
+  }, [allUsers, profile]);
+  const selectedUser = useMemo(() => {
+    if (!selectedUserId || !allUsers) return null;
+    return allUsers.find(u => u.id === selectedUserId);
+  }, [selectedUserId, allUsers]);
   
   // Filter permissions by organization: show global (organization_id = NULL) + user's org permissions
   // Also ensure all permissions have valid UUID IDs
@@ -145,14 +158,14 @@ export function UserPermissionsManagement() {
       console.warn('[UserPermissionsManagement] All permissions filtered out. Total permissions:', allPermissions.length, 'Sample:', allPermissions[0]);
     }
     
-    return filtered;
-  }, [allPermissions, profile]);
+    return filtered.filter((permission) => canProfileReceivePermission(selectedUser, permission.name));
+  }, [allPermissions, profile, selectedUser]);
   
   // Filter users
   const filteredUsers = useMemo(() => {
-    if (!allUsers) return [];
+    if (!visibleUsers) return [];
     
-    return allUsers.filter(user => {
+    return visibleUsers.filter(user => {
       // Search filter
       if (searchQuery) {
         const query = (searchQuery || '').toLowerCase();
@@ -170,13 +183,7 @@ export function UserPermissionsManagement() {
       
       return true;
     });
-  }, [allUsers, searchQuery, roleFilter]);
-  
-  // Get selected user
-  const selectedUser = useMemo(() => {
-    if (!selectedUserId || !allUsers) return null;
-    return allUsers.find(u => u.id === selectedUserId);
-  }, [selectedUserId, allUsers]);
+  }, [visibleUsers, searchQuery, roleFilter]);
   
   // Get user's effective permissions (user_permissions + role_permissions)
   const userEffectivePermissions = useMemo(() => {
@@ -269,6 +276,12 @@ export function UserPermissionsManagement() {
   };
 
   const handleOpenPermissionsDialog = (userId: string) => {
+    const user = allUsers?.find((candidate) => candidate.id === userId);
+    if (user && !canSchoolScopedAdminManageUser(profile, user.role)) {
+      showToast.error(t('events.noPermission'));
+      return;
+    }
+
     setSelectedUserId(userId);
     setIsPermissionsDialogOpen(true);
   };
@@ -568,7 +581,7 @@ export function UserPermissionsManagement() {
                       <div>
                         <Label className="text-sm font-medium mb-2 block">{t('userPermissions.assignRole')}</Label>
                         <div className="flex flex-wrap gap-2">
-                          {roles
+                          {visibleRoles
                             .filter(role => !userRolesData?.roles?.includes(role.name))
                             .map((role) => (
                               <Button
@@ -696,4 +709,3 @@ export function UserPermissionsManagement() {
     </div>
   );
 }
-

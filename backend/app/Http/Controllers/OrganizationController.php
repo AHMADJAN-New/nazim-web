@@ -7,7 +7,6 @@ use App\Services\OrganizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 
 class OrganizationController extends Controller
 {
@@ -27,7 +26,7 @@ class OrganizationController extends Controller
         try {
             $user = $request->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
@@ -36,25 +35,26 @@ class OrganizationController extends Controller
                 ->where('id', $user->id)
                 ->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
-            if (!$this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
-                Log::warning("Permission denied for organizations.read", [
+            if (! $this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
+                Log::warning('Permission denied for organizations.read', [
                     'user_id' => $user->id,
                     'organization_id' => $profile->organization_id,
                 ]);
+
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
-                    'required_permission' => 'organizations.read'
+                    'required_permission' => 'organizations.read',
                 ], 403);
             }
 
@@ -70,10 +70,10 @@ class OrganizationController extends Controller
 
             return response()->json($organizations);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('OrganizationController::index database error: ' . $e->getMessage(), [
+            Log::error('OrganizationController::index database error: '.$e->getMessage(), [
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             // If table doesn't exist, return empty array instead of error
@@ -83,9 +83,10 @@ class OrganizationController extends Controller
 
             return response()->json(['error' => 'Failed to fetch organizations'], 500);
         } catch (\Exception $e) {
-            Log::error('OrganizationController::index error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            Log::error('OrganizationController::index error: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to fetch organizations'], 500);
         }
     }
@@ -107,25 +108,26 @@ class OrganizationController extends Controller
             ->where('id', $user->id)
             ->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
-        if (!$this->userHasPermission($user, 'organizations.create', $profile->organization_id)) {
-            Log::warning("Permission denied for organizations.create", [
+        if (! $this->userHasPermission($user, 'organizations.create', $profile->organization_id)) {
+            Log::warning('Permission denied for organizations.create', [
                 'user_id' => $user->id,
                 'organization_id' => $profile->organization_id,
             ]);
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'organizations.create'
+                'required_permission' => 'organizations.create',
             ], 403);
         }
 
@@ -217,14 +219,14 @@ class OrganizationController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            Log::error('Failed to create organization: ' . $e->getMessage(), [
+            Log::error('Failed to create organization: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'request_data' => $request->except(['admin_password'])
+                'request_data' => $request->except(['admin_password']),
             ]);
 
             return response()->json([
                 'error' => 'Failed to create organization',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -237,7 +239,7 @@ class OrganizationController extends Controller
         try {
             $user = request()->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
@@ -246,31 +248,32 @@ class OrganizationController extends Controller
                 ->where('id', $user->id)
                 ->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
-            if (!$this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
-                Log::warning("Permission denied for organizations.read", [
+            if (! $this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
+                Log::warning('Permission denied for organizations.read', [
                     'user_id' => $user->id,
                     'organization_id' => $profile->organization_id,
                 ]);
+
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
-                    'required_permission' => 'organizations.read'
+                    'required_permission' => 'organizations.read',
                 ], 403);
             }
 
             $organization = Organization::whereNull('deleted_at')->find($id);
 
-            if (!$organization) {
+            if (! $organization) {
                 return response()->json(['error' => 'Organization not found'], 404);
             }
 
@@ -281,23 +284,23 @@ class OrganizationController extends Controller
 
             return response()->json($organization);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('OrganizationController::show database error: ' . $e->getMessage(), [
+            Log::error('OrganizationController::show database error: '.$e->getMessage(), [
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
                 'trace' => $e->getTraceAsString(),
-                'id' => $id
+                'id' => $id,
             ]);
 
             return response()->json(['error' => 'Failed to fetch organization'], 500);
         } catch (\Exception $e) {
-            Log::error('OrganizationController::show error: ' . $e->getMessage(), [
+            Log::error('OrganizationController::show error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'id' => $id
+                'id' => $id,
             ]);
 
             return response()->json([
                 'error' => 'Failed to fetch organization',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -313,27 +316,28 @@ class OrganizationController extends Controller
             ->where('id', $user->id)
             ->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         $organization = Organization::whereNull('deleted_at')->findOrFail($id);
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
-        if (!$this->userHasPermission($user, 'organizations.update', $profile->organization_id)) {
-            Log::warning("Permission denied for organizations.update", [
+        if (! $this->userHasPermission($user, 'organizations.update', $profile->organization_id)) {
+            Log::warning('Permission denied for organizations.update', [
                 'user_id' => $user->id,
                 'organization_id' => $profile->organization_id,
             ]);
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'organizations.update'
+                'required_permission' => 'organizations.update',
             ], 403);
         }
 
@@ -346,16 +350,16 @@ class OrganizationController extends Controller
             $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
         } catch (\Exception $e) {
             // If permission check fails, user is not platform admin
-            Log::debug("Platform admin check failed: " . $e->getMessage());
+            Log::debug('Platform admin check failed: '.$e->getMessage());
         }
 
-        if (!$isPlatformAdmin && $profile->organization_id !== $organization->id) {
+        if (! $isPlatformAdmin && $profile->organization_id !== $organization->id) {
             return response()->json(['error' => 'Cannot update organization from different organization'], 403);
         }
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
-            'slug' => 'sometimes|string|max:100|unique:organizations,slug,' . $id,
+            'slug' => 'sometimes|string|max:100|unique:organizations,slug,'.$id,
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'website' => 'nullable|url|max:255',
@@ -419,27 +423,28 @@ class OrganizationController extends Controller
             ->where('id', $user->id)
             ->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         $organization = Organization::findOrFail($id);
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
-        if (!$this->userHasPermission($user, 'organizations.delete', $profile->organization_id)) {
-            Log::warning("Permission denied for organizations.delete", [
+        if (! $this->userHasPermission($user, 'organizations.delete', $profile->organization_id)) {
+            Log::warning('Permission denied for organizations.delete', [
                 'user_id' => $user->id,
                 'organization_id' => $profile->organization_id,
             ]);
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'organizations.delete'
+                'required_permission' => 'organizations.delete',
             ], 403);
         }
 
@@ -465,23 +470,24 @@ class OrganizationController extends Controller
                 ->where('id', $user->id)
                 ->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
             $organization = Organization::whereNull('deleted_at')->findOrFail($id);
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
-            if (!$this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
-                Log::warning("Permission denied for organizations.read in statistics", [
+            if (! $this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
+                Log::warning('Permission denied for organizations.read in statistics', [
                     'user_id' => $user->id,
                     'organization_id' => $profile->organization_id,
                 ]);
+
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
@@ -538,7 +544,7 @@ class OrganizationController extends Controller
                 ->toArray();
 
             $buildingCount = 0;
-            if (!empty($schoolIds)) {
+            if (! empty($schoolIds)) {
                 $buildingCount = DB::connection('pgsql')
                     ->table('buildings')
                     ->whereIn('school_id', $schoolIds)
@@ -548,7 +554,7 @@ class OrganizationController extends Controller
 
             // Rooms are linked to organizations through schools
             $roomCount = 0;
-            if (!empty($schoolIds)) {
+            if (! empty($schoolIds)) {
                 $roomCount = DB::connection('pgsql')
                     ->table('rooms')
                     ->whereIn('school_id', $schoolIds)
@@ -568,10 +574,11 @@ class OrganizationController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['error' => 'Organization not found'], 404);
         } catch (\Exception $e) {
-            Log::error('OrganizationController::statistics error: ' . $e->getMessage(), [
+            Log::error('OrganizationController::statistics error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'organization_id' => $id,
             ]);
+
             return response()->json(['error' => 'Failed to fetch organization statistics'], 500);
         }
     }
@@ -584,7 +591,7 @@ class OrganizationController extends Controller
         try {
             $user = $request->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
@@ -593,12 +600,12 @@ class OrganizationController extends Controller
                 ->where('id', $user->id)
                 ->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json([]);
             }
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json([]);
             }
 
@@ -618,9 +625,10 @@ class OrganizationController extends Controller
 
             return response()->json($organizations);
         } catch (\Exception $e) {
-            Log::error('OrganizationController::accessible error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            Log::error('OrganizationController::accessible error: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to fetch accessible organizations'], 500);
         }
     }
@@ -637,32 +645,31 @@ class OrganizationController extends Controller
             ->where('id', $user->id)
             ->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission using manual query (Spatie's hasPermissionTo() doesn't work correctly with teams)
-        if (!$this->userHasPermission($user, 'organizations.create', $profile->organization_id)) {
-            Log::warning("Permission denied for organizations.create", [
+        if (! $this->userHasPermission($user, 'organizations.create', $profile->organization_id)) {
+            Log::warning('Permission denied for organizations.create', [
                 'user_id' => $user->id,
                 'organization_id' => $profile->organization_id,
             ]);
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'organizations.create'
+                'required_permission' => 'organizations.create',
             ], 403);
         }
 
         // Get permission definitions from PermissionSeeder
         $permissions = \Database\Seeders\PermissionSeeder::getPermissions();
-        $rolePermissions = \Database\Seeders\PermissionSeeder::getRolePermissions();
-
         // Build preview structure
         $preview = [
             'organization' => [
@@ -671,7 +678,7 @@ class OrganizationController extends Controller
                 'description' => 'Organization will be created with the provided details',
             ],
             'school' => [
-                'name' => ($request->input('name', 'New Organization')) . ' - Main School',
+                'name' => ($request->input('name', 'New Organization')).' - Main School',
                 'description' => 'Default school will be created automatically',
             ],
             'admin_user' => [
@@ -684,17 +691,17 @@ class OrganizationController extends Controller
                 [
                     'name' => 'admin',
                     'description' => 'Administrator with full access to all features',
-                    'permissions_count' => $rolePermissions['admin'] === '*' ? count($permissions, COUNT_RECURSIVE) - count($permissions) : count($rolePermissions['admin']),
+                    'permissions_count' => \Database\Seeders\PermissionSeeder::countPermissionsForRole('admin'),
                 ],
                 [
                     'name' => 'staff',
                     'description' => 'Staff member with limited access for operational tasks',
-                    'permissions_count' => count($rolePermissions['staff'] ?? []),
+                    'permissions_count' => \Database\Seeders\PermissionSeeder::countPermissionsForRole('staff'),
                 ],
                 [
                     'name' => 'teacher',
                     'description' => 'Teacher with access to academic content and student information',
-                    'permissions_count' => count($rolePermissions['teacher'] ?? []),
+                    'permissions_count' => \Database\Seeders\PermissionSeeder::countPermissionsForRole('teacher'),
                 ],
             ],
             'permissions' => [
@@ -718,12 +725,12 @@ class OrganizationController extends Controller
             ->where('id', $user->id)
             ->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -731,15 +738,16 @@ class OrganizationController extends Controller
         // CRITICAL: setPermissionsTeamId() is called in EnsureOrganizationAccess middleware
         // So we don't need to pass organization_id as second parameter
         try {
-            if (!$this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
-            return response()->json([
-                'error' => 'Access Denied',
-                'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'organizations.read'
+            if (! $this->userHasPermission($user, 'organizations.read', $profile->organization_id)) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'organizations.read',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
+            Log::warning('Permission check failed for organizations.read: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This action is unauthorized.',
@@ -748,7 +756,7 @@ class OrganizationController extends Controller
 
         $organization = Organization::whereNull('deleted_at')->find($id);
 
-        if (!$organization) {
+        if (! $organization) {
             return response()->json(['error' => 'Organization not found'], 404);
         }
 
@@ -813,12 +821,12 @@ class OrganizationController extends Controller
             ->where('id', $user->id)
             ->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -826,15 +834,16 @@ class OrganizationController extends Controller
         // CRITICAL: setPermissionsTeamId() is called in EnsureOrganizationAccess middleware
         // So we don't need to pass organization_id as second parameter
         try {
-            if (!$this->userHasPermission($user, 'organizations.update', $profile->organization_id)) {
-            return response()->json([
-                'error' => 'Access Denied',
-                'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'organizations.update'
+            if (! $this->userHasPermission($user, 'organizations.update', $profile->organization_id)) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'organizations.update',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for organizations.update: " . $e->getMessage());
+            Log::warning('Permission check failed for organizations.update: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This action is unauthorized.',
@@ -843,7 +852,7 @@ class OrganizationController extends Controller
 
         $organization = Organization::whereNull('deleted_at')->find($id);
 
-        if (!$organization) {
+        if (! $organization) {
             return response()->json(['error' => 'Organization not found'], 404);
         }
 
@@ -856,10 +865,10 @@ class OrganizationController extends Controller
             $isPlatformAdmin = $user->hasPermissionTo('subscription.admin');
         } catch (\Exception $e) {
             // If permission check fails, user is not platform admin
-            Log::debug("Platform admin check failed: " . $e->getMessage());
+            Log::debug('Platform admin check failed: '.$e->getMessage());
         }
 
-        if (!$isPlatformAdmin && $profile->organization_id !== $organization->id) {
+        if (! $isPlatformAdmin && $profile->organization_id !== $organization->id) {
             return response()->json(['error' => 'Cannot update organization from different organization'], 403);
         }
 
@@ -876,7 +885,7 @@ class OrganizationController extends Controller
             ->where('guard_name', 'web')
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             return response()->json(['error' => 'Role not found'], 404);
         }
 
@@ -909,7 +918,7 @@ class OrganizationController extends Controller
             ];
         }
 
-        if (!empty($insertData)) {
+        if (! empty($insertData)) {
             DB::connection('pgsql')
                 ->table('role_has_permissions')
                 ->insert($insertData);
@@ -934,7 +943,7 @@ class OrganizationController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -945,15 +954,16 @@ class OrganizationController extends Controller
             // in model_has_permissions, but the permission itself has organization_id = NULL
             $platformOrgId = '00000000-0000-0000-0000-000000000000';
             setPermissionsTeamId($platformOrgId);
-            
-            if (!$user->hasPermissionTo('subscription.admin')) {
+
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'This endpoint is only accessible to platform administrators.',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.admin: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This endpoint is only accessible to platform administrators.',
@@ -1026,17 +1036,18 @@ class OrganizationController extends Controller
     {
         // CRITICAL: Log entry to method
         error_log('storePlatformAdmin called');
-        error_log('Request data: ' . json_encode($request->except(['admin_password'])));
-        
+        error_log('Request data: '.json_encode($request->except(['admin_password'])));
+
         try {
             $user = $request->user();
 
-            if (!$user) {
+            if (! $user) {
                 error_log('No user found in storePlatformAdmin');
+
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
-            error_log('User authenticated: ' . $user->id);
+            error_log('User authenticated: '.$user->id);
 
             // CRITICAL: Permission check is already done by platform.admin middleware
             // The middleware sets the team context, so we don't need to check again here
@@ -1078,10 +1089,10 @@ class OrganizationController extends Controller
                     'admin_password' => 'required|string|min:8',
                     'admin_full_name' => 'required|string|max:255',
                 ]);
-                
+
                 error_log('Validation passed');
             } catch (\Illuminate\Validation\ValidationException $e) {
-                error_log('Validation failed: ' . json_encode($e->errors()));
+                error_log('Validation failed: '.json_encode($e->errors()));
                 Log::error('Validation failed when creating organization (platform admin)', [
                     'errors' => $e->errors(),
                 ]);
@@ -1092,15 +1103,15 @@ class OrganizationController extends Controller
                     'errors' => $e->errors(),
                 ], 422);
             } catch (\Exception $e) {
-                error_log('Exception during validation: ' . $e->getMessage());
-                error_log('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+                error_log('Exception during validation: '.$e->getMessage());
+                error_log('File: '.$e->getFile().' Line: '.$e->getLine());
                 Log::error('Exception during validation in storePlatformAdmin', [
                     'error' => $e->getMessage(),
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
                     'trace' => $e->getTraceAsString(),
                 ]);
-                
+
                 return response()->json([
                     'error' => 'Validation error',
                     'message' => $e->getMessage(),
@@ -1165,13 +1176,13 @@ class OrganizationController extends Controller
             ], 422);
         } catch (\Exception $e) {
             // CRITICAL: Use error_log to ensure error is written even if Log::error fails
-            error_log('Organization creation error: ' . $e->getMessage());
-            error_log('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
-            error_log('Trace: ' . $e->getTraceAsString());
-            
+            error_log('Organization creation error: '.$e->getMessage());
+            error_log('File: '.$e->getFile().' Line: '.$e->getLine());
+            error_log('Trace: '.$e->getTraceAsString());
+
             // Also use Laravel's Log facade
             try {
-                Log::error('Failed to create organization (platform admin): ' . $e->getMessage(), [
+                Log::error('Failed to create organization (platform admin): '.$e->getMessage(), [
                     'trace' => $e->getTraceAsString(),
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
@@ -1179,7 +1190,7 @@ class OrganizationController extends Controller
                     'exception_class' => get_class($e),
                 ]);
             } catch (\Exception $logException) {
-                error_log('Failed to write to Laravel log: ' . $logException->getMessage());
+                error_log('Failed to write to Laravel log: '.$logException->getMessage());
             }
 
             return response()->json([
@@ -1198,7 +1209,7 @@ class OrganizationController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -1209,14 +1220,15 @@ class OrganizationController extends Controller
             // in model_has_permissions, but the permission itself has organization_id = NULL
             $platformOrgId = '00000000-0000-0000-0000-000000000000';
             setPermissionsTeamId($platformOrgId);
-            if (!$user->hasPermissionTo('subscription.admin')) {
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'This endpoint is only accessible to platform administrators.',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin in showPlatformAdmin: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.admin in showPlatformAdmin: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This endpoint is only accessible to platform administrators.',
@@ -1237,7 +1249,7 @@ class OrganizationController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -1246,14 +1258,15 @@ class OrganizationController extends Controller
             // CRITICAL: Use platform org UUID as team context for global permissions
             $platformOrgId = '00000000-0000-0000-0000-000000000000';
             setPermissionsTeamId($platformOrgId);
-            if (!$user->hasPermissionTo('subscription.admin')) {
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'This endpoint is only accessible to platform administrators.',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin in updatePlatformAdmin: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.admin in updatePlatformAdmin: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This endpoint is only accessible to platform administrators.',
@@ -1264,7 +1277,7 @@ class OrganizationController extends Controller
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
-            'slug' => 'sometimes|string|max:100|unique:organizations,slug,' . $id,
+            'slug' => 'sometimes|string|max:100|unique:organizations,slug,'.$id,
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'website' => 'nullable|url|max:255',
@@ -1327,7 +1340,7 @@ class OrganizationController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -1336,14 +1349,15 @@ class OrganizationController extends Controller
             // CRITICAL: Use platform org UUID as team context for global permissions
             $platformOrgId = '00000000-0000-0000-0000-000000000000';
             setPermissionsTeamId($platformOrgId);
-            if (!$user->hasPermissionTo('subscription.admin')) {
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'This endpoint is only accessible to platform administrators.',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin in destroyPlatformAdmin: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.admin in destroyPlatformAdmin: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This endpoint is only accessible to platform administrators.',
@@ -1366,7 +1380,7 @@ class OrganizationController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -1376,7 +1390,7 @@ class OrganizationController extends Controller
             setPermissionsTeamId($platformOrgId);
             // Try to check permission, but don't fail if method doesn't exist
             if (method_exists($user, 'hasPermissionTo')) {
-                if (!$user->hasPermissionTo('subscription.admin')) {
+                if (! $user->hasPermissionTo('subscription.admin')) {
                     return response()->json([
                         'error' => 'Access Denied',
                         'message' => 'This endpoint is only accessible to platform administrators.',
@@ -1385,7 +1399,7 @@ class OrganizationController extends Controller
             }
         } catch (\Exception $e) {
             // If permission check fails, log but continue (middleware should have caught it)
-            Log::debug("Permission check in websiteData (non-blocking): " . $e->getMessage());
+            Log::debug('Permission check in websiteData (non-blocking): '.$e->getMessage());
         }
 
         try {
@@ -1407,7 +1421,7 @@ class OrganizationController extends Controller
                 ->toArray();
         } catch (\Exception $e) {
             // Table might not exist yet, return empty array
-            Log::debug("website_domains table query failed: " . $e->getMessage());
+            Log::debug('website_domains table query failed: '.$e->getMessage());
         }
 
         // Get all website settings for this organization (across all schools)
@@ -1421,7 +1435,7 @@ class OrganizationController extends Controller
                 ->toArray();
         } catch (\Exception $e) {
             // Table might not exist yet, return empty array
-            Log::debug("website_settings table query failed: " . $e->getMessage());
+            Log::debug('website_settings table query failed: '.$e->getMessage());
         }
 
         // Get schools for this organization
@@ -1444,7 +1458,7 @@ class OrganizationController extends Controller
                 ->toArray();
         } catch (\Exception $e) {
             // Table might not exist yet, return empty array
-            Log::debug("school_branding table query failed: " . $e->getMessage());
+            Log::debug('school_branding table query failed: '.$e->getMessage());
         }
 
         return response()->json([
@@ -1460,4 +1474,3 @@ class OrganizationController extends Controller
         ]);
     }
 }
-

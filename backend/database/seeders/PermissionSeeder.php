@@ -155,7 +155,93 @@ class PermissionSeeder extends Seeder
             'website_settings' => ['read', 'update'],
             // Activity Logs (audit trail)
             'activity_logs' => ['read'],
+            // Organization HR
+            'hr_staff' => ['read', 'create', 'update', 'delete'],
+            'hr_assignments' => ['read', 'create', 'update', 'approve'],
+            'hr_payroll' => ['read', 'create', 'run', 'approve', 'export'],
+            'hr_reports' => ['read', 'export'],
+            // Organization Finance (org-level accounts, categories, entries, payroll expense)
+            'org_finance' => ['read', 'create'],
         ];
+    }
+
+    /**
+     * Flatten the canonical permission map into permission names.
+     *
+     * @return array<string>
+     */
+    public static function getAllPermissionNames(bool $includeSuperAdminOnly = false): array
+    {
+        $permissionNames = [];
+
+        foreach (self::getPermissions() as $resource => $actions) {
+            foreach ($actions as $action) {
+                $permissionNames[] = "{$resource}.{$action}";
+            }
+        }
+
+        $permissionNames = array_values(array_unique($permissionNames));
+
+        if (! $includeSuperAdminOnly) {
+            $permissionNames = array_values(array_diff(
+                $permissionNames,
+                self::getSuperAdminOnlyPermissions()
+            ));
+        }
+
+        sort($permissionNames);
+
+        return $permissionNames;
+    }
+
+    public static function isSchoolAdminRestrictedPermission(?string $permissionName): bool
+    {
+        if (! is_string($permissionName) || $permissionName === '') {
+            return false;
+        }
+
+        return $permissionName === 'schools.access_all'
+            || str_starts_with($permissionName, 'hr_staff.')
+            || str_starts_with($permissionName, 'hr_assignments.')
+            || str_starts_with($permissionName, 'hr_payroll.')
+            || str_starts_with($permissionName, 'hr_reports.')
+            || str_starts_with($permissionName, 'org_finance.');
+    }
+
+    /**
+     * Permissions that school-scoped admins must never receive.
+     *
+     * @return array<string>
+     */
+    public static function getSchoolAdminRestrictedPermissions(): array
+    {
+        return array_values(array_filter(
+            self::getAllPermissionNames(),
+            fn (string $permissionName): bool => self::isSchoolAdminRestrictedPermission($permissionName)
+        ));
+    }
+
+    /**
+     * Organization-wide administrator permissions.
+     *
+     * @return array<string>
+     */
+    public static function getOrganizationAdminPermissions(): array
+    {
+        return self::getAllPermissionNames();
+    }
+
+    /**
+     * School administrator permissions.
+     *
+     * @return array<string>
+     */
+    public static function getSchoolAdminPermissions(): array
+    {
+        return array_values(array_filter(
+            self::getOrganizationAdminPermissions(),
+            fn (string $permissionName): bool => ! self::isSchoolAdminRestrictedPermission($permissionName)
+        ));
     }
 
     /**
@@ -169,8 +255,8 @@ class PermissionSeeder extends Seeder
     public static function getRolePermissions(): array
     {
         return [
-            'admin' => '*', // All permissions EXCEPT subscription.admin (handled in getExcludedPermissions)
-            'organization_admin' => '*', // Organization Admin - same as admin, full access EXCEPT subscription.admin
+            'admin' => self::getSchoolAdminPermissions(),
+            'organization_admin' => self::getOrganizationAdminPermissions(),
             'staff' => [
                 // Staff: general office/operational access; finance/fees/currencies read-only (see accountant for full finance)
                 // Base permissions required for all users to view org, dashboard, schools, staff, and phonebook
@@ -411,7 +497,75 @@ class PermissionSeeder extends Seeder
                 'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
                 'website_media.read', 'website_media.create', 'website_media.update', 'website_media.delete',
             ],
+            'organization_hr_admin' => [
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'profiles.read', 'profiles.update',
+                'users.read', 'users.create', 'users.update',
+                'notifications.read', 'notifications.update', 'notifications.manage_preferences',
+                'subscription.read',
+                // School management (read + create for org HR admins)
+                'schools.create',
+                // Full HR access
+                'hr_staff.read', 'hr_staff.create', 'hr_staff.update', 'hr_staff.delete',
+                'hr_assignments.read', 'hr_assignments.create', 'hr_assignments.update', 'hr_assignments.approve',
+                'hr_payroll.read', 'hr_payroll.create', 'hr_payroll.run', 'hr_payroll.approve', 'hr_payroll.export',
+                'hr_reports.read', 'hr_reports.export',
+                // Read-only school data for oversight
+                'students.read', 'classes.read', 'subjects.read', 'academic_years.read',
+                'attendance_sessions.read', 'exams.read', 'exams.view_reports',
+                'finance_accounts.read', 'income_entries.read', 'expense_entries.read',
+                'finance_reports.read', 'fees.read',
+                'org_finance.read', 'org_finance.create',
+            ],
+            'hr_officer' => [
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'profiles.read', 'profiles.update',
+                'notifications.read', 'notifications.update',
+                'subscription.read',
+                'hr_staff.read', 'hr_staff.create', 'hr_staff.update',
+                'hr_assignments.read', 'hr_assignments.create', 'hr_assignments.update',
+                'hr_reports.read',
+                // Read-only school data
+                'students.read', 'classes.read', 'attendance_sessions.read',
+            ],
+            'payroll_officer' => [
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'profiles.read',
+                'notifications.read', 'notifications.update',
+                'subscription.read',
+                'hr_staff.read',
+                'hr_payroll.read', 'hr_payroll.create', 'hr_payroll.run', 'hr_payroll.export',
+                'hr_reports.read', 'hr_reports.export',
+                // Read-only finance data for payroll context
+                'finance_accounts.read', 'finance_reports.read',
+                'org_finance.read',
+            ],
+            'principal' => [
+                'organizations.read', 'buildings.read', 'rooms.read',
+                'staff.read', 'school_branding.read', 'schools.read', 'phonebook.read',
+                'profiles.read',
+                'notifications.read', 'notifications.update',
+                'subscription.read',
+                'hr_staff.read',
+                'hr_assignments.read',
+                'hr_reports.read',
+                // Read-only school data for oversight
+                'students.read', 'classes.read', 'subjects.read', 'academic_years.read',
+                'attendance_sessions.read', 'exams.read', 'exams.view_reports',
+                'finance_accounts.read', 'finance_reports.read', 'fees.read',
+            ],
         ];
+    }
+
+    public static function countPermissionsForRole(string $roleName): int
+    {
+        $rolePermissions = self::getRolePermissions();
+        $permissionList = $rolePermissions[$roleName] ?? [];
+
+        return is_array($permissionList) ? count($permissionList) : 0;
     }
 
     /**
@@ -472,14 +626,14 @@ class PermissionSeeder extends Seeder
                     ->whereNull('organization_id')
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     DB::table('permissions')->insert([
                         'name' => $permissionName,
                         'guard_name' => 'web',
                         'organization_id' => null, // Global permissions
                         'resource' => $resource,
                         'action' => $action,
-                        'description' => ucfirst($action) . ' ' . str_replace('_', ' ', $resource),
+                        'description' => ucfirst($action).' '.str_replace('_', ' ', $resource),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -523,14 +677,14 @@ class PermissionSeeder extends Seeder
                             ->where('organization_id', $organization->id)
                             ->exists();
 
-                        if (!$exists) {
+                        if (! $exists) {
                             DB::table('permissions')->insert([
                                 'name' => $permissionName,
                                 'guard_name' => 'web',
                                 'organization_id' => $organization->id, // Organization-specific permissions
                                 'resource' => $resource,
                                 'action' => $action,
-                                'description' => ucfirst($action) . ' ' . str_replace('_', ' ', $resource),
+                                'description' => ucfirst($action).' '.str_replace('_', ' ', $resource),
                                 'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
@@ -545,7 +699,7 @@ class PermissionSeeder extends Seeder
             }
         }
 
-        Log::info("Permission seeding completed:");
+        Log::info('Permission seeding completed:');
         Log::info("  Global permissions - Created: {$globalCreatedCount}, Skipped: {$globalSkippedCount}");
         Log::info("  Organization permissions - Created: {$orgCreatedCount}, Skipped: {$orgSkippedCount}");
 

@@ -65,6 +65,16 @@ class SchoolBranding extends Model
         'is_active',
     ];
 
+    /**
+     * Expose school_name as "name" for API consumers (e.g. org finance transfers).
+     */
+    protected $appends = ['name'];
+
+    public function getNameAttribute(): ?string
+    {
+        return $this->attributes['school_name'] ?? null;
+    }
+
     protected $casts = [
         'is_active' => 'boolean',
         'table_alternating_colors' => 'boolean',

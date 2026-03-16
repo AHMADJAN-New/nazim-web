@@ -16,7 +16,7 @@ class OrganizationDashboardController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
@@ -25,7 +25,7 @@ class OrganizationDashboardController extends Controller
                 ->where('id', $user->id)
                 ->first();
 
-            if (!$profile || !$profile->organization_id) {
+            if (! $profile || ! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
@@ -40,15 +40,23 @@ class OrganizationDashboardController extends Controller
                 $this->userHasPermission($user, 'dashboard.read', $organizationId) ||
                 $this->userHasPermission($user, 'school_branding.read', $organizationId);
 
-            $isOrganizationAdminRole = (string) ($profile->role ?? '') === 'organization_admin';
-            if (!$isOrganizationAdminRole && !$hasOrgScopePermission) {
+            $role = (string) ($profile->role ?? '');
+            if ($role === 'admin') {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'School admins cannot access organization-wide dashboard data.',
+                ], 403);
+            }
+
+            $hasOrgAdminRole = in_array($role, ['organization_admin', 'platform_admin'], true);
+            if (! $hasOrgAdminRole && ! $hasOrgScopePermission) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access organization-wide dashboard data.',
                 ], 403);
             }
 
-            if (!(bool) ($profile->schools_access_all ?? false)) {
+            if (! (bool) ($profile->schools_access_all ?? false)) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'Organization dashboard requires access to all schools.',
@@ -408,6 +416,7 @@ class OrganizationDashboardController extends Controller
                     'upcoming_exams_count' => (int) $upcomingExamsCount,
                     'upcoming_exams' => $upcomingExams->map(function ($exam) use ($schoolNamesById) {
                         $schoolId = (string) ($exam->school_id ?? '');
+
                         return [
                             'id' => (string) $exam->id,
                             'name' => (string) $exam->name,
@@ -435,4 +444,3 @@ class OrganizationDashboardController extends Controller
         }
     }
 }
-

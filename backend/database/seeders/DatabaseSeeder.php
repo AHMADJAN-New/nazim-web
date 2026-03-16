@@ -55,6 +55,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 2b4: Seeding DMS letter types...');
         $this->call(LetterTypeSeeder::class);
 
+        // Step 2b5: Seed facility types for all organizations (org-admin facilities / mosques)
+        $this->command->info('Step 2b5: Seeding facility types...');
+        $this->call(FacilityTypeSeeder::class);
+
         // Step 2c: Seed library categories for all organizations
         $this->command->info('Step 2c: Seeding library categories...');
         $this->call(LibraryCategorySeeder::class);
@@ -283,11 +287,20 @@ class DatabaseSeeder extends Seeder
     {
         $roles = [
             ['name' => 'admin', 'description' => 'Administrator with full access to all features'],
+            ['name' => 'organization_admin', 'description' => 'Organization administrator with full access to all features'],
             ['name' => 'staff', 'description' => 'Staff member with limited access for operational tasks'],
             ['name' => 'teacher', 'description' => 'Teacher with access to academic content and student information'],
+            ['name' => 'exam_controller', 'description' => 'Exam controller with full exam management access'],
+            ['name' => 'accountant', 'description' => 'Accountant with full finance, fees, and currency access'],
+            ['name' => 'hostel_manager', 'description' => 'Hostel manager for room assignments and reports'],
+            ['name' => 'librarian', 'description' => 'Librarian with library and document management access'],
             ['name' => 'website_admin', 'description' => 'Website admin with full control over public site content'],
             ['name' => 'website_editor', 'description' => 'Website editor with content publishing access'],
             ['name' => 'website_media', 'description' => 'Website media manager for uploads and galleries'],
+            ['name' => 'organization_hr_admin', 'description' => 'Organization HR admin with full HR access'],
+            ['name' => 'hr_officer', 'description' => 'HR officer for staff and assignments management'],
+            ['name' => 'payroll_officer', 'description' => 'Payroll officer for payroll processing'],
+            ['name' => 'principal', 'description' => 'School principal with read access to HR data'],
         ];
 
         foreach ($roles as $roleData) {

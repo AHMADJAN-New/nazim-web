@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Cropper, { type Area } from 'react-easy-crop';
+import { Minus, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +17,9 @@ import { showToast } from '@/lib/toast';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const CROP_QUALITY = 0.9;
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 3;
+const ZOOM_STEP = 0.25;
 
 interface ImageCropDialogProps {
   open: boolean;
@@ -87,6 +91,17 @@ export function ImageCropDialog({
     onOpenChange(false);
   }, [onOpenChange]);
 
+  const handleZoomIn = useCallback(() => {
+    setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP));
+  }, []);
+
+  const canZoomIn = zoom < ZOOM_MAX;
+  const canZoomOut = zoom > ZOOM_MIN;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl">
@@ -99,20 +114,53 @@ export function ImageCropDialog({
           </DialogDescription>
         </DialogHeader>
         {imageUrl && (
-          <div className="relative h-[min(60vh,400px)] w-full rounded-lg bg-muted">
-            <Cropper
-              image={imageUrl}
-              crop={crop}
-              zoom={zoom}
-              aspect={aspectRatio}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onCropComplete={onCropCompleteCallback}
-              style={{
-                containerStyle: { borderRadius: 8 },
-                cropAreaStyle: { borderRadius: 8 },
-              }}
-            />
+          <div className="space-y-3">
+            <div className="relative h-[min(60vh,400px)] w-full rounded-lg bg-muted">
+              <Cropper
+                image={imageUrl}
+                crop={crop}
+                zoom={zoom}
+                aspect={aspectRatio}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropCompleteCallback}
+                style={{
+                  containerStyle: { borderRadius: 8 },
+                  cropAreaStyle: { borderRadius: 8 },
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={handleZoomOut}
+                disabled={!canZoomOut}
+                aria-label={t('imageCapture.zoomOut') || 'Zoom out'}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[3.5rem] text-center text-sm tabular-nums text-muted-foreground">
+                {Math.round(zoom * 100)}%
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={handleZoomIn}
+                disabled={!canZoomIn}
+                aria-label={t('imageCapture.zoomIn') || 'Zoom in'}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-center text-xs text-muted-foreground">
+              {t('imageCapture.zoomHint') ||
+                'Use the buttons or scroll on the image to zoom.'}
+            </p>
           </div>
         )}
         <DialogFooter>

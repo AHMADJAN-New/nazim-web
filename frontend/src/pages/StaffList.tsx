@@ -183,6 +183,17 @@ export function StaffList() {
     const orgIdForQuery = selectedOrganizationId === 'all' ? undefined : selectedOrganizationId;
     const { data: schools } = useSchools(orgIdForQuery);
     const { data: staffTypes } = useStaffTypes(orgIdForQuery);
+
+    // School options for staff create/edit: only current school for school-level users; all schools for org-level (Org Admin)
+    const schoolsForStaffForm = useMemo(() => {
+        if (!schools?.length) return [];
+        const currentSchoolId = profile?.default_school_id;
+        if (currentSchoolId) {
+            const current = schools.filter((s) => s.id === currentSchoolId);
+            return current.length ? current : [schools[0]];
+        }
+        return schools;
+    }, [schools, profile?.default_school_id]);
     // Use paginated version of the hook
     const { 
         data: staff, 
@@ -501,6 +512,9 @@ export function StaffList() {
                                 if (import.meta.env.DEV) {
                                     console.log('Create staff button clicked');
                                 }
+                                reset({ status: 'active', school_id: profile?.default_school_id || null });
+                                setCurrentStep(1);
+                                setSelectedPictureFile(null);
                                 setIsCreateDialogOpen(true);
                             }}
                             disabled={!profile?.organization_id}
@@ -1004,7 +1018,7 @@ export function StaffList() {
                                                         />
                                                         {errors.staff_type_id && <p className="text-sm text-destructive">{errors.staff_type_id.message}</p>}
                                                     </div>
-                                                    {schools && schools.length > 0 && (
+                                                    {schoolsForStaffForm.length > 0 && (
                                                         <div className="grid gap-2">
                                                             <Label htmlFor="school_id">{t('staff.school')}</Label>
                                                             <Controller
@@ -1015,7 +1029,7 @@ export function StaffList() {
                                                                         <SelectTrigger><SelectValue placeholder={t('common.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
-                                                                            {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
+                                                                            {schoolsForStaffForm.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
                                                                         </SelectContent>
                                                                     </Select>
                                                                 )}
@@ -1529,7 +1543,7 @@ export function StaffList() {
                                                         />
                                                         {errors.staff_type_id && <p className="text-sm text-destructive">{errors.staff_type_id.message}</p>}
                                                     </div>
-                                                    {schools && schools.length > 0 && (
+                                                    {schoolsForStaffForm.length > 0 && (
                                                         <div className="grid gap-2">
                                                             <Label htmlFor="edit_school_id">{t('staff.school')}</Label>
                                                             <Controller
@@ -1540,7 +1554,7 @@ export function StaffList() {
                                                                         <SelectTrigger><SelectValue placeholder={t('common.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
-                                                                            {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
+                                                                            {schoolsForStaffForm.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
                                                                         </SelectContent>
                                                                     </Select>
                                                                 )}

@@ -9,6 +9,7 @@ import { websiteAdminAr } from './website/admin-ar';
 
 import shared_common_ar from './shared/common/common.ar';
 import shared_nav_ar from './shared/nav/nav.ar';
+import shared_organization_admin_ar from './shared/organizationAdmin/organizationAdmin.ar';
 import shared_toast_ar from './shared/toast/toast.ar';
 import shared_forms_ar from './shared/forms/forms.ar';
 import shared_validation_ar from './shared/validation/validation.ar';
@@ -46,6 +47,7 @@ import pages_library_ar from './pages/library/library.ar';
 import pages_maintenance_ar from './pages/maintenance/maintenance.ar';
 import pages_onboarding_ar from './pages/onboarding/onboarding.ar';
 import pages_organizations_ar from './pages/organizations/organizations.ar';
+import pages_organization_hr_ar from './pages/organization-hr/organizationHr.ar';
 import pages_permissions_ar from './pages/permissions/permissions.ar';
 import pages_phone_book_ar from './pages/phone-book/phoneBook.ar';
 import pages_profile_management_ar from './pages/profile-management/profileManagement.ar';
@@ -75,6 +77,7 @@ export const ar = {
   ...websitePublicAr,
   ...shared_common_ar,
   ...shared_nav_ar,
+  ...shared_organization_admin_ar,
   ...shared_toast_ar,
   ...shared_forms_ar,
   ...shared_validation_ar,
@@ -112,6 +115,7 @@ export const ar = {
   ...pages_maintenance_ar,
   ...pages_onboarding_ar,
   ...pages_organizations_ar,
+  ...pages_organization_hr_ar,
   ...pages_permissions_ar,
   ...pages_phone_book_ar,
   ...pages_profile_management_ar,

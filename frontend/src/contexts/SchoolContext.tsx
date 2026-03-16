@@ -35,21 +35,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return profile?.default_school_id ?? null;
   });
 
-  // Update selected school when profile changes
-  useEffect(() => {
-    if (profile?.default_school_id) {
-      if (!hasSchoolsAccessAll) {
-        // Users without schools_access_all must use their default school
-        setSelectedSchoolIdState(profile.default_school_id);
-      } else if (!selectedSchoolId) {
-        // Users with schools_access_all: if no school selected, use default
-        setSelectedSchoolIdState(profile.default_school_id);
-      }
-      // If user has schools_access_all and already has a selected school, keep it
-    }
-  }, [profile?.default_school_id, hasSchoolsAccessAll]);
-
-  const setSelectedSchoolId = (schoolId: string | null) => {
+  const persistSelectedSchoolId = (schoolId: string | null) => {
     setSelectedSchoolIdState(schoolId);
     if (typeof window !== 'undefined') {
       if (schoolId) {
@@ -58,6 +44,26 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         localStorage.removeItem('selected_school_id');
       }
     }
+  };
+
+  // Update selected school when profile changes
+  useEffect(() => {
+    if (profile?.default_school_id) {
+      if (!hasSchoolsAccessAll) {
+        // Users without schools_access_all must use their default school
+        persistSelectedSchoolId(profile.default_school_id);
+      } else if (!selectedSchoolId) {
+        // Users with schools_access_all: if no school selected, use default
+        persistSelectedSchoolId(profile.default_school_id);
+      }
+      // If user has schools_access_all and already has a selected school, keep it
+    } else if (!hasSchoolsAccessAll) {
+      persistSelectedSchoolId(null);
+    }
+  }, [profile?.default_school_id, hasSchoolsAccessAll, selectedSchoolId]);
+
+  const setSelectedSchoolId = (schoolId: string | null) => {
+    persistSelectedSchoolId(schoolId);
   };
 
   return (
