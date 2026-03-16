@@ -205,10 +205,28 @@ class FixOrganizationAdmins extends Command
                     } else {
                         $this->info("    User already has role: {$user->email}");
                     }
+
+                    // Keep profile.role in sync so org dashboard and frontend see organization_admin
+                    if ((string) (DB::table('profiles')->where('id', $user->id)->value('role') ?? '') !== 'organization_admin') {
+                        DB::table('profiles')->where('id', $user->id)->update(['role' => 'organization_admin', 'updated_at' => now()]);
+                        $this->info("    Set profile.role=organization_admin for: {$user->email}");
+                    }
                 }
 
                 // Clear permission cache
                 app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+                // Platform org: grant organization-wide dashboard (all schools) to all org users
+                $platformOrgId = '00000000-0000-0000-0000-000000000000';
+                if ($organization->id === $platformOrgId) {
+                    $updated = DB::table('profiles')
+                        ->where('organization_id', $platformOrgId)
+                        ->whereNull('deleted_at')
+                        ->update(['schools_access_all' => true, 'updated_at' => now()]);
+                    if ($updated > 0) {
+                        $this->info("  Set schools_access_all=true for {$updated} profile(s) (organization-wide dashboard).");
+                    }
+                }
 
                 $fixedCount++;
                 $this->info("  ✓ Fixed organization: {$organization->name}");

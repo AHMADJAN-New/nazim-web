@@ -28,7 +28,7 @@ import { PlatformAdminDashboard } from './pages/PlatformAdminDashboard';
 import { PlatformAdminLogin } from './pages/PlatformAdminLogin';
 import { PlatformPermissionGroupsManagement } from './pages/PlatformPermissionGroupsManagement';
 
-import { TranslationsManagement, OrganizationRevenueHistory } from '@/components/LazyComponents';
+import { TranslationsManagement, OrganizationRevenueHistory, PlatformBackupsPage, PlatformRestorePage } from '@/components/LazyComponents';
 import { PageSkeleton } from '@/components/ui/loading';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Toaster } from '@/components/ui/sonner';
@@ -209,6 +209,16 @@ export function PlatformAdminApp() {
               <Route path="desktop-licenses" element={<DesktopLicenseGeneration />} />
               <Route path="desktop-releases" element={<DesktopReleasesManagement />} />
               <Route path="files" element={<PlatformFilesManagement />} />
+              <Route path="backups" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <PlatformBackupsPage />
+                </Suspense>
+              } />
+              <Route path="restore" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <PlatformRestorePage />
+                </Suspense>
+              } />
 
               {/* Fallback inside platform */}
               <Route path="*" element={<Navigate to="dashboard" replace />} />

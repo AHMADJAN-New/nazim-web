@@ -26,6 +26,8 @@ import {
   Globe,
   BarChart3,
   FolderOpen,
+  Database,
+  RotateCcw,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -377,6 +379,24 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       iconColor: 'text-sky-600',
       iconBg: 'bg-sky-500/10',
       description: 'Templates, business files, and organization documents',
+      badge: null,
+    },
+    { 
+      name: 'Backups', 
+      href: '/platform/backups', 
+      icon: Database,
+      iconColor: 'text-blue-600',
+      iconBg: 'bg-blue-500/10',
+      description: 'Create and manage database and storage backups',
+      badge: null,
+    },
+    { 
+      name: 'Restore', 
+      href: '/platform/restore', 
+      icon: RotateCcw,
+      iconColor: 'text-amber-600',
+      iconBg: 'bg-amber-500/10',
+      description: 'Restore from backup',
       badge: null,
     },
     { 

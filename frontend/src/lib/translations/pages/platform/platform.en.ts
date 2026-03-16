@@ -102,6 +102,13 @@ export default {
       databaseAndFiles: "Database + Files (Complete Restore)",
       databaseOnlyDescription: "This will replace only the database data. Current storage files will be preserved.",
       databaseAndFilesDescription: "This will replace ALL current data in your database and storage with the data from this backup."
+    },
+    backupType: {
+      label: "Backup Type",
+      databaseOnly: "Database Only",
+      databaseAndFiles: "Database + Files (Complete)",
+      databaseOnlyDescription: "Backup only the database. Faster and creates a smaller file.",
+      databaseAndFilesDescription: "Backup the database and all storage files. Complete backup for full restore."
     }
   },
   platformLandingOffers: {

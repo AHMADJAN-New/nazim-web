@@ -102,6 +102,13 @@ export default {
       databaseAndFiles: "ډیټابیس + فایلونه (بشپړ بېرته راګرځول)",
       databaseOnlyDescription: "دا به یوازې د ډیټابیس ډیټا بدل کړي. اوسنۍ ذخیره فایلونه به وساتل شي.",
       databaseAndFilesDescription: "دا به د بیک اپ څخه د ډیټابیس او ذخیره کولو ټول اوسنۍ ډیټا بدل کړي."
+    },
+    backupType: {
+      label: "د بیک اپ ډول",
+      databaseOnly: "یوازې ډیټابیس",
+      databaseAndFiles: "ډیټابیس + فایلونه (بشپړ)",
+      databaseOnlyDescription: "یوازې ډیټابیس بیک اپ کړئ. ګړندی او کوچنی فایل جوړوي.",
+      databaseAndFilesDescription: "ډیټابیس او ټول ذخیره فایلونه بیک اپ کړئ. د بشپړ بېرته راګرځولو لپاره بشپړ بیک اپ."
     }
   },
   platformLandingOffers: {

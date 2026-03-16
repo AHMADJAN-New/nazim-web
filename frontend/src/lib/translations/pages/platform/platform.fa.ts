@@ -102,6 +102,13 @@ export default {
       databaseAndFiles: "پایگاه داده + فایل‌ها (بازیابی کامل)",
       databaseOnlyDescription: "این فقط داده‌های پایگاه داده را جایگزین می‌کند. فایل‌های ذخیره‌سازی فعلی حفظ خواهند شد.",
       databaseAndFilesDescription: "این تمام داده‌های فعلی در پایگاه داده و ذخیره‌سازی شما را با داده‌های این بکاپ جایگزین می‌کند."
+    },
+    backupType: {
+      label: "نوع بکاپ",
+      databaseOnly: "فقط پایگاه داده",
+      databaseAndFiles: "پایگاه داده + فایل‌ها (کامل)",
+      databaseOnlyDescription: "فقط پایگاه داده را بکاپ بگیرید. سریع‌تر و فایل کوچکتر ایجاد می‌کند.",
+      databaseAndFilesDescription: "پایگاه داده و تمام فایل‌های ذخیره‌سازی را بکاپ بگیرید. بکاپ کامل برای بازیابی کامل."
     }
   },
   platformLandingOffers: {

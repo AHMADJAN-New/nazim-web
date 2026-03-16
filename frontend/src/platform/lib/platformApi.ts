@@ -831,7 +831,7 @@ export const platformApi = {
       }>('/platform/backups');
       return response.backups;
     },
-    create: async () => {
+    create: async (backupType: 'database' | 'all' = 'all') => {
       return apiClient.post<{
         success: boolean;
         message: string;
@@ -842,7 +842,7 @@ export const platformApi = {
           timestamp: string;
           created_at: string;
         };
-      }>('/platform/backups');
+      }>('/platform/backups', { backup_type: backupType });
     },
     download: async (filename: string) => {
       const { blob, filename: responseFilename } = await apiClient.requestFile(

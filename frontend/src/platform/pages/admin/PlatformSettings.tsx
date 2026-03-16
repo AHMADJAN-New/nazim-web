@@ -14,16 +14,10 @@ import {
   XCircle,
   AlertTriangle,
   MessageSquare,
-  Download,
-  Database,
-  HardDrive,
-  Upload,
-  RotateCcw,
   History,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Navigate, Link } from 'react-router-dom';
 import * as z from 'zod';
 
 import {
@@ -76,7 +70,6 @@ import { Tabs,
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -111,18 +104,12 @@ interface PlatformUser {
 }
 
 export default function PlatformSettings() {
-  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { data: permissions, isLoading: permissionsLoading, error: permissionsError } = usePlatformAdminPermissions();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [deletingBackupFilename, setDeletingBackupFilename] = useState<string | null>(null);
-  const [restoringBackupFilename, setRestoringBackupFilename] = useState<string | null>(null);
-  const [restoreType, setRestoreType] = useState<'database' | 'all'>('all');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [uploadRestoreType, setUploadRestoreType] = useState<'database' | 'all'>('all');
   const [maintenanceMessage, setMaintenanceMessage] = useState<string>('');
   const [scheduledEndAt, setScheduledEndAt] = useState<string>('');
   const [affectedServices, setAffectedServices] = useState<string>('');
@@ -267,100 +254,6 @@ export default function PlatformSettings() {
       showToast.error(error.message || 'Failed to delete platform user');
     },
   });
-
-  // Backup queries and mutations
-  const { data: backups, isLoading: isBackupsLoading, error: backupsError } = useQuery({
-    queryKey: ['platform-backups'],
-    queryFn: async () => {
-      try {
-        return await platformApi.backups.list();
-      } catch (error) {
-        console.error('Error fetching backups:', error);
-        return [];
-      }
-    },
-    enabled: hasPlatformAdminPermission && !permissionsLoading,
-    staleTime: 30 * 1000, // 30 seconds
-  });
-
-  const createBackup = useMutation({
-    mutationFn: async () => {
-      return await platformApi.backups.create();
-    },
-    onSuccess: () => {
-      showToast.success('Backup created successfully');
-      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
-    },
-    onError: (error: Error) => {
-      showToast.error(error.message || 'Failed to create backup');
-    },
-  });
-
-  const deleteBackup = useMutation({
-    mutationFn: async (filename: string) => {
-      return await platformApi.backups.delete(filename);
-    },
-    onSuccess: () => {
-      showToast.success('Backup deleted successfully');
-      setDeletingBackupFilename(null);
-      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
-    },
-    onError: (error: Error) => {
-      showToast.error(error.message || 'Failed to delete backup');
-    },
-  });
-
-  const handleDownloadBackup = async (filename: string) => {
-    try {
-      await platformApi.backups.download(filename);
-      showToast.success('Backup download started');
-    } catch (error) {
-      showToast.error('Failed to download backup');
-    }
-  };
-
-  const restoreBackup = useMutation({
-    mutationFn: async ({ filename, restoreType }: { filename: string; restoreType: 'database' | 'all' }) => {
-      return await platformApi.backups.restore(filename, restoreType);
-    },
-    onSuccess: () => {
-      showToast.success('Backup restored successfully. Please refresh the page.');
-      setRestoringBackupFilename(null);
-      setRestoreType('all');
-      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
-    },
-    onError: (error: Error) => {
-      showToast.error(error.message || 'Failed to restore backup');
-      setRestoringBackupFilename(null);
-      setRestoreType('all');
-    },
-  });
-
-  const uploadAndRestore = useMutation({
-    mutationFn: async ({ file, restoreType }: { file: File; restoreType: 'database' | 'all' }) => {
-      return await platformApi.backups.uploadAndRestore(file, restoreType);
-    },
-    onSuccess: () => {
-      showToast.success('Backup uploaded and restored successfully. Please refresh the page.');
-      setUploadedFile(null);
-      setUploadRestoreType('all');
-      queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
-    },
-    onError: (error: Error) => {
-      showToast.error(error.message || 'Failed to upload and restore backup');
-    },
-  });
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.type !== 'application/zip' && !file.name.endsWith('.zip')) {
-        showToast.error('Please select a ZIP file');
-        return;
-      }
-      setUploadedFile(file);
-    }
-  };
 
   // Maintenance mode queries and mutations
   const { data: maintenanceStatus, isLoading: isMaintenanceLoading } = useQuery({
@@ -532,7 +425,7 @@ export default function PlatformSettings() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 overflow-x-auto">
+        <TabsList className="grid w-full grid-cols-4 overflow-x-auto">
           <TabsTrigger value="users" className="flex items-center gap-1 sm:gap-2">
             <Users className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">Platform Users</span>
@@ -552,11 +445,6 @@ export default function PlatformSettings() {
             <Settings className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">System Settings</span>
             <span className="sm:hidden">System</span>
-          </TabsTrigger>
-          <TabsTrigger value="restore" className="flex items-center gap-1 sm:gap-2">
-            <RotateCcw className="h-4 w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Restore</span>
-            <span className="sm:hidden">Rest</span>
           </TabsTrigger>
         </TabsList>
 
@@ -713,13 +601,14 @@ export default function PlatformSettings() {
                     <h4 className="font-medium mb-1">System Settings</h4>
                     <p className="text-sm text-muted-foreground">
                       System configuration options will be available here. This includes email settings, 
-                      notification preferences, backup configurations, and other platform-wide settings.
+                      notification preferences, and other platform-wide settings. Backups and restore are in 
+                      the Backups and Restore pages in the sidebar.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
+                <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <Label className="font-medium">Email Notifications</Label>
@@ -729,100 +618,6 @@ export default function PlatformSettings() {
                   </div>
                   <Badge variant="outline">Coming Soon</Badge>
                 </div>
-
-                {/* Backup & Restore Section */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <Database className="h-5 w-5" />
-                          Backup & Restore
-                        </CardTitle>
-                        <CardDescription>
-                          Create and manage database and storage backups
-                        </CardDescription>
-                      </div>
-                      <Button
-                        onClick={() => createBackup.mutate()}
-                        disabled={createBackup.isPending}
-                      >
-                        {createBackup.isPending ? (
-                          <>
-                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                            Creating...
-                          </>
-                        ) : (
-                          <>
-                            <HardDrive className="mr-2 h-4 w-4" />
-                            Create Backup
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {isBackupsLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <LoadingSpinner />
-                      </div>
-                    ) : backupsError ? (
-                      <div className="py-8 text-center">
-                        <p className="text-destructive">Error loading backups</p>
-                      </div>
-                    ) : !backups || backups.length === 0 ? (
-                      <div className="py-8 text-center text-muted-foreground">
-                        <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                        <p>No backups found</p>
-                        <p className="text-sm mt-1">Create your first backup to get started</p>
-                      </div>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Filename</TableHead>
-                            <TableHead>Size</TableHead>
-                            <TableHead>Created</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {backups.map((backup) => (
-                            <TableRow key={backup.filename}>
-                              <TableCell className="font-medium">
-                                {backup.filename}
-                              </TableCell>
-                              <TableCell>{backup.size}</TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {formatDateTime(new Date(backup.created_at))}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center gap-2 justify-end">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDownloadBackup(backup.filename)}
-                                    title="Download backup"
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setDeletingBackupFilename(backup.filename)}
-                                    title="Delete backup"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </CardContent>
-                </Card>
 
                 {/* System Maintenance */}
                 <Card>
@@ -931,161 +726,6 @@ export default function PlatformSettings() {
                     </p>
                   </div>
                   <Badge variant="outline">Coming Soon</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Restore Tab */}
-        <TabsContent value="restore" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <RotateCcw className="h-5 w-5" />
-                Restore from Backup
-              </CardTitle>
-              <CardDescription>
-                Restore your database and storage from a previous backup
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="rounded-lg border p-4 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-1">
-                      Warning: Data Loss Risk
-                    </h4>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      Restoring a backup will replace all current data in your database and storage.
-                      This action cannot be undone. Please ensure you have a recent backup before proceeding.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Restore from Existing Backup */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Restore from Existing Backup</h3>
-                {isBackupsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <LoadingSpinner />
-                  </div>
-                ) : !backups || backups.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">
-                    <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>No backups available</p>
-                    <p className="text-sm mt-1">Create a backup first in the System Settings tab</p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Filename</TableHead>
-                        <TableHead>Size</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {backups.map((backup) => (
-                        <TableRow key={backup.filename}>
-                          <TableCell className="font-medium">
-                            {backup.filename}
-                          </TableCell>
-                          <TableCell>{backup.size}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatDateTime(new Date(backup.created_at))}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => setRestoringBackupFilename(backup.filename)}
-                              disabled={restoreBackup.isPending}
-                            >
-                              <RotateCcw className="mr-2 h-4 w-4" />
-                              Restore
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
-
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or</span>
-                </div>
-              </div>
-
-              {/* Upload and Restore */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Upload and Restore Backup</h3>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="upload-restore-type">{t('platform.restoreType.label')}</Label>
-                    <Select
-                      value={uploadRestoreType}
-                      onValueChange={(value: 'database' | 'all') => setUploadRestoreType(value)}
-                    >
-                      <SelectTrigger id="upload-restore-type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t('platform.restoreType.databaseAndFiles')}</SelectItem>
-                        <SelectItem value="database">{t('platform.restoreType.databaseOnly')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground">
-                      {uploadRestoreType === 'all'
-                        ? t('platform.restoreType.databaseAndFilesDescription')
-                        : t('platform.restoreType.databaseOnlyDescription')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Input
-                      type="file"
-                      accept=".zip"
-                      onChange={handleFileUpload}
-                      disabled={uploadAndRestore.isPending}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={() => {
-                        if (uploadedFile) {
-                          uploadAndRestore.mutate({ file: uploadedFile, restoreType: uploadRestoreType });
-                        } else {
-                          showToast.error('Please select a backup file first');
-                        }
-                      }}
-                      disabled={!uploadedFile || uploadAndRestore.isPending}
-                    >
-                      {uploadAndRestore.isPending ? (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                          Restoring...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload & Restore
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  {uploadedFile && (
-                    <p className="text-sm text-muted-foreground">
-                      Selected: {uploadedFile.name} ({(uploadedFile.size / 1024 / 1024).toFixed(2)} MB)
-                    </p>
-                  )}
                 </div>
               </div>
             </CardContent>
@@ -1248,114 +888,6 @@ export default function PlatformSettings() {
                 </>
               ) : (
                 'Delete User'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Backup Confirmation Dialog */}
-      <AlertDialog open={!!deletingBackupFilename} onOpenChange={(open) => !open && setDeletingBackupFilename(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Backup</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this backup file? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deletingBackupFilename) {
-                  deleteBackup.mutate(deletingBackupFilename);
-                }
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteBackup.isPending}
-            >
-              {deleteBackup.isPending ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete Backup'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Restore Backup Confirmation Dialog */}
-      <AlertDialog
-        open={!!restoringBackupFilename}
-        onOpenChange={(open) => {
-          if (!open) {
-            setRestoringBackupFilename(null);
-            setRestoreType('all');
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Restore Backup - Warning
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="restore-type">{t('platform.restoreType.label')}</Label>
-                <Select
-                  value={restoreType}
-                  onValueChange={(value: 'database' | 'all') => setRestoreType(value)}
-                >
-                  <SelectTrigger id="restore-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('platform.restoreType.databaseAndFiles')}</SelectItem>
-                    <SelectItem value="database">{t('platform.restoreType.databaseOnly')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">
-                  {restoreType === 'all'
-                    ? t('platform.restoreType.databaseAndFilesDescription')
-                    : t('platform.restoreType.databaseOnlyDescription')}
-                </p>
-              </div>
-              <p className="font-semibold text-foreground">
-                Are you sure you want to restore this backup?
-              </p>
-              <p className="text-yellow-600 dark:text-yellow-400 font-medium">
-                This action is irreversible and cannot be undone!
-              </p>
-              <p className="text-sm mt-2">
-                Backup to restore: <span className="font-mono">{restoringBackupFilename}</span>
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (restoringBackupFilename) {
-                  restoreBackup.mutate({ filename: restoringBackupFilename, restoreType });
-                }
-              }}
-              className="bg-yellow-600 text-white hover:bg-yellow-700"
-              disabled={restoreBackup.isPending}
-            >
-              {restoreBackup.isPending ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Restoring...
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Yes, Restore Backup
-                </>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

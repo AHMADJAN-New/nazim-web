@@ -45,13 +45,21 @@ class BackupController extends Controller
     }
 
     /**
-     * Create a full system backup (database + storage)
+     * Create a backup (database only or database + storage)
+     *
+     * @param  string  $backup_type  'database' = database only, 'all' = database + storage
      */
     public function createBackup(Request $request)
     {
         $this->enforceSubscriptionAdmin($request);
 
         try {
+            $backupType = $request->input('backup_type', 'all');
+            if (! in_array($backupType, ['database', 'all'], true)) {
+                $backupType = 'all';
+            }
+            $includeStorage = $backupType !== 'database';
+
             $timestamp = Carbon::now()->format('Y-m-d_H-i-s');
 
             // CRITICAL: Use storage/app/backups for Docker compatibility
@@ -85,14 +93,17 @@ class BackupController extends Controller
             }
 
             // 1. Backup Database
-            $dbBackupPath = $this->backupDatabase($backupDir);
+            $this->backupDatabase($backupDir);
 
-            // 2. Backup Storage
-            $storageBackupPath = $this->backupStorage($backupDir);
+            // 2. Backup Storage (only if backup_type is 'all')
+            if ($includeStorage) {
+                $this->backupStorage($backupDir);
+            }
 
             // 3. Create ZIP archive
-            // Normalize ZIP path for Windows (use same base directory)
-            $zipPath = $backupBaseDir.DIRECTORY_SEPARATOR.'nazim_backup_'.$timestamp.'.zip';
+            // Use different filename prefix for database-only backups for clarity
+            $zipPrefix = $includeStorage ? 'nazim_backup_' : 'nazim_backup_db_';
+            $zipPath = $backupBaseDir.DIRECTORY_SEPARATOR.$zipPrefix.$timestamp.'.zip';
             $this->createZipArchive($backupDir, $zipPath);
 
             // 4. Clean up temporary directory
