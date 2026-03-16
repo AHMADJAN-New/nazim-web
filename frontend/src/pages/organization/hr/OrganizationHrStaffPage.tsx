@@ -1,51 +1,199 @@
-import { useState } from 'react';
+import { Search, UserRound, Eye } from 'lucide-react';
+import { useState, useMemo } from 'react';
 
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterPanel } from '@/components/layout/FilterPanel';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/ui/loading';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useOrgHrStaff } from '@/hooks/orgHr/useOrgHr';
+import type { OrgHrStaff } from '@/types/domain/orgHr';
+import { useSchools } from '@/hooks/useSchools';
+import type { School } from '@/types/domain/school';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useDebounce } from '@/hooks/useDebounce';
+import { formatDate } from '@/lib/utils';
+
+const statusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  switch (status) {
+    case 'active': return 'default';
+    case 'inactive': return 'secondary';
+    case 'on_leave': return 'outline';
+    case 'terminated':
+    case 'suspended': return 'destructive';
+    default: return 'secondary';
+  }
+};
 
 export default function OrganizationHrStaffPage() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [search, setSearch] = useState('');
-  const { data, isLoading } = useOrgHrStaff(search);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedStaff, setSelectedStaff] = useState<OrgHrStaff | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const debouncedSearch = useDebounce(search, 300);
+  const { data: schools } = useSchools();
+
+  const { data, isLoading } = useOrgHrStaff({
+    search: debouncedSearch || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+  });
+
+  const staffList = useMemo(() => data?.data ?? [], [data]);
+
+  const handleViewStaff = (staff: OrgHrStaff) => {
+    setSelectedStaff(staff);
+    setDetailOpen(true);
+  };
+
+  const getSchoolDisplayName = (schoolId: string | null): string => {
+    if (!schoolId || !schools?.length) return '—';
+    const school = schools.find((s: School) => s.id === schoolId);
+    return school?.schoolName ?? schoolId;
+  };
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <h1 className="text-2xl font-bold">{t('organizationHr.staffMaster') || 'Organization HR / Staff Master'}</h1>
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t('organizationHr.searchStaff') || 'Search staff'}
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+      <PageHeader
+        title={t('organizationHr.staffMaster')}
+        description={t('organizationHr.staffMasterPageDesc')}
+        icon={<UserRound className="h-5 w-5" />}
+        breadcrumbs={[
+          { label: t('organizationHr.hubTitle'), href: '/org-admin/hr' },
+          { label: t('organizationHr.staffMaster') },
+        ]}
       />
-      {isLoading ? <div>{t('organizationHr.loading') || 'Loading...'}</div> : (
-        <div className="rounded border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="p-2">{t('organizationHr.employeeId') || 'Employee ID'}</th>
-                <th className="p-2">{t('organizationHr.name') || 'Name'}</th>
-                <th className="p-2">{t('organizationHr.status') || 'Status'}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data?.data ?? []).map((staff) => (
-                <tr key={staff.id} className="border-b">
-                  <td className="p-2">{staff.employee_id}</td>
-                  <td className="p-2">{staff.first_name} {staff.father_name}</td>
-                  <td className="p-2">{staff.status}</td>
-                </tr>
-              ))}
-              {(data?.data ?? []).length === 0 && (
-                <tr>
-                  <td className="p-3 text-center text-muted-foreground" colSpan={3}>
-                    {t('organizationHr.noStaffFound') || 'No staff found'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+
+      <FilterPanel title={t('organizationHr.filters')} defaultOpenDesktop defaultOpenMobile={false}>
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+          <div className="relative">
+            <Search className={`absolute top-2.5 h-4 w-4 text-muted-foreground ${isRTL ? 'right-3' : 'left-3'}`} />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('organizationHr.searchStaff')}
+              className={isRTL ? 'pr-9' : 'pl-9'}
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('organizationHr.allStatuses')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('organizationHr.allStatuses')}</SelectItem>
+              <SelectItem value="active">{t('organizationHr.statusActive')}</SelectItem>
+              <SelectItem value="inactive">{t('organizationHr.statusInactive')}</SelectItem>
+              <SelectItem value="on_leave">{t('organizationHr.statusOnLeave')}</SelectItem>
+              <SelectItem value="terminated">{t('organizationHr.statusTerminated')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      )}
+      </FilterPanel>
+
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('organizationHr.employeeId')}</TableHead>
+                    <TableHead>{t('organizationHr.name')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('organizationHr.position')}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t('organizationHr.school')}</TableHead>
+                    <TableHead>{t('organizationHr.status')}</TableHead>
+                    <TableHead className="w-[60px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {staffList.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                        {t('organizationHr.noStaffFound')}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    staffList.map((staff) => (
+                      <TableRow key={staff.id}>
+                        <TableCell className="font-mono text-xs">{staff.employeeId}</TableCell>
+                        <TableCell className="font-medium">{staff.firstName} {staff.fatherName}</TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">{staff.position || '—'}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-muted-foreground">{getSchoolDisplayName(staff.schoolId)}</TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant(staff.status)}>{staff.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={() => handleViewStaff(staff)} aria-label={t('organizationHr.viewDetails')}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {data && data.total > 0 && (
+            <div className="border-t px-4 py-3 text-sm text-muted-foreground">
+              {t('organizationHr.showingResults', { count: String(staffList.length), total: String(data.total) }) ||
+                `Showing ${staffList.length} of ${data.total} staff`}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
+        <SheetContent side={isRTL ? 'left' : 'right'} className="sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>{selectedStaff?.firstName} {selectedStaff?.fatherName}</SheetTitle>
+            <SheetDescription>{selectedStaff?.employeeId}</SheetDescription>
+          </SheetHeader>
+          {selectedStaff && (
+            <div className="mt-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">{t('organizationHr.position')}</p>
+                  <p className="font-medium">{selectedStaff.position || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{t('organizationHr.duty')}</p>
+                  <p className="font-medium">{selectedStaff.duty || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{t('organizationHr.email')}</p>
+                  <p className="font-medium">{selectedStaff.email || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{t('organizationHr.phone')}</p>
+                  <p className="font-medium">{selectedStaff.phoneNumber || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{t('organizationHr.school')}</p>
+                  <p className="font-medium">{getSchoolDisplayName(selectedStaff.schoolId)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">{t('organizationHr.status')}</p>
+                  <Badge variant={statusVariant(selectedStaff.status)}>{selectedStaff.status}</Badge>
+                </div>
+              </div>
+              <div className="border-t pt-3 text-xs text-muted-foreground">
+                {t('organizationHr.joinedOn')} {formatDate(selectedStaff.createdAt)}
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

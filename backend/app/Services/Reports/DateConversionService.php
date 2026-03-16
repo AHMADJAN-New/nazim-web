@@ -66,7 +66,7 @@ class DateConversionService
     /**
      * Convert a date to Jalali (Hijri Shamsi) calendar
      *
-     * @param Carbon|string|\DateTime $date
+     * @param  Carbon|string|\DateTime  $date
      * @return array{year: int, month: int, day: int}
      */
     public function toJalali($date): array
@@ -83,12 +83,12 @@ class DateConversionService
         $days = 355666 + (365 * $gy) + floor(($gy2 + 3) / 4) - floor(($gy2 + 99) / 100)
             + floor(($gy2 + 399) / 400);
 
-        for ($i = 0; $i < $gm; ++$i) {
+        for ($i = 0; $i < $gm; $i++) {
             $days += $gDaysInMonth[$i];
         }
 
         if ($gm > 2 && (($gy % 4 == 0 && $gy % 100 != 0) || ($gy % 400 == 0))) {
-            ++$days;
+            $days++;
         }
 
         $days += $gd;
@@ -105,11 +105,11 @@ class DateConversionService
         }
 
         $jm = 0;
-        for ($i = 1; $i <= 12 && $days >= $jDaysInMonth[$i]; ++$i) {
+        for ($i = 1; $i <= 12 && $days >= $jDaysInMonth[$i]; $i++) {
             $days -= $jDaysInMonth[$i];
-            ++$jm;
+            $jm++;
         }
-        ++$jm;
+        $jm++;
         $jd = $days + 1;
 
         return ['year' => (int) $jy, 'month' => (int) $jm, 'day' => (int) $jd];
@@ -118,10 +118,9 @@ class DateConversionService
     /**
      * Convert Jalali date to Gregorian
      *
-     * @param int $jy Jalali year
-     * @param int $jm Jalali month
-     * @param int $jd Jalali day
-     * @return Carbon
+     * @param  int  $jy  Jalali year
+     * @param  int  $jm  Jalali month
+     * @param  int  $jd  Jalali day
      */
     public function jalaliToGregorian(int $jy, int $jm, int $jd): Carbon
     {
@@ -130,7 +129,7 @@ class DateConversionService
         $jy += 1595;
         $days = -355668 + (365 * $jy) + (floor($jy / 33) * 8) + floor((($jy % 33) + 3) / 4);
 
-        for ($i = 1; $i < $jm; ++$i) {
+        for ($i = 1; $i < $jm; $i++) {
             $days += $jDaysInMonth[$i];
         }
         $days += $jd;
@@ -142,7 +141,7 @@ class DateConversionService
             $gy += 100 * floor(--$days / 36524);
             $days %= 36524;
             if ($days >= 365) {
-                ++$days;
+                $days++;
             }
         }
 
@@ -160,15 +159,15 @@ class DateConversionService
 
         // Check for leap year
         if (($gy % 4 == 0 && $gy % 100 != 0) || ($gy % 400 == 0)) {
-            ++$gDaysInMonth[2];
+            $gDaysInMonth[2]++;
         }
 
         $gm = 0;
-        for ($i = 1; $i <= 12 && $gd > $gDaysInMonth[$i]; ++$i) {
+        for ($i = 1; $i <= 12 && $gd > $gDaysInMonth[$i]; $i++) {
             $gd -= $gDaysInMonth[$i];
-            ++$gm;
+            $gm++;
         }
-        ++$gm;
+        $gm++;
 
         return Carbon::createFromDate((int) $gy, (int) $gm, (int) $gd);
     }
@@ -176,7 +175,7 @@ class DateConversionService
     /**
      * Convert a date to Hijri Qamari (Islamic lunar calendar)
      *
-     * @param Carbon|string|\DateTime $date
+     * @param  Carbon|string|\DateTime  $date
      * @return array{year: int, month: int, day: int}
      */
     public function toHijriQamari($date): array
@@ -193,10 +192,9 @@ class DateConversionService
     /**
      * Convert Hijri Qamari date to Gregorian
      *
-     * @param int $hy Hijri year
-     * @param int $hm Hijri month
-     * @param int $hd Hijri day
-     * @return Carbon
+     * @param  int  $hy  Hijri year
+     * @param  int  $hm  Hijri month
+     * @param  int  $hd  Hijri day
      */
     public function hijriToGregorian(int $hy, int $hm, int $hd): Carbon
     {
@@ -209,11 +207,10 @@ class DateConversionService
     /**
      * Format a date according to calendar preference
      *
-     * @param Carbon|string|\DateTime $date
-     * @param string $calendarPreference 'gregorian', 'jalali', 'hijri_shamsi', 'hijri_qamari', 'shamsi', 'qamari'
-     * @param string $format 'full', 'short', 'numeric'
-     * @param string $language 'fa', 'ps', 'ar', 'en'
-     * @return string
+     * @param  Carbon|string|\DateTime  $date
+     * @param  string  $calendarPreference  'gregorian', 'jalali', 'hijri_shamsi', 'hijri_qamari', 'shamsi', 'qamari'
+     * @param  string  $format  'full', 'short', 'numeric'
+     * @param  string  $language  'fa', 'ps', 'ar', 'en'
      */
     public function formatDate($date, string $calendarPreference, string $format = 'full', string $language = 'fa'): string
     {
@@ -227,12 +224,14 @@ class DateConversionService
             case 'jalali':
             case 'shamsi':
                 $converted = $this->toJalali($carbon);
+
                 return $this->formatJalaliDate($converted, $format, $language);
 
             case 'hijri_qamari':
             case 'qamari':
             case 'islamic':
                 $converted = $this->toHijriQamari($carbon);
+
                 return $this->formatHijriDate($converted, $format, $language);
 
             case 'gregorian':
@@ -243,11 +242,6 @@ class DateConversionService
 
     /**
      * Get the current date in the specified calendar
-     *
-     * @param string $calendarPreference
-     * @param string $format
-     * @param string $language
-     * @return string
      */
     public function getCurrentDate(string $calendarPreference, string $format = 'full', string $language = 'fa'): string
     {
@@ -257,8 +251,7 @@ class DateConversionService
     /**
      * Get date components for the specified calendar
      *
-     * @param Carbon|string|\DateTime $date
-     * @param string $calendarPreference
+     * @param  Carbon|string|\DateTime  $date
      * @return array{year: int, month: int, day: int, calendar: string}
      */
     public function getDateComponents($date, string $calendarPreference): array
@@ -272,6 +265,7 @@ class DateConversionService
             case 'shamsi':
                 $result = $this->toJalali($carbon);
                 $result['calendar'] = 'hijri_shamsi';
+
                 return $result;
 
             case 'hijri_qamari':
@@ -279,6 +273,7 @@ class DateConversionService
             case 'islamic':
                 $result = $this->toHijriQamari($carbon);
                 $result['calendar'] = 'hijri_qamari';
+
                 return $result;
 
             case 'gregorian':
@@ -307,6 +302,7 @@ class DateConversionService
                 $result .= $char;
             }
         }
+
         return $result;
     }
 
@@ -325,6 +321,7 @@ class DateConversionService
                 $result .= $char;
             }
         }
+
         return $result;
     }
 
@@ -367,6 +364,7 @@ class DateConversionService
     {
         $cycle = $year % 30;
         $leapYears = [2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29];
+
         return in_array($cycle, $leapYears);
     }
 
@@ -380,6 +378,7 @@ class DateConversionService
         if ($date instanceof \DateTime) {
             return Carbon::instance($date);
         }
+
         return Carbon::parse($date);
     }
 
@@ -407,8 +406,14 @@ class DateConversionService
             case 'numeric':
                 $formatted = sprintf('%04d/%02d/%02d', $year, $month, $day);
                 break;
+            case 'dmy':
+                $formatted = sprintf('%02d/%02d/%04d', $day, $month, $year);
+                break;
             case 'short':
                 $formatted = sprintf('%d %s %d', $day, $monthName, $year);
+                break;
+            case 'month_year_day':
+                $formatted = sprintf('%s %d %d', $monthName, $year, $day);
                 break;
             case 'full':
             default:
@@ -436,8 +441,14 @@ class DateConversionService
             case 'numeric':
                 $formatted = sprintf('%04d/%02d/%02d', $year, $month, $day);
                 break;
+            case 'dmy':
+                $formatted = sprintf('%02d/%02d/%04d هـ', $day, $month, $year);
+                break;
             case 'short':
                 $formatted = sprintf('%d %s %d', $day, $monthName, $year);
+                break;
+            case 'month_year_day':
+                $formatted = sprintf('%s %d %d هـ', $monthName, $year, $day);
                 break;
             case 'full':
             default:
@@ -460,8 +471,12 @@ class DateConversionService
         switch ($format) {
             case 'numeric':
                 return $date->format('Y-m-d');
+            case 'dmy':
+                return $date->format('d/m/Y');
             case 'short':
                 return $date->format('d M Y');
+            case 'month_year_day':
+                return $date->format('F Y j');
             case 'full':
             default:
                 return $date->format('F d, Y');

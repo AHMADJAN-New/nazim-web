@@ -200,11 +200,33 @@ class FeatureGateService
     ): array {
         $canonical = $this->normalizeFeatureKey($featureKey);
 
+        // No subscription: allow only if feature is enabled via addon (organization_feature_addons)
         if (! $subscription) {
+            if (! in_array($canonical, $enabledFeatures, true)) {
+                return [
+                    'allowed' => false,
+                    'access_level' => 'none',
+                    'reason' => 'no_subscription',
+                    'feature_key' => $canonical,
+                    'missing_dependencies' => [],
+                    'required_plan' => null,
+                ];
+            }
+            $missingDependencies = $this->getMissingDependencies($canonical, $enabledFeatures);
+            if (! empty($missingDependencies)) {
+                return [
+                    'allowed' => false,
+                    'access_level' => 'none',
+                    'reason' => 'dependency_missing',
+                    'feature_key' => $canonical,
+                    'missing_dependencies' => $missingDependencies,
+                    'required_plan' => $this->getMinimumPlanForFeature($canonical),
+                ];
+            }
             return [
-                'allowed' => false,
-                'access_level' => 'none',
-                'reason' => 'no_subscription',
+                'allowed' => true,
+                'access_level' => 'full',
+                'reason' => null,
                 'feature_key' => $canonical,
                 'missing_dependencies' => [],
                 'required_plan' => null,

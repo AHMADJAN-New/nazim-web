@@ -164,8 +164,10 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
 import { useHasAnyWebsitePermissionAndFeature, useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
 import { useProfile } from "@/hooks/useProfiles";
+import { useOrganizationPlanSlug } from "@/hooks/useOrganizationPlanSlug";
 import { useSubscriptionGateStatus, type SubscriptionGateStatus } from "@/hooks/useSubscription";
 import { useUserRole } from "@/hooks/useUserRole";
+import { canAccessOrgAdminArea } from '@/organization-admin/lib/access';
 import type { UserRole } from "@/types/auth";
 import { SecondarySidebar } from "./SecondarySidebar";
 
@@ -276,6 +278,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // CRITICAL: Check if subscription is blocked (expired, suspended, trial ended, etc.)
   // When blocked, sidebar should show NO navigation items
   const subscriptionBlocked = isSubscriptionBlocked(gateStatus);
+
+  const { isEnterprise } = useOrganizationPlanSlug();
 
   // Check if user is on the subscription page (allowed even when blocked)
   const isOnSubscriptionPage = location.pathname.startsWith('/subscription');
@@ -574,19 +578,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   // Check if user is event user (profile already declared above)
   const isEventUser = profile?.is_event_user === true;
-  const hasOrganizationDashboardPermissionFromList =
-    permissions.includes('organizations.read') ||
-    permissions.includes('dashboard.read') ||
-    permissions.includes('school_branding.read');
-  const hasOrganizationDashboardAccess =
-    !!profile?.schools_access_all &&
-    (
-      role === 'organization_admin' ||
-      hasOrganizationDashboardPermissionFromList ||
-      hasOrganizationsPermission === true ||
-      hasDashboardPermission === true ||
-      hasBrandingPermission === true
-    );
+  const hasOrganizationDashboardPermissionFromList = canAccessOrgAdminArea(profile, permissions);
+  const hasOrganizationDashboardAccess = hasOrganizationDashboardPermissionFromList;
 
   // Define category colors for icons
   const categoryColors = {
@@ -803,30 +796,14 @@ export const SmartSidebar = memo(function SmartSidebar() {
         category: 'core' as NavigationCategory,
         iconColor: categoryColors.core,
       },
-      ...(hasOrganizationDashboardAccess ? [asNavItem({
-        titleKey: "organizationDashboard",
-        url: "/organization-dashboard",
+      ...(isEnterprise && hasOrganizationDashboardAccess ? [asNavItem({
+        titleKey: "organizationAdmin",
+        url: "/org-admin",
         icon: Building2,
         badge: null,
         priority: 0.6,
         category: 'core' as NavigationCategory,
         iconColor: categoryColors.core,
-      })] : []),
-      ...((hasOrgHrStaffPermission || hasOrgHrAssignmentsPermission || hasOrgHrPayrollPermission || hasOrgHrReportsPermission) ? [asNavItem({
-        title: 'Organization HR',
-        titleKey: 'organizationHr',
-        icon: Users,
-        badge: null,
-        priority: 0.7,
-        category: 'operations' as NavigationCategory,
-        iconColor: categoryColors.operations,
-        children: [
-          ...(hasOrgHrStaffPermission ? [{ title: 'HR Hub', titleKey: 'organizationHrHub', url: '/organization/hr', icon: Building2 }] : []),
-          ...(hasOrgHrStaffPermission ? [{ title: 'Staff Master', titleKey: 'organizationHrStaff', url: '/organization/hr/staff', icon: UserRound }] : []),
-          ...(hasOrgHrAssignmentsPermission ? [{ title: 'Assignments', titleKey: 'organizationHrAssignments', url: '/organization/hr/assignments', icon: ClipboardList }] : []),
-          ...(hasOrgHrPayrollPermission ? [{ title: 'Payroll', titleKey: 'organizationHrPayroll', url: '/organization/hr/payroll', icon: FileSpreadsheet }] : []),
-          ...(hasOrgHrReportsPermission ? [{ title: 'Reports', titleKey: 'organizationHrReports', url: '/organization/hr/reports', icon: BarChart3 }] : []),
-        ],
       })] : []),
       ...((hasStaffPermission || hasStaffReportsPermission) ? [asNavItem({
         titleKey: "staffManagement",

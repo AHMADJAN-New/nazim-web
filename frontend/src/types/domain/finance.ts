@@ -158,6 +158,7 @@ export interface IncomeEntry {
     accountId: string;
     incomeCategoryId: string;
     projectId: string | null;
+    facilityId: string | null;
     donorId: string | null;
     amount: number;
     date: Date;
@@ -184,6 +185,7 @@ export type IncomeEntryFormData = {
     date: string;
     schoolId?: string | null;
     projectId?: string | null;
+    facilityId?: string | null;
     donorId?: string | null;
     referenceNo?: string | null;
     description?: string | null;
@@ -201,6 +203,8 @@ export interface ExpenseEntry {
     accountId: string;
     expenseCategoryId: string;
     projectId: string | null;
+    facilityId: string | null;
+    payrollRunId: string | null;
     amount: number;
     date: Date;
     referenceNo: string | null;
@@ -228,6 +232,7 @@ export type ExpenseEntryFormData = {
     date: string;
     schoolId?: string | null;
     projectId?: string | null;
+    facilityId?: string | null;
     referenceNo?: string | null;
     description?: string | null;
     paidTo?: string | null;

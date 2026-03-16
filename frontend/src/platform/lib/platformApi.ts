@@ -1,9 +1,25 @@
 import { apiClient } from '@/lib/api/client';
 import type * as HelpCenterApi from '@/types/api/helpCenter';
 import type * as OrganizationApi from '@/types/api/organization';
+import type * as PlatformOrderFormApi from '@/types/api/platformOrderForm';
 import type * as SubscriptionApi from '@/types/api/subscription';
 import type * as DesktopLicenseApi from '@/types/api/desktopLicense';
 import type * as LoginAuditApi from '@/types/api/loginAudit';
+
+export interface PlatformFile {
+  id: string;
+  organization_id: string | null;
+  organization: { id: string; name: string } | null;
+  category: string;
+  title: string;
+  notes: string | null;
+  file_name: string;
+  mime_type: string | null;
+  file_size: number;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 /**
  * Platform Admin API Client
@@ -109,6 +125,84 @@ export const platformApi = {
         `/platform/organizations/${organizationId}/maintenance-payment`,
         data
       );
+    },
+  },
+
+  orderForms: {
+    get: async (organizationId: string) => {
+      return apiClient.get<{ data: PlatformOrderFormApi.PlatformOrderFormResponse }>(
+        `/platform/organizations/${organizationId}/order-form`
+      );
+    },
+    update: async (
+      organizationId: string,
+      data: Partial<PlatformOrderFormApi.PlatformOrderForm>
+    ) => {
+      return apiClient.put<{ data: PlatformOrderFormApi.PlatformOrderFormResponse }>(
+        `/platform/organizations/${organizationId}/order-form`,
+        data
+      );
+    },
+    downloadPdf: async (
+      organizationId: string,
+      params?: {
+        calendar_preference?: string;
+        language?: string;
+        order_form?: Partial<PlatformOrderFormApi.PlatformOrderForm>;
+      }
+    ) => {
+      if (params?.order_form) {
+        return apiClient.requestFile(`/platform/organizations/${organizationId}/order-form/pdf`, {
+          method: 'POST',
+          body: JSON.stringify({
+            order_form: params.order_form,
+            calendar_preference: params.calendar_preference,
+            language: params.language,
+          }),
+        });
+      }
+      return apiClient.requestFile(`/platform/organizations/${organizationId}/order-form/pdf`, {
+        method: 'GET',
+        params: {
+          calendar_preference: params?.calendar_preference,
+          language: params?.language,
+        },
+      });
+    },
+    uploadDocument: async (
+      organizationId: string,
+      data: FormData
+    ) => {
+      return apiClient.post<{ data: PlatformOrderFormApi.PlatformOrderFormDocument }>(
+        `/platform/organizations/${organizationId}/order-form/documents`,
+        data
+      );
+    },
+    downloadDocument: async (organizationId: string, documentId: string) => {
+      return apiClient.requestFile(
+        `/platform/organizations/${organizationId}/order-form/documents/${documentId}/download`,
+        { method: 'GET' }
+      );
+    },
+    deleteDocument: async (organizationId: string, documentId: string) => {
+      return apiClient.delete(
+        `/platform/organizations/${organizationId}/order-form/documents/${documentId}`
+      );
+    },
+  },
+
+  platformFiles: {
+    list: async (params?: { organization_id?: string; category?: string }) => {
+      return apiClient.get<{ data: PlatformFile[] }>('/platform/files', params);
+    },
+    upload: async (data: FormData) => {
+      return apiClient.post<{ data: PlatformFile }>('/platform/files', data);
+    },
+    download: async (id: string) => {
+      return apiClient.requestFile(`/platform/files/${id}/download`, { method: 'GET' });
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/files/${id}`);
     },
   },
 
@@ -1154,4 +1248,3 @@ export const platformApi = {
     },
   },
 };
-

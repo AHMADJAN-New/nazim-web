@@ -66,7 +66,10 @@ export interface CurrencyConversionResponse {
     from_currency_id: string;
     to_currency_id: string;
     amount: number;
-    rate: number;
+    rate: number | null;
     converted_amount: number;
+    /** When false, no rate was found and amount is shown in original currency. */
+    converted?: boolean;
+    message?: string;
 }
 

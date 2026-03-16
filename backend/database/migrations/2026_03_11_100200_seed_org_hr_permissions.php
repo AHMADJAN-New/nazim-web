@@ -19,6 +19,7 @@ return new class extends Migration
             ['name' => 'hr_assignments.read', 'resource' => 'hr_assignments', 'action' => 'read'],
             ['name' => 'hr_assignments.create', 'resource' => 'hr_assignments', 'action' => 'create'],
             ['name' => 'hr_assignments.update', 'resource' => 'hr_assignments', 'action' => 'update'],
+            ['name' => 'hr_assignments.delete', 'resource' => 'hr_assignments', 'action' => 'delete'],
             ['name' => 'hr_assignments.approve', 'resource' => 'hr_assignments', 'action' => 'approve'],
             ['name' => 'hr_payroll.read', 'resource' => 'hr_payroll', 'action' => 'read'],
             ['name' => 'hr_payroll.create', 'resource' => 'hr_payroll', 'action' => 'create'],
@@ -56,7 +57,7 @@ return new class extends Migration
 
         $roleMatrix = [
             'organization_hr_admin' => array_keys($permissionIds),
-            'hr_officer' => ['hr_staff.read', 'hr_staff.create', 'hr_staff.update', 'hr_assignments.read', 'hr_assignments.create', 'hr_assignments.update', 'hr_reports.read'],
+            'hr_officer' => ['hr_staff.read', 'hr_staff.create', 'hr_staff.update', 'hr_assignments.read', 'hr_assignments.create', 'hr_assignments.update', 'hr_assignments.delete', 'hr_reports.read'],
             'payroll_officer' => ['hr_staff.read', 'hr_payroll.read', 'hr_payroll.create', 'hr_payroll.run', 'hr_payroll.approve', 'hr_payroll.export', 'hr_reports.read', 'hr_reports.export'],
             'principal' => ['hr_staff.read', 'hr_assignments.read'],
         ];

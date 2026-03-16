@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\DiscountCode;
 use App\Models\FeatureDefinition;
-use App\Models\OrganizationSubscription;
 use App\Models\PaymentRecord;
 use App\Models\RenewalRequest;
 use App\Models\SubscriptionPlan;
@@ -164,7 +163,7 @@ class SubscriptionController extends Controller
 
     /**
      * Get current subscription status (lite version - no permission required)
-     * 
+     *
      * CRITICAL: This endpoint is used for frontend gating and must be accessible to ALL authenticated users.
      * It returns only the minimal information needed for access control decisions.
      * No sensitive subscription details (plan, pricing, etc.) are exposed.
@@ -174,14 +173,14 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $organizationId = $profile->organization_id;
         $subscription = $this->subscriptionService->getCurrentSubscription($organizationId);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return response()->json([
                 'data' => [
                     'status' => 'none',
@@ -198,7 +197,7 @@ class SubscriptionController extends Controller
 
         // Use FeatureGateService to get status (includes payment suspension logic)
         $statusInfo = $this->featureGateService->getSubscriptionStatus($organizationId);
-        
+
         return response()->json([
             'data' => [
                 'status' => $statusInfo['status'],
@@ -221,17 +220,18 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subscription.read')) {
+            if (! $user->hasPermissionTo('subscription.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -251,17 +251,18 @@ class SubscriptionController extends Controller
             $user = $request->user();
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile || !$profile->organization_id) {
+            if (! $profile || ! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('subscription.read')) {
+                if (! $user->hasPermissionTo('subscription.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
-                Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+                Log::warning('Permission check failed for subscription.read: '.$e->getMessage());
+
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
@@ -270,7 +271,7 @@ class SubscriptionController extends Controller
             try {
                 $usage = $this->usageTrackingService->getAllUsage($profile->organization_id);
             } catch (\Exception $e) {
-                \Log::error('Failed to get usage: ' . $e->getMessage(), [
+                \Log::error('Failed to get usage: '.$e->getMessage(), [
                     'trace' => $e->getTraceAsString(),
                     'organization_id' => $profile->organization_id,
                 ]);
@@ -282,7 +283,7 @@ class SubscriptionController extends Controller
             try {
                 $warnings = $this->usageTrackingService->hasWarnings($profile->organization_id);
             } catch (\Exception $e) {
-                \Log::error('Failed to get warnings: ' . $e->getMessage(), [
+                \Log::error('Failed to get warnings: '.$e->getMessage(), [
                     'trace' => $e->getTraceAsString(),
                     'organization_id' => $profile->organization_id,
                 ]);
@@ -294,7 +295,7 @@ class SubscriptionController extends Controller
                 $usage = $this->featureGateService->filterUsageByFeatures($profile->organization_id, $usage);
                 $warnings = $this->featureGateService->filterWarningsByFeatures($profile->organization_id, $warnings);
             } catch (\Exception $e) {
-                \Log::warning('Failed to filter usage by features: ' . $e->getMessage(), [
+                \Log::warning('Failed to filter usage by features: '.$e->getMessage(), [
                     'organization_id' => $profile->organization_id,
                 ]);
             }
@@ -306,11 +307,11 @@ class SubscriptionController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            \Log::error('Subscription usage error: ' . $e->getMessage(), [
+            \Log::error('Subscription usage error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'user_id' => $request->user()?->id,
             ]);
-            
+
             // Return empty data instead of error to prevent frontend crashes
             return response()->json([
                 'data' => [
@@ -329,17 +330,18 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subscription.read')) {
+            if (! $user->hasPermissionTo('subscription.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -369,7 +371,7 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -403,34 +405,34 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $code = DiscountCode::where('code', strtoupper($request->code))->first();
 
-        if (!$code) {
+        if (! $code) {
             return response()->json([
                 'valid' => false,
                 'message' => 'Invalid discount code',
             ]);
         }
 
-        if (!$code->isValid()) {
+        if (! $code->isValid()) {
             return response()->json([
                 'valid' => false,
                 'message' => 'This discount code has expired or is no longer valid',
             ]);
         }
 
-        if (!$code->canBeUsedByOrganization($profile->organization_id)) {
+        if (! $code->canBeUsedByOrganization($profile->organization_id)) {
             return response()->json([
                 'valid' => false,
                 'message' => 'You have already used this discount code',
             ]);
         }
 
-        if ($request->plan_id && !$code->appliesToPlan($request->plan_id)) {
+        if ($request->plan_id && ! $code->appliesToPlan($request->plan_id)) {
             return response()->json([
                 'valid' => false,
                 'message' => 'This discount code does not apply to the selected plan',
@@ -466,7 +468,7 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -510,7 +512,7 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -525,7 +527,7 @@ class SubscriptionController extends Controller
                     throw new \Exception('Unauthorized');
                 }
 
-                if (!$renewalRequest->isPending()) {
+                if (! $renewalRequest->isPending()) {
                     throw new \Exception('Renewal request is not pending');
                 }
 
@@ -550,7 +552,7 @@ class SubscriptionController extends Controller
 
                 $subscription = $this->subscriptionService->getCurrentSubscription($profile->organization_id);
                 $plan = SubscriptionPlan::findOrFail($renewalRequest->requested_plan_id);
-                if (!$plan->is_active) {
+                if (! $plan->is_active) {
                     throw new \Exception('Selected plan is not active');
                 }
 
@@ -600,17 +602,18 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subscription.read')) {
+            if (! $user->hasPermissionTo('subscription.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -632,17 +635,18 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subscription.read')) {
+            if (! $user->hasPermissionTo('subscription.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -663,17 +667,18 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subscription.read')) {
+            if (! $user->hasPermissionTo('subscription.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.read: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -685,6 +690,32 @@ class SubscriptionController extends Controller
 
         return response()->json([
             'data' => $history,
+        ]);
+    }
+
+    /**
+     * Lightweight endpoint returning only the current organization's plan slug.
+     * No subscription.read permission required — auth + organization context is enough.
+     */
+    public function planSlug(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile || ! $profile->organization_id) {
+            return response()->json(['plan_slug' => null]);
+        }
+
+        $subscription = $this->subscriptionService->getCurrentSubscription($profile->organization_id);
+
+        if (! $subscription || ! $subscription->plan_id) {
+            return response()->json(['plan_slug' => null]);
+        }
+
+        $plan = SubscriptionPlan::find($subscription->plan_id);
+
+        return response()->json([
+            'plan_slug' => $plan?->slug ?? null,
         ]);
     }
 }

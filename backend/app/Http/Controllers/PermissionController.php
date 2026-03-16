@@ -2,21 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RestrictsSchoolScopedAdmins;
 use App\Models\Permission;
 use App\Models\PermissionGroup;
 use App\Models\PermissionGroupItem;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\ActivityLogService;
+use App\Services\DefaultRolePermissionSyncService;
+use App\Services\OrganizationAdminSchoolAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PermissionController extends Controller
 {
+    use RestrictsSchoolScopedAdmins;
+
     public function __construct(
-        private ActivityLogService $activityLogService
+        private ActivityLogService $activityLogService,
+        private DefaultRolePermissionSyncService $defaultRolePermissionSyncService,
+        private OrganizationAdminSchoolAccessService $organizationAdminSchoolAccessService
     ) {}
+
     /**
      * Display a listing of permissions
      * CRITICAL: Returns ONLY organization-specific permissions for the user's organization
@@ -28,19 +36,25 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'User profile not found'], 404);
         }
 
         // CRITICAL: Only show organization-specific permissions
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        $this->defaultRolePermissionSyncService->syncOrganization($profile->organization_id);
 
         $query = Permission::query();
 
         // ONLY show permissions for user's organization (no global permissions)
         $query->where('organization_id', $profile->organization_id);
+
+        if ($this->isSchoolScopedProfile($profile)) {
+            $query->whereNotIn('name', \Database\Seeders\PermissionSeeder::getSchoolAdminRestrictedPermissions());
+        }
 
         $permissions = $query->orderBy('resource')->orderBy('action')->get();
 
@@ -60,16 +74,17 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['permissions' => []]);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $organizationId = $profile->organization_id;
+        $this->defaultRolePermissionSyncService->syncOrganization($organizationId);
 
         // Get permissions via roles (bypasses model_has_permissions)
         // CRITICAL: Only use organization-specific permissions (no global permissions)
@@ -78,8 +93,8 @@ class PermissionController extends Controller
             ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
             ->join('model_has_roles', function ($join) use ($user) {
                 $join->on('role_has_permissions.role_id', '=', 'model_has_roles.role_id')
-                     ->where('model_has_roles.model_id', '=', $user->id)
-                     ->where('model_has_roles.model_type', '=', 'App\\Models\\User');
+                    ->where('model_has_roles.model_id', '=', $user->id)
+                    ->where('model_has_roles.model_type', '=', 'App\\Models\\User');
             })
             ->where(function ($query) use ($organizationId) {
                 // Match organization context in role assignments
@@ -105,10 +120,10 @@ class PermissionController extends Controller
         $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
 
         $directPermissions = DB::table($modelHasPermissionsTable)
-            ->join('permissions', $modelHasPermissionsTable . '.permission_id', '=', 'permissions.id')
-            ->where($modelHasPermissionsTable . '.' . $modelMorphKey, $user->id)
-            ->where($modelHasPermissionsTable . '.model_type', 'App\\Models\\User')
-            ->where($modelHasPermissionsTable . '.organization_id', $organizationId)
+            ->join('permissions', $modelHasPermissionsTable.'.permission_id', '=', 'permissions.id')
+            ->where($modelHasPermissionsTable.'.'.$modelMorphKey, $user->id)
+            ->where($modelHasPermissionsTable.'.model_type', 'App\\Models\\User')
+            ->where($modelHasPermissionsTable.'.organization_id', $organizationId)
             ->where('permissions.organization_id', $organizationId) // CRITICAL: Only org permissions
             ->distinct()
             ->pluck('permissions.name')
@@ -121,23 +136,23 @@ class PermissionController extends Controller
         sort($permissions);
 
         return response()->json([
-            'permissions' => $permissions
+            'permissions' => $permissions,
         ]);
     }
 
     /**
      * Get platform admin permissions (GLOBAL, not organization-scoped)
-     * 
+     *
      * CRITICAL: This endpoint is for platform admins who are NOT tied to organizations.
      * It returns global permissions (organization_id = NULL), specifically subscription.admin
-     * 
+     *
      * This endpoint does NOT require organization_id - platform admins can access it
      */
     public function platformAdminPermissions(Request $request)
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -149,14 +164,15 @@ class PermissionController extends Controller
 
         // Check if user has subscription.admin permission (GLOBAL)
         try {
-            if (!$user->hasPermissionTo('subscription.admin')) {
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'This endpoint is only accessible to platform administrators.',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Platform admin permission check failed: " . $e->getMessage());
+            Log::warning('Platform admin permission check failed: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This endpoint is only accessible to platform administrators.',
@@ -173,13 +189,13 @@ class PermissionController extends Controller
         // CRITICAL: Global permissions are stored with platform org UUID (00000000-0000-0000-0000-000000000000)
         // in model_has_permissions, but the permission itself has organization_id = NULL
         $globalPermissions = DB::table($modelHasPermissionsTable)
-            ->join('permissions', $modelHasPermissionsTable . '.permission_id', '=', 'permissions.id')
-            ->where($modelHasPermissionsTable . '.' . $modelMorphKey, $user->id)
-            ->where($modelHasPermissionsTable . '.model_type', 'App\\Models\\User')
+            ->join('permissions', $modelHasPermissionsTable.'.permission_id', '=', 'permissions.id')
+            ->where($modelHasPermissionsTable.'.'.$modelMorphKey, $user->id)
+            ->where($modelHasPermissionsTable.'.model_type', 'App\\Models\\User')
             ->where(function ($query) use ($modelHasPermissionsTable, $platformOrgId) {
                 // Check for platform org UUID OR NULL (covers both cases)
-                $query->where($modelHasPermissionsTable . '.organization_id', $platformOrgId)
-                      ->orWhereNull($modelHasPermissionsTable . '.organization_id');
+                $query->where($modelHasPermissionsTable.'.organization_id', $platformOrgId)
+                    ->orWhereNull($modelHasPermissionsTable.'.organization_id');
             })
             ->whereNull('permissions.organization_id') // CRITICAL: Only global permissions (permission itself is NULL)
             ->distinct()
@@ -193,7 +209,7 @@ class PermissionController extends Controller
         sort($permissions);
 
         return response()->json([
-            'permissions' => $permissions
+            'permissions' => $permissions,
         ]);
     }
 
@@ -205,19 +221,24 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['roles' => []]);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Get roles for the user's organization (global + org-specific)
-        $roles = Role::forOrganization($profile->organization_id)
-            ->orderBy('name')
-            ->get();
+        $rolesQuery = Role::forOrganization($profile->organization_id)
+            ->orderBy('name');
+
+        if ($this->isSchoolScopedProfile($profile)) {
+            $rolesQuery->where('name', '!=', 'organization_admin');
+        }
+
+        $roles = $rolesQuery->get();
 
         return response()->json([
             'roles' => $roles->map(function ($role) {
@@ -226,7 +247,7 @@ class PermissionController extends Controller
                     'description' => $role->description,
                     'organization_id' => $role->organization_id,
                 ];
-            })
+            }),
         ]);
     }
 
@@ -238,20 +259,21 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.create')) {
+            if (! $user->hasPermissionTo('permissions.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.create: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.create: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -294,7 +316,7 @@ class PermissionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log permission creation: ' . $e->getMessage());
+            Log::warning('Failed to log permission creation: '.$e->getMessage());
         }
 
         return response()->json($permission, 201);
@@ -308,26 +330,27 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.update')) {
+            if (! $user->hasPermissionTo('permissions.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.update: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $permission = Permission::find($id);
 
-        if (!$permission) {
+        if (! $permission) {
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
@@ -358,7 +381,7 @@ class PermissionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log permission update: ' . $e->getMessage());
+            Log::warning('Failed to log permission update: '.$e->getMessage());
         }
 
         return response()->json($permission);
@@ -372,26 +395,27 @@ class PermissionController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.delete')) {
+            if (! $user->hasPermissionTo('permissions.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $permission = Permission::find($id);
 
-        if (!$permission) {
+        if (! $permission) {
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
@@ -418,7 +442,7 @@ class PermissionController extends Controller
                 request: request()
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log permission deletion: ' . $e->getMessage());
+            Log::warning('Failed to log permission deletion: '.$e->getMessage());
         }
 
         return response()->json(['message' => 'Permission deleted successfully']);
@@ -432,16 +456,19 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $this->defaultRolePermissionSyncService->syncOrganization($profile->organization_id);
+
         try {
-            if (!$user->hasPermissionTo('permissions.read')) {
+            if (! $user->hasPermissionTo('permissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.read: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -450,8 +477,12 @@ class PermissionController extends Controller
             ->where('guard_name', 'web')
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             return response()->json(['error' => 'Role not found'], 404);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isProtectedOrganizationRole($role->name)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrator permissions'], 403);
         }
 
         setPermissionsTeamId($profile->organization_id);
@@ -459,7 +490,7 @@ class PermissionController extends Controller
 
         return response()->json([
             'role' => $roleName,
-            'permissions' => $permissions->pluck('name')->toArray()
+            'permissions' => $permissions->pluck('name')->toArray(),
         ]);
     }
 
@@ -471,16 +502,17 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.update')) {
+            if (! $user->hasPermissionTo('permissions.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.update: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -489,18 +521,22 @@ class PermissionController extends Controller
             'permission_id' => 'required|integer|exists:permissions,id',
         ]);
 
+        if ($this->isSchoolScopedProfile($profile) && $this->isProtectedOrganizationRole($request->role)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrator permissions'], 403);
+        }
+
         $role = Role::where('name', $request->role)
             ->where('organization_id', $profile->organization_id)
             ->where('guard_name', 'web')
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             return response()->json(['error' => 'Role not found'], 404);
         }
 
         $permission = Permission::find($request->permission_id);
 
-        if (!$permission) {
+        if (! $permission) {
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
@@ -512,6 +548,14 @@ class PermissionController extends Controller
         // CRITICAL: Permission must belong to user's organization
         if ($permission->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot assign permission from different organization'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isSchoolAdminRestrictedPermission($permission->name)) {
+            return response()->json(['error' => 'School admins cannot manage organization-wide permissions'], 403);
+        }
+
+        if (! $this->canAssignPermissionToSchoolAdminRole($role->name, $permission->name)) {
+            return response()->json(['error' => 'The admin role cannot be granted organization-wide permissions'], 403);
         }
 
         // CRITICAL: Manually insert into role_has_permissions with organization_id
@@ -526,7 +570,7 @@ class PermissionController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->exists();
 
-        if (!$exists) {
+        if (! $exists) {
             DB::table($roleHasPermissionsTable)->insert([
                 'role_id' => $role->id,
                 'permission_id' => $permission->id,
@@ -548,7 +592,7 @@ class PermissionController extends Controller
                     request: $request
                 );
             } catch (\Exception $e) {
-                Log::warning('Failed to log permission assignment: ' . $e->getMessage());
+                Log::warning('Failed to log permission assignment: '.$e->getMessage());
             }
         }
 
@@ -563,16 +607,17 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.update')) {
+            if (! $user->hasPermissionTo('permissions.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.update: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -581,19 +626,27 @@ class PermissionController extends Controller
             'permission_id' => 'required|integer|exists:permissions,id',
         ]);
 
+        if ($this->isSchoolScopedProfile($profile) && $this->isProtectedOrganizationRole($request->role)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrator permissions'], 403);
+        }
+
         $role = Role::where('name', $request->role)
             ->where('organization_id', $profile->organization_id)
             ->where('guard_name', 'web')
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             return response()->json(['error' => 'Role not found'], 404);
         }
 
         $permission = Permission::find($request->permission_id);
 
-        if (!$permission) {
+        if (! $permission) {
             return response()->json(['error' => 'Permission not found'], 404);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isSchoolAdminRestrictedPermission($permission->name)) {
+            return response()->json(['error' => 'School admins cannot manage organization-wide permissions'], 403);
         }
 
         // CRITICAL: Manually delete from role_has_permissions with organization_id
@@ -622,7 +675,7 @@ class PermissionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log permission removal: ' . $e->getMessage());
+            Log::warning('Failed to log permission removal: '.$e->getMessage());
         }
 
         return response()->json(['message' => 'Permission removed from role successfully']);
@@ -636,28 +689,39 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.read')) {
+            if (! $user->hasPermissionTo('permissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.read: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $targetUser = User::find($userId);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $userId)->first();
-        if (!$targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
+        if (! $targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot access user from different organization'], 403);
         }
+
+        if ($this->isSchoolScopedProfile($profile) && ! $this->canSchoolScopedProfileManageTarget($profile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage users in their own school'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->userHasProtectedOrganizationRole($userId, $profile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
+        }
+
+        $this->defaultRolePermissionSyncService->syncOrganization($profile->organization_id);
 
         setPermissionsTeamId($profile->organization_id);
 
@@ -666,17 +730,17 @@ class PermissionController extends Controller
             ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
             ->join('model_has_roles', function ($join) use ($targetUser, $profile) {
                 $join->on('role_has_permissions.role_id', '=', 'model_has_roles.role_id')
-                     ->where('model_has_roles.model_id', '=', $targetUser->id)
-                     ->where('model_has_roles.model_type', '=', 'App\\Models\\User')
-                     ->where('model_has_roles.organization_id', '=', $profile->organization_id);
+                    ->where('model_has_roles.model_id', '=', $targetUser->id)
+                    ->where('model_has_roles.model_type', '=', 'App\\Models\\User')
+                    ->where('model_has_roles.organization_id', '=', $profile->organization_id);
             })
             ->where(function ($query) use ($profile) {
                 $query->where('role_has_permissions.organization_id', $profile->organization_id)
-                      ->orWhereNull('role_has_permissions.organization_id');
+                    ->orWhereNull('role_has_permissions.organization_id');
             })
             ->where(function ($query) use ($profile) {
                 $query->whereNull('permissions.organization_id')
-                      ->orWhere('permissions.organization_id', $profile->organization_id);
+                    ->orWhere('permissions.organization_id', $profile->organization_id);
             })
             ->select('permissions.id', 'permissions.name', 'permissions.resource', 'permissions.action')
             ->distinct()
@@ -689,13 +753,13 @@ class PermissionController extends Controller
         $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
 
         $directPermissions = DB::table($modelHasPermissionsTable)
-            ->join('permissions', $modelHasPermissionsTable . '.permission_id', '=', 'permissions.id')
-            ->where($modelHasPermissionsTable . '.' . $modelMorphKey, $targetUser->id)
-            ->where($modelHasPermissionsTable . '.model_type', 'App\\Models\\User')
-            ->where($modelHasPermissionsTable . '.organization_id', $profile->organization_id)
+            ->join('permissions', $modelHasPermissionsTable.'.permission_id', '=', 'permissions.id')
+            ->where($modelHasPermissionsTable.'.'.$modelMorphKey, $targetUser->id)
+            ->where($modelHasPermissionsTable.'.model_type', 'App\\Models\\User')
+            ->where($modelHasPermissionsTable.'.organization_id', $profile->organization_id)
             ->where(function ($query) use ($profile) {
                 $query->whereNull('permissions.organization_id')
-                      ->orWhere('permissions.organization_id', $profile->organization_id);
+                    ->orWhere('permissions.organization_id', $profile->organization_id);
             })
             ->select('permissions.id', 'permissions.name', 'permissions.resource', 'permissions.action')
             ->distinct()
@@ -731,16 +795,17 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.update')) {
+            if (! $user->hasPermissionTo('permissions.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.update: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -750,13 +815,25 @@ class PermissionController extends Controller
         ]);
 
         $targetUser = User::find($request->user_id);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $request->user_id)->first();
-        if (!$targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
+        if (! $targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot assign role to user from different organization'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && ! $this->canSchoolScopedProfileManageTarget($profile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage users in their own school'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->userHasProtectedOrganizationRole($request->user_id, $profile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isProtectedOrganizationRole($request->role)) {
+            return response()->json(['error' => 'School admins cannot assign the organization_admin role'], 403);
         }
 
         $role = Role::where('name', $request->role)
@@ -764,7 +841,7 @@ class PermissionController extends Controller
             ->where('guard_name', 'web')
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             return response()->json(['error' => 'Role not found'], 404);
         }
 
@@ -773,6 +850,10 @@ class PermissionController extends Controller
 
         // Clear permission cache so user's permissions are refreshed immediately
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        if ($this->organizationAdminSchoolAccessService->shouldAutoEnableAllSchoolsForRole($profile->organization_id, $role->name)) {
+            $this->organizationAdminSchoolAccessService->enableAllSchoolsForUser($targetUser->id, $profile->organization_id);
+        }
 
         // Log role assignment
         try {
@@ -788,7 +869,7 @@ class PermissionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log role assignment: ' . $e->getMessage());
+            Log::warning('Failed to log role assignment: '.$e->getMessage());
         }
 
         return response()->json(['message' => 'Role assigned to user successfully']);
@@ -802,16 +883,17 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.update')) {
+            if (! $user->hasPermissionTo('permissions.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.update: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -821,13 +903,25 @@ class PermissionController extends Controller
         ]);
 
         $targetUser = User::find($request->user_id);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $request->user_id)->first();
-        if (!$targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
+        if (! $targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot remove role from user in different organization'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && ! $this->canSchoolScopedProfileManageTarget($profile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage users in their own school'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->userHasProtectedOrganizationRole($request->user_id, $profile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isProtectedOrganizationRole($request->role)) {
+            return response()->json(['error' => 'School admins cannot manage the organization_admin role'], 403);
         }
 
         $role = Role::where('name', $request->role)
@@ -835,7 +929,7 @@ class PermissionController extends Controller
             ->where('guard_name', 'web')
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             return response()->json(['error' => 'Role not found'], 404);
         }
 
@@ -859,7 +953,7 @@ class PermissionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log role removal: ' . $e->getMessage());
+            Log::warning('Failed to log role removal: '.$e->getMessage());
         }
 
         return response()->json(['message' => 'Role removed from user successfully']);
@@ -873,16 +967,17 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.update')) {
+            if (! $user->hasPermissionTo('permissions.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.update: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -892,17 +987,25 @@ class PermissionController extends Controller
         ]);
 
         $targetUser = User::find($request->user_id);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $request->user_id)->first();
-        if (!$targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
+        if (! $targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot assign permission to user in different organization'], 403);
         }
 
+        if ($this->isSchoolScopedProfile($profile) && ! $this->canSchoolScopedProfileManageTarget($profile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage users in their own school'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->userHasProtectedOrganizationRole($request->user_id, $profile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
+        }
+
         $permission = Permission::find($request->permission_id);
-        if (!$permission) {
+        if (! $permission) {
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
@@ -914,6 +1017,14 @@ class PermissionController extends Controller
         // CRITICAL: Permission must belong to user's organization
         if ($permission->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot assign permission from different organization'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isSchoolAdminRestrictedPermission($permission->name)) {
+            return response()->json(['error' => 'School admins cannot manage organization-wide permissions'], 403);
+        }
+
+        if (! $this->canAssignPermissionToSchoolScopedProfile($targetProfile, $permission->name)) {
+            return response()->json(['error' => 'School-scoped users cannot be granted organization-wide permissions'], 403);
         }
 
         // Use direct database insert for team-scoped permissions
@@ -932,7 +1043,7 @@ class PermissionController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->exists();
 
-        if (!$exists) {
+        if (! $exists) {
             DB::table($modelHasPermissionsTable)->insert([
                 'permission_id' => $permission->id,
                 $modelMorphKey => $targetUser->id,
@@ -954,7 +1065,7 @@ class PermissionController extends Controller
                     request: $request
                 );
             } catch (\Exception $e) {
-                Log::warning('Failed to log direct permission assignment: ' . $e->getMessage());
+                Log::warning('Failed to log direct permission assignment: '.$e->getMessage());
             }
         }
 
@@ -969,16 +1080,17 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.update')) {
+            if (! $user->hasPermissionTo('permissions.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.update: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -988,17 +1100,25 @@ class PermissionController extends Controller
         ]);
 
         $targetUser = User::find($request->user_id);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $request->user_id)->first();
-        if (!$targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
+        if (! $targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot remove permission from user in different organization'], 403);
         }
 
+        if ($this->isSchoolScopedProfile($profile) && ! $this->canSchoolScopedProfileManageTarget($profile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage users in their own school'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->userHasProtectedOrganizationRole($request->user_id, $profile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
+        }
+
         $permission = Permission::find($request->permission_id);
-        if (!$permission) {
+        if (! $permission) {
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
@@ -1010,6 +1130,10 @@ class PermissionController extends Controller
         // CRITICAL: Permission must belong to user's organization
         if ($permission->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot remove permission from different organization'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isSchoolAdminRestrictedPermission($permission->name)) {
+            return response()->json(['error' => 'School admins cannot manage organization-wide permissions'], 403);
         }
 
         // Use direct database delete (team-scoped permissions)
@@ -1043,7 +1167,7 @@ class PermissionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log direct permission removal: ' . $e->getMessage());
+            Log::warning('Failed to log direct permission removal: '.$e->getMessage());
         }
 
         return response()->json(['message' => 'Permission removed from user successfully']);
@@ -1057,27 +1181,36 @@ class PermissionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('permissions.read')) {
+            if (! $user->hasPermissionTo('permissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for permissions.read: " . $e->getMessage());
+            Log::warning('Permission check failed for permissions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $targetUser = User::find($userId);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $userId)->first();
-        if (!$targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
+        if (! $targetProfile || $targetProfile->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot access user from different organization'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && ! $this->canSchoolScopedProfileManageTarget($profile, $targetProfile)) {
+            return response()->json(['error' => 'School admins can only manage users in their own school'], 403);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->userHasProtectedOrganizationRole($userId, $profile->organization_id)) {
+            return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
         }
 
         setPermissionsTeamId($profile->organization_id);
@@ -1114,7 +1247,7 @@ class PermissionController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -1123,14 +1256,15 @@ class PermissionController extends Controller
             // CRITICAL: Use platform org UUID as team context for global permissions
             $platformOrgId = '00000000-0000-0000-0000-000000000000';
             setPermissionsTeamId($platformOrgId);
-            if (!$user->hasPermissionTo('subscription.admin')) {
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'This endpoint is only accessible to platform administrators.',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin in platformAdminOrganizationPermissions: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.admin in platformAdminOrganizationPermissions: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This endpoint is only accessible to platform administrators.',
@@ -1143,7 +1277,7 @@ class PermissionController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$organization) {
+        if (! $organization) {
             return response()->json(['error' => 'Organization not found'], 404);
         }
 
@@ -1197,7 +1331,7 @@ class PermissionController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -1206,14 +1340,15 @@ class PermissionController extends Controller
             // CRITICAL: Use platform org UUID as team context for global permissions
             $platformOrgId = '00000000-0000-0000-0000-000000000000';
             setPermissionsTeamId($platformOrgId);
-            if (!$user->hasPermissionTo('subscription.admin')) {
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'This endpoint is only accessible to platform administrators.',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin in platformAdminUserPermissions: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.admin in platformAdminUserPermissions: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This endpoint is only accessible to platform administrators.',
@@ -1221,12 +1356,12 @@ class PermissionController extends Controller
         }
 
         $targetUser = User::find($userId);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $userId)->first();
-        if (!$targetProfile || !$targetProfile->organization_id) {
+        if (! $targetProfile || ! $targetProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 404);
         }
 
@@ -1240,9 +1375,9 @@ class PermissionController extends Controller
             ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
             ->join('model_has_roles', function ($join) use ($targetUser, $targetProfile) {
                 $join->on('role_has_permissions.role_id', '=', 'model_has_roles.role_id')
-                     ->where('model_has_roles.model_id', '=', $targetUser->id)
-                     ->where('model_has_roles.model_type', '=', 'App\\Models\\User')
-                     ->where('model_has_roles.organization_id', '=', $targetProfile->organization_id);
+                    ->where('model_has_roles.model_id', '=', $targetUser->id)
+                    ->where('model_has_roles.model_type', '=', 'App\\Models\\User')
+                    ->where('model_has_roles.organization_id', '=', $targetProfile->organization_id);
             })
             ->where('role_has_permissions.organization_id', $targetProfile->organization_id)
             ->where('permissions.organization_id', $targetProfile->organization_id)
@@ -1260,10 +1395,10 @@ class PermissionController extends Controller
         // NOTE: model_has_permissions table does NOT have deleted_at column (no soft deletes)
         $directPermissions = DB::connection('pgsql')
             ->table($modelHasPermissionsTable)
-            ->join('permissions', $modelHasPermissionsTable . '.permission_id', '=', 'permissions.id')
-            ->where($modelHasPermissionsTable . '.' . $modelMorphKey, $targetUser->id)
-            ->where($modelHasPermissionsTable . '.model_type', 'App\\Models\\User')
-            ->where($modelHasPermissionsTable . '.organization_id', $targetProfile->organization_id)
+            ->join('permissions', $modelHasPermissionsTable.'.permission_id', '=', 'permissions.id')
+            ->where($modelHasPermissionsTable.'.'.$modelMorphKey, $targetUser->id)
+            ->where($modelHasPermissionsTable.'.model_type', 'App\\Models\\User')
+            ->where($modelHasPermissionsTable.'.organization_id', $targetProfile->organization_id)
             ->where('permissions.organization_id', $targetProfile->organization_id)
             ->select('permissions.id', 'permissions.name', 'permissions.resource', 'permissions.action')
             ->distinct()
@@ -1299,7 +1434,7 @@ class PermissionController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -1308,14 +1443,15 @@ class PermissionController extends Controller
             // CRITICAL: Use platform org UUID as team context for global permissions
             $platformOrgId = '00000000-0000-0000-0000-000000000000';
             setPermissionsTeamId($platformOrgId);
-            if (!$user->hasPermissionTo('subscription.admin')) {
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'This endpoint is only accessible to platform administrators.',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin in platformAdminAssignPermissionToUser: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.admin in platformAdminAssignPermissionToUser: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This endpoint is only accessible to platform administrators.',
@@ -1327,17 +1463,17 @@ class PermissionController extends Controller
         ]);
 
         $targetUser = User::find($userId);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $userId)->first();
-        if (!$targetProfile || !$targetProfile->organization_id) {
+        if (! $targetProfile || ! $targetProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 404);
         }
 
         $permission = Permission::find($request->permission_id);
-        if (!$permission) {
+        if (! $permission) {
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
@@ -1372,7 +1508,7 @@ class PermissionController extends Controller
         // CRITICAL: model_has_permissions table does NOT have deleted_at column
         // If permission already exists, just return success
         // Otherwise, assign it using Spatie and update organization_id
-        if (!$existing) {
+        if (! $existing) {
             // Assign permission using Spatie
             $targetUser->givePermissionTo($permission);
 
@@ -1400,7 +1536,7 @@ class PermissionController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
@@ -1409,14 +1545,15 @@ class PermissionController extends Controller
             // CRITICAL: Use platform org UUID as team context for global permissions
             $platformOrgId = '00000000-0000-0000-0000-000000000000';
             setPermissionsTeamId($platformOrgId);
-            if (!$user->hasPermissionTo('subscription.admin')) {
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 return response()->json([
                     'error' => 'Access Denied',
                     'message' => 'This endpoint is only accessible to platform administrators.',
                 ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin in platformAdminRemovePermissionFromUser: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.admin in platformAdminRemovePermissionFromUser: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'This endpoint is only accessible to platform administrators.',
@@ -1428,17 +1565,17 @@ class PermissionController extends Controller
         ]);
 
         $targetUser = User::find($userId);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $userId)->first();
-        if (!$targetProfile || !$targetProfile->organization_id) {
+        if (! $targetProfile || ! $targetProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 404);
         }
 
         $permission = Permission::find($request->permission_id);
-        if (!$permission) {
+        if (! $permission) {
             return response()->json(['error' => 'Permission not found'], 404);
         }
 
@@ -1540,8 +1677,9 @@ class PermissionController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to create permission group: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to create permission group: ' . $e->getMessage()], 500);
+            Log::error('Failed to create permission group: '.$e->getMessage());
+
+            return response()->json(['error' => 'Failed to create permission group: '.$e->getMessage()], 500);
         }
     }
 
@@ -1565,7 +1703,7 @@ class PermissionController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$group) {
+        if (! $group) {
             return response()->json(['error' => 'Permission group not found'], 404);
         }
 
@@ -1577,12 +1715,13 @@ class PermissionController extends Controller
                     ->where('id', '!=', $groupId)
                     ->whereNull('deleted_at')
                     ->first();
-                
+
                 if ($existing) {
                     DB::rollBack();
+
                     return response()->json(['error' => 'A permission group with this name already exists'], 400);
                 }
-                
+
                 $group->name = $validated['name'];
             }
             if (isset($validated['description'])) {
@@ -1614,8 +1753,9 @@ class PermissionController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to update permission group: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to update permission group: ' . $e->getMessage()], 500);
+            Log::error('Failed to update permission group: '.$e->getMessage());
+
+            return response()->json(['error' => 'Failed to update permission group: '.$e->getMessage()], 500);
         }
     }
 
@@ -1632,7 +1772,7 @@ class PermissionController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$group) {
+        if (! $group) {
             return response()->json(['error' => 'Permission group not found'], 404);
         }
 
@@ -1654,12 +1794,12 @@ class PermissionController extends Controller
         ]);
 
         $targetUser = User::find($userId);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $userId)->first();
-        if (!$targetProfile || !$targetProfile->organization_id) {
+        if (! $targetProfile || ! $targetProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 400);
         }
 
@@ -1670,7 +1810,7 @@ class PermissionController extends Controller
             ->with('permissions')
             ->first();
 
-        if (!$group) {
+        if (! $group) {
             return response()->json(['error' => 'Permission group not found'], 404);
         }
 
@@ -1710,7 +1850,7 @@ class PermissionController extends Controller
                     ->where('organization_id', $targetProfile->organization_id)
                     ->first();
 
-                if (!$existing) {
+                if (! $existing) {
                     // Assign permission using Spatie
                     $targetUser->givePermissionTo($permission);
 
@@ -1744,7 +1884,8 @@ class PermissionController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to assign permission group to user: ' . $e->getMessage());
+            Log::error('Failed to assign permission group to user: '.$e->getMessage());
+
             return response()->json(['error' => 'Failed to assign permission group'], 500);
         }
     }
@@ -1762,12 +1903,12 @@ class PermissionController extends Controller
         ]);
 
         $targetUser = User::find($userId);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $targetProfile = DB::table('profiles')->where('id', $userId)->first();
-        if (!$targetProfile || !$targetProfile->organization_id) {
+        if (! $targetProfile || ! $targetProfile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 400);
         }
 
@@ -1778,7 +1919,7 @@ class PermissionController extends Controller
             ->with('permissions')
             ->first();
 
-        if (!$group) {
+        if (! $group) {
             return response()->json(['error' => 'Permission group not found'], 404);
         }
 
@@ -1832,7 +1973,8 @@ class PermissionController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to remove permission group from user: ' . $e->getMessage());
+            Log::error('Failed to remove permission group from user: '.$e->getMessage());
+
             return response()->json(['error' => 'Failed to remove permission group'], 500);
         }
     }
@@ -1844,7 +1986,7 @@ class PermissionController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             abort(401, 'Unauthenticated');
         }
 
@@ -1855,11 +1997,11 @@ class PermissionController extends Controller
         setPermissionsTeamId($platformOrgId);
 
         try {
-            if (!$user->hasPermissionTo('subscription.admin')) {
+            if (! $user->hasPermissionTo('subscription.admin')) {
                 abort(403, 'This action is only available to platform administrators');
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subscription.admin: " . $e->getMessage());
+            Log::warning('Permission check failed for subscription.admin: '.$e->getMessage());
             abort(403, 'This action is only available to platform administrators');
         }
     }

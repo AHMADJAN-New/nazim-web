@@ -7,12 +7,32 @@ import { mapOrganizationApiToDomain } from '@/mappers/organizationMapper';
 import type * as OrganizationApi from '@/types/api/organization';
 import type * as SubscriptionApi from '@/types/api/subscription';
 import type { Organization } from '@/types/domain/organization';
-import type { SubscriptionDashboardStats, SubscriptionPlan } from '@/types/domain/subscription';
+import type { LandingOffer, SubscriptionDashboardStats, SubscriptionPlan } from '@/types/domain/subscription';
 
 /**
  * Map API SubscriptionPlan to domain SubscriptionPlan
  */
 function mapPlanApiToDomain(api: SubscriptionApi.SubscriptionPlan): SubscriptionPlan {
+  const landingOffer: LandingOffer | null | undefined = api.landing_offer
+    ? {
+        id: api.landing_offer.id,
+        code: api.landing_offer.code,
+        name: api.landing_offer.name,
+        description: api.landing_offer.description,
+        discountType: api.landing_offer.discount_type,
+        discountValue: Number(api.landing_offer.discount_value || 0),
+        maxDiscountAmount: api.landing_offer.max_discount_amount != null ? Number(api.landing_offer.max_discount_amount) : null,
+        currency: api.landing_offer.currency,
+        validFrom: api.landing_offer.valid_from ? new Date(api.landing_offer.valid_from) : null,
+        validUntil: api.landing_offer.valid_until ? new Date(api.landing_offer.valid_until) : null,
+        metadata: api.landing_offer.metadata,
+        discountAmountAfn: Number(api.landing_offer.discount_amount_afn || 0),
+        discountAmountUsd: Number(api.landing_offer.discount_amount_usd || 0),
+        discountedTotalFeeAfn: Number(api.landing_offer.discounted_total_fee_afn || 0),
+        discountedTotalFeeUsd: Number(api.landing_offer.discounted_total_fee_usd || 0),
+      }
+    : null;
+
   return {
     id: api.id,
     name: api.name,
@@ -20,6 +40,18 @@ function mapPlanApiToDomain(api: SubscriptionApi.SubscriptionPlan): Subscription
     description: api.description,
     priceYearlyAfn: api.price_yearly_afn,
     priceYearlyUsd: api.price_yearly_usd,
+    billingPeriod: api.billing_period,
+    billingPeriodLabel: (api as any).billing_period_label || api.billing_period,
+    billingPeriodDays: Number((api as any).billing_period_days || 0),
+    customBillingDays: api.custom_billing_days,
+    licenseFeeAfn: Number(api.license_fee_afn || 0),
+    licenseFeeUsd: Number(api.license_fee_usd || 0),
+    maintenanceFeeAfn: Number(api.maintenance_fee_afn || 0),
+    maintenanceFeeUsd: Number(api.maintenance_fee_usd || 0),
+    hasLicenseFee: Boolean((api as any).has_license_fee ?? api.license_fee_afn ?? api.license_fee_usd),
+    hasMaintenanceFee: Boolean((api as any).has_maintenance_fee ?? api.maintenance_fee_afn ?? api.maintenance_fee_usd),
+    totalFeeAfn: Number((api as any).total_fee_afn ?? (api.license_fee_afn || 0) + (api.maintenance_fee_afn || 0)),
+    totalFeeUsd: Number((api as any).total_fee_usd ?? (api.license_fee_usd || 0) + (api.maintenance_fee_usd || 0)),
     isActive: api.is_active,
     isDefault: api.is_default,
     isCustom: api.is_custom,
@@ -32,6 +64,7 @@ function mapPlanApiToDomain(api: SubscriptionApi.SubscriptionPlan): Subscription
     sortOrder: api.sort_order,
     features: api.features || [],
     limits: api.limits || {},
+    landingOffer: landingOffer ?? undefined,
     createdAt: new Date(api.created_at),
     updatedAt: new Date(api.updated_at),
     deletedAt: api.deleted_at ? new Date(api.deleted_at) : null,

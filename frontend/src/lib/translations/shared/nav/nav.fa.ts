@@ -24,6 +24,7 @@ export default {
     courseStudents: "شاگردان کورس",
     dashboard: "دشبورد",
     organizationDashboard: "دشبورد سازمان",
+    organizationAdmin: "مدیریت سازمان",
     organizationHr: "منابع بشری سازمان",
     organizationHrHub: "مرکز منابع بشری",
     organizationHrStaff: "کارمندان مرکزی",

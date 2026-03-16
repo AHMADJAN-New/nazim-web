@@ -1,21 +1,23 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle,
-  Clock,
   Package,
   Pencil,
   RefreshCw,
   XCircle,
-  CreditCard,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
-import { useParams, Link, Navigate } from 'react-router-dom';
 
 import { OrganizationPermissionManagement } from '@/components/settings/OrganizationPermissionManagement';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,8 +47,11 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { formatDate } from '@/lib/utils';
+import { showToast } from '@/lib/toast';
+import { cn, formatDate } from '@/lib/utils';
+import { LicenseFeeStatusCard } from '@/platform/components/LicenseFeeStatusCard';
+import { MaintenanceFeeStatusCard } from '@/platform/components/MaintenanceFeeStatusCard';
+import { OrganizationOrderFormPanel } from '@/platform/components/OrganizationOrderFormPanel';
 import { usePlatformPlans, usePlatformOrganization } from '@/platform/hooks/usePlatformAdmin';
 import {
   usePlatformOrganizationSubscription,
@@ -57,10 +62,6 @@ import {
 } from '@/platform/hooks/usePlatformAdminComplete';
 import { usePlatformAdminPermissions } from '@/platform/hooks/usePlatformAdminPermissions';
 import { platformApi } from '@/platform/lib/platformApi';
-import { showToast } from '@/lib/toast';
-import { LicenseFeeStatusCard } from '@/platform/components/LicenseFeeStatusCard';
-import { MaintenanceFeeStatusCard } from '@/platform/components/MaintenanceFeeStatusCard';
-import { useQueryClient } from '@tanstack/react-query';
 import type * as SubscriptionApi from '@/types/api/subscription';
 
 export default function OrganizationSubscriptionDetail() {
@@ -86,7 +87,7 @@ export default function OrganizationSubscriptionDetail() {
   const [isLicensePaymentDialogOpen, setIsLicensePaymentDialogOpen] = useState(false);
   const [isMaintenancePaymentDialogOpen, setIsMaintenancePaymentDialogOpen] = useState(false);
   const [isLimitOverrideDialogOpen, setIsLimitOverrideDialogOpen] = useState(false);
-  const [managementTab, setManagementTab] = useState('limits');
+  const [managementTab, setManagementTab] = useState('order-form');
   const [featureStateTab, setFeatureStateTab] = useState('all');
   const [limitOverrideFormData, setLimitOverrideFormData] = useState({
     resource_key: '',
@@ -114,13 +115,14 @@ export default function OrganizationSubscriptionDetail() {
   });
 
   type PaymentFormData = z.infer<typeof paymentFormSchema>;
+  type PaymentMethod = PaymentFormData['payment_method'];
 
   const licensePaymentForm = useForm<PaymentFormData>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
       currency: 'AFN',
       payment_method: 'bank_transfer',
-      payment_date: new Date().toISOString().split('T')[0],
+      payment_date: dateToLocalYYYYMMDD(new Date()),
     },
   });
 
@@ -129,7 +131,7 @@ export default function OrganizationSubscriptionDetail() {
     defaultValues: {
       currency: 'AFN',
       payment_method: 'bank_transfer',
-      payment_date: new Date().toISOString().split('T')[0],
+      payment_date: dateToLocalYYYYMMDD(new Date()),
     },
   });
 
@@ -198,9 +200,7 @@ export default function OrganizationSubscriptionDetail() {
 
   // Extract data with defaults - allow rendering even if subscription is null
   const subscription = data?.subscription || null;
-  const statusObj = data?.status || { status: 'none', message: 'No subscription data' };
-  const status = statusObj.status || 'none';
-  const usage = data?.usage || {};
+  const usage = (data?.usage || {}) as Record<string, SubscriptionApi.UsageInfo>;
   const features = Array.isArray(data?.features) ? data.features : [];
 
   const handleActivate = () => {
@@ -608,8 +608,9 @@ export default function OrganizationSubscriptionDetail() {
                 showToast.success('License payment recorded successfully');
                 setIsLicensePaymentDialogOpen(false);
                 licensePaymentForm.reset();
-                // Refresh subscription data
-                await queryClient.invalidateQueries({ queryKey: ['platform-organization-subscription', organizationId] });
+                // Refresh subscription and order form (subscription_context)
+                await queryClient.invalidateQueries({ queryKey: ['platform-org-subscription', organizationId] });
+                await queryClient.invalidateQueries({ queryKey: ['platform-order-form', organizationId] });
               } catch (error) {
                 showToast.error(error instanceof Error ? error.message : 'Failed to record license payment');
               }
@@ -651,7 +652,9 @@ export default function OrganizationSubscriptionDetail() {
               <Label htmlFor="license-payment-method">Payment Method</Label>
               <Select
                 value={licensePaymentForm.watch('payment_method')}
-                onValueChange={(value) => licensePaymentForm.setValue('payment_method', value as any)}
+                onValueChange={(value) =>
+                  licensePaymentForm.setValue('payment_method', value as PaymentMethod)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -674,19 +677,13 @@ export default function OrganizationSubscriptionDetail() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="license-payment-date">Payment Date</Label>
-              <Input
-                id="license-payment-date"
-                type="date"
-                {...licensePaymentForm.register('payment_date')}
-              />
-              {licensePaymentForm.formState.errors.payment_date && (
-                <p className="text-sm text-destructive">
-                  {licensePaymentForm.formState.errors.payment_date.message}
-                </p>
-              )}
-            </div>
+            <CalendarFormField
+              control={licensePaymentForm.control}
+              name="payment_date"
+              label="Payment Date"
+              placeholder="Select payment date"
+              required
+            />
 
             <div className="space-y-2">
               <Label htmlFor="license-notes">Notes (Optional)</Label>
@@ -736,8 +733,9 @@ export default function OrganizationSubscriptionDetail() {
                 showToast.success('Maintenance payment recorded successfully');
                 setIsMaintenancePaymentDialogOpen(false);
                 maintenancePaymentForm.reset();
-                // Refresh subscription data
-                await queryClient.invalidateQueries({ queryKey: ['platform-organization-subscription', organizationId] });
+                // Refresh subscription and order form
+                await queryClient.invalidateQueries({ queryKey: ['platform-org-subscription', organizationId] });
+                await queryClient.invalidateQueries({ queryKey: ['platform-order-form', organizationId] });
               } catch (error) {
                 showToast.error(error instanceof Error ? error.message : 'Failed to record maintenance payment');
               }
@@ -779,7 +777,9 @@ export default function OrganizationSubscriptionDetail() {
               <Label htmlFor="maintenance-payment-method">Payment Method</Label>
               <Select
                 value={maintenancePaymentForm.watch('payment_method')}
-                onValueChange={(value) => maintenancePaymentForm.setValue('payment_method', value as any)}
+                onValueChange={(value) =>
+                  maintenancePaymentForm.setValue('payment_method', value as PaymentMethod)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -802,19 +802,13 @@ export default function OrganizationSubscriptionDetail() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="maintenance-payment-date">Payment Date</Label>
-              <Input
-                id="maintenance-payment-date"
-                type="date"
-                {...maintenancePaymentForm.register('payment_date')}
-              />
-              {maintenancePaymentForm.formState.errors.payment_date && (
-                <p className="text-sm text-destructive">
-                  {maintenancePaymentForm.formState.errors.payment_date.message}
-                </p>
-              )}
-            </div>
+            <CalendarFormField
+              control={maintenancePaymentForm.control}
+              name="payment_date"
+              label="Payment Date"
+              placeholder="Select payment date"
+              required
+            />
 
             <div className="space-y-2">
               <Label htmlFor="maintenance-notes">Notes (Optional)</Label>
@@ -893,16 +887,15 @@ export default function OrganizationSubscriptionDetail() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="limit-expires-at">Expires At (Optional)</Label>
-              <Input
-                id="limit-expires-at"
-                type="date"
-                value={limitOverrideFormData.expires_at}
-                onChange={(e) =>
+              <CalendarDatePicker
+                date={limitOverrideFormData.expires_at ? new Date(limitOverrideFormData.expires_at) : undefined}
+                onDateChange={(date) =>
                   setLimitOverrideFormData((prev) => ({
                     ...prev,
-                    expires_at: e.target.value,
+                    expires_at: date ? dateToLocalYYYYMMDD(date) : '',
                   }))
                 }
+                placeholder="Select expiry date"
               />
             </div>
           </div>
@@ -940,7 +933,10 @@ export default function OrganizationSubscriptionDetail() {
 
       <Tabs value={managementTab} onValueChange={setManagementTab} className="space-y-4">
         <div className="overflow-x-auto pb-1">
-          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-3">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-4">
+            <TabsTrigger value="order-form" className="flex-shrink-0">
+              Order Form
+            </TabsTrigger>
             <TabsTrigger value="limits" className="flex-shrink-0">
               Limits
             </TabsTrigger>
@@ -953,6 +949,16 @@ export default function OrganizationSubscriptionDetail() {
           </TabsList>
         </div>
 
+        <TabsContent value="order-form">
+        <OrganizationOrderFormPanel
+          organizationId={organizationId}
+          organizationName={organization?.name ?? null}
+          plans={plans ?? []}
+          subscription={subscription ?? null}
+          usage={usage}
+        />
+        </TabsContent>
+
         <TabsContent value="limits">
       {/* Limits Card */}
       <Card>
@@ -963,9 +969,9 @@ export default function OrganizationSubscriptionDetail() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-3 sm:p-6">
-          {Object.keys(usage || {}).length > 0 ? (
+          {Object.keys(usage).length > 0 ? (
             <div className="space-y-3 sm:space-y-4">
-              {Object.entries(usage || {}).map(([key, info]: [string, any]) => (
+              {Object.entries(usage).map(([key, info]) => (
                 <div
                   key={key}
                   className="rounded-lg border p-3 sm:p-4 space-y-3"
@@ -1190,7 +1196,7 @@ export default function OrganizationSubscriptionDetail() {
                 <SelectContent>
                   {plans?.map((plan) => (
                     <SelectItem key={plan.id} value={plan.id}>
-                      {plan.name} - {plan.price_afn} AFN / {plan.price_usd} USD
+                      {plan.name} - {plan.totalFeeAfn.toLocaleString()} AFN / {plan.totalFeeUsd.toLocaleString()} USD
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1201,7 +1207,9 @@ export default function OrganizationSubscriptionDetail() {
               <div className="rounded-lg border p-4 bg-muted/50">
                 <div className="text-sm font-medium mb-2">Plan Details</div>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <div>Price: {selectedPlan.price_afn} AFN / {selectedPlan.price_usd} USD</div>
+                  <div>Total fees: {selectedPlan.totalFeeAfn.toLocaleString()} AFN / {selectedPlan.totalFeeUsd.toLocaleString()} USD</div>
+                  <div>License fee: {selectedPlan.licenseFeeAfn.toLocaleString()} AFN / {selectedPlan.licenseFeeUsd.toLocaleString()} USD</div>
+                  <div>Maintenance fee: {selectedPlan.maintenanceFeeAfn.toLocaleString()} AFN / {selectedPlan.maintenanceFeeUsd.toLocaleString()} USD</div>
                   {selectedPlan.description && (
                     <div>{selectedPlan.description}</div>
                   )}

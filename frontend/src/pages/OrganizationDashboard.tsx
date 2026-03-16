@@ -6,6 +6,7 @@ import {
   CalendarDays,
   DollarSign,
   GraduationCap,
+  LayoutDashboard,
   School,
   Users,
 } from 'lucide-react';
@@ -23,6 +24,7 @@ import {
   XAxis,
   YAxis,
 } from '@/components/charts/LazyChart';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,9 +34,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useOrganizationDashboardOverview } from '@/hooks/useOrganizationDashboardOverview';
 import { useUserPermissions } from '@/hooks/usePermissions';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
+import { canAccessOrgAdminDashboard } from '@/organization-admin/lib/access';
 
 const formatNumber = (value: number): string => {
   return new Intl.NumberFormat().format(value || 0);
@@ -46,6 +50,7 @@ const formatPercentage = (value: number): string => {
 
 export default function OrganizationDashboard() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { profile, loading, profileLoading } = useAuth();
   const { setSelectedSchoolId } = useSchoolContext();
   const { data: permissions = [], isLoading: permissionsLoading } = useUserPermissions();
@@ -54,17 +59,8 @@ export default function OrganizationDashboard() {
   const isAccessCheckLoading = loading || profileLoading || permissionsLoading;
 
   const canAccessOrganizationDashboard = useMemo(() => {
-    if (!profile?.organization_id) return false;
-
-    const hasAllSchoolsAccess = profile.schools_access_all === true;
-    const isOrganizationAdmin = profile.role === 'organization_admin';
-    const hasEquivalentPermission =
-      permissions.includes('organizations.read') ||
-      permissions.includes('dashboard.read') ||
-      permissions.includes('school_branding.read');
-
-    return hasAllSchoolsAccess && (isOrganizationAdmin || hasEquivalentPermission);
-  }, [permissions, profile?.organization_id, profile?.role, profile?.schools_access_all]);
+    return canAccessOrgAdminDashboard(profile, permissions);
+  }, [permissions, profile]);
 
   const {
     data: overview,
@@ -82,25 +78,23 @@ export default function OrganizationDashboard() {
 
   if (isAccessCheckLoading || (!canAccessOrganizationDashboard && !isAccessCheckLoading)) {
     return (
-      <MainLayout title="Organization Dashboard">
-        <LoadingSpinner text={isAccessCheckLoading ? 'Checking access...' : 'Redirecting...'} />
+      <MainLayout title={t('organizationAdmin.orgDashboardTitle')}>
+        <LoadingSpinner text={isAccessCheckLoading ? t('organizationAdmin.checkingAccess') : t('organizationAdmin.redirecting')} />
       </MainLayout>
     );
   }
 
   if (error) {
     return (
-      <MainLayout title="Organization Dashboard">
+      <MainLayout title={t('organizationAdmin.orgDashboardTitle')}>
         <Card>
           <CardHeader>
-            <CardTitle>Unable to load organization dashboard</CardTitle>
-            <CardDescription>
-              Please try again. If the issue continues, verify your organization permissions.
-            </CardDescription>
+            <CardTitle>{t('organizationAdmin.loadErrorTitle')}</CardTitle>
+            <CardDescription>{t('organizationAdmin.loadErrorDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => refetch()} disabled={isFetching}>
-              Retry
+              {t('organizationAdmin.retry')}
             </Button>
           </CardContent>
         </Card>
@@ -110,8 +104,8 @@ export default function OrganizationDashboard() {
 
   if (isLoading || !overview) {
     return (
-      <MainLayout title="Organization Dashboard">
-        <LoadingSpinner text="Loading organization overview..." />
+      <MainLayout title={t('organizationAdmin.orgDashboardTitle')}>
+        <LoadingSpinner text={t('organizationAdmin.loadingOverview')} />
       </MainLayout>
     );
   }
@@ -121,67 +115,67 @@ export default function OrganizationDashboard() {
 
   const statsCards = [
     {
-      title: 'Total Students',
+      title: t('organizationAdmin.totalStudents'),
       value: formatNumber(summary.total_students),
       icon: Users,
-      description: 'Organization-wide students',
+      description: t('organizationAdmin.totalStudentsDesc'),
       color: 'blue' as const,
       onClick: '/students',
-      buttonText: 'View Students',
+      buttonText: t('organizationAdmin.viewStudents'),
     },
     {
-      title: 'Total Staff',
+      title: t('organizationAdmin.totalStaff'),
       value: formatNumber(summary.total_staff),
       icon: GraduationCap,
-      description: 'Organization-wide staff',
+      description: t('organizationAdmin.totalStaffDesc'),
       color: 'green' as const,
       onClick: '/staff',
-      buttonText: 'View Staff',
+      buttonText: t('organizationAdmin.viewStaff'),
     },
     {
-      title: 'Total Schools',
+      title: t('organizationAdmin.totalSchools'),
       value: formatNumber(summary.total_schools),
       icon: School,
-      description: `${summary.active_schools} active schools`,
+      description: `${formatNumber(summary.active_schools)} ${t('organizationAdmin.totalSchoolsDesc')}`,
       color: 'purple' as const,
       onClick: '/settings/schools',
-      buttonText: 'View Schools',
+      buttonText: t('organizationAdmin.viewSchools'),
     },
     {
-      title: 'Total Classes',
+      title: t('organizationAdmin.totalClasses'),
       value: formatNumber(summary.total_classes),
       icon: BookOpen,
-      description: 'Across all schools',
+      description: t('organizationAdmin.totalClassesDesc'),
       color: 'amber' as const,
       onClick: '/settings/classes',
-      buttonText: 'View Classes',
+      buttonText: t('organizationAdmin.viewClasses'),
     },
     {
-      title: "Today's Attendance",
+      title: t('organizationAdmin.todaysAttendance'),
       value: formatPercentage(summary.today_attendance.rate),
       icon: CalendarDays,
-      description: `${formatNumber(summary.today_attendance.present)} / ${formatNumber(summary.today_attendance.total)} present`,
+      description: `${formatNumber(summary.today_attendance.present)} / ${formatNumber(summary.today_attendance.total)} ${t('organizationAdmin.todaysAttendanceDesc')}`,
       color: 'emerald' as const,
       onClick: '/attendance/reports',
-      buttonText: 'View Attendance',
+      buttonText: t('organizationAdmin.viewAttendance'),
     },
     {
-      title: 'Buildings / Rooms',
+      title: t('organizationAdmin.buildingsRooms'),
       value: `${formatNumber(summary.total_buildings)} / ${formatNumber(summary.total_rooms)}`,
       icon: Building2,
-      description: 'Organization infrastructure',
+      description: t('organizationAdmin.buildingsRoomsDesc'),
       color: 'orange' as const,
       onClick: '/settings/buildings',
-      buttonText: 'View Buildings',
+      buttonText: t('organizationAdmin.viewBuildings'),
     },
   ];
 
   const quickActions = [
-    { label: 'Schools', href: '/settings/schools', icon: School },
-    { label: 'Students', href: '/students', icon: Users },
-    { label: 'Staff', href: '/staff', icon: GraduationCap },
-    { label: 'Classes', href: '/settings/classes', icon: BookOpen },
-    { label: 'Subscription', href: '/subscription', icon: DollarSign },
+    { label: t('organizationAdmin.schools'), href: '/settings/schools', icon: School },
+    { label: t('organizationAdmin.studentsLabel'), href: '/students', icon: Users },
+    { label: t('organizationAdmin.staffLabel'), href: '/staff', icon: GraduationCap },
+    { label: t('organizationAdmin.classesLabel'), href: '/settings/classes', icon: BookOpen },
+    { label: t('organizationAdmin.subscription'), href: '/subscription', icon: DollarSign },
   ];
 
   const handleOpenSchoolDashboard = (schoolId: string) => {
@@ -190,20 +184,28 @@ export default function OrganizationDashboard() {
   };
 
   return (
-    <MainLayout title="Organization Dashboard">
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-primary to-primary/80 p-5 md:p-7 rounded-xl text-primary-foreground shadow-lg">
-          <h1 className="text-2xl md:text-3xl font-bold">Organization Dashboard</h1>
-          <p className="text-primary-foreground/90 mt-1">
-            Organization-wide view across all schools.
-          </p>
-        </div>
+    <MainLayout title={t('organizationAdmin.orgDashboardTitle')}>
+      <div className="container mx-auto max-w-7xl space-y-6 overflow-x-hidden p-4 md:p-6">
+        <PageHeader
+          title={t('organizationAdmin.orgDashboardTitle')}
+          description={t('organizationAdmin.orgDashboardSubtitle')}
+          icon={<LayoutDashboard className="h-5 w-5" />}
+        />
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'overview' | 'attendance' | 'finance')}>
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="attendance">Attendance</TabsTrigger>
-            <TabsTrigger value="finance">Finance</TabsTrigger>
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('organizationAdmin.tabOverview')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="attendance" className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('organizationAdmin.tabAttendance')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="finance" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('organizationAdmin.tabFinance')}</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
@@ -225,20 +227,20 @@ export default function OrganizationDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Schools Overview</CardTitle>
-                <CardDescription>Compare school size and attendance across the organization.</CardDescription>
+                <CardTitle>{t('organizationAdmin.schoolsOverview')}</CardTitle>
+                <CardDescription>{t('organizationAdmin.schoolsOverviewDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>School</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Students</TableHead>
-                      <TableHead>Staff</TableHead>
-                      <TableHead>Classes</TableHead>
-                      <TableHead>Attendance</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead>{t('organizationAdmin.school')}</TableHead>
+                      <TableHead>{t('organizationAdmin.status')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('organizationAdmin.totalStudents')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('organizationAdmin.totalStaff')}</TableHead>
+                      <TableHead className="hidden lg:table-cell">{t('organizationAdmin.totalClasses')}</TableHead>
+                      <TableHead>{t('organizationAdmin.todaysAttendance')}</TableHead>
+                      <TableHead className="text-right">{t('organizationAdmin.action')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -250,12 +252,12 @@ export default function OrganizationDashboard() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={school.is_active ? 'default' : 'secondary'}>
-                            {school.is_active ? 'Active' : 'Inactive'}
+                            {school.is_active ? t('organizationAdmin.active') : t('organizationAdmin.inactive')}
                           </Badge>
                         </TableCell>
-                        <TableCell>{formatNumber(school.students_count)}</TableCell>
-                        <TableCell>{formatNumber(school.staff_count)}</TableCell>
-                        <TableCell>{formatNumber(school.classes_count)}</TableCell>
+                        <TableCell className="hidden md:table-cell">{formatNumber(school.students_count)}</TableCell>
+                        <TableCell className="hidden md:table-cell">{formatNumber(school.staff_count)}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{formatNumber(school.classes_count)}</TableCell>
                         <TableCell>
                           {formatNumber(school.today_attendance.present)} / {formatNumber(school.today_attendance.total)} ({formatPercentage(school.today_attendance.rate)})
                         </TableCell>
@@ -267,8 +269,9 @@ export default function OrganizationDashboard() {
                               event.stopPropagation();
                               handleOpenSchoolDashboard(school.id);
                             }}
+                            aria-label={t('organizationAdmin.open')}
                           >
-                            Open <ArrowUpRight className="h-4 w-4 ml-1" />
+                            {t('organizationAdmin.open')} <ArrowUpRight className="h-4 w-4 ml-1" />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -281,7 +284,7 @@ export default function OrganizationDashboard() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Students by School</CardTitle>
+                  <CardTitle>{t('organizationAdmin.studentsBySchool')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Suspense fallback={<ChartSkeleton />}>
@@ -302,7 +305,7 @@ export default function OrganizationDashboard() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Staff by School</CardTitle>
+                  <CardTitle>{t('organizationAdmin.staffBySchool')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Suspense fallback={<ChartSkeleton />}>
@@ -325,7 +328,7 @@ export default function OrganizationDashboard() {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <Card className="xl:col-span-2">
                 <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
+                  <CardTitle>{t('organizationAdmin.quickActions')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
@@ -346,11 +349,11 @@ export default function OrganizationDashboard() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Today Summary</CardTitle>
+                  <CardTitle>{t('organizationAdmin.todaySummary')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <div className="text-sm text-muted-foreground">Upcoming Exams</div>
+                    <div className="text-sm text-muted-foreground">{t('organizationAdmin.upcomingExams')}</div>
                     <div className="text-xl font-semibold">{formatNumber(overview.today_summary.upcoming_exams_count)}</div>
                   </div>
 
@@ -378,14 +381,14 @@ export default function OrganizationDashboard() {
             {overview.today_summary.recent_activity.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
+                  <CardTitle>{t('organizationAdmin.recentActivity')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {overview.today_summary.recent_activity.slice(0, 8).map((activity) => (
                     <div key={activity.id} className="flex items-start justify-between gap-4 border-b last:border-b-0 pb-3 last:pb-0">
                       <div>
                         <p className="text-sm font-medium">
-                          {activity.description || activity.event || 'Activity update'}
+                          {activity.description || activity.event || t('organizationAdmin.activityUpdate')}
                         </p>
                         {activity.subject_type ? (
                           <p className="text-xs text-muted-foreground">{activity.subject_type}</p>
@@ -404,31 +407,31 @@ export default function OrganizationDashboard() {
           <TabsContent value="attendance" className="space-y-6 mt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <StatsCard
-                title="Present Today"
+                title={t('organizationAdmin.presentToday')}
                 value={formatNumber(summary.today_attendance.present)}
                 icon={Users}
                 color="green"
-                description="Students marked present"
+                description={t('organizationAdmin.presentTodayDesc')}
               />
               <StatsCard
-                title="Expected Today"
+                title={t('organizationAdmin.expectedToday')}
                 value={formatNumber(summary.today_attendance.total)}
                 icon={School}
                 color="blue"
-                description="Total attendance records"
+                description={t('organizationAdmin.expectedTodayDesc')}
               />
               <StatsCard
-                title="Attendance Rate"
+                title={t('organizationAdmin.attendanceRate')}
                 value={formatPercentage(summary.today_attendance.rate)}
                 icon={CalendarDays}
                 color="emerald"
-                description="Organization-wide attendance"
+                description={t('organizationAdmin.attendanceRateDesc')}
               />
             </div>
 
             <Card>
               <CardHeader>
-                <CardTitle>Attendance Rate by School</CardTitle>
+                <CardTitle>{t('organizationAdmin.attendanceRateBySchool')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Suspense fallback={<ChartSkeleton />}>
@@ -479,39 +482,39 @@ export default function OrganizationDashboard() {
           <TabsContent value="finance" className="space-y-6 mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               <StatsCard
-                title="Income"
+                title={t('organizationAdmin.incomeLabel')}
                 value={formatCurrency(summary.finance.income)}
                 icon={DollarSign}
                 color="green"
-                description="Total income (all schools)"
+                description={t('organizationAdmin.incomeDesc')}
               />
               <StatsCard
-                title="Expense"
+                title={t('organizationAdmin.expenseLabel')}
                 value={formatCurrency(summary.finance.expense)}
                 icon={DollarSign}
                 color="red"
-                description="Total expense (all schools)"
+                description={t('organizationAdmin.expenseDesc')}
               />
               <StatsCard
-                title="Net"
+                title={t('organizationAdmin.netLabel')}
                 value={formatCurrency(summary.finance.net)}
                 icon={DollarSign}
                 color={summary.finance.net >= 0 ? 'emerald' : 'red'}
-                description="Income - expense"
+                description={t('organizationAdmin.netDesc')}
               />
               <StatsCard
-                title="Fee Collection"
+                title={t('organizationAdmin.feeCollection')}
                 value={formatCurrency(summary.finance.fee_collection)}
                 icon={DollarSign}
                 color="blue"
-                description="Total fee payments"
+                description={t('organizationAdmin.feeCollectionDesc')}
               />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Fee Collection by School</CardTitle>
+                  <CardTitle>{t('organizationAdmin.feeCollectionBySchool')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Suspense fallback={<ChartSkeleton />}>
@@ -532,7 +535,7 @@ export default function OrganizationDashboard() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Income by School</CardTitle>
+                  <CardTitle>{t('organizationAdmin.incomeBySchool')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Suspense fallback={<ChartSkeleton />}>
@@ -554,17 +557,17 @@ export default function OrganizationDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Finance by School</CardTitle>
+                <CardTitle>{t('organizationAdmin.financeBySchool')}</CardTitle>
               </CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>School</TableHead>
-                      <TableHead>Income</TableHead>
-                      <TableHead>Expense</TableHead>
-                      <TableHead>Net</TableHead>
-                      <TableHead>Fee Collection</TableHead>
+                      <TableHead>{t('organizationAdmin.school')}</TableHead>
+                      <TableHead>{t('organizationAdmin.incomeLabel')}</TableHead>
+                      <TableHead>{t('organizationAdmin.expenseLabel')}</TableHead>
+                      <TableHead>{t('organizationAdmin.netLabel')}</TableHead>
+                      <TableHead>{t('organizationAdmin.feeCollection')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

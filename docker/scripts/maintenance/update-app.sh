@@ -98,6 +98,19 @@ if ! compose exec -T php sh -lc 'php artisan migrate --force && php artisan opti
   exit 1
 fi
 
+echo "[update-app] Ensuring storage directories and fixing permissions..."
+compose exec -T php sh -c '
+  mkdir -p /var/www/backend/storage/app/private/platform/files \
+    /var/www/backend/storage/app/private/organizations \
+    /var/www/backend/storage/app/backups \
+    /var/www/backend/storage/app/restore_temp \
+    /var/www/backend/storage/app/temp \
+    /var/www/backend/storage/app/upload_tmp 2>/dev/null || true
+  chown -R www-data:www-data /var/www/backend/storage 2>/dev/null || true
+  find /var/www/backend/storage -type d -exec chmod 775 {} \; 2>/dev/null || true
+  find /var/www/backend/storage -type f -exec chmod 664 {} \; 2>/dev/null || true
+' || true
+
 if [[ "$SYNC_PERMISSIONS" == "true" ]]; then
   echo "[update-app] Syncing default role permissions..."
   compose exec -T php sh -lc 'php artisan permissions:sync-default-roles' || true

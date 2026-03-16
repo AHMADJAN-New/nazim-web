@@ -32,13 +32,18 @@ fi
 # Ensure storage directories exist with correct permissions
 # CRITICAL: This handles both fresh volumes and existing volumes
 # The storage directory is mounted as a volume, so we must ensure base directories exist
+# Include ALL known subdirs from FileStorageService: organizations, reports, students, staff,
+# courses, dms, events, admissions, templates, website, facilities, platform files
 mkdir -p /var/www/backend/storage 2>/dev/null || true
 mkdir -p /var/www/backend/storage/app/private 2>/dev/null || true
 mkdir -p /var/www/backend/storage/app/public 2>/dev/null || true
+mkdir -p /var/www/backend/storage/app/private/platform/files 2>/dev/null || true
+mkdir -p /var/www/backend/storage/app/private/organizations 2>/dev/null || true
 mkdir -p /var/www/backend/storage/app/backups 2>/dev/null || true
 mkdir -p /var/www/backend/storage/app/restore_temp 2>/dev/null || true
 mkdir -p /var/www/backend/storage/app/temp 2>/dev/null || true
 mkdir -p /var/www/backend/storage/app/tmp 2>/dev/null || true
+mkdir -p /var/www/backend/storage/app/upload_tmp 2>/dev/null || true
 mkdir -p /var/www/backend/storage/framework/cache 2>/dev/null || true
 mkdir -p /var/www/backend/storage/framework/sessions 2>/dev/null || true
 mkdir -p /var/www/backend/storage/framework/views 2>/dev/null || true
@@ -49,6 +54,7 @@ mkdir -p /var/www/backend/bootstrap/cache 2>/dev/null || true
 
 # Set ownership: www-data must own all storage and cache directories
 # This allows PHP-FPM (running as www-data) to create subdirectories and files
+# CRITICAL: Fixes permission denied when backup copies reports/, students/, etc.
 chown -R www-data:www-data /var/www/backend/storage 2>/dev/null || true
 chown -R www-data:www-data /var/www/backend/bootstrap/cache 2>/dev/null || true
 

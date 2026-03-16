@@ -9,6 +9,7 @@ import { websiteAdminFa } from './website/admin-fa';
 
 import shared_common_fa from './shared/common/common.fa';
 import shared_nav_fa from './shared/nav/nav.fa';
+import shared_organization_admin_fa from './shared/organizationAdmin/organizationAdmin.fa';
 import shared_toast_fa from './shared/toast/toast.fa';
 import shared_forms_fa from './shared/forms/forms.fa';
 import shared_validation_fa from './shared/validation/validation.fa';
@@ -76,6 +77,7 @@ export const fa = {
   ...websitePublicFa,
   ...shared_common_fa,
   ...shared_nav_fa,
+  ...shared_organization_admin_fa,
   ...shared_toast_fa,
   ...shared_forms_fa,
   ...shared_validation_fa,

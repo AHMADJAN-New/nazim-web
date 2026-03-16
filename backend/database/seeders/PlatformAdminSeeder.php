@@ -6,6 +6,7 @@ use App\Models\Organization;
 use App\Models\OrganizationFeatureAddon;
 use App\Models\OrganizationSubscription;
 use App\Models\SchoolBranding;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\Subscription\SubscriptionService;
 use Illuminate\Database\Seeder;
@@ -45,7 +46,9 @@ class PlatformAdminSeeder extends Seeder
         $this->command->info('  Email: platform-admin@nazim.app');
         $this->command->info('  Password: platform-admin-123');
         $this->command->info('');
-        $this->command->info('Access the platform admin at: /platform/login');
+        $this->command->info('Access:');
+        $this->command->info('  - Platform Admin (all orgs): /platform/login');
+        $this->command->info('  - Organization Admin (test org): log in at /auth then use sidebar "Organization Admin" or go to /org-admin');
     }
 
     /**
@@ -279,9 +282,24 @@ class PlatformAdminSeeder extends Seeder
                     $this->command->info('  ✓ Subscription already exists');
                 }
 
+                // Upgrade to enterprise so Organization Admin is available
+                if ($subscription) {
+                    $this->upgradeSubscriptionToEnterprise($subscription);
+                }
+
                 // Ensure multi_school feature is enabled for platform admin organization
                 $this->enableMultiSchoolFeature($profile->organization_id, $expiresAt);
                 $this->command->info('  ✓ Enabled multi_school feature for platform admin organization');
+
+                // Set profile as organization_admin with access all schools for Organization Admin access
+                DB::table('profiles')
+                    ->where('id', $userId)
+                    ->update([
+                        'role' => 'organization_admin',
+                        'schools_access_all' => true,
+                        'updated_at' => now(),
+                    ]);
+                $this->command->info('  ✓ Set profile to organization_admin with schools_access_all for Organization Admin access');
 
                 // CRITICAL: Ensure user has admin role for existing organization
                 $this->ensureAdminRoleForOrganization($userId, $profile->organization_id);
@@ -352,16 +370,29 @@ class PlatformAdminSeeder extends Seeder
 
         $this->command->info("  ✓ Updated profile with organization and school");
 
-        // Create trial subscription
+        // Create trial subscription then upgrade to enterprise so Organization Admin is available (isEnterprise)
         $subscriptionService = app(SubscriptionService::class);
         $subscription = $subscriptionService->createTrialSubscription($organizationId, $userId);
 
         $this->command->info("  ✓ Created trial subscription for organization");
 
+        // Upgrade to enterprise plan so /org-admin and Organization Admin button are available
+        $this->upgradeSubscriptionToEnterprise($subscription);
+
         // Enable multi_school feature for platform admin organization
         $this->enableMultiSchoolFeature($organizationId, $subscription->expires_at);
 
         $this->command->info("  ✓ Enabled multi_school feature for platform admin organization");
+
+        // Set profile as organization_admin with access all schools so they can use Organization Admin in main app
+        DB::table('profiles')
+            ->where('id', $userId)
+            ->update([
+                'role' => 'organization_admin',
+                'schools_access_all' => true,
+                'updated_at' => now(),
+            ]);
+        $this->command->info("  ✓ Set profile to organization_admin with schools_access_all for Organization Admin access");
 
         // Assign admin role to user for the organization (gives all permissions)
         // CRITICAL: Set team context BEFORE finding/assigning role
@@ -663,6 +694,30 @@ class PlatformAdminSeeder extends Seeder
         if ($createdCount > 0) {
             $this->command->info("  ✓ Created {$createdCount} permissions for organization");
         }
+    }
+
+    /**
+     * Upgrade subscription to enterprise plan so Organization Admin (/org-admin) is available (isEnterprise).
+     */
+    protected function upgradeSubscriptionToEnterprise(OrganizationSubscription $subscription): void
+    {
+        $enterprisePlan = SubscriptionPlan::where('slug', 'enterprise')
+            ->where('is_active', true)
+            ->first();
+
+        if (!$enterprisePlan) {
+            $this->command->warn('  ⚠ Enterprise plan not found. Organization Admin may be hidden (isEnterprise=false).');
+            return;
+        }
+
+        $subscription->update([
+            'plan_id' => $enterprisePlan->id,
+            'status' => OrganizationSubscription::STATUS_ACTIVE,
+            'expires_at' => $subscription->expires_at ?? now()->addYear(),
+            'updated_at' => now(),
+        ]);
+
+        $this->command->info('  ✓ Upgraded subscription to enterprise plan for Organization Admin access');
     }
 
     /**

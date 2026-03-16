@@ -9,6 +9,7 @@ import { websiteAdminPs } from './website/admin-ps';
 
 import shared_common_ps from './shared/common/common.ps';
 import shared_nav_ps from './shared/nav/nav.ps';
+import shared_organization_admin_ps from './shared/organizationAdmin/organizationAdmin.ps';
 import shared_toast_ps from './shared/toast/toast.ps';
 import shared_forms_ps from './shared/forms/forms.ps';
 import shared_validation_ps from './shared/validation/validation.ps';
@@ -76,6 +77,7 @@ export const ps = {
   ...websitePublicPs,
   ...shared_common_ps,
   ...shared_nav_ps,
+  ...shared_organization_admin_ps,
   ...shared_toast_ps,
   ...shared_forms_ps,
   ...shared_validation_ps,

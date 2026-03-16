@@ -46,16 +46,12 @@ class StaffController extends Controller
         // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
-        // Strict school scoping: only current school from middleware context
-        $currentSchoolId = $this->getCurrentSchoolId($request);
-
+        // List all staff in the organization (no school filter on list; school is only on create/update)
         $query = Staff::with(['staffType', 'organization', 'school', 'profile'])
             ->whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds)
-            ->where('school_id', $currentSchoolId);
+            ->whereIn('organization_id', $orgIds);
 
-        // Apply filters
-        // NOTE: Ignore client-provided organization_id/school_id; everything is school-scoped.
+        // Apply filters (staff_type_id, status, search only; ignore client school_id)
 
         if ($request->has('staff_type_id') && $request->staff_type_id) {
             $query->where('staff_type_id', $request->staff_type_id);

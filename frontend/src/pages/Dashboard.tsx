@@ -63,10 +63,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardStats, useStudentsByClass, useWeeklyAttendance, useMonthlyFeeCollection, useUpcomingExams } from "@/hooks/useDashboardStats";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useOrganizationPlanSlug } from "@/hooks/useOrganizationPlanSlug";
 import { useRecentActivities } from "@/hooks/useRecentActivities";
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
-import { useHasAnyPermissionAndFeature, useHasPermissionAndFeature } from "@/hooks/usePermissions";
+import { useHasAnyPermissionAndFeature, useHasPermissionAndFeature, useUserPermissions } from "@/hooks/usePermissions";
 import { useUserRole } from "@/hooks/useUserRole";
+import { shouldDefaultToOrgAdminArea } from '@/organization-admin/lib/access';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 // Lazy load dashboard components for performance (only load when tab is opened)
@@ -131,8 +133,12 @@ export default function Dashboard() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { role, loading: roleLoading } = useUserRole();
+  const { loading: roleLoading } = useUserRole();
+  const { isEnterprise } = useOrganizationPlanSlug();
+  const { data: permissions } = useUserPermissions();
   const [activeTab, setActiveTab] = useState<string>('overview');
+
+  const shouldRedirectToOrgAdmin = isEnterprise && shouldDefaultToOrgAdminArea(profile, permissions ?? []);
 
   const canSeeStudents = useHasPermissionAndFeature('students.read') === true;
   const canSeeStaff = useHasPermissionAndFeature('staff.read') === true;
@@ -190,22 +196,7 @@ export default function Dashboard() {
     t,
   ]);
 
-  // CRITICAL: Event users should not access dashboard - redirect to their event
-  useEffect(() => {
-    if (profile?.is_event_user && profile?.event_id) {
-      // Redirect to their assigned event immediately
-      navigate(`/events/${profile.event_id}`, { replace: true });
-      return;
-    }
-  }, [profile, navigate]);
-
-  // If event user, show loading while redirecting
-  if (profile?.is_event_user && profile?.event_id) {
-    return <LoadingSpinner text="Redirecting to event..." />;
-  }
-  
-  // Only load data for the active tab (lazy loading for performance)
-  // Overview tab data is always loaded (first tab)
+  // CRITICAL: Call all hooks unconditionally (before any early return) to avoid "Rendered fewer hooks than expected"
   const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
   const { data: studentsByClass, isLoading: classLoading } = useStudentsByClass();
   const { data: attendanceData, isLoading: attendanceLoading } = useWeeklyAttendance();
@@ -213,6 +204,28 @@ export default function Dashboard() {
   const { data: upcomingExams, isLoading: examsLoading } = useUpcomingExams();
   const { data: recentActivities, isLoading: activitiesLoading } = useRecentActivities();
   const { data: upcomingEvents, isLoading: eventsLoading } = useUpcomingEvents();
+
+  // CRITICAL: Event users should not access dashboard - redirect to their event
+  useEffect(() => {
+    if (profile?.is_event_user && profile?.event_id) {
+      navigate(`/events/${profile.event_id}`, { replace: true });
+      return;
+    }
+  }, [profile, navigate]);
+
+  // Users with no school and org-admin permissions: redirect to Organization Admin
+  useEffect(() => {
+    if (shouldRedirectToOrgAdmin) {
+      navigate('/org-admin', { replace: true });
+    }
+  }, [shouldRedirectToOrgAdmin, navigate]);
+
+  if (profile?.is_event_user && profile?.event_id) {
+    return <LoadingSpinner text="Redirecting to event..." />;
+  }
+  if (shouldRedirectToOrgAdmin) {
+    return <LoadingSpinner text={t('common.loading') || 'Loading...'} />;
+  }
 
   const handleStatClick = (path: string) => {
     navigate(path);

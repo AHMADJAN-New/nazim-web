@@ -163,6 +163,7 @@ export interface IncomeEntry {
     account_id: string;
     income_category_id: string;
     project_id: string | null;
+    facility_id: string | null;
     donor_id: string | null;
     amount: string;
     date: string;
@@ -190,6 +191,7 @@ export interface IncomeEntryInsert {
     date: string;
     school_id?: string | null;
     project_id?: string | null;
+    facility_id?: string | null;
     donor_id?: string | null;
     reference_no?: string | null;
     description?: string | null;
@@ -207,6 +209,8 @@ export interface ExpenseEntry {
     account_id: string;
     expense_category_id: string;
     project_id: string | null;
+    facility_id: string | null;
+    payroll_run_id: string | null;
     amount: string;
     date: string;
     reference_no: string | null;
@@ -235,6 +239,7 @@ export interface ExpenseEntryInsert {
     date: string;
     school_id?: string | null;
     project_id?: string | null;
+    facility_id?: string | null;
     reference_no?: string | null;
     description?: string | null;
     paid_to?: string | null;

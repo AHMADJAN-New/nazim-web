@@ -5363,6 +5363,27 @@ Before creating or modifying platform admin features, verify:
 - Access ALL organizations (no filtering)
 - Register platform routes as nested routes under `/platform` with `<Outlet />`
 
+## Organization Admin Application
+
+**CRITICAL: The Organization Admin area (`/org-admin`) is enterprise-gated, org-wide management with its own layout and routes. For full details, use the project skill `.cursor/skills/nazim-org-admin-setup/SKILL.md`.**
+
+### When to Use the Org Admin Skill
+
+Use the **nazim-org-admin-setup** skill when:
+- Adding or changing org-admin pages, routes, or sidebar items
+- Working on HR hub, staff list, or assignments list (org-wide vs school-scoped behavior)
+- Changing school scoping rules (lists = no school filter; create/update = school selection by user type)
+- Modifying `OrganizationAdminRoute`, `OrganizationAdminLayout`, or org HR hooks/API
+
+### Summary
+
+- **Routes**: `/org-admin` with nested dashboard, schools, users, subscription, limits, hr (staff, assignments, payroll, reports). Guard: `OrganizationAdminRoute`; layout: `OrganizationAdminLayout`.
+- **Access**: Authenticated, `organization_id`, Enterprise plan, org-level user (e.g. `schools_access_all` or no `default_school_id`), and permission (e.g. `hr_staff.read`, `organizations.read`, or `organization_admin` role).
+- **Staff/assignments lists**: Org-wide—do not filter by current school. Pass `school_id` only when the UI explicitly filters. API client must not add `school_id` to GET `/staff`.
+- **Create/update**: Staff form school dropdown = current school only for school-level users, all schools for org-level users. Org-admin users page shows "Access all schools" checkbox.
+- **Files**: Guard `OrganizationAdminRoute.tsx`; layout and nav `organization-admin/components/OrganizationAdminLayout.tsx`; HR pages `pages/organization/hr/`; hooks `hooks/orgHr/useOrgHr.ts`; backend `OrganizationHrController`, `StaffController` (index = all org staff).
+- **Reference**: See `.cursor/skills/nazim-org-admin-setup/reference.md` for permissions, feature gating, and useStaff vs useOrgHrStaff.
+
 ## Onboarding & Guided Tour System
 
 **CRITICAL: The application uses Shepherd.js for guided tours and onboarding. All tour-related code is centralized in `/src/onboarding/`.**
@@ -5962,4 +5983,4 @@ const count = DB::raw("SELECT COUNT(*) FROM students WHERE deleted_at IS NULL");
 // npx shadcn@latest add button
 ```
 
-Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices. **ALWAYS use Laravel Boost and Shadcn UI MCP servers for all relevant tasks.**
+Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices. **ALWAYS use Laravel Boost and Shadcn UI MCP servers for all relevant tasks.** For Organization Admin area (`/org-admin`), HR hub, staff/assignments lists, and school scoping rules, use the **nazim-org-admin-setup** skill (`.cursor/skills/nazim-org-admin-setup/SKILL.md`).

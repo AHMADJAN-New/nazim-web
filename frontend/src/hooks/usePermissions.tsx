@@ -17,7 +17,7 @@ export const usePermissions = () => {
   const { profile } = useAuth();
 
   return useQuery<Permission[]>({
-    queryKey: ['permissions', profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: ['permissions', profile?.id ?? null, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       // Laravel API automatically filters permissions by user's organization
       // Returns: global permissions (organization_id = NULL) + user's org permissions
@@ -42,7 +42,7 @@ export const useRolePermissions = (role: string) => {
   const { profile } = useAuth();
 
   return useQuery({
-    queryKey: ['role-permissions', role, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: ['role-permissions', role, profile?.id ?? null, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!role || !profile?.organization_id) return { role, permissions: [] };
 
@@ -69,7 +69,7 @@ export const useRoles = () => {
   const { profile } = useAuth();
 
   return useQuery<Role[]>({
-    queryKey: ['roles', profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: ['roles', profile?.id ?? null, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       const roles = await rolesApi.list();
       return (roles as Role[]);
@@ -284,6 +284,7 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'hr_assignments.read': 'org_hr_core',
   'hr_assignments.create': 'org_hr_core',
   'hr_assignments.update': 'org_hr_core',
+  'hr_assignments.delete': 'org_hr_core',
   'hr_assignments.approve': 'org_hr_core',
   'hr_payroll.read': 'org_hr_payroll',
   'hr_payroll.create': 'org_hr_payroll',
@@ -292,6 +293,8 @@ const PERMISSION_TO_FEATURE_MAP: Record<string, string | string[]> = {
   'hr_payroll.export': 'org_hr_payroll',
   'hr_reports.read': 'org_hr_analytics',
   'hr_reports.export': 'org_hr_analytics',
+  'org_finance.read': 'org_finance',
+  'org_finance.create': 'org_finance',
   'classes.read': 'classes',
   'classes.create': 'classes',
   'classes.update': 'classes',
@@ -933,7 +936,14 @@ export const useAssignPermissionToRole = () => {
   const canUpdatePermissions = useHasPermission('permissions.update');
 
   return useMutation({
-    mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
+    mutationFn: async ({
+      role,
+      permissionId,
+    }: {
+      role: string;
+      permissionId: string | number;
+      silent?: boolean;
+    }) => {
       if (!profile) {
         throw new Error('User not authenticated');
       }
@@ -954,10 +964,14 @@ export const useAssignPermissionToRole = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.role] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
-      showToast.success(`Permission assigned to ${variables.role} role`);
+      if (!variables.silent) {
+        showToast.success(`Permission assigned to ${variables.role} role`);
+      }
     },
-    onError: (error: Error) => {
-      showToast.error(error.message || 'toast.permissionAssignFailed');
+    onError: (error: Error, variables) => {
+      if (!variables.silent) {
+        showToast.error(error.message || 'toast.permissionAssignFailed');
+      }
     },
   });
 };
@@ -968,7 +982,14 @@ export const useRemovePermissionFromRole = () => {
   const canUpdatePermissions = useHasPermission('permissions.update');
 
   return useMutation({
-    mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
+    mutationFn: async ({
+      role,
+      permissionId,
+    }: {
+      role: string;
+      permissionId: string | number;
+      silent?: boolean;
+    }) => {
       if (!profile) {
         throw new Error('User not authenticated');
       }
@@ -989,10 +1010,14 @@ export const useRemovePermissionFromRole = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.role] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
-      showToast.success(`Permission removed from ${variables.role} role`);
+      if (!variables.silent) {
+        showToast.success(`Permission removed from ${variables.role} role`);
+      }
     },
-    onError: (error: Error) => {
-      showToast.error(error.message || 'toast.permissionRemoveFailed');
+    onError: (error: Error, variables) => {
+      if (!variables.silent) {
+        showToast.error(error.message || 'toast.permissionRemoveFailed');
+      }
     },
   });
 };

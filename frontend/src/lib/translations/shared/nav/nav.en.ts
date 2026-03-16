@@ -24,6 +24,7 @@ export default {
     courseStudents: "Course Students",
     dashboard: "Dashboard",
     organizationDashboard: "Organization Dashboard",
+    organizationAdmin: "Organization Admin",
     organizationHr: "Organization HR",
     organizationHrHub: "HR Hub",
     organizationHrStaff: "Staff Master",

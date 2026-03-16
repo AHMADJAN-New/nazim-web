@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RestrictsSchoolScopedAdmins;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 
 class RoleController extends Controller
 {
+    use RestrictsSchoolScopedAdmins;
+
     /**
      * Display a listing of roles
      */
@@ -17,29 +20,35 @@ class RoleController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('roles.read')) {
+            if (! $user->hasPermissionTo('roles.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for roles.read: " . $e->getMessage());
+            Log::warning('Permission check failed for roles.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         // Get roles for the user's organization (global + org-specific)
-        $roles = Role::forOrganization($profile->organization_id)
-            ->orderBy('name')
-            ->get();
+        $rolesQuery = Role::forOrganization($profile->organization_id)
+            ->orderBy('name');
+
+        if ($this->isSchoolScopedProfile($profile)) {
+            $rolesQuery->where('name', '!=', 'organization_admin');
+        }
+
+        $roles = $rolesQuery->get();
 
         return response()->json(
             $roles->map(function ($role) {
@@ -64,22 +73,23 @@ class RoleController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('roles.create')) {
+            if (! $user->hasPermissionTo('roles.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for roles.create: " . $e->getMessage());
+            Log::warning('Permission check failed for roles.create: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -88,6 +98,10 @@ class RoleController extends Controller
             'description' => 'nullable|string|max:1000',
             'guard_name' => 'nullable|string|max:255',
         ]);
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isProtectedOrganizationRole($request->name)) {
+            return response()->json(['error' => 'School admins cannot manage the organization_admin role'], 403);
+        }
 
         // Check if role with same name already exists for this organization
         $existingRole = Role::where('name', $request->name)
@@ -143,7 +157,7 @@ class RoleController extends Controller
                     ->where('organization_id', $organizationId)
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     DB::table('role_has_permissions')->insert([
                         'role_id' => $role->id,
                         'permission_id' => $permission->id,
@@ -183,22 +197,23 @@ class RoleController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('roles.read')) {
+            if (! $user->hasPermissionTo('roles.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for roles.read: " . $e->getMessage());
+            Log::warning('Permission check failed for roles.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -206,8 +221,12 @@ class RoleController extends Controller
             ->where('id', $id)
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             return response()->json(['error' => 'Role not found'], 404);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isProtectedOrganizationRole($role->name)) {
+            return response()->json(['error' => 'School admins cannot manage the organization_admin role'], 403);
         }
 
         return response()->json([
@@ -229,22 +248,23 @@ class RoleController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('roles.update')) {
+            if (! $user->hasPermissionTo('roles.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for roles.update: " . $e->getMessage());
+            Log::warning('Permission check failed for roles.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -257,8 +277,12 @@ class RoleController extends Controller
             ->where('id', $id)
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             return response()->json(['error' => 'Role not found'], 404);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isProtectedOrganizationRole($role->name)) {
+            return response()->json(['error' => 'School admins cannot manage the organization_admin role'], 403);
         }
 
         // Check if name change would conflict with existing role
@@ -302,22 +326,23 @@ class RoleController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('roles.delete')) {
+            if (! $user->hasPermissionTo('roles.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for roles.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for roles.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -325,8 +350,12 @@ class RoleController extends Controller
             ->where('id', $id)
             ->first();
 
-        if (!$role) {
+        if (! $role) {
             return response()->json(['error' => 'Role not found'], 404);
+        }
+
+        if ($this->isSchoolScopedProfile($profile) && $this->isProtectedOrganizationRole($role->name)) {
+            return response()->json(['error' => 'School admins cannot manage the organization_admin role'], 403);
         }
 
         // Check if role is in use (has users assigned)
@@ -346,4 +375,3 @@ class RoleController extends Controller
         return response()->noContent();
     }
 }
-
