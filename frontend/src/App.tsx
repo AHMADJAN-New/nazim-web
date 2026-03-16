@@ -219,6 +219,7 @@ import {
   MaintenanceHistory,
   DesktopLicenseGeneration,
   DesktopReleasesManagement,
+  PlatformFilesManagement,
   ActivityLogsPage
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -735,6 +736,11 @@ const App = () => (
                     <Route path="desktop-releases" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <DesktopReleasesManagement />
+                      </Suspense>
+                    } />
+                    <Route path="files" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PlatformFilesManagement />
                       </Suspense>
                     } />
                     <Route path="maintenance" element={<Navigate to="maintenance-history" replace />} />

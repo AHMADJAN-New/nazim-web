@@ -15,7 +15,7 @@
     $boldFont = file_exists($boldPath) ? 'data:font/truetype;charset=utf-8;base64,' . base64_encode(file_get_contents($boldPath)) : $regularFont;
 
     $text = static fn ($value) => filled($value) ? $value : '—';
-    $money = static fn ($value, $currency) => filled($value) ? number_format((float) $value, 2) . ' ' . ($currency ?: 'AFN') : '—';
+    $money = static fn ($value) => filled($value) ? number_format((float) $value, 2) : '—';
 
     $licenseFee = (float) ($orderForm['license_fee'] ?? 0);
     $additionalServicesFee = (float) ($orderForm['additional_services_fee'] ?? 0);
@@ -27,14 +27,6 @@
     $computedDiscount = $discountAmount > 0 ? $discountAmount
         : ($discountPct !== null ? round($subtotalForDiscount * ($discountPct / 100), 2) : 0);
     $computedTotalOneTime = max($subtotalForDiscount - $computedDiscount, 0);
-    $currency = $orderForm['currency'] ?? 'AFN';
-
-    $statusLabel = match ($orderForm['status'] ?? 'draft') {
-        'signed' => 'لاسلیک شوی',
-        'sent' => 'استول شوی',
-        'pending_review' => 'د ارزونې په حال کې',
-        default => 'مسوده',
-    };
 
     $trainingMode = match ($orderForm['training_mode'] ?? null) {
         'in_person' => 'حضوري',
@@ -131,7 +123,7 @@
         .kv tr:last-child td { border-bottom: none; }
         .label { width: 34%; color: #5c6f8d; font-weight: 700; }
         .ltr { direction: ltr; unicode-bidi: embed; display: inline-block; }
-        .stats td { width: 20%; vertical-align: top; }
+        .stats td { width: 25%; vertical-align: top; }
         .stat {
             padding: 12px;
             text-align: center;
@@ -153,6 +145,24 @@
             background: #edf4ff;
             color: #0b2c6b;
             font-weight: 700;
+        }
+        .attachments {
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
+        .attachments th,
+        .attachments td {
+            text-align: center;
+        }
+        .attachments-wrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .attachments-wrapper .attachments {
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto;
         }
         .highlight td {
             background: #fff8e8;
@@ -228,7 +238,6 @@
                     <td class="hero-meta">
                         <div class="chip">د فورمې شمېره: <span class="ltr">{{ $text($orderForm['form_number'] ?? null) }}</span></div>
                         <div class="chip">نېټه: <span class="ltr">{{ $orderForm['issue_date'] ?? null ? $formatDateFn($orderForm['issue_date']) : '—' }}</span></div>
-                        <div class="chip">{{ $statusLabel }}</div>
                     </td>
                 </tr>
             </table>
@@ -287,16 +296,15 @@
                         <tr>
                             <td><div class="stat"><small>پلان</small><strong>{{ $text($orderForm['plan_name_override'] ?? null) }}</strong></div></td>
                             <td><div class="stat"><small>دوره</small><strong>{{ $text($orderForm['billing_cycle'] ?? null) }}</strong></div></td>
-                            <td><div class="stat"><small>ټول مقدار (یو ځل)</small><strong>{{ number_format($computedTotalOneTime, 2) }} {{ $currency }}</strong></div></td>
-                            <td><div class="stat"><small>د ساتنې فیس (کلني)</small><strong>{{ $money($orderForm['maintenance_fee'] ?? null, $orderForm['currency'] ?? 'AFN') }}</strong></div></td>
-                            <td><div class="stat"><small>وضعیت</small><strong>{{ $statusLabel }}</strong></div></td>
+                            <td><div class="stat"><small>ټول مقدار (یو ځل)</small><strong>{{ $money($computedTotalOneTime) }}</strong></div></td>
+                            <td><div class="stat"><small>د ساتنې فیس (کلني)</small><strong>{{ $money($orderForm['maintenance_fee'] ?? null) }}</strong></div></td>
                         </tr>
                     </table>
 
                     <table class="summary">
                         <thead>
                             <tr>
-                                <th style="width: 40%">فیلډ</th>
+                                <th style="width: 40%">عنوان</th>
                                 <th style="width: 22%">مقدار</th>
                                 <th>یادښت</th>
                             </tr>
@@ -304,22 +312,22 @@
                         <tbody>
                             <tr>
                                 <td>د جواز فیس</td>
-                                <td>{{ $money($orderForm['license_fee'] ?? null, $orderForm['currency'] ?? 'AFN') }}</td>
+                                <td>{{ $money($orderForm['license_fee'] ?? null) }}</td>
                                 <td>{{ $text($orderForm['plan_description'] ?? null) }}</td>
                             </tr>
                             <tr>
                                 <td>اضافي خدمات</td>
-                                <td>{{ $money($orderForm['additional_services_fee'] ?? null, $orderForm['currency'] ?? 'AFN') }}</td>
+                                <td>{{ $money($orderForm['additional_services_fee'] ?? null) }}</td>
                                 <td>{{ $text($orderForm['additional_modules'] ?? null) }}</td>
                             </tr>
                             <tr>
                                 <td>مالیات / نور لګښتونه</td>
-                                <td>{{ $money($orderForm['tax_amount'] ?? null, $orderForm['currency'] ?? 'AFN') }}</td>
+                                <td>{{ $money($orderForm['tax_amount'] ?? null) }}</td>
                                 <td>{{ $text($orderForm['payment_notes'] ?? null) }}</td>
                             </tr>
                             <tr>
                                 <td>تخفیف</td>
-                                <td>{{ $money($orderForm['discount_amount'] ?? null, $orderForm['currency'] ?? 'AFN') }}</td>
+                                <td>{{ $money($orderForm['discount_amount'] ?? null) }}</td>
                                 <td>
                                     {{ $text($orderForm['discount_name'] ?? null) }}
                                     @if(!empty($orderForm['discount_percentage']))
@@ -329,12 +337,12 @@
                             </tr>
                             <tr class="highlight">
                                 <td>ټول مقدار (یو ځل)</td>
-                                <td>{{ number_format($computedTotalOneTime, 2) }} {{ $currency }}</td>
+                                <td>{{ $money($computedTotalOneTime) }}</td>
                                 <td>{{ $text($orderForm['payment_terms'] ?? null) }}</td>
                             </tr>
                             <tr class="maintenance-row">
                                 <td>د ساتنې فیس (کلني تکراري)</td>
-                                <td>{{ $money($orderForm['maintenance_fee'] ?? null, $orderForm['currency'] ?? 'AFN') }}</td>
+                                <td>{{ $money($orderForm['maintenance_fee'] ?? null) }}</td>
                                 <td>هر کال تادیه کېږي، په ټول مقدار کې شامیل نه دی</td>
                             </tr>
                             @if($licensePaid && $licensePaidAt)
@@ -405,8 +413,8 @@
                 </div>
             </div>
 
-            <div class="section">
-                <div class="section-title">۵. منل او لاسلیکونه</div>
+            <div class="section signatures-page" style="page-break-before: always;">
+                <div class="section-title">۵. لاسلیکونه</div>
                 <div class="section-body">
                     <div class="note-box">
                         <span class="status-pill">{{ !empty($orderForm['acceptance_confirmed']) ? 'شرایط منل شوي' : 'شرایط لا نه دي تایید شوي' }}</span>
@@ -440,13 +448,20 @@
                 <div class="section-title">۶. ضمیمې</div>
                 <div class="section-body">
                     @if(count($documents) > 0)
-                        <table class="attachments" style="width: 100%; border-collapse: collapse;">
+                        <div class="attachments-wrapper">
+                            <table class="attachments" style="width: 100%;">
+                            <colgroup>
+                                <col style="width: 24%;">
+                                <col style="width: 28%;">
+                                <col style="width: 30%;">
+                                <col style="width: 18%;">
+                            </colgroup>
                             <thead>
                                 <tr>
-                                    <th style="width: 24%">ډول</th>
-                                    <th style="width: 28%">سرلیک</th>
+                                    <th>ډول</th>
+                                    <th>سرلیک</th>
                                     <th>یادښت</th>
-                                    <th style="width: 18%">پورته شوی</th>
+                                    <th>نېټه</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -460,6 +475,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        </div>
                     @else
                         <div class="card">تر اوسه هېڅ سند نه دی پورته شوی.</div>
                     @endif
@@ -471,7 +487,7 @@
                 @if($organization)
                     <span class="ltr">{{ $organization->name }}</span>
                 @endif
-                لپاره په <span class="ltr">{{ $formatDateFn(now(), 'full') }} {{ now()->format('H:i') }}</span> تولید شوې ده.
+                لپاره په <span class="ltr">{{ $formatDateFn(now()) }} {{ now()->format('H:i') }}</span> تولید شوې ده.
             </div>
         </div>
     </div>

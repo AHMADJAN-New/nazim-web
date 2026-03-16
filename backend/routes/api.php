@@ -1739,6 +1739,7 @@ Route::get('/reports/preview/template', [\App\Http\Controllers\ReportGenerationC
 // =====================================================
 
 use App\Http\Controllers\ContactMessageController;
+use App\Http\Controllers\PlatformFilesController;
 use App\Http\Controllers\PlatformOrganizationOrderFormController;
 use App\Http\Controllers\SubscriptionAdminController;
 use App\Http\Controllers\SubscriptionController;
@@ -1833,6 +1834,12 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/organizations/{organizationId}/order-form/documents', [PlatformOrganizationOrderFormController::class, 'uploadDocument']);
     Route::get('/organizations/{organizationId}/order-form/documents/{documentId}/download', [PlatformOrganizationOrderFormController::class, 'downloadDocument']);
     Route::delete('/organizations/{organizationId}/order-form/documents/{documentId}', [PlatformOrganizationOrderFormController::class, 'destroyDocument']);
+
+    // Platform files (templates, business documents)
+    Route::get('/files', [PlatformFilesController::class, 'index']);
+    Route::post('/files', [PlatformFilesController::class, 'store']);
+    Route::get('/files/{id}/download', [PlatformFilesController::class, 'download']);
+    Route::delete('/files/{id}', [PlatformFilesController::class, 'destroy']);
 
     // Payments & renewals
     Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);

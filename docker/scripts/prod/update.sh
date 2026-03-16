@@ -96,6 +96,9 @@ fi
 
 # Clear Laravel caches to ensure fresh state
 compose exec -T php php artisan optimize:clear >/dev/null 2>&1 || echo -e "${YELLOW}⚠️  Cache clear completed (may have warnings)${NC}"
+
+# Ensure platform files and order-form storage directories exist (for Platform Files Management and org order-form documents)
+compose exec -T php sh -c 'mkdir -p /var/www/backend/storage/app/private/platform/files /var/www/backend/storage/app/private/organizations && chown -R www-data:www-data /var/www/backend/storage/app/private/platform /var/www/backend/storage/app/private/organizations 2>/dev/null || true' || echo -e "${YELLOW}⚠️  Storage dirs (platform/files, organizations) may already exist${NC}"
 echo ""
 
 # Step 6: Clean up old images

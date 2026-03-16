@@ -438,6 +438,27 @@ class FileStorageService
     }
 
     // ==============================================
+    // PLATFORM FILES (global, no organization_id)
+    // ==============================================
+
+    private const PATH_PLATFORM_FILES = 'platform/files';
+
+    /**
+     * Store platform-level file (PRIVATE).
+     * Path: platform/files/{category}/{uuid}.{ext}
+     * No storage limit or usage tracking (platform files are not tenant-scoped).
+     */
+    public function storePlatformFile(
+        UploadedFile $file,
+        string $category
+    ): string {
+        $safeCategory = $this->sanitizePathSegment($category ?: 'other');
+        $path = self::PATH_PLATFORM_FILES.'/'.($safeCategory !== '' ? $safeCategory : 'other');
+
+        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+    }
+
+    // ==============================================
     // DMS FILES (Document Management System)
     // ==============================================
 

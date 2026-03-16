@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { showToast } from '@/lib/toast';
 import { formatDate } from '@/lib/utils';
 import {
   useDeletePlatformOrganizationOrderFormDocument,
@@ -48,6 +49,8 @@ import {
   useSavePlatformOrganizationOrderForm,
   useUploadPlatformOrganizationOrderFormDocument,
 } from '@/platform/hooks/usePlatformOrganizationOrderForm';
+import { platformApi, type PlatformFile } from '@/platform/lib/platformApi';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import type {
   OrderFormBillingCycle,
   OrderFormDocumentCategory,
@@ -72,6 +75,19 @@ const DOCUMENT_CATEGORIES = [
 ] as const;
 
 const NONE_VALUE = '__none__';
+
+const CONTRACT_PLATFORM_CATEGORIES = ['contract_template', 'signed_contract'];
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 const optionalStringSchema = z
   .union([z.string(), z.null(), z.undefined()])
@@ -431,7 +447,63 @@ export function OrganizationOrderFormPanel({
   const orderForm = orderFormQuery.data?.order_form ?? null;
   const documents = orderFormQuery.data?.documents ?? [];
   const subscriptionContext = orderFormQuery.data?.subscription_context ?? null;
+  const contractDocument = documents.find(
+    (d: { document_category: string }) =>
+      d.document_category === 'contract' || d.document_category === 'signed_contract'
+  );
   const fromSubscription = orderFormQuery.data?.from_subscription ?? null;
+
+  // Platform files: contract for this org (linked) or global contract template
+  const { data: platformFilesForOrg } = useQuery({
+    queryKey: ['platform-files-org-contract', organizationId],
+    queryFn: async () => {
+      const res = await platformApi.platformFiles.list({ organization_id: organizationId });
+      return (res as { data?: PlatformFile[] }).data ?? [];
+    },
+    enabled: !!organizationId,
+    staleTime: 2 * 60 * 1000,
+  });
+  const platformContractForOrg = (platformFilesForOrg ?? []).find((f: PlatformFile) =>
+    CONTRACT_PLATFORM_CATEGORIES.includes(f.category)
+  );
+
+  const { data: platformFilesAll } = useQuery({
+    queryKey: ['platform-files-global-contract'],
+    queryFn: async () => {
+      const res = await platformApi.platformFiles.list();
+      return (res as { data?: PlatformFile[] }).data ?? [];
+    },
+    enabled:
+      !!organizationId &&
+      !!orderFormQuery.data &&
+      !contractDocument &&
+      !platformContractForOrg,
+    staleTime: 2 * 60 * 1000,
+  });
+  const platformContractGlobal = (platformFilesAll ?? []).find(
+    (f: PlatformFile) =>
+      !f.organization_id && CONTRACT_PLATFORM_CATEGORIES.includes(f.category)
+  );
+
+  const effectiveContract =
+    contractDocument != null
+      ? { type: 'order_form' as const, document: contractDocument }
+      : platformContractForOrg != null
+        ? { type: 'platform' as const, file: platformContractForOrg }
+        : platformContractGlobal != null
+          ? { type: 'platform' as const, file: platformContractGlobal }
+          : null;
+
+  const platformFileDownloadMutation = useMutation({
+    mutationFn: async (fileId: string) => {
+      const { blob, filename } = await platformApi.platformFiles.download(fileId);
+      downloadBlob(blob, filename || 'contract');
+      return filename;
+    },
+    onError: (err: Error) => {
+      showToast.error(err.message || 'Download failed');
+    },
+  });
 
   const currency = form.watch('currency');
   const planId = form.watch('plan_id');
@@ -665,7 +737,41 @@ export function OrganizationOrderFormPanel({
                 ) : (
                   <Download className="mr-2 h-4 w-4" />
                 )}
-                Download PDF
+                <span className="hidden sm:inline ml-2">Download Order Form</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                title={
+                  effectiveContract
+                    ? 'Download contract'
+                    : 'Upload a contract in Attachments below or add one in Platform Files'
+                }
+                onClick={() => {
+                  if (!effectiveContract) return;
+                  if (effectiveContract.type === 'order_form') {
+                    downloadDocumentMutation.mutate({
+                      organizationId,
+                      documentId: effectiveContract.document.id,
+                      fileName: effectiveContract.document.file_name,
+                    });
+                  } else {
+                    platformFileDownloadMutation.mutate(effectiveContract.file.id);
+                  }
+                }}
+                disabled={
+                  !effectiveContract ||
+                  downloadDocumentMutation.isPending ||
+                  platformFileDownloadMutation.isPending
+                }
+              >
+                {downloadDocumentMutation.isPending || platformFileDownloadMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="mr-2 h-4 w-4" />
+                )}
+                <span className="hidden sm:inline ml-2">Download Contract</span>
               </Button>
               <Button
                 type="submit"

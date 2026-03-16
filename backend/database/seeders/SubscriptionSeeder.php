@@ -193,9 +193,9 @@ class SubscriptionSeeder extends Seeder
                 ],
             ],
             [
-                'name' => 'Starter',
+                'name' => 'اساسي',
                 'slug' => 'starter',
-                'description' => 'Operational core + exams lite',
+                'description' => " د مدرسې اساسي مدیریت لپاره.\nد زده کوونکو ثبت، د کارمندانو تنظیم، حاضري او د لیلیې اداره.",
                 // New fee separation structure
                 'billing_period' => 'yearly',
                 'license_fee_afn' => 0,
@@ -261,9 +261,9 @@ class SubscriptionSeeder extends Seeder
                 ],
             ],
             [
-                'name' => 'Pro',
+                'name' => 'معیاري',
                 'slug' => 'pro',
-                'description' => 'Full academic workflow',
+                'description' => " د اساسي پلان ټول امکانات + اضافي تعلیمي تنظیم.\nد درسي پلانونو، کتابونو ثبت او د امتحاناتو ابتدایي مدیریت.",
                 // New fee separation structure
                 'billing_period' => 'yearly',
                 'license_fee_afn' => 0,
@@ -329,9 +329,9 @@ class SubscriptionSeeder extends Seeder
                 ],
             ],
             [
-                'name' => 'Complete',
+                'name' => 'مکمل',
                 'slug' => 'complete',
-                'description' => 'Administration, finance, and credentials',
+                'description' => "  د مدرسې بشپړ اداري سیسټم.\nثبت، حاضري، امتحانات، اسناد او مالي چارې په یو ځای کې.",
                 // New fee separation structure
                 'billing_period' => 'yearly',
                 'license_fee_afn' => 0,

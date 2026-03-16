@@ -6,6 +6,21 @@ import type * as SubscriptionApi from '@/types/api/subscription';
 import type * as DesktopLicenseApi from '@/types/api/desktopLicense';
 import type * as LoginAuditApi from '@/types/api/loginAudit';
 
+export interface PlatformFile {
+  id: string;
+  organization_id: string | null;
+  organization: { id: string; name: string } | null;
+  category: string;
+  title: string;
+  notes: string | null;
+  file_name: string;
+  mime_type: string | null;
+  file_size: number;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /**
  * Platform Admin API Client
  * Uses /platform routes (not /admin/subscription)
@@ -173,6 +188,21 @@ export const platformApi = {
       return apiClient.delete(
         `/platform/organizations/${organizationId}/order-form/documents/${documentId}`
       );
+    },
+  },
+
+  platformFiles: {
+    list: async (params?: { organization_id?: string; category?: string }) => {
+      return apiClient.get<{ data: PlatformFile[] }>('/platform/files', params);
+    },
+    upload: async (data: FormData) => {
+      return apiClient.post<{ data: PlatformFile }>('/platform/files', data);
+    },
+    download: async (id: string) => {
+      return apiClient.requestFile(`/platform/files/${id}/download`, { method: 'GET' });
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/files/${id}`);
     },
   },
 

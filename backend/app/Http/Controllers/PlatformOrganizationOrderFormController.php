@@ -17,8 +17,11 @@ use Illuminate\Support\Facades\Validator;
 class PlatformOrganizationOrderFormController extends Controller
 {
     private const STATUS_VALUES = ['draft', 'pending_review', 'sent', 'signed'];
+
     private const BILLING_CYCLES = ['monthly', 'quarterly', 'yearly', 'custom'];
+
     private const TRAINING_MODES = ['in_person', 'online', 'hybrid'];
+
     private const DOCUMENT_CATEGORIES = [
         'signed_order_form',
         'contract',
@@ -45,8 +48,7 @@ class PlatformOrganizationOrderFormController extends Controller
         private FileStorageService $fileStorageService,
         private OrganizationOrderFormPdfService $pdfService,
         private DateConversionService $dateService
-    ) {
-    }
+    ) {}
 
     public function show(Request $request, string $organizationId)
     {
@@ -86,7 +88,7 @@ class PlatformOrganizationOrderFormController extends Controller
 
         $validated = $validator->validated();
 
-        if (!empty($validated['plan_id'])) {
+        if (! empty($validated['plan_id'])) {
             $plan = SubscriptionPlan::find($validated['plan_id']);
             if ($plan && empty($validated['plan_name_override'])) {
                 $validated['plan_name_override'] = $plan->name;
@@ -105,7 +107,7 @@ class PlatformOrganizationOrderFormController extends Controller
                 'organization_id' => $organizationId,
             ]);
 
-            if (!$orderForm->exists) {
+            if (! $orderForm->exists) {
                 $orderForm->fill($this->buildDefaults($organization, $subscription));
                 $orderForm->created_by = (string) $request->user()->id;
                 $orderForm->form_number = $validated['form_number'] ?? $this->generateFormNumber($organization->slug ?? null);
@@ -150,8 +152,9 @@ class PlatformOrganizationOrderFormController extends Controller
 
         $calendarPreference = $request->query('calendar_preference', 'jalali');
         $language = $request->query('language', 'ps');
-        $formatDateFn = fn ($date, $format = 'full') => $date
-            ? $this->dateService->formatDate($date, $calendarPreference, $format, $language)
+        $dateFormat = 'dmy';
+        $formatDateFn = fn ($date, $format = null) => $date
+            ? $this->dateService->formatDate($date, $calendarPreference, $format ?? $dateFormat, $language)
             : '—';
 
         $pdfPath = $this->pdfService->generate([
@@ -163,11 +166,11 @@ class PlatformOrganizationOrderFormController extends Controller
             'formatDate' => $formatDateFn,
             'calendar_preference' => $calendarPreference,
             'language' => $language,
-        ], ($serializedOrderForm['form_number'] ?? 'nazim-order-form') . '-' . ($organization->slug ?? 'organization'));
+        ], ($serializedOrderForm['form_number'] ?? 'nazim-order-form').'-'.($organization->slug ?? 'organization'));
 
         return response()->download(
             $pdfPath,
-            ($serializedOrderForm['form_number'] ?? 'nazim-order-form') . '.pdf',
+            ($serializedOrderForm['form_number'] ?? 'nazim-order-form').'.pdf',
             ['Content-Type' => 'application/pdf']
         )->deleteFileAfterSend(true);
     }
@@ -189,7 +192,7 @@ class PlatformOrganizationOrderFormController extends Controller
         $serializedOrderForm = $this->serializeOrderForm($orderForm, $organization, $subscription);
 
         $body = $request->all();
-        if (!empty($body['order_form'])) {
+        if (! empty($body['order_form'])) {
             $overrides = $body['order_form'];
             $validated = array_intersect_key($overrides, array_flip([
                 'license_fee', 'additional_services_fee', 'tax_amount', 'discount_amount',
@@ -218,8 +221,9 @@ class PlatformOrganizationOrderFormController extends Controller
 
         $calendarPreference = $body['calendar_preference'] ?? $request->query('calendar_preference', 'jalali');
         $language = $body['language'] ?? $request->query('language', 'ps');
-        $formatDateFn = fn ($date, $format = 'full') => $date
-            ? $this->dateService->formatDate($date, $calendarPreference, $format, $language)
+        $dateFormat = 'dmy';
+        $formatDateFn = fn ($date, $format = null) => $date
+            ? $this->dateService->formatDate($date, $calendarPreference, $format ?? $dateFormat, $language)
             : '—';
 
         $pdfPath = $this->pdfService->generate([
@@ -231,11 +235,11 @@ class PlatformOrganizationOrderFormController extends Controller
             'formatDate' => $formatDateFn,
             'calendar_preference' => $calendarPreference,
             'language' => $language,
-        ], ($serializedOrderForm['form_number'] ?? 'nazim-order-form') . '-' . ($organization->slug ?? 'organization'));
+        ], ($serializedOrderForm['form_number'] ?? 'nazim-order-form').'-'.($organization->slug ?? 'organization'));
 
         return response()->download(
             $pdfPath,
-            ($serializedOrderForm['form_number'] ?? 'nazim-order-form') . '.pdf',
+            ($serializedOrderForm['form_number'] ?? 'nazim-order-form').'.pdf',
             ['Content-Type' => 'application/pdf']
         )->deleteFileAfterSend(true);
     }
@@ -245,7 +249,7 @@ class PlatformOrganizationOrderFormController extends Controller
         $organization = Organization::findOrFail($organizationId);
         $subscription = $this->getCurrentSubscription($organizationId);
         $validator = Validator::make($request->all(), [
-            'document_category' => 'required|string|in:' . implode(',', self::DOCUMENT_CATEGORIES),
+            'document_category' => 'required|string|in:'.implode(',', self::DOCUMENT_CATEGORIES),
             'title' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'file' => 'required|file|max:25600',
@@ -352,7 +356,7 @@ class PlatformOrganizationOrderFormController extends Controller
         return [
             'subscription_id' => 'nullable|uuid|exists:organization_subscriptions,id',
             'plan_id' => 'nullable|uuid|exists:subscription_plans,id',
-            'status' => 'nullable|string|in:' . implode(',', self::STATUS_VALUES),
+            'status' => 'nullable|string|in:'.implode(',', self::STATUS_VALUES),
             'form_number' => 'nullable|string|max:80',
             'issue_date' => 'nullable|date',
             'currency' => 'nullable|string|in:AFN,USD',
@@ -374,7 +378,7 @@ class PlatformOrganizationOrderFormController extends Controller
             'provider_notes' => 'nullable|string',
             'plan_name_override' => 'nullable|string|max:255',
             'plan_description' => 'nullable|string',
-            'billing_cycle' => 'nullable|string|in:' . implode(',', self::BILLING_CYCLES),
+            'billing_cycle' => 'nullable|string|in:'.implode(',', self::BILLING_CYCLES),
             'subscription_start_date' => 'nullable|date',
             'subscription_end_date' => 'nullable|date',
             'license_fee' => 'nullable|numeric|min:0',
@@ -392,7 +396,7 @@ class PlatformOrganizationOrderFormController extends Controller
             'max_storage_gb' => 'nullable|numeric|min:0',
             'limits_notes' => 'nullable|string',
             'implementation_date' => 'nullable|date',
-            'training_mode' => 'nullable|string|in:' . implode(',', self::TRAINING_MODES),
+            'training_mode' => 'nullable|string|in:'.implode(',', self::TRAINING_MODES),
             'special_requirements' => 'nullable|string',
             'additional_modules' => 'nullable|string',
             'important_terms' => 'nullable|string',
@@ -435,7 +439,7 @@ class PlatformOrganizationOrderFormController extends Controller
     {
         $defaults = $this->buildDefaults($organization, $subscription);
 
-        if (!$orderForm) {
+        if (! $orderForm) {
             return array_merge($defaults, [
                 'id' => null,
                 'created_at' => null,
@@ -560,6 +564,7 @@ class PlatformOrganizationOrderFormController extends Controller
                     return (int) $limits[$key];
                 }
             }
+
             return null;
         };
 
@@ -632,7 +637,8 @@ class PlatformOrganizationOrderFormController extends Controller
                     'jpg', 'jpeg' => 'image/jpeg',
                     default => 'image/webp',
                 };
-                return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
+
+                return 'data:'.$mime.';base64,'.base64_encode(file_get_contents($path));
             }
         }
 
@@ -641,7 +647,7 @@ class PlatformOrganizationOrderFormController extends Controller
 
     private function buildSubscriptionContext(?OrganizationSubscription $subscription): array
     {
-        if (!$subscription) {
+        if (! $subscription) {
             return [
                 'license_paid' => false,
                 'license_paid_at' => null,
@@ -663,6 +669,7 @@ class PlatformOrganizationOrderFormController extends Controller
     private function generateFormNumber(?string $slug = null): string
     {
         $prefix = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $slug), 0, 4) ?: 'NAZM');
-        return $prefix . '-' . now()->format('Ymd');
+
+        return $prefix.'-'.now()->format('Ymd');
     }
 }

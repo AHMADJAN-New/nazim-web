@@ -177,6 +177,7 @@ export const OrganizationLimitsOverview = lazy(() => import('@/platform/pages/ad
 export const PlanRequestsPage = lazy(() => import('@/platform/pages/admin/PlanRequestsPage').then(module => ({ default: module.default })));
 export const DesktopLicenseGeneration = lazy(() => import('@/platform/pages/admin/DesktopLicenseGeneration').then(module => ({ default: module.default })));
 export const DesktopReleasesManagement = lazy(() => import('@/platform/pages/admin/DesktopReleasesManagement').then(module => ({ default: module.default })));
+export const PlatformFilesManagement = lazy(() => import('@/platform/pages/admin/PlatformFilesManagement').then(module => ({ default: module.default })));
 export const LandingOffersPage = lazy(() => import('@/platform/pages/admin/LandingOffersPage').then(module => ({ default: module.default })));
 
 // Re-export loading components for backward compatibility

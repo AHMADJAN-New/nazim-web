@@ -25,6 +25,7 @@ import {
   AlertCircle,
   Globe,
   BarChart3,
+  FolderOpen,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -368,6 +369,15 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
           icon: Languages,
         },
       ]
+    },
+    { 
+      name: 'Platform Files', 
+      href: '/platform/files', 
+      icon: FolderOpen,
+      iconColor: 'text-sky-600',
+      iconBg: 'bg-sky-500/10',
+      description: 'Templates, business files, and organization documents',
+      badge: null,
     },
     { 
       name: 'Maintenance History', 
