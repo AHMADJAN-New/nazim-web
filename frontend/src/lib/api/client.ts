@@ -114,10 +114,11 @@ class ApiClient {
     // never add school_id to org-finance requests or the backend may 500.
     const isOrgFinanceRoute = endpoint.startsWith('/org-finance/');
     const isOrgHrRoute = endpoint.startsWith('/org-hr/');
+    const isPlatformRoute = endpoint.startsWith('/platform/');
     const skipSchoolIdForOrgRoute =
       isOrgHrRoute && (options.method === 'GET' || !options.method);
     const shouldAutoScopeToSelectedSchool =
-      !isOrgFinanceRoute && !skipSchoolIdForOrgRoute;
+      !isOrgFinanceRoute && !isPlatformRoute && !skipSchoolIdForOrgRoute;
 
     if (typeof window !== 'undefined' && !options.params?.school_id && shouldAutoScopeToSelectedSchool) {
       // Check if user has schools_access_all permission (stored in localStorage by SchoolContext)

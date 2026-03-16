@@ -64,6 +64,7 @@ const BACKUP_TYPE_PREFIX = {
   database: 'nazim_backup_db_',
   all: 'nazim_backup_',
 } as const;
+const BACKUP_TYPE_FILTER_ALL = 'all_types';
 
 function inferBackupType(filename: string): 'database' | 'all' {
   return filename.startsWith(BACKUP_TYPE_PREFIX.database) ? 'database' : 'all';
@@ -75,7 +76,7 @@ export default function PlatformBackupsPage() {
   const { data: permissions, isLoading: permissionsLoading } = usePlatformAdminPermissions();
   const hasAdminPermission = Array.isArray(permissions) && permissions.includes('subscription.admin');
 
-  const [backupTypeFilter, setBackupTypeFilter] = useState<string>('');
+  const [backupTypeFilter, setBackupTypeFilter] = useState<string>(BACKUP_TYPE_FILTER_ALL);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,16 +85,7 @@ export default function PlatformBackupsPage() {
 
   const { data: backups = [], isLoading: isBackupsLoading, error: backupsError } = useQuery({
     queryKey: ['platform-backups'],
-    queryFn: async () => {
-      try {
-        return await platformApi.backups.list();
-      } catch (err) {
-        if (import.meta.env.DEV) {
-          console.error('Error fetching backups:', err);
-        }
-        return [];
-      }
-    },
+    queryFn: async () => platformApi.backups.list(),
     enabled: hasAdminPermission && !permissionsLoading,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -169,7 +161,7 @@ export default function PlatformBackupsPage() {
         icon={<Database className="h-5 w-5" />}
       />
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="space-y-6">
         <FilterPanel
           title="Filters"
           defaultOpenDesktop={true}
@@ -183,7 +175,7 @@ export default function PlatformBackupsPage() {
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value={BACKUP_TYPE_FILTER_ALL}>All types</SelectItem>
                   <SelectItem value="database">{t('platform.backupType.databaseOnly')}</SelectItem>
                   <SelectItem value="all">{t('platform.backupType.databaseAndFiles')}</SelectItem>
                 </SelectContent>
@@ -220,131 +212,132 @@ export default function PlatformBackupsPage() {
           </div>
         </FilterPanel>
 
-        <div className="flex-1 min-w-0">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <CardTitle>Backup List</CardTitle>
-                  <CardDescription>
-                    {filteredBackups.length} backup{filteredBackups.length !== 1 ? 's' : ''} shown
-                  </CardDescription>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className="space-y-2">
-                    <Label htmlFor="create-backup-type" className="text-xs text-muted-foreground">
-                      {t('platform.backupType.label')}
-                    </Label>
-                    <Select
-                      value={createBackupType}
-                      onValueChange={(v: 'database' | 'all') => setCreateBackupType(v)}
-                    >
-                      <SelectTrigger id="create-backup-type" className="w-full sm:w-[200px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t('platform.backupType.databaseAndFiles')}</SelectItem>
-                        <SelectItem value="database">{t('platform.backupType.databaseOnly')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    onClick={() => createBackup.mutate(createBackupType)}
-                    disabled={createBackup.isPending}
-                    className="self-start sm:self-end"
-                  >
-                    {createBackup.isPending ? (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <HardDrive className="mr-2 h-4 w-4" />
-                        Create Backup
-                      </>
-                    )}
-                  </Button>
-                </div>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle>Backup List</CardTitle>
+                <CardDescription>
+                  {filteredBackups.length} backup{filteredBackups.length !== 1 ? 's' : ''} shown
+                </CardDescription>
               </div>
-            </CardHeader>
-            <CardContent>
-              {isBackupsLoading ? (
-                <div className="flex justify-center py-12">
-                  <LoadingSpinner />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="space-y-2">
+                  <Label htmlFor="create-backup-type" className="text-xs text-muted-foreground">
+                    {t('platform.backupType.label')}
+                  </Label>
+                  <Select
+                    value={createBackupType}
+                    onValueChange={(v: 'database' | 'all') => setCreateBackupType(v)}
+                  >
+                    <SelectTrigger id="create-backup-type" className="w-full sm:w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('platform.backupType.databaseAndFiles')}</SelectItem>
+                      <SelectItem value="database">{t('platform.backupType.databaseOnly')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : backupsError ? (
-                <div className="py-12 text-center text-destructive">
-                  Error loading backups
-                </div>
-              ) : filteredBackups.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground">
-                  <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>
-                    {backups.length === 0
-                      ? 'No backups found. Create your first backup to get started.'
-                      : 'No backups match the current filters.'}
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Filename</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Size</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                <Button
+                  onClick={() => createBackup.mutate(createBackupType)}
+                  disabled={createBackup.isPending}
+                  className="self-start sm:self-end"
+                >
+                  {createBackup.isPending ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <HardDrive className="mr-2 h-4 w-4" />
+                      Create Backup
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isBackupsLoading ? (
+              <div className="flex justify-center py-12">
+                <LoadingSpinner />
+              </div>
+            ) : backupsError ? (
+              <div className="py-12 text-center text-destructive">
+                Error loading backups
+                {backupsError instanceof Error && (
+                  <p className="mt-1 text-sm text-muted-foreground">{backupsError.message}</p>
+                )}
+              </div>
+            ) : filteredBackups.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>
+                  {backups.length === 0
+                    ? 'No backups found. Create your first backup to get started.'
+                    : 'No backups match the current filters.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Filename</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Size</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBackups.map((backup) => (
+                      <TableRow key={backup.filename}>
+                        <TableCell className="font-medium font-mono text-sm">
+                          {backup.filename}
+                        </TableCell>
+                        <TableCell>
+                          {inferBackupType(backup.filename) === 'database'
+                            ? t('platform.backupType.databaseOnly')
+                            : t('platform.backupType.databaseAndFiles')}
+                        </TableCell>
+                        <TableCell>{backup.size}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDateTime(new Date(backup.created_at))}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDownloadBackup(backup.filename)}
+                              title="Download backup"
+                              aria-label="Download backup"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeletingBackupFilename(backup.filename)}
+                              title="Delete backup"
+                              aria-label="Delete backup"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredBackups.map((backup) => (
-                        <TableRow key={backup.filename}>
-                          <TableCell className="font-medium font-mono text-sm">
-                            {backup.filename}
-                          </TableCell>
-                          <TableCell>
-                            {inferBackupType(backup.filename) === 'database'
-                              ? t('platform.backupType.databaseOnly')
-                              : t('platform.backupType.databaseAndFiles')}
-                          </TableCell>
-                          <TableCell>{backup.size}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatDateTime(new Date(backup.created_at))}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDownloadBackup(backup.filename)}
-                                title="Download backup"
-                                aria-label="Download backup"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setDeletingBackupFilename(backup.filename)}
-                                title="Delete backup"
-                                aria-label="Delete backup"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <AlertDialog

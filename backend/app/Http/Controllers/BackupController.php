@@ -23,8 +23,9 @@ class BackupController extends Controller
         }
 
         try {
-            $platformOrgId = '00000000-0000-0000-0000-000000000000';
-            setPermissionsTeamId($platformOrgId);
+            // CRITICAL: subscription.admin is a GLOBAL permission (organization_id = NULL).
+            // Team context must be null for global permission checks.
+            setPermissionsTeamId(null);
 
             return $user->hasPermissionTo('subscription.admin');
         } catch (\Exception $e) {
@@ -51,8 +52,6 @@ class BackupController extends Controller
      */
     public function createBackup(Request $request)
     {
-        $this->enforceSubscriptionAdmin($request);
-
         try {
             $backupType = $request->input('backup_type', 'all');
             if (! in_array($backupType, ['database', 'all'], true)) {
@@ -141,8 +140,6 @@ class BackupController extends Controller
      */
     public function downloadBackup(Request $request, string $filename)
     {
-        $this->enforceSubscriptionAdmin($request);
-
         try {
             $backupPath = storage_path('app/backups/'.$filename);
 
@@ -172,8 +169,6 @@ class BackupController extends Controller
      */
     public function listBackups(Request $request)
     {
-        $this->enforceSubscriptionAdmin($request);
-
         try {
             $backupsDir = storage_path('app/backups');
 
@@ -235,8 +230,6 @@ class BackupController extends Controller
      */
     public function deleteBackup(Request $request, string $filename)
     {
-        $this->enforceSubscriptionAdmin($request);
-
         try {
             $backupPath = storage_path('app/backups/'.$filename);
 
@@ -268,8 +261,6 @@ class BackupController extends Controller
      */
     public function restoreBackup(Request $request, string $filename)
     {
-        $this->enforceSubscriptionAdmin($request);
-
         try {
             $backupPath = storage_path('app/backups/'.$filename);
 
@@ -311,8 +302,6 @@ class BackupController extends Controller
      */
     public function uploadAndRestore(Request $request)
     {
-        $this->enforceSubscriptionAdmin($request);
-
         try {
             // Check PHP-level upload errors before validation (e.g. missing temp dir, size limits)
             $file = $request->file('backup_file');

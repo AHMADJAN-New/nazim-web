@@ -820,16 +820,42 @@ export const platformApi = {
   // Backup & Restore
   backups: {
     list: async () => {
-      const response = await apiClient.get<{
-        success: boolean;
-        backups: Array<{
-          filename: string;
-          size: string;
-          created_at: string;
-          path: string;
-        }>;
-      }>('/platform/backups');
-      return response.backups;
+      const response = await apiClient.get<
+        | {
+            success?: boolean;
+            backups?: Array<{
+              filename: string;
+              size: string;
+              created_at: string;
+              path: string;
+            }>;
+            data?: {
+              backups?: Array<{
+                filename: string;
+                size: string;
+                created_at: string;
+                path: string;
+              }>;
+            };
+          }
+        | Array<{
+            filename: string;
+            size: string;
+            created_at: string;
+            path: string;
+          }>
+      >('/platform/backups');
+
+      if (Array.isArray(response)) {
+        return response;
+      }
+      if (Array.isArray(response?.backups)) {
+        return response.backups;
+      }
+      if (Array.isArray(response?.data?.backups)) {
+        return response.data.backups;
+      }
+      return [];
     },
     create: async (backupType: 'database' | 'all' = 'all') => {
       return apiClient.post<{

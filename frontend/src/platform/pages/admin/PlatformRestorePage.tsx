@@ -70,13 +70,7 @@ export default function PlatformRestorePage() {
 
   const { data: backups = [], isLoading: isBackupsLoading } = useQuery({
     queryKey: ['platform-backups'],
-    queryFn: async () => {
-      try {
-        return await platformApi.backups.list();
-      } catch {
-        return [];
-      }
-    },
+    queryFn: async () => platformApi.backups.list(),
     enabled: hasAdminPermission && !permissionsLoading,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -172,11 +166,11 @@ export default function PlatformRestorePage() {
             <div className="py-8 text-center text-muted-foreground">
               <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p>No backups available</p>
-              <p className="text-sm mt-1">
-                <Link to="/platform/backups" className="underline hover:no-underline">
-                  Create a backup first
-                </Link>
-              </p>
+              <div className="mt-3">
+                <Button asChild size="sm">
+                  <Link to="/platform/backups">Create Backup</Link>
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
