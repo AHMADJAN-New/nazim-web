@@ -409,6 +409,34 @@ class FileStorageService
         return $filePath;
     }
 
+    /**
+     * Store an organization order form attachment (PRIVATE, org-level).
+     * Path: organizations/{orgId}/subscription/order-forms/{orderFormId}/{category}
+     */
+    public function storeOrganizationOrderFormDocument(
+        UploadedFile $file,
+        string $organizationId,
+        string $orderFormId,
+        ?string $documentCategory = null
+    ): string {
+        $this->checkStorageLimit($file, $organizationId);
+
+        $safeCategory = $this->sanitizePathSegment($documentCategory ?? 'other');
+        $path = $this->buildPath(
+            $organizationId,
+            null,
+            'subscription',
+            'order-forms',
+            $orderFormId,
+            $safeCategory !== '' ? $safeCategory : 'other'
+        );
+        $filePath = $this->storeFile($file, $path, self::DISK_PRIVATE);
+
+        $this->updateStorageUsage($file, $organizationId);
+
+        return $filePath;
+    }
+
     // ==============================================
     // DMS FILES (Document Management System)
     // ==============================================

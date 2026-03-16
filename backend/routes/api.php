@@ -1739,6 +1739,7 @@ Route::get('/reports/preview/template', [\App\Http\Controllers\ReportGenerationC
 // =====================================================
 
 use App\Http\Controllers\ContactMessageController;
+use App\Http\Controllers\PlatformOrganizationOrderFormController;
 use App\Http\Controllers\SubscriptionAdminController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TestimonialController;
@@ -1825,6 +1826,13 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/organizations/{organizationId}/recalculate-usage', [SubscriptionAdminController::class, 'recalculateUsage']);
     Route::post('/organizations/{organizationId}/maintenance-payment', [SubscriptionAdminController::class, 'recordMaintenancePayment']);
     Route::post('/organizations/{organizationId}/license-payment', [SubscriptionAdminController::class, 'recordLicensePayment']);
+    Route::get('/organizations/{organizationId}/order-form', [PlatformOrganizationOrderFormController::class, 'show']);
+    Route::put('/organizations/{organizationId}/order-form', [PlatformOrganizationOrderFormController::class, 'upsert']);
+    Route::get('/organizations/{organizationId}/order-form/pdf', [PlatformOrganizationOrderFormController::class, 'downloadPdf']);
+    Route::post('/organizations/{organizationId}/order-form/pdf', [PlatformOrganizationOrderFormController::class, 'downloadPdfWithData']);
+    Route::post('/organizations/{organizationId}/order-form/documents', [PlatformOrganizationOrderFormController::class, 'uploadDocument']);
+    Route::get('/organizations/{organizationId}/order-form/documents/{documentId}/download', [PlatformOrganizationOrderFormController::class, 'downloadDocument']);
+    Route::delete('/organizations/{organizationId}/order-form/documents/{documentId}', [PlatformOrganizationOrderFormController::class, 'destroyDocument']);
 
     // Payments & renewals
     Route::get('/payments/pending', [SubscriptionAdminController::class, 'listPendingPayments']);
