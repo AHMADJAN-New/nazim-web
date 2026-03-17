@@ -64,7 +64,10 @@ class DefaultRolePermissionSyncService
                 ->map(fn ($permissionId) => (string) $permissionId)
                 ->all();
 
-            $permissionsToAdd = array_values(array_diff($expectedPermissionIds, $currentPermissionIds));
+            $permissionsToAdd = array_values(array_unique(
+                array_values(array_diff($expectedPermissionIds, $currentPermissionIds)),
+                SORT_REGULAR
+            ));
             $permissionsToRemove = array_values(array_diff($currentPermissionIds, $expectedPermissionIds));
 
             if (! empty($permissionsToAdd)) {
