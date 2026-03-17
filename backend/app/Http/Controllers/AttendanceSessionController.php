@@ -884,22 +884,15 @@ class AttendanceSessionController extends Controller
                 $q->whereNull('deleted_at');
             });
 
+        $classIds = $this->normalizeRequestedClassIds($request);
+
         if ($request->filled('student_id')) {
             $query->where('attendance_records.student_id', $request->input('student_id'));
         }
 
-        if ($request->filled('class_id')) {
-            $query->whereHas('session', function ($q) use ($request) {
-                $q->where('class_id', $request->input('class_id'));
-            });
-        }
-
-        if ($request->filled('class_ids')) {
-            $classIds = $request->input('class_ids');
+        if (! empty($classIds)) {
             $query->whereHas('session', function ($q) use ($classIds) {
-                $q->whereHas('classes', function ($cq) use ($classIds) {
-                    $cq->whereIn('classes.id', $classIds);
-                })->orWhereIn('class_id', $classIds);
+                $this->applyAttendanceSessionClassFilter($q, $classIds);
             });
         }
 
@@ -1224,6 +1217,8 @@ class AttendanceSessionController extends Controller
             'language' => 'nullable|in:en,ps,fa,ar',
             'student_id' => 'nullable|uuid',
             'class_id' => 'nullable|uuid',
+            'class_ids' => 'nullable|array|min:1',
+            'class_ids.*' => 'required|uuid|exists:classes,id',
             'school_id' => 'nullable|uuid',
             'status' => 'nullable|in:present,absent,late,excused,sick,leave',
             'date_from' => 'nullable|date',
@@ -1234,6 +1229,7 @@ class AttendanceSessionController extends Controller
         $currentSchoolId = $this->getCurrentSchoolId($request);
         $calendarPreference = $validated['calendar_preference'] ?? 'jalali';
         $language = $validated['language'] ?? 'ps';
+        $classIds = $this->normalizeRequestedClassIds($request);
 
         // Build query based on filters
         $query = AttendanceRecord::with(['student', 'session.classModel', 'session.classes', 'session.school'])
@@ -1248,9 +1244,9 @@ class AttendanceSessionController extends Controller
         if (! empty($validated['student_id'])) {
             $query->where('attendance_records.student_id', $validated['student_id']);
         }
-        if (! empty($validated['class_id'])) {
-            $query->whereHas('session', function ($q) use ($validated) {
-                $q->where('class_id', $validated['class_id']);
+        if (! empty($classIds)) {
+            $query->whereHas('session', function ($q) use ($classIds) {
+                $this->applyAttendanceSessionClassFilter($q, $classIds);
             });
         }
         if (! empty($validated['status'])) {
@@ -1543,5 +1539,37 @@ class AttendanceSessionController extends Controller
                 'error' => 'Failed to generate report: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    private function normalizeRequestedClassIds(Request $request): array
+    {
+        $classIds = [];
+
+        if ($request->filled('class_ids')) {
+            $classIds = array_values(array_filter(
+                $request->input('class_ids', []),
+                fn ($classId) => is_string($classId) && $classId !== ''
+            ));
+        }
+
+        if ($request->filled('class_id')) {
+            $classIds[] = $request->input('class_id');
+        }
+
+        return array_values(array_unique($classIds));
+    }
+
+    private function applyAttendanceSessionClassFilter($query, array $classIds): void
+    {
+        if (empty($classIds)) {
+            return;
+        }
+
+        $query->where(function ($sessionQuery) use ($classIds) {
+            $sessionQuery->whereIn('class_id', $classIds)
+                ->orWhereHas('classes', function ($classQuery) use ($classIds) {
+                    $classQuery->whereIn('classes.id', $classIds);
+                });
+        });
     }
 }

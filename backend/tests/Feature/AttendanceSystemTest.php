@@ -347,4 +347,57 @@ class AttendanceSystemTest extends TestCase
             'status' => 'absent',
         ]);
     }
+
+    /** @test */
+    public function attendance_report_class_filter_includes_sessions_attached_through_pivot_classes()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $primaryClass = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $attachedClass = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $primaryClass->id,
+        ]);
+
+        $session->classes()->attach($attachedClass->id);
+
+        $record = AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'status' => 'present',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/attendance-sessions/report', [
+            'class_id' => $attachedClass->id,
+            'per_page' => 25,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonFragment([
+                'id' => $record->id,
+                'student_id' => $student->id,
+            ]);
+    }
 }

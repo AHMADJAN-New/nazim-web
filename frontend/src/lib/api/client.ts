@@ -2741,6 +2741,7 @@ export const attendanceSessionsApi = {
     language?: 'en' | 'ps' | 'fa' | 'ar';
     student_id?: string;
     class_id?: string;
+    class_ids?: string[];
     school_id?: string;
     status?: 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
     date_from?: string;
@@ -5619,3 +5620,4 @@ export const activityLogsApi = {
     }>('/activity-logs/stats');
   },
 };
+
