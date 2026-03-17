@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
+use App\Models\AcademicYear;
 use App\Models\Organization;
 use App\Models\SchoolBranding;
 use App\Models\Student;
@@ -169,6 +171,180 @@ class AttendanceSystemTest extends TestCase
         $this->assertDatabaseHas('attendance_sessions', [
             'id' => $session->id,
             'status' => 'closed',
+        ]);
+    }
+
+    /** @test */
+    public function closing_a_session_marks_unmarked_students_absent()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'method' => 'barcode',
+            'status' => 'open',
+        ]);
+
+        $presentStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $absentStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        foreach ([$presentStudent, $absentStudent] as $student) {
+            StudentAdmission::create([
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'academic_year_id' => $academicYear->id,
+            ]);
+        }
+
+        AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $presentStudent->id,
+            'status' => 'present',
+            'entry_method' => 'barcode',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'POST', "/api/attendance-sessions/{$session->id}/close");
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('attendance_sessions', [
+            'id' => $session->id,
+            'status' => 'closed',
+        ]);
+
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'student_id' => $presentStudent->id,
+            'status' => 'present',
+        ]);
+
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'student_id' => $absentStudent->id,
+            'status' => 'absent',
+        ]);
+    }
+
+    /** @test */
+    public function closing_a_session_preserves_explicit_statuses_before_marking_remaining_students_absent()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'method' => 'manual',
+            'status' => 'open',
+        ]);
+
+        $sickStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $leaveStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $unmarkedStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        foreach ([$sickStudent, $leaveStudent, $unmarkedStudent] as $student) {
+            StudentAdmission::create([
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'academic_year_id' => $academicYear->id,
+            ]);
+        }
+
+        AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $sickStudent->id,
+            'status' => 'sick',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $leaveStudent->id,
+            'status' => 'leave',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'PUT', "/api/attendance-sessions/{$session->id}", [
+            'status' => 'closed',
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'student_id' => $sickStudent->id,
+            'status' => 'sick',
+        ]);
+
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'student_id' => $leaveStudent->id,
+            'status' => 'leave',
+        ]);
+
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'student_id' => $unmarkedStudent->id,
+            'status' => 'absent',
         ]);
     }
 }

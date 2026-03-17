@@ -65,11 +65,16 @@ class UpdateStudentAdmissionRequest extends FormRequest
 
     /**
      * Prepare the data for validation.
+     * Remove school_id and organization_id before validation - the API client may add
+     * school_id as a query param for users with schools_access_all; we ignore it.
      */
     protected function prepareForValidation(): void
     {
+        // Strip school_id and organization_id so they don't trigger 'prohibited' validation
+        $input = $this->except(['school_id', 'organization_id']);
+        $this->replace($input);
+
         // Convert empty strings to null for optional fields
-        // Note: school_id is excluded as it's prohibited from updates
         $fieldsToClean = [
             'academic_year_id', 'class_id', 'class_academic_year_id',
             'residency_type_id', 'room_id', 'admission_year', 'enrollment_type',
@@ -84,9 +89,8 @@ class UpdateStudentAdmissionRequest extends FormRequest
             }
         }
 
-        if (!empty($data)) {
+        if (! empty($data)) {
             $this->merge($data);
         }
     }
 }
-

@@ -1,29 +1,28 @@
 import { format } from 'date-fns';
-import { ClipboardList, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { ClipboardList } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { useAttendanceSession, useAttendanceSessions, useCreateAttendanceSession, useCloseAttendanceSession } from '@/hooks/useAttendance';
+import { useAttendanceSessions, useCreateAttendanceSession } from '@/hooks/useAttendance';
 import { useClasses } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useSchools } from '@/hooks/useSchools';
-import { cn } from '@/lib/utils';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
+import { cn } from '@/lib/utils';
 import type { AttendanceSessionInsert } from '@/types/domain/attendance';
 
 
 export default function Attendance() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessionDate, setSessionDate] = useState<string>('');
@@ -35,9 +34,7 @@ export default function Attendance() {
 
 
   const { sessions, pagination, page, pageSize, setPage, setPageSize, isLoading: sessionsLoading } = useAttendanceSessions({}, true);
-  const { session } = useAttendanceSession(selectedSessionId || undefined);
   const createSession = useCreateAttendanceSession();
-  const closeSession = useCloseAttendanceSession();
   
   // Check for session query param and auto-select session
   useEffect(() => {
@@ -87,8 +84,9 @@ export default function Attendance() {
       setSelectedClassIds([]);
       setSessionDate('');
       setSessionRemarks('');
-    } catch (error: any) {
-      showToast.error(error.message || t('events.error'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('events.error');
+      showToast.error(message || t('events.error'));
     }
   };
 
@@ -201,8 +199,8 @@ export default function Attendance() {
                       setSelectedSessionId(item.id);
                     }}>
                       <div className="flex items-center gap-2 flex-wrap">
-                        {item.classes && item.classes.length > 0 ? (
-                          item.classes.map((cls, idx) => (
+                          {item.classes && item.classes.length > 0 ? (
+                            item.classes.map((cls) => (
                             <Badge key={cls.id} variant="outline" className="text-xs">
                               {cls.name}
                             </Badge>
@@ -224,13 +222,12 @@ export default function Attendance() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            closeSession.mutate(item.id);
+                            navigate(`/attendance/marking?session=${item.id}`);
                           }}
-                          disabled={closeSession.isPending}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          title={t('attendancePage.closeSession') || 'Close session'}
+                          className="h-8 w-8 p-0 hover:bg-primary/10"
+                          title={t('attendancePage.reviewInMarking') || 'Review in marking'}
                         >
-                          <X className="h-4 w-4" />
+                          <ClipboardList className="h-4 w-4" />
                         </Button>
                       )}
                     </div>

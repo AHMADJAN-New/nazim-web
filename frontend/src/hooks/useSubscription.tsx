@@ -347,7 +347,7 @@ export const useSubscriptionStatus = () => {
  * Get current usage statistics
  * CRITICAL: Only accessible to users with subscription.read permission (admin and organization_admin)
  */
-export const useUsage = () => {
+export const useUsage = (options: { enabled?: boolean } = {}) => {
   const { user, profile } = useAuth();
   const hasSubscriptionRead = useHasPermission('subscription.read');
 
@@ -379,7 +379,7 @@ export const useUsage = () => {
         throw error;
       }
     },
-    enabled: !!user && !!profile?.organization_id && hasSubscriptionRead === true,
+    enabled: !!user && !!profile?.organization_id && hasSubscriptionRead === true && (options.enabled ?? true),
     staleTime: 2 * 60 * 1000, // 2 minutes - usage changes but not that frequently
     ...queryOptionsNoRefetchOnFocus,
     refetchOnMount: true, // Still refetch on mount to get fresh data
@@ -402,7 +402,7 @@ export const useUsage = () => {
 const recentlyInvalidatedFeatures = new Set<string>();
 const invalidationTimeouts = new Map<string, NodeJS.Timeout>();
 
-export const useFeatures = () => {
+export const useFeatures = (options: { enabled?: boolean } = {}) => {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const hasSubscriptionRead = useHasPermission('subscription.read');
@@ -505,7 +505,7 @@ export const useFeatures = () => {
         throw error;
       }
     },
-    enabled: !!user && !!organizationId && hasSubscriptionRead === true,
+    enabled: !!user && !!organizationId && hasSubscriptionRead === true && (options.enabled ?? true),
     staleTime: 5 * 60 * 1000, // 5 minutes
     ...queryOptionsNoRefetchOnFocus,
     retry: (failureCount, error: any) => {

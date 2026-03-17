@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, Shield, Play, Globe } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { ContextualHelpButton } from "@/components/help/ContextualHelpButton";
 import { NotificationDrawer } from "@/components/notifications/NotificationDrawer";
@@ -54,6 +54,7 @@ interface AppHeaderProps {
 export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] }: AppHeaderProps) {
   const { user, signOut, profile: authProfile, refreshAuth } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, setLanguage, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -61,12 +62,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const { data: unreadCount } = useNotificationCount();
+  const isAttendanceMarkingPage = location.pathname.startsWith('/attendance/marking');
+  const { data: unreadCount } = useNotificationCount({ enabled: !isAttendanceMarkingPage });
 
   const queryClient = useQueryClient();
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
   const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
-  const { data: features } = useFeatures();
+  const { data: features } = useFeatures({ enabled: !isAttendanceMarkingPage });
   const hasWebsitePermissionAndFeature = useHasAnyWebsitePermissionAndFeature();
 
   // Show website button only when org has the feature AND user has at least one website permission

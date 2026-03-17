@@ -5,6 +5,19 @@ This is a comprehensive Islamic school management system built with React, TypeS
 
 **⚠️ CRITICAL: This is a MULTI-TENANT SaaS application. ALL code must enforce organization isolation. See "Multi-Tenancy Architecture" section below.**
 
+## Superpowers Plugin (Always Use)
+
+**CRITICAL: This project uses the Superpowers plugin. The agent MUST use it on every relevant task.**
+
+- **Invoke relevant skills before responding.** If there is even a 1% chance a Superpowers skill applies, invoke it first. See `.cursor/rules/superpowers.mdc` for the full rule.
+- **Creative work** (new features, components, behavior) → Use **brainstorming** first (or user runs `/brainstorm`).
+- **Bugs / test failures** → Use **systematic-debugging** before proposing fixes.
+- **Feature or bugfix implementation** → Use **test-driven-development** (tests first, then code) when appropriate.
+- **Multi-step work** → Use **writing-plans** then **executing-plans** or **subagent-driven-development**; user can run `/write-plan` and `/execute-plan`.
+- **Before claiming done** → Use **verification-before-completion**; after major steps use **requesting-code-review** or **code-reviewer** subagent; when implementation is complete use **finishing-a-development-branch**.
+- **Multiple independent tasks** → Use **dispatching-parallel-agents**. **Isolated feature work** → Use **using-git-worktrees** when requested.
+- **Rigid skills** (TDD, debugging, verification): Follow exactly; do not relax the workflow.
+
 ## Tech Stack
 - **Frontend**: React 18.3.1, TypeScript, Vite, Tailwind CSS, shadcn/ui
 - **Backend**: Laravel 12 (PHP 8.2+), PostgreSQL, Laravel Sanctum (API Authentication)

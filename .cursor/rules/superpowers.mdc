@@ -1,0 +1,32 @@
+---
+description: Always use the Superpowers plugin — invoke relevant skills before responding, brainstorm before creative work, and follow TDD/debugging/planning workflows.
+globs: 
+  - "**/*"
+alwaysApply: true
+---
+
+# Superpowers Plugin — Always Use
+
+**CRITICAL: This project uses the Superpowers plugin. The agent MUST use it on every relevant task.**
+
+## Rule
+
+1. **Invoke relevant skills before responding.** If there is even a 1% chance a Superpowers skill applies, invoke it first (via the Skill tool or by following the skill's instructions). Do not skip skills to "save time" or because the task "seems simple."
+
+2. **Skill priority:**
+   - **Creative work** (new features, components, behavior changes) → Use **brainstorming** first to clarify intent, requirements, and design before implementation.
+   - **Bugs / test failures / unexpected behavior** → Use **systematic-debugging** before proposing fixes.
+   - **Feature or bugfix implementation** → Use **test-driven-development** (tests first, then code) when appropriate.
+   - **Multi-step work with a spec** → Use **writing-plans** to produce a step-by-step plan, then **executing-plans** or **subagent-driven-development** to run it.
+   - **Completion / merge** → Use **verification-before-completion** before claiming done; use **requesting-code-review** or **code-reviewer** subagent after major steps; use **finishing-a-development-branch** when implementation is complete and tests pass.
+   - **Multiple independent tasks** → Use **dispatching-parallel-agents** when 2+ tasks can be done in parallel without shared state.
+   - **Isolated feature work** → Use **using-git-worktrees** when the user wants isolation from the current branch.
+
+3. **Commands (user can invoke with `/`):**
+   - `/brainstorm` — Before any creative work; explore requirements and design.
+   - `/write-plan` — Turn a spec or requirements into a detailed implementation plan.
+   - `/execute-plan` — Execute a written plan in batches with review checkpoints.
+
+4. **Rigid skills** (TDD, debugging, verification-before-completion): Follow exactly. Do not relax the workflow.
+
+5. **When in doubt,** invoke the skill. If a skill turns out not to apply, it's acceptable to proceed without it after checking.

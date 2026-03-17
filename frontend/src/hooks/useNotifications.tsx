@@ -64,13 +64,13 @@ export const useNotifications = (options: NotificationQueryOptions = {}) => {
   });
 };
 
-export const useNotificationCount = () => {
+export const useNotificationCount = (options: { enabled?: boolean } = {}) => {
   const { user } = useAuth();
 
   return useQuery({
     queryKey: [NOTIFICATION_QUERY_KEY, 'count', user?.id],
     queryFn: notificationsApi.unreadCount,
-    enabled: !!user,
+    enabled: !!user && (options.enabled ?? true),
     refetchInterval: 30000,
     refetchOnWindowFocus: false,
   });

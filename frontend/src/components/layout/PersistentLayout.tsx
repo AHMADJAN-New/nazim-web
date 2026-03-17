@@ -50,7 +50,8 @@ export function PersistentLayout() {
   
   // Don't show banner on the subscription page itself
   const isSubscriptionPage = location.pathname.startsWith('/subscription');
-  const showBanner = !bannerDismissed && !isSubscriptionPage;
+  const isAttendanceMarkingPage = location.pathname.startsWith('/attendance/marking');
+  const showBanner = !bannerDismissed && !isSubscriptionPage && !isAttendanceMarkingPage;
   
   const handleDismissBanner = useCallback(() => {
     setBannerDismissed(true);

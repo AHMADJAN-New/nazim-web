@@ -28,21 +28,23 @@ class AttendanceSessionController extends Controller
         private DateConversionService $dateService,
         private NotificationService $notificationService
     ) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.read')) {
+            if (! $user->hasPermissionTo('attendance_sessions.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -75,11 +77,11 @@ class AttendanceSessionController extends Controller
 
         // Sort by latest first (session_date desc, then created_at desc)
         $query->orderBy('session_date', 'desc')
-              ->orderBy('created_at', 'desc');
+            ->orderBy('created_at', 'desc');
 
         $perPage = $request->integer('per_page', 25);
         $allowedPerPage = [10, 25, 50, 100];
-        if (!in_array($perPage, $allowedPerPage, true)) {
+        if (! in_array($perPage, $allowedPerPage, true)) {
             $perPage = 25;
         }
 
@@ -93,16 +95,17 @@ class AttendanceSessionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.create')) {
+            if (! $user->hasPermissionTo('attendance_sessions.create')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.create: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.create: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -110,8 +113,8 @@ class AttendanceSessionController extends Controller
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Determine class IDs: use class_ids array if provided, otherwise use class_id (backward compatibility)
-        $classIds = !empty($validated['class_ids']) ? $validated['class_ids'] : 
-                    (!empty($validated['class_id']) ? [$validated['class_id']] : []);
+        $classIds = ! empty($validated['class_ids']) ? $validated['class_ids'] :
+                    (! empty($validated['class_id']) ? [$validated['class_id']] : []);
 
         if (empty($classIds)) {
             return response()->json(['error' => 'At least one class is required'], 422);
@@ -155,7 +158,7 @@ class AttendanceSessionController extends Controller
             }
             $session->classes()->attach($classIds, $pivot);
 
-            if (!empty($validated['records'])) {
+            if (! empty($validated['records'])) {
                 foreach ($validated['records'] as $record) {
                     AttendanceRecord::create([
                         'attendance_session_id' => $session->id,
@@ -194,7 +197,7 @@ class AttendanceSessionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log attendance session creation: ' . $e->getMessage());
+            Log::warning('Failed to log attendance session creation: '.$e->getMessage());
         }
 
         // Notify about attendance session creation
@@ -202,7 +205,7 @@ class AttendanceSessionController extends Controller
             $classNames = $session->classes->pluck('name')->join(', ') ?: ($session->classModel?->name ?? 'Class');
             $sessionDate = $session->session_date ? Carbon::parse($session->session_date)->format('Y-m-d') : 'N/A';
             $method = ucfirst($session->method ?? 'manual');
-            
+
             $this->notificationService->notify(
                 'attendance.session.created',
                 $session,
@@ -228,16 +231,17 @@ class AttendanceSessionController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.read')) {
+            if (! $user->hasPermissionTo('attendance_sessions.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -252,7 +256,7 @@ class AttendanceSessionController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
@@ -264,16 +268,17 @@ class AttendanceSessionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.update')) {
+            if (! $user->hasPermissionTo('attendance_sessions.update')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.update: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -288,7 +293,7 @@ class AttendanceSessionController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
@@ -297,14 +302,26 @@ class AttendanceSessionController extends Controller
 
         // Track old status for status change notification
         $oldStatus = $session->status;
-        
-        $session->update([
-            'status' => $validated['status'] ?? $session->status,
-            'remarks' => $validated['remarks'] ?? $session->remarks,
-            'closed_at' => ($validated['status'] ?? $session->status) === 'closed' ? now() : null,
-        ]);
+        $nextStatus = $validated['status'] ?? $session->status;
 
-        $session->fresh(['classModel', 'classes', 'school', 'academicYear']);
+        DB::transaction(function () use ($session, $validated, $nextStatus, $oldStatus, $profile, $currentSchoolId, $user) {
+            $session->update([
+                'status' => $nextStatus,
+                'remarks' => $validated['remarks'] ?? $session->remarks,
+                'closed_at' => $nextStatus === 'closed' ? now() : null,
+            ]);
+
+            if ($nextStatus === 'closed' && $oldStatus !== 'closed') {
+                $this->finalizeUnmarkedStudentsAsAbsent(
+                    $session,
+                    $profile->organization_id,
+                    $currentSchoolId,
+                    $user->id
+                );
+            }
+        });
+
+        $session->fresh(['classModel', 'classes', 'school', 'academicYear', 'records']);
 
         // Log attendance session update
         try {
@@ -321,7 +338,7 @@ class AttendanceSessionController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log attendance session update: ' . $e->getMessage());
+            Log::warning('Failed to log attendance session update: '.$e->getMessage());
         }
 
         // Notify if session is closed
@@ -330,7 +347,7 @@ class AttendanceSessionController extends Controller
                 $classNames = $session->classes->pluck('name')->join(', ') ?: ($session->classModel?->name ?? 'Class');
                 $sessionDate = $session->session_date ? Carbon::parse($session->session_date)->format('Y-m-d') : 'N/A';
                 $recordsCount = $session->records()->whereNull('deleted_at')->count();
-                
+
                 $this->notificationService->notify(
                     'attendance.session.closed',
                     $session,
@@ -357,16 +374,17 @@ class AttendanceSessionController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.update')) {
+            if (! $user->hasPermissionTo('attendance_sessions.update')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.update: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -377,7 +395,7 @@ class AttendanceSessionController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
@@ -385,10 +403,19 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Session is already closed'], 422);
         }
 
-        $session->update([
-            'status' => 'closed',
-            'closed_at' => now(),
-        ]);
+        DB::transaction(function () use ($session, $profile, $currentSchoolId, $user) {
+            $this->finalizeUnmarkedStudentsAsAbsent(
+                $session,
+                $profile->organization_id,
+                $currentSchoolId,
+                $user->id
+            );
+
+            $session->update([
+                'status' => 'closed',
+                'closed_at' => now(),
+            ]);
+        });
 
         // Load relationships for notification
         $session->fresh(['classModel', 'classes', 'school', 'academicYear', 'records']);
@@ -398,7 +425,7 @@ class AttendanceSessionController extends Controller
             $classNames = $session->classes->pluck('name')->join(', ') ?: ($session->classModel?->name ?? 'Class');
             $sessionDate = $session->session_date ? Carbon::parse($session->session_date)->format('Y-m-d') : 'N/A';
             $recordsCount = $session->records()->whereNull('deleted_at')->count();
-            
+
             $this->notificationService->notify(
                 'attendance.session.closed',
                 $session,
@@ -419,21 +446,109 @@ class AttendanceSessionController extends Controller
         return response()->json($session);
     }
 
+    private function getSessionClassIds(AttendanceSession $session): array
+    {
+        $session->loadMissing('classes');
+
+        return collect($session->classes->pluck('id'))
+            ->merge($session->class_id ? [$session->class_id] : [])
+            ->filter(fn ($classId) => is_string($classId) && $classId !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function getSessionRosterStudentIds(AttendanceSession $session, string $organizationId, string $currentSchoolId): array
+    {
+        $sessionClassIds = $this->getSessionClassIds($session);
+
+        if (empty($sessionClassIds)) {
+            return [];
+        }
+
+        return DB::table('student_admissions')
+            ->whereIn('class_id', $sessionClassIds)
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $currentSchoolId)
+            ->when($session->academic_year_id, function ($query) use ($session) {
+                $query->where('academic_year_id', $session->academic_year_id);
+            })
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->pluck('student_id')
+            ->filter(fn ($studentId) => is_string($studentId) && $studentId !== '')
+            ->values()
+            ->all();
+    }
+
+    private function finalizeUnmarkedStudentsAsAbsent(
+        AttendanceSession $session,
+        string $organizationId,
+        string $currentSchoolId,
+        string $markedBy
+    ): void {
+        $rosterStudentIds = $this->getSessionRosterStudentIds($session, $organizationId, $currentSchoolId);
+
+        if (empty($rosterStudentIds)) {
+            return;
+        }
+
+        $existingStudentIds = DB::table('attendance_records')
+            ->where('attendance_session_id', $session->id)
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->pluck('student_id')
+            ->filter(fn ($studentId) => is_string($studentId) && $studentId !== '')
+            ->all();
+
+        $missingStudentIds = array_values(array_diff($rosterStudentIds, $existingStudentIds));
+
+        if (empty($missingStudentIds)) {
+            return;
+        }
+
+        $timestamp = now();
+
+        foreach (array_chunk($missingStudentIds, 500) as $studentIdChunk) {
+            $payload = array_map(function (string $studentId) use ($session, $organizationId, $currentSchoolId, $markedBy, $timestamp) {
+                return [
+                    'id' => (string) Str::uuid(),
+                    'attendance_session_id' => $session->id,
+                    'organization_id' => $organizationId,
+                    'school_id' => $session->school_id ?? $currentSchoolId,
+                    'student_id' => $studentId,
+                    'status' => 'absent',
+                    'entry_method' => $session->method,
+                    'marked_at' => $timestamp,
+                    'marked_by' => $markedBy,
+                    'note' => null,
+                    'deleted_at' => null,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ];
+            }, $studentIdChunk);
+
+            DB::table('attendance_records')->insert($payload);
+        }
+    }
+
     public function markRecords(MarkAttendanceRecordsRequest $request, string $id)
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.update')) {
+            if (! $user->hasPermissionTo('attendance_sessions.update')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.update: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -443,16 +558,24 @@ class AttendanceSessionController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
         $records = $request->validated('records');
         $studentIds = collect($records)->pluck('student_id')->unique()->values();
 
+        // Get all class IDs for this session (supports multi-class sessions)
+        $sessionClassIds = $this->getSessionClassIds($session);
+
+        if (empty($sessionClassIds)) {
+            return response()->json(['error' => 'Session has no classes configured'], 422);
+        }
+
+        // Check enrollment: student must be in one of the session's classes (strict school isolation)
         $enrolled = DB::table('student_admissions')
             ->whereIn('student_id', $studentIds)
-            ->where('class_id', $session->class_id)
+            ->whereIn('class_id', $sessionClassIds)
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
@@ -500,6 +623,7 @@ class AttendanceSessionController extends Controller
         });
 
         $session->refresh();
+
         return response()->json($session->load(['records.student', 'classModel', 'school']));
     }
 
@@ -508,16 +632,17 @@ class AttendanceSessionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.update')) {
+            if (! $user->hasPermissionTo('attendance_sessions.update')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.update: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.update: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -527,7 +652,7 @@ class AttendanceSessionController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
@@ -538,31 +663,34 @@ class AttendanceSessionController extends Controller
         $validated = $request->validated();
         $searchTerm = trim($validated['card_number']);
 
-        // Search by card_number, admission_no, or student_code
+        // Search by card_number, admission_no, or student_code (strict school isolation)
         $student = DB::table('students')
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->where(function ($q) use ($searchTerm) {
                 $q->where('card_number', $searchTerm)
-                  ->orWhere('admission_no', $searchTerm)
-                  ->orWhere('student_code', $searchTerm);
+                    ->orWhere('admission_no', $searchTerm)
+                    ->orWhere('student_code', $searchTerm);
             })
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found for this organization'], 404);
         }
 
-        $isEnrolled = DB::table('student_admissions')
+        // Get all class IDs for this session (supports multi-class sessions)
+        $sessionClassIds = $this->getSessionClassIds($session);
+
+        $isEnrolled = ! empty($sessionClassIds) && DB::table('student_admissions')
             ->where('student_id', $student->id)
-            ->where('class_id', $session->class_id)
+            ->whereIn('class_id', $sessionClassIds)
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->exists();
 
-        if (!$isEnrolled) {
+        if (! $isEnrolled) {
             return response()->json(['error' => 'Student is not enrolled in this class'], 422);
         }
 
@@ -594,16 +722,17 @@ class AttendanceSessionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.read')) {
+            if (! $user->hasPermissionTo('attendance_sessions.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -616,7 +745,7 @@ class AttendanceSessionController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
@@ -634,16 +763,17 @@ class AttendanceSessionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.read')) {
+            if (! $user->hasPermissionTo('attendance_sessions.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -655,8 +785,8 @@ class AttendanceSessionController extends Controller
         ]);
 
         // Determine class IDs: use class_ids array if provided, otherwise use class_id
-        $classIds = !empty($request->input('class_ids')) ? $request->input('class_ids') : 
-                    (!empty($request->input('class_id')) ? [$request->input('class_id')] : []);
+        $classIds = ! empty($request->input('class_ids')) ? $request->input('class_ids') :
+                    (! empty($request->input('class_id')) ? [$request->input('class_id')] : []);
 
         if (empty($classIds)) {
             return response()->json(['error' => 'At least one class is required'], 422);
@@ -675,9 +805,14 @@ class AttendanceSessionController extends Controller
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
-        // Get students from all classes
+        // Get students from all classes (strict school isolation); include father name, class, and room labels
         $students = DB::table('student_admissions as sa')
             ->join('students as s', 'sa.student_id', '=', 's.id')
+            ->leftJoin('classes as c', 'sa.class_id', '=', 'c.id')
+            ->leftJoin('rooms as r', function ($join) {
+                $join->on('sa.room_id', '=', 'r.id')
+                    ->whereNull('r.deleted_at');
+            })
             ->whereIn('sa.class_id', $classIds)
             ->where('sa.organization_id', $profile->organization_id)
             ->where('sa.school_id', $currentSchoolId)
@@ -689,13 +824,17 @@ class AttendanceSessionController extends Controller
             ->select(
                 's.id',
                 's.full_name',
+                's.father_name',
                 's.admission_no',
                 's.card_number',
                 's.student_code',
                 's.gender',
                 'sa.school_id',
                 'sa.class_id',
-                'sa.academic_year_id'
+                'sa.room_id',
+                'sa.academic_year_id',
+                'c.name as class_name',
+                'r.room_number as room_name'
             )
             ->orderBy('s.full_name')
             ->get();
@@ -708,16 +847,17 @@ class AttendanceSessionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.read')) {
+            if (! $user->hasPermissionTo('attendance_sessions.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -787,7 +927,7 @@ class AttendanceSessionController extends Controller
 
         $perPage = $request->integer('per_page', 25);
         $allowedPerPage = [10, 25, 50, 100];
-        if (!in_array($perPage, $allowedPerPage, true)) {
+        if (! in_array($perPage, $allowedPerPage, true)) {
             $perPage = 25;
         }
 
@@ -823,16 +963,17 @@ class AttendanceSessionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.report') && !$user->hasPermissionTo('attendance_sessions.read')) {
+            if (! $user->hasPermissionTo('attendance_sessions.report') && ! $user->hasPermissionTo('attendance_sessions.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.report: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.report: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -849,15 +990,15 @@ class AttendanceSessionController extends Controller
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $classIds = [];
-        if (!empty($validated['class_ids'])) {
+        if (! empty($validated['class_ids'])) {
             $classIds = $validated['class_ids'];
         }
 
-        if (!empty($validated['class_id'])) {
+        if (! empty($validated['class_id'])) {
             $classIds[] = $validated['class_id'];
         }
 
-        if (!empty($classIds)) {
+        if (! empty($classIds)) {
             $classIds = array_unique($classIds);
             $validClassCount = DB::table('classes')
                 ->whereIn('id', $classIds)
@@ -889,7 +1030,7 @@ class AttendanceSessionController extends Controller
             $sessionQuery->where('attendance_sessions.academic_year_id', $request->input('academic_year_id'));
         }
 
-        if (!empty($classIds)) {
+        if (! empty($classIds)) {
             $recordQuery->where(function ($q) use ($classIds) {
                 $q->whereIn('s.class_id', $classIds)
                     ->orWhereExists(function ($sub) use ($classIds) {
@@ -1053,7 +1194,7 @@ class AttendanceSessionController extends Controller
 
     /**
      * Generate attendance report
-     * 
+     *
      * POST /api/attendance-sessions/generate-report
      */
     public function generateReport(Request $request)
@@ -1061,16 +1202,17 @@ class AttendanceSessionController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('attendance_sessions.read')) {
+            if (! $user->hasPermissionTo('attendance_sessions.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for attendance_sessions.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for attendance_sessions.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -1103,28 +1245,28 @@ class AttendanceSessionController extends Controller
             });
 
         // Apply filters
-        if (!empty($validated['student_id'])) {
+        if (! empty($validated['student_id'])) {
             $query->where('attendance_records.student_id', $validated['student_id']);
         }
-        if (!empty($validated['class_id'])) {
+        if (! empty($validated['class_id'])) {
             $query->whereHas('session', function ($q) use ($validated) {
                 $q->where('class_id', $validated['class_id']);
             });
         }
-        if (!empty($validated['status'])) {
+        if (! empty($validated['status'])) {
             $query->where('attendance_records.status', $validated['status']);
         }
-        if (!empty($validated['date_from'])) {
+        if (! empty($validated['date_from'])) {
             $query->whereHas('session', function ($q) use ($validated) {
                 $q->whereDate('session_date', '>=', Carbon::parse($validated['date_from'])->toDateString());
             });
         }
-        if (!empty($validated['date_to'])) {
+        if (! empty($validated['date_to'])) {
             $query->whereHas('session', function ($q) use ($validated) {
                 $q->whereDate('session_date', '<=', Carbon::parse($validated['date_to'])->toDateString());
             });
         }
-        if (!empty($validated['academic_year_id'])) {
+        if (! empty($validated['academic_year_id'])) {
             $query->whereHas('session', function ($q) use ($validated) {
                 $q->where('academic_year_id', $validated['academic_year_id']);
             });
@@ -1139,14 +1281,14 @@ class AttendanceSessionController extends Controller
         $dateRangeText = '';
 
         // Build date range text
-        if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+        if (! empty($validated['date_from']) && ! empty($validated['date_to'])) {
             $dateFrom = $this->dateService->formatDate($validated['date_from'], $calendarPreference, 'full', $language);
             $dateTo = $this->dateService->formatDate($validated['date_to'], $calendarPreference, 'full', $language);
             $dateRangeText = "{$dateFrom} - {$dateTo}";
-        } elseif (!empty($validated['date_from'])) {
+        } elseif (! empty($validated['date_from'])) {
             $dateFrom = $this->dateService->formatDate($validated['date_from'], $calendarPreference, 'full', $language);
             $dateRangeText = "From: {$dateFrom}";
-        } elseif (!empty($validated['date_to'])) {
+        } elseif (! empty($validated['date_to'])) {
             $dateTo = $this->dateService->formatDate($validated['date_to'], $calendarPreference, 'full', $language);
             $dateRangeText = "Until: {$dateTo}";
         }
@@ -1171,11 +1313,11 @@ class AttendanceSessionController extends Controller
                     'student_name' => $record->student?->full_name ?? '—',
                     'admission_no' => $record->student?->admission_no ?? '—',
                     'class_name' => $record->session?->classModel?->name ?? ($record->session?->classes?->first()?->name ?? '—'),
-                    'session_date' => $record->session?->session_date 
+                    'session_date' => $record->session?->session_date
                         ? $this->dateService->formatDate($record->session->session_date, $calendarPreference, 'full', $language)
                         : '—',
                     'status' => ucfirst($record->status),
-                    'marked_at' => $this->dateService->formatDate($record->marked_at, $calendarPreference, 'full', $language) . ' ' . Carbon::parse($record->marked_at)->format('H:i'),
+                    'marked_at' => $this->dateService->formatDate($record->marked_at, $calendarPreference, 'full', $language).' '.Carbon::parse($record->marked_at)->format('H:i'),
                     'entry_method' => ucfirst($record->entry_method ?? '—'),
                 ];
             }
@@ -1303,7 +1445,7 @@ class AttendanceSessionController extends Controller
 
             // Filter for sessions without class assignment
             $roomRecords = $records->filter(function ($record) {
-                return !$record->session?->classModel && (!$record->session?->classes || $record->session->classes->isEmpty());
+                return ! $record->session?->classModel && (! $record->session?->classes || $record->session->classes->isEmpty());
             });
 
             $grouped = $roomRecords->groupBy(function ($record) {
@@ -1354,7 +1496,7 @@ class AttendanceSessionController extends Controller
             'date_range' => $dateRangeText,
             'total_count' => count($rows),
         ];
-        
+
         if (isset($totals) && $validated['report_type'] === 'excel') {
             // Mark totals row in parameters for Excel service
             $parameters['show_totals'] = true;
@@ -1395,9 +1537,10 @@ class AttendanceSessionController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json([
                 'success' => false,
-                'error' => 'Failed to generate report: ' . $e->getMessage(),
+                'error' => 'Failed to generate report: '.$e->getMessage(),
             ], 500);
         }
     }

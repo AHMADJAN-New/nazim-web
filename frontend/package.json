@@ -19,7 +19,10 @@
     "i18n:keys:generate": "npx --yes tsx scripts/i18n/generate-translation-keys.ts",
     "i18n:fix-fa": "npx --yes tsx scripts/i18n/fix-fa-dari.ts",
     "i18n:migrate": "npx --yes tsx scripts/i18n/migrate-to-page-structure.ts",
-    "i18n:report": "npx --yes tsx scripts/i18n/translation-key-count-report.ts"
+    "i18n:report": "npx --yes tsx scripts/i18n/translation-key-count-report.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:stress": "playwright test e2e/attendance-stress.spec.ts --headed",
+    "test:e2e:stress:headless": "playwright test e2e/attendance-stress.spec.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -101,6 +104,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",

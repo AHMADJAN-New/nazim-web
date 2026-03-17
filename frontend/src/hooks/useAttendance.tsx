@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
-import { useLanguage } from './useLanguage';
 import { usePagination } from './usePagination';
 
 import { attendanceSessionsApi } from '@/lib/api/client';
@@ -23,6 +22,21 @@ import type {
 } from '@/types/domain/attendance';
 import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
 
+type AttendanceSessionsPaginationApi = {
+  current_page: number;
+  data: AttendanceApi.AttendanceSession[];
+  first_page_url: string;
+  from: number | null;
+  last_page: number;
+  last_page_url: string;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number | null;
+  total: number;
+};
+
 
 export type AttendanceFilters = {
   classId?: string;
@@ -33,12 +47,16 @@ export type AttendanceFilters = {
   schoolId?: string;
 };
 
-export const useAttendanceSessions = (filters: AttendanceFilters = {}, usePaginated: boolean = true) => {
+export const useAttendanceSessions = (
+  filters: AttendanceFilters = {},
+  usePaginated: boolean = true,
+  initialPageSize: number = 10
+) => {
   const { user, profile, profileLoading } = useAuth();
   const isEventUser = profile?.is_event_user === true;
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
     initialPage: 1,
-    initialPageSize: 10,
+    initialPageSize,
   });
 
   const { data, isLoading, error } = useQuery<AttendanceSession[] | PaginatedResponse<AttendanceApi.AttendanceSession>>({
@@ -70,8 +88,8 @@ export const useAttendanceSessions = (filters: AttendanceFilters = {}, usePagina
       const apiSessions = await attendanceSessionsApi.list(params);
 
       if (usePaginated && apiSessions && typeof apiSessions === 'object' && 'data' in apiSessions && 'current_page' in apiSessions) {
-        const paginatedResponse = apiSessions as any;
-        const mapped = (paginatedResponse.data as AttendanceApi.AttendanceSession[]).map(mapAttendanceSessionApiToDomain);
+        const paginatedResponse = apiSessions as AttendanceSessionsPaginationApi;
+        const mapped = paginatedResponse.data.map(mapAttendanceSessionApiToDomain);
         const meta: PaginationMeta = {
           current_page: paginatedResponse.current_page,
           from: paginatedResponse.from,
@@ -139,6 +157,8 @@ export const useAttendanceSession = (id?: string) => {
       };
     },
     enabled: !!user && !!profile && !!id,
+    staleTime: 30 * 1000, // 30s – avoid refetch on every focus; optimistic updates handle scan
+    refetchOnWindowFocus: false,
   });
 
   return { session: data, isLoading, error, refetch };
@@ -147,7 +167,6 @@ export const useAttendanceSession = (id?: string) => {
 export const useCreateAttendanceSession = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
-  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: async (payload: AttendanceSessionInsert) => {
@@ -168,7 +187,6 @@ export const useCreateAttendanceSession = () => {
 
 export const useUpdateAttendanceSession = () => {
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: AttendanceSessionUpdate }) => {
       const apiPayload = mapAttendanceSessionDomainToUpdate(data);
@@ -188,10 +206,10 @@ export const useUpdateAttendanceSession = () => {
 
 export const useMarkAttendance = (sessionId?: string) => {
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
   return useMutation({
-    mutationFn: async (records: AttendanceRecordInsert[]) => {
+    mutationFn: async ({ records }: { records: AttendanceRecordInsert[]; silent?: boolean }) => {
       if (!sessionId) throw new Error('Session is required');
+      let latestSession: AttendanceSession | undefined;
       const toPayload = (batch: AttendanceRecordInsert[]) => batch.map(r => ({
         student_id: r.studentId,
         status: r.status,
@@ -201,24 +219,35 @@ export const useMarkAttendance = (sessionId?: string) => {
       const chunkSize = 200;
       for (let i = 0; i < records.length; i += chunkSize) {
         const batch = records.slice(i, i + chunkSize);
-         
-        await attendanceSessionsApi.markRecords(sessionId, { records: toPayload(batch) });
+        const apiSession = await attendanceSessionsApi.markRecords(sessionId, { records: toPayload(batch) });
+        const mappedSession = mapAttendanceSessionApiToDomain(apiSession as AttendanceApi.AttendanceSession);
+        const sessionRecords = (apiSession as AttendanceApi.AttendanceSession & { records?: AttendanceApi.AttendanceRecord[] }).records;
+        latestSession = {
+          ...mappedSession,
+          records: sessionRecords?.map(mapAttendanceRecordApiToDomain),
+        };
+      }
+
+      return latestSession;
+    },
+    onSuccess: (data, variables) => {
+      if (data) {
+        queryClient.setQueriesData<AttendanceSession | undefined>({ queryKey: ['attendance-session', sessionId] }, () => data);
+      }
+
+      if (!variables.silent) {
+        showToast.success('attendancePage.saveSuccess');
       }
     },
-    onSuccess: () => {
-      showToast.success('attendancePage.saveSuccess');
-      void queryClient.invalidateQueries({ queryKey: ['attendance-session', sessionId] });
-      void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
-    },
-    onError: (error: Error) => {
-      showToast.error(error.message || 'common.error');
+    onError: (error: Error, variables) => {
+      if (!variables.silent) {
+        showToast.error(error.message || 'common.error');
+      }
     },
   });
 };
 
 export const useScanAttendance = (sessionId?: string) => {
-  const queryClient = useQueryClient();
-  const { t } = useLanguage();
   return useMutation({
     mutationFn: async (payload: { cardNumber: string; status?: AttendanceApi.AttendanceStatus; note?: string | null }) => {
       if (!sessionId) throw new Error('Session is required for scanning');
@@ -228,26 +257,6 @@ export const useScanAttendance = (sessionId?: string) => {
         note: payload.note,
       });
       return record as AttendanceApi.AttendanceRecord;
-    },
-    onSuccess: (record) => {
-      const mapped = mapAttendanceRecordApiToDomain(record as AttendanceApi.AttendanceRecord);
-      showToast.success('attendancePage.scanSuccess');
-      queryClient.setQueryData(['attendance-session', sessionId], (current: AttendanceSession | undefined) => {
-        if (!current) return current;
-        const existing = current.records || [];
-        const filtered = existing.filter(item => item.studentId !== mapped.studentId);
-        return { ...current, records: [{ ...mapped }, ...filtered] };
-      });
-      queryClient.setQueryData(['attendance-scan-feed', sessionId], (current: AttendanceRecord[] | undefined) => {
-        const existing = current || [];
-        const withoutDuplicate = existing.filter(item => item.studentId !== mapped.studentId);
-        return [mapped, ...withoutDuplicate].slice(0, 50);
-      });
-      void queryClient.invalidateQueries({ queryKey: ['attendance-session', sessionId] });
-      void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
-    },
-    onError: (error: Error) => {
-      showToast.error(error.message || 'common.error');
     },
   });
 };
@@ -274,13 +283,14 @@ export const useAttendanceScanFeed = (sessionId?: string, limit: number = 25, en
       return (feed as AttendanceApi.AttendanceRecord[]).map(mapAttendanceRecordApiToDomain);
     },
     enabled: !!user && !!profile && !!sessionId && enabled,
-    refetchInterval: enabled && sessionId ? 1500 : false,
+    staleTime: 10 * 1000, // keep feed stable locally; explicit resume refetch handles catch-up after active scans
+    refetchInterval: enabled && sessionId ? 5000 : false, // 5s – background sync only, teacher feedback is immediate
+    refetchOnWindowFocus: false,
   });
 };
 
 export const useCloseAttendanceSession = () => {
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
   return useMutation({
     mutationFn: async (sessionId: string) => {
       const apiSession = await attendanceSessionsApi.close(sessionId);
