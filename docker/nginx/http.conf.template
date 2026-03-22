@@ -4,7 +4,10 @@ server {
 
     client_max_body_size 512M;
 
+    include /etc/nginx/snippets/nazim-security-headers-http.conf;
+
     location = /healthz {
+        include /etc/nginx/snippets/nazim-security-headers-http.conf;
         add_header Content-Type text/plain;
         return 200 "ok\n";
     }
@@ -19,6 +22,7 @@ server {
     index index.html;
 
     location ^~ /assets/ {
+        include /etc/nginx/snippets/nazim-security-headers-http.conf;
         try_files $uri =404;
         access_log off;
         expires 30d;
@@ -26,6 +30,7 @@ server {
     }
 
     location ^~ /storage/ {
+        include /etc/nginx/snippets/nazim-security-headers-http.conf;
         alias /backend-storage/app/public/;
         try_files $uri =404;
         access_log off;
@@ -35,10 +40,10 @@ server {
 
     # Internal: desktop release/prereq files served directly by nginx (X-Accel-Redirect) for full download speed
     location /internal-desktop-files/ {
+        include /etc/nginx/snippets/nazim-security-headers-http.conf;
         internal;
         alias /backend-storage/app/public/;
         add_header Content-Disposition "attachment; filename=\"$arg_f\"";
-        add_header X-Content-Type-Options "nosniff";
         sendfile on;
         tcp_nopush off;
         tcp_nodelay on;

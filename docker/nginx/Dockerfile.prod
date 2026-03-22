@@ -26,6 +26,8 @@ RUN apk add --no-cache gettext openssl
 # Templates + scripts
 COPY docker/nginx/http.conf.template /etc/nginx/conf.d/http.conf.template
 COPY docker/nginx/https.conf.template /etc/nginx/conf.d/https.conf.template
+COPY docker/nginx/snippets/nazim-security-headers-http.conf /etc/nginx/snippets/nazim-security-headers-http.conf
+COPY docker/nginx/snippets/nazim-security-headers-https.conf /etc/nginx/snippets/nazim-security-headers-https.conf
 
 COPY docker/nginx/entrypoint.sh /entrypoint.sh
 COPY docker/nginx/refresh_certs.sh /refresh_certs.sh

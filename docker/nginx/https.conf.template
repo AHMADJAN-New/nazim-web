@@ -34,17 +34,19 @@ server {
     ssl_session_tickets off;
     ssl_protocols TLSv1.2 TLSv1.3;
 
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    include /etc/nginx/snippets/nazim-security-headers-https.conf;
 
     root /usr/share/nginx/html;
     index index.html;
 
     location = /healthz {
+        include /etc/nginx/snippets/nazim-security-headers-https.conf;
         add_header Content-Type text/plain;
         return 200 "ok\n";
     }
 
     location ^~ /assets/ {
+        include /etc/nginx/snippets/nazim-security-headers-https.conf;
         try_files $uri =404;
         access_log off;
         expires 30d;
@@ -52,6 +54,7 @@ server {
     }
 
     location ^~ /storage/ {
+        include /etc/nginx/snippets/nazim-security-headers-https.conf;
         alias /backend-storage/app/public/;
         try_files $uri =404;
         access_log off;
@@ -60,10 +63,10 @@ server {
     }
 
     location /internal-desktop-files/ {
+        include /etc/nginx/snippets/nazim-security-headers-https.conf;
         internal;
         alias /backend-storage/app/public/;
         add_header Content-Disposition "attachment; filename=\"$arg_f\"";
-        add_header X-Content-Type-Options "nosniff";
         sendfile on;
         tcp_nopush off;
         tcp_nodelay on;
