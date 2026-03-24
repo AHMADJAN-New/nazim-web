@@ -587,7 +587,10 @@ class UsageTrackingService
                 try {
                     $resourceKey = $definition->resource_key;
                     $check = $this->canCreate($organizationId, $resourceKey);
-                    
+                    // For single-school orgs (limit 1), do not show as warning so "school limit reached" is hidden
+                    $isSingleSchoolLimit = $resourceKey === 'schools' && (int) $check['limit'] === 1;
+                    $warning = $isSingleSchoolLimit ? false : $check['warning'];
+
                     $usage[$resourceKey] = [
                         'name' => $definition->name,
                         'description' => $definition->description,
@@ -597,7 +600,7 @@ class UsageTrackingService
                         'limit' => $check['limit'],
                         'remaining' => $check['remaining'],
                         'percentage' => $check['percentage'],
-                        'warning' => $check['warning'],
+                        'warning' => $warning,
                         'unlimited' => $check['limit'] === -1,
                     ];
                 } catch (\Exception $e) {

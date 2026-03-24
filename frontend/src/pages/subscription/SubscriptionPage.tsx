@@ -147,11 +147,20 @@ export default function SubscriptionPage() {
   }, {} as Record<string, typeof features>);
 
   const usageItems = usageData?.usage ?? [];
+  // Single-school orgs (schools limit === 1): do not treat as warning so "school limit reached" is hidden
+  const isSchoolLimitOne = (item: { resourceKey: string; limit: number }) =>
+    item.resourceKey === 'schools' && item.limit === 1;
   const warningUsageItems = usageItems.filter(
-    (item) => !item.isUnlimited && (item.isWarning || item.percentage >= 75)
+    (item) =>
+      !item.isUnlimited &&
+      !isSchoolLimitOne(item) &&
+      (item.isWarning || item.percentage >= 75)
   );
   const healthyUsageItems = usageItems.filter(
-    (item) => item.isUnlimited || (!item.isWarning && item.percentage < 75)
+    (item) =>
+      item.isUnlimited ||
+      isSchoolLimitOne(item) ||
+      (!item.isWarning && item.percentage < 75)
   );
 
   const groupedFeaturesByState = useMemo(() => {
@@ -564,14 +573,17 @@ export default function SubscriptionPage() {
                     { key: 'healthy', rows: healthyUsageItems },
                   ].map((tab) => (
                     <TabsContent key={tab.key} value={tab.key} className="space-y-6">
-                      {tab.rows.length > 0 ? tab.rows.map((item) => (
+                      {tab.rows.length > 0 ? tab.rows.map((item) => {
+                        const singleSchool = isSchoolLimitOne(item);
+                        const showAsAtLimit = !singleSchool && (item.isWarning || item.percentage >= 100);
+                        return (
                     <div key={item.resourceKey} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className={cn(
                             'font-medium',
-                            item.isWarning && 'text-yellow-700',
-                            item.percentage >= 100 && 'text-red-700'
+                            showAsAtLimit && item.isWarning && 'text-yellow-700',
+                            showAsAtLimit && item.percentage >= 100 && 'text-red-700'
                           )}>
                             {item.name}
                           </div>
@@ -587,10 +599,10 @@ export default function SubscriptionPage() {
                             <>
                               <div className={cn(
                                 'font-medium',
-                                item.isWarning && 'text-yellow-700',
-                                item.percentage >= 100 && 'text-red-700'
+                                showAsAtLimit && item.isWarning && 'text-yellow-700',
+                                showAsAtLimit && item.percentage >= 100 && 'text-red-700'
                               )}>
-                                {item.resourceKey === 'storage_gb' 
+                                {item.resourceKey === 'storage_gb'
                                   ? `${Number(item.current).toFixed(2)} / ${item.limit === -1 ? 'Unlimited' : Number(item.limit).toFixed(2)} GB`
                                   : `${item.current.toLocaleString()} / ${item.limit === -1 ? 'Unlimited' : item.limit.toLocaleString()}${item.unit ? ` ${item.unit}` : ''}`
                                 }
@@ -603,13 +615,14 @@ export default function SubscriptionPage() {
                         </div>
                       </div>
                       {!item.isUnlimited && (
-                        <Progress 
-                          value={Math.min(item.percentage, 100)} 
+                        <Progress
+                          value={Math.min(item.percentage, 100)}
                           className="h-2"
                         />
                       )}
                     </div>
-                      )) : (
+                        );
+                      }) : (
                         <div className="text-center py-8 text-muted-foreground">
                           <p>No usage items in this filter</p>
                         </div>

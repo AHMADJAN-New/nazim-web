@@ -39,13 +39,20 @@ export function UsageSummaryCard() {
 
   const { usage, warnings } = data;
 
-  // Get top 5 usage items by percentage
+  // Get top 5 usage items by percentage (exclude single-school from "at limit" styling)
+  const isSingleSchoolLimit = (u: { resourceKey: string; limit: number }) =>
+    u.resourceKey === 'schools' && u.limit === 1;
   const topUsage = [...usage]
     .filter((u) => !u.isUnlimited)
     .sort((a, b) => b.percentage - a.percentage)
     .slice(0, 5);
 
-  const getProgressColor = (percentage: number, isWarning: boolean) => {
+  const getProgressColor = (
+    percentage: number,
+    isWarning: boolean,
+    item?: { resourceKey: string; limit: number }
+  ) => {
+    if (item && isSingleSchoolLimit(item)) return 'bg-blue-500';
     if (percentage >= 100) return 'bg-red-500';
     if (isWarning) return 'bg-yellow-500';
     if (percentage >= 50) return 'bg-blue-500';
@@ -79,32 +86,36 @@ export function UsageSummaryCard() {
           </div>
         ) : (
           <>
-            {topUsage.map((item) => (
-              <div key={item.resourceKey} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className={cn(
-                    item.isWarning && 'text-yellow-700 font-medium',
-                    item.percentage >= 100 && 'text-red-700 font-medium'
-                  )}>
-                    {item.name}
-                  </span>
-                  <span className={cn(
-                    'text-muted-foreground',
-                    item.isWarning && 'text-yellow-700',
-                    item.percentage >= 100 && 'text-red-700'
-                  )}>
-                    {item.current.toLocaleString()} / {item.limit.toLocaleString()}
-                  </span>
+            {topUsage.map((item) => {
+              const singleSchool = isSingleSchoolLimit(item);
+              const showAsWarning = !singleSchool && (item.isWarning || item.percentage >= 100);
+              return (
+                <div key={item.resourceKey} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className={cn(
+                      showAsWarning && item.isWarning && 'text-yellow-700 font-medium',
+                      showAsWarning && item.percentage >= 100 && 'text-red-700 font-medium'
+                    )}>
+                      {item.name}
+                    </span>
+                    <span className={cn(
+                      'text-muted-foreground',
+                      showAsWarning && item.isWarning && 'text-yellow-700',
+                      showAsWarning && item.percentage >= 100 && 'text-red-700'
+                    )}>
+                      {item.current.toLocaleString()} / {item.limit.toLocaleString()}
+                    </span>
+                  </div>
+                  <Progress
+                    value={Math.min(item.percentage, 100)}
+                    className={cn(
+                      'h-2',
+                      `[&>div]:${getProgressColor(item.percentage, item.isWarning, item)}`
+                    )}
+                  />
                 </div>
-                <Progress 
-                  value={Math.min(item.percentage, 100)} 
-                  className={cn(
-                    'h-2',
-                    `[&>div]:${getProgressColor(item.percentage, item.isWarning)}`
-                  )}
-                />
-              </div>
-            ))}
+              );
+            })}
 
             {/* Warnings Section */}
             {warnings.filter(w => w.isBlocked).length > 0 && (

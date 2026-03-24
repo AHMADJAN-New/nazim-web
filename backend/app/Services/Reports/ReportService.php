@@ -184,8 +184,8 @@ class ReportService
 
         $count = 0;
         foreach ($oldReports as $report) {
-            if ($report->output_path && Storage::exists($report->output_path)) {
-                Storage::delete($report->output_path);
+            if ($report->output_path && Storage::disk('local')->exists($report->output_path)) {
+                Storage::disk('local')->delete($report->output_path);
             }
             $report->delete();
             $count++;

@@ -328,20 +328,28 @@ class ReportGenerationController extends Controller
             ], 404);
         }
 
-        // Use FileStorageService to check if file exists (handles 'local' disk correctly)
-        if (!$this->fileStorageService->fileExists($reportRun->output_path, 'local')) {
-            \Log::error('Report file not found', [
-                'report_id' => $id,
-                'output_path' => $reportRun->output_path,
-                'status' => $reportRun->status,
-                'file_name' => $reportRun->file_name,
-                'storage_exists' => Storage::disk('local')->exists($reportRun->output_path),
-                'absolute_path' => storage_path('app/private/' . $reportRun->output_path),
-            ]);
-            return response()->json([
-                'success' => false,
-                'error' => 'Report file not found',
-            ], 404);
+        // Use FileStorageService to check if file exists (local disk root = storage/app/private)
+        $disk = 'local';
+        if (!$this->fileStorageService->fileExists($reportRun->output_path, $disk)) {
+            // Fallback: try 'private' disk in case config differs
+            if ($this->fileStorageService->fileExists($reportRun->output_path, 'private')) {
+                $disk = 'private';
+            } else {
+                \Log::error('Report file not found', [
+                    'report_id' => $id,
+                    'output_path' => $reportRun->output_path,
+                    'status' => $reportRun->status,
+                    'file_name' => $reportRun->file_name,
+                    'storage_exists' => Storage::disk('local')->exists($reportRun->output_path),
+                    'absolute_path' => storage_path('app/private/' . $reportRun->output_path),
+                ]);
+                // Mark as failed so UI can show "missing" and offer regenerate instead of repeated failed downloads
+                $reportRun->markFailed('Report file missing from storage. Please regenerate the report.', 0);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Report file not found. The file may have been removed or the report was generated in a different environment. Please regenerate the report.',
+                ], 404);
+            }
         }
 
         $fileName = $reportRun->file_name ?? "report.{$reportRun->getFileExtension()}";
@@ -352,8 +360,8 @@ class ReportGenerationController extends Controller
             'file_name' => $fileName,
         ]);
 
-        // Use FileStorageService to download file (handles disk correctly)
-        return $this->fileStorageService->downloadFile($reportRun->output_path, $fileName, 'local');
+        // Use FileStorageService to download file (use disk that had the file)
+        return $this->fileStorageService->downloadFile($reportRun->output_path, $fileName, $disk);
     }
 
     /**
@@ -442,9 +450,9 @@ class ReportGenerationController extends Controller
             ], 403);
         }
 
-        // Delete file if exists
-        if ($reportRun->output_path && Storage::exists($reportRun->output_path)) {
-            Storage::delete($reportRun->output_path);
+        // Delete file if exists (reports are on local/private disk)
+        if ($reportRun->output_path && Storage::disk('local')->exists($reportRun->output_path)) {
+            Storage::disk('local')->delete($reportRun->output_path);
         }
 
         $reportRun->delete();
