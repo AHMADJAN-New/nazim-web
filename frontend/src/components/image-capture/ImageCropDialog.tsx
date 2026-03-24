@@ -1,6 +1,7 @@
+import { Minus, Plus } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import Cropper, { type Area } from 'react-easy-crop';
-import { Minus, Plus } from 'lucide-react';
+import 'react-easy-crop/react-easy-crop.css';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +18,8 @@ import { showToast } from '@/lib/toast';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const CROP_QUALITY = 0.9;
-const ZOOM_MIN = 1;
+/** Below 1 = zoom out past “fit” (smaller image inside crop frame). Must match Cropper minZoom. */
+const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 3;
 const ZOOM_STEP = 0.25;
 
@@ -115,20 +117,41 @@ export function ImageCropDialog({
         </DialogHeader>
         {imageUrl && (
           <div className="space-y-3">
-            <div className="relative h-[min(60vh,400px)] w-full rounded-lg bg-muted">
-              <Cropper
-                image={imageUrl}
-                crop={crop}
-                zoom={zoom}
-                aspect={aspectRatio}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropCompleteCallback}
-                style={{
-                  containerStyle: { borderRadius: 8 },
-                  cropAreaStyle: { borderRadius: 8 },
-                }}
+            <div className="relative h-[min(60vh,400px)] w-full overflow-hidden rounded-lg">
+              {/* Letterbox / zoom-out backdrop: solid surface + blurred same image */}
+              <div
+                className="pointer-events-none absolute inset-0 z-0 bg-background"
+                aria-hidden
               />
+              <img
+                src={imageUrl}
+                alt=""
+                className="pointer-events-none absolute inset-0 z-[1] h-full w-full scale-110 object-cover opacity-40 blur-2xl"
+                aria-hidden
+              />
+              <div className="absolute inset-0 z-[2]">
+                {/* Below 100% zoom, default restrictPosition locks panning; getCroppedImg handles out-of-bounds */}
+                <Cropper
+                  image={imageUrl}
+                  crop={crop}
+                  zoom={zoom}
+                  minZoom={ZOOM_MIN}
+                  maxZoom={ZOOM_MAX}
+                  rotation={0}
+                  aspect={aspectRatio}
+                  restrictPosition={zoom >= 1}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropCompleteCallback}
+                  style={{
+                    containerStyle: {
+                      borderRadius: 8,
+                      backgroundColor: 'transparent',
+                    },
+                    cropAreaStyle: { borderRadius: 8 },
+                  }}
+                />
+              </div>
             </div>
             <div className="flex items-center justify-center gap-2">
               <Button

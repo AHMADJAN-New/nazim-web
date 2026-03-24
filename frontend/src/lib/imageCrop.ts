@@ -35,20 +35,33 @@ export async function getCroppedImg(
     throw new Error('Canvas 2d context not available');
   }
 
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
+  canvas.width = Math.max(1, Math.round(pixelCrop.width));
+  canvas.height = Math.max(1, Math.round(pixelCrop.height));
 
-  ctx.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    pixelCrop.width,
-    pixelCrop.height
-  );
+  // White base for JPEG export (letterboxing, zoom-out crop, or transparency)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const iw = image.naturalWidth;
+  const ih = image.naturalHeight;
+  const cropLeft = pixelCrop.x;
+  const cropTop = pixelCrop.y;
+  const cropRight = pixelCrop.x + pixelCrop.width;
+  const cropBottom = pixelCrop.y + pixelCrop.height;
+
+  // Intersect crop rect with source image (needed when zoom < 1 + restrictPosition off)
+  const srcLeft = Math.max(0, cropLeft);
+  const srcTop = Math.max(0, cropTop);
+  const srcRight = Math.min(iw, cropRight);
+  const srcBottom = Math.min(ih, cropBottom);
+  const srcW = srcRight - srcLeft;
+  const srcH = srcBottom - srcTop;
+
+  if (srcW > 0 && srcH > 0) {
+    const destX = srcLeft - cropLeft;
+    const destY = srcTop - cropTop;
+    ctx.drawImage(image, srcLeft, srcTop, srcW, srcH, destX, destY, srcW, srcH);
+  }
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
