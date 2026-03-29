@@ -116,7 +116,6 @@ export const ar = {
   ...pages_onboarding_ar,
   ...pages_organizations_ar,
   ...pages_organization_hr_ar,
-  ...pages_permissions_ar,
   ...pages_phone_book_ar,
   ...pages_profile_management_ar,
   ...pages_question_bank_ar,
@@ -140,6 +139,7 @@ export const ar = {
   ...pages_website_admin_ar,
   ...pages_platform_ar,
   ...pages_misc_ar,
+  ...pages_permissions_ar,
   websiteManager: websiteAdminAr.websiteManager,
   website: websiteAdminAr.website,
 };

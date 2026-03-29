@@ -111,6 +111,7 @@ export const useCreateLibraryBook = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => libraryBooksApi.create(data),
+    retry: false,
     onSuccess: async () => {
       showToast.success('toast.library.bookSaved');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
@@ -123,7 +124,9 @@ export const useCreateLibraryBook = () => {
       await qc.refetchQueries({ queryKey: ['finance-accounts'] });
       await qc.refetchQueries({ queryKey: ['finance-dashboard'] });
     },
-    onError: () => showToast.error('toast.library.bookSaveFailed'),
+    onError: (error: Error) => {
+      showToast.error(error.message || 'toast.library.bookSaveFailed');
+    },
   });
 };
 
@@ -131,6 +134,7 @@ export const useUpdateLibraryBook = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => libraryBooksApi.update(id, data),
+    retry: false,
     onSuccess: async () => {
       showToast.success('toast.library.bookUpdated');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
@@ -143,7 +147,9 @@ export const useUpdateLibraryBook = () => {
       await qc.refetchQueries({ queryKey: ['finance-accounts'] });
       await qc.refetchQueries({ queryKey: ['finance-dashboard'] });
     },
-    onError: () => showToast.error('toast.library.bookUpdateFailed'),
+    onError: (error: Error) => {
+      showToast.error(error.message || 'toast.library.bookUpdateFailed');
+    },
   });
 };
 

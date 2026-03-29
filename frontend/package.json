@@ -17,6 +17,8 @@
     "i18n:check": "node scripts/i18n/check-bad-patterns.js",
     "i18n:check:update-baseline": "node scripts/i18n/check-bad-patterns.js --update-baseline",
     "i18n:keys:generate": "npx --yes tsx scripts/i18n/generate-translation-keys.ts",
+    "i18n:permissions-meta": "php scripts/i18n/dump-permissions-meta.php",
+    "i18n:permissions-catalog": "node scripts/i18n/generate-permissions-management-catalog.mjs",
     "i18n:fix-fa": "npx --yes tsx scripts/i18n/fix-fa-dari.ts",
     "i18n:migrate": "npx --yes tsx scripts/i18n/migrate-to-page-structure.ts",
     "i18n:report": "npx --yes tsx scripts/i18n/translation-key-count-report.ts",

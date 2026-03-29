@@ -21,6 +21,48 @@ export function parseLocalDate(ymd: string): Date {
 }
 
 /**
+ * Parse Laravel/API date values for display (date-only, ISO, or SQL datetime strings).
+ * Prefer calendar day from YYYY-MM-DD prefix so timezone quirks do not produce Invalid Date.
+ */
+export function parseApiDateInput(value: unknown): Date | null {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const ms = value < 1e12 ? value * 1000 : value;
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof value !== 'string') return null;
+  const s = value.trim();
+  if (!s) return null;
+  const head = s.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(head)) {
+    const d = parseLocalDate(head);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const normalized = s.includes(' ') && !s.includes('T') ? s.replace(' ', 'T') : s;
+  const d = new Date(normalized);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Format an API date for UI; never returns "Invalid Date".
+ */
+export function safeFormatDate(
+  value: unknown,
+  formatDate: (date: Date, locale?: string) => string,
+  fallback: string,
+  locale: string = 'en-US',
+): string {
+  const d = parseApiDateInput(value);
+  if (!d) return fallback;
+  const out = formatDate(d, locale);
+  return out === 'Invalid Date' ? fallback : out;
+}
+
+/**
  * Format a Date as "YYYY-MM-DD" using local date parts.
  * Do not use toISOString().split("T")[0] — that uses UTC and can shift the calendar day.
  */

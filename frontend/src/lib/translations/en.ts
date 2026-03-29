@@ -116,7 +116,6 @@ export const en = {
   ...pages_onboarding_en,
   ...pages_organizations_en,
   ...pages_organization_hr_en,
-  ...pages_permissions_en,
   ...pages_phone_book_en,
   ...pages_profile_management_en,
   ...pages_question_bank_en,
@@ -140,6 +139,7 @@ export const en = {
   ...pages_website_admin_en,
   ...pages_platform_en,
   ...pages_misc_en,
+  ...pages_permissions_en,
   websiteManager: websiteAdminEn.websiteManager,
   website: websiteAdminEn.website,
 };

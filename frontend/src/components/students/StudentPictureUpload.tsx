@@ -301,12 +301,11 @@ export function StudentPictureUpload({
                 )}
             </div>
             <div className="space-y-2 flex-1">
-                {/* Hidden file input with camera capture support */}
+                {/* Hidden file input — no `capture`: that forces the camera on many mobile browsers; use Take photo for camera */}
                 <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    capture // Enable camera on mobile devices (user can choose camera or gallery)
                     onChange={onFileChange}
                     style={{ display: 'none' }}
                 />

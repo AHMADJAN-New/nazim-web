@@ -321,7 +321,6 @@ export function StudentGuardianPictureUpload({
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture
           onChange={onFileChange}
           style={{ display: 'none' }}
         />

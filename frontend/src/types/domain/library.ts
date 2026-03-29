@@ -20,7 +20,8 @@ export interface LibraryBook {
   author?: string | null;
   isbn?: string | null;
   book_number?: string | null;
-  category?: string | null; // Legacy string field for backward compatibility
+  /** Legacy string column and/or nested `category` object from API when relation is loaded */
+  category?: string | { id?: string; name?: string; code?: string | null } | null;
   category_id?: string | null;
   volume?: string | null;
   description?: string | null;

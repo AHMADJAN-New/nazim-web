@@ -116,7 +116,6 @@ export const ps = {
   ...pages_onboarding_ps,
   ...pages_organizations_ps,
   ...pages_organization_hr_ps,
-  ...pages_permissions_ps,
   ...pages_phone_book_ps,
   ...pages_profile_management_ps,
   ...pages_question_bank_ps,
@@ -140,6 +139,7 @@ export const ps = {
   ...pages_website_admin_ps,
   ...pages_platform_ps,
   ...pages_misc_ps,
+  ...pages_permissions_ps,
   websiteManager: websiteAdminPs.websiteManager,
   website: websiteAdminPs.website,
 };

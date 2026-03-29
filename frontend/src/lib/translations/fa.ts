@@ -116,7 +116,6 @@ export const fa = {
   ...pages_onboarding_fa,
   ...pages_organizations_fa,
   ...pages_organization_hr_fa,
-  ...pages_permissions_fa,
   ...pages_phone_book_fa,
   ...pages_profile_management_fa,
   ...pages_question_bank_fa,
@@ -140,6 +139,7 @@ export const fa = {
   ...pages_website_admin_fa,
   ...pages_platform_fa,
   ...pages_misc_fa,
+  ...pages_permissions_fa,
   websiteManager: websiteAdminFa.websiteManager,
   website: websiteAdminFa.website,
 };

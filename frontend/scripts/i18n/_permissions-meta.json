@@ -1,0 +1,2564 @@
+[
+    {
+        "name": "academic_years.create",
+        "resource": "academic_years",
+        "action": "create",
+        "dbDescription": "Create academic years"
+    },
+    {
+        "name": "academic_years.delete",
+        "resource": "academic_years",
+        "action": "delete",
+        "dbDescription": "Delete academic years"
+    },
+    {
+        "name": "academic_years.read",
+        "resource": "academic_years",
+        "action": "read",
+        "dbDescription": "Read academic years"
+    },
+    {
+        "name": "academic_years.update",
+        "resource": "academic_years",
+        "action": "update",
+        "dbDescription": "Update academic years"
+    },
+    {
+        "name": "activity_logs.read",
+        "resource": "activity_logs",
+        "action": "read",
+        "dbDescription": "Read activity logs"
+    },
+    {
+        "name": "asset_categories.create",
+        "resource": "asset_categories",
+        "action": "create",
+        "dbDescription": "Create asset categories"
+    },
+    {
+        "name": "asset_categories.delete",
+        "resource": "asset_categories",
+        "action": "delete",
+        "dbDescription": "Delete asset categories"
+    },
+    {
+        "name": "asset_categories.read",
+        "resource": "asset_categories",
+        "action": "read",
+        "dbDescription": "Read asset categories"
+    },
+    {
+        "name": "asset_categories.update",
+        "resource": "asset_categories",
+        "action": "update",
+        "dbDescription": "Update asset categories"
+    },
+    {
+        "name": "assets.create",
+        "resource": "assets",
+        "action": "create",
+        "dbDescription": "Create assets"
+    },
+    {
+        "name": "assets.delete",
+        "resource": "assets",
+        "action": "delete",
+        "dbDescription": "Delete assets"
+    },
+    {
+        "name": "assets.read",
+        "resource": "assets",
+        "action": "read",
+        "dbDescription": "Read assets"
+    },
+    {
+        "name": "assets.update",
+        "resource": "assets",
+        "action": "update",
+        "dbDescription": "Update assets"
+    },
+    {
+        "name": "attendance_sessions.create",
+        "resource": "attendance_sessions",
+        "action": "create",
+        "dbDescription": "Create attendance sessions"
+    },
+    {
+        "name": "attendance_sessions.delete",
+        "resource": "attendance_sessions",
+        "action": "delete",
+        "dbDescription": "Delete attendance sessions"
+    },
+    {
+        "name": "attendance_sessions.read",
+        "resource": "attendance_sessions",
+        "action": "read",
+        "dbDescription": "Read attendance sessions"
+    },
+    {
+        "name": "attendance_sessions.report",
+        "resource": "attendance_sessions",
+        "action": "report",
+        "dbDescription": "Report attendance sessions"
+    },
+    {
+        "name": "attendance_sessions.update",
+        "resource": "attendance_sessions",
+        "action": "update",
+        "dbDescription": "Update attendance sessions"
+    },
+    {
+        "name": "buildings.create",
+        "resource": "buildings",
+        "action": "create",
+        "dbDescription": "Create buildings"
+    },
+    {
+        "name": "buildings.delete",
+        "resource": "buildings",
+        "action": "delete",
+        "dbDescription": "Delete buildings"
+    },
+    {
+        "name": "buildings.read",
+        "resource": "buildings",
+        "action": "read",
+        "dbDescription": "Read buildings"
+    },
+    {
+        "name": "buildings.update",
+        "resource": "buildings",
+        "action": "update",
+        "dbDescription": "Update buildings"
+    },
+    {
+        "name": "certificate_templates.activate",
+        "resource": "certificate_templates",
+        "action": "activate",
+        "dbDescription": "Activate certificate templates"
+    },
+    {
+        "name": "certificate_templates.create",
+        "resource": "certificate_templates",
+        "action": "create",
+        "dbDescription": "Create certificate templates"
+    },
+    {
+        "name": "certificate_templates.deactivate",
+        "resource": "certificate_templates",
+        "action": "deactivate",
+        "dbDescription": "Deactivate certificate templates"
+    },
+    {
+        "name": "certificate_templates.delete",
+        "resource": "certificate_templates",
+        "action": "delete",
+        "dbDescription": "Delete certificate templates"
+    },
+    {
+        "name": "certificate_templates.read",
+        "resource": "certificate_templates",
+        "action": "read",
+        "dbDescription": "Read certificate templates"
+    },
+    {
+        "name": "certificate_templates.update",
+        "resource": "certificate_templates",
+        "action": "update",
+        "dbDescription": "Update certificate templates"
+    },
+    {
+        "name": "certificates.issue",
+        "resource": "certificates",
+        "action": "issue",
+        "dbDescription": "Issue certificates"
+    },
+    {
+        "name": "certificates.print",
+        "resource": "certificates",
+        "action": "print",
+        "dbDescription": "Print certificates"
+    },
+    {
+        "name": "certificates.revoke",
+        "resource": "certificates",
+        "action": "revoke",
+        "dbDescription": "Revoke certificates"
+    },
+    {
+        "name": "classes.assign",
+        "resource": "classes",
+        "action": "assign",
+        "dbDescription": "Assign classes"
+    },
+    {
+        "name": "classes.copy",
+        "resource": "classes",
+        "action": "copy",
+        "dbDescription": "Copy classes"
+    },
+    {
+        "name": "classes.create",
+        "resource": "classes",
+        "action": "create",
+        "dbDescription": "Create classes"
+    },
+    {
+        "name": "classes.delete",
+        "resource": "classes",
+        "action": "delete",
+        "dbDescription": "Delete classes"
+    },
+    {
+        "name": "classes.read",
+        "resource": "classes",
+        "action": "read",
+        "dbDescription": "Read classes"
+    },
+    {
+        "name": "classes.update",
+        "resource": "classes",
+        "action": "update",
+        "dbDescription": "Update classes"
+    },
+    {
+        "name": "course_attendance.create",
+        "resource": "course_attendance",
+        "action": "create",
+        "dbDescription": "Create course attendance"
+    },
+    {
+        "name": "course_attendance.delete",
+        "resource": "course_attendance",
+        "action": "delete",
+        "dbDescription": "Delete course attendance"
+    },
+    {
+        "name": "course_attendance.read",
+        "resource": "course_attendance",
+        "action": "read",
+        "dbDescription": "Read course attendance"
+    },
+    {
+        "name": "course_attendance.update",
+        "resource": "course_attendance",
+        "action": "update",
+        "dbDescription": "Update course attendance"
+    },
+    {
+        "name": "course_documents.create",
+        "resource": "course_documents",
+        "action": "create",
+        "dbDescription": "Create course documents"
+    },
+    {
+        "name": "course_documents.delete",
+        "resource": "course_documents",
+        "action": "delete",
+        "dbDescription": "Delete course documents"
+    },
+    {
+        "name": "course_documents.read",
+        "resource": "course_documents",
+        "action": "read",
+        "dbDescription": "Read course documents"
+    },
+    {
+        "name": "course_documents.update",
+        "resource": "course_documents",
+        "action": "update",
+        "dbDescription": "Update course documents"
+    },
+    {
+        "name": "course_student_discipline_records.create",
+        "resource": "course_student_discipline_records",
+        "action": "create",
+        "dbDescription": "Create course student discipline records"
+    },
+    {
+        "name": "course_student_discipline_records.delete",
+        "resource": "course_student_discipline_records",
+        "action": "delete",
+        "dbDescription": "Delete course student discipline records"
+    },
+    {
+        "name": "course_student_discipline_records.read",
+        "resource": "course_student_discipline_records",
+        "action": "read",
+        "dbDescription": "Read course student discipline records"
+    },
+    {
+        "name": "course_student_discipline_records.update",
+        "resource": "course_student_discipline_records",
+        "action": "update",
+        "dbDescription": "Update course student discipline records"
+    },
+    {
+        "name": "course_students.copy_to_main",
+        "resource": "course_students",
+        "action": "copy_to_main",
+        "dbDescription": "Copy_to_main course students"
+    },
+    {
+        "name": "course_students.create",
+        "resource": "course_students",
+        "action": "create",
+        "dbDescription": "Create course students"
+    },
+    {
+        "name": "course_students.delete",
+        "resource": "course_students",
+        "action": "delete",
+        "dbDescription": "Delete course students"
+    },
+    {
+        "name": "course_students.enroll_from_main",
+        "resource": "course_students",
+        "action": "enroll_from_main",
+        "dbDescription": "Enroll_from_main course students"
+    },
+    {
+        "name": "course_students.read",
+        "resource": "course_students",
+        "action": "read",
+        "dbDescription": "Read course students"
+    },
+    {
+        "name": "course_students.report",
+        "resource": "course_students",
+        "action": "report",
+        "dbDescription": "Report course students"
+    },
+    {
+        "name": "course_students.update",
+        "resource": "course_students",
+        "action": "update",
+        "dbDescription": "Update course students"
+    },
+    {
+        "name": "currencies.create",
+        "resource": "currencies",
+        "action": "create",
+        "dbDescription": "Create currencies"
+    },
+    {
+        "name": "currencies.delete",
+        "resource": "currencies",
+        "action": "delete",
+        "dbDescription": "Delete currencies"
+    },
+    {
+        "name": "currencies.read",
+        "resource": "currencies",
+        "action": "read",
+        "dbDescription": "Read currencies"
+    },
+    {
+        "name": "currencies.update",
+        "resource": "currencies",
+        "action": "update",
+        "dbDescription": "Update currencies"
+    },
+    {
+        "name": "dms.archive.read",
+        "resource": "dms.archive",
+        "action": "read",
+        "dbDescription": "Read dms.archive"
+    },
+    {
+        "name": "dms.archive.search",
+        "resource": "dms.archive",
+        "action": "search",
+        "dbDescription": "Search dms.archive"
+    },
+    {
+        "name": "dms.departments.create",
+        "resource": "dms.departments",
+        "action": "create",
+        "dbDescription": "Create dms.departments"
+    },
+    {
+        "name": "dms.departments.delete",
+        "resource": "dms.departments",
+        "action": "delete",
+        "dbDescription": "Delete dms.departments"
+    },
+    {
+        "name": "dms.departments.read",
+        "resource": "dms.departments",
+        "action": "read",
+        "dbDescription": "Read dms.departments"
+    },
+    {
+        "name": "dms.departments.update",
+        "resource": "dms.departments",
+        "action": "update",
+        "dbDescription": "Update dms.departments"
+    },
+    {
+        "name": "dms.files.create",
+        "resource": "dms.files",
+        "action": "create",
+        "dbDescription": "Create dms.files"
+    },
+    {
+        "name": "dms.files.delete",
+        "resource": "dms.files",
+        "action": "delete",
+        "dbDescription": "Delete dms.files"
+    },
+    {
+        "name": "dms.files.download",
+        "resource": "dms.files",
+        "action": "download",
+        "dbDescription": "Download dms.files"
+    },
+    {
+        "name": "dms.files.read",
+        "resource": "dms.files",
+        "action": "read",
+        "dbDescription": "Read dms.files"
+    },
+    {
+        "name": "dms.files.update",
+        "resource": "dms.files",
+        "action": "update",
+        "dbDescription": "Update dms.files"
+    },
+    {
+        "name": "dms.incoming.create",
+        "resource": "dms.incoming",
+        "action": "create",
+        "dbDescription": "Create dms.incoming"
+    },
+    {
+        "name": "dms.incoming.delete",
+        "resource": "dms.incoming",
+        "action": "delete",
+        "dbDescription": "Delete dms.incoming"
+    },
+    {
+        "name": "dms.incoming.read",
+        "resource": "dms.incoming",
+        "action": "read",
+        "dbDescription": "Read dms.incoming"
+    },
+    {
+        "name": "dms.incoming.update",
+        "resource": "dms.incoming",
+        "action": "update",
+        "dbDescription": "Update dms.incoming"
+    },
+    {
+        "name": "dms.letter_types.create",
+        "resource": "dms.letter_types",
+        "action": "create",
+        "dbDescription": "Create dms.letter types"
+    },
+    {
+        "name": "dms.letter_types.delete",
+        "resource": "dms.letter_types",
+        "action": "delete",
+        "dbDescription": "Delete dms.letter types"
+    },
+    {
+        "name": "dms.letter_types.read",
+        "resource": "dms.letter_types",
+        "action": "read",
+        "dbDescription": "Read dms.letter types"
+    },
+    {
+        "name": "dms.letter_types.update",
+        "resource": "dms.letter_types",
+        "action": "update",
+        "dbDescription": "Update dms.letter types"
+    },
+    {
+        "name": "dms.letterheads.create",
+        "resource": "dms.letterheads",
+        "action": "create",
+        "dbDescription": "Create dms.letterheads"
+    },
+    {
+        "name": "dms.letterheads.delete",
+        "resource": "dms.letterheads",
+        "action": "delete",
+        "dbDescription": "Delete dms.letterheads"
+    },
+    {
+        "name": "dms.letterheads.manage",
+        "resource": "dms.letterheads",
+        "action": "manage",
+        "dbDescription": "Manage dms.letterheads"
+    },
+    {
+        "name": "dms.letterheads.read",
+        "resource": "dms.letterheads",
+        "action": "read",
+        "dbDescription": "Read dms.letterheads"
+    },
+    {
+        "name": "dms.letterheads.update",
+        "resource": "dms.letterheads",
+        "action": "update",
+        "dbDescription": "Update dms.letterheads"
+    },
+    {
+        "name": "dms.outgoing.create",
+        "resource": "dms.outgoing",
+        "action": "create",
+        "dbDescription": "Create dms.outgoing"
+    },
+    {
+        "name": "dms.outgoing.delete",
+        "resource": "dms.outgoing",
+        "action": "delete",
+        "dbDescription": "Delete dms.outgoing"
+    },
+    {
+        "name": "dms.outgoing.generate_pdf",
+        "resource": "dms.outgoing",
+        "action": "generate_pdf",
+        "dbDescription": "Generate_pdf dms.outgoing"
+    },
+    {
+        "name": "dms.outgoing.read",
+        "resource": "dms.outgoing",
+        "action": "read",
+        "dbDescription": "Read dms.outgoing"
+    },
+    {
+        "name": "dms.outgoing.update",
+        "resource": "dms.outgoing",
+        "action": "update",
+        "dbDescription": "Update dms.outgoing"
+    },
+    {
+        "name": "dms.reports.read",
+        "resource": "dms.reports",
+        "action": "read",
+        "dbDescription": "Read dms.reports"
+    },
+    {
+        "name": "dms.settings.manage",
+        "resource": "dms.settings",
+        "action": "manage",
+        "dbDescription": "Manage dms.settings"
+    },
+    {
+        "name": "dms.settings.read",
+        "resource": "dms.settings",
+        "action": "read",
+        "dbDescription": "Read dms.settings"
+    },
+    {
+        "name": "dms.templates.create",
+        "resource": "dms.templates",
+        "action": "create",
+        "dbDescription": "Create dms.templates"
+    },
+    {
+        "name": "dms.templates.delete",
+        "resource": "dms.templates",
+        "action": "delete",
+        "dbDescription": "Delete dms.templates"
+    },
+    {
+        "name": "dms.templates.read",
+        "resource": "dms.templates",
+        "action": "read",
+        "dbDescription": "Read dms.templates"
+    },
+    {
+        "name": "dms.templates.update",
+        "resource": "dms.templates",
+        "action": "update",
+        "dbDescription": "Update dms.templates"
+    },
+    {
+        "name": "donors.create",
+        "resource": "donors",
+        "action": "create",
+        "dbDescription": "Create donors"
+    },
+    {
+        "name": "donors.delete",
+        "resource": "donors",
+        "action": "delete",
+        "dbDescription": "Delete donors"
+    },
+    {
+        "name": "donors.read",
+        "resource": "donors",
+        "action": "read",
+        "dbDescription": "Read donors"
+    },
+    {
+        "name": "donors.update",
+        "resource": "donors",
+        "action": "update",
+        "dbDescription": "Update donors"
+    },
+    {
+        "name": "event_checkins.create",
+        "resource": "event_checkins",
+        "action": "create",
+        "dbDescription": "Create event checkins"
+    },
+    {
+        "name": "event_checkins.delete",
+        "resource": "event_checkins",
+        "action": "delete",
+        "dbDescription": "Delete event checkins"
+    },
+    {
+        "name": "event_checkins.read",
+        "resource": "event_checkins",
+        "action": "read",
+        "dbDescription": "Read event checkins"
+    },
+    {
+        "name": "event_checkins.update",
+        "resource": "event_checkins",
+        "action": "update",
+        "dbDescription": "Update event checkins"
+    },
+    {
+        "name": "event_guests.checkin",
+        "resource": "event_guests",
+        "action": "checkin",
+        "dbDescription": "Checkin event guests"
+    },
+    {
+        "name": "event_guests.create",
+        "resource": "event_guests",
+        "action": "create",
+        "dbDescription": "Create event guests"
+    },
+    {
+        "name": "event_guests.delete",
+        "resource": "event_guests",
+        "action": "delete",
+        "dbDescription": "Delete event guests"
+    },
+    {
+        "name": "event_guests.import",
+        "resource": "event_guests",
+        "action": "import",
+        "dbDescription": "Import event guests"
+    },
+    {
+        "name": "event_guests.read",
+        "resource": "event_guests",
+        "action": "read",
+        "dbDescription": "Read event guests"
+    },
+    {
+        "name": "event_guests.update",
+        "resource": "event_guests",
+        "action": "update",
+        "dbDescription": "Update event guests"
+    },
+    {
+        "name": "event_types.create",
+        "resource": "event_types",
+        "action": "create",
+        "dbDescription": "Create event types"
+    },
+    {
+        "name": "event_types.delete",
+        "resource": "event_types",
+        "action": "delete",
+        "dbDescription": "Delete event types"
+    },
+    {
+        "name": "event_types.read",
+        "resource": "event_types",
+        "action": "read",
+        "dbDescription": "Read event types"
+    },
+    {
+        "name": "event_types.update",
+        "resource": "event_types",
+        "action": "update",
+        "dbDescription": "Update event types"
+    },
+    {
+        "name": "events.create",
+        "resource": "events",
+        "action": "create",
+        "dbDescription": "Create events"
+    },
+    {
+        "name": "events.delete",
+        "resource": "events",
+        "action": "delete",
+        "dbDescription": "Delete events"
+    },
+    {
+        "name": "events.read",
+        "resource": "events",
+        "action": "read",
+        "dbDescription": "Read events"
+    },
+    {
+        "name": "events.update",
+        "resource": "events",
+        "action": "update",
+        "dbDescription": "Update events"
+    },
+    {
+        "name": "exam_classes.create",
+        "resource": "exam_classes",
+        "action": "create",
+        "dbDescription": "Create exam classes"
+    },
+    {
+        "name": "exam_classes.delete",
+        "resource": "exam_classes",
+        "action": "delete",
+        "dbDescription": "Delete exam classes"
+    },
+    {
+        "name": "exam_classes.read",
+        "resource": "exam_classes",
+        "action": "read",
+        "dbDescription": "Read exam classes"
+    },
+    {
+        "name": "exam_classes.update",
+        "resource": "exam_classes",
+        "action": "update",
+        "dbDescription": "Update exam classes"
+    },
+    {
+        "name": "exam_documents.create",
+        "resource": "exam_documents",
+        "action": "create",
+        "dbDescription": "Create exam documents"
+    },
+    {
+        "name": "exam_documents.delete",
+        "resource": "exam_documents",
+        "action": "delete",
+        "dbDescription": "Delete exam documents"
+    },
+    {
+        "name": "exam_documents.read",
+        "resource": "exam_documents",
+        "action": "read",
+        "dbDescription": "Read exam documents"
+    },
+    {
+        "name": "exam_documents.update",
+        "resource": "exam_documents",
+        "action": "update",
+        "dbDescription": "Update exam documents"
+    },
+    {
+        "name": "exam_results.create",
+        "resource": "exam_results",
+        "action": "create",
+        "dbDescription": "Create exam results"
+    },
+    {
+        "name": "exam_results.delete",
+        "resource": "exam_results",
+        "action": "delete",
+        "dbDescription": "Delete exam results"
+    },
+    {
+        "name": "exam_results.read",
+        "resource": "exam_results",
+        "action": "read",
+        "dbDescription": "Read exam results"
+    },
+    {
+        "name": "exam_results.update",
+        "resource": "exam_results",
+        "action": "update",
+        "dbDescription": "Update exam results"
+    },
+    {
+        "name": "exam_students.create",
+        "resource": "exam_students",
+        "action": "create",
+        "dbDescription": "Create exam students"
+    },
+    {
+        "name": "exam_students.delete",
+        "resource": "exam_students",
+        "action": "delete",
+        "dbDescription": "Delete exam students"
+    },
+    {
+        "name": "exam_students.read",
+        "resource": "exam_students",
+        "action": "read",
+        "dbDescription": "Read exam students"
+    },
+    {
+        "name": "exam_students.update",
+        "resource": "exam_students",
+        "action": "update",
+        "dbDescription": "Update exam students"
+    },
+    {
+        "name": "exam_subjects.create",
+        "resource": "exam_subjects",
+        "action": "create",
+        "dbDescription": "Create exam subjects"
+    },
+    {
+        "name": "exam_subjects.delete",
+        "resource": "exam_subjects",
+        "action": "delete",
+        "dbDescription": "Delete exam subjects"
+    },
+    {
+        "name": "exam_subjects.read",
+        "resource": "exam_subjects",
+        "action": "read",
+        "dbDescription": "Read exam subjects"
+    },
+    {
+        "name": "exam_subjects.update",
+        "resource": "exam_subjects",
+        "action": "update",
+        "dbDescription": "Update exam subjects"
+    },
+    {
+        "name": "exam_times.create",
+        "resource": "exam_times",
+        "action": "create",
+        "dbDescription": "Create exam times"
+    },
+    {
+        "name": "exam_times.delete",
+        "resource": "exam_times",
+        "action": "delete",
+        "dbDescription": "Delete exam times"
+    },
+    {
+        "name": "exam_times.read",
+        "resource": "exam_times",
+        "action": "read",
+        "dbDescription": "Read exam times"
+    },
+    {
+        "name": "exam_times.update",
+        "resource": "exam_times",
+        "action": "update",
+        "dbDescription": "Update exam times"
+    },
+    {
+        "name": "exam_types.create",
+        "resource": "exam_types",
+        "action": "create",
+        "dbDescription": "Create exam types"
+    },
+    {
+        "name": "exam_types.delete",
+        "resource": "exam_types",
+        "action": "delete",
+        "dbDescription": "Delete exam types"
+    },
+    {
+        "name": "exam_types.read",
+        "resource": "exam_types",
+        "action": "read",
+        "dbDescription": "Read exam types"
+    },
+    {
+        "name": "exam_types.update",
+        "resource": "exam_types",
+        "action": "update",
+        "dbDescription": "Update exam types"
+    },
+    {
+        "name": "exams.assign",
+        "resource": "exams",
+        "action": "assign",
+        "dbDescription": "Assign exams"
+    },
+    {
+        "name": "exams.create",
+        "resource": "exams",
+        "action": "create",
+        "dbDescription": "Create exams"
+    },
+    {
+        "name": "exams.delete",
+        "resource": "exams",
+        "action": "delete",
+        "dbDescription": "Delete exams"
+    },
+    {
+        "name": "exams.enroll_students",
+        "resource": "exams",
+        "action": "enroll_students",
+        "dbDescription": "Enroll_students exams"
+    },
+    {
+        "name": "exams.enter_marks",
+        "resource": "exams",
+        "action": "enter_marks",
+        "dbDescription": "Enter_marks exams"
+    },
+    {
+        "name": "exams.manage",
+        "resource": "exams",
+        "action": "manage",
+        "dbDescription": "Manage exams"
+    },
+    {
+        "name": "exams.manage_attendance",
+        "resource": "exams",
+        "action": "manage_attendance",
+        "dbDescription": "Manage_attendance exams"
+    },
+    {
+        "name": "exams.manage_timetable",
+        "resource": "exams",
+        "action": "manage_timetable",
+        "dbDescription": "Manage_timetable exams"
+    },
+    {
+        "name": "exams.numbers.print",
+        "resource": "exams",
+        "action": "numbers.print",
+        "dbDescription": "Numbers.print exams"
+    },
+    {
+        "name": "exams.papers.create",
+        "resource": "exams.papers",
+        "action": "create",
+        "dbDescription": "Create exams.papers"
+    },
+    {
+        "name": "exams.papers.delete",
+        "resource": "exams.papers",
+        "action": "delete",
+        "dbDescription": "Delete exams.papers"
+    },
+    {
+        "name": "exams.papers.read",
+        "resource": "exams.papers",
+        "action": "read",
+        "dbDescription": "Read exams.papers"
+    },
+    {
+        "name": "exams.papers.update",
+        "resource": "exams.papers",
+        "action": "update",
+        "dbDescription": "Update exams.papers"
+    },
+    {
+        "name": "exams.questions.create",
+        "resource": "exams.questions",
+        "action": "create",
+        "dbDescription": "Create exams.questions"
+    },
+    {
+        "name": "exams.questions.delete",
+        "resource": "exams.questions",
+        "action": "delete",
+        "dbDescription": "Delete exams.questions"
+    },
+    {
+        "name": "exams.questions.read",
+        "resource": "exams.questions",
+        "action": "read",
+        "dbDescription": "Read exams.questions"
+    },
+    {
+        "name": "exams.questions.update",
+        "resource": "exams.questions",
+        "action": "update",
+        "dbDescription": "Update exams.questions"
+    },
+    {
+        "name": "exams.read",
+        "resource": "exams",
+        "action": "read",
+        "dbDescription": "Read exams"
+    },
+    {
+        "name": "exams.roll_numbers.assign",
+        "resource": "exams",
+        "action": "roll_numbers.assign",
+        "dbDescription": "Roll_numbers.assign exams"
+    },
+    {
+        "name": "exams.roll_numbers.read",
+        "resource": "exams",
+        "action": "roll_numbers.read",
+        "dbDescription": "Roll_numbers.read exams"
+    },
+    {
+        "name": "exams.secret_numbers.assign",
+        "resource": "exams",
+        "action": "secret_numbers.assign",
+        "dbDescription": "Secret_numbers.assign exams"
+    },
+    {
+        "name": "exams.secret_numbers.read",
+        "resource": "exams",
+        "action": "secret_numbers.read",
+        "dbDescription": "Secret_numbers.read exams"
+    },
+    {
+        "name": "exams.update",
+        "resource": "exams",
+        "action": "update",
+        "dbDescription": "Update exams"
+    },
+    {
+        "name": "exams.view_attendance_reports",
+        "resource": "exams",
+        "action": "view_attendance_reports",
+        "dbDescription": "View_attendance_reports exams"
+    },
+    {
+        "name": "exams.view_class_reports",
+        "resource": "exams",
+        "action": "view_class_reports",
+        "dbDescription": "View_class_reports exams"
+    },
+    {
+        "name": "exams.view_consolidated_reports",
+        "resource": "exams",
+        "action": "view_consolidated_reports",
+        "dbDescription": "View_consolidated_reports exams"
+    },
+    {
+        "name": "exams.view_grade_cards",
+        "resource": "exams",
+        "action": "view_grade_cards",
+        "dbDescription": "View_grade_cards exams"
+    },
+    {
+        "name": "exams.view_reports",
+        "resource": "exams",
+        "action": "view_reports",
+        "dbDescription": "View_reports exams"
+    },
+    {
+        "name": "exams.view_student_reports",
+        "resource": "exams",
+        "action": "view_student_reports",
+        "dbDescription": "View_student_reports exams"
+    },
+    {
+        "name": "exchange_rates.create",
+        "resource": "exchange_rates",
+        "action": "create",
+        "dbDescription": "Create exchange rates"
+    },
+    {
+        "name": "exchange_rates.delete",
+        "resource": "exchange_rates",
+        "action": "delete",
+        "dbDescription": "Delete exchange rates"
+    },
+    {
+        "name": "exchange_rates.read",
+        "resource": "exchange_rates",
+        "action": "read",
+        "dbDescription": "Read exchange rates"
+    },
+    {
+        "name": "exchange_rates.update",
+        "resource": "exchange_rates",
+        "action": "update",
+        "dbDescription": "Update exchange rates"
+    },
+    {
+        "name": "expense_categories.create",
+        "resource": "expense_categories",
+        "action": "create",
+        "dbDescription": "Create expense categories"
+    },
+    {
+        "name": "expense_categories.delete",
+        "resource": "expense_categories",
+        "action": "delete",
+        "dbDescription": "Delete expense categories"
+    },
+    {
+        "name": "expense_categories.read",
+        "resource": "expense_categories",
+        "action": "read",
+        "dbDescription": "Read expense categories"
+    },
+    {
+        "name": "expense_categories.update",
+        "resource": "expense_categories",
+        "action": "update",
+        "dbDescription": "Update expense categories"
+    },
+    {
+        "name": "expense_entries.create",
+        "resource": "expense_entries",
+        "action": "create",
+        "dbDescription": "Create expense entries"
+    },
+    {
+        "name": "expense_entries.delete",
+        "resource": "expense_entries",
+        "action": "delete",
+        "dbDescription": "Delete expense entries"
+    },
+    {
+        "name": "expense_entries.read",
+        "resource": "expense_entries",
+        "action": "read",
+        "dbDescription": "Read expense entries"
+    },
+    {
+        "name": "expense_entries.update",
+        "resource": "expense_entries",
+        "action": "update",
+        "dbDescription": "Update expense entries"
+    },
+    {
+        "name": "fees.create",
+        "resource": "fees",
+        "action": "create",
+        "dbDescription": "Create fees"
+    },
+    {
+        "name": "fees.delete",
+        "resource": "fees",
+        "action": "delete",
+        "dbDescription": "Delete fees"
+    },
+    {
+        "name": "fees.exceptions.approve",
+        "resource": "fees.exceptions",
+        "action": "approve",
+        "dbDescription": "Approve fees.exceptions"
+    },
+    {
+        "name": "fees.exceptions.create",
+        "resource": "fees.exceptions",
+        "action": "create",
+        "dbDescription": "Create fees.exceptions"
+    },
+    {
+        "name": "fees.payments.create",
+        "resource": "fees.payments",
+        "action": "create",
+        "dbDescription": "Create fees.payments"
+    },
+    {
+        "name": "fees.read",
+        "resource": "fees",
+        "action": "read",
+        "dbDescription": "Read fees"
+    },
+    {
+        "name": "fees.update",
+        "resource": "fees",
+        "action": "update",
+        "dbDescription": "Update fees"
+    },
+    {
+        "name": "finance_accounts.create",
+        "resource": "finance_accounts",
+        "action": "create",
+        "dbDescription": "Create finance accounts"
+    },
+    {
+        "name": "finance_accounts.delete",
+        "resource": "finance_accounts",
+        "action": "delete",
+        "dbDescription": "Delete finance accounts"
+    },
+    {
+        "name": "finance_accounts.read",
+        "resource": "finance_accounts",
+        "action": "read",
+        "dbDescription": "Read finance accounts"
+    },
+    {
+        "name": "finance_accounts.update",
+        "resource": "finance_accounts",
+        "action": "update",
+        "dbDescription": "Update finance accounts"
+    },
+    {
+        "name": "finance_documents.create",
+        "resource": "finance_documents",
+        "action": "create",
+        "dbDescription": "Create finance documents"
+    },
+    {
+        "name": "finance_documents.delete",
+        "resource": "finance_documents",
+        "action": "delete",
+        "dbDescription": "Delete finance documents"
+    },
+    {
+        "name": "finance_documents.read",
+        "resource": "finance_documents",
+        "action": "read",
+        "dbDescription": "Read finance documents"
+    },
+    {
+        "name": "finance_documents.update",
+        "resource": "finance_documents",
+        "action": "update",
+        "dbDescription": "Update finance documents"
+    },
+    {
+        "name": "finance_donors.create",
+        "resource": "finance_donors",
+        "action": "create",
+        "dbDescription": "Create finance donors"
+    },
+    {
+        "name": "finance_donors.delete",
+        "resource": "finance_donors",
+        "action": "delete",
+        "dbDescription": "Delete finance donors"
+    },
+    {
+        "name": "finance_donors.read",
+        "resource": "finance_donors",
+        "action": "read",
+        "dbDescription": "Read finance donors"
+    },
+    {
+        "name": "finance_donors.update",
+        "resource": "finance_donors",
+        "action": "update",
+        "dbDescription": "Update finance donors"
+    },
+    {
+        "name": "finance_expense.create",
+        "resource": "finance_expense",
+        "action": "create",
+        "dbDescription": "Create finance expense"
+    },
+    {
+        "name": "finance_expense.delete",
+        "resource": "finance_expense",
+        "action": "delete",
+        "dbDescription": "Delete finance expense"
+    },
+    {
+        "name": "finance_expense.read",
+        "resource": "finance_expense",
+        "action": "read",
+        "dbDescription": "Read finance expense"
+    },
+    {
+        "name": "finance_expense.update",
+        "resource": "finance_expense",
+        "action": "update",
+        "dbDescription": "Update finance expense"
+    },
+    {
+        "name": "finance_income.create",
+        "resource": "finance_income",
+        "action": "create",
+        "dbDescription": "Create finance income"
+    },
+    {
+        "name": "finance_income.delete",
+        "resource": "finance_income",
+        "action": "delete",
+        "dbDescription": "Delete finance income"
+    },
+    {
+        "name": "finance_income.read",
+        "resource": "finance_income",
+        "action": "read",
+        "dbDescription": "Read finance income"
+    },
+    {
+        "name": "finance_income.update",
+        "resource": "finance_income",
+        "action": "update",
+        "dbDescription": "Update finance income"
+    },
+    {
+        "name": "finance_projects.create",
+        "resource": "finance_projects",
+        "action": "create",
+        "dbDescription": "Create finance projects"
+    },
+    {
+        "name": "finance_projects.delete",
+        "resource": "finance_projects",
+        "action": "delete",
+        "dbDescription": "Delete finance projects"
+    },
+    {
+        "name": "finance_projects.read",
+        "resource": "finance_projects",
+        "action": "read",
+        "dbDescription": "Read finance projects"
+    },
+    {
+        "name": "finance_projects.update",
+        "resource": "finance_projects",
+        "action": "update",
+        "dbDescription": "Update finance projects"
+    },
+    {
+        "name": "finance_reports.read",
+        "resource": "finance_reports",
+        "action": "read",
+        "dbDescription": "Read finance reports"
+    },
+    {
+        "name": "grades.create",
+        "resource": "grades",
+        "action": "create",
+        "dbDescription": "Create grades"
+    },
+    {
+        "name": "grades.delete",
+        "resource": "grades",
+        "action": "delete",
+        "dbDescription": "Delete grades"
+    },
+    {
+        "name": "grades.read",
+        "resource": "grades",
+        "action": "read",
+        "dbDescription": "Read grades"
+    },
+    {
+        "name": "grades.update",
+        "resource": "grades",
+        "action": "update",
+        "dbDescription": "Update grades"
+    },
+    {
+        "name": "graduation_batches.approve",
+        "resource": "graduation_batches",
+        "action": "approve",
+        "dbDescription": "Approve graduation batches"
+    },
+    {
+        "name": "graduation_batches.create",
+        "resource": "graduation_batches",
+        "action": "create",
+        "dbDescription": "Create graduation batches"
+    },
+    {
+        "name": "graduation_batches.generate_students",
+        "resource": "graduation_batches",
+        "action": "generate_students",
+        "dbDescription": "Generate_students graduation batches"
+    },
+    {
+        "name": "graduation_batches.issue",
+        "resource": "graduation_batches",
+        "action": "issue",
+        "dbDescription": "Issue graduation batches"
+    },
+    {
+        "name": "graduation_batches.read",
+        "resource": "graduation_batches",
+        "action": "read",
+        "dbDescription": "Read graduation batches"
+    },
+    {
+        "name": "help_center.create",
+        "resource": "help_center",
+        "action": "create",
+        "dbDescription": "Create help center"
+    },
+    {
+        "name": "help_center.delete",
+        "resource": "help_center",
+        "action": "delete",
+        "dbDescription": "Delete help center"
+    },
+    {
+        "name": "help_center.read",
+        "resource": "help_center",
+        "action": "read",
+        "dbDescription": "Read help center"
+    },
+    {
+        "name": "help_center.read_staff",
+        "resource": "help_center",
+        "action": "read_staff",
+        "dbDescription": "Read_staff help center"
+    },
+    {
+        "name": "help_center.update",
+        "resource": "help_center",
+        "action": "update",
+        "dbDescription": "Update help center"
+    },
+    {
+        "name": "hostel.create",
+        "resource": "hostel",
+        "action": "create",
+        "dbDescription": "Create hostel"
+    },
+    {
+        "name": "hostel.delete",
+        "resource": "hostel",
+        "action": "delete",
+        "dbDescription": "Delete hostel"
+    },
+    {
+        "name": "hostel.read",
+        "resource": "hostel",
+        "action": "read",
+        "dbDescription": "Read hostel"
+    },
+    {
+        "name": "hostel.update",
+        "resource": "hostel",
+        "action": "update",
+        "dbDescription": "Update hostel"
+    },
+    {
+        "name": "hr_assignments.approve",
+        "resource": "hr_assignments",
+        "action": "approve",
+        "dbDescription": "Approve hr assignments"
+    },
+    {
+        "name": "hr_assignments.create",
+        "resource": "hr_assignments",
+        "action": "create",
+        "dbDescription": "Create hr assignments"
+    },
+    {
+        "name": "hr_assignments.read",
+        "resource": "hr_assignments",
+        "action": "read",
+        "dbDescription": "Read hr assignments"
+    },
+    {
+        "name": "hr_assignments.update",
+        "resource": "hr_assignments",
+        "action": "update",
+        "dbDescription": "Update hr assignments"
+    },
+    {
+        "name": "hr_payroll.approve",
+        "resource": "hr_payroll",
+        "action": "approve",
+        "dbDescription": "Approve hr payroll"
+    },
+    {
+        "name": "hr_payroll.create",
+        "resource": "hr_payroll",
+        "action": "create",
+        "dbDescription": "Create hr payroll"
+    },
+    {
+        "name": "hr_payroll.export",
+        "resource": "hr_payroll",
+        "action": "export",
+        "dbDescription": "Export hr payroll"
+    },
+    {
+        "name": "hr_payroll.read",
+        "resource": "hr_payroll",
+        "action": "read",
+        "dbDescription": "Read hr payroll"
+    },
+    {
+        "name": "hr_payroll.run",
+        "resource": "hr_payroll",
+        "action": "run",
+        "dbDescription": "Run hr payroll"
+    },
+    {
+        "name": "hr_reports.export",
+        "resource": "hr_reports",
+        "action": "export",
+        "dbDescription": "Export hr reports"
+    },
+    {
+        "name": "hr_reports.read",
+        "resource": "hr_reports",
+        "action": "read",
+        "dbDescription": "Read hr reports"
+    },
+    {
+        "name": "hr_staff.create",
+        "resource": "hr_staff",
+        "action": "create",
+        "dbDescription": "Create hr staff"
+    },
+    {
+        "name": "hr_staff.delete",
+        "resource": "hr_staff",
+        "action": "delete",
+        "dbDescription": "Delete hr staff"
+    },
+    {
+        "name": "hr_staff.read",
+        "resource": "hr_staff",
+        "action": "read",
+        "dbDescription": "Read hr staff"
+    },
+    {
+        "name": "hr_staff.update",
+        "resource": "hr_staff",
+        "action": "update",
+        "dbDescription": "Update hr staff"
+    },
+    {
+        "name": "id_cards.create",
+        "resource": "id_cards",
+        "action": "create",
+        "dbDescription": "Create id cards"
+    },
+    {
+        "name": "id_cards.delete",
+        "resource": "id_cards",
+        "action": "delete",
+        "dbDescription": "Delete id cards"
+    },
+    {
+        "name": "id_cards.export",
+        "resource": "id_cards",
+        "action": "export",
+        "dbDescription": "Export id cards"
+    },
+    {
+        "name": "id_cards.read",
+        "resource": "id_cards",
+        "action": "read",
+        "dbDescription": "Read id cards"
+    },
+    {
+        "name": "id_cards.update",
+        "resource": "id_cards",
+        "action": "update",
+        "dbDescription": "Update id cards"
+    },
+    {
+        "name": "income_categories.create",
+        "resource": "income_categories",
+        "action": "create",
+        "dbDescription": "Create income categories"
+    },
+    {
+        "name": "income_categories.delete",
+        "resource": "income_categories",
+        "action": "delete",
+        "dbDescription": "Delete income categories"
+    },
+    {
+        "name": "income_categories.read",
+        "resource": "income_categories",
+        "action": "read",
+        "dbDescription": "Read income categories"
+    },
+    {
+        "name": "income_categories.update",
+        "resource": "income_categories",
+        "action": "update",
+        "dbDescription": "Update income categories"
+    },
+    {
+        "name": "income_entries.create",
+        "resource": "income_entries",
+        "action": "create",
+        "dbDescription": "Create income entries"
+    },
+    {
+        "name": "income_entries.delete",
+        "resource": "income_entries",
+        "action": "delete",
+        "dbDescription": "Delete income entries"
+    },
+    {
+        "name": "income_entries.read",
+        "resource": "income_entries",
+        "action": "read",
+        "dbDescription": "Read income entries"
+    },
+    {
+        "name": "income_entries.update",
+        "resource": "income_entries",
+        "action": "update",
+        "dbDescription": "Update income entries"
+    },
+    {
+        "name": "issued_certificates.read",
+        "resource": "issued_certificates",
+        "action": "read",
+        "dbDescription": "Read issued certificates"
+    },
+    {
+        "name": "leave_requests.create",
+        "resource": "leave_requests",
+        "action": "create",
+        "dbDescription": "Create leave requests"
+    },
+    {
+        "name": "leave_requests.delete",
+        "resource": "leave_requests",
+        "action": "delete",
+        "dbDescription": "Delete leave requests"
+    },
+    {
+        "name": "leave_requests.read",
+        "resource": "leave_requests",
+        "action": "read",
+        "dbDescription": "Read leave requests"
+    },
+    {
+        "name": "leave_requests.update",
+        "resource": "leave_requests",
+        "action": "update",
+        "dbDescription": "Update leave requests"
+    },
+    {
+        "name": "library_books.create",
+        "resource": "library_books",
+        "action": "create",
+        "dbDescription": "Create library books"
+    },
+    {
+        "name": "library_books.delete",
+        "resource": "library_books",
+        "action": "delete",
+        "dbDescription": "Delete library books"
+    },
+    {
+        "name": "library_books.read",
+        "resource": "library_books",
+        "action": "read",
+        "dbDescription": "Read library books"
+    },
+    {
+        "name": "library_books.update",
+        "resource": "library_books",
+        "action": "update",
+        "dbDescription": "Update library books"
+    },
+    {
+        "name": "library_categories.create",
+        "resource": "library_categories",
+        "action": "create",
+        "dbDescription": "Create library categories"
+    },
+    {
+        "name": "library_categories.delete",
+        "resource": "library_categories",
+        "action": "delete",
+        "dbDescription": "Delete library categories"
+    },
+    {
+        "name": "library_categories.read",
+        "resource": "library_categories",
+        "action": "read",
+        "dbDescription": "Read library categories"
+    },
+    {
+        "name": "library_categories.update",
+        "resource": "library_categories",
+        "action": "update",
+        "dbDescription": "Update library categories"
+    },
+    {
+        "name": "library_loans.create",
+        "resource": "library_loans",
+        "action": "create",
+        "dbDescription": "Create library loans"
+    },
+    {
+        "name": "library_loans.read",
+        "resource": "library_loans",
+        "action": "read",
+        "dbDescription": "Read library loans"
+    },
+    {
+        "name": "library_loans.update",
+        "resource": "library_loans",
+        "action": "update",
+        "dbDescription": "Update library loans"
+    },
+    {
+        "name": "notifications.manage_preferences",
+        "resource": "notifications",
+        "action": "manage_preferences",
+        "dbDescription": "Manage_preferences notifications"
+    },
+    {
+        "name": "notifications.read",
+        "resource": "notifications",
+        "action": "read",
+        "dbDescription": "Read notifications"
+    },
+    {
+        "name": "notifications.update",
+        "resource": "notifications",
+        "action": "update",
+        "dbDescription": "Update notifications"
+    },
+    {
+        "name": "org_finance.create",
+        "resource": "org_finance",
+        "action": "create",
+        "dbDescription": "Create org finance"
+    },
+    {
+        "name": "org_finance.read",
+        "resource": "org_finance",
+        "action": "read",
+        "dbDescription": "Read org finance"
+    },
+    {
+        "name": "organizations.create",
+        "resource": "organizations",
+        "action": "create",
+        "dbDescription": "Create organizations"
+    },
+    {
+        "name": "organizations.delete",
+        "resource": "organizations",
+        "action": "delete",
+        "dbDescription": "Delete organizations"
+    },
+    {
+        "name": "organizations.read",
+        "resource": "organizations",
+        "action": "read",
+        "dbDescription": "Read organizations"
+    },
+    {
+        "name": "organizations.update",
+        "resource": "organizations",
+        "action": "update",
+        "dbDescription": "Update organizations"
+    },
+    {
+        "name": "permissions.create",
+        "resource": "permissions",
+        "action": "create",
+        "dbDescription": "Create permissions"
+    },
+    {
+        "name": "permissions.delete",
+        "resource": "permissions",
+        "action": "delete",
+        "dbDescription": "Delete permissions"
+    },
+    {
+        "name": "permissions.read",
+        "resource": "permissions",
+        "action": "read",
+        "dbDescription": "Read permissions"
+    },
+    {
+        "name": "permissions.update",
+        "resource": "permissions",
+        "action": "update",
+        "dbDescription": "Update permissions"
+    },
+    {
+        "name": "phonebook.read",
+        "resource": "phonebook",
+        "action": "read",
+        "dbDescription": "Read phonebook"
+    },
+    {
+        "name": "profiles.create",
+        "resource": "profiles",
+        "action": "create",
+        "dbDescription": "Create profiles"
+    },
+    {
+        "name": "profiles.delete",
+        "resource": "profiles",
+        "action": "delete",
+        "dbDescription": "Delete profiles"
+    },
+    {
+        "name": "profiles.read",
+        "resource": "profiles",
+        "action": "read",
+        "dbDescription": "Read profiles"
+    },
+    {
+        "name": "profiles.update",
+        "resource": "profiles",
+        "action": "update",
+        "dbDescription": "Update profiles"
+    },
+    {
+        "name": "report_templates.create",
+        "resource": "report_templates",
+        "action": "create",
+        "dbDescription": "Create report templates"
+    },
+    {
+        "name": "report_templates.delete",
+        "resource": "report_templates",
+        "action": "delete",
+        "dbDescription": "Delete report templates"
+    },
+    {
+        "name": "report_templates.read",
+        "resource": "report_templates",
+        "action": "read",
+        "dbDescription": "Read report templates"
+    },
+    {
+        "name": "report_templates.update",
+        "resource": "report_templates",
+        "action": "update",
+        "dbDescription": "Update report templates"
+    },
+    {
+        "name": "reports.read",
+        "resource": "reports",
+        "action": "read",
+        "dbDescription": "Read reports"
+    },
+    {
+        "name": "residency_types.create",
+        "resource": "residency_types",
+        "action": "create",
+        "dbDescription": "Create residency types"
+    },
+    {
+        "name": "residency_types.delete",
+        "resource": "residency_types",
+        "action": "delete",
+        "dbDescription": "Delete residency types"
+    },
+    {
+        "name": "residency_types.read",
+        "resource": "residency_types",
+        "action": "read",
+        "dbDescription": "Read residency types"
+    },
+    {
+        "name": "residency_types.update",
+        "resource": "residency_types",
+        "action": "update",
+        "dbDescription": "Update residency types"
+    },
+    {
+        "name": "roles.create",
+        "resource": "roles",
+        "action": "create",
+        "dbDescription": "Create roles"
+    },
+    {
+        "name": "roles.delete",
+        "resource": "roles",
+        "action": "delete",
+        "dbDescription": "Delete roles"
+    },
+    {
+        "name": "roles.read",
+        "resource": "roles",
+        "action": "read",
+        "dbDescription": "Read roles"
+    },
+    {
+        "name": "roles.update",
+        "resource": "roles",
+        "action": "update",
+        "dbDescription": "Update roles"
+    },
+    {
+        "name": "rooms.create",
+        "resource": "rooms",
+        "action": "create",
+        "dbDescription": "Create rooms"
+    },
+    {
+        "name": "rooms.delete",
+        "resource": "rooms",
+        "action": "delete",
+        "dbDescription": "Delete rooms"
+    },
+    {
+        "name": "rooms.read",
+        "resource": "rooms",
+        "action": "read",
+        "dbDescription": "Read rooms"
+    },
+    {
+        "name": "rooms.update",
+        "resource": "rooms",
+        "action": "update",
+        "dbDescription": "Update rooms"
+    },
+    {
+        "name": "schedule_slots.create",
+        "resource": "schedule_slots",
+        "action": "create",
+        "dbDescription": "Create schedule slots"
+    },
+    {
+        "name": "schedule_slots.delete",
+        "resource": "schedule_slots",
+        "action": "delete",
+        "dbDescription": "Delete schedule slots"
+    },
+    {
+        "name": "schedule_slots.read",
+        "resource": "schedule_slots",
+        "action": "read",
+        "dbDescription": "Read schedule slots"
+    },
+    {
+        "name": "schedule_slots.update",
+        "resource": "schedule_slots",
+        "action": "update",
+        "dbDescription": "Update schedule slots"
+    },
+    {
+        "name": "school_branding.create",
+        "resource": "school_branding",
+        "action": "create",
+        "dbDescription": "Create school branding"
+    },
+    {
+        "name": "school_branding.delete",
+        "resource": "school_branding",
+        "action": "delete",
+        "dbDescription": "Delete school branding"
+    },
+    {
+        "name": "school_branding.read",
+        "resource": "school_branding",
+        "action": "read",
+        "dbDescription": "Read school branding"
+    },
+    {
+        "name": "school_branding.update",
+        "resource": "school_branding",
+        "action": "update",
+        "dbDescription": "Update school branding"
+    },
+    {
+        "name": "schools.access_all",
+        "resource": "schools",
+        "action": "access_all",
+        "dbDescription": "Access_all schools"
+    },
+    {
+        "name": "schools.create",
+        "resource": "schools",
+        "action": "create",
+        "dbDescription": "Create schools"
+    },
+    {
+        "name": "schools.delete",
+        "resource": "schools",
+        "action": "delete",
+        "dbDescription": "Delete schools"
+    },
+    {
+        "name": "schools.read",
+        "resource": "schools",
+        "action": "read",
+        "dbDescription": "Read schools"
+    },
+    {
+        "name": "schools.update",
+        "resource": "schools",
+        "action": "update",
+        "dbDescription": "Update schools"
+    },
+    {
+        "name": "short_term_courses.close",
+        "resource": "short_term_courses",
+        "action": "close",
+        "dbDescription": "Close short term courses"
+    },
+    {
+        "name": "short_term_courses.create",
+        "resource": "short_term_courses",
+        "action": "create",
+        "dbDescription": "Create short term courses"
+    },
+    {
+        "name": "short_term_courses.delete",
+        "resource": "short_term_courses",
+        "action": "delete",
+        "dbDescription": "Delete short term courses"
+    },
+    {
+        "name": "short_term_courses.read",
+        "resource": "short_term_courses",
+        "action": "read",
+        "dbDescription": "Read short term courses"
+    },
+    {
+        "name": "short_term_courses.update",
+        "resource": "short_term_courses",
+        "action": "update",
+        "dbDescription": "Update short term courses"
+    },
+    {
+        "name": "staff.create",
+        "resource": "staff",
+        "action": "create",
+        "dbDescription": "Create staff"
+    },
+    {
+        "name": "staff.delete",
+        "resource": "staff",
+        "action": "delete",
+        "dbDescription": "Delete staff"
+    },
+    {
+        "name": "staff.read",
+        "resource": "staff",
+        "action": "read",
+        "dbDescription": "Read staff"
+    },
+    {
+        "name": "staff.update",
+        "resource": "staff",
+        "action": "update",
+        "dbDescription": "Update staff"
+    },
+    {
+        "name": "staff_documents.create",
+        "resource": "staff_documents",
+        "action": "create",
+        "dbDescription": "Create staff documents"
+    },
+    {
+        "name": "staff_documents.delete",
+        "resource": "staff_documents",
+        "action": "delete",
+        "dbDescription": "Delete staff documents"
+    },
+    {
+        "name": "staff_documents.read",
+        "resource": "staff_documents",
+        "action": "read",
+        "dbDescription": "Read staff documents"
+    },
+    {
+        "name": "staff_documents.update",
+        "resource": "staff_documents",
+        "action": "update",
+        "dbDescription": "Update staff documents"
+    },
+    {
+        "name": "staff_reports.export",
+        "resource": "staff_reports",
+        "action": "export",
+        "dbDescription": "Export staff reports"
+    },
+    {
+        "name": "staff_reports.read",
+        "resource": "staff_reports",
+        "action": "read",
+        "dbDescription": "Read staff reports"
+    },
+    {
+        "name": "staff_types.create",
+        "resource": "staff_types",
+        "action": "create",
+        "dbDescription": "Create staff types"
+    },
+    {
+        "name": "staff_types.delete",
+        "resource": "staff_types",
+        "action": "delete",
+        "dbDescription": "Delete staff types"
+    },
+    {
+        "name": "staff_types.read",
+        "resource": "staff_types",
+        "action": "read",
+        "dbDescription": "Read staff types"
+    },
+    {
+        "name": "staff_types.update",
+        "resource": "staff_types",
+        "action": "update",
+        "dbDescription": "Update staff types"
+    },
+    {
+        "name": "student_admissions.create",
+        "resource": "student_admissions",
+        "action": "create",
+        "dbDescription": "Create student admissions"
+    },
+    {
+        "name": "student_admissions.delete",
+        "resource": "student_admissions",
+        "action": "delete",
+        "dbDescription": "Delete student admissions"
+    },
+    {
+        "name": "student_admissions.read",
+        "resource": "student_admissions",
+        "action": "read",
+        "dbDescription": "Read student admissions"
+    },
+    {
+        "name": "student_admissions.report",
+        "resource": "student_admissions",
+        "action": "report",
+        "dbDescription": "Report student admissions"
+    },
+    {
+        "name": "student_admissions.update",
+        "resource": "student_admissions",
+        "action": "update",
+        "dbDescription": "Update student admissions"
+    },
+    {
+        "name": "student_discipline_records.create",
+        "resource": "student_discipline_records",
+        "action": "create",
+        "dbDescription": "Create student discipline records"
+    },
+    {
+        "name": "student_discipline_records.delete",
+        "resource": "student_discipline_records",
+        "action": "delete",
+        "dbDescription": "Delete student discipline records"
+    },
+    {
+        "name": "student_discipline_records.read",
+        "resource": "student_discipline_records",
+        "action": "read",
+        "dbDescription": "Read student discipline records"
+    },
+    {
+        "name": "student_discipline_records.update",
+        "resource": "student_discipline_records",
+        "action": "update",
+        "dbDescription": "Update student discipline records"
+    },
+    {
+        "name": "student_documents.create",
+        "resource": "student_documents",
+        "action": "create",
+        "dbDescription": "Create student documents"
+    },
+    {
+        "name": "student_documents.delete",
+        "resource": "student_documents",
+        "action": "delete",
+        "dbDescription": "Delete student documents"
+    },
+    {
+        "name": "student_documents.read",
+        "resource": "student_documents",
+        "action": "read",
+        "dbDescription": "Read student documents"
+    },
+    {
+        "name": "student_documents.update",
+        "resource": "student_documents",
+        "action": "update",
+        "dbDescription": "Update student documents"
+    },
+    {
+        "name": "student_educational_history.create",
+        "resource": "student_educational_history",
+        "action": "create",
+        "dbDescription": "Create student educational history"
+    },
+    {
+        "name": "student_educational_history.delete",
+        "resource": "student_educational_history",
+        "action": "delete",
+        "dbDescription": "Delete student educational history"
+    },
+    {
+        "name": "student_educational_history.read",
+        "resource": "student_educational_history",
+        "action": "read",
+        "dbDescription": "Read student educational history"
+    },
+    {
+        "name": "student_educational_history.update",
+        "resource": "student_educational_history",
+        "action": "update",
+        "dbDescription": "Update student educational history"
+    },
+    {
+        "name": "student_reports.export",
+        "resource": "student_reports",
+        "action": "export",
+        "dbDescription": "Export student reports"
+    },
+    {
+        "name": "student_reports.read",
+        "resource": "student_reports",
+        "action": "read",
+        "dbDescription": "Read student reports"
+    },
+    {
+        "name": "students.create",
+        "resource": "students",
+        "action": "create",
+        "dbDescription": "Create students"
+    },
+    {
+        "name": "students.delete",
+        "resource": "students",
+        "action": "delete",
+        "dbDescription": "Delete students"
+    },
+    {
+        "name": "students.import",
+        "resource": "students",
+        "action": "import",
+        "dbDescription": "Import students"
+    },
+    {
+        "name": "students.read",
+        "resource": "students",
+        "action": "read",
+        "dbDescription": "Read students"
+    },
+    {
+        "name": "students.update",
+        "resource": "students",
+        "action": "update",
+        "dbDescription": "Update students"
+    },
+    {
+        "name": "subjects.assign",
+        "resource": "subjects",
+        "action": "assign",
+        "dbDescription": "Assign subjects"
+    },
+    {
+        "name": "subjects.copy",
+        "resource": "subjects",
+        "action": "copy",
+        "dbDescription": "Copy subjects"
+    },
+    {
+        "name": "subjects.create",
+        "resource": "subjects",
+        "action": "create",
+        "dbDescription": "Create subjects"
+    },
+    {
+        "name": "subjects.delete",
+        "resource": "subjects",
+        "action": "delete",
+        "dbDescription": "Delete subjects"
+    },
+    {
+        "name": "subjects.read",
+        "resource": "subjects",
+        "action": "read",
+        "dbDescription": "Read subjects"
+    },
+    {
+        "name": "subjects.update",
+        "resource": "subjects",
+        "action": "update",
+        "dbDescription": "Update subjects"
+    },
+    {
+        "name": "subscription.read",
+        "resource": "subscription",
+        "action": "read",
+        "dbDescription": "Read subscription"
+    },
+    {
+        "name": "teacher_subject_assignments.create",
+        "resource": "teacher_subject_assignments",
+        "action": "create",
+        "dbDescription": "Create teacher subject assignments"
+    },
+    {
+        "name": "teacher_subject_assignments.delete",
+        "resource": "teacher_subject_assignments",
+        "action": "delete",
+        "dbDescription": "Delete teacher subject assignments"
+    },
+    {
+        "name": "teacher_subject_assignments.read",
+        "resource": "teacher_subject_assignments",
+        "action": "read",
+        "dbDescription": "Read teacher subject assignments"
+    },
+    {
+        "name": "teacher_subject_assignments.update",
+        "resource": "teacher_subject_assignments",
+        "action": "update",
+        "dbDescription": "Update teacher subject assignments"
+    },
+    {
+        "name": "teacher_timetable_preferences.create",
+        "resource": "teacher_timetable_preferences",
+        "action": "create",
+        "dbDescription": "Create teacher timetable preferences"
+    },
+    {
+        "name": "teacher_timetable_preferences.delete",
+        "resource": "teacher_timetable_preferences",
+        "action": "delete",
+        "dbDescription": "Delete teacher timetable preferences"
+    },
+    {
+        "name": "teacher_timetable_preferences.read",
+        "resource": "teacher_timetable_preferences",
+        "action": "read",
+        "dbDescription": "Read teacher timetable preferences"
+    },
+    {
+        "name": "teacher_timetable_preferences.update",
+        "resource": "teacher_timetable_preferences",
+        "action": "update",
+        "dbDescription": "Update teacher timetable preferences"
+    },
+    {
+        "name": "teachers.create",
+        "resource": "teachers",
+        "action": "create",
+        "dbDescription": "Create teachers"
+    },
+    {
+        "name": "teachers.delete",
+        "resource": "teachers",
+        "action": "delete",
+        "dbDescription": "Delete teachers"
+    },
+    {
+        "name": "teachers.read",
+        "resource": "teachers",
+        "action": "read",
+        "dbDescription": "Read teachers"
+    },
+    {
+        "name": "teachers.update",
+        "resource": "teachers",
+        "action": "update",
+        "dbDescription": "Update teachers"
+    },
+    {
+        "name": "timetables.create",
+        "resource": "timetables",
+        "action": "create",
+        "dbDescription": "Create timetables"
+    },
+    {
+        "name": "timetables.delete",
+        "resource": "timetables",
+        "action": "delete",
+        "dbDescription": "Delete timetables"
+    },
+    {
+        "name": "timetables.export",
+        "resource": "timetables",
+        "action": "export",
+        "dbDescription": "Export timetables"
+    },
+    {
+        "name": "timetables.read",
+        "resource": "timetables",
+        "action": "read",
+        "dbDescription": "Read timetables"
+    },
+    {
+        "name": "timetables.update",
+        "resource": "timetables",
+        "action": "update",
+        "dbDescription": "Update timetables"
+    },
+    {
+        "name": "users.create",
+        "resource": "users",
+        "action": "create",
+        "dbDescription": "Create users"
+    },
+    {
+        "name": "users.delete",
+        "resource": "users",
+        "action": "delete",
+        "dbDescription": "Delete users"
+    },
+    {
+        "name": "users.read",
+        "resource": "users",
+        "action": "read",
+        "dbDescription": "Read users"
+    },
+    {
+        "name": "users.reset_password",
+        "resource": "users",
+        "action": "reset_password",
+        "dbDescription": "Reset_password users"
+    },
+    {
+        "name": "users.update",
+        "resource": "users",
+        "action": "update",
+        "dbDescription": "Update users"
+    },
+    {
+        "name": "website_domains.create",
+        "resource": "website_domains",
+        "action": "create",
+        "dbDescription": "Create website domains"
+    },
+    {
+        "name": "website_domains.delete",
+        "resource": "website_domains",
+        "action": "delete",
+        "dbDescription": "Delete website domains"
+    },
+    {
+        "name": "website_domains.read",
+        "resource": "website_domains",
+        "action": "read",
+        "dbDescription": "Read website domains"
+    },
+    {
+        "name": "website_domains.update",
+        "resource": "website_domains",
+        "action": "update",
+        "dbDescription": "Update website domains"
+    },
+    {
+        "name": "website_events.create",
+        "resource": "website_events",
+        "action": "create",
+        "dbDescription": "Create website events"
+    },
+    {
+        "name": "website_events.delete",
+        "resource": "website_events",
+        "action": "delete",
+        "dbDescription": "Delete website events"
+    },
+    {
+        "name": "website_events.read",
+        "resource": "website_events",
+        "action": "read",
+        "dbDescription": "Read website events"
+    },
+    {
+        "name": "website_events.update",
+        "resource": "website_events",
+        "action": "update",
+        "dbDescription": "Update website events"
+    },
+    {
+        "name": "website_media.create",
+        "resource": "website_media",
+        "action": "create",
+        "dbDescription": "Create website media"
+    },
+    {
+        "name": "website_media.delete",
+        "resource": "website_media",
+        "action": "delete",
+        "dbDescription": "Delete website media"
+    },
+    {
+        "name": "website_media.read",
+        "resource": "website_media",
+        "action": "read",
+        "dbDescription": "Read website media"
+    },
+    {
+        "name": "website_media.update",
+        "resource": "website_media",
+        "action": "update",
+        "dbDescription": "Update website media"
+    },
+    {
+        "name": "website_menus.create",
+        "resource": "website_menus",
+        "action": "create",
+        "dbDescription": "Create website menus"
+    },
+    {
+        "name": "website_menus.delete",
+        "resource": "website_menus",
+        "action": "delete",
+        "dbDescription": "Delete website menus"
+    },
+    {
+        "name": "website_menus.read",
+        "resource": "website_menus",
+        "action": "read",
+        "dbDescription": "Read website menus"
+    },
+    {
+        "name": "website_menus.update",
+        "resource": "website_menus",
+        "action": "update",
+        "dbDescription": "Update website menus"
+    },
+    {
+        "name": "website_pages.create",
+        "resource": "website_pages",
+        "action": "create",
+        "dbDescription": "Create website pages"
+    },
+    {
+        "name": "website_pages.delete",
+        "resource": "website_pages",
+        "action": "delete",
+        "dbDescription": "Delete website pages"
+    },
+    {
+        "name": "website_pages.read",
+        "resource": "website_pages",
+        "action": "read",
+        "dbDescription": "Read website pages"
+    },
+    {
+        "name": "website_pages.update",
+        "resource": "website_pages",
+        "action": "update",
+        "dbDescription": "Update website pages"
+    },
+    {
+        "name": "website_posts.create",
+        "resource": "website_posts",
+        "action": "create",
+        "dbDescription": "Create website posts"
+    },
+    {
+        "name": "website_posts.delete",
+        "resource": "website_posts",
+        "action": "delete",
+        "dbDescription": "Delete website posts"
+    },
+    {
+        "name": "website_posts.read",
+        "resource": "website_posts",
+        "action": "read",
+        "dbDescription": "Read website posts"
+    },
+    {
+        "name": "website_posts.update",
+        "resource": "website_posts",
+        "action": "update",
+        "dbDescription": "Update website posts"
+    },
+    {
+        "name": "website_settings.read",
+        "resource": "website_settings",
+        "action": "read",
+        "dbDescription": "Read website settings"
+    },
+    {
+        "name": "website_settings.update",
+        "resource": "website_settings",
+        "action": "update",
+        "dbDescription": "Update website settings"
+    }
+]
