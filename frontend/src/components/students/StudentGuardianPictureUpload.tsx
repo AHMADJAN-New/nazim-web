@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { CameraCaptureDialog, ImageCropDialog } from '@/components/image-capture';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudentGuardianPictureUpload } from '@/hooks/useStudentGuardianPictureUpload';
+import { IMAGE_UPLOAD_ACCEPT, isAllowedProfilePictureFile } from '@/lib/imageFileAccept';
 import { Camera } from 'lucide-react';
 
 interface StudentGuardianPictureUploadProps {
@@ -149,14 +150,7 @@ export function StudentGuardianPictureUpload({
         onFileSelected?.(null);
         return;
       }
-      const allowedTypes = [
-        'image/jpeg',
-        'image/jpg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-      ];
-      if (!allowedTypes.includes(f.type)) {
+      if (!isAllowedProfilePictureFile(f)) {
         const { showToast } = await import('@/lib/toast');
         showToast.error(
           'The file must be an image (jpg, jpeg, png, gif, or webp).'
@@ -320,7 +314,8 @@ export function StudentGuardianPictureUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept={IMAGE_UPLOAD_ACCEPT}
+          multiple
           onChange={onFileChange}
           style={{ display: 'none' }}
         />

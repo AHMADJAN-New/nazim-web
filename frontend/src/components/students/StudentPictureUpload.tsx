@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { CameraCaptureDialog, ImageCropDialog } from '@/components/image-capture';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
+import { IMAGE_UPLOAD_ACCEPT, isAllowedProfilePictureFile } from '@/lib/imageFileAccept';
 import { Camera } from 'lucide-react';
 
 interface StudentPictureUploadProps {
@@ -155,8 +156,7 @@ export function StudentPictureUpload({
                 onFileSelected?.(null);
                 return;
             }
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-            if (!allowedTypes.includes(f.type)) {
+            if (!isAllowedProfilePictureFile(f)) {
                 const { showToast } = await import('@/lib/toast');
                 showToast.error('The file must be an image (jpg, jpeg, png, gif, or webp).');
                 setFile(null);
@@ -305,7 +305,8 @@ export function StudentPictureUpload({
                 <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept={IMAGE_UPLOAD_ACCEPT}
+                    multiple
                     onChange={onFileChange}
                     style={{ display: 'none' }}
                 />

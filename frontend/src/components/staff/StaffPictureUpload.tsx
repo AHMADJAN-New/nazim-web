@@ -5,6 +5,7 @@ import { CameraCaptureDialog, ImageCropDialog } from '@/components/image-capture
 import { Label } from '@/components/ui/label';
 import { useUploadStaffPicture } from '@/hooks/useStaff';
 import { useLanguage } from '@/hooks/useLanguage';
+import { IMAGE_UPLOAD_ACCEPT, isAllowedProfilePictureFile } from '@/lib/imageFileAccept';
 import { Camera, User, X } from 'lucide-react';
 
 interface StaffPictureUploadProps {
@@ -150,8 +151,7 @@ export function StaffPictureUpload({
                 onFileSelected?.(null);
                 return;
             }
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-            if (!allowedTypes.includes(f.type)) {
+            if (!isAllowedProfilePictureFile(f)) {
                 const { showToast } = await import('@/lib/toast');
                 showToast.error('The file must be an image (jpg, jpeg, png, gif, or webp).');
                 setFile(null);
@@ -330,7 +330,8 @@ export function StaffPictureUpload({
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*"
+                        accept={IMAGE_UPLOAD_ACCEPT}
+                        multiple
                         onChange={onFileChange}
                         style={{ display: 'none' }}
                     />
