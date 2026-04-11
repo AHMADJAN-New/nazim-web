@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
-import type { HostelRoom, HostelOccupant } from '@/types/domain/hostel';
+import type { HostelRoom, HostelOccupant, HostelUnassignedBoarder } from '@/types/domain/hostel';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -41,7 +41,7 @@ export function HostelReports() {
   const { data: profile } = useProfile();
   const orgId = profile?.organization_id;
 
-  const { data: hostelOverview, isLoading } = useHostelOverview(orgId);
+  const { data: hostelOverview, isLoading, isError } = useHostelOverview(orgId);
   const unassignedBoarders = hostelOverview?.unassignedBoarders ?? [];
   
   // Search and filter states
@@ -247,7 +247,7 @@ export function HostelReports() {
     }));
   };
 
-  const transformUnassignedBoarders = (data: HostelOccupant[]) => {
+  const transformUnassignedBoarders = (data: HostelUnassignedBoarder[]) => {
     return data.map((boarder) => ({
       student_name: boarder.studentName || '—',
       admission_number: boarder.admissionNumber || '—',
@@ -300,6 +300,24 @@ export function HostelReports() {
           <CardContent>
             <LoadingSpinner size="lg" text={t('hostel.reports.loadingHostelReports') || 'Loading hostel reports...'} />
           </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="container mx-auto p-4 md:p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              {t('hostel.reports.hostelReporting') || 'Hostel reporting'}
+            </CardTitle>
+            <CardDescription className="text-destructive">
+              {t('hostel.reports.failedToLoad') || 'Failed to load hostel report data. Please check your permissions or contact your administrator.'}
+            </CardDescription>
+          </CardHeader>
         </Card>
       </div>
     );

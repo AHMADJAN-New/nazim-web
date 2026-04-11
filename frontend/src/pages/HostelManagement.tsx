@@ -31,7 +31,7 @@ export function HostelManagement() {
   const { data: profile } = useProfile();
   const orgId = profile?.organization_id;
 
-  const { data: hostelOverview, isLoading } = useHostelOverview(orgId);
+  const { data: hostelOverview, isLoading, isError } = useHostelOverview(orgId);
 
   const [buildingFilter, setBuildingFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -212,6 +212,24 @@ export function HostelManagement() {
           <CardContent>
             <LoadingSpinner size="lg" text={t('hostel.loadingHostelData')} />
           </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="container mx-auto p-4 md:p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BedDouble className="h-5 w-5" />
+              {t('hostel.management')}
+            </CardTitle>
+            <CardDescription className="text-destructive">
+              {t('hostel.failedToLoad') || 'Failed to load hostel data. Please check your permissions or contact your administrator.'}
+            </CardDescription>
+          </CardHeader>
         </Card>
       </div>
     );

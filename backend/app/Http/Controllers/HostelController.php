@@ -65,12 +65,14 @@ class HostelController extends Controller
             ->get();
 
         // Fetch admissions (boarders and day scholars) scoped to accessible schools and organization
+        // Only include active or admitted enrollments — exclude inactive/rejected
         $admissions = DB::table('student_admissions as sa')
             ->join('students as s', function ($join) {
                 $join->on('sa.student_id', '=', 's.id')
                     ->whereNull('s.deleted_at');
             })
             ->whereNull('sa.deleted_at')
+            ->whereIn('sa.enrollment_status', ['active', 'admitted'])
             ->whereIn('sa.organization_id', $orgIds)
             ->whereIn('sa.school_id', $schoolIds)
             ->select(
