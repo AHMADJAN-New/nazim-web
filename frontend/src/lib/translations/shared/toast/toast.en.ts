@@ -247,6 +247,8 @@ export default {
     fileDownloadFailed: "Failed to download file",
     fileUploaded: "File uploaded successfully",
     fileUploadFailed: "Failed to upload file",
+    hostelOverviewLoadFailed:
+      "Could not load hostel data. Check your connection and permissions, then try again.",
     fileMustBeImage: "Please select an image file (JPEG, PNG, GIF, WebP, BMP, or SVG).",
     imageUploadFailed: "Failed to upload image",
     finance: {

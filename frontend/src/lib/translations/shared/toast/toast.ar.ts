@@ -255,6 +255,8 @@ export default {
     fileDownloadFailed: "فشل تنزيل الملف",
     fileUploaded: "تم رفع الملف بنجاح",
     fileUploadFailed: "فشل رفع الملف",
+    hostelOverviewLoadFailed:
+      "تعذر تحميل بيانات السكن الداخلي. تحقق من الاتصال والصلاحيات ثم أعد المحاولة.",
     fileMustBeImage: "يرجى اختيار ملف صورة (JPEG أو PNG أو GIF أو WebP أو BMP أو SVG).",
     imageUploadFailed: "فشل رفع الصورة",
     fillAllFields: undefined,

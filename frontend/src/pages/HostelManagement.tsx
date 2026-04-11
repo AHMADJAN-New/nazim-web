@@ -1,5 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
-import { BedDouble, Building2, FileDown, ShieldCheck, Users } from 'lucide-react';
+import { AlertCircle, BedDouble, Building2, FileDown, ShieldCheck, Users } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 
 import { DataTable } from '@/components/data-table/data-table';
@@ -31,7 +31,7 @@ export function HostelManagement() {
   const { data: profile } = useProfile();
   const orgId = profile?.organization_id;
 
-  const { data: hostelOverview, isLoading } = useHostelOverview(orgId);
+  const { data: hostelOverview, isLoading, isError, error, refetch } = useHostelOverview(orgId);
 
   const [buildingFilter, setBuildingFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -211,6 +211,30 @@ export function HostelManagement() {
           </CardHeader>
           <CardContent>
             <LoadingSpinner size="lg" text={t('hostel.loadingHostelData')} />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isError) {
+    const message = error instanceof Error ? error.message : '';
+    return (
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              {t('toast.hostelOverviewLoadFailed')}
+            </CardTitle>
+            {message ? (
+              <CardDescription className="text-destructive">{message}</CardDescription>
+            ) : null}
+          </CardHeader>
+          <CardContent>
+            <Button type="button" variant="outline" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
           </CardContent>
         </Card>
       </div>

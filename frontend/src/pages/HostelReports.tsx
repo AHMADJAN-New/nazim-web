@@ -1,5 +1,5 @@
-import { BarChart3, BedDouble, Building2, ShieldCheck, Users, Search, X, MapPin, UserCheck } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { AlertCircle, BarChart3, BedDouble, Building2, ShieldCheck, Users, Search, X, MapPin, UserCheck, ChevronDown } from 'lucide-react';
+import { Fragment, useMemo, useState, useEffect } from 'react';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -7,12 +7,14 @@ import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
-import type { HostelRoom, HostelOccupant } from '@/types/domain/hostel';
+import type { HostelRoom, HostelOccupant, HostelUnassignedBoarder } from '@/types/domain/hostel';
+import { hostelMetricBadgeVariant } from '@/lib/hostelReportBadges';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -36,12 +38,59 @@ interface WardenCoverageRow {
   students: number;
 }
 
+type AssignedBoarderRow = HostelOccupant & {
+  roomNumber: string;
+  buildingName: string | null;
+  buildingId: string | null;
+  roomId: string;
+  /** Matches `wardenCoverage[].wardenName` (includes translated “not assigned”). */
+  wardenDisplayName: string;
+};
+
+interface RoomOccupantTableRow {
+  buildingId: string | null;
+  buildingName: string | null;
+  roomId: string;
+  roomNumber: string;
+  wardenName: string | null;
+  occupant: HostelOccupant;
+}
+
+const COLLAPSIBLE_STUDENTS_PAGE_SIZE = 25;
+
+function occupantClassFilterKey(o: HostelOccupant): string | null {
+  if (o.classId) return `class:${o.classId}`;
+  if (o.classAcademicYearId) return `cay:${o.classAcademicYearId}`;
+  const n = o.className?.trim();
+  if (n) return `name:${n}`;
+  return null;
+}
+
+function occupantMatchesClassFilter(o: HostelOccupant, filter: string): boolean {
+  if (filter === 'all') return true;
+  return occupantClassFilterKey(o) === filter;
+}
+
+function occupantMatchesAcademicYearFilter(o: HostelOccupant, filter: string): boolean {
+  if (filter === 'all') return true;
+  if (!o.academicYearId) return false;
+  return o.academicYearId === filter;
+}
+
+/** Admission is to an academic year; show that year's name (same as admissions flow). */
+function hostelReportAcademicYearDisplay(o: Pick<HostelOccupant, 'academicYearName' | 'admissionYear'>): string {
+  const name = o.academicYearName?.trim();
+  if (name) return name;
+  const fallback = o.admissionYear?.trim();
+  return fallback || '—';
+}
+
 export function HostelReports() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
   const orgId = profile?.organization_id;
 
-  const { data: hostelOverview, isLoading } = useHostelOverview(orgId);
+  const { data: hostelOverview, isLoading, isError, error, refetch } = useHostelOverview(orgId);
   const unassignedBoarders = hostelOverview?.unassignedBoarders ?? [];
   
   // Search and filter states
@@ -49,25 +98,43 @@ export function HostelReports() {
   const [unassignedSearchQuery, setUnassignedSearchQuery] = useState('');
   const [selectedBuilding, setSelectedBuilding] = useState<string>('all');
   const [selectedRoom, setSelectedRoom] = useState<string>('all');
+  const [roomBuildingsSubTab, setRoomBuildingsSubTab] = useState<string>('all');
+  const [buildingStudentOpen, setBuildingStudentOpen] = useState<Record<string, boolean>>({});
+  const [wardenStudentOpen, setWardenStudentOpen] = useState<Record<string, boolean>>({});
 
-  const buildingReports: BuildingReportRow[] =
-    hostelOverview?.buildings
-      .map((building) => ({
-        buildingId: building.id,
-        buildingName: building.buildingName,
-        totalRooms: building.roomCount,
-        occupiedRooms: building.occupiedRooms,
-        boardersAssigned: building.studentsInRooms,
-        wardensCovering: building.wardensAssigned,
-      }))
-      .sort((a, b) => b.boardersAssigned - a.boardersAssigned) || [];
+  const [assignedClassFilter, setAssignedClassFilter] = useState('all');
+  const [assignedAcademicYearFilter, setAssignedAcademicYearFilter] = useState('all');
+  const [unassignedClassFilter, setUnassignedClassFilter] = useState('all');
+  const [unassignedAcademicYearFilter, setUnassignedAcademicYearFilter] = useState('all');
+  const [roomsTabClassFilter, setRoomsTabClassFilter] = useState('all');
+  const [roomsTabAcademicYearFilter, setRoomsTabAcademicYearFilter] = useState('all');
+  const [roomsTabRoomFilter, setRoomsTabRoomFilter] = useState('all');
+  const [roomsTabSearch, setRoomsTabSearch] = useState('');
+  const [roomsTablePage, setRoomsTablePage] = useState(1);
+  const [roomsTablePageSize, setRoomsTablePageSize] = useState(25);
+  const [collapsibleClassFilter, setCollapsibleClassFilter] = useState('all');
+  const [collapsibleAcademicYearFilter, setCollapsibleAcademicYearFilter] = useState('all');
+  const [collapsibleRoomFilter, setCollapsibleRoomFilter] = useState('all');
+  const [buildingStudentPageById, setBuildingStudentPageById] = useState<Record<string, number>>({});
+  const [wardenStudentPageByName, setWardenStudentPageByName] = useState<Record<string, number>>({});
+
+  const buildingReports: BuildingReportRow[] = (hostelOverview?.buildings ?? [])
+    .map((building) => ({
+      buildingId: building.id,
+      buildingName: building.buildingName,
+      totalRooms: building.roomCount,
+      occupiedRooms: building.occupiedRooms,
+      boardersAssigned: building.studentsInRooms,
+      wardensCovering: building.wardensAssigned,
+    }))
+    .sort((a, b) => b.boardersAssigned - a.boardersAssigned);
 
   const wardenCoverage: WardenCoverageRow[] = useMemo(() => {
     if (!hostelOverview) return [];
 
     const map = new Map<string, { buildings: Set<string>; rooms: number; students: number }>();
 
-    hostelOverview.rooms.forEach((room: HostelRoom) => {
+    (hostelOverview.rooms ?? []).forEach((room: HostelRoom) => {
       const staffName = room.staffName || t('hostel.notAssigned');
 
       if (!map.has(staffName)) {
@@ -90,7 +157,7 @@ export function HostelReports() {
         students: info.students,
       }))
       .sort((a, b) => b.students - a.students);
-  }, [hostelOverview]);
+  }, [hostelOverview, t]);
 
   const totals = useMemo(
     () => ({
@@ -107,20 +174,209 @@ export function HostelReports() {
   );
 
   // Get all assigned boarders from rooms
-  const allAssignedBoarders = useMemo(() => {
+  const allAssignedBoarders = useMemo((): AssignedBoarderRow[] => {
     if (!hostelOverview) return [];
-    const boarders: Array<HostelOccupant & { roomNumber: string; buildingName: string | null; roomId: string }> = [];
-    hostelOverview.rooms.forEach((room) => {
+    const notAssigned = t('hostel.notAssigned');
+    const boarders: AssignedBoarderRow[] = [];
+    (hostelOverview.rooms ?? []).forEach((room) => {
       room.occupants.forEach((occupant) => {
         boarders.push({
           ...occupant,
           roomNumber: room.roomNumber,
           buildingName: room.buildingName,
+          buildingId: room.buildingId,
           roomId: room.id,
+          wardenDisplayName: room.staffName || notAssigned,
         });
       });
     });
     return boarders;
+  }, [hostelOverview, t]);
+
+  const roomOccupantTableRows = useMemo((): RoomOccupantTableRow[] => {
+    if (!hostelOverview) return [];
+    const rows: RoomOccupantTableRow[] = [];
+    (hostelOverview.rooms ?? []).forEach((room) => {
+      room.occupants.forEach((occupant) => {
+        rows.push({
+          buildingId: room.buildingId,
+          buildingName: room.buildingName,
+          roomId: room.id,
+          roomNumber: room.roomNumber,
+          wardenName: room.staffName,
+          occupant,
+        });
+      });
+    });
+    return rows;
+  }, [hostelOverview]);
+
+  const filteredBoardersForCollapsibleLists = useMemo(() => {
+    let list = allAssignedBoarders;
+    if (collapsibleClassFilter !== 'all') {
+      list = list.filter((b) => occupantMatchesClassFilter(b, collapsibleClassFilter));
+    }
+    if (collapsibleAcademicYearFilter !== 'all') {
+      list = list.filter((b) => occupantMatchesAcademicYearFilter(b, collapsibleAcademicYearFilter));
+    }
+    if (collapsibleRoomFilter !== 'all') {
+      list = list.filter((b) => b.roomId === collapsibleRoomFilter);
+    }
+    return list;
+  }, [allAssignedBoarders, collapsibleClassFilter, collapsibleAcademicYearFilter, collapsibleRoomFilter]);
+
+  const boardersByBuildingIdFiltered = useMemo(() => {
+    const m = new Map<string, AssignedBoarderRow[]>();
+    filteredBoardersForCollapsibleLists.forEach((b) => {
+      if (!b.buildingId) return;
+      if (!m.has(b.buildingId)) m.set(b.buildingId, []);
+      m.get(b.buildingId)!.push(b);
+    });
+    return m;
+  }, [filteredBoardersForCollapsibleLists]);
+
+  const boardersByWardenDisplayNameFiltered = useMemo(() => {
+    const m = new Map<string, AssignedBoarderRow[]>();
+    filteredBoardersForCollapsibleLists.forEach((b) => {
+      if (!m.has(b.wardenDisplayName)) m.set(b.wardenDisplayName, []);
+      m.get(b.wardenDisplayName)!.push(b);
+    });
+    return m;
+  }, [filteredBoardersForCollapsibleLists]);
+
+  const assignedClassFilterOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    allAssignedBoarders.forEach((b) => {
+      const key = occupantClassFilterKey(b);
+      if (!key) return;
+      m.set(key, b.className?.trim() || '—');
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [allAssignedBoarders]);
+
+  const assignedAcademicYearFilterOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    allAssignedBoarders.forEach((b) => {
+      if (!b.academicYearId) return;
+      m.set(b.academicYearId, b.academicYearName?.trim() || b.academicYearId);
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [allAssignedBoarders]);
+
+  const unassignedClassFilterOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    unassignedBoarders.forEach((b) => {
+      const key = occupantClassFilterKey(b);
+      if (!key) return;
+      m.set(key, b.className?.trim() || '—');
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [unassignedBoarders]);
+
+  const unassignedAcademicYearFilterOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    unassignedBoarders.forEach((b) => {
+      if (!b.academicYearId) return;
+      m.set(b.academicYearId, b.academicYearName?.trim() || b.academicYearId);
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [unassignedBoarders]);
+
+  const collapsibleRoomFilterOptions = useMemo(() => {
+    const m = new Map<string, { roomNumber: string; buildingLabel: string }>();
+    allAssignedBoarders.forEach((b) => {
+      m.set(b.roomId, {
+        roomNumber: b.roomNumber,
+        buildingLabel: b.buildingName || '—',
+      });
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].roomNumber.localeCompare(b[1].roomNumber));
+  }, [allAssignedBoarders]);
+
+  const roomTabBaseRows = useMemo(() => {
+    if (roomBuildingsSubTab === 'all') return roomOccupantTableRows;
+    return roomOccupantTableRows.filter((r) => r.buildingId === roomBuildingsSubTab);
+  }, [roomOccupantTableRows, roomBuildingsSubTab]);
+
+  const roomsTabClassFilterOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    roomTabBaseRows.forEach((row) => {
+      const o = row.occupant;
+      const key = occupantClassFilterKey(o);
+      if (!key) return;
+      m.set(key, o.className?.trim() || '—');
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [roomTabBaseRows]);
+
+  const roomsTabAcademicYearFilterOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    roomTabBaseRows.forEach((row) => {
+      const o = row.occupant;
+      if (!o.academicYearId) return;
+      m.set(o.academicYearId, o.academicYearName?.trim() || o.academicYearId);
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [roomTabBaseRows]);
+
+  const roomsTabRoomFilterOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    roomTabBaseRows.forEach((row) => {
+      m.set(row.roomId, row.roomNumber);
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [roomTabBaseRows]);
+
+  const filteredRoomTabRows = useMemo(() => {
+    let rows = roomTabBaseRows;
+    if (roomsTabClassFilter !== 'all') {
+      rows = rows.filter((r) => occupantMatchesClassFilter(r.occupant, roomsTabClassFilter));
+    }
+    if (roomsTabAcademicYearFilter !== 'all') {
+      rows = rows.filter((r) => occupantMatchesAcademicYearFilter(r.occupant, roomsTabAcademicYearFilter));
+    }
+    if (roomsTabRoomFilter !== 'all') {
+      rows = rows.filter((r) => r.roomId === roomsTabRoomFilter);
+    }
+    if (roomsTabSearch.trim()) {
+      const q = roomsTabSearch.trim().toLowerCase();
+      rows = rows.filter((r) => {
+        const o = r.occupant;
+        return (
+          o.studentName?.toLowerCase().includes(q) ||
+          o.fatherName?.toLowerCase().includes(q) ||
+          o.className?.toLowerCase().includes(q) ||
+          o.admissionNumber?.toLowerCase().includes(q) ||
+          o.academicYearName?.toLowerCase().includes(q) ||
+          r.roomNumber.toLowerCase().includes(q) ||
+          (r.buildingName || '').toLowerCase().includes(q)
+        );
+      });
+    }
+    return rows;
+  }, [
+    roomTabBaseRows,
+    roomsTabClassFilter,
+    roomsTabAcademicYearFilter,
+    roomsTabRoomFilter,
+    roomsTabSearch,
+  ]);
+
+  const paginatedRoomTabRows = useMemo(() => {
+    const start = (roomsTablePage - 1) * roomsTablePageSize;
+    return filteredRoomTabRows.slice(start, start + roomsTablePageSize);
+  }, [filteredRoomTabRows, roomsTablePage, roomsTablePageSize]);
+
+  const roomsTabTotalPages = Math.max(1, Math.ceil(filteredRoomTabRows.length / roomsTablePageSize));
+
+  const buildingsWithRooms = useMemo(() => {
+    if (!hostelOverview) return [];
+    const ids = new Set(
+      (hostelOverview.rooms ?? [])
+        .map((r) => r.buildingId)
+        .filter((id): id is string => !!id)
+    );
+    return (hostelOverview.buildings ?? []).filter((b) => ids.has(b.id));
   }, [hostelOverview]);
 
   // Pagination state for assigned boarders
@@ -137,18 +393,18 @@ export function HostelReports() {
       filtered = filtered.filter(
         (boarder) =>
           boarder.studentName?.toLowerCase().includes(query) ||
+          boarder.fatherName?.toLowerCase().includes(query) ||
+          boarder.className?.toLowerCase().includes(query) ||
           boarder.admissionNumber?.toLowerCase().includes(query) ||
           boarder.roomNumber?.toLowerCase().includes(query) ||
-          boarder.buildingName?.toLowerCase().includes(query)
+          boarder.buildingName?.toLowerCase().includes(query) ||
+          boarder.academicYearName?.toLowerCase().includes(query)
       );
     }
 
     // Building filter
     if (selectedBuilding !== 'all') {
-      filtered = filtered.filter((boarder) => {
-        const room = hostelOverview?.rooms.find((r) => r.id === boarder.roomId);
-        return room?.buildingId === selectedBuilding;
-      });
+      filtered = filtered.filter((boarder) => boarder.buildingId === selectedBuilding);
     }
 
     // Room filter
@@ -156,8 +412,24 @@ export function HostelReports() {
       filtered = filtered.filter((boarder) => boarder.roomId === selectedRoom);
     }
 
+    if (assignedClassFilter !== 'all') {
+      filtered = filtered.filter((boarder) => occupantMatchesClassFilter(boarder, assignedClassFilter));
+    }
+    if (assignedAcademicYearFilter !== 'all') {
+      filtered = filtered.filter((boarder) =>
+        occupantMatchesAcademicYearFilter(boarder, assignedAcademicYearFilter)
+      );
+    }
+
     return filtered;
-  }, [allAssignedBoarders, assignedSearchQuery, selectedBuilding, selectedRoom, hostelOverview]);
+  }, [
+    allAssignedBoarders,
+    assignedSearchQuery,
+    selectedBuilding,
+    selectedRoom,
+    assignedClassFilter,
+    assignedAcademicYearFilter,
+  ]);
 
   // Paginated assigned boarders
   const paginatedAssignedBoarders = useMemo(() => {
@@ -171,7 +443,7 @@ export function HostelReports() {
   // Reset pagination when filters change
   useEffect(() => {
     setAssignedPage(1);
-  }, [assignedSearchQuery, selectedBuilding, selectedRoom]);
+  }, [assignedSearchQuery, selectedBuilding, selectedRoom, assignedClassFilter, assignedAcademicYearFilter]);
 
   // Pagination state for unassigned boarders
   const [unassignedPage, setUnassignedPage] = useState(1);
@@ -179,15 +451,31 @@ export function HostelReports() {
 
   // Filter unassigned boarders
   const filteredUnassignedBoarders = useMemo(() => {
-    if (!unassignedSearchQuery) return unassignedBoarders;
-    const query = unassignedSearchQuery.toLowerCase();
-    return unassignedBoarders.filter(
-      (boarder) =>
-        boarder.studentName?.toLowerCase().includes(query) ||
-        boarder.admissionNumber?.toLowerCase().includes(query) ||
-        boarder.className?.toLowerCase().includes(query)
-    );
-  }, [unassignedBoarders, unassignedSearchQuery]);
+    let list = unassignedBoarders;
+    if (unassignedSearchQuery) {
+      const query = unassignedSearchQuery.toLowerCase();
+      list = list.filter(
+        (boarder) =>
+          boarder.studentName?.toLowerCase().includes(query) ||
+          boarder.fatherName?.toLowerCase().includes(query) ||
+          boarder.admissionNumber?.toLowerCase().includes(query) ||
+          boarder.className?.toLowerCase().includes(query) ||
+          boarder.academicYearName?.toLowerCase().includes(query)
+      );
+    }
+    if (unassignedClassFilter !== 'all') {
+      list = list.filter((b) => occupantMatchesClassFilter(b, unassignedClassFilter));
+    }
+    if (unassignedAcademicYearFilter !== 'all') {
+      list = list.filter((b) => occupantMatchesAcademicYearFilter(b, unassignedAcademicYearFilter));
+    }
+    return list;
+  }, [
+    unassignedBoarders,
+    unassignedSearchQuery,
+    unassignedClassFilter,
+    unassignedAcademicYearFilter,
+  ]);
 
   // Paginated unassigned boarders
   const paginatedUnassignedBoarders = useMemo(() => {
@@ -201,11 +489,31 @@ export function HostelReports() {
   // Reset pagination when filters change
   useEffect(() => {
     setUnassignedPage(1);
-  }, [unassignedSearchQuery]);
+  }, [unassignedSearchQuery, unassignedClassFilter, unassignedAcademicYearFilter]);
+
+  useEffect(() => {
+    setRoomsTablePage(1);
+  }, [
+    roomBuildingsSubTab,
+    roomsTabClassFilter,
+    roomsTabAcademicYearFilter,
+    roomsTabRoomFilter,
+    roomsTabSearch,
+    roomsTablePageSize,
+  ]);
+
+  useEffect(() => {
+    setBuildingStudentPageById({});
+    setWardenStudentPageByName({});
+  }, [collapsibleClassFilter, collapsibleAcademicYearFilter, collapsibleRoomFilter]);
+
+  useEffect(() => {
+    setRoomsTabRoomFilter('all');
+  }, [roomBuildingsSubTab]);
 
   // Get rooms and buildings for filters
   const buildingsForFilter = useMemo(() => {
-    return hostelOverview?.buildings || [];
+    return hostelOverview?.buildings ?? [];
   }, [hostelOverview]);
 
   const roomsForFilter = useMemo(() => {
@@ -237,21 +545,25 @@ export function HostelReports() {
     }));
   };
 
-  const transformAssignedBoarders = (data: Array<HostelOccupant & { roomNumber: string; buildingName: string | null; roomId: string }>) => {
+  const transformAssignedBoarders = (data: AssignedBoarderRow[]) => {
     return data.map((boarder) => ({
       student_name: boarder.studentName || '—',
+      father_name: boarder.fatherName || '—',
+      class_name: boarder.className || '—',
       admission_number: boarder.admissionNumber || '—',
       building_name: boarder.buildingName || '—',
       room_number: boarder.roomNumber || '—',
-      admission_year: boarder.admissionYear || '—',
+      admission_year: hostelReportAcademicYearDisplay(boarder),
     }));
   };
 
-  const transformUnassignedBoarders = (data: HostelOccupant[]) => {
+  const transformUnassignedBoarders = (data: HostelUnassignedBoarder[]) => {
     return data.map((boarder) => ({
       student_name: boarder.studentName || '—',
+      father_name: boarder.fatherName || '—',
       admission_number: boarder.admissionNumber || '—',
       class_name: boarder.className || '—',
+      academic_year: hostelReportAcademicYearDisplay(boarder),
       residency_type: boarder.residencyTypeName || 'Boarder',
     }));
   };
@@ -269,19 +581,37 @@ export function HostelReports() {
     const parts: string[] = [];
     if (assignedSearchQuery) parts.push(`Search: "${assignedSearchQuery}"`);
     if (selectedBuilding !== 'all') {
-      const building = buildingsForFilter.find(b => b.id === selectedBuilding);
+      const building = buildingsForFilter.find((b) => b.id === selectedBuilding);
       if (building) parts.push(`Building: ${building.buildingName}`);
     }
     if (selectedRoom !== 'all') {
-      const room = roomsForFilter.find(r => r.id === selectedRoom);
+      const room = roomsForFilter.find((r) => r.id === selectedRoom);
       if (room) parts.push(`Room: ${room.roomNumber}`);
+    }
+    if (assignedClassFilter !== 'all') {
+      const label = assignedClassFilterOptions.find(([k]) => k === assignedClassFilter)?.[1];
+      if (label) parts.push(`${t('hostel.reports.filterClass')}: ${label}`);
+    }
+    if (assignedAcademicYearFilter !== 'all') {
+      const label = assignedAcademicYearFilterOptions.find(([k]) => k === assignedAcademicYearFilter)?.[1];
+      if (label) parts.push(`${t('hostel.reports.filterAcademicYear')}: ${label}`);
     }
     return parts.length > 0 ? parts.join(' • ') : `Total assigned boarders: ${filteredAssignedBoarders.length}`;
   };
 
   const buildUnassignedBoardersFiltersSummary = () => {
-    if (unassignedSearchQuery) {
-      return `Search: "${unassignedSearchQuery}" • Total: ${filteredUnassignedBoarders.length}`;
+    const parts: string[] = [];
+    if (unassignedSearchQuery) parts.push(`Search: "${unassignedSearchQuery}"`);
+    if (unassignedClassFilter !== 'all') {
+      const label = unassignedClassFilterOptions.find(([k]) => k === unassignedClassFilter)?.[1];
+      if (label) parts.push(`${t('hostel.reports.filterClass')}: ${label}`);
+    }
+    if (unassignedAcademicYearFilter !== 'all') {
+      const label = unassignedAcademicYearFilterOptions.find(([k]) => k === unassignedAcademicYearFilter)?.[1];
+      if (label) parts.push(`${t('hostel.reports.filterAcademicYear')}: ${label}`);
+    }
+    if (parts.length > 0) {
+      return `${parts.join(' • ')} • Total: ${filteredUnassignedBoarders.length}`;
     }
     return `Total unassigned boarders: ${filteredUnassignedBoarders.length}`;
   };
@@ -299,6 +629,30 @@ export function HostelReports() {
           </CardHeader>
           <CardContent>
             <LoadingSpinner size="lg" text={t('hostel.reports.loadingHostelReports') || 'Loading hostel reports...'} />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isError) {
+    const message = error instanceof Error ? error.message : '';
+    return (
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              {t('toast.hostelOverviewLoadFailed')}
+            </CardTitle>
+            {message ? (
+              <CardDescription className="text-destructive">{message}</CardDescription>
+            ) : null}
+          </CardHeader>
+          <CardContent>
+            <Button type="button" variant="outline" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -350,30 +704,30 @@ export function HostelReports() {
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto p-1">
           <TabsTrigger value="building-utilization" className="flex items-center gap-1 sm:gap-2">
             <Building2 className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">{t('hostel.reports.buildingsTab')}</span>
+            <span className="hidden sm:inline text-xs sm:text-sm">{t('hostel.reports.buildingsTab')}</span>
           </TabsTrigger>
           <TabsTrigger value="warden-coverage" className="flex items-center gap-1 sm:gap-2">
             <ShieldCheck className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">{t('hostel.reports.wardensTab')}</span>
+            <span className="hidden sm:inline text-xs sm:text-sm">{t('hostel.reports.wardensTab')}</span>
           </TabsTrigger>
           <TabsTrigger value="room-buildings" className="flex items-center gap-1 sm:gap-2">
             <MapPin className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">{t('hostel.reports.roomsTab')}</span>
+            <span className="hidden sm:inline text-xs sm:text-sm">{t('hostel.reports.roomsTab')}</span>
           </TabsTrigger>
           <TabsTrigger value="assigned-boarders" className="flex items-center gap-1 sm:gap-2">
             <UserCheck className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">{t('hostel.reports.assignedTab')}</span>
+            <span className="hidden sm:inline text-xs sm:text-sm">{t('hostel.reports.assignedTab')}</span>
             {allAssignedBoarders.length > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs flex-shrink-0">
+              <Badge variant={hostelMetricBadgeVariant(3)} className="ml-1 shrink-0 text-xs">
                 {allAssignedBoarders.length}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="unassigned-boarders" className="flex items-center gap-1 sm:gap-2">
             <Users className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">{t('hostel.reports.unassignedTab')}</span>
+            <span className="hidden sm:inline text-xs sm:text-sm">{t('hostel.reports.unassignedTab')}</span>
             {totals.unassignedBoarders > 0 && (
-              <Badge variant="destructive" className="ml-1 text-xs flex-shrink-0">
+              <Badge variant="warning" className="ml-1 shrink-0 text-xs">
                 {totals.unassignedBoarders}
               </Badge>
             )}
@@ -389,7 +743,9 @@ export function HostelReports() {
                 <CardDescription className="hidden md:block">{t('hostel.reports.buildingUtilizationDescription') || 'Rooms, occupancy, and warden coverage by building.'}</CardDescription>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge variant="outline" className="hidden sm:inline-flex">{t('hostel.reports.buildingsCount').replace('{count}', buildingReports.length.toString())}</Badge>
+                <Badge variant={hostelMetricBadgeVariant(0)} className="hidden sm:inline-flex shrink-0 text-xs">
+                  {t('hostel.reports.buildingsCount').replace('{count}', buildingReports.length.toString())}
+                </Badge>
                 <ReportExportButtons
                   data={buildingReports}
                   columns={[
@@ -411,7 +767,63 @@ export function HostelReports() {
                 />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <FilterPanel
+                title={t('hostel.reports.filterStudentListsTitle')}
+                defaultOpenDesktop={true}
+                defaultOpenMobile={false}
+              >
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+                  <div className="min-w-0">
+                    <Label htmlFor="building-collapsible-class-filter">{t('hostel.reports.filterClass')}</Label>
+                    <Select value={collapsibleClassFilter} onValueChange={setCollapsibleClassFilter}>
+                      <SelectTrigger id="building-collapsible-class-filter">
+                        <SelectValue placeholder={t('hostel.reports.allClasses')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allClasses')}</SelectItem>
+                        {assignedClassFilterOptions.map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="min-w-0">
+                    <Label htmlFor="building-collapsible-year-filter">{t('hostel.reports.filterAcademicYear')}</Label>
+                    <Select value={collapsibleAcademicYearFilter} onValueChange={setCollapsibleAcademicYearFilter}>
+                      <SelectTrigger id="building-collapsible-year-filter">
+                        <SelectValue placeholder={t('hostel.reports.allAcademicYears')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allAcademicYears')}</SelectItem>
+                        {assignedAcademicYearFilterOptions.map(([id, name]) => (
+                          <SelectItem key={id} value={id}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="min-w-0">
+                    <Label htmlFor="building-collapsible-room-filter">{t('hostel.reports.filterRoom')}</Label>
+                    <Select value={collapsibleRoomFilter} onValueChange={setCollapsibleRoomFilter}>
+                      <SelectTrigger id="building-collapsible-room-filter">
+                        <SelectValue placeholder={t('hostel.reports.allRooms')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allRooms')}</SelectItem>
+                        {collapsibleRoomFilterOptions.map(([roomId, meta]) => (
+                          <SelectItem key={roomId} value={roomId}>
+                            {t('hostel.reports.roomNumber').replace('{number}', meta.roomNumber)} — {meta.buildingLabel}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </FilterPanel>
               <div className="overflow-x-auto -mx-4 md:mx-0">
                 <div className="inline-block min-w-full align-middle px-4 md:px-0">
                   <div className="rounded-md border">
@@ -436,31 +848,164 @@ export function HostelReports() {
                         ) : (
                           buildingReports.map((row) => {
                             const utilizationRate = row.totalRooms > 0 ? (row.occupiedRooms / row.totalRooms) * 100 : 0;
+                            const studentsInBuilding = boardersByBuildingIdFiltered.get(row.buildingId) ?? [];
+                            const open = !!buildingStudentOpen[row.buildingId];
+                            const bPage = buildingStudentPageById[row.buildingId] ?? 1;
+                            const bStart = (bPage - 1) * COLLAPSIBLE_STUDENTS_PAGE_SIZE;
+                            const paginatedBuildingStudents = studentsInBuilding.slice(
+                              bStart,
+                              bStart + COLLAPSIBLE_STUDENTS_PAGE_SIZE
+                            );
+                            const buildingStudentTotalPages = Math.max(
+                              1,
+                              Math.ceil(studentsInBuilding.length / COLLAPSIBLE_STUDENTS_PAGE_SIZE)
+                            );
                             return (
-                              <TableRow key={row.buildingId}>
-                                <TableCell className="font-medium">{row.buildingName}</TableCell>
-                                <TableCell>{row.totalRooms}</TableCell>
-                                <TableCell>
-                                  <Badge variant={row.occupiedRooms > 0 ? 'default' : 'secondary'}>
-                                    {t('hostel.reports.occupiedOfTotal').replace('{occupied}', row.occupiedRooms.toString()).replace('{total}', row.totalRooms.toString())}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{row.boardersAssigned}</TableCell>
-                                <TableCell>{row.wardensCovering}</TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <div className="flex-1 bg-muted rounded-full h-2">
-                                      <div
-                                        className="bg-primary h-2 rounded-full"
-                                        style={{ width: `${utilizationRate}%` }}
-                                      />
+                              <Fragment key={row.buildingId}>
+                                <TableRow>
+                                  <TableCell className="font-medium">{row.buildingName}</TableCell>
+                                  <TableCell>
+                                    <Badge variant={hostelMetricBadgeVariant(1)} className="shrink-0 text-xs">
+                                      {row.totalRooms}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant={row.occupiedRooms > 0 ? 'success' : 'muted'} className="shrink-0 text-xs">
+                                      {t('hostel.reports.occupiedOfTotal').replace('{occupied}', row.occupiedRooms.toString()).replace('{total}', row.totalRooms.toString())}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="boarder" className="shrink-0 text-xs">
+                                      {row.boardersAssigned}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>{row.wardensCovering}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1 bg-muted rounded-full h-2 min-w-[48px]">
+                                        <div
+                                          className="bg-primary h-2 rounded-full"
+                                          style={{ width: `${utilizationRate}%` }}
+                                        />
+                                      </div>
+                                      <span className="text-sm text-muted-foreground w-12 text-right tabular-nums">
+                                        {utilizationRate.toFixed(0)}%
+                                      </span>
                                     </div>
-                                    <span className="text-sm text-muted-foreground w-12 text-right">
-                                      {utilizationRate.toFixed(0)}%
-                                    </span>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
+                                  </TableCell>
+                                </TableRow>
+                                <TableRow className="hover:bg-transparent">
+                                  <TableCell colSpan={6} className="p-0 border-t bg-muted/30">
+                                    <Collapsible
+                                      open={open}
+                                      onOpenChange={(next) =>
+                                        setBuildingStudentOpen((prev) => ({ ...prev, [row.buildingId]: next }))
+                                      }
+                                    >
+                                      <CollapsibleTrigger asChild>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="w-full justify-between rounded-none px-4 py-2 h-auto font-normal"
+                                        >
+                                          <span className="text-sm">{t('hostel.reports.studentListBuilding')}</span>
+                                          <span className="flex items-center gap-2">
+                                            <Badge variant="info" className="shrink-0 text-xs">
+                                              {studentsInBuilding.length}
+                                            </Badge>
+                                            <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+                                          </span>
+                                        </Button>
+                                      </CollapsibleTrigger>
+                                      <CollapsibleContent>
+                                        <div className="overflow-x-auto px-2 pb-3">
+                                          <Table>
+                                            <TableHeader>
+                                              <TableRow>
+                                                <TableHead>{t('hostel.reports.studentHeader')}</TableHead>
+                                                <TableHead>{t('hostel.reports.fatherHeader')}</TableHead>
+                                                <TableHead>{t('hostel.reports.classHeader')}</TableHead>
+                                                <TableHead>{t('hostel.reports.roomHeader')}</TableHead>
+                                              </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                              {studentsInBuilding.length === 0 ? (
+                                                <TableRow>
+                                                  <TableCell colSpan={4} className="text-muted-foreground text-sm">
+                                                    {t('hostel.reports.noBoardersAssignedYet')}
+                                                  </TableCell>
+                                                </TableRow>
+                                              ) : (
+                                                paginatedBuildingStudents.map((b) => (
+                                                  <TableRow key={b.id}>
+                                                    <TableCell className="font-medium">{b.studentName || '—'}</TableCell>
+                                                    <TableCell>{b.fatherName || '—'}</TableCell>
+                                                    <TableCell>{b.className || '—'}</TableCell>
+                                                    <TableCell>
+                                                      <Badge variant="muted" className="shrink-0 text-xs">
+                                                        {t('hostel.reports.roomNumber').replace('{number}', b.roomNumber)}
+                                                      </Badge>
+                                                    </TableCell>
+                                                  </TableRow>
+                                                ))
+                                              )}
+                                            </TableBody>
+                                          </Table>
+                                        </div>
+                                        {studentsInBuilding.length > COLLAPSIBLE_STUDENTS_PAGE_SIZE ? (
+                                          <div className="flex flex-col gap-2 px-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <p className="text-xs text-muted-foreground">
+                                              {t('hostel.reports.showingBoarders')
+                                                .replace('{start}', (bStart + 1).toString())
+                                                .replace(
+                                                  '{end}',
+                                                  Math.min(bStart + COLLAPSIBLE_STUDENTS_PAGE_SIZE, studentsInBuilding.length).toString()
+                                                )
+                                                .replace('{total}', studentsInBuilding.length.toString())}
+                                            </p>
+                                            <div className="flex items-center gap-1">
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8"
+                                                disabled={bPage <= 1}
+                                                onClick={() =>
+                                                  setBuildingStudentPageById((prev) => ({
+                                                    ...prev,
+                                                    [row.buildingId]: Math.max(1, bPage - 1),
+                                                  }))
+                                                }
+                                              >
+                                                {t('common.previous')}
+                                              </Button>
+                                              <span className="text-xs tabular-nums px-1">
+                                                {bPage} / {buildingStudentTotalPages}
+                                              </span>
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8"
+                                                disabled={bPage >= buildingStudentTotalPages}
+                                                onClick={() =>
+                                                  setBuildingStudentPageById((prev) => ({
+                                                    ...prev,
+                                                    [row.buildingId]: Math.min(buildingStudentTotalPages, bPage + 1),
+                                                  }))
+                                                }
+                                              >
+                                                {t('common.next')}
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ) : null}
+                                      </CollapsibleContent>
+                                    </Collapsible>
+                                  </TableCell>
+                                </TableRow>
+                              </Fragment>
                             );
                           })
                         )}
@@ -482,7 +1027,9 @@ export function HostelReports() {
                 <CardDescription className="hidden md:block">{t('hostel.reports.wardenCoverageDescription') || 'Room assignments and student counts per warden.'}</CardDescription>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge variant="outline" className="hidden sm:inline-flex">{t('hostel.reports.wardensCount').replace('{count}', wardenCoverage.length.toString())}</Badge>
+                <Badge variant={hostelMetricBadgeVariant(2)} className="hidden sm:inline-flex shrink-0 text-xs">
+                  {t('hostel.reports.wardensCount').replace('{count}', wardenCoverage.length.toString())}
+                </Badge>
                 <ReportExportButtons
                   data={wardenCoverage}
                   columns={[
@@ -502,7 +1049,63 @@ export function HostelReports() {
                 />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <FilterPanel
+                title={t('hostel.reports.filterStudentListsTitle')}
+                defaultOpenDesktop={true}
+                defaultOpenMobile={false}
+              >
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+                  <div className="min-w-0">
+                    <Label htmlFor="warden-collapsible-class-filter">{t('hostel.reports.filterClass')}</Label>
+                    <Select value={collapsibleClassFilter} onValueChange={setCollapsibleClassFilter}>
+                      <SelectTrigger id="warden-collapsible-class-filter">
+                        <SelectValue placeholder={t('hostel.reports.allClasses')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allClasses')}</SelectItem>
+                        {assignedClassFilterOptions.map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="min-w-0">
+                    <Label htmlFor="warden-collapsible-year-filter">{t('hostel.reports.filterAcademicYear')}</Label>
+                    <Select value={collapsibleAcademicYearFilter} onValueChange={setCollapsibleAcademicYearFilter}>
+                      <SelectTrigger id="warden-collapsible-year-filter">
+                        <SelectValue placeholder={t('hostel.reports.allAcademicYears')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allAcademicYears')}</SelectItem>
+                        {assignedAcademicYearFilterOptions.map(([id, name]) => (
+                          <SelectItem key={id} value={id}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="min-w-0">
+                    <Label htmlFor="warden-collapsible-room-filter">{t('hostel.reports.filterRoom')}</Label>
+                    <Select value={collapsibleRoomFilter} onValueChange={setCollapsibleRoomFilter}>
+                      <SelectTrigger id="warden-collapsible-room-filter">
+                        <SelectValue placeholder={t('hostel.reports.allRooms')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allRooms')}</SelectItem>
+                        {collapsibleRoomFilterOptions.map(([roomId, meta]) => (
+                          <SelectItem key={roomId} value={roomId}>
+                            {t('hostel.reports.roomNumber').replace('{number}', meta.roomNumber)} — {meta.buildingLabel}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </FilterPanel>
               <div className="overflow-x-auto -mx-4 md:mx-0">
                 <div className="inline-block min-w-full align-middle px-4 md:px-0">
                   <div className="rounded-md border">
@@ -524,19 +1127,160 @@ export function HostelReports() {
                             </TableCell>
                           </TableRow>
                         ) : (
-                          wardenCoverage.map((warden) => (
-                            <TableRow key={warden.wardenName}>
-                              <TableCell className="font-medium">{warden.wardenName}</TableCell>
-                              <TableCell>{warden.buildings}</TableCell>
-                              <TableCell>{warden.rooms}</TableCell>
-                              <TableCell>{warden.students}</TableCell>
-                              <TableCell>
-                                <Badge variant={warden.students > 0 ? 'default' : 'secondary'}>
-                                  {t('hostel.reports.studentsCount').replace('{count}', warden.students.toString())}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))
+                          wardenCoverage.map((warden) => {
+                            const studentsForWarden = boardersByWardenDisplayNameFiltered.get(warden.wardenName) ?? [];
+                            const open = !!wardenStudentOpen[warden.wardenName];
+                            const wPage = wardenStudentPageByName[warden.wardenName] ?? 1;
+                            const wStart = (wPage - 1) * COLLAPSIBLE_STUDENTS_PAGE_SIZE;
+                            const paginatedWardenStudents = studentsForWarden.slice(
+                              wStart,
+                              wStart + COLLAPSIBLE_STUDENTS_PAGE_SIZE
+                            );
+                            const wardenStudentTotalPages = Math.max(
+                              1,
+                              Math.ceil(studentsForWarden.length / COLLAPSIBLE_STUDENTS_PAGE_SIZE)
+                            );
+                            return (
+                              <Fragment key={warden.wardenName}>
+                                <TableRow>
+                                  <TableCell className="font-medium">{warden.wardenName}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="info" className="shrink-0 text-xs">
+                                      {warden.buildings}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant={hostelMetricBadgeVariant(1)} className="shrink-0 text-xs">
+                                      {warden.rooms}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="boarder" className="shrink-0 text-xs">
+                                      {warden.students}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant={warden.students > 0 ? 'success' : 'muted'} className="shrink-0 text-xs">
+                                      {t('hostel.reports.studentsCount').replace('{count}', warden.students.toString())}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                                <TableRow className="hover:bg-transparent">
+                                  <TableCell colSpan={5} className="p-0 border-t bg-muted/30">
+                                    <Collapsible
+                                      open={open}
+                                      onOpenChange={(next) =>
+                                        setWardenStudentOpen((prev) => ({ ...prev, [warden.wardenName]: next }))
+                                      }
+                                    >
+                                      <CollapsibleTrigger asChild>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="w-full justify-between rounded-none px-4 py-2 h-auto font-normal"
+                                        >
+                                          <span className="text-sm">{t('hostel.reports.studentListWarden')}</span>
+                                          <span className="flex items-center gap-2">
+                                            <Badge variant="info" className="shrink-0 text-xs">
+                                              {studentsForWarden.length}
+                                            </Badge>
+                                            <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+                                          </span>
+                                        </Button>
+                                      </CollapsibleTrigger>
+                                      <CollapsibleContent>
+                                        <div className="overflow-x-auto px-2 pb-3">
+                                          <Table>
+                                            <TableHeader>
+                                              <TableRow>
+                                                <TableHead>{t('hostel.reports.studentHeader')}</TableHead>
+                                                <TableHead>{t('hostel.reports.fatherHeader')}</TableHead>
+                                                <TableHead>{t('hostel.reports.classHeader')}</TableHead>
+                                                <TableHead>{t('hostel.reports.buildingHeaderAssigned')}</TableHead>
+                                                <TableHead>{t('hostel.reports.roomHeader')}</TableHead>
+                                              </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                              {studentsForWarden.length === 0 ? (
+                                                <TableRow>
+                                                  <TableCell colSpan={5} className="text-muted-foreground text-sm">
+                                                    {t('hostel.reports.noBoardersAssignedYet')}
+                                                  </TableCell>
+                                                </TableRow>
+                                              ) : (
+                                                paginatedWardenStudents.map((b) => (
+                                                  <TableRow key={b.id}>
+                                                    <TableCell className="font-medium">{b.studentName || '—'}</TableCell>
+                                                    <TableCell>{b.fatherName || '—'}</TableCell>
+                                                    <TableCell>{b.className || '—'}</TableCell>
+                                                    <TableCell>{b.buildingName || '—'}</TableCell>
+                                                    <TableCell>
+                                                      <Badge variant="muted" className="shrink-0 text-xs">
+                                                        {t('hostel.reports.roomNumber').replace('{number}', b.roomNumber)}
+                                                      </Badge>
+                                                    </TableCell>
+                                                  </TableRow>
+                                                ))
+                                              )}
+                                            </TableBody>
+                                          </Table>
+                                        </div>
+                                        {studentsForWarden.length > COLLAPSIBLE_STUDENTS_PAGE_SIZE ? (
+                                          <div className="flex flex-col gap-2 px-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <p className="text-xs text-muted-foreground">
+                                              {t('hostel.reports.showingBoarders')
+                                                .replace('{start}', (wStart + 1).toString())
+                                                .replace(
+                                                  '{end}',
+                                                  Math.min(wStart + COLLAPSIBLE_STUDENTS_PAGE_SIZE, studentsForWarden.length).toString()
+                                                )
+                                                .replace('{total}', studentsForWarden.length.toString())}
+                                            </p>
+                                            <div className="flex items-center gap-1">
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8"
+                                                disabled={wPage <= 1}
+                                                onClick={() =>
+                                                  setWardenStudentPageByName((prev) => ({
+                                                    ...prev,
+                                                    [warden.wardenName]: Math.max(1, wPage - 1),
+                                                  }))
+                                                }
+                                              >
+                                                {t('common.previous')}
+                                              </Button>
+                                              <span className="text-xs tabular-nums px-1">
+                                                {wPage} / {wardenStudentTotalPages}
+                                              </span>
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8"
+                                                disabled={wPage >= wardenStudentTotalPages}
+                                                onClick={() =>
+                                                  setWardenStudentPageByName((prev) => ({
+                                                    ...prev,
+                                                    [warden.wardenName]: Math.min(wardenStudentTotalPages, wPage + 1),
+                                                  }))
+                                                }
+                                              >
+                                                {t('common.next')}
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ) : null}
+                                      </CollapsibleContent>
+                                    </Collapsible>
+                                  </TableCell>
+                                </TableRow>
+                              </Fragment>
+                            );
+                          })
                         )}
                       </TableBody>
                     </Table>
@@ -554,81 +1298,251 @@ export function HostelReports() {
               <CardTitle>{t('hostel.reports.roomAndBuildingsTitle') || 'Room & Buildings Report'}</CardTitle>
               <CardDescription>{t('hostel.reports.roomAndBuildingsDescription') || 'All students assigned to rooms, organized by building and room.'}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {buildingsForFilter.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">{t('hostel.reports.noBuildingsAvailable')}</p>
-                ) : (
-                  buildingsForFilter.map((building) => {
-                    const buildingRooms = hostelOverview?.rooms.filter((r) => r.buildingId === building.id) || [];
-                    const totalStudentsInBuilding = buildingRooms.reduce((sum, room) => sum + room.occupants.length, 0);
-
-                    if (buildingRooms.length === 0) return null;
-
-                    return (
-                      <div key={building.id} className="space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-2">
-                          <div>
-                            <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
-                              <Building2 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                              <span className="truncate">{building.buildingName}</span>
-                            </h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
-                              {t('hostel.reports.roomsAndBoarders').replace('{rooms}', buildingRooms.length.toString()).replace('{boarders}', totalStudentsInBuilding.toString())}
-                            </p>
-                          </div>
-                          <Badge variant="outline" className="self-start sm:self-auto">
-                            {t('hostel.reports.occupiedCount').replace('{occupied}', building.occupiedRooms.toString()).replace('{total}', building.roomCount.toString())}
+            <CardContent className="space-y-4">
+              {buildingsForFilter.length === 0 || !hostelOverview?.rooms?.length ? (
+                <p className="text-center text-muted-foreground py-8">{t('hostel.reports.noBuildingsAvailable')}</p>
+              ) : (
+                <Tabs value={roomBuildingsSubTab} onValueChange={setRoomBuildingsSubTab} className="w-full space-y-4">
+                  <div className="overflow-x-auto -mx-1 px-1">
+                    <TabsList className="inline-flex h-auto min-h-10 w-max max-w-full flex-nowrap justify-start gap-1 p-1">
+                      <TabsTrigger value="all" className="flex shrink-0 items-center gap-1.5 px-2 sm:px-3">
+                        <Building2 className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline text-xs">{t('hostel.reports.allBuildingsTab')}</span>
+                        {roomOccupantTableRows.length > 0 ? (
+                          <Badge variant={hostelMetricBadgeVariant(0)} className="shrink-0 text-xs">
+                            {roomOccupantTableRows.length}
                           </Badge>
+                        ) : null}
+                      </TabsTrigger>
+                      {buildingsWithRooms.map((b, i) => {
+                        const count = roomOccupantTableRows.filter((r) => r.buildingId === b.id).length;
+                        return (
+                          <TabsTrigger key={b.id} value={b.id} className="max-w-[160px] shrink-0 px-2 sm:px-3">
+                            <span className="truncate text-xs">{b.buildingName}</span>
+                            {count > 0 ? (
+                              <Badge variant={hostelMetricBadgeVariant(i + 1)} className="ml-1 shrink-0 text-xs">
+                                {count}
+                              </Badge>
+                            ) : null}
+                          </TabsTrigger>
+                        );
+                      })}
+                    </TabsList>
+                  </div>
+                  <TabsContent value={roomBuildingsSubTab} className="mt-0 space-y-4">
+                    <FilterPanel
+                      title={t('events.filters') || 'Search & Filter'}
+                      defaultOpenDesktop={true}
+                      defaultOpenMobile={false}
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+                          <div className="min-w-0">
+                            <Label htmlFor="rooms-tab-class">{t('hostel.reports.filterClass')}</Label>
+                            <Select value={roomsTabClassFilter} onValueChange={setRoomsTabClassFilter}>
+                              <SelectTrigger id="rooms-tab-class">
+                                <SelectValue placeholder={t('hostel.reports.allClasses')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">{t('hostel.reports.allClasses')}</SelectItem>
+                                {roomsTabClassFilterOptions.map(([value, label]) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="min-w-0">
+                            <Label htmlFor="rooms-tab-year">{t('hostel.reports.filterAcademicYear')}</Label>
+                            <Select value={roomsTabAcademicYearFilter} onValueChange={setRoomsTabAcademicYearFilter}>
+                              <SelectTrigger id="rooms-tab-year">
+                                <SelectValue placeholder={t('hostel.reports.allAcademicYears')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">{t('hostel.reports.allAcademicYears')}</SelectItem>
+                                {roomsTabAcademicYearFilterOptions.map(([id, name]) => (
+                                  <SelectItem key={id} value={id}>
+                                    {name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="min-w-0">
+                            <Label htmlFor="rooms-tab-room">{t('hostel.reports.filterRoom')}</Label>
+                            <Select value={roomsTabRoomFilter} onValueChange={setRoomsTabRoomFilter}>
+                              <SelectTrigger id="rooms-tab-room">
+                                <SelectValue placeholder={t('hostel.reports.allRooms')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">{t('hostel.reports.allRooms')}</SelectItem>
+                                {roomsTabRoomFilterOptions.map(([roomId, roomNumber]) => (
+                                  <SelectItem key={roomId} value={roomId}>
+                                    {t('hostel.reports.roomNumber').replace('{number}', roomNumber)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-
-                        <div className="space-y-2">
-                          {buildingRooms.map((room) => (
-                            <Card key={room.id} className="border-l-4 border-l-primary">
-                              <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                                    <CardTitle className="text-base">{t('hostel.reports.roomNumber').replace('{number}', room.roomNumber)}</CardTitle>
-                                    {room.staffName && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        {t('hostel.reports.wardenLabel').replace('{name}', room.staffName)}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <Badge variant={room.occupants.length > 0 ? 'default' : 'secondary'}>
-                                    {t('hostel.reports.boardersCount').replace('{count}', room.occupants.length.toString())}
-                                  </Badge>
-                                </div>
-                              </CardHeader>
-                              {room.occupants.length > 0 && (
-                                <CardContent>
-                                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                                    {room.occupants.map((occupant) => (
-                                      <div
-                                        key={occupant.id}
-                                        className="flex items-center gap-2 p-2 rounded-md border bg-card"
-                                      >
-                                        <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-sm font-medium truncate">{occupant.studentName || t('hostel.reports.student')}</p>
-                                          <p className="text-xs text-muted-foreground truncate">
-                                            {occupant.admissionNumber || '—'}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </CardContent>
-                              )}
-                            </Card>
-                          ))}
+                        <div className="min-w-0">
+                          <Label htmlFor="rooms-tab-search">{t('events.search')}</Label>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              id="rooms-tab-search"
+                              placeholder={t('hostel.reports.searchRoomsTablePlaceholder')}
+                              value={roomsTabSearch}
+                              onChange={(e) => setRoomsTabSearch(e.target.value)}
+                              className="pl-10"
+                            />
+                            {roomsTabSearch ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
+                                onClick={() => setRoomsTabSearch('')}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
+                    </FilterPanel>
+                    <div className="overflow-x-auto rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('hostel.reports.buildingHeader')}</TableHead>
+                            <TableHead>{t('hostel.reports.roomHeader')}</TableHead>
+                            <TableHead>{t('hostel.reports.wardenColumnHeader')}</TableHead>
+                            <TableHead>{t('hostel.reports.studentHeader')}</TableHead>
+                            <TableHead>{t('hostel.reports.fatherHeader')}</TableHead>
+                            <TableHead>{t('hostel.reports.classHeader')}</TableHead>
+                            <TableHead>{t('hostel.reports.admissionNumberHeader')}</TableHead>
+                            <TableHead>{t('hostel.reports.academicYearHeader')}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredRoomTabRows.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center text-muted-foreground">
+                                {roomTabBaseRows.length === 0
+                                  ? t('hostel.reports.noBoardersAssignedYet')
+                                  : t('hostel.reports.noBoardersFoundMatching')}
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            paginatedRoomTabRows.map((row) => {
+                              const o = row.occupant;
+                              const wardenLabel = row.wardenName || t('hostel.notAssigned');
+                              return (
+                                <TableRow key={`${row.roomId}-${o.id}`}>
+                                  <TableCell className="font-medium whitespace-nowrap">{row.buildingName || '—'}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="muted" className="shrink-0 text-xs">
+                                      {t('hostel.reports.roomNumber').replace('{number}', row.roomNumber)}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-sm">{wardenLabel}</TableCell>
+                                  <TableCell className="font-medium">{o.studentName || '—'}</TableCell>
+                                  <TableCell>{o.fatherName || '—'}</TableCell>
+                                  <TableCell>{o.className || '—'}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="muted" className="shrink-0 text-xs">
+                                      {o.admissionNumber || '—'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>{hostelReportAcademicYearDisplay(o)}</TableCell>
+                                </TableRow>
+                              );
+                            })
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    {filteredRoomTabRows.length > 0 && roomsTabTotalPages > 1 ? (
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="text-sm text-muted-foreground">
+                          {t('hostel.reports.showingBoarders')
+                            .replace('{start}', ((roomsTablePage - 1) * roomsTablePageSize + 1).toString())
+                            .replace(
+                              '{end}',
+                              Math.min(roomsTablePage * roomsTablePageSize, filteredRoomTabRows.length).toString()
+                            )
+                            .replace('{total}', filteredRoomTabRows.length.toString())}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={roomsTablePageSize.toString()}
+                            onValueChange={(value) => setRoomsTablePageSize(Number(value))}
+                          >
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="10">{t('hostel.reports.perPage').replace('{count}', '10')}</SelectItem>
+                              <SelectItem value="25">{t('hostel.reports.perPage').replace('{count}', '25')}</SelectItem>
+                              <SelectItem value="50">{t('hostel.reports.perPage').replace('{count}', '50')}</SelectItem>
+                              <SelectItem value="100">{t('hostel.reports.perPage').replace('{count}', '100')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  onClick={() => setRoomsTablePage(Math.max(1, roomsTablePage - 1))}
+                                  className={
+                                    roomsTablePage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                                  }
+                                />
+                              </PaginationItem>
+                              {Array.from({ length: Math.min(5, roomsTabTotalPages) }, (_, i) => {
+                                let pageNum: number;
+                                if (roomsTabTotalPages <= 5) {
+                                  pageNum = i + 1;
+                                } else if (roomsTablePage <= 3) {
+                                  pageNum = i + 1;
+                                } else if (roomsTablePage >= roomsTabTotalPages - 2) {
+                                  pageNum = roomsTabTotalPages - 4 + i;
+                                } else {
+                                  pageNum = roomsTablePage - 2 + i;
+                                }
+                                return (
+                                  <PaginationItem key={pageNum}>
+                                    <PaginationLink
+                                      onClick={() => setRoomsTablePage(pageNum)}
+                                      isActive={roomsTablePage === pageNum}
+                                      className="cursor-pointer"
+                                    >
+                                      {pageNum}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                );
+                              })}
+                              <PaginationItem>
+                                <PaginationNext
+                                  onClick={() =>
+                                    setRoomsTablePage(Math.min(roomsTabTotalPages, roomsTablePage + 1))
+                                  }
+                                  className={
+                                    roomsTablePage === roomsTabTotalPages
+                                      ? 'pointer-events-none opacity-50'
+                                      : 'cursor-pointer'
+                                  }
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      </div>
+                    ) : null}
+                  </TabsContent>
+                </Tabs>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -646,10 +1560,12 @@ export function HostelReports() {
                   data={filteredAssignedBoarders}
                   columns={[
                     { key: 'student_name', label: t('hostel.reports.student') || 'Student', align: 'left' },
+                    { key: 'father_name', label: t('hostel.reports.fatherHeader') || 'Father', align: 'left' },
+                    { key: 'class_name', label: t('hostel.reports.classColumn') || 'Class', align: 'left' },
                     { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
                     { key: 'building_name', label: t('hostel.reports.buildingColumn') || t('settings.buildings.buildingName') || 'Building', align: 'left' },
                     { key: 'room_number', label: t('hostel.reports.roomLabel') || t('settings.rooms.roomNumber') || 'Room', align: 'left' },
-                    { key: 'admission_year', label: t('hostel.reports.admissionYearColumn') || 'Admission Year', align: 'left' },
+                    { key: 'admission_year', label: t('hostel.reports.academicYearColumn') || 'Academic year', align: 'left' },
                   ]}
                   reportKey="hostel_assigned_boarders"
                   title={t('hostel.reports.assignedBoardersTitle') || t('hostel.reports.assignedBoarders') || 'Assigned Boarders Report'}
@@ -727,6 +1643,38 @@ export function HostelReports() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="w-full md:w-[200px]">
+                    <Label htmlFor="assigned-class-filter">{t('hostel.reports.filterClass')}</Label>
+                    <Select value={assignedClassFilter} onValueChange={setAssignedClassFilter}>
+                      <SelectTrigger id="assigned-class-filter">
+                        <SelectValue placeholder={t('hostel.reports.allClasses')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allClasses')}</SelectItem>
+                        {assignedClassFilterOptions.map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-full md:w-[200px]">
+                    <Label htmlFor="assigned-year-filter">{t('hostel.reports.filterAcademicYear')}</Label>
+                    <Select value={assignedAcademicYearFilter} onValueChange={setAssignedAcademicYearFilter}>
+                      <SelectTrigger id="assigned-year-filter">
+                        <SelectValue placeholder={t('hostel.reports.allAcademicYears')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allAcademicYears')}</SelectItem>
+                        {assignedAcademicYearFilterOptions.map(([id, name]) => (
+                          <SelectItem key={id} value={id}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </FilterPanel>
 
@@ -737,16 +1685,18 @@ export function HostelReports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('hostel.reports.studentHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.fatherHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.classHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.admissionNumberHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.buildingHeaderAssigned')}</TableHead>
                       <TableHead>{t('hostel.reports.roomHeader')}</TableHead>
-                      <TableHead>{t('hostel.reports.admissionYearHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.academicYearHeader')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAssignedBoarders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
                           {allAssignedBoarders.length === 0
                             ? t('hostel.reports.noBoardersAssignedYet')
                             : t('hostel.reports.noBoardersFoundMatching')}
@@ -756,12 +1706,20 @@ export function HostelReports() {
                       paginatedAssignedBoarders.map((boarder) => (
                         <TableRow key={boarder.id}>
                           <TableCell className="font-medium">{boarder.studentName || t('hostel.reports.student')}</TableCell>
-                          <TableCell>{boarder.admissionNumber || '—'}</TableCell>
+                          <TableCell>{boarder.fatherName || '—'}</TableCell>
+                          <TableCell>{boarder.className || '—'}</TableCell>
+                          <TableCell>
+                            <Badge variant="muted" className="shrink-0 text-xs">
+                              {boarder.admissionNumber || '—'}
+                            </Badge>
+                          </TableCell>
                           <TableCell>{boarder.buildingName || '—'}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{t('hostel.reports.roomNumber').replace('{number}', boarder.roomNumber)}</Badge>
+                            <Badge variant="info" className="shrink-0 text-xs">
+                              {t('hostel.reports.roomNumber').replace('{number}', boarder.roomNumber)}
+                            </Badge>
                           </TableCell>
-                          <TableCell>{boarder.admissionYear || '—'}</TableCell>
+                          <TableCell>{hostelReportAcademicYearDisplay(boarder)}</TableCell>
                         </TableRow>
                       ))
                     )}
@@ -849,8 +1807,10 @@ export function HostelReports() {
                   data={filteredUnassignedBoarders}
                   columns={[
                     { key: 'student_name', label: t('hostel.reports.student') || 'Student', align: 'left' },
+                    { key: 'father_name', label: t('hostel.reports.fatherHeader') || 'Father', align: 'left' },
                     { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
                     { key: 'class_name', label: t('hostel.reports.classColumn') || 'Class', align: 'left' },
+                    { key: 'academic_year', label: t('hostel.reports.academicYearColumn') || 'Academic year', align: 'left' },
                     { key: 'residency_type', label: t('hostel.reports.residencyTypeColumn') || 'Residency Type', align: 'left' },
                   ]}
                   reportKey="hostel_unassigned_boarders"
@@ -870,8 +1830,8 @@ export function HostelReports() {
                 defaultOpenDesktop={true}
                 defaultOpenMobile={false}
               >
-                <div className="flex flex-col gap-4 md:flex-row md:items-end">
-                  <div className="flex-1 min-w-0">
+                <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end">
+                  <div className="flex-1 min-w-0 md:min-w-[200px]">
                     <Label htmlFor="unassigned-search">{t('events.search')}</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -894,6 +1854,38 @@ export function HostelReports() {
                       )}
                     </div>
                   </div>
+                  <div className="w-full md:w-[200px]">
+                    <Label htmlFor="unassigned-class-filter">{t('hostel.reports.filterClass')}</Label>
+                    <Select value={unassignedClassFilter} onValueChange={setUnassignedClassFilter}>
+                      <SelectTrigger id="unassigned-class-filter">
+                        <SelectValue placeholder={t('hostel.reports.allClasses')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allClasses')}</SelectItem>
+                        {unassignedClassFilterOptions.map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-full md:w-[200px]">
+                    <Label htmlFor="unassigned-year-filter">{t('hostel.reports.filterAcademicYear')}</Label>
+                    <Select value={unassignedAcademicYearFilter} onValueChange={setUnassignedAcademicYearFilter}>
+                      <SelectTrigger id="unassigned-year-filter">
+                        <SelectValue placeholder={t('hostel.reports.allAcademicYears')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allAcademicYears')}</SelectItem>
+                        {unassignedAcademicYearFilterOptions.map(([id, name]) => (
+                          <SelectItem key={id} value={id}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </FilterPanel>
 
@@ -904,15 +1896,17 @@ export function HostelReports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('hostel.reports.studentHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.fatherHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.admissionNumberHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.classHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.academicYearHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.residencyTypeHeader')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredUnassignedBoarders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
                           {unassignedBoarders.length === 0
                             ? t('hostel.reports.allBoardersPlaced')
                             : t('hostel.reports.noBoardersFoundMatchingUnassigned')}
@@ -922,10 +1916,18 @@ export function HostelReports() {
                       paginatedUnassignedBoarders.map((admission) => (
                         <TableRow key={admission.id}>
                           <TableCell className="font-medium">{admission.studentName || t('hostel.reports.student')}</TableCell>
-                          <TableCell>{admission.admissionNumber || '—'}</TableCell>
-                          <TableCell>{admission.className || '—'}</TableCell>
+                          <TableCell>{admission.fatherName || '—'}</TableCell>
                           <TableCell>
-                            <Badge variant="secondary">{admission.residencyTypeName || t('hostel.boarders')}</Badge>
+                            <Badge variant="muted" className="shrink-0 text-xs">
+                              {admission.admissionNumber || '—'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{admission.className || '—'}</TableCell>
+                          <TableCell>{hostelReportAcademicYearDisplay(admission)}</TableCell>
+                          <TableCell>
+                            <Badge variant="info" className="shrink-0 text-xs">
+                              {admission.residencyTypeName || t('hostel.boarders')}
+                            </Badge>
                           </TableCell>
                         </TableRow>
                       ))

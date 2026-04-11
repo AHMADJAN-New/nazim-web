@@ -247,6 +247,8 @@ export default {
     fileDownloadFailed: "د فایل ډاونلوډ ناکام شو",
     fileUploaded: "فایل په بریالیتوب سره اپلوډ شو",
     fileUploadFailed: "د فایل اپلوډ ناکام شو",
+    hostelOverviewLoadFailed:
+      "د لیلیې معلومات نشي ترلاسه کېدلی. خپله اړیکه او اجازې وګورئ او بیا هڅه وکړئ.",
     fileMustBeImage: "مهرباني وکړئ د انځور فایل وټاکئ (JPEG, PNG, GIF, WebP, BMP، یا SVG).",
     imageUploadFailed: "د انځور اپلوډ ناکام شو",
     finance: {

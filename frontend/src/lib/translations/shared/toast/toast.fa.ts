@@ -247,6 +247,8 @@ export default {
     fileDownloadFailed: "بارگیری فایل ناموفق بود",
     fileUploaded: "فایل با موفقیت بارگذاری شد",
     fileUploadFailed: "بارگذاری فایل ناموفق بود",
+    hostelOverviewLoadFailed:
+      "بارگذاری معلومات لیلیه ناموفق بود. اتصال و اجازه‌ها را بررسی کنید و دوباره تلاش کنید.",
     fileMustBeImage: "لطفاً فایل تصویر انتخاب کنید (JPEG, PNG, GIF, WebP, BMP یا SVG).",
     imageUploadFailed: "بارگذاری تصویر ناموفق بود",
     finance: {
