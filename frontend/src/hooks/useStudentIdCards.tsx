@@ -401,7 +401,7 @@ export const useExportIdCards = () => {
         ['back'];
 
       // Prepare cards for export
-      const exportCards: Array<{ template: IdCardTemplate; student: Student; side: 'front' | 'back'; notes?: string | null; expiryDate?: Date | null }> = [];
+      const exportCards: Array<{ template: IdCardTemplate; student: Student; side: 'front' | 'back'; notes?: string | null; createdDate?: Date | null; expiryDate?: Date | null }> = [];
       
       for (const card of cardsToExport) {
         const template = templateMap.get(card.idCardTemplateId);
@@ -420,8 +420,9 @@ export const useExportIdCards = () => {
           continue;
         }
 
-        // Calculate expiry date (1 year from print date, or null if not printed)
-        const expiryDate = card.printedAt ? new Date(card.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
+        const createdDate = card.createdAt;
+        const expiryDate = new Date(card.createdAt.getTime());
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
         for (const side of sidesArray) {
           // Check if layout exists for this side
@@ -432,6 +433,7 @@ export const useExportIdCards = () => {
               student, 
               side,
               notes: card.notes || null,
+              createdDate,
               expiryDate,
             });
           }
@@ -495,7 +497,7 @@ export const usePreviewIdCard = () => {
         renderHeightPx: screenRenderSize.height,
         paddingPx: DEFAULT_ID_CARD_PADDING_PX,
         notes: card.notes || null,
-        expiryDate: card.printedAt ? new Date(card.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null,
+        createdDate: card.createdAt,
       });
       return canvas.toDataURL('image/png');
     },
@@ -547,7 +549,9 @@ export const useExportIndividualIdCard = () => {
       }
 
       const notes = card.notes || null;
-      const expiryDate = card.printedAt ? new Date(card.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
+      const createdDate = card.createdAt;
+      const expiryDate = new Date(card.createdAt.getTime());
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
       const baseFilename = `id-card-${card.student.admissionNumber || card.id}`;
       const printRenderSize = getDefaultPrintRenderSize();
 
@@ -560,6 +564,7 @@ export const useExportIndividualIdCard = () => {
             exportSide,
             validSides.length > 1 ? `${baseFilename}-${exportSide}` : baseFilename,
             notes,
+            createdDate,
             expiryDate
           );
         }
@@ -572,6 +577,7 @@ export const useExportIndividualIdCard = () => {
             renderHeightPx: printRenderSize.height,
             paddingPx: DEFAULT_ID_CARD_PADDING_PX,
             notes,
+            createdDate,
             expiryDate,
           });
           const dataUrl = canvas.toDataURL('image/png');

@@ -15,7 +15,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents } from '@/hooks/useStudents';
 import { idCardTemplatesApi } from '@/lib/api/client';
-import { formatDate } from '@/lib/calendarAdapter';
+import {
+  formatIdCardFontFamilyToken,
+  ID_CARD_RTL_FONT_FALLBACK_STACK,
+  normalizeIdCardText,
+  resolveIdCardDefaultFontFamily,
+  resolveIdCardFieldValue,
+  scaleUniformImageDimensions,
+} from '@/lib/idCards/idCardFieldUtils';
+import { generateLocalQrCodeDataUrl } from '@/lib/idCards/idCardQr';
 import {
   CARD_ASPECT_RATIO,
   DEFAULT_ID_CARD_PADDING_PX,
@@ -38,6 +46,7 @@ const AVAILABLE_FONTS = [
   { value: 'Calibri', label: 'Calibri' },
   { value: 'Cambria', label: 'Cambria' },
   { value: 'Bahij Nassim', label: 'Bahij Nassim' },
+  { value: 'Bahij Titr', label: 'Bahij Titr' },
   { value: 'Noto Sans Arabic', label: 'Noto Sans Arabic' },
   { value: 'Noto Naskh Arabic', label: 'Noto Naskh Arabic' },
   { value: 'Noto Nastaliq Urdu', label: 'Noto Nastaliq Urdu' },
@@ -111,39 +120,25 @@ const mergeEnabledFields = (enabledFields: string[] | undefined, defaults: strin
 const getFieldPreviewText = (
   field: FieldConfig,
   config: IdCardLayoutConfig,
-  sampleStudent: Student | null
+  sampleStudent: Student | null,
+  locale: string
 ): string => {
-  const fieldValue = config.fieldValues?.[field.id];
-
-  if (field.id === 'studentName' && sampleStudent?.fullName) {
-    return sampleStudent.fullName;
-  }
-
-  if (field.id === 'room' && sampleStudent?.roomNumber) {
-    return sampleStudent.roomNumber;
-  }
-
-  if (field.id === 'expiryDate' && fieldValue) {
-    try {
-      const date = new Date(fieldValue);
-      if (!isNaN(date.getTime())) {
-        return formatDate(date);
-      }
-    } catch {
-      // Fall back to raw value below.
-    }
-    return fieldValue;
-  }
-
-  if (fieldValue) {
-    return fieldValue;
-  }
-
-  if (LABEL_FIELD_IDS.includes(field.id)) {
-    return DEFAULT_LABEL_TEXTS[field.id] || field.sampleText;
-  }
-
-  return field.sampleText;
+  return (
+    normalizeIdCardText(
+      resolveIdCardFieldValue(
+        field.id,
+        config,
+        {
+          student: sampleStudent,
+          notes: sampleStudent?.notes ?? null,
+          createdDate: sampleStudent?.createdAt ?? null,
+          locale,
+        },
+        field.sampleText
+      )
+    ) ||
+    field.sampleText
+  );
 };
 
 // Front side fields - includes all fields from both front and back
@@ -163,6 +158,7 @@ const FRONT_FIELDS: FieldConfig[] = [
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
   { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
   { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
+  { id: 'createdDate', label: 'Created Date', key: 'createdDatePosition', sampleText: 'Apr 13, 2026', defaultFontSize: 10 },
   { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
   { id: 'notes', label: 'Notes', key: 'notesPosition', sampleText: 'Additional information', defaultFontSize: 10 },
   { id: 'studentPhoto', label: 'Student Photo', key: 'studentPhotoPosition', sampleText: '📷', isImage: true, defaultWidth: 30, defaultHeight: 40, defaultFontSize: 12 },
@@ -171,6 +167,7 @@ const FRONT_FIELDS: FieldConfig[] = [
 
 // Back side fields
 const BACK_FIELDS: FieldConfig[] = [
+  { id: 'createdDate', label: 'Created Date', key: 'createdDatePosition', sampleText: 'Apr 13, 2026', defaultFontSize: 10 },
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
   { id: 'roomLabel', label: 'Label: Room (خونه)', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
   { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
@@ -379,6 +376,63 @@ export function IdCardLayoutEditor({
   const currentImageLoaded = activeTab === 'front' ? backgroundImageLoadedFront : backgroundImageLoadedBack;
   const currentImageError = activeTab === 'front' ? backgroundImageErrorFront : backgroundImageErrorBack;
 
+  const getImageFieldSizePercent = useCallback(
+    (fieldId: 'studentPhoto' | 'qrCode') => {
+      if (fieldId === 'qrCode') {
+        return (currentConfig.qrCodePosition as { width?: number } | undefined)?.width ?? 10;
+      }
+
+      return (currentConfig.studentPhotoPosition as { width?: number } | undefined)?.width ?? 8;
+    },
+    [currentConfig.qrCodePosition, currentConfig.studentPhotoPosition]
+  );
+
+  const setImageFieldSizePercent = useCallback(
+    (fieldId: 'studentPhoto' | 'qrCode', nextSize: number) => {
+      const boundedSize = Math.max(1, Math.min(100, Number.isFinite(nextSize) ? nextSize : 1));
+
+      setCurrentConfig((prev) => {
+        if (fieldId === 'qrCode') {
+          const current = (prev.qrCodePosition as { x?: number; y?: number; width?: number; height?: number } | undefined) || {
+            x: 80,
+            y: 50,
+            width: 10,
+            height: 10,
+          };
+
+          return {
+            ...prev,
+            qrCodePosition: {
+              ...current,
+              width: boundedSize,
+              height: boundedSize,
+            },
+          };
+        }
+
+        const current = (prev.studentPhotoPosition as { x?: number; y?: number; width?: number; height?: number } | undefined) || {
+          x: 20,
+          y: 50,
+          width: 8,
+          height: 12,
+        };
+        const currentWidth = current.width ?? 8;
+        const currentHeight = current.height ?? 12;
+        const nextDimensions = scaleUniformImageDimensions(currentWidth, currentHeight, boundedSize);
+
+        return {
+          ...prev,
+          studentPhotoPosition: {
+            ...current,
+            width: nextDimensions.width,
+            height: nextDimensions.height,
+          },
+        };
+      });
+    },
+    [setCurrentConfig]
+  );
+
   // Sync RTL from language so alignment and canvas render correctly for RTL languages
   useEffect(() => {
     setCurrentConfig((prev) => {
@@ -419,6 +473,7 @@ export function IdCardLayoutEditor({
   // Fetch students for sample data
   const { data: students = [] } = useStudents();
   const sampleStudent = students.length > 0 ? students[0] : null;
+  const livePreviewStudent = previewStudent ?? sampleStudent;
 
   // Update preview student when students change
   useEffect(() => {
@@ -587,10 +642,8 @@ export function IdCardLayoutEditor({
       }
 
       try {
-        // Get QR code value source from config (default to student_code)
         const valueSource = currentConfig.qrCodeValueSource || 'student_code';
-        
-        // Get QR code value based on selected source
+
         let qrValue: string | null | undefined = null;
         switch (valueSource) {
           case 'student_id':
@@ -612,7 +665,6 @@ export function IdCardLayoutEditor({
             qrValue = previewStudent.studentCode || previewStudent.admissionNumber || previewStudent.id;
         }
 
-        // Fallback to default if selected field is null/undefined
         if (!qrValue) {
           qrValue = previewStudent.studentCode || previewStudent.admissionNumber || previewStudent.id;
         }
@@ -622,20 +674,8 @@ export function IdCardLayoutEditor({
           return;
         }
 
-        // Generate QR code using external service
-        const size = 200;
-        const response = await fetch(
-          `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(qrValue)}`,
-          { mode: 'cors' }
-        );
-
-        if (response.ok) {
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          setQrCodeUrl(blobUrl);
-        } else {
-          setQrCodeUrl(null);
-        }
+        const qrDataUrl = await generateLocalQrCodeDataUrl(qrValue, 200);
+        setQrCodeUrl(qrDataUrl);
       } catch (error) {
         if (import.meta.env.DEV) {
           console.warn('[IdCardLayoutEditor] Failed to generate QR code:', error);
@@ -708,8 +748,10 @@ export function IdCardLayoutEditor({
       qrCodePosition: { x: 80, y: 50, width: 10, height: 10 }, // Square
       schoolNamePosition: { x: 50, y: 30 },
       cardNumberLabelPosition: { x: 72, y: 80 },
+      createdDatePosition: { x: 50, y: 52 },
       expiryDatePosition: { x: 50, y: 60 },
       cardNumberPosition: { x: 28, y: 80 },
+      notesPosition: { x: 50, y: 90 },
     };
     
     return defaultPositions[fieldKey] || { x: 50, y: 50 };
@@ -1012,21 +1054,25 @@ export function IdCardLayoutEditor({
 
         const deltaX = currentX - resizeStart.x;
         const deltaY = currentY - resizeStart.y;
+        const dominantDelta = Math.abs(deltaX) >= Math.abs(deltaY) ? deltaX : deltaY;
+        const nextSize = Math.max(1, Math.min(100, resizeStart.width + dominantDelta));
 
-        let newWidth = Math.max(1, Math.min(100, resizeStart.width + deltaX));
-        let newHeight = Math.max(1, Math.min(100, resizeStart.height + deltaY));
+        let newWidth = nextSize;
+        let newHeight = nextSize;
 
         if (import.meta.env.DEV) {
           console.log('[IdCardLayoutEditor] Resize values:', {
-            currentX, currentY, deltaX, deltaY, newWidth, newHeight
+            currentX, currentY, deltaX, deltaY, nextSize
           });
         }
 
-        // For QR codes, keep it square (use smaller dimension)
         if (selectedField === 'qrCode') {
-          const size = Math.min(newWidth, newHeight);
-          newWidth = size;
-          newHeight = size;
+          newWidth = nextSize;
+          newHeight = nextSize;
+        } else if (selectedField === 'studentPhoto') {
+          const nextDimensions = scaleUniformImageDimensions(resizeStart.width, resizeStart.height, nextSize);
+          newWidth = nextDimensions.width;
+          newHeight = nextDimensions.height;
         }
 
         // Update width and height in config
@@ -1225,15 +1271,13 @@ export function IdCardLayoutEditor({
     // Get per-field font settings if available
     const fieldFont = currentConfig.fieldFonts?.[field.id];
     
-    // Use per-field font family or fall back to global/default
-    // Match canvas renderer logic: use RTL-aware default font if RTL is enabled
+    // Use per-field font family or fall back to global/default (same rules as idCardCanvasRenderer)
     const isRtl = currentConfig.rtl !== false;
-    const defaultFontFamily = isRtl
-      ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
-      : (currentConfig.fontFamily || 'Arial');
+    const defaultFontFamily = resolveIdCardDefaultFontFamily(isRtl, currentConfig.fontFamily);
     let fontFamily = defaultFontFamily;
     if (fieldFont?.fontFamily) {
-      fontFamily = fieldFont.fontFamily;
+      const tok = formatIdCardFontFamilyToken(fieldFont.fontFamily);
+      fontFamily = isRtl ? `${tok}, ${ID_CARD_RTL_FONT_FALLBACK_STACK}` : tok;
     }
     
     // Calculate font size: use per-field custom size, or use base size directly (no multiplier)
@@ -1289,7 +1333,7 @@ export function IdCardLayoutEditor({
     }
 
     const isLabelField = LABEL_FIELD_IDS.includes(field.id);
-    const isCenterField = ['schoolName', 'notes', 'expiryDate'].includes(field.id);
+    const isCenterField = ['schoolName', 'notes', 'createdDate', 'expiryDate'].includes(field.id);
 
     return {
       position: 'absolute' as const,
@@ -1310,6 +1354,8 @@ export function IdCardLayoutEditor({
       borderRadius: '2px',
       whiteSpace: 'nowrap' as const,
       pointerEvents: 'auto' as const,
+      direction: currentConfig.rtl !== false ? ('rtl' as const) : ('ltr' as const),
+      unicodeBidi: 'plaintext' as const,
     };
   };
 
@@ -1500,7 +1546,7 @@ export function IdCardLayoutEditor({
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
                       const isImageField = field.isImage;
-                      const displayText = getFieldPreviewText(field, currentConfig, sampleStudent);
+                      const displayText = getFieldPreviewText(field, currentConfig, livePreviewStudent, language);
 
                       const fieldStyle = getFieldStyle(field);
                       const isStudentName = field.id === 'studentName';
@@ -1531,7 +1577,6 @@ export function IdCardLayoutEditor({
                               {/* Resize handles - only show when a single field is selected */}
                               {selectedField === field.id && selectedFields.size === 1 && (
                                 <>
-                                  {/* Corner resize handles */}
                                   <div
                                     className="absolute -top-1 -left-1 w-4 h-4 bg-blue-500 rounded-full cursor-nw-resize border-2 border-white shadow-lg hover:bg-blue-600"
                                     onMouseDown={(e) => handleResizeStart(e, field.id, 'nw')}
@@ -1556,48 +1601,36 @@ export function IdCardLayoutEditor({
                                     style={{ zIndex: 30 }}
                                     title="Resize from bottom-right"
                                   />
-                                  {/* Edge resize handles */}
-                                  <div
-                                    className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-4 bg-blue-500 rounded cursor-n-resize border-2 border-white shadow-lg hover:bg-blue-600"
-                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'n')}
-                                    style={{ zIndex: 30 }}
-                                    title="Resize from top"
-                                  />
-                                  <div
-                                    className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-4 bg-blue-500 rounded cursor-s-resize border-2 border-white shadow-lg hover:bg-blue-600"
-                                    onMouseDown={(e) => handleResizeStart(e, field.id, 's')}
-                                    style={{ zIndex: 30 }}
-                                    title="Resize from bottom"
-                                  />
-                                  <div
-                                    className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-4 h-3 bg-blue-500 rounded cursor-w-resize border-2 border-white shadow-lg hover:bg-blue-600"
-                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'w')}
-                                    style={{ zIndex: 30 }}
-                                    title="Resize from left"
-                                  />
-                                  <div
-                                    className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-4 h-3 bg-blue-500 rounded cursor-e-resize border-2 border-white shadow-lg hover:bg-blue-600"
-                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'e')}
-                                    style={{ zIndex: 30 }}
-                                    title="Resize from right"
-                                  />
                                 </>
                               )}
 
                               <div className="flex items-center justify-center gap-1">
                                 <GripVertical className="h-4 w-4 opacity-50" />
                                 {field.id === 'studentPhoto' && studentPhotoUrl ? (
-                                  <img
-                                    src={studentPhotoUrl}
-                                    alt="Student Photo"
+                                  <div
                                     style={{
                                       width: '100%',
                                       height: '100%',
-                                      objectFit: 'contain',
-                                      borderRadius: '4px',
+                                      padding: '4px',
+                                      borderRadius: '6px',
+                                      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                                      border: '1px solid rgba(148, 163, 184, 0.85)',
+                                      boxShadow: '0 2px 6px rgba(15, 23, 42, 0.14)',
                                       pointerEvents: 'none',
                                     }}
-                                  />
+                                  >
+                                    <img
+                                      src={studentPhotoUrl}
+                                      alt="Student Photo"
+                                      style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'contain',
+                                        borderRadius: '4px',
+                                        pointerEvents: 'none',
+                                      }}
+                                    />
+                                  </div>
                                 ) : field.id === 'qrCode' && qrCodeUrl ? (
                                   <img
                                     src={qrCodeUrl}
@@ -1626,7 +1659,9 @@ export function IdCardLayoutEditor({
                                 color: fieldStyle.color,
                                 fontFamily: fieldStyle.fontFamily,
                                 fontSize: fieldStyle.fontSize,
-                                fontWeight: isStudentName ? 'bold' : 'normal'
+                                fontWeight: isStudentName ? 'bold' : 'normal',
+                                direction: currentConfig.rtl !== false ? 'rtl' : 'ltr',
+                                unicodeBidi: 'plaintext',
                               }}>{displayText}</span>
                             </div>
                           )}
@@ -1845,67 +1880,27 @@ export function IdCardLayoutEditor({
                     </CardHeader>
                     <CollapsibleContent>
                       <CardContent className="space-y-4">
-                    {/* Image Field Settings (Width/Height) */}
+                    {/* Image Field Settings */}
                     {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
                       <div className="space-y-3 pt-2 border-t">
                         <div className="space-y-2">
-                          <Label className="text-sm">{selectedField === 'qrCode' ? 'QR Code Size (% of card)' : 'Photo Size (% of card)'}</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Width (%)</Label>
-                              <Input
-                                type="number"
-                                value={
-                                  (selectedField === 'qrCode'
-                                    ? (currentConfig.qrCodePosition as any)?.width ?? 10
-                                    : (currentConfig.studentPhotoPosition as any)?.width ?? 8)
-                                }
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
-                                  if (selectedField === 'qrCode') {
-                                    const current = currentConfig.qrCodePosition || { x: 80, y: 50, width: 10, height: 10 };
-                                    // For QR codes, update both width and height to keep it square
-                                    setCurrentConfig({ ...currentConfig, qrCodePosition: { ...current, width: val, height: val } });
-                                  } else {
-                                    const current = currentConfig.studentPhotoPosition || { x: 20, y: 50, width: 8, height: 12 };
-                                    setCurrentConfig({ ...currentConfig, studentPhotoPosition: { ...current, width: val } });
-                                  }
-                                }}
-                                placeholder={selectedField === 'qrCode' ? "10 (default)" : "8 (default)"}
-                                min="1"
-                                max="100"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">Height (%)</Label>
-                              <Input
-                                type="number"
-                                value={
-                                  (selectedField === 'qrCode'
-                                    ? (currentConfig.qrCodePosition as any)?.height ?? 10
-                                    : (currentConfig.studentPhotoPosition as any)?.height ?? 12)
-                                }
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
-                                  if (selectedField === 'qrCode') {
-                                    const current = currentConfig.qrCodePosition || { x: 80, y: 50, width: 10, height: 10 };
-                                    // For QR codes, update both width and height to keep it square
-                                    setCurrentConfig({ ...currentConfig, qrCodePosition: { ...current, width: val, height: val } });
-                                  } else {
-                                    const current = currentConfig.studentPhotoPosition || { x: 20, y: 50, width: 8, height: 12 };
-                                    setCurrentConfig({ ...currentConfig, studentPhotoPosition: { ...current, height: val } });
-                                  }
-                                }}
-                                placeholder={selectedField === 'qrCode' ? "10 (default)" : "12 (default)"}
-                                min="1"
-                                max="100"
-                              />
-                            </div>
-                          </div>
+                          <Label className="text-sm">{selectedField === 'qrCode' ? 'QR Code Size (%)' : 'Photo Size (%)'}</Label>
+                          <Input
+                            type="number"
+                            value={getImageFieldSizePercent(selectedField)}
+                            onChange={(e) => {
+                              const value = Number(e.target.value);
+                              if (!Number.isNaN(value)) {
+                                setImageFieldSizePercent(selectedField, value);
+                              }
+                            }}
+                            min="1"
+                            max="100"
+                          />
                           <p className="text-xs text-muted-foreground">
-                            Values are percentages of the card dimensions. Leave empty to use defaults.
+                            {selectedField === 'qrCode'
+                              ? 'One size control keeps the QR square in preview and export.'
+                              : 'One size control keeps the photo proportional and matches export framing.'}
                           </p>
                         </div>
                         
@@ -2257,7 +2252,7 @@ export function IdCardLayoutEditor({
 
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
-                      const displayText = getFieldPreviewText(field, currentConfig, sampleStudent);
+                      const displayText = getFieldPreviewText(field, currentConfig, livePreviewStudent, language);
                       
                       return (
                         <div
@@ -2608,64 +2603,24 @@ export function IdCardLayoutEditor({
                     {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
                       <div className="space-y-3 pt-2 border-t">
                         <div className="space-y-2">
-                          <Label className="text-sm">{selectedField === 'qrCode' ? t('idCards.qrCodeSize') || 'QR Code Size (% of card)' : t('idCards.photoSize') || 'Photo Size (% of card)'}</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-1">
-                              <Label className="text-xs">{t('idCards.width') || 'Width (%)'}</Label>
-                              <Input
-                                type="number"
-                                value={
-                                  (selectedField === 'qrCode'
-                                    ? (currentConfig.qrCodePosition as any)?.width ?? 10
-                                    : (currentConfig.studentPhotoPosition as any)?.width ?? 8)
-                                }
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
-                                  if (selectedField === 'qrCode') {
-                                    const current = currentConfig.qrCodePosition || { x: 80, y: 50, width: 10, height: 10 };
-                                    setCurrentConfig({ ...currentConfig, qrCodePosition: { ...current, width: val } });
-                                  } else {
-                                    const current = currentConfig.studentPhotoPosition || { x: 20, y: 50, width: 8, height: 12 };
-                                    setCurrentConfig({ ...currentConfig, studentPhotoPosition: { ...current, width: val } });
-                                  }
-                                }}
-                                placeholder={selectedField === 'qrCode' ? "10 (default)" : "8 (default)"}
-                                min="1"
-                                max="100"
-                                className="h-8 text-xs"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">{t('idCards.height') || 'Height (%)'}</Label>
-                              <Input
-                                type="number"
-                                value={
-                                  (selectedField === 'qrCode'
-                                    ? (currentConfig.qrCodePosition as any)?.height ?? 10
-                                    : (currentConfig.studentPhotoPosition as any)?.height ?? 12)
-                                }
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  const val = raw === '' ? undefined : Math.max(1, Math.min(100, Number(raw)));
-                                  if (selectedField === 'qrCode') {
-                                    // For QR codes, update both width and height to keep it square
-                                    const current = currentConfig.qrCodePosition || { x: 80, y: 50, width: 10, height: 10 };
-                                    setCurrentConfig({ ...currentConfig, qrCodePosition: { ...current, width: val, height: val } });
-                                  } else {
-                                    const current = currentConfig.studentPhotoPosition || { x: 20, y: 50, width: 8, height: 12 };
-                                    setCurrentConfig({ ...currentConfig, studentPhotoPosition: { ...current, height: val } });
-                                  }
-                                }}
-                                placeholder={selectedField === 'qrCode' ? "10 (default)" : "12 (default)"}
-                                min="1"
-                                max="100"
-                                className="h-8 text-xs"
-                              />
-                            </div>
-                          </div>
+                          <Label className="text-sm">{selectedField === 'qrCode' ? t('idCards.qrCodeSize') || 'QR Code Size (%)' : t('idCards.photoSize') || 'Photo Size (%)'}</Label>
+                          <Input
+                            type="number"
+                            value={getImageFieldSizePercent(selectedField)}
+                            onChange={(e) => {
+                              const value = Number(e.target.value);
+                              if (!Number.isNaN(value)) {
+                                setImageFieldSizePercent(selectedField, value);
+                              }
+                            }}
+                            min="1"
+                            max="100"
+                            className="h-8 text-xs"
+                          />
                           <p className="text-xs text-muted-foreground">
-                            {t('idCards.sizeDescription') || 'Values are percentages of the card. Leave empty to use default size.'}
+                            {selectedField === 'qrCode'
+                              ? t('idCards.sizeDescription') || 'One size control keeps the QR square.'
+                              : t('idCards.sizeDescription') || 'One size control keeps the photo proportional.'}
                           </p>
                         </div>
                         

@@ -146,7 +146,7 @@ class IdCardTemplate extends Model
     public static function getDefaultLayoutBack(): array
     {
         return [
-            'enabledFields' => ['schoolName', 'cardNumberLabel', 'cardNumber', 'expiryDate'],
+            'enabledFields' => ['schoolName', 'cardNumberLabel', 'cardNumber', 'createdDate', 'expiryDate'],
             'fieldValues' => [
                 'studentNameLabel' => 'نوم',
                 'fatherNameLabel' => 'د پلار نوم',
@@ -158,6 +158,7 @@ class IdCardTemplate extends Model
             ],
             'schoolNamePosition' => ['x' => 50, 'y' => 30],
             'cardNumberLabelPosition' => ['x' => 35, 'y' => 80],
+            'createdDatePosition' => ['x' => 50, 'y' => 52],
             'expiryDatePosition' => ['x' => 50, 'y' => 60],
             'cardNumberPosition' => ['x' => 68, 'y' => 80],
             'fontSize' => 10,

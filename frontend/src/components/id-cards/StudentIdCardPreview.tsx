@@ -225,7 +225,7 @@ export function StudentIdCardPreview({
             mimeType: 'image/jpeg',
             jpegQuality: 0.95,
             notes: actualCard?.notes || null,
-            expiryDate: actualCard?.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null, // 1 year from print date
+            createdDate: actualCard?.createdAt ?? studentForRender.createdAt ?? null,
           }
         );
         setPreviewImageUrl(dataUrl);
@@ -277,7 +277,7 @@ export function StudentIdCardPreview({
         renderHeightPx: printRenderSize.height,
         paddingPx: DEFAULT_ID_CARD_PADDING_PX,
         notes: actualCard?.notes || null,
-        expiryDate: actualCard?.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null,
+        createdDate: actualCard?.createdAt ?? studentForRender.createdAt ?? null,
       });
       const dataUrl = canvas.toDataURL('image/png');
       
@@ -327,7 +327,7 @@ export function StudentIdCardPreview({
       const admissionNumber = studentForRender.admissionNumber;
       const baseFilename = `id-card-${admissionNumber || actualCard?.id || 'preview'}`;
       const notes = actualCard?.notes || null;
-      const expiryDate = actualCard?.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null;
+      const createdDate = actualCard?.createdAt ?? studentForRender.createdAt ?? null;
 
       // Export each side
       for (const exportSideValue of validSides) {
@@ -337,7 +337,7 @@ export function StudentIdCardPreview({
           exportSideValue,
           validSides.length > 1 ? `${baseFilename}-${exportSideValue}` : baseFilename,
           notes,
-          expiryDate
+          createdDate
         );
       }
       
@@ -376,7 +376,7 @@ export function StudentIdCardPreview({
           mimeType: 'image/jpeg',
           jpegQuality: 0.95,
           notes: actualCard?.notes || null,
-          expiryDate: actualCard?.printedAt ? new Date(actualCard.printedAt.getTime() + 365 * 24 * 60 * 60 * 1000) : null,
+          createdDate: actualCard?.createdAt ?? studentForRender.createdAt ?? null,
         }
       );
       setPreviewImageUrl(dataUrl);

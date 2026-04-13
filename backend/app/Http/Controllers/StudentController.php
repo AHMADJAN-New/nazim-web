@@ -196,7 +196,7 @@ class StudentController extends Controller
             ->whereNull('deleted_at')
             ->where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
-            ->with(['classAcademicYear.class', 'class', 'academicYear'])
+            ->with(['classAcademicYear.class', 'class', 'academicYear', 'room:id,room_number'])
             ->orderByDesc('admission_date')
             ->orderByDesc('created_at')
             ->get();
@@ -214,6 +214,7 @@ class StudentController extends Controller
                 $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
                 $student->current_section = $admission->classAcademicYear?->section_name;
                 $student->current_academic_year = $admission->academicYear?->name;
+                $student->room_number = $admission->room?->room_number;
             }
 
             return $student;
@@ -268,12 +269,13 @@ class StudentController extends Controller
         // Get current class from student admissions
         $admission = \App\Models\StudentAdmission::where('student_id', $student->id)
             ->whereNull('deleted_at')
-            ->with(['classAcademicYear.class', 'class'])
+            ->with(['classAcademicYear.class', 'class', 'room:id,room_number'])
             ->orderBy('admission_date', 'desc')
             ->first();
 
         if ($admission) {
             $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
+            $student->room_number = $admission->room?->room_number;
         }
 
         // Org access is implicitly enforced by organization middleware + school scope.

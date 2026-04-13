@@ -83,6 +83,7 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
     admissionNumber: api.admission_no,
     studentCode: api.student_code,
     cardNumber: api.card_number,
+    roomNumber: api.room_number ?? null,
     tazkiraNumber: api.tazkira_number,
     rollNumber: undefined,
     

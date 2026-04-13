@@ -1,5 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+// @vitest-environment jsdom
+import '@testing-library/jest-dom/vitest';
+
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IdCardGenerator } from '@/components/id-cards/IdCardGenerator';
 
@@ -79,6 +82,10 @@ describe('IdCardGenerator', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('should render when open', () => {
     render(
       <IdCardGenerator
@@ -116,7 +123,7 @@ describe('IdCardGenerator', () => {
     );
 
     // Label key used by the current UI implementation
-    expect(screen.getByText('studentReportCard.selectTemplate')).toBeInTheDocument();
+    expect(screen.getAllByText('studentReportCard.selectTemplate').length).toBeGreaterThan(0);
   });
 
   it('should display student selection', () => {
@@ -129,7 +136,7 @@ describe('IdCardGenerator', () => {
       />
     );
 
-    expect(screen.getByText('idCards.selectStudents')).toBeInTheDocument();
+    expect(screen.getAllByText('idCards.selectStudents').length).toBeGreaterThan(0);
   });
 });
 

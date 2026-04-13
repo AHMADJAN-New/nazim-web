@@ -18,6 +18,7 @@ export interface IdCardLayoutConfig {
   cardNumberPosition?: { x: number; y: number };
   classLabelPosition?: { x: number; y: number };
   classPosition?: { x: number; y: number };
+  createdDatePosition?: { x: number; y: number };
   expiryDatePosition?: { x: number; y: number };
   schoolNamePosition?: { x: number; y: number };
   notesPosition?: { x: number; y: number };
@@ -70,4 +71,3 @@ export interface IdCardTemplateInsert {
 }
 
 export type IdCardTemplateUpdate = Partial<IdCardTemplateInsert>;
-

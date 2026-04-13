@@ -145,6 +145,7 @@ export async function exportIdCardToPdf(
   side: 'front' | 'back',
   filename?: string,
   notes?: string | null,
+  createdDate?: Date | string | null,
   expiryDate?: Date | string | null,
   quality: 'standard' | 'high' = 'high'
 ): Promise<void> {
@@ -201,6 +202,7 @@ export async function exportIdCardToPdf(
       mimeType: 'image/jpeg',
       jpegQuality: 0.95,
       notes,
+      createdDate,
       expiryDate
     }
   );
@@ -234,7 +236,7 @@ export async function exportIdCardToPdf(
  * @returns Promise that resolves when PDF is downloaded
  */
 export async function exportBulkIdCardsToPdf(
-  cards: Array<{ template: IdCardTemplate; student: Student; side: 'front' | 'back'; notes?: string | null; expiryDate?: Date | string | null }>,
+  cards: Array<{ template: IdCardTemplate; student: Student; side: 'front' | 'back'; notes?: string | null; createdDate?: Date | string | null; expiryDate?: Date | string | null }>,
   cardsPerPage: number = 8,
   filename?: string,
   quality: 'standard' | 'high' = 'high'
@@ -270,7 +272,7 @@ export async function exportBulkIdCardsToPdf(
     // cardsPerPage === 1: one card per card-sized page (for card printers)
     const content: any[] = [];
     for (let index = 0; index < cards.length; index++) {
-      const { template, student, side, notes, expiryDate } = cards[index];
+      const { template, student, side, notes, createdDate, expiryDate } = cards[index];
       const cardImageDataUrl = await renderIdCardToDataUrl(template, student, side, {
         quality: renderQuality,
         renderWidthPx: renderSize.width,
@@ -280,6 +282,7 @@ export async function exportBulkIdCardsToPdf(
         mimeType: 'image/jpeg',
         jpegQuality: 0.95,
         notes,
+        createdDate,
         expiryDate,
       });
       content.push({
@@ -316,7 +319,7 @@ export async function exportBulkIdCardsToPdf(
     const pageContent: any[] = [];
 
     for (let i = 0; i < pageCards.length; i++) {
-      const { template, student, side, notes, expiryDate } = pageCards[i];
+      const { template, student, side, notes, createdDate, expiryDate } = pageCards[i];
       const cardImageDataUrl = await renderIdCardToDataUrl(template, student, side, {
         quality: renderQuality,
         renderWidthPx: renderSize.width,
@@ -326,6 +329,7 @@ export async function exportBulkIdCardsToPdf(
         mimeType: 'image/jpeg',
         jpegQuality: 0.95,
         notes,
+        createdDate,
         expiryDate,
       });
       const col = i % cols;

@@ -10,6 +10,7 @@ export interface Student {
   organization_id: string;
   school_id: string | null;
   card_number: string | null;
+  room_number?: string | null;
   tazkira_number: string | null;
   phone: string | null;
   notes: string | null;

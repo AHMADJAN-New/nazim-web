@@ -45,7 +45,7 @@ function sanitizeFilename(text: string | null | undefined): string {
  * @returns Promise that resolves with the ZIP blob
  */
 export async function exportIdCardsToZip(
-  cards: Array<{ template: IdCardTemplate; student: Student; side: 'front' | 'back'; notes?: string | null; expiryDate?: Date | string | null }>,
+  cards: Array<{ template: IdCardTemplate; student: Student; side: 'front' | 'back'; notes?: string | null; createdDate?: Date | string | null; expiryDate?: Date | string | null }>,
   filename?: string,
   quality: 'standard' | 'high' = 'high'
 ): Promise<Blob> {
@@ -60,7 +60,7 @@ export async function exportIdCardsToZip(
 
   const files: Record<string, Uint8Array> = {};
 
-  for (const { template, student, side, notes, expiryDate } of cards) {
+  for (const { template, student, side, notes, createdDate, expiryDate } of cards) {
     try {
       const canvas = await renderIdCardToCanvas(template, student, side, {
         quality: renderQuality,
@@ -68,6 +68,7 @@ export async function exportIdCardsToZip(
         renderHeightPx: renderSize.height,
         paddingPx: DEFAULT_ID_CARD_PADDING_PX,
         notes: notes || null,
+        createdDate: createdDate || null,
         expiryDate: expiryDate || null,
       });
       const pngData = canvas.toDataURL('image/png');

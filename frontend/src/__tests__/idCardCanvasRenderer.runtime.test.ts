@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderIdCardToCanvas } from '@/lib/idCards/idCardCanvasRenderer';
+import { deriveExpiryDateFromCreatedDate, formatIdCardDateValue } from '@/lib/idCards/idCardFieldUtils';
 
 type FillTextCall = {
   canvasWidth: number;
@@ -51,6 +52,7 @@ describe('idCardCanvasRenderer runtime alignment', () => {
           });
         },
       } as unknown as CanvasRenderingContext2D;
+
       return context;
     });
   });
@@ -111,16 +113,16 @@ describe('idCardCanvasRenderer runtime alignment', () => {
 
     const normalizedScreenX = (screenNameCall?.x ?? 0) / 634;
     const normalizedPrintX = (printNameCall?.x ?? 0) / 1011;
-    const normalizedDelta = Math.abs(normalizedScreenX - normalizedPrintX);
-    expect(normalizedDelta).toBeLessThan(0.002);
+    expect(Math.abs(normalizedScreenX - normalizedPrintX)).toBeLessThan(0.002);
 
     const editorContainerWidth = 634;
     const editorMetricsPadding = 20;
     const editorContentWidth = editorContainerWidth - editorMetricsPadding * 2;
-    const editorLeftCss = editorMetricsPadding + (template.layoutConfigFront.studentNamePosition.x / 100) * editorContentWidth;
+    const editorLeftCss =
+      editorMetricsPadding +
+      (template.layoutConfigFront.studentNamePosition.x / 100) * editorContentWidth;
     const editorNormalizedX = editorLeftCss / editorContainerWidth;
-    const editorVsRuntimeDelta = Math.abs(editorNormalizedX - normalizedScreenX);
-    expect(editorVsRuntimeDelta).toBeLessThan(0.002);
+    expect(Math.abs(editorNormalizedX - normalizedScreenX)).toBeLessThan(0.002);
   });
 
   it('renders class and card number with resilient fallbacks', async () => {
@@ -202,8 +204,8 @@ describe('idCardCanvasRenderer runtime alignment', () => {
     });
 
     const renderedTexts = fillTextCalls.map((call) => call.text);
-    expect(renderedTexts).toContain('نوم');
-    expect(renderedTexts).toContain('کارت نمبر');
+    expect(renderedTexts.some((text) => text.startsWith('نوم'))).toBe(true);
+    expect(renderedTexts.some((text) => text.startsWith('کارت نمبر'))).toBe(true);
     expect(renderedTexts).toContain('ADM-300');
   });
 
@@ -248,10 +250,59 @@ describe('idCardCanvasRenderer runtime alignment', () => {
       paddingPx: 20,
     });
 
-    const roomLabelCall = fillTextCalls.find((call) => call.text === 'خونه');
+    const roomLabelCall = fillTextCalls.find((call) => call.text.startsWith('خونه'));
     const roomValueCall = fillTextCalls.find((call) => call.text === 'B-12');
     expect(roomLabelCall).toBeDefined();
     expect(roomValueCall).toBeDefined();
     expect(roomValueCall?.fillStyle.toLowerCase()).toBe('#ff0000');
+  });
+
+  it('renders created date and derives expiry from the record date', async () => {
+    const createdAt = new Date('2026-04-13T00:00:00.000Z');
+    const template = {
+      id: 'template-runtime-5',
+      layoutConfigFront: {},
+      layoutConfigBack: {
+        enabledFields: ['createdDate', 'expiryDate'],
+        createdDatePosition: { x: 50, y: 45 },
+        expiryDatePosition: { x: 50, y: 60 },
+        fontSize: 12,
+        fontFamily: 'Arial',
+        textColor: '#000000',
+        rtl: false,
+      },
+      backgroundImagePathFront: null,
+      backgroundImagePathBack: null,
+    } as any;
+
+    const student = {
+      id: 'student-runtime-5',
+      fullName: 'Date Student',
+      fatherName: 'Date Father',
+      studentCode: 'STD-500',
+      admissionNumber: 'ADM-500',
+      cardNumber: null,
+      createdAt,
+      currentClass: null,
+      school: { id: 'school-runtime-5', schoolName: 'Runtime School' },
+    } as any;
+
+    await renderIdCardToCanvas(template, student, 'back', {
+      quality: 'screen',
+      renderWidthPx: 634,
+      renderHeightPx: 400,
+      paddingPx: 20,
+      createdDate: createdAt,
+    });
+
+    const renderedTexts = fillTextCalls.map((call) => call.text);
+    const expectedCreatedDate = formatIdCardDateValue(createdAt, 'en-US');
+    const expectedExpiryDate = formatIdCardDateValue(
+      deriveExpiryDateFromCreatedDate(createdAt),
+      'en-US'
+    );
+
+    expect(renderedTexts).toContain(expectedCreatedDate);
+    expect(renderedTexts).toContain(expectedExpiryDate);
   });
 });
