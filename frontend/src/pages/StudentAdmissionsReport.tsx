@@ -17,9 +17,13 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudentAdmissionReport } from '@/hooks/useStudentAdmissionReport';
+import { studentAdmissionsApi } from '@/lib/api/client';
+import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
+import { mapStudentAdmissionReportApiToDomain } from '@/mappers/studentAdmissionReportMapper';
 import type { AdmissionStatus } from '@/types/domain/studentAdmission';
 import type { StudentAdmission } from '@/types/domain/studentAdmission';
 import type { StudentAdmissionReportFilters } from '@/types/domain/studentAdmissionReport';
+import type { StudentAdmissionReport as StudentAdmissionReportApi } from '@/types/api/studentAdmissionReport';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -237,6 +241,36 @@ const StudentAdmissionsReport = () => {
   // Get current school for export
   const currentSchoolId = selectedSchoolId || profile?.default_school_id;
 
+  const fetchAllAdmissionsForExport = async (): Promise<StudentAdmission[]> => {
+    const baseParams = {
+      organization_id: filters.organizationId,
+      school_id: filters.schoolId,
+      academic_year_id: filters.academicYearId,
+      class_id: filters.classId,
+      enrollment_status: filters.enrollmentStatus,
+      residency_type_id: filters.residencyTypeId,
+      is_boarder: filters.isBoarder,
+      from_date: filters.fromDate,
+      to_date: filters.toDate,
+      per_page: pageSize,
+    };
+
+    return fetchAllPaginatedRows(async (requestedPage) => {
+      const apiReport = (await studentAdmissionsApi.report({
+        ...baseParams,
+        page: requestedPage,
+      })) as StudentAdmissionReportApi;
+
+      const mapped = mapStudentAdmissionReportApiToDomain(apiReport);
+
+      return {
+        rows: mapped.recentAdmissions,
+        currentPage: mapped.pagination.currentPage,
+        lastPage: mapped.pagination.lastPage,
+      };
+    });
+  };
+
   const hasActiveFilters = useMemo(() => {
     return !!(
       filters.schoolId ||
@@ -292,6 +326,7 @@ const StudentAdmissionsReport = () => {
               reportKey="student_admissions"
               title={t('admissions.reportTitle') || 'Student Admissions Report'}
               transformData={transformAdmissionData}
+              getExportData={fetchAllAdmissionsForExport}
               buildFiltersSummary={buildFiltersSummary}
               schoolId={currentSchoolId}
               templateType="student_admissions"
@@ -771,7 +806,7 @@ const StudentAdmissionsReport = () => {
                     setPageIndex: () => {},
                     setPageSize: () => {},
                     getPageCount: () => report.pagination.lastPage,
-                  } as any}
+                  } as never}
                   paginationMeta={{
                     current_page: report.pagination.currentPage,
                     per_page: report.pagination.perPage,

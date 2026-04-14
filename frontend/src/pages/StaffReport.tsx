@@ -13,10 +13,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { useLanguage } from '@/hooks/useLanguage';
+import { staffApi } from '@/lib/api/client';
+import { mapStaffApiToDomain } from '@/mappers/staffMapper';
+import { fetchAllStaffForExport } from '@/lib/reporting/staffExport';
 import { formatStaffName } from '@/lib/utils/formatStaffName';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStaff, useStaffTypes } from '@/hooks/useStaff';
+import type * as StaffApi from '@/types/api/staff';
 import type { Staff } from '@/types/domain/staff';
 import {
   Select,
@@ -327,6 +331,41 @@ const StaffReport = () => {
   // Get current school for export
   const currentSchoolId = schoolFilter !== 'all' ? schoolFilter : selectedSchoolId || profile?.default_school_id;
 
+  const getExportData = async (): Promise<Staff[]> => {
+    if (!orgIdForQuery) return [];
+
+    const allStaffApiRows = await fetchAllStaffForExport(async (requestedPage) => {
+      return (await staffApi.list({
+        organization_id: orgIdForQuery,
+        page: requestedPage,
+        per_page: pageSize,
+      })) as {
+        data?: StaffApi.Staff[];
+        current_page: number;
+        last_page: number;
+      };
+    });
+
+    const allStaffDomainRows = allStaffApiRows.map(mapStaffApiToDomain);
+    const query = searchQuery.toLowerCase();
+
+    return allStaffDomainRows.filter((staffMember) => {
+      if (statusFilter !== 'all' && staffMember.status !== statusFilter) return false;
+      if (staffTypeFilter !== 'all' && staffMember.staffTypeId !== staffTypeFilter) return false;
+      if (schoolFilter !== 'all' && staffMember.schoolId !== schoolFilter) return false;
+      if (!query) return true;
+
+      return (
+        (staffMember.fullName || '').toLowerCase().includes(query) ||
+        (staffMember.employeeId || '').toLowerCase().includes(query) ||
+        (staffMember.staffCode || '').toLowerCase().includes(query) ||
+        (staffMember.fatherName || '').toLowerCase().includes(query) ||
+        (staffMember.phoneNumber || '').toLowerCase().includes(query) ||
+        (staffMember.email || '').toLowerCase().includes(query)
+      );
+    });
+  };
+
   const columns: ColumnDef<Staff, any>[] = [
     {
       id: 'avatar',
@@ -488,6 +527,7 @@ const StaffReport = () => {
             ]}
             reportKey="staff_list"
             title={t('staff.reportTitle') || 'Staff Report'}
+            getExportData={getExportData}
             transformData={transformStaffData}
             buildFiltersSummary={buildFiltersSummary}
             schoolId={currentSchoolId}

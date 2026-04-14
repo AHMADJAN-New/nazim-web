@@ -3,7 +3,7 @@
  */
 
 import { Plus, Pencil, Trash2, TrendingUp, Search, Filter, Calendar, X, DollarSign } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
@@ -48,6 +48,9 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Separator } from '@/components/ui/separator';
 import { useCurrencies, useConvertCurrency } from '@/hooks/useCurrencies';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
+import { incomeEntriesApi } from '@/lib/api/client';
+import { mapIncomeEntryApiToDomain } from '@/mappers/financeMapper';
+import { fetchAllFinanceEntriesForExport } from '@/lib/reporting/financeEntriesExport';
 import {
     useIncomeEntries,
     useCreateIncomeEntry,
@@ -62,6 +65,7 @@ import {
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import type * as FinanceApi from '@/types/api/finance';
 import type { PaymentMethod } from '@/types/domain/finance';
 
 export default function IncomeEntries() {
@@ -100,6 +104,22 @@ export default function IncomeEntries() {
         description: '',
         paymentMethod: 'cash',
     });
+
+    const matchesIncomeEntryFilters = useCallback((entry: IncomeEntry) => {
+        const matchesSearch = searchTerm === '' ||
+            entry.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            entry.referenceNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            entry.incomeCategory?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            entry.donor?.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = filterCategory === 'all' || entry.incomeCategoryId === filterCategory;
+        const matchesAccount = filterAccount === 'all' || entry.accountId === filterAccount;
+
+        const entryDate = new Date(entry.date);
+        const matchesDateFrom = !dateFrom || entryDate >= new Date(dateFrom);
+        const matchesDateTo = !dateTo || entryDate <= new Date(dateTo);
+
+        return matchesSearch && matchesCategory && matchesAccount && matchesDateFrom && matchesDateTo;
+    }, [searchTerm, filterCategory, filterAccount, dateFrom, dateTo]);
 
     const resetForm = () => {
         setFormData({
@@ -153,23 +173,28 @@ export default function IncomeEntries() {
 
     const filteredEntries = useMemo(() => {
         if (!entries) return [];
-        return entries.filter((entry) => {
-            const matchesSearch = searchTerm === '' ||
-                entry.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                entry.referenceNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                entry.incomeCategory?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                entry.donor?.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesCategory = filterCategory === 'all' || entry.incomeCategoryId === filterCategory;
-            const matchesAccount = filterAccount === 'all' || entry.accountId === filterAccount;
+        return entries.filter(matchesIncomeEntryFilters);
+    }, [entries, matchesIncomeEntryFilters]);
 
-            // Date range filter
-            const entryDate = new Date(entry.date);
-            const matchesDateFrom = !dateFrom || entryDate >= new Date(dateFrom);
-            const matchesDateTo = !dateTo || entryDate <= new Date(dateTo);
-
-            return matchesSearch && matchesCategory && matchesAccount && matchesDateFrom && matchesDateTo;
+    const getExportData = async (): Promise<IncomeEntry[]> => {
+        const allIncomeEntries = await fetchAllFinanceEntriesForExport<FinanceApi.IncomeEntry>(async (requestedPage) => {
+            return (await incomeEntriesApi.list({
+                account_id: filterAccount !== 'all' ? filterAccount : undefined,
+                income_category_id: filterCategory !== 'all' ? filterCategory : undefined,
+                date_from: dateFrom || undefined,
+                date_to: dateTo || undefined,
+                search: searchTerm || undefined,
+                page: requestedPage,
+                per_page: 200,
+            })) as {
+                data?: FinanceApi.IncomeEntry[];
+                current_page: number;
+                last_page: number;
+            };
         });
-    }, [entries, searchTerm, filterCategory, filterAccount, dateFrom, dateTo]);
+
+        return allIncomeEntries.map(mapIncomeEntryApiToDomain).filter(matchesIncomeEntryFilters);
+    };
 
     // Check for view query param and auto-open side panel
     useEffect(() => {
@@ -549,6 +574,7 @@ export default function IncomeEntries() {
                 rightSlot={
                     <ReportExportButtons
                         data={filteredEntries}
+                        getExportData={getExportData}
                         columns={[
                             { key: 'date', label: t('events.date'), align: 'left' },
                             { key: 'categoryName', label: t('assets.category'), align: 'left' },

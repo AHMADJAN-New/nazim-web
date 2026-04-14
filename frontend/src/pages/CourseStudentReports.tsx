@@ -40,7 +40,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
+import { courseStudentsApi } from '@/lib/api/client';
+import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { mapCourseStudentApiToDomain } from '@/mappers/courseStudentMapper';
+import type * as CourseStudentApi from '@/types/api/courseStudent';
 import type { CourseStudent } from '@/types/domain/courseStudent';
 
 const statusBadge: Record<string, string> = {
@@ -132,8 +136,9 @@ const CourseStudentReports = () => {
       setSelectedStudentIds(new Set());
       setBulkCompleteDialogOpen(false);
       showToast.success(t('toast.studentsMarkedCompleted', { count: selectedStudents.length }));
-    } catch (error: any) {
-      showToast.error(error.message || t('toast.studentsMarkCompletedFailed'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('toast.studentsMarkCompletedFailed');
+      showToast.error(message || t('toast.studentsMarkCompletedFailed'));
     }
   };
 
@@ -144,8 +149,9 @@ const CourseStudentReports = () => {
       setSelectedStudentIds(new Set());
       setBulkDropDialogOpen(false);
       showToast.success(t('toast.studentsMarkedDropped', { count: selectedStudents.length }));
-    } catch (error: any) {
-      showToast.error(error.message || t('toast.studentsMarkDroppedFailed'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('toast.studentsMarkDroppedFailed');
+      showToast.error(message || t('toast.studentsMarkDroppedFailed'));
     }
   };
 
@@ -208,6 +214,50 @@ const CourseStudentReports = () => {
     return filters.join(', ');
   }, [selectedCourseId, statusFilter, search, courses, t]);
 
+  const fetchAllFilteredCourseStudentsForExport = useCallback(async (): Promise<CourseStudent[]> => {
+    const allStudents = await fetchAllPaginatedRows(async (requestedPage) => {
+      const response = (await courseStudentsApi.list({
+        organization_id: profile?.organization_id || undefined,
+        course_id: effectiveCourseId,
+        page: requestedPage,
+        per_page: pageSize,
+      })) as {
+        data?: CourseStudentApi.CourseStudent[];
+        current_page: number;
+        last_page: number;
+      };
+
+      return {
+        rows: (response.data || []).map(mapCourseStudentApiToDomain),
+        currentPage: response.current_page,
+        lastPage: response.last_page,
+      };
+    });
+
+    let result = allStudents;
+
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'dropped') {
+        result = result.filter((student) => student.completionStatus === 'dropped' || student.completionStatus === 'failed');
+      } else {
+        result = result.filter((student) => student.completionStatus === statusFilter);
+      }
+    }
+
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(
+        (student) =>
+          student.fullName?.toLowerCase().includes(searchLower) ||
+          student.admissionNo?.toLowerCase().includes(searchLower) ||
+          student.fatherName?.toLowerCase().includes(searchLower) ||
+          student.guardianName?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return result;
+  }, [profile?.organization_id, effectiveCourseId, pageSize, statusFilter, search]);
+
   const paginationState: PaginationState = {
     pageIndex: page - 1,
     pageSize,
@@ -248,6 +298,7 @@ const CourseStudentReports = () => {
                 reportKey="short_term_course_students"
                 title={t('courses.shortTermCourseStudentsReport')}
                 transformData={transformCourseStudentData}
+              getExportData={fetchAllFilteredCourseStudentsForExport}
                 buildFiltersSummary={buildFiltersSummary}
                 schoolId={profile?.default_school_id}
                 templateType="course_students"

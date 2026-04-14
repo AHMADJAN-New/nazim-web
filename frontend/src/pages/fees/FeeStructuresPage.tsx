@@ -30,9 +30,13 @@ import {
   useUpdateFeeStructure,
 } from '@/hooks/useFees';
 import { useLanguage } from '@/hooks/useLanguage';
+import { feeStructuresApi } from '@/lib/api/client';
+import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
 import { showToast } from '@/lib/toast';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { FeeStructureFormData } from '@/lib/validations/fees';
+import { mapFeeStructureApiToDomain } from '@/mappers/feeMapper';
+import type * as FeeApi from '@/types/api/fees';
 import type { FeeStructure } from '@/types/domain/fees';
 
 export default function FeeStructuresPage() {
@@ -230,6 +234,25 @@ export default function FeeStructuresPage() {
     }
   };
 
+  const fetchAllStructuresForExport = async (): Promise<FeeStructure[]> => {
+    return fetchAllPaginatedRows(async (requestedPage) => {
+      const response = (await feeStructuresApi.list({
+        page: requestedPage,
+        per_page: pageSize,
+      })) as {
+        data?: FeeApi.FeeStructure[];
+        current_page: number;
+        last_page: number;
+      };
+
+      return {
+        rows: (response.data || []).map(mapFeeStructureApiToDomain),
+        currentPage: response.current_page,
+        lastPage: response.last_page,
+      };
+    });
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
@@ -256,6 +279,7 @@ export default function FeeStructuresPage() {
             ]}
             reportKey="fee_structures"
             title={t('fees.structures') || 'Fee Structures'}
+            getExportData={fetchAllStructuresForExport}
             transformData={(data) =>
               data.map((structure) => ({
                 name: structure.name,
@@ -420,7 +444,7 @@ export default function FeeStructuresPage() {
                     getRowCount: () => pagination.total,
                     getRowModel: () => ({ rows: [] }),
                     options: { data: structures },
-                  } as any}
+                  } as never}
                   paginationMeta={pagination}
                   onPageChange={setPage}
                   onPageSizeChange={(newPageSize) => {

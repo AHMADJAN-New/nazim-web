@@ -26,6 +26,7 @@ import { useGrades } from '@/hooks/useGrades';
 import { useProfile } from '@/hooks/useProfiles';
 import { useServerReport } from '@/hooks/useServerReport';
 import { examsApi } from '@/lib/api/client';
+import { fetchAllClassSubjectMarkSheetRows } from '@/lib/reporting/classSubjectMarkSheetExport';
 import { showToast } from '@/lib/toast';
 
 // Report data type
@@ -82,6 +83,8 @@ type ClassSubjectReportData = {
     lowest_marks?: number;
   };
 };
+
+const EXPORT_PAGE_SIZE = 200;
 
 // Component for displaying student picture in mark sheet table cell
 function MarkSheetPictureCell({ studentId, picturePath, studentName }: { studentId?: string; picturePath?: string | null; studentName?: string }) {
@@ -819,8 +822,12 @@ export default function ClassSubjectMarkSheet() {
 
       for (const subject of subjectsForClass) {
         try {
-          const response = await examsApi.classSubjectMarkSheet(selectedExamId, examClass.id, subject.id);
-          const subjectReport = ((response as { data?: unknown }).data ?? response) as ClassSubjectReportData;
+          const subjectReport = (await fetchAllClassSubjectMarkSheetRows(async (requestedPage) =>
+            examsApi.classSubjectMarkSheet(selectedExamId, examClass.id, subject.id, {
+              page: requestedPage,
+              per_page: EXPORT_PAGE_SIZE,
+            })
+          )) as ClassSubjectReportData;
 
           if (!subjectReport?.students || subjectReport.students.length === 0) continue;
 
@@ -1000,12 +1007,21 @@ export default function ClassSubjectMarkSheet() {
                 schoolId={selectedSchoolId || profile?.default_school_id}
                 buildSections={async () => {
                   // For single subject, create one section
-                  if (!report || !report.students || report.students.length === 0) return [];
+                  if (!selectedExamId || !selectedClassId || !selectedSubjectId) return [];
+
+                  const fullReport = (await fetchAllClassSubjectMarkSheetRows(async (requestedPage) =>
+                    examsApi.classSubjectMarkSheet(selectedExamId, selectedClassId, selectedSubjectId, {
+                      page: requestedPage,
+                      per_page: EXPORT_PAGE_SIZE,
+                    })
+                  )) as ClassSubjectReportData;
+
+                  if (!fullReport.students || fullReport.students.length === 0) return [];
                   return [{
                     title: `${selectedClass?.classAcademicYear?.class?.name || ''}${selectedClass?.classAcademicYear?.sectionName ? ` - ${selectedClass.classAcademicYear.sectionName}` : ''} - ${selectedSubject?.subject?.name || selectedSubject?.classSubject?.subject?.name || ''}`,
                     sheetName: `${selectedClass?.classAcademicYear?.class?.name || ''} - ${selectedSubject?.subject?.name || selectedSubject?.classSubject?.subject?.name || ''}`.substring(0, 31),
-                    columns: getExportColumns(report, t),
-                    rows: transformSubjectReportData(report, t),
+                    columns: getExportColumns(fullReport, t),
+                    rows: transformSubjectReportData(fullReport, t),
                   }];
                 }}
                 buildFiltersSummary={() => {
