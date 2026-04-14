@@ -45,8 +45,11 @@ import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
+import { studentsApi } from '@/lib/api/client';
+import { mapStudentApiToDomain } from '@/mappers/studentMapper';
 import { showToast } from '@/lib/toast';
 import type { Student } from '@/types/domain/student';
+import type { Student as StudentApiModel } from '@/types/api/student';
 
 
 
@@ -147,6 +150,24 @@ const StudentReport = () => {
   }, [studentsData]);
 
   const filteredStudents = students;
+
+  const fetchAllFilteredStudentsForExport = async (): Promise<Student[]> => {
+    const response = await studentsApi.list({
+      organization_id: orgIdForQuery || undefined,
+      school_id: profile?.default_school_id || undefined,
+      search: studentFilters.search,
+      student_status: studentFilters.student_status,
+      gender: studentFilters.gender,
+      academic_year_id: studentFilters.academic_year_id,
+      class_id: studentFilters.class_id,
+    });
+
+    const apiStudents = Array.isArray(response)
+      ? (response as StudentApiModel[])
+      : (((response as { data?: StudentApiModel[] })?.data ?? []) as StudentApiModel[]);
+
+    return apiStudents.map(mapStudentApiToDomain);
+  };
 
   useEffect(() => {
     setClassFilter('all');
@@ -418,6 +439,7 @@ const StudentReport = () => {
             reportKey="student_list"
             title={t('nav.studentReports') || 'Students Report'}
             transformData={transformStudentData}
+            getExportData={fetchAllFilteredStudentsForExport}
             buildFiltersSummary={buildFiltersSummary}
             schoolId={currentSchoolId}
             templateType="student_list"

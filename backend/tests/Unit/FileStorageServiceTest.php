@@ -3,9 +3,11 @@
 namespace Tests\Unit;
 
 use App\Services\Storage\FileStorageService;
+use App\Services\Storage\ImageCompressionService;
 use App\Services\Subscription\UsageTrackingService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Tests\TestCase;
 
 class FileStorageServiceTest extends TestCase
@@ -30,7 +32,10 @@ class FileStorageServiceTest extends TestCase
         ]);
         $usageTracking->method('incrementStorageUsage');
 
-        $this->service = new FileStorageService($usageTracking);
+        $imageCompression = $this->createMock(ImageCompressionService::class);
+        $imageCompression->method('compressImage')->willReturn(null);
+
+        $this->service = new FileStorageService($usageTracking, $imageCompression);
     }
 
     // ==============================================
@@ -196,6 +201,24 @@ class FileStorageServiceTest extends TestCase
         $this->assertStringContains("reports/{$reportType}/", $path);
         Storage::disk('local')->assertExists($path);
         $this->assertEquals($content, Storage::disk('local')->get($path));
+    }
+
+    public function test_store_report_throws_when_storage_write_fails(): void
+    {
+        $content = 'Report content here';
+        $filename = 'report.pdf';
+        $organizationId = 'org-123';
+        $schoolId = 'school-789';
+        $reportType = 'attendance';
+
+        $diskMock = \Mockery::mock();
+        $diskMock->shouldReceive('put')->once()->andReturn(false);
+        Storage::shouldReceive('disk')->with('local')->andReturn($diskMock);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Failed to store report file');
+
+        $this->service->storeReport($content, $filename, $organizationId, $schoolId, $reportType);
     }
 
     // ==============================================
