@@ -197,6 +197,7 @@ class GenerateReportJob implements ShouldQueue
         Log::debug("Report context font settings (Job)", [
             'font_family' => $context['FONT_FAMILY'] ?? 'N/A',
             'font_size' => $context['FONT_SIZE'] ?? 'N/A',
+            'table_font_size' => $context['TABLE_FONT_SIZE'] ?? 'N/A',
             'template_font_family' => $layout['font_family'] ?? null,
             'template_font_size' => $layout['font_size'] ?? null,
             'branding_font_family' => $branding['font_family'] ?? null,
@@ -471,6 +472,9 @@ class GenerateReportJob implements ShouldQueue
             $layout['font_size'] = $layout['font_size'] ?? '11px';
         }
 
+        $resolvedFontSize = $layout['font_size'] ?? $branding['report_font_size'] ?? '12px';
+        $tableFontSize = $this->clampFontSize($resolvedFontSize, 14);
+
         // Calculate column widths
         $columnWidths = $this->calculateColumnWidths($columns, $config);
 
@@ -491,7 +495,8 @@ class GenerateReportJob implements ShouldQueue
             // CRITICAL: Use template font family from layout first, then branding fallback
             'FONT_FAMILY' => $layout['font_family'] ?? $branding['font_family'] ?? 'Bahij Nassim',
             // CRITICAL: Use template font size from layout first, then branding fallback
-            'FONT_SIZE' => $layout['font_size'] ?? $branding['report_font_size'] ?? '12px',
+            'FONT_SIZE' => $resolvedFontSize,
+            'TABLE_FONT_SIZE' => $tableFontSize,
 
             // Logos
             'PRIMARY_LOGO_URI' => $branding['primary_logo_uri'] ?? null,
@@ -580,6 +585,26 @@ class GenerateReportJob implements ShouldQueue
             'generatedAt' => $data['generatedAt'] ?? now()->toISOString(),
             'labels' => $data['labels'] ?? [],
         ];
+    }
+
+    private function clampFontSize(string $fontSize, int $minimum): string
+    {
+        $normalized = trim($fontSize);
+        if ($normalized === '') {
+            return "{$minimum}px";
+        }
+
+        if (!preg_match('/(?P<value>\d+(?:\.\d+)?)(?P<unit>[a-z%]*)/i', $normalized, $matches)) {
+            return "{$minimum}px";
+        }
+
+        $value = max($minimum, (float) $matches['value']);
+        $unit = $matches['unit'] !== '' ? strtolower($matches['unit']) : 'px';
+        $formattedValue = abs($value - round($value)) < 0.001
+            ? (string) (int) round($value)
+            : rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+
+        return $formattedValue.$unit;
     }
 
     /**

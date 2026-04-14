@@ -1,6 +1,16 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/lib/api/client', () => ({
+  idCardTemplatesApi: {
+    getBackgroundImage: vi.fn(),
+  },
+  apiClient: {
+    getToken: vi.fn().mockReturnValue(null),
+  },
+}));
+
+import { idCardTemplatesApi } from '@/lib/api/client';
 import { renderIdCardToCanvas } from '@/lib/idCards/idCardCanvasRenderer';
 import { deriveExpiryDateFromCreatedDate, formatIdCardDateValue } from '@/lib/idCards/idCardFieldUtils';
 
@@ -304,5 +314,69 @@ describe('idCardCanvasRenderer runtime alignment', () => {
 
     expect(renderedTexts).toContain(expectedCreatedDate);
     expect(renderedTexts).toContain(expectedExpiryDate);
+  });
+
+  it('reuses cached background images across repeated renders', async () => {
+    const getBackgroundImageMock = vi.mocked(idCardTemplatesApi.getBackgroundImage);
+    getBackgroundImageMock.mockResolvedValue({
+      blob: new Blob(['fake-image'], { type: 'image/png' }),
+    } as any);
+
+    class MockImage {
+      onload: (() => void) | null = null;
+      onerror: ((error?: unknown) => void) | null = null;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+
+    const originalImage = globalThis.Image;
+    (globalThis as typeof globalThis & { Image: typeof Image }).Image = MockImage as unknown as typeof Image;
+
+    try {
+      const template = {
+        id: 'template-runtime-cache',
+        layoutConfigFront: {
+          enabledFields: [],
+          fontSize: 12,
+          fontFamily: 'Arial',
+          textColor: '#000000',
+          rtl: false,
+        },
+        layoutConfigBack: {},
+        backgroundImagePathFront: 'background/front.png',
+        backgroundImagePathBack: null,
+      } as any;
+
+      const student = {
+        id: 'student-runtime-cache',
+        fullName: 'Cache Student',
+        fatherName: 'Cache Father',
+        studentCode: 'STD-CACHE',
+        admissionNumber: 'ADM-CACHE',
+        currentClass: null,
+        school: { id: 'school-runtime-cache', schoolName: 'Runtime School' },
+      } as any;
+
+      await renderIdCardToCanvas(template, student, 'front', {
+        quality: 'screen',
+        renderWidthPx: 634,
+        renderHeightPx: 400,
+        paddingPx: 20,
+      });
+
+      await renderIdCardToCanvas(template, student, 'front', {
+        quality: 'screen',
+        renderWidthPx: 634,
+        renderHeightPx: 400,
+        paddingPx: 20,
+      });
+
+      expect(getBackgroundImageMock).toHaveBeenCalledTimes(1);
+      expect(getBackgroundImageMock).toHaveBeenCalledWith('template-runtime-cache', 'front');
+    } finally {
+      (globalThis as typeof globalThis & { Image: typeof Image }).Image = originalImage;
+    }
   });
 });

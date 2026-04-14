@@ -1,11 +1,12 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { Eye, Search, User, X } from 'lucide-react';
+import { Eye, Search, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportColumnSelector } from '@/components/reports/ReportColumnSelector';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { PictureCell } from '@/components/shared/PictureCell';
 import { useSchoolContext } from '@/contexts/SchoolContext';
@@ -38,16 +39,32 @@ import {
 import { useDataTable } from '@/hooks/use-data-table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
-import { showToast } from '@/lib/toast';
+import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
+import {
+  filterSelectedReportColumns,
+  getDefaultReportColumnKeys,
+  normalizeSelectedReportColumnKeys,
+} from '@/lib/reporting/reportColumnSelection';
 import type { Student } from '@/types/domain/student';
 
+export const studentCoreExportColumnKeys = [
+  'admission_no',
+  'card_number',
+  'status',
+  'full_name',
+  'father_name',
+  'gender',
+  'phone',
+  'applying_grade',
+  'school',
+  'admission_year',
+] as const;
 
 
 const statusBadgeVariant = (status?: string): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
@@ -220,6 +237,49 @@ const StudentReport = () => {
 
   // Get current school for export
   const currentSchoolId = selectedSchoolId || profile?.default_school_id;
+  const allExportColumns = useMemo<ReportColumn[]>(() => [
+    { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission #' },
+    { key: 'card_number', label: t('attendancePage.cardHeader') || 'Card #' },
+    { key: 'status', label: t('events.status') || 'Status' },
+    { key: 'full_name', label: t('userManagement.fullName') || 'Full Name' },
+    { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
+    { key: 'gender', label: t('students.gender') || 'Gender' },
+    { key: 'age', label: t('studentReport.age') || 'Age' },
+    { key: 'birth_date', label: t('students.birthDate') || 'Birth Date' },
+    { key: 'nationality', label: t('students.nationality') || 'Nationality' },
+    { key: 'address', label: t('events.address') || 'Address' },
+    { key: 'phone', label: t('students.phone') || 'Phone' },
+    { key: 'tazkira_number', label: t('students.tazkiraNumber') || 'Tazkira Number' },
+    { key: 'guardian', label: t('students.guardian') || 'Guardian' },
+    { key: 'applying_grade', label: t('students.applyingGrade') || 'Applying Grade' },
+    { key: 'school', label: t('students.school') || 'School' },
+    { key: 'admission_year', label: t('students.admissionYear') || 'Admission Year' },
+    { key: 'admission_fee_status', label: t('students.admissionFeeStatus') || 'Fee Status' },
+    { key: 'origin_location', label: t('studentReport.originLocation') || 'Origin Location' },
+    { key: 'current_location', label: t('studentReport.currentLocation') || 'Current Location' },
+    { key: 'previous_school', label: t('studentReport.previousSchool') || 'Previous School' },
+    { key: 'orphan', label: t('studentReport.isOrphan') || 'Orphan' },
+    { key: 'disability', label: t('studentReport.disabilityStatus') || 'Disability' },
+    { key: 'emergency_contact', label: t('studentReport.emergencyContact') || 'Emergency Contact' },
+    { key: 'notes', label: t('students.notes') || 'Notes' },
+  ], [t]);
+  const [selectedExportColumnKeys, setSelectedExportColumnKeys] = useState<string[]>(() =>
+    getDefaultReportColumnKeys(allExportColumns, [...studentCoreExportColumnKeys])
+  );
+  const selectedExportColumns = useMemo(
+    () => filterSelectedReportColumns(allExportColumns, selectedExportColumnKeys),
+    [allExportColumns, selectedExportColumnKeys]
+  );
+
+  useEffect(() => {
+    setSelectedExportColumnKeys((previousKeys) => {
+      const normalizedKeys = normalizeSelectedReportColumnKeys(allExportColumns, previousKeys);
+      return normalizedKeys.length === previousKeys.length &&
+        normalizedKeys.every((key, index) => key === previousKeys[index])
+        ? previousKeys
+        : normalizedKeys;
+    });
+  }, [allExportColumns]);
 
   const columns: ColumnDef<Student, any>[] = useMemo(() => [
     {
@@ -387,48 +447,38 @@ const StudentReport = () => {
         description={t('students.subtitle') || 'View and export student registration data with detailed information'}
         icon={<User className="h-5 w-5" />}
         rightSlot={
-          <ReportExportButtons
-            data={filteredStudents}
-            columns={[
-              { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission #' },
-              { key: 'card_number', label: t('attendancePage.cardHeader') || 'Card #' },
-              { key: 'status', label: t('events.status') || 'Status' },
-              { key: 'full_name', label: t('userManagement.fullName') || 'Full Name' },
-              { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
-              { key: 'gender', label: t('students.gender') || 'Gender' },
-              { key: 'age', label: t('studentReport.age') || 'Age' },
-              { key: 'birth_date', label: t('students.birthDate') || 'Birth Date' },
-              { key: 'nationality', label: t('students.nationality') || 'Nationality' },
-              { key: 'address', label: t('events.address') || 'Address' },
-              { key: 'phone', label: t('students.phone') || 'Phone' },
-              { key: 'tazkira_number', label: t('students.tazkiraNumber') || 'Tazkira Number' },
-              { key: 'guardian', label: t('students.guardian') || 'Guardian' },
-              { key: 'applying_grade', label: t('students.applyingGrade') || 'Applying Grade' },
-              { key: 'school', label: t('students.school') || 'School' },
-              { key: 'admission_year', label: t('students.admissionYear') || 'Admission Year' },
-              { key: 'admission_fee_status', label: t('students.admissionFeeStatus') || 'Fee Status' },
-              { key: 'origin_location', label: t('studentReport.originLocation') || 'Origin Location' },
-              { key: 'current_location', label: t('studentReport.currentLocation') || 'Current Location' },
-              { key: 'previous_school', label: t('studentReport.previousSchool') || 'Previous School' },
-              { key: 'orphan', label: t('studentReport.isOrphan') || 'Orphan' },
-              { key: 'disability', label: t('studentReport.disabilityStatus') || 'Disability' },
-              { key: 'emergency_contact', label: t('studentReport.emergencyContact') || 'Emergency Contact' },
-              { key: 'notes', label: t('students.notes') || 'Notes' },
-            ]}
-            reportKey="student_list"
-            title={t('nav.studentReports') || 'Students Report'}
-            transformData={transformStudentData}
-            buildFiltersSummary={buildFiltersSummary}
-            schoolId={currentSchoolId}
-            templateType="student_list"
-            disabled={filteredStudents.length === 0 || isLoading}
-            errorNoSchool={t('studentReport.schoolRequired') || 'A school is required to export the report.'}
-            errorNoData={t('events.noDataToExport') || 'No data to export'}
-            successPdf={t('studentReport.reportExported') || 'PDF report generated successfully'}
-            successExcel={t('studentReport.reportExported') || 'Excel report generated successfully'}
-            errorPdf={t('studentReport.exportFailed') || 'Failed to generate PDF report'}
-            errorExcel={t('studentReport.exportFailed') || 'Failed to generate Excel report'}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ReportColumnSelector
+              columns={allExportColumns}
+              selectedKeys={selectedExportColumnKeys}
+              coreKeys={[...studentCoreExportColumnKeys]}
+              onChange={setSelectedExportColumnKeys}
+              labels={{
+                trigger: t('studentReport.selectColumns') || 'Columns',
+                core: t('studentReport.coreColumns') || 'Core columns',
+                selectAll: t('studentReport.selectAllColumns') || 'Select all',
+                clearAll: t('studentReport.clearAllColumns') || 'Clear all',
+                empty: t('studentReport.noColumnsSelected') || 'Select at least one column to export.',
+              }}
+            />
+            <ReportExportButtons
+              data={filteredStudents}
+              columns={selectedExportColumns}
+              reportKey="student_list"
+              title={t('nav.studentReports') || 'Students Report'}
+              transformData={transformStudentData}
+              buildFiltersSummary={buildFiltersSummary}
+              schoolId={currentSchoolId}
+              templateType="student_list"
+              disabled={filteredStudents.length === 0 || isLoading || selectedExportColumns.length === 0}
+              errorNoSchool={t('studentReport.schoolRequired') || 'A school is required to export the report.'}
+              errorNoData={t('events.noDataToExport') || 'No data to export'}
+              successPdf={t('studentReport.reportExported') || 'PDF report generated successfully'}
+              successExcel={t('studentReport.reportExported') || 'Excel report generated successfully'}
+              errorPdf={t('studentReport.exportFailed') || 'Failed to generate PDF report'}
+              errorExcel={t('studentReport.exportFailed') || 'Failed to generate Excel report'}
+            />
+          </div>
         }
       />
 

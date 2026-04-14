@@ -113,23 +113,23 @@
         $COLUMNS = $COLUMNS ?? [];
         $ROWS = $ROWS ?? [];
     @endphp
-    <table class="data-table" style="font-size: 8px;">
+    <table class="data-table">
         <thead>
             <tr>
-                <th class="row-number" style="width: 20px; padding: 4px 2px;">#</th>
+                <th class="row-number" style="width: 30px; padding: 4px 3px;">#</th>
                 @foreach($COLUMNS as $index => $column)
                     @php
                         $label = is_array($column) ? ($column['label'] ?? $column['key'] ?? '') : $column;
                         $width = isset($COL_WIDTHS[$index]) ? $COL_WIDTHS[$index] . '%' : 'auto';
                     @endphp
-                    <th style="width: {{ $width }}; padding: 4px 2px; font-size: 7px;">{{ $label }}</th>
+                    <th style="width: {{ $width }}; padding: 4px 3px;">{{ $label }}</th>
                 @endforeach
             </tr>
         </thead>
         <tbody>
             @forelse($ROWS as $rowIndex => $row)
                 <tr>
-                    <td class="row-number" style="padding: 3px 2px; font-size: 7px;">{{ $rowIndex + 1 }}</td>
+                    <td class="row-number" style="padding: 3px 3px;">{{ $rowIndex + 1 }}</td>
                     @foreach($COLUMNS as $colIndex => $column)
                         @php
                             $key = is_array($column) ? ($column['key'] ?? $colIndex) : $colIndex;
@@ -144,7 +144,7 @@
                             // NOTE: "0" is a valid value and must be shown.
                             $displayValue = ($value !== null && $value !== '') ? $value : '—';
                         @endphp
-                        <td style="padding: 3px 2px; font-size: 7px;">{{ $displayValue }}</td>
+                        <td style="padding: 3px 3px;">{{ $displayValue }}</td>
                     @endforeach
                 </tr>
             @empty

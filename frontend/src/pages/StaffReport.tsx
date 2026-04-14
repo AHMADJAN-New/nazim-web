@@ -6,6 +6,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportColumnSelector } from '@/components/reports/ReportColumnSelector';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,12 @@ import { formatStaffName } from '@/lib/utils/formatStaffName';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStaff, useStaffTypes } from '@/hooks/useStaff';
+import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
+import {
+  filterSelectedReportColumns,
+  getDefaultReportColumnKeys,
+  normalizeSelectedReportColumnKeys,
+} from '@/lib/reporting/reportColumnSelection';
 import type { Staff } from '@/types/domain/staff';
 import {
   Select,
@@ -43,6 +50,18 @@ import {
 import { useDataTable } from '@/hooks/use-data-table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+export const staffCoreExportColumnKeys = [
+  'staff_code',
+  'employee_id',
+  'status',
+  'full_name',
+  'phone_number',
+  'staff_type',
+  'position',
+  'duty',
+  'school',
+] as const;
 
 
 
@@ -326,6 +345,56 @@ const StaffReport = () => {
 
   // Get current school for export
   const currentSchoolId = schoolFilter !== 'all' ? schoolFilter : selectedSchoolId || profile?.default_school_id;
+  const allExportColumns = useMemo<ReportColumn[]>(() => [
+    { key: 'staff_code', label: t('staff.staffCode') || 'Staff Code' },
+    { key: 'employee_id', label: t('search.employeeId') || 'Employee ID' },
+    { key: 'status', label: t('events.status') || 'Status' },
+    { key: 'full_name', label: t('userManagement.fullName') || 'Full Name' },
+    { key: 'first_name', label: t('events.firstName') || 'First Name' },
+    { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
+    { key: 'grandfather_name', label: t('staff.grandfatherName') || 'Grandfather Name' },
+    { key: 'tazkira_number', label: t('staff.tazkiraNumber') || 'Tazkira Number' },
+    { key: 'birth_date', label: t('staff.birthDate') || 'Birth Date' },
+    { key: 'birth_year', label: t('staff.birthYear') || 'Birth Year' },
+    { key: 'phone_number', label: t('staff.phoneNumber') || 'Phone Number' },
+    { key: 'email', label: t('events.email') || 'Email' },
+    { key: 'home_address', label: t('staff.homeAddress') || 'Home Address' },
+    { key: 'staff_type', label: t('staff.staffType') || 'Staff Type' },
+    { key: 'position', label: t('search.position') || 'Position' },
+    { key: 'duty', label: t('staff.duty') || 'Duty' },
+    { key: 'salary', label: t('staff.salary') || 'Salary', align: 'right' },
+    { key: 'teaching_section', label: t('staff.teachingSection') || 'Teaching Section' },
+    { key: 'school', label: t('staff.school') || 'School' },
+    { key: 'organization', label: t('students.organization') || 'Organization' },
+    { key: 'origin_location', label: t('staff.originLocation') || 'Origin Location' },
+    { key: 'current_location', label: t('staff.currentLocation') || 'Current Location' },
+    { key: 'religious_education', label: t('staff.religiousEducation') || 'Religious Education' },
+    { key: 'religious_institution', label: t('staff.religiousInstitution') || 'Religious Institution' },
+    { key: 'religious_graduation_year', label: t('staff.religiousGraduationYear') || 'Religious Graduation Year' },
+    { key: 'religious_department', label: t('staff.religiousDepartment') || 'Religious Department' },
+    { key: 'modern_education', label: t('staff.modernEducation') || 'Modern Education' },
+    { key: 'modern_institution', label: t('staff.modernInstitution') || 'Modern Institution' },
+    { key: 'modern_graduation_year', label: t('staff.modernGraduationYear') || 'Modern Graduation Year' },
+    { key: 'modern_department', label: t('staff.modernDepartment') || 'Modern Department' },
+    { key: 'notes', label: t('events.notes') || 'Notes' },
+  ], [t]);
+  const [selectedExportColumnKeys, setSelectedExportColumnKeys] = useState<string[]>(() =>
+    getDefaultReportColumnKeys(allExportColumns, [...staffCoreExportColumnKeys])
+  );
+  const selectedExportColumns = useMemo(
+    () => filterSelectedReportColumns(allExportColumns, selectedExportColumnKeys),
+    [allExportColumns, selectedExportColumnKeys]
+  );
+
+  useEffect(() => {
+    setSelectedExportColumnKeys((previousKeys) => {
+      const normalizedKeys = normalizeSelectedReportColumnKeys(allExportColumns, previousKeys);
+      return normalizedKeys.length === previousKeys.length &&
+        normalizedKeys.every((key, index) => key === previousKeys[index])
+        ? previousKeys
+        : normalizedKeys;
+    });
+  }, [allExportColumns]);
 
   const columns: ColumnDef<Staff, any>[] = [
     {
@@ -451,55 +520,38 @@ const StaffReport = () => {
         description={t('staff.staffRegistrationReportDescription')}
         icon={<User className="h-5 w-5" />}
         rightSlot={
-          <ReportExportButtons
-            data={filteredStaff}
-            columns={[
-              { key: 'staff_code', label: t('staff.staffCode') || 'Staff Code' },
-              { key: 'employee_id', label: t('search.employeeId') || 'Employee ID' },
-              { key: 'status', label: t('events.status') || 'Status' },
-              { key: 'full_name', label: t('userManagement.fullName') || 'Full Name' },
-              { key: 'first_name', label: t('events.firstName') || 'First Name' },
-              { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
-              { key: 'grandfather_name', label: t('staff.grandfatherName') || 'Grandfather Name' },
-              { key: 'tazkira_number', label: t('staff.tazkiraNumber') || 'Tazkira Number' },
-              { key: 'birth_date', label: t('staff.birthDate') || 'Birth Date' },
-              { key: 'birth_year', label: t('staff.birthYear') || 'Birth Year' },
-              { key: 'phone_number', label: t('staff.phoneNumber') || 'Phone Number' },
-              { key: 'email', label: t('events.email') || 'Email' },
-              { key: 'home_address', label: t('staff.homeAddress') || 'Home Address' },
-              { key: 'staff_type', label: t('staff.staffType') || 'Staff Type' },
-              { key: 'position', label: t('search.position') || 'Position' },
-              { key: 'duty', label: t('staff.duty') || 'Duty' },
-              { key: 'salary', label: t('staff.salary') || 'Salary', type: 'numeric' },
-              { key: 'teaching_section', label: t('staff.teachingSection') || 'Teaching Section' },
-              { key: 'school', label: t('staff.school') || 'School' },
-              { key: 'organization', label: t('students.organization') || 'Organization' },
-              { key: 'origin_location', label: t('staff.originLocation') || 'Origin Location' },
-              { key: 'current_location', label: t('staff.currentLocation') || 'Current Location' },
-              { key: 'religious_education', label: t('staff.religiousEducation') || 'Religious Education' },
-              { key: 'religious_institution', label: t('staff.religiousInstitution') || 'Religious Institution' },
-              { key: 'religious_graduation_year', label: t('staff.religiousGraduationYear') || 'Religious Graduation Year' },
-              { key: 'religious_department', label: t('staff.religiousDepartment') || 'Religious Department' },
-              { key: 'modern_education', label: t('staff.modernEducation') || 'Modern Education' },
-              { key: 'modern_institution', label: t('staff.modernInstitution') || 'Modern Institution' },
-              { key: 'modern_graduation_year', label: t('staff.modernGraduationYear') || 'Modern Graduation Year' },
-              { key: 'modern_department', label: t('staff.modernDepartment') || 'Modern Department' },
-              { key: 'notes', label: t('events.notes') || 'Notes' },
-            ]}
-            reportKey="staff_list"
-            title={t('staff.reportTitle') || 'Staff Report'}
-            transformData={transformStaffData}
-            buildFiltersSummary={buildFiltersSummary}
-            schoolId={currentSchoolId}
-            templateType="staff_list"
-            disabled={filteredStaff.length === 0 || isLoading}
-            errorNoSchool={t('staff.schoolRequiredForExport') || 'A school is required to export the report.'}
-            errorNoData={t('events.noDataToExport') || 'No data to export'}
-            successPdf={t('staff.reportExportedAs') || 'PDF report generated successfully'}
-            successExcel={t('staff.reportExportedAs') || 'Excel report generated successfully'}
-            errorPdf={t('staff.failedToExport') || 'Failed to generate PDF report'}
-            errorExcel={t('staff.failedToExport') || 'Failed to generate Excel report'}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ReportColumnSelector
+              columns={allExportColumns}
+              selectedKeys={selectedExportColumnKeys}
+              coreKeys={[...staffCoreExportColumnKeys]}
+              onChange={setSelectedExportColumnKeys}
+              labels={{
+                trigger: t('staff.selectColumns') || 'Columns',
+                core: t('staff.coreColumns') || 'Core columns',
+                selectAll: t('staff.selectAllColumns') || 'Select all',
+                clearAll: t('staff.clearAllColumns') || 'Clear all',
+                empty: t('staff.noColumnsSelected') || 'Select at least one column to export.',
+              }}
+            />
+            <ReportExportButtons
+              data={filteredStaff}
+              columns={selectedExportColumns}
+              reportKey="staff_list"
+              title={t('staff.reportTitle') || 'Staff Report'}
+              transformData={transformStaffData}
+              buildFiltersSummary={buildFiltersSummary}
+              schoolId={currentSchoolId}
+              templateType="staff_list"
+              disabled={filteredStaff.length === 0 || isLoading || selectedExportColumns.length === 0}
+              errorNoSchool={t('staff.schoolRequiredForExport') || 'A school is required to export the report.'}
+              errorNoData={t('events.noDataToExport') || 'No data to export'}
+              successPdf={t('staff.reportExportedAs') || 'PDF report generated successfully'}
+              successExcel={t('staff.reportExportedAs') || 'Excel report generated successfully'}
+              errorPdf={t('staff.failedToExport') || 'Failed to generate PDF report'}
+              errorExcel={t('staff.failedToExport') || 'Failed to generate Excel report'}
+            />
+          </div>
         }
       />
 

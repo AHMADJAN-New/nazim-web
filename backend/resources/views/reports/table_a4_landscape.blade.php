@@ -112,7 +112,7 @@
         $COLUMNS = $COLUMNS ?? [];
         $ROWS = $ROWS ?? [];
     @endphp
-    <table class="data-table" style="font-size: 9px;">
+    <table class="data-table">
         <thead>
             <tr>
                 <th class="row-number" style="width: 25px;">#</th>

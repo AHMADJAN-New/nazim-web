@@ -473,11 +473,11 @@ class ExcelReportService
 
         // Style header row
         $lastCol = $this->getColumnLetter($colIndex - 1);
-        $fontSize = $this->parseFontSize($context['FONT_SIZE'] ?? '12px');
+        $tableFontSize = $this->parseFontSize($context['TABLE_FONT_SIZE'] ?? $context['FONT_SIZE'] ?? '14px');
         $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->applyFromArray([
             'font' => [
                 'bold' => true,
-                'size' => $fontSize,
+                'size' => $tableFontSize,
                 'color' => ['argb' => 'FFFFFFFF'],
             ],
             'fill' => [
@@ -487,6 +487,7 @@ class ExcelReportService
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical' => Alignment::VERTICAL_CENTER,
+                'wrapText' => true,
             ],
             'borders' => [
                 'allBorders' => [
@@ -499,7 +500,7 @@ class ExcelReportService
         $sheet->getRowDimension($headerRow)->setRowHeight(25);
 
         // Parse font size once (used for all rows)
-        $fontSize = $this->parseFontSize($context['FONT_SIZE'] ?? '12px');
+        $fontSize = $tableFontSize;
 
         // Handle empty table (matches PDF behavior)
         if (empty($rows)) {
@@ -514,6 +515,7 @@ class ExcelReportService
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
                     'vertical' => Alignment::VERTICAL_CENTER,
+                    'wrapText' => true,
                 ],
             ]);
             $sheet->getRowDimension($currentRow)->setRowHeight(30);
@@ -555,6 +557,7 @@ class ExcelReportService
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
                     'vertical' => Alignment::VERTICAL_CENTER,
+                    'wrapText' => true,
                 ],
                 'borders' => [
                     'allBorders' => [
@@ -648,6 +651,7 @@ class ExcelReportService
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
                     'vertical' => Alignment::VERTICAL_CENTER,
+                    'wrapText' => true,
                 ],
                 'borders' => [
                     'allBorders' => [

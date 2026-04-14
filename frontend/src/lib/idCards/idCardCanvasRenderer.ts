@@ -59,51 +59,110 @@ export const CR80_WIDTH_PX = DEFAULT_SCREEN_WIDTH_PX;
 export const CR80_HEIGHT_PX = DEFAULT_SCREEN_HEIGHT_PX;
 export const CR80_WIDTH_PX_PRINT = DEFAULT_PRINT_WIDTH_PX;
 export const CR80_HEIGHT_PX_PRINT = DEFAULT_PRINT_HEIGHT_PX;
+const DEFAULT_STUDENT_PHOTO_WIDTH = 18;
+const DEFAULT_STUDENT_PHOTO_HEIGHT = 28;
+const DEFAULT_QR_CODE_SIZE = 10;
+const authenticatedImageDataUrlCache = new Map<string, Promise<string | null>>();
+const backgroundImageDataUrlCache = new Map<string, Promise<string | null>>();
 
 async function generateQRCode(data: string, size: number = 200): Promise<string> {
   return generateLocalQrCodeDataUrl(data, size);
 }
 
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 // Convert image URL to base64 with authentication
-async function convertImageToBase64(url: string): Promise<string | null> {
-  try {
-    // Import API client to get authentication token
-    const { apiClient } = await import('@/lib/api/client');
-    const token = apiClient.getToken();
-    
-    // Use relative URL (Vite proxy handles it in dev)
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'image/*',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      },
-      credentials: 'include',
-    });
-    
-    if (!response.ok) {
-      // 404 is expected if image doesn't exist - don't treat as error
-      if (response.status === 404) {
+async function convertImageToBase64(url: string, cacheKey: string = url): Promise<string | null> {
+  const cached = authenticatedImageDataUrlCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const promise = (async () => {
+    try {
+      // Import API client to get authentication token
+      const { apiClient } = await import('@/lib/api/client');
+      const token = apiClient.getToken();
+
+      // Use relative URL (Vite proxy handles it in dev)
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'image/*',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        // 404 is expected if image doesn't exist - don't treat as error
+        if (response.status === 404) {
+          return null;
+        }
+        if (import.meta.env.DEV) {
+          console.warn(`[idCardCanvasRenderer] Failed to fetch image: ${response.status} ${response.statusText}`);
+        }
         return null;
       }
+
+      const blob = await response.blob();
+      return blobToDataUrl(blob);
+    } catch (error) {
       if (import.meta.env.DEV) {
-        console.warn(`[idCardCanvasRenderer] Failed to fetch image: ${response.status} ${response.statusText}`);
+        console.error('[idCardCanvasRenderer] Image conversion failed:', error);
       }
       return null;
     }
-    
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+  })();
+
+  authenticatedImageDataUrlCache.set(cacheKey, promise);
+
+  try {
+    return await promise;
   } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error('[idCardCanvasRenderer] Image conversion failed:', error);
+    authenticatedImageDataUrlCache.delete(cacheKey);
+    throw error;
+  }
+}
+
+async function getBackgroundImageDataUrl(
+  templateId: string,
+  side: 'front' | 'back',
+  backgroundPath: string
+): Promise<string | null> {
+  const cacheKey = `${templateId}:${side}:${backgroundPath}`;
+  const cached = backgroundImageDataUrlCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const promise = (async () => {
+    try {
+      const { idCardTemplatesApi } = await import('@/lib/api/client');
+      const { blob } = await idCardTemplatesApi.getBackgroundImage(templateId, side);
+      return blobToDataUrl(blob);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('[idCardCanvasRenderer] Failed to load background image:', error);
+      }
+      return null;
     }
-    return null;
+  })();
+
+  backgroundImageDataUrlCache.set(cacheKey, promise);
+
+  try {
+    return await promise;
+  } catch (error) {
+    backgroundImageDataUrlCache.delete(cacheKey);
+    throw error;
   }
 }
 
@@ -268,18 +327,7 @@ export async function renderIdCardToCanvas(
     // Draw background image if available
     if (backgroundPath) {
       try {
-        // Use API client for authenticated request
-        const { idCardTemplatesApi } = await import('@/lib/api/client');
-        const { blob } = await idCardTemplatesApi.getBackgroundImage(template.id, side);
-        
-        // Convert blob to data URL
-        const backgroundBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-        
+        const backgroundBase64 = await getBackgroundImageDataUrl(template.id, side, backgroundPath);
         if (backgroundBase64) {
           const bgImg = new Image();
           await new Promise((resolve, reject) => {
@@ -370,8 +418,8 @@ export async function renderIdCardToCanvas(
     createdDatePosition: { x: 50, y: 52 },
     expiryDatePosition: { x: 50, y: 60 },
     notesPosition: { x: 50, y: 90 },
-    studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 },
-    qrCodePosition: { x: 80, y: 50, width: 10, height: 10 },
+    studentPhotoPosition: { x: 20, y: 50, width: DEFAULT_STUDENT_PHOTO_WIDTH, height: DEFAULT_STUDENT_PHOTO_HEIGHT },
+    qrCodePosition: { x: 80, y: 50, width: DEFAULT_QR_CODE_SIZE, height: DEFAULT_QR_CODE_SIZE },
   };
   const getPositionOrDefault = (
     fieldKey: keyof typeof DEFAULT_FIELD_POSITIONS,
@@ -532,7 +580,10 @@ export async function renderIdCardToCanvas(
       try {
         // Use authenticated API request for student picture
         const photoUrl = `/api/students/${student.id}/picture`;
-        const photoBase64 = await convertImageToBase64(photoUrl);
+        const photoBase64 = await convertImageToBase64(
+          photoUrl,
+          `${photoUrl}:${picturePathForFetch}`
+        );
         if (photoBase64) {
           const photoImg = new Image();
           await new Promise((resolve, reject) => {
@@ -573,7 +624,7 @@ export async function renderIdCardToCanvas(
               const imgW = photoImg.naturalWidth || photoImg.width;
               const imgH = photoImg.naturalHeight || photoImg.height;
               if (imgW > 0 && imgH > 0) {
-                const scale = Math.min(innerW / imgW, innerH / imgH);
+                const scale = Math.max(innerW / imgW, innerH / imgH);
                 const drawW = imgW * scale;
                 const drawH = imgH * scale;
                 const drawX = pos.x! - drawW / 2;

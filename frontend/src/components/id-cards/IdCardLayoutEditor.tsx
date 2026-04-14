@@ -68,6 +68,13 @@ const AVAILABLE_FONTS = [
   { value: 'Arial Unicode MS', label: 'Arial Unicode MS' },
 ];
 
+const DEFAULT_STUDENT_PHOTO_WIDTH = 18;
+const DEFAULT_STUDENT_PHOTO_HEIGHT = 28;
+const DEFAULT_QR_CODE_SIZE = 10;
+
+const backgroundImageBlobCache = new Map<string, Blob>();
+const studentPhotoBlobCache = new Map<string, Blob | null>();
+
 interface FieldConfig {
   id: string;
   label: string;
@@ -161,8 +168,8 @@ const FRONT_FIELDS: FieldConfig[] = [
   { id: 'createdDate', label: 'Created Date', key: 'createdDatePosition', sampleText: 'Apr 13, 2026', defaultFontSize: 10 },
   { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
   { id: 'notes', label: 'Notes', key: 'notesPosition', sampleText: 'Additional information', defaultFontSize: 10 },
-  { id: 'studentPhoto', label: 'Student Photo', key: 'studentPhotoPosition', sampleText: '📷', isImage: true, defaultWidth: 30, defaultHeight: 40, defaultFontSize: 12 },
-  { id: 'qrCode', label: 'QR Code', key: 'qrCodePosition', sampleText: 'QR', isImage: true, defaultWidth: 15, defaultHeight: 15, defaultFontSize: 12 },
+  { id: 'studentPhoto', label: 'Student Photo', key: 'studentPhotoPosition', sampleText: '📷', isImage: true, defaultWidth: DEFAULT_STUDENT_PHOTO_WIDTH, defaultHeight: DEFAULT_STUDENT_PHOTO_HEIGHT, defaultFontSize: 12 },
+  { id: 'qrCode', label: 'QR Code', key: 'qrCodePosition', sampleText: 'QR', isImage: true, defaultWidth: DEFAULT_QR_CODE_SIZE, defaultHeight: DEFAULT_QR_CODE_SIZE, defaultFontSize: 12 },
 ];
 
 // Back side fields
@@ -227,8 +234,8 @@ export function IdCardLayoutEditor({
       if (!photoPos.width || !photoPos.height) {
         updatedConfig.studentPhotoPosition = {
           ...photoPos,
-          width: photoPos.width ?? 8,
-          height: photoPos.height ?? 12,
+          width: photoPos.width ?? DEFAULT_STUDENT_PHOTO_WIDTH,
+          height: photoPos.height ?? DEFAULT_STUDENT_PHOTO_HEIGHT,
         };
       }
     }
@@ -238,8 +245,8 @@ export function IdCardLayoutEditor({
       if (!qrPos.width || !qrPos.height) {
         updatedConfig.qrCodePosition = {
           ...qrPos,
-          width: qrPos.width ?? 10,
-          height: qrPos.height ?? 10,
+          width: qrPos.width ?? DEFAULT_QR_CODE_SIZE,
+          height: qrPos.height ?? DEFAULT_QR_CODE_SIZE,
         };
       }
     }
@@ -379,10 +386,10 @@ export function IdCardLayoutEditor({
   const getImageFieldSizePercent = useCallback(
     (fieldId: 'studentPhoto' | 'qrCode') => {
       if (fieldId === 'qrCode') {
-        return (currentConfig.qrCodePosition as { width?: number } | undefined)?.width ?? 10;
+        return (currentConfig.qrCodePosition as { width?: number } | undefined)?.width ?? DEFAULT_QR_CODE_SIZE;
       }
 
-      return (currentConfig.studentPhotoPosition as { width?: number } | undefined)?.width ?? 8;
+      return (currentConfig.studentPhotoPosition as { width?: number } | undefined)?.width ?? DEFAULT_STUDENT_PHOTO_WIDTH;
     },
     [currentConfig.qrCodePosition, currentConfig.studentPhotoPosition]
   );
@@ -396,8 +403,8 @@ export function IdCardLayoutEditor({
           const current = (prev.qrCodePosition as { x?: number; y?: number; width?: number; height?: number } | undefined) || {
             x: 80,
             y: 50,
-            width: 10,
-            height: 10,
+            width: DEFAULT_QR_CODE_SIZE,
+            height: DEFAULT_QR_CODE_SIZE,
           };
 
           return {
@@ -413,11 +420,11 @@ export function IdCardLayoutEditor({
         const current = (prev.studentPhotoPosition as { x?: number; y?: number; width?: number; height?: number } | undefined) || {
           x: 20,
           y: 50,
-          width: 8,
-          height: 12,
+          width: DEFAULT_STUDENT_PHOTO_WIDTH,
+          height: DEFAULT_STUDENT_PHOTO_HEIGHT,
         };
-        const currentWidth = current.width ?? 8;
-        const currentHeight = current.height ?? 12;
+        const currentWidth = current.width ?? DEFAULT_STUDENT_PHOTO_WIDTH;
+        const currentHeight = current.height ?? DEFAULT_STUDENT_PHOTO_HEIGHT;
         const nextDimensions = scaleUniformImageDimensions(currentWidth, currentHeight, boundedSize);
 
         return {
@@ -494,16 +501,19 @@ export function IdCardLayoutEditor({
 
     const loadImage = async () => {
       try {
-        let endpoint = backgroundImageUrlFront;
-        if (backgroundImageUrlFront.startsWith('http://') || backgroundImageUrlFront.startsWith('https://')) {
-          const urlObj = new URL(backgroundImageUrlFront);
-          endpoint = urlObj.pathname;
-        }
-        if (endpoint.startsWith('/api')) {
-          endpoint = endpoint.replace('/api', '');
+        setBackgroundImageLoadedFront(false);
+        setBackgroundImageErrorFront(false);
+
+        const cacheKey = `${templateId}:front:${backgroundImageUrlFront}`;
+        const cachedBlob = backgroundImageBlobCache.get(cacheKey);
+        const blob =
+          cachedBlob ??
+          (await idCardTemplatesApi.getBackgroundImage(templateId, 'front')).blob;
+
+        if (!cachedBlob) {
+          backgroundImageBlobCache.set(cacheKey, blob);
         }
 
-        const { blob } = await idCardTemplatesApi.getBackgroundImage(templateId, 'front');
         const url = URL.createObjectURL(blob);
         setImageUrlFront(url);
         
@@ -543,16 +553,19 @@ export function IdCardLayoutEditor({
 
     const loadImage = async () => {
       try {
-        let endpoint = backgroundImageUrlBack;
-        if (backgroundImageUrlBack.startsWith('http://') || backgroundImageUrlBack.startsWith('https://')) {
-          const urlObj = new URL(backgroundImageUrlBack);
-          endpoint = urlObj.pathname;
-        }
-        if (endpoint.startsWith('/api')) {
-          endpoint = endpoint.replace('/api', '');
+        setBackgroundImageLoadedBack(false);
+        setBackgroundImageErrorBack(false);
+
+        const cacheKey = `${templateId}:back:${backgroundImageUrlBack}`;
+        const cachedBlob = backgroundImageBlobCache.get(cacheKey);
+        const blob =
+          cachedBlob ??
+          (await idCardTemplatesApi.getBackgroundImage(templateId, 'back')).blob;
+
+        if (!cachedBlob) {
+          backgroundImageBlobCache.set(cacheKey, blob);
         }
 
-        const { blob } = await idCardTemplatesApi.getBackgroundImage(templateId, 'back');
         const url = URL.createObjectURL(blob);
         setImageUrlBack(url);
         
@@ -587,7 +600,8 @@ export function IdCardLayoutEditor({
   // Load student photo for preview
   useEffect(() => {
     const loadStudentPhoto = async () => {
-      if (!previewStudent?.id || activeTab !== 'front') {
+      const picturePathForPreview = previewStudent?.picturePath?.trim() || previewStudent?.profilePhoto?.trim();
+      if (!previewStudent?.id || activeTab !== 'front' || !picturePathForPreview) {
         setStudentPhotoUrl(null);
         return;
       }
@@ -595,7 +609,19 @@ export function IdCardLayoutEditor({
       try {
         const { apiClient } = await import('@/lib/api/client');
         const token = apiClient.getToken();
-        const url = `/api/students/${previewStudent.id}/picture?t=${Date.now()}`;
+        const cacheKey = `${previewStudent.id}:${picturePathForPreview}`;
+        const cachedBlob = studentPhotoBlobCache.get(cacheKey);
+        if (cachedBlob === null) {
+          setStudentPhotoUrl(null);
+          return;
+        }
+
+        if (cachedBlob) {
+          setStudentPhotoUrl(URL.createObjectURL(cachedBlob));
+          return;
+        }
+
+        const url = `/api/students/${previewStudent.id}/picture`;
 
         const response = await fetch(url, {
           method: 'GET',
@@ -608,9 +634,11 @@ export function IdCardLayoutEditor({
 
         if (response.ok) {
           const blob = await response.blob();
+          studentPhotoBlobCache.set(cacheKey, blob);
           const blobUrl = URL.createObjectURL(blob);
           setStudentPhotoUrl(blobUrl);
         } else {
+          studentPhotoBlobCache.set(cacheKey, null);
           setStudentPhotoUrl(null);
         }
       } catch (error) {
@@ -622,7 +650,7 @@ export function IdCardLayoutEditor({
     };
 
     loadStudentPhoto();
-  }, [previewStudent?.id ?? null, activeTab]);
+  }, [previewStudent?.id ?? null, previewStudent?.picturePath ?? null, previewStudent?.profilePhoto ?? null, activeTab]);
 
   // Cleanup student photo blob URL
   useEffect(() => {
@@ -744,8 +772,8 @@ export function IdCardLayoutEditor({
       classPosition: { x: 28, y: 80 },
       roomLabelPosition: { x: 72, y: 88 },
       roomPosition: { x: 28, y: 88 },
-      studentPhotoPosition: { x: 20, y: 50, width: 8, height: 12 }, // Passport-like size for ID cards
-      qrCodePosition: { x: 80, y: 50, width: 10, height: 10 }, // Square
+      studentPhotoPosition: { x: 20, y: 50, width: DEFAULT_STUDENT_PHOTO_WIDTH, height: DEFAULT_STUDENT_PHOTO_HEIGHT }, // ID-card portrait frame
+      qrCodePosition: { x: 80, y: 50, width: DEFAULT_QR_CODE_SIZE, height: DEFAULT_QR_CODE_SIZE }, // Square
       schoolNamePosition: { x: 50, y: 30 },
       cardNumberLabelPosition: { x: 72, y: 80 },
       createdDatePosition: { x: 50, y: 52 },
@@ -768,8 +796,8 @@ export function IdCardLayoutEditor({
           x, 
           y,
           // Set default width/height if not already set
-          width: width !== undefined ? width : (currentPosition.width ?? (fieldKey === 'qrCodePosition' ? 10 : fieldKey === 'studentPhotoPosition' ? 8 : undefined)),
-          height: height !== undefined ? height : (currentPosition.height ?? (fieldKey === 'qrCodePosition' ? 10 : fieldKey === 'studentPhotoPosition' ? 12 : undefined)),
+          width: width !== undefined ? width : (currentPosition.width ?? (fieldKey === 'qrCodePosition' ? DEFAULT_QR_CODE_SIZE : fieldKey === 'studentPhotoPosition' ? DEFAULT_STUDENT_PHOTO_WIDTH : undefined)),
+          height: height !== undefined ? height : (currentPosition.height ?? (fieldKey === 'qrCodePosition' ? DEFAULT_QR_CODE_SIZE : fieldKey === 'studentPhotoPosition' ? DEFAULT_STUDENT_PHOTO_HEIGHT : undefined)),
         },
       };
     });
@@ -1009,14 +1037,14 @@ export function IdCardLayoutEditor({
       const pos = currentConfig.studentPhotoPosition as any;
       currentX = pos?.x ?? 20;
       currentY = pos?.y ?? 50;
-      currentWidth = pos?.width ?? 8;
-      currentHeight = pos?.height ?? 12;
+      currentWidth = pos?.width ?? DEFAULT_STUDENT_PHOTO_WIDTH;
+      currentHeight = pos?.height ?? DEFAULT_STUDENT_PHOTO_HEIGHT;
     } else if (fieldId === 'qrCode') {
       const pos = currentConfig.qrCodePosition as any;
       currentX = pos?.x ?? 80;
       currentY = pos?.y ?? 50;
-      currentWidth = pos?.width ?? 10;
-      currentHeight = pos?.height ?? 10;
+      currentWidth = pos?.width ?? DEFAULT_QR_CODE_SIZE;
+      currentHeight = pos?.height ?? DEFAULT_QR_CODE_SIZE;
     }
 
     if (import.meta.env.DEV) {
@@ -1054,15 +1082,34 @@ export function IdCardLayoutEditor({
 
         const deltaX = currentX - resizeStart.x;
         const deltaY = currentY - resizeStart.y;
-        const dominantDelta = Math.abs(deltaX) >= Math.abs(deltaY) ? deltaX : deltaY;
-        const nextSize = Math.max(1, Math.min(100, resizeStart.width + dominantDelta));
+        const resizeContributions: number[] = [];
+
+        if (resizeHandle?.includes('e')) {
+          resizeContributions.push(deltaX);
+        }
+        if (resizeHandle?.includes('w')) {
+          resizeContributions.push(-deltaX);
+        }
+        if (resizeHandle?.includes('s')) {
+          resizeContributions.push(deltaY);
+        }
+        if (resizeHandle?.includes('n')) {
+          resizeContributions.push(-deltaY);
+        }
+        if (resizeContributions.length === 0) {
+          resizeContributions.push(deltaX, deltaY);
+        }
+
+        const sizeDelta =
+          resizeContributions.reduce((sum, value) => sum + value, 0) / resizeContributions.length;
+        const nextSize = Math.max(1, Math.min(100, resizeStart.width + sizeDelta));
 
         let newWidth = nextSize;
         let newHeight = nextSize;
 
         if (import.meta.env.DEV) {
           console.log('[IdCardLayoutEditor] Resize values:', {
-            currentX, currentY, deltaX, deltaY, nextSize
+            currentX, currentY, deltaX, deltaY, resizeHandle, sizeDelta, nextSize
           });
         }
 
@@ -1302,8 +1349,8 @@ export function IdCardLayoutEditor({
     if (field.isImage) {
       const imagePosition = position as { x: number; y: number; width?: number; height?: number };
       
-      const imageWidthPercent = imagePosition.width ?? (field.id === 'studentPhoto' ? 8 : 10);
-      const imageHeightPercent = imagePosition.height ?? (field.id === 'studentPhoto' ? 12 : 10);
+      const imageWidthPercent = imagePosition.width ?? (field.id === 'studentPhoto' ? DEFAULT_STUDENT_PHOTO_WIDTH : DEFAULT_QR_CODE_SIZE);
+      const imageHeightPercent = imagePosition.height ?? (field.id === 'studentPhoto' ? DEFAULT_STUDENT_PHOTO_HEIGHT : DEFAULT_QR_CODE_SIZE);
       
       // Calculate pixel dimensions from percentages and container dimensions
       let imageWidthPx = renderMetrics.pctToWidth(imageWidthPercent);
@@ -1370,8 +1417,8 @@ export function IdCardLayoutEditor({
       if (!photoPos.width || !photoPos.height) {
         configFrontToSave.studentPhotoPosition = {
           ...photoPos,
-          width: photoPos.width ?? 8,
-          height: photoPos.height ?? 12,
+          width: photoPos.width ?? DEFAULT_STUDENT_PHOTO_WIDTH,
+          height: photoPos.height ?? DEFAULT_STUDENT_PHOTO_HEIGHT,
         };
       }
     }
@@ -1382,8 +1429,8 @@ export function IdCardLayoutEditor({
       if (!qrPos.width || !qrPos.height) {
         configFrontToSave.qrCodePosition = {
           ...qrPos,
-          width: qrPos.width ?? 10,
-          height: qrPos.height ?? 10,
+          width: qrPos.width ?? DEFAULT_QR_CODE_SIZE,
+          height: qrPos.height ?? DEFAULT_QR_CODE_SIZE,
         };
       }
     }
@@ -1601,6 +1648,30 @@ export function IdCardLayoutEditor({
                                     style={{ zIndex: 30 }}
                                     title="Resize from bottom-right"
                                   />
+                                  <div
+                                    className="absolute -top-1 left-1/2 -translate-x-1/2 h-4 w-3 rounded bg-blue-500 border-2 border-white shadow-lg hover:bg-blue-600 cursor-n-resize"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'n')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from top"
+                                  />
+                                  <div
+                                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-4 w-3 rounded bg-blue-500 border-2 border-white shadow-lg hover:bg-blue-600 cursor-s-resize"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 's')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from bottom"
+                                  />
+                                  <div
+                                    className="absolute -left-1 top-1/2 -translate-y-1/2 h-3 w-4 rounded bg-blue-500 border-2 border-white shadow-lg hover:bg-blue-600 cursor-w-resize"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'w')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from left"
+                                  />
+                                  <div
+                                    className="absolute -right-1 top-1/2 -translate-y-1/2 h-3 w-4 rounded bg-blue-500 border-2 border-white shadow-lg hover:bg-blue-600 cursor-e-resize"
+                                    onMouseDown={(e) => handleResizeStart(e, field.id, 'e')}
+                                    style={{ zIndex: 30 }}
+                                    title="Resize from right"
+                                  />
                                 </>
                               )}
 
@@ -1616,6 +1687,7 @@ export function IdCardLayoutEditor({
                                       backgroundColor: 'rgba(255, 255, 255, 0.92)',
                                       border: '1px solid rgba(148, 163, 184, 0.85)',
                                       boxShadow: '0 2px 6px rgba(15, 23, 42, 0.14)',
+                                      overflow: 'hidden',
                                       pointerEvents: 'none',
                                     }}
                                   >
@@ -1625,7 +1697,8 @@ export function IdCardLayoutEditor({
                                       style={{
                                         width: '100%',
                                         height: '100%',
-                                        objectFit: 'contain',
+                                        objectFit: 'cover',
+                                        objectPosition: 'center top',
                                         borderRadius: '4px',
                                         pointerEvents: 'none',
                                       }}
@@ -1638,7 +1711,7 @@ export function IdCardLayoutEditor({
                                     style={{
                                       width: '100%',
                                       height: '100%',
-                                      objectFit: 'contain', // Contain maintains aspect ratio without distortion
+                                      objectFit: 'contain',
                                       pointerEvents: 'none', // Allow resize handles to receive mouse events
                                       // Force square container for QR codes
                                       aspectRatio: '1 / 1',

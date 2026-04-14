@@ -39,6 +39,25 @@
             $fontFamilyQuoted = "'" . $fontFamilyEscaped . "'";
             // Parse font size to get numeric value for calculations
             $baseFontSize = intval(str_replace(['px', 'pt'], '', $fontSize));
+            $normalizeMinimumFontSize = function (string $candidate, int $minimum = 14): string {
+                $normalized = trim($candidate);
+                if ($normalized === '') {
+                    return $minimum . 'px';
+                }
+
+                if (!preg_match('/(?P<value>\d+(?:\.\d+)?)(?P<unit>[a-z%]*)/i', $normalized, $matches)) {
+                    return $minimum . 'px';
+                }
+
+                $value = max($minimum, (float) $matches['value']);
+                $unit = !empty($matches['unit']) ? strtolower($matches['unit']) : 'px';
+                $formattedValue = abs($value - round($value)) < 0.001
+                    ? (string) (int) round($value)
+                    : rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+
+                return $formattedValue . $unit;
+            };
+            $tableFontSize = $normalizeMinimumFontSize(isset($TABLE_FONT_SIZE) && !empty($TABLE_FONT_SIZE) ? trim($TABLE_FONT_SIZE) : $fontSize);
             
             // CRITICAL: Always load Bahij Nassim fonts by default (they're the standard font for this system)
             // Check if font family matches Bahij Nassim (case-insensitive, with or without spaces)
@@ -51,8 +70,10 @@
                 \Log::debug("Blade base template: Font processing", [
                     'FONT_FAMILY_input' => $FONT_FAMILY ?? 'NOT SET',
                     'FONT_SIZE_input' => $FONT_SIZE ?? 'NOT SET',
+                    'TABLE_FONT_SIZE_input' => $TABLE_FONT_SIZE ?? 'NOT SET',
                     'fontFamily_processed' => $fontFamily,
                     'fontSize_processed' => $fontSize,
+                    'tableFontSize_processed' => $tableFontSize,
                     'baseFontSize_calculated' => $baseFontSize,
                     'loadBahijNassim' => $loadBahijNassim,
                 ]);
@@ -246,8 +267,8 @@
         }
         
         /* Specific elements with font size - ensure font size is applied */
-        body, p, div, span, td, th, h1, h2, h3, h4, h5, h6, .school-name, .report-title, .header-text, .data-table,
-        table, thead, tbody, tfoot, tr, caption, li, ul, ol, a, label, input, textarea, select, button {
+        body, p, div, span, h1, h2, h3, h4, h5, h6, .school-name, .report-title, .header-text,
+        caption, li, ul, ol, a, label, input, textarea, select, button {
             font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
             font-size: {{ $fontSize }} !important;
         }
@@ -358,6 +379,8 @@
             width: 100%;
             border-collapse: collapse;
             margin: 10px 0;
+            table-layout: fixed;
+            font-size: {{ $tableFontSize }} !important;
         }
 
         .data-table thead {
@@ -371,14 +394,24 @@
             padding: 8px 6px;
             border: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }};
             text-align: center;
-            font-size: {{ $fontSize }} !important;
+            font-size: {{ $tableFontSize }} !important;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
         }
 
         .data-table td {
             padding: 6px 5px;
             border: 1px solid #ddd;
             text-align: center;
-            font-size: {{ $fontSize }} !important;
+            font-size: {{ $tableFontSize }} !important;
+            line-height: 1.45;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
+            vertical-align: top;
         }
 
         .data-table tr:nth-child(even) td {
@@ -395,6 +428,7 @@
             width: 30px;
             font-weight: bold;
             background-color: #f0f0f0;
+            font-size: {{ $tableFontSize }} !important;
         }
 
         /* Footer section */
