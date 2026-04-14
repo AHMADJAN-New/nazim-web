@@ -15,7 +15,7 @@ import type { Question, QuestionType, QuestionDifficulty, QuestionOption, Questi
 import { useClassSubjects } from '@/hooks/useSubjects';
 import { useSchools } from '@/hooks/useSchools';
 import { useProfile } from '@/hooks/useProfiles';
-import { classSubjectsApi } from '@/lib/api/client';
+import { classSubjectsApi, questionsApi } from '@/lib/api/client';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,10 +30,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
+import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
 
 
 import { cn } from '@/lib/utils';
 import { questionSchema, type QuestionFormData } from '@/lib/validations/questionBank';
+import { mapQuestionApiToDomain, mapQuestionFiltersDomainToApi } from '@/mappers/questionMapper';
+import type * as QuestionApiModel from '@/types/api/question';
 import { useDataTable } from '@/hooks/use-data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 
@@ -51,6 +54,11 @@ const typeConfig: Record<QuestionType, { label: string }> = {
   true_false: { label: 'True/False' },
   essay: { label: 'Essay' },
 };
+
+interface ClassSubjectApiBrief {
+  subject_id: string;
+  class_academic_year_id: string;
+}
 
 export function QuestionBank() {
   const { t, isRTL } = useLanguage();
@@ -351,8 +359,9 @@ export function QuestionBank() {
       try {
         const classSubject = await classSubjectsApi.get(data.classSubjectId);
         if (classSubject) {
-          subjectId = (classSubject as any).subject_id;
-          classAcademicYearId = (classSubject as any).class_academic_year_id;
+          const typedClassSubject = classSubject as ClassSubjectApiBrief;
+          subjectId = typedClassSubject.subject_id;
+          classAcademicYearId = typedClassSubject.class_academic_year_id;
         }
       } catch (error) {
         if (import.meta.env.DEV) {
@@ -418,8 +427,9 @@ export function QuestionBank() {
       try {
         const classSubject = await classSubjectsApi.get(data.classSubjectId);
         if (classSubject) {
-          subjectId = (classSubject as any).subject_id;
-          classAcademicYearId = (classSubject as any).class_academic_year_id;
+          const typedClassSubject = classSubject as ClassSubjectApiBrief;
+          subjectId = typedClassSubject.subject_id;
+          classAcademicYearId = typedClassSubject.class_academic_year_id;
         }
       } catch (error) {
         if (import.meta.env.DEV) {
@@ -705,6 +715,28 @@ export function QuestionBank() {
     }));
     form.setValue('options', updatedOptions);
   };
+
+  const fetchAllQuestionsForExport = useCallback(async (): Promise<Question[]> => {
+    const apiFilters = mapQuestionFiltersDomainToApi(filters);
+
+    return fetchAllPaginatedRows(async (requestedPage) => {
+      const response = (await questionsApi.list({
+        ...apiFilters,
+        page: requestedPage,
+        per_page: pageSize,
+      })) as {
+        data?: QuestionApiModel.Question[];
+        current_page: number;
+        last_page: number;
+      };
+
+      return {
+        rows: (response.data || []).map(mapQuestionApiToDomain),
+        currentPage: response.current_page,
+        lastPage: response.last_page,
+      };
+    });
+  }, [filters, pageSize]);
 
   const QuestionFormFields = ({ isEdit = false }: { isEdit?: boolean }) => {
     const selectedSchool = useMemo(() => {
@@ -1134,6 +1166,7 @@ export function QuestionBank() {
                 status: q.isActive ? (t('events.active') || 'Active') : (t('events.inactive') || 'Inactive'),
                 correctAnswer: q.correctAnswer || '-',
               }))}
+              getExportData={fetchAllQuestionsForExport}
               buildFiltersSummary={() => {
                 const parts: string[] = [];
                 if (selectedType !== 'all') parts.push(`Type: ${typeConfig[selectedType]?.label || selectedType}`);

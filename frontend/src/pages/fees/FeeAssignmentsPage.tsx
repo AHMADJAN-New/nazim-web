@@ -20,8 +20,11 @@ import {
   type FeeAssignment,
 } from '@/hooks/useFees';
 import { useLanguage } from '@/hooks/useLanguage';
+import { feeAssignmentsApi } from '@/lib/api/client';
+import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
 import { showToast } from '@/lib/toast';
 import { feeAssignmentSchema, type FeeAssignmentFormData } from '@/lib/validations/fees';
+import { mapFeeAssignmentApiToDomain } from '@/mappers/feeMapper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -62,6 +65,7 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import type * as FeeApi from '@/types/api/fees';
 
 export default function FeeAssignmentsPage() {
   const { t } = useLanguage();
@@ -441,6 +445,31 @@ export default function FeeAssignmentsPage() {
     }
   }, [open, form]);
 
+  const fetchAllAssignmentsForExport = async (): Promise<FeeAssignment[]> => {
+    const baseParams = {
+      academic_year_id: filterAcademicYear || undefined,
+      class_academic_year_id: filterClassAy === 'all' ? undefined : filterClassAy,
+      per_page: pageSize,
+    };
+
+    return fetchAllPaginatedRows(async (requestedPage) => {
+      const response = (await feeAssignmentsApi.list({
+        ...baseParams,
+        page: requestedPage,
+      })) as {
+        data?: FeeApi.FeeAssignment[];
+        current_page: number;
+        last_page: number;
+      };
+
+      return {
+        rows: (response.data || []).map(mapFeeAssignmentApiToDomain),
+        currentPage: response.current_page,
+        lastPage: response.last_page,
+      };
+    });
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
@@ -470,6 +499,7 @@ export default function FeeAssignmentsPage() {
             ]}
             reportKey="fee_assignments"
             title={t('fees.assignments') || 'Fee Assignments'}
+            getExportData={fetchAllAssignmentsForExport}
             transformData={(data) =>
               data.map((assignment) => ({
                 studentName: (assignment as any).student?.full_name || assignment.studentId || 'Unknown',

@@ -949,7 +949,10 @@ class FileStorageService
         $path = $this->buildPath($organizationId, $schoolId, self::PATH_REPORTS, $reportType);
         $fullPath = $path.'/'.$filename;
 
-        Storage::disk(self::DISK_PRIVATE)->put($fullPath, $content);
+        $stored = Storage::disk(self::DISK_PRIVATE)->put($fullPath, $content);
+        if ($stored !== true || !Storage::disk(self::DISK_PRIVATE)->exists($fullPath)) {
+            throw new \RuntimeException("Failed to store report file at path: {$fullPath}");
+        }
 
         // Update storage usage after successful storage
         $this->updateStorageUsageForContent($content, $organizationId);

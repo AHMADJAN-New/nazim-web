@@ -30,6 +30,7 @@ import { Suspense } from 'react';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { feeReportsApi } from '@/lib/api/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -52,6 +53,7 @@ import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYea
 import { useFeeReportDashboard, useStudentFees, useFeeDefaulters, useFeeAssignments, useFeePayments, useFeeStructures, useFeeExceptions } from '@/hooks/useFees';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
+import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 
@@ -197,6 +199,68 @@ export default function FeeReportsPage() {
     }));
   }, [dashboard]);
 
+  const fetchAllStudentFeesForExport = async () => {
+    const baseParams = {
+      academic_year_id: filterAcademicYear,
+      class_academic_year_id: filterClassAy,
+      status: filterStatus,
+      search: searchQuery || undefined,
+      per_page: 100,
+    };
+
+    return fetchAllPaginatedRows(async (requestedPage) => {
+      const response = (await feeReportsApi.studentFees({
+        ...baseParams,
+        page: requestedPage,
+      })) as {
+        data?: Array<{
+          id: string;
+          full_name?: string;
+          father_name?: string;
+          registration_number: string;
+          class_name?: string;
+          class_academic_year_id: string;
+          assignment_count: number;
+          total_assigned: number | string;
+          total_paid: number | string;
+          total_remaining: number | string;
+          overall_status: 'paid' | 'partial' | 'pending' | 'overdue';
+        }>;
+        pagination: {
+          current_page: number;
+          last_page: number;
+        };
+      };
+
+      const rows = (response.data || []).map((item) => {
+        const nameParts = (item.full_name || '').trim().split(/\s+/);
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        return {
+          id: item.id,
+          firstName,
+          lastName,
+          fatherName: item.father_name || '',
+          registrationNumber: item.registration_number,
+          className: item.class_name || 'Unknown',
+          classAcademicYearId: item.class_academic_year_id,
+          assignmentCount: item.assignment_count,
+          totalAssigned: Number(item.total_assigned),
+          totalPaid: Number(item.total_paid),
+          totalRemaining: Number(item.total_remaining),
+          overallStatus: item.overall_status,
+        };
+      });
+
+      return {
+        rows,
+        currentPage: response.pagination.current_page,
+        lastPage: response.pagination.last_page,
+      };
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       paid: 'default',
@@ -258,6 +322,7 @@ export default function FeeReportsPage() {
                 overallStatus: student.overallStatus.charAt(0).toUpperCase() + student.overallStatus.slice(1),
               }))
             }
+            getExportData={fetchAllStudentFeesForExport}
             buildFiltersSummary={() => {
               const parts: string[] = [];
               const ay = academicYears.find(a => a.id === filterAcademicYear);

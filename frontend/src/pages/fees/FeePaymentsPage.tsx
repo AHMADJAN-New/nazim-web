@@ -8,6 +8,7 @@ import { FeePaymentForm } from '@/components/fees/FeePaymentForm';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { feePaymentsApi } from '@/lib/api/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +26,9 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { showToast } from '@/lib/toast';
+import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
+import { mapFeePaymentApiToDomain } from '@/mappers/feeMapper';
+import type * as FeeApi from '@/types/api/fees';
 import type { FeePaymentFormData } from '@/lib/validations/fees';
 import type { Student } from '@/types/domain/student';
 import type { FeePayment } from '@/types/domain/fees';
@@ -140,6 +144,33 @@ export default function FeePaymentsPage() {
     const allowedAssignmentIds = new Set(assignments.map((a) => a.id));
     return payments.filter((p) => allowedAssignmentIds.has(p.feeAssignmentId));
   }, [payments, assignments, filterAcademicYear, filterClassAy]);
+
+  const fetchAllFilteredPaymentsForExport = async (): Promise<FeePayment[]> => {
+    const allowedAssignmentIds = new Set(assignments.map((assignment) => assignment.id));
+
+    const allPayments = await fetchAllPaginatedRows(async (requestedPage) => {
+      const response = (await feePaymentsApi.list({
+        page: requestedPage,
+        per_page: 100,
+      })) as {
+        data?: FeeApi.FeePayment[];
+        current_page: number;
+        last_page: number;
+      };
+
+      return {
+        rows: (response.data || []).map(mapFeePaymentApiToDomain),
+        currentPage: response.current_page,
+        lastPage: response.last_page,
+      };
+    });
+
+    if (!filterAcademicYear && !filterClassAy) {
+      return allPayments;
+    }
+
+    return allPayments.filter((payment) => allowedAssignmentIds.has(payment.feeAssignmentId));
+  };
 
   const assignmentOptions = useMemo(
     () =>
@@ -287,6 +318,7 @@ export default function FeePaymentsPage() {
                 };
               })
             }
+            getExportData={fetchAllFilteredPaymentsForExport}
             buildFiltersSummary={() => {
               const parts: string[] = [];
               const ay = academicYears.find((a) => a.id === filterAcademicYear);
@@ -541,7 +573,7 @@ export default function FeePaymentsPage() {
                     getRowCount: () => pagination.total,
                     getRowModel: () => ({ rows: [] }),
                     options: { data: payments },
-                  } as any}
+                  } as never}
                   paginationMeta={pagination}
                   onPageChange={setPage}
                   onPageSizeChange={(newPageSize) => {

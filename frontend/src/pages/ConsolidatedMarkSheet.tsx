@@ -25,6 +25,7 @@ import { useProfile } from '@/hooks/useProfiles';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { MultiSectionReportExportButtons } from '@/components/reports/MultiSectionReportExportButtons';
 import type { MultiSectionReportSection } from '@/components/reports/MultiSectionReportExportButtons';
+import { fetchAllConsolidatedMarkSheetRows } from '@/lib/reporting/consolidatedMarkSheetExport';
 
 // Report data type
 type ReportData = {
@@ -86,6 +87,8 @@ type ReportData = {
     incomplete_count: number;
   };
 };
+
+const EXPORT_PAGE_SIZE = 200;
 
 // Component for individual class report in multiple classes tab
 function ClassReportTab({ examClass, examId, academicYear, selectedExam }: { examClass: any; examId: string; academicYear?: any; selectedExam?: any }) {
@@ -638,8 +641,12 @@ export default function ConsolidatedMarkSheet() {
 
     for (const examClass of allExamClasses) {
       try {
-        const response = await examsApi.consolidatedClassReport(selectedExamId, examClass.id);
-        const classReport = ((response as { data?: unknown }).data ?? response) as ReportData;
+        const classReport = (await fetchAllConsolidatedMarkSheetRows(async (requestedPage) =>
+          examsApi.consolidatedClassReport(selectedExamId, examClass.id, {
+            page: requestedPage,
+            per_page: EXPORT_PAGE_SIZE,
+          })
+        )) as ReportData;
 
         if (!classReport?.students || classReport.students.length === 0) continue;
 
@@ -661,6 +668,19 @@ export default function ConsolidatedMarkSheet() {
     }
 
     return sections;
+  };
+
+  const getAllStudentsForCurrentClassExport = async () => {
+    if (!selectedExamId || !selectedClassId) return [];
+
+    const fullReport = (await fetchAllConsolidatedMarkSheetRows(async (requestedPage) =>
+      examsApi.consolidatedClassReport(selectedExamId, selectedClassId, {
+        page: requestedPage,
+        per_page: EXPORT_PAGE_SIZE,
+      })
+    )) as ReportData;
+
+    return fullReport.students ?? [];
   };
 
   if (!canViewReports) {
@@ -745,14 +765,22 @@ export default function ConsolidatedMarkSheet() {
                   return parts.join(' | ');
                 }}
                 buildSections={async () => {
-                  if (!report?.students || report.students.length === 0) return [];
-                  const className = report?.class?.name || classLabel || (t('search.class') || 'Class');
+                  if (!selectedExamId || !selectedClassId) return [];
+                  const fullReport = (await fetchAllConsolidatedMarkSheetRows(async (requestedPage) =>
+                    examsApi.consolidatedClassReport(selectedExamId, selectedClassId, {
+                      page: requestedPage,
+                      per_page: EXPORT_PAGE_SIZE,
+                    })
+                  )) as ReportData;
+
+                  if (!fullReport.students || fullReport.students.length === 0) return [];
+                  const className = fullReport.class?.name || classLabel || (t('search.class') || 'Class');
                   return [
                     {
                       title: className,
                       sheetName: className,
-                      columns: getExportColumns(report, t),
-                      rows: transformClassReportData(report, t),
+                      columns: getExportColumns(fullReport, t),
+                      rows: transformClassReportData(fullReport, t),
                     },
                   ];
                 }}
@@ -760,6 +788,7 @@ export default function ConsolidatedMarkSheet() {
               {report && report.students && report.students.length > 0 && (
                 <ReportExportButtons
                   data={report.students}
+                  getExportData={getAllStudentsForCurrentClassExport}
                   columns={[
                     { key: 'rank', label: t('examReports.rank') || 'Rank' },
                     { key: 'rollNumber', label: t('students.rollNumber') || 'Roll Number' },

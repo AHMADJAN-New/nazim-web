@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { dmsApi } from "@/lib/api/client";
 import { formatDate, getShortDescription, dateToLocalYYYYMMDD, parseLocalDate } from "@/lib/dateUtils";
+import { fetchAllArchiveDocumentsForExport } from "@/lib/reporting/dmsArchiveExport";
 import type { IncomingDocument, OutgoingDocument } from "@/types/dms";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -243,34 +244,72 @@ export default function ArchiveSearch() {
   const totalIncoming = incomingMeta?.total || 0;
   const totalOutgoing = outgoingMeta?.total || 0;
 
+  const mapIncomingDocForExport = (doc: IncomingDocument) => ({
+    document_number: doc.full_indoc_number || '',
+    subject: doc.subject || '',
+    sender_name: doc.sender_name || '',
+    sender_org: doc.sender_org || '',
+    received_date: doc.received_date || '',
+    status: doc.status || '',
+    security_level: doc.security_level_key || '',
+    external_doc_number: doc.external_doc_number || '',
+    pages_count: doc.pages_count || 0,
+  });
+
+  const mapOutgoingDocForExport = (doc: OutgoingDocument) => ({
+    document_number: doc.full_outdoc_number || '',
+    subject: doc.subject || '',
+    recipient_type: doc.recipient_type || '',
+    issue_date: doc.issue_date || '',
+    status: doc.status || '',
+    security_level: doc.security_level_key || '',
+    external_doc_number: doc.external_doc_number || '',
+    pages_count: doc.pages_count || 0,
+  });
+
   // Prepare data for export - Incoming Documents
   const incomingExportData = useMemo(() => {
-    return incomingDocs.map((doc: IncomingDocument) => ({
-      document_number: doc.full_indoc_number || '',
-      subject: doc.subject || '',
-      sender_name: doc.sender_name || '',
-      sender_org: doc.sender_org || '',
-      received_date: doc.received_date || '',
-      status: doc.status || '',
-      security_level: doc.security_level_key || '',
-      external_doc_number: doc.external_doc_number || '',
-      pages_count: doc.pages_count || 0,
-    }));
+    return incomingDocs.map((doc: IncomingDocument) => mapIncomingDocForExport(doc));
   }, [incomingDocs]);
 
   // Prepare data for export - Outgoing Documents
   const outgoingExportData = useMemo(() => {
-    return outgoingDocs.map((doc: OutgoingDocument) => ({
-      document_number: doc.full_outdoc_number || '',
-      subject: doc.subject || '',
-      recipient_type: doc.recipient_type || '',
-      issue_date: doc.issue_date || '',
-      status: doc.status || '',
-      security_level: doc.security_level_key || '',
-      external_doc_number: doc.external_doc_number || '',
-      pages_count: doc.pages_count || 0,
-    }));
+    return outgoingDocs.map((doc: OutgoingDocument) => mapOutgoingDocForExport(doc));
   }, [outgoingDocs]);
+
+  const getIncomingExportData = async () => {
+    const allIncomingDocs = await fetchAllArchiveDocumentsForExport(
+      async (requestedPage) =>
+        (await dmsApi.archive({
+          ...apiParams,
+          incoming_page: requestedPage,
+          outgoing_page: 1,
+        })) as {
+          incoming?: { data?: IncomingDocument[]; meta?: { current_page: number; last_page: number } };
+          outgoing?: { data?: OutgoingDocument[]; meta?: { current_page: number; last_page: number } };
+        },
+      'incoming'
+    );
+
+    return (allIncomingDocs as IncomingDocument[]).map((doc) => mapIncomingDocForExport(doc));
+  };
+
+  const getOutgoingExportData = async () => {
+    const allOutgoingDocs = await fetchAllArchiveDocumentsForExport(
+      async (requestedPage) =>
+        (await dmsApi.archive({
+          ...apiParams,
+          incoming_page: 1,
+          outgoing_page: requestedPage,
+        })) as {
+          incoming?: { data?: IncomingDocument[]; meta?: { current_page: number; last_page: number } };
+          outgoing?: { data?: OutgoingDocument[]; meta?: { current_page: number; last_page: number } };
+        },
+      'outgoing'
+    );
+
+    return (allOutgoingDocs as OutgoingDocument[]).map((doc) => mapOutgoingDocForExport(doc));
+  };
 
   // Build filters summary
   const buildFiltersSummary = () => {
@@ -556,6 +595,7 @@ export default function ArchiveSearch() {
                       ]}
                       reportKey="dms_archive_incoming"
                       title="DMS Archive - Incoming Documents"
+                      getExportData={getIncomingExportData}
                       transformData={(data) => data}
                       buildFiltersSummary={buildFiltersSummary}
                       templateType="dms"
@@ -578,6 +618,7 @@ export default function ArchiveSearch() {
                       ]}
                       reportKey="dms_archive_outgoing"
                       title="DMS Archive - Outgoing Documents"
+                      getExportData={getOutgoingExportData}
                       transformData={(data) => data}
                       buildFiltersSummary={buildFiltersSummary}
                       templateType="dms"

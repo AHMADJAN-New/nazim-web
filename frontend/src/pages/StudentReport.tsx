@@ -45,13 +45,16 @@ import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
+import { studentsApi } from '@/lib/api/client';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 import {
   filterSelectedReportColumns,
   getDefaultReportColumnKeys,
   normalizeSelectedReportColumnKeys,
 } from '@/lib/reporting/reportColumnSelection';
+import { mapStudentApiToDomain } from '@/mappers/studentMapper';
 import type { Student } from '@/types/domain/student';
+import type { Student as StudentApiModel } from '@/types/api/student';
 
 export const studentCoreExportColumnKeys = [
   'admission_no',
@@ -164,6 +167,24 @@ const StudentReport = () => {
   }, [studentsData]);
 
   const filteredStudents = students;
+
+  const fetchAllFilteredStudentsForExport = async (): Promise<Student[]> => {
+    const response = await studentsApi.list({
+      organization_id: orgIdForQuery || undefined,
+      school_id: profile?.default_school_id || undefined,
+      search: studentFilters.search,
+      student_status: studentFilters.student_status,
+      gender: studentFilters.gender,
+      academic_year_id: studentFilters.academic_year_id,
+      class_id: studentFilters.class_id,
+    });
+
+    const apiStudents = Array.isArray(response)
+      ? (response as StudentApiModel[])
+      : (((response as { data?: StudentApiModel[] })?.data ?? []) as StudentApiModel[]);
+
+    return apiStudents.map(mapStudentApiToDomain);
+  };
 
   useEffect(() => {
     setClassFilter('all');
@@ -466,6 +487,7 @@ const StudentReport = () => {
               columns={selectedExportColumns}
               reportKey="student_list"
               title={t('nav.studentReports') || 'Students Report'}
+              getExportData={fetchAllFilteredStudentsForExport}
               transformData={transformStudentData}
               buildFiltersSummary={buildFiltersSummary}
               schoolId={currentSchoolId}

@@ -3,7 +3,7 @@
  */
 
 import { Plus, Pencil, Trash2, TrendingDown, Search, Filter, Calendar, X } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
@@ -47,6 +47,7 @@ import {
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useCurrencies } from '@/hooks/useCurrencies';
+import { expenseEntriesApi } from '@/lib/api/client';
 import {
     useExpenseEntries,
     useCreateExpenseEntry,
@@ -59,8 +60,11 @@ import {
     type ExpenseEntryFormData,
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
+import { mapExpenseEntryApiToDomain } from '@/mappers/financeMapper';
+import { fetchAllFinanceEntriesForExport } from '@/lib/reporting/financeEntriesExport';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
+import type * as FinanceApi from '@/types/api/finance';
 
 export default function ExpenseEntries() {
     const { t } = useLanguage();
@@ -99,6 +103,23 @@ export default function ExpenseEntries() {
         paymentMethod: 'cash',
         status: 'approved',
     });
+
+    const matchesExpenseEntryFilters = useCallback((entry: ExpenseEntry) => {
+        const matchesSearch = searchTerm === '' ||
+            entry.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            entry.referenceNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            entry.expenseCategory?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            entry.paidTo?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = filterCategory === 'all' || entry.expenseCategoryId === filterCategory;
+        const matchesAccount = filterAccount === 'all' || entry.accountId === filterAccount;
+        const matchesStatus = filterStatus === 'all' || entry.status === filterStatus;
+
+        const entryDate = entry.date instanceof Date ? entry.date : parseLocalDate(entry.date);
+        const matchesDateFrom = !dateFrom || entryDate >= parseLocalDate(dateFrom);
+        const matchesDateTo = !dateTo || entryDate <= parseLocalDate(dateTo);
+
+        return matchesSearch && matchesCategory && matchesAccount && matchesStatus && matchesDateFrom && matchesDateTo;
+    }, [searchTerm, filterCategory, filterAccount, filterStatus, dateFrom, dateTo]);
 
     const resetForm = () => {
         setFormData({
@@ -153,24 +174,29 @@ export default function ExpenseEntries() {
 
     const filteredEntries = useMemo(() => {
         if (!entries) return [];
-        return entries.filter((entry) => {
-            const matchesSearch = searchTerm === '' ||
-                entry.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                entry.referenceNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                entry.expenseCategory?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                entry.paidTo?.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesCategory = filterCategory === 'all' || entry.expenseCategoryId === filterCategory;
-            const matchesAccount = filterAccount === 'all' || entry.accountId === filterAccount;
-            const matchesStatus = filterStatus === 'all' || entry.status === filterStatus;
+        return entries.filter(matchesExpenseEntryFilters);
+    }, [entries, matchesExpenseEntryFilters]);
 
-            // Date range filter
-            const entryDate = entry.date instanceof Date ? entry.date : parseLocalDate(entry.date);
-            const matchesDateFrom = !dateFrom || entryDate >= parseLocalDate(dateFrom);
-            const matchesDateTo = !dateTo || entryDate <= parseLocalDate(dateTo);
-
-            return matchesSearch && matchesCategory && matchesAccount && matchesStatus && matchesDateFrom && matchesDateTo;
+    const getExportData = async (): Promise<ExpenseEntry[]> => {
+        const allExpenseEntries = await fetchAllFinanceEntriesForExport<FinanceApi.ExpenseEntry>(async (requestedPage) => {
+            return (await expenseEntriesApi.list({
+                account_id: filterAccount !== 'all' ? filterAccount : undefined,
+                expense_category_id: filterCategory !== 'all' ? filterCategory : undefined,
+                status: filterStatus !== 'all' ? filterStatus : undefined,
+                date_from: dateFrom || undefined,
+                date_to: dateTo || undefined,
+                search: searchTerm || undefined,
+                page: requestedPage,
+                per_page: 200,
+            })) as {
+                data?: FinanceApi.ExpenseEntry[];
+                current_page: number;
+                last_page: number;
+            };
         });
-    }, [entries, searchTerm, filterCategory, filterAccount, filterStatus, dateFrom, dateTo]);
+
+        return allExpenseEntries.map(mapExpenseEntryApiToDomain).filter(matchesExpenseEntryFilters);
+    };
 
     const clearFilters = () => {
         setSearchTerm('');
@@ -441,6 +467,7 @@ export default function ExpenseEntries() {
                 rightSlot={
                     <ReportExportButtons
                         data={filteredEntries}
+                        getExportData={getExportData}
                         columns={[
                             { key: 'date', label: t('events.date'), align: 'left' },
                             { key: 'categoryName', label: t('assets.category'), align: 'left' },

@@ -3422,8 +3422,15 @@ export const examsApi = {
   },
 
   // New Report Methods
-  consolidatedClassReport: async (examId: string, classId: string) => {
-    return apiClient.get(`/exams/${examId}/reports/classes/${classId}/consolidated`);
+  consolidatedClassReport: async (
+    examId: string,
+    classId: string,
+    params?: {
+      page?: number;
+      per_page?: number;
+    }
+  ) => {
+    return apiClient.get(`/exams/${examId}/reports/classes/${classId}/consolidated`, params);
   },
 
   classSubjectMarkSheet: async (
@@ -3435,6 +3442,8 @@ export const examsApi = {
       sort_order?: 'asc' | 'desc';
       show_secret_number?: boolean;
       show_rank?: boolean;
+      page?: number;
+      per_page?: number;
     }
   ) => {
     return apiClient.get(`/exams/${examId}/reports/classes/${classId}/subjects/${subjectId}`, params);
@@ -4052,6 +4061,8 @@ export const feeStructuresApi = {
     class_id?: string;
     class_academic_year_id?: string;
     is_active?: boolean;
+    page?: number;
+    per_page?: number;
   }) => apiClient.get('/fees/structures', params),
   get: async (id: string) => apiClient.get(`/fees/structures/${id}`),
   create: async (data: any) => apiClient.post('/fees/structures', data),
@@ -4067,6 +4078,8 @@ export const feeAssignmentsApi = {
     academic_year_id?: string;
     class_academic_year_id?: string;
     status?: string;
+    page?: number;
+    per_page?: number;
   }) => apiClient.get('/fees/assignments', params),
   create: async (data: any) => apiClient.post('/fees/assignments', data),
   update: async (id: string, data: any) => apiClient.put(`/fees/assignments/${id}`, data),
@@ -4079,6 +4092,8 @@ export const feePaymentsApi = {
     student_id?: string;
     payment_date_from?: string;
     payment_date_to?: string;
+    page?: number;
+    per_page?: number;
   }) => apiClient.get('/fees/payments', params),
   create: async (data: any) => apiClient.post('/fees/payments', data),
 };

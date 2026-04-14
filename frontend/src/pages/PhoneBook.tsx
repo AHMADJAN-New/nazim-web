@@ -19,6 +19,8 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { usePagination } from '@/hooks/usePagination';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { usePhoneBook } from '@/hooks/usePhoneBook';
+import { phoneBookApi } from '@/lib/api/client';
+import { fetchAllPhoneBookEntriesForExport } from '@/lib/reporting/phoneBookExport';
 import type { PhoneBookEntry } from '@/types/domain/phoneBook';
 
 type PhoneBookCategory = 'all' | 'students' | 'staff' | 'donors' | 'guests' | 'others';
@@ -294,6 +296,25 @@ export function PhoneBook() {
     return parts.join(' | ');
   };
 
+  const getExportData = async (): Promise<PhoneBookEntry[]> => {
+    if (!profile?.organization_id || !profile.default_school_id) {
+      return [];
+    }
+
+    return fetchAllPhoneBookEntriesForExport(async (requestedPage) => {
+      return (await phoneBookApi.list({
+        category: effectiveActiveTab,
+        search: search.trim() || undefined,
+        page: requestedPage,
+        per_page: pageSize,
+      })) as {
+        data?: PhoneBookEntry[];
+        current_page: number;
+        last_page: number;
+      };
+    });
+  };
+
   // Export columns
   const exportColumns = useMemo(() => [
     { key: 'name', label: t('events.name') || 'Name', width: 30 },
@@ -330,6 +351,7 @@ export function PhoneBook() {
             columns={exportColumns}
             reportKey="phonebook"
             title={t('nav.phoneBook') || 'Phone Book'}
+            getExportData={getExportData}
             transformData={transformDataForExport}
             buildFiltersSummary={buildFiltersSummary}
             schoolId={selectedSchoolId}

@@ -14,6 +14,18 @@ import { useHasFeature } from '@/hooks/useSubscription';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 import { showToast } from '@/lib/toast';
 
+export async function resolveExportRows<T extends Record<string, any>>(
+  data: T[],
+  getExportData?: () => Promise<T[]> | T[]
+): Promise<T[]> {
+  if (!getExportData) {
+    return data;
+  }
+
+  const exportSource = await getExportData();
+  return Array.isArray(exportSource) ? exportSource : data;
+}
+
 export interface ReportExportButtonsProps<T extends Record<string, any>> {
   /** The data to export (filtered data matching on-screen filters) */
   data: T[];
@@ -25,6 +37,8 @@ export interface ReportExportButtonsProps<T extends Record<string, any>> {
   title: string;
   /** Transform function to convert domain data to report row format */
   transformData: (data: T[]) => Record<string, any>[];
+  /** Optional callback to fetch complete filtered data for export (e.g., all pages) */
+  getExportData?: () => Promise<T[]> | T[];
   /** Optional function to build filters summary string */
   buildFiltersSummary?: () => string;
   /** School ID (optional, will use profile default if not provided) */
@@ -74,6 +88,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
   reportKey,
   title,
   transformData,
+  getExportData,
   buildFiltersSummary,
   schoolId,
   templateType,
@@ -110,7 +125,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
     generateReport,
     status,
     progress,
-    downloadUrl,
+    fileName,
     isGenerating,
     error: reportError,
     downloadReport,
@@ -118,6 +133,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
   } = useServerReport();
   
   const [showReportProgress, setShowReportProgress] = useState(false);
+  const [isPreparingExportData, setIsPreparingExportData] = useState(false);
 
   // Find default template for the report type (only if report_templates feature is enabled)
   const defaultTemplate = useMemo(() => {
@@ -157,7 +173,7 @@ export function ReportExportButtons<T extends Record<string, any>>({
       console.log(`[ReportExportButtons] Generating ${reportType.toUpperCase()} report:`, {
         reportKey,
         schoolId: school.id,
-        schoolName: school.school_name,
+        schoolName: school.schoolName,
         brandingId: school.id,
         hasReportTemplatesFeature,
         hasTemplate: !!defaultTemplate,
@@ -167,8 +183,20 @@ export function ReportExportButtons<T extends Record<string, any>>({
     }
 
     try {
+      setIsPreparingExportData(true);
+
+      // Fetch complete filtered data when supported by caller.
+      const resolvedExportSource = await resolveExportRows(data, getExportData);
+
+      if (!resolvedExportSource.length) {
+        showToast.error(
+          errorNoData || t('events.exportErrorNoData') || 'No data to export'
+        );
+        return;
+      }
+
       // Transform data for export
-      const reportData = transformData(data);
+      const reportData = transformData(resolvedExportSource);
 
       // Show progress dialog
       setShowReportProgress(true);
@@ -235,6 +263,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
         error instanceof Error ? error.message : errorMessage
       );
       setShowReportProgress(false);
+    } finally {
+      setIsPreparingExportData(false);
     }
   };
 
@@ -242,7 +272,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
   const handleExportExcel = () => handleExport('excel');
 
   // Determine if buttons should be disabled
-  const isDisabled = disabled || !data || data.length === 0 || !school || isGenerating;
+  const isDisabled =
+    disabled || !data || data.length === 0 || !school || isGenerating || isPreparingExportData;
 
   const excelLabel = t('events.exportExcel') || 'Export Excel';
   const pdfLabel = t('events.exportPdf') || 'Export PDF';
@@ -298,9 +329,10 @@ export function ReportExportButtons<T extends Record<string, any>>({
         onOpenChange={setShowReportProgress}
         status={status}
         progress={progress}
-        downloadUrl={downloadUrl}
+        fileName={fileName}
         error={reportError}
         onDownload={downloadReport}
+        onClose={resetReport}
       />
     </TooltipProvider>
   );
