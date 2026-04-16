@@ -255,6 +255,9 @@ class HostelController extends Controller
             if (! $admission->room_id) {
                 continue;
             }
+            if (! $admission->is_boarder) {
+                continue;
+            }
             if (! isset($occupancyByRoom[$admission->room_id])) {
                 $occupancyByRoom[$admission->room_id] = [];
             }

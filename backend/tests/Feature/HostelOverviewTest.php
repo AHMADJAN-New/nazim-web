@@ -376,4 +376,83 @@ class HostelOverviewTest extends TestCase
         $this->assertSame(0, $json['summary']['total_rooms'] ?? -1);
         $this->assertSame([], $json['rooms'] ?? null);
     }
+
+    #[Test]
+    public function hostel_overview_does_not_count_day_scholars_as_room_occupants_even_if_room_id_is_set(): void
+    {
+        $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+
+        $user = $this->createUser(
+            [],
+            [
+                'organization_id' => $organization->id,
+                'default_school_id' => $school->id,
+                'schools_access_all' => true,
+            ],
+            $organization,
+            $school,
+            true,
+            ['withRole' => false]
+        );
+
+        $this->grantHostelPermissions($organization, $user);
+        $this->enableHostelAddon($organization->id);
+
+        $building = Building::create([
+            'building_name' => 'Hostel Day Scholar Block',
+            'school_id' => $school->id,
+        ]);
+
+        $room = Room::create([
+            'room_number' => 'DS-1',
+            'building_id' => $building->id,
+            'school_id' => $school->id,
+        ]);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        // This admission is a day scholar but has room_id set (historical/bad data).
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'admission_date' => now()->toDateString(),
+            'admission_year' => (string) now()->year,
+            'enrollment_status' => 'admitted',
+            'is_boarder' => false,
+            'room_id' => $room->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/hostel/overview');
+
+        if ($response->status() === 402) {
+            $this->markTestSkipped('Hostel feature not available on subscription in this test environment.');
+        }
+
+        $response->assertOk();
+        $json = $response->json();
+
+        $roomPayload = collect($json['rooms'] ?? [])->firstWhere('id', $room->id);
+        $this->assertIsArray($roomPayload);
+        $this->assertSame([], $roomPayload['occupants'] ?? []);
+
+        $this->assertSame(0, $json['summary']['occupied_rooms'] ?? -1);
+        $this->assertSame(0, $json['summary']['total_students_in_rooms'] ?? -1);
+    }
 }

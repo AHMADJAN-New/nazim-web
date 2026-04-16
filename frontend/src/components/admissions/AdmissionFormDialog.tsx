@@ -147,7 +147,7 @@ export function AdmissionFormDialog({
     defaultValues: {
       enrollment_status: 'admitted',
       is_boarder: false,
-      admission_year: new Date().getFullYear().toString(),
+      admission_year: undefined,
     },
     mode: 'onSubmit',
   });
@@ -333,13 +333,42 @@ export function AdmissionFormDialog({
       reset({
         enrollment_status: 'admitted',
         is_boarder: false,
-        admission_year: new Date().getFullYear().toString(),
+        admission_year: undefined,
       });
       setSelectedAcademicYear(undefined);
       setTab('basic');
       setQuickMode(true);
     }
   }, [admission, isEdit, reset]);
+
+  const resolveCurrentAcademicYearName = () => {
+    if (!academicYears || academicYears.length === 0) return undefined;
+
+    const byFlag = academicYears.find((y) => y.isCurrent);
+    if (byFlag?.name) return byFlag.name;
+
+    const today = new Date();
+    const byRange = academicYears.find((y) => y.startDate <= today && today <= y.endDate);
+    if (byRange?.name) return byRange.name;
+
+    // Fallback: first academic year (UI will still allow changing it)
+    return academicYears[0]?.name;
+  };
+
+  // Default admission year ("د داخلې کال") from current academic year when creating.
+  useEffect(() => {
+    if (!open || isEdit) return;
+
+    const currentYearName = resolveCurrentAcademicYearName();
+    if (!currentYearName) return;
+
+    // Only set if user hasn't typed something already.
+    const existing = watch('admission_year');
+    if (!existing) {
+      setValue('admission_year', currentYearName, { shouldValidate: false, shouldDirty: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isEdit, academicYears, setValue]);
 
   // Keyboard shortcuts (Esc close, Ctrl/Cmd+Enter submit)
   useEffect(() => {
@@ -451,12 +480,21 @@ export function AdmissionFormDialog({
     if (cay) {
       payload.classId = cay.classId;
       payload.academicYearId = cay.academicYearId;
-      if (!payload.roomId && cay.roomId) payload.roomId = cay.roomId;
+      // IMPORTANT: student_admissions.room_id represents HOSTEL room only (boarders).
+      // Some class sections may also have a room; we must not persist that here for day scholars.
+      if (payload.isBoarder && !payload.roomId && cay.roomId) {
+        payload.roomId = cay.roomId;
+      }
     } else {
       // If user explicitly cleared fields, keep null
       if (!data.class_academic_year_id) {
         if (data.room_id === '') payload.roomId = null;
       }
+    }
+
+    // Defense-in-depth: day scholars must never carry hostel room_id.
+    if (!payload.isBoarder) {
+      payload.roomId = null;
     }
 
     if (admission && isEdit) {

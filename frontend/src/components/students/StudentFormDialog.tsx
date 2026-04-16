@@ -37,6 +37,8 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudentAutocomplete } from '@/hooks/useStudentAutocomplete';
 
+import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useClassAcademicYears } from '@/hooks/useClasses';
 
 import { useStudentDuplicateCheck } from '@/hooks/useStudentDuplicateCheck';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -93,7 +95,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
             age: undefined,
             admission_year: '',
             applying_grade: '',
-            preferred_language: 'Dari',
+            preferred_language: 'Pashto',
             nationality: 'Afghan',
             previous_school: '',
             orig_province: '',
@@ -130,6 +132,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
     const hasStudentsPermission = hasCreatePermission || hasUpdatePermission;
     const orgIdForQuery = profile?.organization_id;
     const { data: schools } = useSchools(orgIdForQuery);
+    const { data: academicYears = [] } = useAcademicYears(orgIdForQuery);
+    const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>(undefined);
+    const { data: classAcademicYears = [] } = useClassAcademicYears(selectedAcademicYearId, orgIdForQuery);
     const formValues = watch();
     const watchedBirthDate = watch('birth_date');
     const [activeTab, setActiveTab] = useState('admission');
@@ -180,7 +185,8 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                 age: student.age ?? undefined,
                 admission_year: student.admissionYear || '',
                 applying_grade: student.applyingGrade || '',
-                preferred_language: student.preferredLanguage || 'Dari',
+                // Edit mode: never auto-default; keep stored value to avoid overwriting old data.
+                preferred_language: student.preferredLanguage || '',
                 nationality: student.nationality || 'Afghan',
                 previous_school: student.previousSchool || '',
                 orig_province: student.origProvince || '',
@@ -200,7 +206,14 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                 zamin_tazkira: student.zaminTazkira || '',
                 zamin_address: student.zaminAddress || '',
                 admission_fee_status: student.admissionFeeStatus || 'pending',
-                student_status: student.status || 'active',
+                student_status: (
+                    student.status === 'applied' ||
+                    student.status === 'admitted' ||
+                    student.status === 'active' ||
+                    student.status === 'withdrawn'
+                )
+                    ? student.status
+                    : 'active',
                 is_orphan: student.isOrphan ?? false,
                 disability_status: student.disabilityStatus || '',
                 emergency_contact_name: student.emergencyContactName || student.healthInfo?.emergencyContact?.name || '',
@@ -225,7 +238,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                 age: undefined,
                 admission_year: '',
                 applying_grade: '',
-                preferred_language: 'Dari',
+                preferred_language: 'Pashto',
                 nationality: 'Afghan',
                 previous_school: '',
                 orig_province: '',
@@ -255,6 +268,63 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
             });
         }
     }, [open, student, reset, schools]);
+
+    const resolveCurrentAcademicYear = () => {
+        if (!academicYears || academicYears.length === 0) {
+            return null;
+        }
+
+        const byFlag = academicYears.find((y) => y.isCurrent);
+        if (byFlag) {
+            return byFlag;
+        }
+
+        const today = new Date();
+        const byRange = academicYears.find((y) => y.startDate <= today && today <= y.endDate);
+        if (byRange) {
+            return byRange;
+        }
+
+        return academicYears[0] ?? null;
+    };
+
+    // Create mode defaults: current academic year + its classes.
+    useEffect(() => {
+        if (!open || isEdit) {
+            return;
+        }
+
+        const current = resolveCurrentAcademicYear();
+        if (!current) {
+            return;
+        }
+
+        setSelectedAcademicYearId(current.id);
+
+        const existingAdmissionYear = watch('admission_year');
+        if (!existingAdmissionYear) {
+            setValue('admission_year', current.name, { shouldValidate: false, shouldDirty: false });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, isEdit, academicYears, setValue]);
+
+    // Edit mode: infer academic year (for loading class sections) from stored admission_year name.
+    useEffect(() => {
+        if (!open || !isEdit) {
+            return;
+        }
+
+        const admissionYearName = watch('admission_year');
+        if (!admissionYearName) {
+            return;
+        }
+
+        const match = academicYears.find((y) => y.name === admissionYearName);
+        if (match) {
+            setSelectedAcademicYearId(match.id);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, isEdit, academicYears]);
 
     const onSubmit = async (values: StudentFormValues) => {
         // Check subscription limits for new students
@@ -423,7 +493,7 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                     <SelectContent>
                                                         {schools.map((s) => (
                                                             <SelectItem key={s.id} value={s.id}>
-                                                                {s.school_name}
+                                                                {s.schoolName}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>
@@ -454,11 +524,65 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                     </div>
                                     <div>
                                         <Label>{t('students.applyingGrade') || 'Applying Grade'}</Label>
-                                        <Input placeholder="ابتدائیه" {...register('applying_grade')} />
+                                        <Controller
+                                            control={control}
+                                            name="applying_grade"
+                                            render={({ field }) => (
+                                                <Select value={field.value || ''} onValueChange={field.onChange}>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder={t('students.applyingGrade') || 'Applying Grade'} />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {classAcademicYears.length > 0 ? (
+                                                            classAcademicYears.map((cay) => {
+                                                                const base = cay.class?.name || cay.class?.code || t('search.class') || 'Class';
+                                                                const label = cay.sectionName ? `${base} — ${cay.sectionName}` : base;
+                                                                return (
+                                                                    <SelectItem key={cay.id} value={label}>
+                                                                        {label}
+                                                                    </SelectItem>
+                                                                );
+                                                            })
+                                                        ) : (
+                                                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                                {selectedAcademicYearId
+                                                                    ? (t('admissions.noClassesForYear') || 'No classes available for this academic year')
+                                                                    : (t('admissions.selectAcademicYearFirst') || 'Select academic year first')}
+                                                            </div>
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
                                     </div>
                                     <div>
                                         <Label>{t('students.admissionYear') || 'Admission Year'}</Label>
-                                        <Input placeholder="1405" {...register('admission_year')} />
+                                        <Controller
+                                            control={control}
+                                            name="admission_year"
+                                            render={({ field }) => (
+                                                <Select
+                                                    value={field.value || ''}
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value);
+                                                        const match = academicYears.find((y) => y.name === value);
+                                                        setSelectedAcademicYearId(match?.id);
+                                                        setValue('applying_grade', '', { shouldValidate: false, shouldDirty: true });
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder={t('students.admissionYear') || 'Admission Year'} />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {academicYears.map((year) => (
+                                                            <SelectItem key={year.id} value={year.name}>
+                                                                {year.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
                                     </div>
                                 </div>
                             </TabsContent>

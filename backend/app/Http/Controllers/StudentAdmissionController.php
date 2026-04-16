@@ -283,6 +283,11 @@ class StudentAdmissionController extends Controller
         $validated['enrollment_status'] = $validated['enrollment_status'] ?? 'admitted';
         $validated['is_boarder'] = $validated['is_boarder'] ?? false;
 
+        // student_admissions.room_id is HOSTEL room only; day scholars must not have it set.
+        if (empty($validated['is_boarder'])) {
+            $validated['room_id'] = null;
+        }
+
         // school_id is forced by middleware context
 
         $admission = StudentAdmission::create($validated);
@@ -390,6 +395,11 @@ class StudentAdmissionController extends Controller
 
         // Remove organization_id from update data to prevent changes
         unset($validated['organization_id']);
+
+        // student_admissions.room_id is HOSTEL room only; when switching to day scholar, clear it.
+        if (array_key_exists('is_boarder', $validated) && empty($validated['is_boarder'])) {
+            $validated['room_id'] = null;
+        }
 
         // Capture old values for logging
         $oldValues = $admission->only(['class_id', 'academic_year_id', 'enrollment_status', 'admission_date']);

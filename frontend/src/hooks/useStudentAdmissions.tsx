@@ -243,6 +243,7 @@ export const useUpdateStudentAdmission = () => {
       showToast.success('toast.studentAdmissions.updated');
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
+      void queryClient.refetchQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentAdmissions.updateFailed');
