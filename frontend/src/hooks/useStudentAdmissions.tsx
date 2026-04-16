@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
@@ -11,7 +12,55 @@ import type * as StudentAdmissionApi from '@/types/api/studentAdmission';
 import type { StudentAdmission, StudentAdmissionInsert, StudentAdmissionUpdate, AdmissionStatus, AdmissionStats } from '@/types/domain/studentAdmission';
 import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
 
+/** Immediate list refresh: merge API response into every cached student-admissions query (paginated or not). */
+function mergeUpdatedAdmissionIntoStudentAdmissionsCaches(
+  queryClient: QueryClient,
+  updated: StudentAdmission
+): void {
+  queryClient.setQueriesData({ queryKey: ['student-admissions'] }, (old: unknown) => {
+    if (!old) return old;
+    if (Array.isArray(old)) {
+      const list = old as StudentAdmission[];
+      const idx = list.findIndex((a) => a.id === updated.id);
+      if (idx === -1) return old;
+      const next = [...list];
+      next[idx] = updated;
+      return next;
+    }
+    if (typeof old === 'object' && old !== null && 'data' in old) {
+      const pr = old as PaginatedResponse<StudentAdmission>;
+      if (!Array.isArray(pr.data)) return old;
+      const idx = pr.data.findIndex((a) => a.id === updated.id);
+      if (idx === -1) return old;
+      const nextData = [...pr.data];
+      nextData[idx] = updated;
+      return { ...pr, data: nextData };
+    }
+    return old;
+  });
+}
 
+function removeAdmissionFromStudentAdmissionsCaches(queryClient: QueryClient, id: string): void {
+  queryClient.setQueriesData({ queryKey: ['student-admissions'] }, (old: unknown) => {
+    if (!old) return old;
+    if (Array.isArray(old)) {
+      return (old as StudentAdmission[]).filter((a) => a.id !== id);
+    }
+    if (typeof old === 'object' && old !== null && 'data' in old) {
+      const pr = old as PaginatedResponse<StudentAdmission>;
+      if (!Array.isArray(pr.data)) return old;
+      return { ...pr, data: pr.data.filter((a) => a.id !== id) };
+    }
+    return old;
+  });
+}
+
+async function refetchAllStudentAdmissionListQueries(queryClient: QueryClient): Promise<void> {
+  await queryClient.invalidateQueries({
+    queryKey: ['student-admissions'],
+    refetchType: 'all',
+  });
+}
 
 // Re-export domain types for convenience
 export type { StudentAdmission, StudentAdmissionInsert, StudentAdmissionUpdate, AdmissionStatus, AdmissionStats } from '@/types/domain/studentAdmission';
@@ -211,11 +260,12 @@ export const useCreateStudentAdmission = () => {
       // Map API → Domain
       return mapStudentAdmissionApiToDomain(apiAdmission as StudentAdmissionApi.StudentAdmission);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success('toast.studentAdmissions.admitted');
-      void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
-      void queryClient.refetchQueries({ queryKey: ['student-admissions'] });
+      await refetchAllStudentAdmissionListQueries(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
+      void queryClient.refetchQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentAdmissions.admitFailed');
@@ -239,11 +289,14 @@ export const useUpdateStudentAdmission = () => {
       // Map API → Domain
       return mapStudentAdmissionApiToDomain(apiUpdated as StudentAdmissionApi.StudentAdmission);
     },
-    onSuccess: () => {
+    onSuccess: async (updated) => {
       showToast.success('toast.studentAdmissions.updated');
-      void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      mergeUpdatedAdmissionIntoStudentAdmissionsCaches(queryClient, updated);
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
       void queryClient.refetchQueries({ queryKey: ['hostel-overview'] });
+      // Background sync so filters / pagination totals stay correct without a full page reload.
+      void refetchAllStudentAdmissionListQueries(queryClient);
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentAdmissions.updateFailed');
@@ -264,10 +317,12 @@ export const useDeleteStudentAdmission = () => {
       await studentAdmissionsApi.delete(id);
       return id;
     },
-    onSuccess: () => {
+    onSuccess: async (id) => {
       showToast.success('toast.studentAdmissions.removed');
-      void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      removeAdmissionFromStudentAdmissionsCaches(queryClient, id);
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
+      void refetchAllStudentAdmissionListQueries(queryClient);
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentAdmissions.removeFailed');
@@ -322,12 +377,12 @@ export const useBulkDeactivateAdmissions = () => {
         total_processed: number;
       };
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       showToast.success(
         `toast.studentAdmissions.bulkDeactivated` || 
         `${result.deactivated_count} student(s) deactivated successfully`
       );
-      void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      await refetchAllStudentAdmissionListQueries(queryClient);
       void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
@@ -360,12 +415,12 @@ export const useBulkDeactivateAdmissionsByStudentIds = () => {
         total_processed: number;
       };
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       showToast.success(
         `toast.studentAdmissions.bulkDeactivated` || 
         `${result.deactivated_count} student(s) deactivated successfully`
       );
-      void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      await refetchAllStudentAdmissionListQueries(queryClient);
       void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
       void queryClient.invalidateQueries({ queryKey: ['graduation-batch'] });

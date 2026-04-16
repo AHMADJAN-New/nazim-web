@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreStudentAdmissionRequest;
 use App\Http\Requests\UpdateStudentAdmissionRequest;
 use App\Models\ClassAcademicYear;
+use App\Models\ResidencyType;
 use App\Models\Student;
 use App\Models\StudentAdmission;
 use App\Services\ActivityLogService;
@@ -283,6 +284,8 @@ class StudentAdmissionController extends Controller
         $validated['enrollment_status'] = $validated['enrollment_status'] ?? 'admitted';
         $validated['is_boarder'] = $validated['is_boarder'] ?? false;
 
+        $this->applyDayResidencyClearsBoarding($validated);
+
         // student_admissions.room_id is HOSTEL room only; day scholars must not have it set.
         if (empty($validated['is_boarder'])) {
             $validated['room_id'] = null;
@@ -395,6 +398,8 @@ class StudentAdmissionController extends Controller
 
         // Remove organization_id from update data to prevent changes
         unset($validated['organization_id']);
+
+        $this->applyDayResidencyClearsBoarding($validated);
 
         // student_admissions.room_id is HOSTEL room only; when switching to day scholar, clear it.
         if (array_key_exists('is_boarder', $validated) && empty($validated['is_boarder'])) {
@@ -1279,6 +1284,29 @@ class StudentAdmissionController extends Controller
             Log::error('Bulk deactivation by student IDs failed: '.$e->getMessage());
 
             return response()->json(['error' => 'Bulk deactivation failed', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * When residency type code is "day", clear boarding and hostel room (users often change residency only).
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function applyDayResidencyClearsBoarding(array &$validated): void
+    {
+        $residencyId = $validated['residency_type_id'] ?? null;
+        if (! is_string($residencyId) || $residencyId === '') {
+            return;
+        }
+
+        $code = ResidencyType::query()->whereKey($residencyId)->value('code');
+        if ($code === null) {
+            return;
+        }
+
+        if (strtolower((string) $code) === 'day') {
+            $validated['is_boarder'] = false;
+            $validated['room_id'] = null;
         }
     }
 }

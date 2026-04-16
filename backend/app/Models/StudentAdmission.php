@@ -58,6 +58,13 @@ class StudentAdmission extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+
+        // Hostel room is only for boarders; never persist a room for day scholars.
+        static::saving(function (StudentAdmission $model) {
+            if (! $model->is_boarder) {
+                $model->room_id = null;
+            }
+        });
     }
 
     /**

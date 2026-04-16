@@ -309,7 +309,13 @@ export function AdmissionDetailsPanel({
               />
               <InfoRow 
                 label={t('admissions.roomDorm') || 'Room / Dorm'} 
-                value={room ? `${room.roomNumber || ''}${room.building?.buildingName ? ` - ${room.building.buildingName}` : ''}`.trim() || room.id : '—'} 
+                value={
+                  admission.isBoarder
+                    ? (room
+                        ? `${room.roomNumber || ''}${room.building?.buildingName ? ` - ${room.building.buildingName}` : ''}`.trim() || room.id
+                        : '—')
+                    : (t('admissions.notRequired') || 'Not required')
+                } 
               />
               <InfoRow 
                 label={t('admissions.boarder') || 'Boarder'} 

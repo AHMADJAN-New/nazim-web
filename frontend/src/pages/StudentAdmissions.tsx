@@ -318,6 +318,7 @@ export function StudentAdmissions() {
       accessorKey: 'room',
       header: t('admissions.room') || 'Room',
       cell: ({ row }) => {
+        if (!row.original.isBoarder) return '—';
         const room = rooms?.find((r) => r.id === row.original.roomId);
         if (!room) return '—';
         return (

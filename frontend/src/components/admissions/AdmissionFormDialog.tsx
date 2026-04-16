@@ -908,7 +908,18 @@ export function AdmissionFormDialog({
                               control={control}
                               name="residency_type_id"
                               render={({ field }) => (
-                                <Select value={field.value || ''} onValueChange={field.onChange} disabled={isCreateDisabled}>
+                                <Select
+                                  value={field.value || ''}
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    const selectedRt = residencyTypes?.find((rt) => rt.id === value);
+                                    if (selectedRt?.code?.toLowerCase() === 'day') {
+                                      setValue('is_boarder', false, { shouldValidate: false });
+                                      setValue('room_id', '', { shouldValidate: false });
+                                    }
+                                  }}
+                                  disabled={isCreateDisabled}
+                                >
                                   <SelectTrigger className={`h-10 ${errors.residency_type_id ? 'border-destructive' : ''}`}>
                                     <SelectValue placeholder={t('admissions.selectResidency') || 'Select residency'} />
                                   </SelectTrigger>
