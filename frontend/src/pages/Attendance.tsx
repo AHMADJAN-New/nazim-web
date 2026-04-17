@@ -31,6 +31,7 @@ export default function Attendance() {
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<string>('all');
+  const [studentType, setStudentType] = useState<'all' | 'boarders' | 'day_scholars'>('all');
 
 
   const { sessions, pagination, page, pageSize, setPage, setPageSize, isLoading: sessionsLoading } = useAttendanceSessions({}, true);
@@ -74,6 +75,7 @@ export default function Attendance() {
       sessionDate: new Date(sessionDate),
       method: sessionMethod,
       remarks: sessionRemarks || undefined,
+      studentType,
     };
 
     try {
@@ -84,6 +86,7 @@ export default function Attendance() {
       setSelectedClassIds([]);
       setSessionDate('');
       setSessionRemarks('');
+      setStudentType('all');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('events.error');
       showToast.error(message || t('events.error'));
@@ -152,6 +155,22 @@ export default function Attendance() {
             </Select>
           </div>
           <div className="space-y-3">
+            <Label>{t('attendancePage.studentTypeLabel') || 'Student Type'}</Label>
+            <Select value={studentType} onValueChange={value => setStudentType(value as 'all' | 'boarders' | 'day_scholars')}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('attendancePage.studentTypeAll') || 'All Students'}</SelectItem>
+                <SelectItem value="boarders">{t('attendancePage.studentTypeBoarders') || 'Boarders Only'}</SelectItem>
+                <SelectItem value="day_scholars">{t('attendancePage.studentTypeDayScholars') || 'Day Scholars Only'}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {t('attendancePage.studentTypeHint') || 'Choose which students are included in this session. Day scholars will not be marked absent in boarder sessions.'}
+            </p>
+          </div>
+          <div className="space-y-3">
             <Label>{t('attendancePage.schoolLabel')}</Label>
             <Select value={selectedSchool} onValueChange={setSelectedSchool}>
               <SelectTrigger>
@@ -215,6 +234,11 @@ export default function Attendance() {
                       <div className="text-right space-y-1">
                         <Badge variant="secondary">{item.method === 'manual' ? t('attendancePage.manualTab') : t('attendancePage.barcodeTab')}</Badge>
                         <Badge variant={item.status === 'open' ? 'default' : 'outline'}>{item.status}</Badge>
+                        {item.studentType && item.studentType !== 'all' && (
+                          <Badge variant="outline" className={item.studentType === 'boarders' ? 'bg-blue-50 text-blue-700 border-blue-200 text-xs' : 'bg-emerald-50 text-emerald-700 border-emerald-200 text-xs'}>
+                            {item.studentType === 'boarders' ? (t('attendancePage.studentTypeBoarders') || 'Boarders') : (t('attendancePage.studentTypeDayScholars') || 'Day Scholars')}
+                          </Badge>
+                        )}
                       </div>
                       {item.status === 'open' && (
                         <Button

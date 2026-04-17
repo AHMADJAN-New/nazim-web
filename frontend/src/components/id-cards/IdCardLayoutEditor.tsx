@@ -1,4 +1,4 @@
-import { GripVertical, Save, RotateCcw, Eye, ChevronDown, AlignEndHorizontal, AlignStartHorizontal, Rows3, AlignStartVertical, AlignEndVertical } from 'lucide-react';
+import { GripVertical, Save, RotateCcw, Eye, ChevronDown, AlignEndHorizontal, AlignStartHorizontal, Rows3, AlignStartVertical, AlignEndVertical, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -1275,7 +1275,7 @@ export function IdCardLayoutEditor({
   };
 
   // Helper functions for per-field font customization
-  const updateFieldFont = (fieldId: string, property: 'fontSize' | 'fontFamily' | 'textColor', value: number | string) => {
+  const updateFieldFont = (fieldId: string, property: 'fontSize' | 'fontFamily' | 'textColor' | 'textAlign', value: number | string) => {
     setCurrentConfig((prev) => {
       const newFieldFonts = { ...(prev.fieldFonts || {}) };
       if (!newFieldFonts[fieldId]) {
@@ -1292,7 +1292,7 @@ export function IdCardLayoutEditor({
     });
   };
 
-  const clearFieldFont = (fieldId: string, property: 'fontSize' | 'fontFamily' | 'textColor') => {
+  const clearFieldFont = (fieldId: string, property: 'fontSize' | 'fontFamily' | 'textColor' | 'textAlign') => {
     setCurrentConfig((prev) => {
       const newFieldFonts = { ...(prev.fieldFonts || {}) };
       if (newFieldFonts[fieldId]) {
@@ -1382,15 +1382,20 @@ export function IdCardLayoutEditor({
     const isLabelField = LABEL_FIELD_IDS.includes(field.id);
     const isCenterField = ['schoolName', 'notes', 'createdDate', 'expiryDate'].includes(field.id);
 
+    // Resolve text alignment: per-field override > default based on field type
+    const defaultAlign = isLabelField ? 'right' : isCenterField ? 'center' : 'left';
+    const fieldTextAlign = (currentConfig.fieldFonts?.[field.id]?.textAlign) ?? defaultAlign;
+    const transformX = fieldTextAlign === 'right' ? '-100%' : fieldTextAlign === 'center' ? '-50%' : '0';
+
     return {
       position: 'absolute' as const,
       left: `${renderMetrics.pctToX(position.x)}px`,
       top: `${renderMetrics.pctToY(position.y)}px`,
-      transform: isLabelField ? 'translate(-100%, -50%)' : isCenterField ? 'translate(-50%, -50%)' : 'translate(0, -50%)',
+      transform: `translate(${transformX}, -50%)`,
       fontSize: `${scaledFontSize}px`,
       fontFamily,
       color: textColor,
-      textAlign: isLabelField ? 'right' : isCenterField ? 'center' : ('left' as const),
+      textAlign: fieldTextAlign as 'left' | 'center' | 'right',
       cursor: 'move',
       userSelect: 'none' as const,
       zIndex: isSelected || isDragging ? 10 : 1,
@@ -2021,6 +2026,7 @@ export function IdCardLayoutEditor({
                               clearFieldFont(selectedField, 'fontSize');
                               clearFieldFont(selectedField, 'fontFamily');
                               clearFieldFont(selectedField, 'textColor');
+                              clearFieldFont(selectedField, 'textAlign');
                             }}
                             className="text-xs"
                           >
@@ -2129,6 +2135,41 @@ export function IdCardLayoutEditor({
                           </div>
                           <p className="text-xs text-muted-foreground">
                             {t('idCards.fieldColorDescription') || 'Set custom color for this field, or reset to use global color'}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs">{t('idCards.textAlignment') || 'Text Alignment'}</Label>
+                          <div className="flex gap-1">
+                            {(['left', 'center', 'right'] as const).map((align) => {
+                              const isLabelField = LABEL_FIELD_IDS.includes(selectedField);
+                              const isCenterField = ['schoolName', 'notes', 'createdDate', 'expiryDate'].includes(selectedField);
+                              const defaultAlign = isLabelField ? 'right' : isCenterField ? 'center' : 'left';
+                              const currentAlign = currentConfig.fieldFonts?.[selectedField]?.textAlign ?? defaultAlign;
+                              const isActive = currentAlign === align;
+                              const Icon = align === 'left' ? AlignLeft : align === 'center' ? AlignCenter : AlignRight;
+                              return (
+                                <Button
+                                  key={align}
+                                  size="sm"
+                                  variant={isActive ? 'default' : 'outline'}
+                                  className="flex-1 h-8 px-2"
+                                  title={align.charAt(0).toUpperCase() + align.slice(1)}
+                                  onClick={() => {
+                                    if (isActive && currentConfig.fieldFonts?.[selectedField]?.textAlign) {
+                                      clearFieldFont(selectedField, 'textAlign');
+                                    } else {
+                                      updateFieldFont(selectedField, 'textAlign', align);
+                                    }
+                                  }}
+                                >
+                                  <Icon className="h-3.5 w-3.5" />
+                                </Button>
+                              );
+                            })}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {t('idCards.textAlignmentDescription') || 'Override default text alignment for this field'}
                           </p>
                         </div>
                       </div>

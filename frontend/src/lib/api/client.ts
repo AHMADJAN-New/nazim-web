@@ -2700,7 +2700,7 @@ export const attendanceSessionsApi = {
     return apiClient.get(`/attendance-sessions/${id}/scans`, params);
   },
 
-  roster: async (params: { class_id?: string; class_ids?: string[]; academic_year_id?: string }) => {
+  roster: async (params: { class_id?: string; class_ids?: string[]; academic_year_id?: string; is_boarder?: boolean }) => {
     return apiClient.get('/attendance-sessions/roster', params);
   },
   close: async (id: string) => {

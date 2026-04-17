@@ -55,6 +55,7 @@ interface RosterStudent {
   card_number: string | null;
   student_code: string | null;
   gender: string | null;
+  is_boarder?: boolean;
   class_id?: string | null;
   class_name?: string | null;
   room_name?: string | null;
@@ -213,7 +214,10 @@ export default function AttendanceMarking() {
     return session.classId ? [session.classId] : [];
   }, [session]);
 
-  const { data: roster } = useAttendanceRoster(sessionClassIds.length ? sessionClassIds : undefined, session?.academicYearId || undefined);
+  const rosterBoarderFilter = session?.studentType === 'boarders' ? true
+    : session?.studentType === 'day_scholars' ? false
+    : undefined;
+  const { data: roster } = useAttendanceRoster(sessionClassIds.length ? sessionClassIds : undefined, session?.academicYearId || undefined, rosterBoarderFilter);
   const {
     data: scanFeed,
     refetch: refetchScanFeed,

@@ -11,6 +11,7 @@ export const mapAttendanceSessionApiToDomain = (session: AttendanceApi.Attendanc
   method: session.method,
   status: session.status,
   remarks: session.remarks,
+  studentType: session.student_type ?? 'all',
   createdBy: session.created_by,
   closedAt: session.closed_at ? new Date(session.closed_at) : null,
   className: session.class_model?.name,
@@ -54,6 +55,7 @@ export const mapAttendanceSessionDomainToInsert = (session: AttendanceSessionIns
   method: session.method,
   status: session.status,
   remarks: session.remarks ?? null,
+  student_type: session.studentType ?? 'all',
   records: session.records?.map(mapAttendanceRecordDomainToInsert),
 });
 

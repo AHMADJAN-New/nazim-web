@@ -113,7 +113,12 @@ export default {
     sessions: "sessions",
     unsavedChanges: "Unsaved changes",
     unsavedChangesHint: "Draft changes waiting to be saved",
-    willBeAbsentOnClose: "Will be marked absent on close"
+    willBeAbsentOnClose: "Will be marked absent on close",
+    studentTypeLabel: "Student Type",
+    studentTypeAll: "All Students",
+    studentTypeBoarders: "Boarders Only",
+    studentTypeDayScholars: "Day Scholars Only",
+    studentTypeHint: "Choose which students are included in this session. Day scholars will not be marked absent in boarder sessions."
   },
   attendanceReports: {
     subtitle: "View and analyze student attendance records",
@@ -130,7 +135,9 @@ export default {
     reportStatus: "Report status",
     school: "School",
     schoolRequired: "School is required for report generation",
-    student: "Student"
+    student: "Student",
+    ofCurrentPage: "of current page",
+    presentVsTotal: "Present vs total (current page)"
   },
   attendanceTotalsReport: {
     subtitle: "Analyze attendance performance across classes, rooms, and schools",

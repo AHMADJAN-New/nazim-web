@@ -113,7 +113,12 @@ export default {
     reviewStateHeader: "Review state",
     unsavedChanges: "Unsaved changes",
     unsavedChangesHint: "Draft changes waiting to be saved",
-    willBeAbsentOnClose: "Will be marked absent on close"
+    willBeAbsentOnClose: "سيتم تسجيله غائباً عند الإغلاق",
+    studentTypeLabel: "نوع الطالب",
+    studentTypeAll: "جميع الطلاب",
+    studentTypeBoarders: "المقيمون فقط",
+    studentTypeDayScholars: "الطلاب اليوميون فقط",
+    studentTypeHint: "اختر الطلاب المشمولين في هذه الجلسة. لن يُسجَّل الطلاب اليوميون غائبين في جلسات المقيمين."
   },
   attendanceReports: {
     cardNumber: "رقم البطاقة",
@@ -129,7 +134,9 @@ export default {
     reportStatus: "Report status",
     school: "المدرسة",
     schoolRequired: "School is required for report generation",
-    student: "الطالب"
+    student: "الطالب",
+    ofCurrentPage: "من الصفحة الحالية",
+    presentVsTotal: "الحاضرون مقابل الإجمالي (الصفحة الحالية)"
   },
   attendanceTotalsReport: {
     absenceHelper: "عبر المرشحات المحددة",

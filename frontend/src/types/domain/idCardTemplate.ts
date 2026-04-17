@@ -1,6 +1,6 @@
 export interface IdCardLayoutConfig {
   enabledFields?: string[];
-  fieldFonts?: Record<string, { fontSize?: number; fontFamily?: string; textColor?: string }>;
+  fieldFonts?: Record<string, { fontSize?: number; fontFamily?: string; textColor?: string; textAlign?: 'left' | 'center' | 'right' }>;
   fieldValues?: Record<string, string | null>; // Custom text/values for editable fields (labels, notes, expiryDate, schoolName, etc.)
   
   // Text field positions (as percentages)

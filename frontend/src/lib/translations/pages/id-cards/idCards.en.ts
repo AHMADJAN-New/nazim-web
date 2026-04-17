@@ -146,6 +146,8 @@ export default {
     templateNamePlaceholder: "e.g., Student ID Card",
     templateNotLoaded: "Template not loaded",
     templates: "Templates",
+    textAlignment: "Text Alignment",
+    textAlignmentDescription: "Override default text alignment for this field",
     textColor: "Text Color",
     totalCards: "Total Cards",
     totalFeeCollected: "Fee Collected",

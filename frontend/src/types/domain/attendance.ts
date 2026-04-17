@@ -1,4 +1,4 @@
-import type { AttendanceMethod, AttendanceStatus, AttendanceSessionStatus } from '@/types/api/attendance';
+import type { AttendanceMethod, AttendanceStatus, AttendanceSessionStatus, AttendanceStudentType } from '@/types/api/attendance';
 
 export interface AttendanceRecord {
   id: string;
@@ -36,6 +36,7 @@ export interface AttendanceSession {
   method: AttendanceMethod;
   status: AttendanceSessionStatus;
   remarks: string | null;
+  studentType: AttendanceStudentType;
   createdBy: string;
   closedAt: Date | null;
   className?: string;
@@ -58,6 +59,7 @@ export interface AttendanceSessionInsert {
   method: AttendanceMethod;
   status?: AttendanceSessionStatus;
   remarks?: string | null;
+  studentType?: AttendanceStudentType;
   records?: AttendanceRecordInsert[];
 }
 

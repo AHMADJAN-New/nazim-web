@@ -146,6 +146,8 @@ export default {
     templateNamePlaceholder: "مثلاً: کارت هویت شاگرد",
     templateNotLoaded: "قالب بارگذاری نشد",
     templates: "قالب‌ها",
+    textAlignment: "تراز متن",
+    textAlignmentDescription: "تراز پیش‌فرض متن این فیلد را تغییر دهید",
     textColor: "رنگ متن",
     totalCards: "مجموع کارت‌ها",
     totalFeeCollected: "فیس جمع‌آوری شده",

@@ -113,7 +113,12 @@ export default {
     reviewStateHeader: "د بیاکتنې حالت",
     unsavedChanges: "ناخوندي شوي بدلونونه",
     unsavedChangesHint: "د خوندي کیدو په تمه مسودې بدلونونه",
-    willBeAbsentOnClose: "د پای ته رسولو سره به غیر حاضر په نښه شي"
+    willBeAbsentOnClose: "د پای ته رسولو سره به غیر حاضر په نښه شي",
+    studentTypeLabel: "د زده کوونکو ډول",
+    studentTypeAll: "ټول زده کوونکي",
+    studentTypeBoarders: "یوازې لیلیه زده کوونکي",
+    studentTypeDayScholars: "یوازې ورځني زده کوونکي",
+    studentTypeHint: "د دې ناستې لپاره کوم زده کوونکي شامل دي وټاکئ. ورځني زده کوونکي به د بورډر ناستو کې غیر حاضر نه ګڼل کیږي."
   },
   attendanceReports: {
     subtitle: "د زده کوونکو د حاضري ریکارډونه وګورئ او تحلیل کړئ",
@@ -130,7 +135,9 @@ export default {
     reportStatus: "د راپور حالت",
     school: "ښوونځی",
     schoolRequired: "د راپور جوړولو لپاره ښوونځی اړین دی",
-    student: "زده کوونکی"
+    student: "زده کوونکی",
+    ofCurrentPage: "د اوسني مخ",
+    presentVsTotal: "حاضر مقابل ټول (اوسنی مخ)"
   },
   attendanceTotalsReport: {
     subtitle: "په صنفونو، اتاقونو او ښوونځیو کې د حاضرۍ فعالیت تحلیل کړئ",

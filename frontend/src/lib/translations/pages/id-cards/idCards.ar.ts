@@ -146,6 +146,8 @@ export default {
     templateNamePlaceholder: "e.g., Student ID Card",
     templateNotLoaded: "Template not loaded",
     templates: "Templates",
+    textAlignment: "محاذاة النص",
+    textAlignmentDescription: "تجاوز محاذاة النص الافتراضية لهذا الحقل",
     textColor: "Text Color",
     totalCards: "Total Cards",
     totalFeeCollected: "Fee Collected",

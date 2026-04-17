@@ -2,6 +2,8 @@ export type AttendanceMethod = 'manual' | 'barcode';
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
 export type AttendanceSessionStatus = 'open' | 'closed';
 
+export type AttendanceStudentType = 'all' | 'boarders' | 'day_scholars';
+
 export interface AttendanceSession {
   id: string;
   organization_id: string;
@@ -12,6 +14,7 @@ export interface AttendanceSession {
   method: AttendanceMethod;
   status: AttendanceSessionStatus;
   remarks: string | null;
+  student_type: AttendanceStudentType;
   created_by: string;
   closed_at: string | null;
   created_at: string;
@@ -69,6 +72,7 @@ export interface AttendanceSessionInsert {
   method: AttendanceMethod;
   status?: AttendanceSessionStatus;
   remarks?: string | null;
+  student_type?: AttendanceStudentType;
   records?: AttendanceRecordInsert[];
 }
 

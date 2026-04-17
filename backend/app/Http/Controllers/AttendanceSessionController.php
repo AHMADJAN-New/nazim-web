@@ -144,6 +144,7 @@ class AttendanceSessionController extends Controller
                 'method' => $validated['method'],
                 'status' => $validated['status'] ?? 'open',
                 'remarks' => $validated['remarks'] ?? null,
+                'student_type' => $validated['student_type'] ?? 'all',
                 'created_by' => $user->id,
             ]);
 
@@ -782,6 +783,7 @@ class AttendanceSessionController extends Controller
             'class_ids' => 'nullable|array|min:1', // New: multiple classes
             'class_ids.*' => 'required|uuid|exists:classes,id',
             'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
+            'is_boarder' => 'nullable|boolean',
         ]);
 
         // Determine class IDs: use class_ids array if provided, otherwise use class_id
@@ -819,6 +821,9 @@ class AttendanceSessionController extends Controller
             ->when($request->filled('academic_year_id'), function ($q) use ($request) {
                 $q->where('sa.academic_year_id', $request->input('academic_year_id'));
             })
+            ->when($request->has('is_boarder') && $request->input('is_boarder') !== null, function ($q) use ($request) {
+                $q->where('sa.is_boarder', $request->boolean('is_boarder'));
+            })
             ->whereNull('sa.deleted_at')
             ->whereNull('s.deleted_at')
             ->select(
@@ -833,6 +838,7 @@ class AttendanceSessionController extends Controller
                 'sa.class_id',
                 'sa.room_id',
                 'sa.academic_year_id',
+                'sa.is_boarder',
                 'c.name as class_name',
                 'r.room_number as room_name'
             )

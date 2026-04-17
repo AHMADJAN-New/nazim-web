@@ -486,8 +486,8 @@ export async function renderIdCardToCanvas(
     const fieldFont = getFieldFont(fieldId, 0.9);
     ctx.fillStyle = fieldFont.textColor;
     ctx.font = `${fieldFont.fontSize}px ${formatIdCardFontFamilyForCanvas(fieldFont.fontFamily)}`;
-    // Labels on the right: anchor at right edge of text (position = right side of card)
-    ctx.textAlign = 'right';
+    // Use per-field textAlign override, otherwise default to 'right' for labels
+    ctx.textAlign = (layout.fieldFonts?.[fieldId]?.textAlign as CanvasTextAlign | undefined) ?? 'right';
     ctx.fillText(labelWithColon, pos.x, pos.y);
   };
 
@@ -537,7 +537,8 @@ export async function renderIdCardToCanvas(
     const fieldFont = getFieldFont(fieldId, defaultMultiplier);
     ctx.fillStyle = fieldFont.textColor;
     ctx.font = `${fontWeight === 'bold' ? 'bold ' : ''}${fieldFont.fontSize}px ${formatIdCardFontFamilyForCanvas(fieldFont.fontFamily)}`;
-    ctx.textAlign = alignment;
+    // Use per-field textAlign override if set, otherwise fall back to the default alignment for this field
+    ctx.textAlign = (layout.fieldFonts?.[fieldId]?.textAlign as CanvasTextAlign | undefined) ?? alignment;
     ctx.fillText(normalizedValue, pos.x, pos.y);
 
     if (import.meta.env.DEV) {

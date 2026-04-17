@@ -261,13 +261,17 @@ export const useScanAttendance = (sessionId?: string) => {
   });
 };
 
-export const useAttendanceRoster = (classIds?: string[], academicYearId?: string) => {
+export const useAttendanceRoster = (classIds?: string[], academicYearId?: string, isBoarder?: boolean) => {
   const { user, profile } = useAuth();
   return useQuery({
-    queryKey: ['attendance-roster', classIds?.join(','), academicYearId, profile?.organization_id ?? null, profile?.default_school_id ?? null],
+    queryKey: ['attendance-roster', classIds?.join(','), academicYearId, isBoarder, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !classIds || classIds.length === 0) return [];
-      return attendanceSessionsApi.roster({ class_ids: classIds, academic_year_id: academicYearId });
+      return attendanceSessionsApi.roster({
+        class_ids: classIds,
+        academic_year_id: academicYearId,
+        ...(isBoarder !== undefined && { is_boarder: isBoarder }),
+      });
     },
     enabled: !!user && !!profile && !!classIds && classIds.length > 0,
   });

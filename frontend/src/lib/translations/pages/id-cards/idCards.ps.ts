@@ -147,6 +147,8 @@ export default {
     templateNamePlaceholder: "د بېلګې په توګه: د زده کوونکي ID کارت",
     templateNotLoaded: "قالب تر لاسه نشو",
     templates: "قالبونه",
+    textAlignment: "د متن تنظیم",
+    textAlignmentDescription: "د دې برخې لپاره د متن د تنظیم پیش ګزینه بدل کړئ",
     textColor: "د متن رنګ",
     totalCards: "ټول کارتونه",
     totalFeeCollected: "راټول شوی فیس",

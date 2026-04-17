@@ -28,6 +28,7 @@ class AttendanceSession extends Model
         'method',
         'status',
         'remarks',
+        'student_type',
         'created_by',
         'closed_at',
     ];

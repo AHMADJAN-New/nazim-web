@@ -23,6 +23,7 @@ class StoreAttendanceSessionRequest extends FormRequest
             'method' => 'required|string|in:manual,barcode',
             'status' => 'nullable|string|in:open,closed',
             'remarks' => 'nullable|string',
+            'student_type' => 'nullable|string|in:all,boarders,day_scholars',
             'records' => 'nullable|array',
             'records.*.student_id' => 'required_with:records|uuid|exists:students,id',
             'records.*.status' => 'required_with:records|string|in:present,absent,late,excused,sick,leave',

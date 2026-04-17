@@ -116,7 +116,12 @@ export default {
     reviewStateHeader: "وضعیت بررسی",
     unsavedChanges: "تغییرات ذخیره نشده",
     unsavedChangesHint: "پیش‌نویس تغییرات در انتظار ذخیره",
-    willBeAbsentOnClose: "هنگام بسته شدن غایب علامت‌گذاری خواهند شد"
+    willBeAbsentOnClose: "هنگام بسته شدن غایب علامت‌گذاری خواهند شد",
+    studentTypeLabel: "نوع شاگرد",
+    studentTypeAll: "همه شاگردان",
+    studentTypeBoarders: "فقط لیلیه شاگردان",
+    studentTypeDayScholars: "فقط شاگردان روزانه",
+    studentTypeHint: "انتخاب کنید کدام شاگردان در این جلسه شامل می‌شوند. شاگردان روزانه در جلسات لیلیه غایب محسوب نمی‌شوند."
   },
   attendanceReports: {
     cardNumber: "شماره کارت",
@@ -132,7 +137,9 @@ export default {
     reportStatus: "وضعیت گزارش",
     school: "مکتب",
     schoolRequired: "انتخاب مکتب برای ایجاد گزارش الزامی است",
-    student: "شاگرد"
+    student: "شاگرد",
+    ofCurrentPage: "از صفحه جاری",
+    presentVsTotal: "حاضر در مقابل کل (صفحه جاری)"
   },
   attendanceTotalsReport: {
     absenceHelper: "در فیلترهای انتخاب شده",

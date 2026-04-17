@@ -10,7 +10,9 @@ import {
   Loader2,
   RefreshCw,
   School,
+  TrendingUp,
   UserRound,
+  XCircle,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -143,6 +145,7 @@ export default function AttendanceReports() {
     classId: '',
     academicYearId: '',
     status: '',
+    studentType: '' as '' | 'all' | 'boarders' | 'day_scholars',
     dateFrom: '',
     dateTo: '',
     page: 1,
@@ -248,6 +251,7 @@ export default function AttendanceReports() {
       classId: '',
       academicYearId: '',
       status: '',
+      studentType: '',
       dateFrom: '',
       dateTo: '',
       page: 1,
@@ -467,7 +471,11 @@ export default function AttendanceReports() {
   });
 
   const hasActiveFilters =
-    filters.studentId || filters.classId || filters.academicYearId || filters.status || filters.dateFrom || filters.dateTo;
+    filters.studentId || filters.classId || filters.academicYearId || filters.status || filters.studentType || filters.dateFrom || filters.dateTo;
+
+  const attendanceRate = visibleSummary.total > 0
+    ? Math.round((visibleSummary.present / visibleSummary.total) * 100)
+    : null;
 
   const exportDisabled = isGenerating || isLoading || hasInvalidRange || totalMatchingRecords === 0;
 
@@ -538,32 +546,32 @@ export default function AttendanceReports() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatsCard
-          title={t('attendanceReports.school') || 'School'}
-          value={currentSchool?.schoolName || '-'}
-          description={t('attendanceReports.currentScope') || 'Active school scope'}
-          icon={School}
-          color="blue"
-        />
-        <StatsCard
-          title={t('attendanceTotalsReport.totalRecords') || 'Records'}
+          title={t('attendanceTotalsReport.totalRecords') || 'Total Records'}
           value={totalMatchingRecords.toLocaleString()}
-          description={t('attendanceReports.matchingFilters') || 'Matching the current filters'}
+          description={t('attendanceReports.matchingFilters') || 'Matching current filters'}
           icon={FileText}
           color="primary"
         />
         <StatsCard
-          title={t('attendanceReports.visibleStudents') || 'Visible students'}
-          value={visibleSummary.uniqueStudents.toLocaleString()}
-          description={t('attendanceReports.currentPage') || 'Current page only'}
-          icon={UserRound}
-          color="green"
-        />
-        <StatsCard
           title={t('attendancePage.statusPresent') || 'Present'}
           value={visibleSummary.present.toLocaleString()}
-          description={t('attendanceReports.currentPage') || 'Current page only'}
+          description={`${visibleSummary.total > 0 ? Math.round((visibleSummary.present / visibleSummary.total) * 100) : 0}% ${t('attendanceReports.ofCurrentPage') || 'of current page'}`}
           icon={CheckCircle2}
           color="emerald"
+        />
+        <StatsCard
+          title={t('attendancePage.statusAbsent') || 'Absent'}
+          value={visibleSummary.absent.toLocaleString()}
+          description={`${visibleSummary.total > 0 ? Math.round((visibleSummary.absent / visibleSummary.total) * 100) : 0}% ${t('attendanceReports.ofCurrentPage') || 'of current page'}`}
+          icon={XCircle}
+          color="red"
+        />
+        <StatsCard
+          title={t('attendanceTotalsReport.attendanceRate') || 'Attendance Rate'}
+          value={attendanceRate !== null ? `${attendanceRate}%` : '-'}
+          description={t('attendanceReports.presentVsTotal') || 'Present vs total (current page)'}
+          icon={TrendingUp}
+          color="blue"
         />
       </div>
 
@@ -638,6 +646,23 @@ export default function AttendanceReports() {
                     {option.label}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t('attendancePage.studentTypeLabel') || 'Student Type'}</Label>
+            <Select
+              value={filters.studentType || 'all'}
+              onValueChange={(value) => handleFilterChange('studentType', value === 'all' ? '' : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('attendancePage.studentTypeAll') || 'All students'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('attendancePage.studentTypeAll') || 'All Students'}</SelectItem>
+                <SelectItem value="boarders">{t('attendancePage.studentTypeBoarders') || 'Boarders Only'}</SelectItem>
+                <SelectItem value="day_scholars">{t('attendancePage.studentTypeDayScholars') || 'Day Scholars Only'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
