@@ -882,7 +882,11 @@ class AttendanceSessionController extends Controller
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
-        $query = AttendanceRecord::with(['student:id,full_name,admission_no,card_number,student_code', 'session.classModel', 'session.classes', 'session.school'])
+        $query = AttendanceRecord::with(['student:id,full_name,father_name,admission_no,card_number,student_code', 'session.classModel', 'session.classes', 'session.school'])
+            ->addSelect([
+                'attendance_records.*',
+                DB::raw("(SELECT c.name FROM student_admissions sa JOIN classes c ON sa.class_id = c.id WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' ORDER BY sa.created_at DESC LIMIT 1) as student_class_name"),
+            ])
             ->where('attendance_records.organization_id', $profile->organization_id)
             ->where('attendance_records.school_id', $currentSchoolId)
             ->whereNull('attendance_records.deleted_at')

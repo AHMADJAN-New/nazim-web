@@ -16,10 +16,12 @@ export interface AttendanceReportRecord {
   id: string;
   studentId: string;
   studentName: string;
+  fatherName: string | null;
   admissionNo: string;
   cardNumber: string | null;
   status: AttendanceApi.AttendanceStatus;
   sessionDate: Date;
+  studentClassName: string;
   className: string;
   classNames: string[];
   schoolName: string | null;
@@ -63,14 +65,18 @@ export const mapAttendanceReportRecord = (record: AttendanceReportApiRecord): At
     )
   );
 
+  const studentClassName = (record as AttendanceReportApiRecord & { student_class_name?: string | null }).student_class_name ?? null;
+
   return {
     id: record.id,
     studentId: record.student_id,
     studentName: record.student?.full_name ?? 'Unknown student',
+    fatherName: record.student?.father_name ?? null,
     admissionNo: record.student?.admission_no ?? '-',
     cardNumber: record.student?.card_number ?? null,
     status: record.status,
     sessionDate: record.session?.session_date ? new Date(record.session.session_date) : new Date(record.marked_at),
+    studentClassName: studentClassName ?? (classNames.length > 0 ? classNames.join(', ') : '—'),
     className: classNames.length > 0 ? classNames.join(', ') : 'Unassigned',
     classNames,
     schoolName: record.session?.school?.school_name ?? null,

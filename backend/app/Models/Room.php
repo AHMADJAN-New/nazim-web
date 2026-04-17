@@ -10,24 +10,29 @@ use Illuminate\Support\Str;
 
 class Room extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivityWithContext;
+    use HasFactory, LogsActivityWithContext, SoftDeletes;
 
     protected $connection = 'pgsql';
+
     protected $table = 'rooms';
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
         'id',
         'room_number',
+        'capacity',
         'building_id',
         'school_id',
         'staff_id',
     ];
 
     protected $casts = [
+        'capacity' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

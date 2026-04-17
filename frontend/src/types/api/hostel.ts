@@ -15,6 +15,7 @@ export interface HostelOccupant {
 export interface HostelRoom {
   id: string;
   room_number: string;
+  capacity: number | null;
   building_id: string | null;
   building_name: string | null;
   staff_id: string | null;

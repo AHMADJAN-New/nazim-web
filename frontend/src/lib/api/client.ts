@@ -1658,6 +1658,7 @@ export const roomsApi = {
 
   create: async (data: {
     room_number: string;
+    capacity?: number | null;
     building_id: string;
     staff_id?: string | null;
   }) => {
@@ -1666,6 +1667,7 @@ export const roomsApi = {
 
   update: async (id: string, data: {
     room_number?: string;
+    capacity?: number | null;
     building_id?: string;
     staff_id?: string | null;
   }) => {

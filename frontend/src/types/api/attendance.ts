@@ -48,9 +48,11 @@ export interface AttendanceRecord {
   note: string | null;
   created_at: string;
   updated_at: string;
+  student_class_name?: string | null;
   student?: {
     id: string;
     full_name: string;
+    father_name?: string | null;
     admission_no: string;
     card_number: string | null;
     gender: string | null;

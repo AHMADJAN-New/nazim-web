@@ -134,7 +134,7 @@ export default {
     noData: "معلومات نشته",
     viewAll: "ټول کتل",
     noDataToExport: "د صادرولو لپاره معلومات نشته",
-    refresh: "تازګي",
+    refresh: "تازه کول",
     pass: "کامیاب",
     fail: "ناکام",
     topPerformers: "غوره کوونکي",

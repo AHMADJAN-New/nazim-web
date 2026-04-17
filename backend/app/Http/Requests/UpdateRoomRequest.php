@@ -47,6 +47,7 @@ class UpdateRoomRequest extends FormRequest
             ],
             'building_id' => 'sometimes|uuid|exists:buildings,id',
             'staff_id' => 'nullable|uuid|exists:staff,id',
+            'capacity' => 'sometimes|nullable|integer|min:1|max:200',
         ];
     }
 

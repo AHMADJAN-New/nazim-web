@@ -1,18 +1,20 @@
-import { ColumnDef } from '@tanstack/react-table';
-import { AlertCircle, BedDouble, Building2, FileDown, ShieldCheck, Users } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import {
+  AlertCircle,
+  BedDouble,
+  Building2,
+  CheckCircle2,
+  FileDown,
+  Search,
+  Users,
+} from 'lucide-react';
+import { startTransition, useDeferredValue, useMemo, useState, type ReactNode } from 'react';
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -20,170 +22,410 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useDataTable } from '@/hooks/use-data-table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useHostelOverview } from '@/hooks/useHostel';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
-import type { HostelRoom, HostelSummary } from '@/types/domain/hostel';
+import {
+  filterAssignedBoarders,
+  filterHostelRooms,
+  filterUnassignedBoarders,
+  flattenAssignedBoarders,
+  getHostelRoomStatus,
+  summarizeHostelRooms,
+  type HostelStudentDirectoryRow,
+  type HostelRoomStatus,
+} from '@/lib/hostelManagementView';
+import { cn } from '@/lib/utils';
+import type {
+  HostelBuildingReport,
+  HostelRoom,
+  HostelSummary,
+  HostelUnassignedBoarder,
+} from '@/types/domain/hostel';
+
+type RoomStatusFilter = HostelRoomStatus | 'all';
+type HostelTab = 'rooms' | 'students' | 'waiting';
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface HostelManagementLabels {
+  searchPlaceholder: string;
+  allAcademicYears: string;
+  allClasses: string;
+  allRooms: string;
+  academicYear: string;
+  classColumn: string;
+  admissionNumber: string;
+  occupiedRooms: string;
+  boardersCount: string;
+  capacity: string;
+  residencyType: string;
+  placement: string;
+  student: string;
+  fatherName: string;
+  status: string;
+  filtersNote: string;
+  buildingOverview: string;
+  roomsRegister: string;
+  studentsRegister: string;
+  waitingRegister: string;
+  waitingStatus: string;
+}
+
+function getOccupancyRate(occupied: number, total: number): number {
+  if (total === 0) return 0;
+  return Math.round((occupied / total) * 100);
+}
+
+function translateOrFallback(
+  t: ReturnType<typeof useLanguage>['t'],
+  key: Parameters<ReturnType<typeof useLanguage>['t']>[0],
+  fallback: string
+): string {
+  const translated = t(key);
+  return translated === key ? fallback : translated;
+}
+
+function formatCellValue(value: string | null | undefined, fallback = '-'): string {
+  const normalized = value?.trim();
+  return normalized ? normalized : fallback;
+}
+
+function buildUniqueOptions(
+  items: Array<{ value: string | null | undefined; label: string | null | undefined }>,
+  allLabel: string
+): SelectOption[] {
+  const uniqueItems = new Map<string, string>();
+
+  items.forEach((item) => {
+    const value = item.value?.trim();
+    const label = item.label?.trim();
+    if (!value || !label || uniqueItems.has(value)) {
+      return;
+    }
+
+    uniqueItems.set(value, label);
+  });
+
+  const sorted = Array.from(uniqueItems.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((left, right) =>
+      left.label.localeCompare(right.label, undefined, { numeric: true, sensitivity: 'base' })
+    );
+
+  return [{ value: 'all', label: allLabel }, ...sorted];
+}
+
+function getRoomStatusMeta(status: HostelRoomStatus, t: ReturnType<typeof useLanguage>['t']) {
+  switch (status) {
+    case 'full':
+      return {
+        label: translateOrFallback(t, 'hostel.full', 'Full'),
+        className:
+          'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300',
+      };
+    case 'occupied':
+      return {
+        label: t('hostel.occupied'),
+        className:
+          'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900 dark:text-emerald-300',
+      };
+    case 'attention':
+      return {
+        label: t('hostel.needsAttention'),
+        className:
+          'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-900 dark:text-amber-300',
+      };
+    default:
+      return {
+        label: t('hostel.available'),
+        className: 'bg-muted border-border text-muted-foreground',
+      };
+  }
+}
+
+function getPlacementMeta(status: HostelRoomStatus, t: ReturnType<typeof useLanguage>['t']) {
+  if (status === 'attention') {
+    return {
+      label: translateOrFallback(t, 'hostel.followUp', 'Follow up'),
+      className:
+        'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-900 dark:text-amber-300',
+    };
+  }
+
+  return {
+    label: translateOrFallback(t, 'hostel.placedStatus', 'Placed'),
+    className:
+      'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900 dark:text-emerald-300',
+  };
+}
 
 export function HostelManagement() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
   const orgId = profile?.organization_id;
-
   const { data: hostelOverview, isLoading, isError, error, refetch } = useHostelOverview(orgId);
 
+  const [activeTab, setActiveTab] = useState<HostelTab>('rooms');
   const [buildingFilter, setBuildingFilter] = useState<string>('all');
+  const [roomStatusFilter, setRoomStatusFilter] = useState<RoomStatusFilter>('all');
+  const [academicYearFilter, setAcademicYearFilter] = useState<string>('all');
+  const [classFilter, setClassFilter] = useState<string>('all');
+  const [roomFilter, setRoomFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const deferredSearch = useDeferredValue(search);
 
   const rooms: HostelRoom[] = hostelOverview?.rooms ?? [];
-  const buildings = hostelOverview?.buildings ?? [];
-  const summary: HostelSummary =
-    hostelOverview?.summary ??
-    {
-      totalRooms: 0,
-      occupiedRooms: 0,
-      totalStudentsInRooms: 0,
-      totalBuildings: 0,
-      uniqueWardens: 0,
-      unassignedBoarders: 0,
-      occupancyRate: 0,
-    };
+  const buildings: HostelBuildingReport[] = hostelOverview?.buildings ?? [];
+  const unassignedBoarders = hostelOverview?.unassignedBoarders ?? [];
+  const summary: HostelSummary = hostelOverview?.summary ?? {
+    totalRooms: 0,
+    occupiedRooms: 0,
+    totalStudentsInRooms: 0,
+    totalBuildings: 0,
+    uniqueWardens: 0,
+    unassignedBoarders: 0,
+    occupancyRate: 0,
+  };
 
-  const filteredRooms = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return rooms.filter((room) => {
-      if (buildingFilter !== 'all' && room.buildingId !== buildingFilter) return false;
-      if (!term) return true;
-
-      return (
-        room.roomNumber.toLowerCase().includes(term) ||
-        (room.buildingName || '').toLowerCase().includes(term) ||
-        (room.staffName || '').toLowerCase().includes(term) ||
-        room.occupants.some((student) =>
-          student.studentName?.toLowerCase().includes(term) ||
-          student.admissionNumber?.toLowerCase().includes(term)
-        )
-      );
-    });
-  }, [rooms, buildingFilter, search]);
-
-  // Paginated rooms
-  const paginatedRooms = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredRooms.slice(start, end);
-  }, [filteredRooms, page, pageSize]);
-
-  const totalPages = Math.ceil(filteredRooms.length / pageSize);
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [buildingFilter, search]);
-
-  // Create pagination meta for DataTable (client-side pagination)
-  const paginationMeta = useMemo(() => {
-    if (filteredRooms.length === 0) return null;
-    const totalPages = Math.ceil(filteredRooms.length / pageSize);
-    return {
-      current_page: page,
-      from: (page - 1) * pageSize + 1,
-      last_page: totalPages,
-      per_page: pageSize,
-      to: Math.min(page * pageSize, filteredRooms.length),
-      total: filteredRooms.length,
-    };
-  }, [filteredRooms.length, page, pageSize]);
-
-  // Define columns for DataTable
-  const columns: ColumnDef<HostelRoom>[] = useMemo(() => [
-    {
-      accessorKey: 'roomNumber',
-      header: t('hostel.room'),
-      cell: ({ row }) => (
-        <span className="font-medium">{row.original.roomNumber}</span>
+  const labels = useMemo(
+    () => ({
+      searchPlaceholder: translateOrFallback(
+        t,
+        'hostel.searchRoomsPlaceholder',
+        'Search student, father, room, class, or year'
       ),
-    },
-    {
-      accessorKey: 'buildingName',
-      header: t('settings.building'),
-      cell: ({ row }) => row.original.buildingName || t('hostel.unassigned'),
-    },
-    {
-      accessorKey: 'staffName',
-      header: t('settings.warden'),
-      cell: ({ row }) => row.original.staffName || t('hostel.notAssigned'),
-    },
-    {
-      accessorKey: 'occupants',
-      header: t('hostel.occupancy'),
-      cell: ({ row }) => {
-        const count = row.original.occupants.length;
-        return (
-          <Badge variant={count > 0 ? 'default' : 'secondary'}>
-            {count} {count === 1 ? t('hostel.student') : t('hostel.studentPlural')}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: 'students',
-      header: t('table.students'),
-      cell: ({ row }) => {
-        const occupants = row.original.occupants;
-        if (occupants.length === 0) {
-          return <span className="text-muted-foreground">{t('hostel.noStudentsAssigned')}</span>;
-        }
-        return (
-          <div className="flex flex-wrap gap-2">
-            {occupants.map((student) => (
-              <Badge key={student.id} variant="outline">
-                {student.studentName || t('hostel.student')}
-              </Badge>
-            ))}
-          </div>
-        );
-      },
-    },
-  ], [t]);
+      allAcademicYears: translateOrFallback(t, 'hostel.allAcademicYears', 'All academic years'),
+      allClasses: translateOrFallback(t, 'hostel.allClasses', 'All classes'),
+      allRooms: translateOrFallback(t, 'hostel.reports.allRooms', 'All rooms'),
+      academicYear: translateOrFallback(t, 'hostel.reports.academicYearColumn', 'Academic year'),
+      classColumn: translateOrFallback(t, 'hostel.reports.classColumn', 'Class'),
+      admissionNumber: translateOrFallback(
+        t,
+        'hostel.reports.admissionNumberColumn',
+        'Admission no.'
+      ),
+      occupiedRooms: translateOrFallback(t, 'hostel.occupiedRooms', 'Occupied rooms'),
+      boardersCount: translateOrFallback(t, 'hostel.boardersCount', 'Boarders'),
+      capacity: translateOrFallback(t, 'hostel.capacity', 'Capacity'),
+      residencyType: translateOrFallback(t, 'hostel.residencyType', 'Residency'),
+      placement: translateOrFallback(t, 'hostel.placement', 'Placement'),
+      student: translateOrFallback(t, 'hostel.student', 'Student'),
+      fatherName: translateOrFallback(t, 'hostel.fatherName', 'Father name'),
+      status: translateOrFallback(t, 'common.status', 'Status'),
+      filtersNote: translateOrFallback(
+        t,
+        'hostel.roomFiltersDisabledForWaiting',
+        'Building, room, and status filters apply to allocated rooms only. Needs follow up means room setup is incomplete (missing building or warden).'
+      ),
+      buildingOverview: translateOrFallback(t, 'hostel.buildingOverview', 'Building overview'),
+      roomsRegister: translateOrFallback(t, 'hostel.roomsRegister', 'Room register'),
+      studentsRegister: translateOrFallback(t, 'hostel.studentsRegister', 'Student register'),
+      waitingRegister: translateOrFallback(t, 'hostel.waitingRegister', 'Waiting register'),
+      waitingStatus: translateOrFallback(t, 'hostel.awaitingRoom', 'Awaiting room'),
+    }),
+    [t]
+  );
 
-  // Use DataTable hook for pagination integration
-  const { table } = useDataTable({
-    data: paginatedRooms,
-    columns,
-    pageCount: paginationMeta?.last_page,
-    paginationMeta,
-    initialState: {
-      pagination: {
-        pageIndex: page - 1,
-        pageSize,
-      },
-    },
-    onPaginationChange: (newPagination) => {
-      setPage(newPagination.pageIndex + 1);
-      setPageSize(newPagination.pageSize);
-    },
-  });
+  const isRoomScopedTab = activeTab !== 'waiting';
+  const allAssignedStudents = useMemo(() => flattenAssignedBoarders(rooms), [rooms]);
+
+  const filteredRooms = useMemo(
+    () =>
+      filterHostelRooms(rooms, {
+        buildingId: isRoomScopedTab && buildingFilter !== 'all' ? buildingFilter : undefined,
+        roomId: isRoomScopedTab && roomFilter !== 'all' ? roomFilter : undefined,
+        academicYearId: academicYearFilter !== 'all' ? academicYearFilter : undefined,
+        classId: classFilter !== 'all' ? classFilter : undefined,
+        search: deferredSearch,
+        status: isRoomScopedTab ? roomStatusFilter : 'all',
+      }),
+    [
+      rooms,
+      isRoomScopedTab,
+      buildingFilter,
+      roomFilter,
+      academicYearFilter,
+      classFilter,
+      deferredSearch,
+      roomStatusFilter,
+    ]
+  );
+
+  const assignedStudents = useMemo(
+    () =>
+      filterAssignedBoarders(allAssignedStudents, {
+        buildingId: isRoomScopedTab && buildingFilter !== 'all' ? buildingFilter : undefined,
+        roomId: isRoomScopedTab && roomFilter !== 'all' ? roomFilter : undefined,
+        academicYearId: academicYearFilter !== 'all' ? academicYearFilter : undefined,
+        classId: classFilter !== 'all' ? classFilter : undefined,
+        search: deferredSearch,
+        roomStatus: isRoomScopedTab ? roomStatusFilter : 'all',
+      }),
+    [
+      allAssignedStudents,
+      isRoomScopedTab,
+      buildingFilter,
+      roomFilter,
+      academicYearFilter,
+      classFilter,
+      deferredSearch,
+      roomStatusFilter,
+    ]
+  );
+
+  const visibleUnassignedBoarders = useMemo(
+    () =>
+      filterUnassignedBoarders(unassignedBoarders, {
+        academicYearId: academicYearFilter !== 'all' ? academicYearFilter : undefined,
+        classId: classFilter !== 'all' ? classFilter : undefined,
+        search: deferredSearch,
+      }),
+    [unassignedBoarders, academicYearFilter, classFilter, deferredSearch]
+  );
+
+  const filteredSummary = useMemo(() => summarizeHostelRooms(filteredRooms), [filteredRooms]);
+  const allRoomSummary = useMemo(() => summarizeHostelRooms(rooms), [rooms]);
+  const fullRoomsCount = useMemo(
+    () => filteredRooms.filter((room) => getHostelRoomStatus(room) === 'full').length,
+    [filteredRooms]
+  );
+
+  const buildingOptions = useMemo(
+    () =>
+      buildUniqueOptions(
+        buildings.map((building) => ({ value: building.id, label: building.buildingName })),
+        t('hostel.allBuildingsOption')
+      ),
+    [buildings, t]
+  );
+
+  const roomOptions = useMemo(() => {
+    const scopedRooms =
+      buildingFilter === 'all'
+        ? rooms
+        : rooms.filter((room) => room.buildingId === buildingFilter);
+
+    const sortedRooms = [...scopedRooms].sort((left, right) => {
+      const buildingCompare = (left.buildingName ?? '').localeCompare(right.buildingName ?? '');
+      if (buildingCompare !== 0) {
+        return buildingCompare;
+      }
+
+      return left.roomNumber.localeCompare(right.roomNumber, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+
+    return [
+      { value: 'all', label: labels.allRooms },
+      ...sortedRooms.map((room) => ({
+        value: room.id,
+        label: room.buildingName ? `${room.roomNumber} - ${room.buildingName}` : room.roomNumber,
+      })),
+    ];
+  }, [rooms, buildingFilter, labels.allRooms]);
+
+  const academicYearOptions = useMemo(
+    () =>
+      buildUniqueOptions(
+        [...allAssignedStudents, ...unassignedBoarders].map((row) => ({
+          value: row.academicYearId,
+          label: row.academicYearName || row.admissionYear,
+        })),
+        labels.allAcademicYears
+      ),
+    [allAssignedStudents, unassignedBoarders, labels.allAcademicYears]
+  );
+
+  const classOptions = useMemo(
+    () =>
+      buildUniqueOptions(
+        [...allAssignedStudents, ...unassignedBoarders].map((row) => ({
+          value: row.classId,
+          label: row.className,
+        })),
+        labels.allClasses
+      ),
+    [allAssignedStudents, unassignedBoarders, labels.allClasses]
+  );
+
+  const visibleBuildings = useMemo(() => {
+    const sorted = [...buildings].sort((left, right) => {
+      const studentDelta = right.studentsInRooms - left.studentsInRooms;
+      if (studentDelta !== 0) {
+        return studentDelta;
+      }
+
+      const roomDelta = right.occupiedRooms - left.occupiedRooms;
+      if (roomDelta !== 0) {
+        return roomDelta;
+      }
+
+      return left.buildingName.localeCompare(right.buildingName);
+    });
+
+    if (buildingFilter === 'all') {
+      return sorted;
+    }
+
+    return sorted.filter((building) => building.id === buildingFilter);
+  }, [buildings, buildingFilter]);
+
+  const hasActiveFilters =
+    buildingFilter !== 'all' ||
+    roomFilter !== 'all' ||
+    roomStatusFilter !== 'all' ||
+    academicYearFilter !== 'all' ||
+    classFilter !== 'all' ||
+    search.trim().length > 0;
 
   const exportCsv = () => {
     const headers = [
-      t('settings.roomNumber'),
-      t('settings.building'),
-      t('settings.warden'),
-      t('hostel.occupancy'),
-      t('table.students'),
+      t('hostel.room'),
+      t('hostel.building'),
+      t('hostel.warden'),
+      labels.status,
+      labels.boardersCount,
+      t('hostel.students'),
     ];
 
-    const rows = filteredRooms.map((room) => [
-      room.roomNumber,
-      room.buildingName || t('hostel.unassigned'),
-      room.staffName || t('hostel.notAssigned'),
-      room.occupants.length.toString(),
-      room.occupants.map((student) => student.studentName || '').join(' | '),
-    ]);
+    const rows = filteredRooms.map((room) => {
+      const roomStatus = getHostelRoomStatus(room);
+      const statusLabel = getRoomStatusMeta(roomStatus, t).label;
+
+      return [
+        room.roomNumber,
+        room.buildingName || t('hostel.unassigned'),
+        room.staffName || t('hostel.notAssigned'),
+        statusLabel,
+        String(room.occupants.length),
+        room.occupants
+          .map((student) =>
+            [
+              student.studentName || labels.student,
+              student.className || '',
+              student.admissionNumber || '',
+            ]
+              .filter(Boolean)
+              .join(' / ')
+          )
+          .join(' | '),
+      ];
+    });
 
     const csvContent = [headers, ...rows]
       .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','))
@@ -198,155 +440,712 @@ export function HostelManagement() {
     URL.revokeObjectURL(url);
   };
 
+  const handleTabChange = (nextTab: string) => {
+    const resolvedTab = nextTab as HostelTab;
+    setActiveTab(resolvedTab);
+
+    if (resolvedTab === 'waiting') {
+      setBuildingFilter('all');
+      setRoomFilter('all');
+      setRoomStatusFilter('all');
+    }
+  };
+
+  const clearFilters = () => {
+    setBuildingFilter('all');
+    setRoomFilter('all');
+    setRoomStatusFilter('all');
+    setAcademicYearFilter('all');
+    setClassFilter('all');
+    startTransition(() => setSearch(''));
+  };
+
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 md:p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BedDouble className="h-5 w-5" />
-              {t('hostel.management')}
-            </CardTitle>
-            <CardDescription>{t('hostel.loadingHostelOccupancy')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LoadingSpinner size="lg" text={t('hostel.loadingHostelData')} />
-          </CardContent>
-        </Card>
+      <div className="container mx-auto max-w-7xl space-y-6 overflow-x-hidden p-4 md:p-6">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border bg-card p-12 shadow-sm">
+          <BedDouble className="h-10 w-10 text-muted-foreground/40" />
+          <LoadingSpinner size="lg" text={t('hostel.loadingHostelData')} />
+        </div>
       </div>
     );
   }
 
   if (isError) {
     const message = error instanceof Error ? error.message : '';
+
     return (
-      <div className="container mx-auto p-4 md:p-6 max-w-7xl overflow-x-hidden">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              {t('toast.hostelOverviewLoadFailed')}
-            </CardTitle>
-            {message ? (
-              <CardDescription className="text-destructive">{message}</CardDescription>
-            ) : null}
-          </CardHeader>
-          <CardContent>
-            <Button type="button" variant="outline" onClick={() => void refetch()}>
-              {t('common.retry')}
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto max-w-7xl space-y-6 overflow-x-hidden p-4 md:p-6">
+        <div className="space-y-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-8 text-center">
+          <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
+          <p className="font-semibold text-destructive">{t('toast.hostelOverviewLoadFailed')}</p>
+          {message && <p className="text-sm text-muted-foreground">{message}</p>}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refetch()}
+            className="mt-2 rounded-xl"
+          >
+            {t('common.retry')}
+          </Button>
+        </div>
       </div>
     );
   }
 
+  const occupancyRate = Math.round(summary.occupancyRate);
+
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+    <div className="container mx-auto max-w-7xl space-y-6 overflow-x-hidden p-4 md:p-6">
       <PageHeader
-        title={t('students.hostel') || 'Hostel Management'}
+        title={t('students.hostel')}
         description={t('hostel.monitorOccupancyAssignments')}
         icon={<BedDouble className="h-5 w-5" />}
-        rightSlot={
-          <Button onClick={exportCsv} variant="outline" size="sm" disabled={filteredRooms.length === 0} className="flex-shrink-0">
-            <FileDown className="h-4 w-4" />
-            <span className="hidden sm:inline ml-2">{t('hostel.exportOccupancyCsv')}</span>
-          </Button>
-        }
-        showDescriptionOnMobile={false}
+        primaryAction={{
+          label: t('hostel.exportOccupancyCsv'),
+          onClick: exportCsv,
+          icon: <FileDown className="h-4 w-4" />,
+          disabled: filteredRooms.length === 0,
+        }}
       />
 
-      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title={t('hostel.roomsOccupied')}
-          value={summary.occupiedRooms}
-          icon={BedDouble}
-          description={`${summary.totalRooms} ${t('hostel.totalRoomsLabel')}`}
-          color="blue"
-        />
-        <StatsCard
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryMetricCard
           title={t('hostel.studentsInHostel')}
           value={summary.totalStudentsInRooms}
-          icon={Users}
-          description={`${summary.unassignedBoarders} ${t('hostel.boardersWaitingForRooms')}`}
-          color="green"
+          icon={<Users className="h-4 w-4" />}
         />
-        <StatsCard
-          title={t('hostel.buildingsLabel')}
-          value={summary.totalBuildings}
-          icon={Building2}
-          description={t('hostel.acrossHostelNetwork')}
-          color="purple"
+        <SummaryMetricCard
+          title={t('hostel.rooms')}
+          value={summary.totalRooms}
+          icon={<BedDouble className="h-4 w-4" />}
         />
-        <StatsCard
-          title={t('hostel.wardenCoverageLabel')}
-          value={summary.uniqueWardens}
-          icon={ShieldCheck}
-          description={t('hostel.roomsWithAssignedWardens')}
-          color="amber"
+        <SummaryMetricCard
+          title={t('hostel.boardersWaitingForRooms')}
+          value={summary.unassignedBoarders}
+          icon={<AlertCircle className="h-4 w-4" />}
+          highlight={summary.unassignedBoarders > 0}
+        />
+        <SummaryMetricCard
+          title={t('hostel.needsAttention')}
+          value={allRoomSummary.roomsNeedingAttention}
+          icon={<AlertCircle className="h-4 w-4" />}
+          highlight={allRoomSummary.roomsNeedingAttention > 0}
         />
       </div>
 
-      <FilterPanel 
-        title={t('events.filters') || 'Search & Filter'}
-        defaultOpenDesktop={true}
-        defaultOpenMobile={false}
-      >
-        <div className="flex flex-col gap-4 md:flex-row md:items-end">
-          <div className="w-full md:w-[200px]">
-            <Label htmlFor="building-filter">{t('hostel.building')}</Label>
-            <Select value={buildingFilter} onValueChange={setBuildingFilter}>
-              <SelectTrigger id="building-filter">
-                <SelectValue placeholder={t('hostel.filterByBuilding')} />
+      <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium text-muted-foreground">{t('hostel.overallOccupancy')}</span>
+            <span className="font-semibold tabular-nums">{occupancyRate}%</span>
+          </div>
+          <Progress value={occupancyRate} className="h-2" />
+          <p className="text-xs text-muted-foreground">
+            {summary.occupiedRooms} / {summary.totalRooms} {labels.occupiedRooms.toLowerCase()}
+          </p>
+        </div>
+      </div>
+
+      {visibleBuildings.length > 0 && (
+        <BuildingOverviewTable
+          buildings={visibleBuildings}
+          buildingFilter={buildingFilter}
+          labels={labels}
+          summary={summary}
+          t={t}
+        />
+      )}
+
+      <FilterPanel title={t('hostel.filters')} defaultOpenDesktop defaultOpenMobile={false}>
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">{labels.filtersNote}</p>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 self-start text-xs">
+                {t('hostel.clearAll')}
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-0 flex-1 sm:min-w-[220px]">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="h-10 pl-9 text-sm"
+                placeholder={labels.searchPlaceholder}
+                value={search}
+                onChange={(event) => startTransition(() => setSearch(event.target.value))}
+              />
+            </div>
+
+            <Select value={academicYearFilter} onValueChange={setAcademicYearFilter}>
+              <SelectTrigger className="h-10 w-full sm:w-[180px]">
+                <SelectValue placeholder={labels.allAcademicYears} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('hostel.allBuildingsOption')}</SelectItem>
-                {buildings.map((building) => (
-                  <SelectItem key={building.id} value={building.id}>
-                    {building.buildingName}
+                {academicYearOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger className="h-10 w-full sm:w-[180px]">
+                <SelectValue placeholder={labels.allClasses} />
+              </SelectTrigger>
+              <SelectContent>
+                {classOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={buildingFilter}
+              onValueChange={(value) => {
+                setBuildingFilter(value);
+                setRoomFilter('all');
+              }}
+              disabled={!isRoomScopedTab}
+            >
+              <SelectTrigger className="h-10 w-full sm:w-[180px]">
+                <SelectValue placeholder={t('hostel.allBuildingsOption')} />
+              </SelectTrigger>
+              <SelectContent>
+                {buildingOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={roomFilter} onValueChange={setRoomFilter} disabled={!isRoomScopedTab}>
+              <SelectTrigger className="h-10 w-full sm:w-[180px]">
+                <SelectValue placeholder={labels.allRooms} />
+              </SelectTrigger>
+              <SelectContent>
+                {roomOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={roomStatusFilter}
+              onValueChange={(value) => setRoomStatusFilter(value as RoomStatusFilter)}
+              disabled={!isRoomScopedTab}
+            >
+              <SelectTrigger className="h-10 w-full sm:w-[170px]">
+                <SelectValue placeholder={labels.status} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{labels.allRooms}</SelectItem>
+                <SelectItem value="full">{translateOrFallback(t, 'hostel.full', 'Full')}</SelectItem>
+                <SelectItem value="occupied">{t('hostel.occupied')}</SelectItem>
+                <SelectItem value="attention">{t('hostel.needsAttention')}</SelectItem>
+                <SelectItem value="empty">{t('hostel.available')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="flex-1 min-w-0">
-            <Label htmlFor="search">{t('common.search') || t('events.searchAndFilters') || 'Search'}</Label>
-            <Input
-              id="search"
-              placeholder={t('hostel.searchRoomsPlaceholder')}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+            <span>
+              <span className="font-medium text-foreground">{filteredRooms.length}</span>{' '}
+              {t('hostel.rooms').toLowerCase()}
+            </span>
+            <span>
+              <span className="font-medium text-foreground">{assignedStudents.length}</span>{' '}
+              {t('hostel.studentPlural')}
+            </span>
+            <span>
+              <span className="font-medium text-foreground">
+                {visibleUnassignedBoarders.length}
+              </span>{' '}
+              {t('hostel.waiting').toLowerCase()}
+            </span>
+            {filteredSummary.roomsNeedingAttention > 0 && (
+              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                <AlertCircle className="h-3 w-3" />
+                <span className="font-medium">{filteredSummary.roomsNeedingAttention}</span>{' '}
+                {t('hostel.needsAttention').toLowerCase()}
+              </span>
+            )}
+            {fullRoomsCount > 0 && (
+              <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+                <BedDouble className="h-3 w-3" />
+                <span className="font-medium">{fullRoomsCount}</span>{' '}
+                {translateOrFallback(t, 'hostel.fullRooms', 'full rooms')}
+              </span>
+            )}
           </div>
         </div>
       </FilterPanel>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <CardTitle>{t('hostel.roomOccupancy')}</CardTitle>
-              <CardDescription className="hidden md:block">{t('hostel.trackStudentsPerRoom')}</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto -mx-4 md:mx-0">
-            <div className="inline-block min-w-full align-middle px-4 md:px-0">
-              <DataTable table={table} />
-            </div>
-          </div>
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+        <TabsList className="grid h-11 w-full grid-cols-3 rounded-2xl p-1">
+          <TabsTrigger value="rooms" className="gap-1.5 rounded-xl text-xs sm:text-sm" aria-label={t('hostel.rooms')}>
+            <BedDouble className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{t('hostel.rooms')}</span>
+            <span className="ml-1 text-[10px] font-semibold opacity-70">({filteredRooms.length})</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="students"
+            className="gap-1.5 rounded-xl text-xs sm:text-sm"
+            aria-label={t('hostel.students')}
+          >
+            <Users className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{t('hostel.students')}</span>
+            <span className="ml-1 text-[10px] font-semibold opacity-70">
+              ({assignedStudents.length})
+            </span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="waiting"
+            className="gap-1.5 rounded-xl text-xs sm:text-sm"
+            aria-label={t('hostel.waiting')}
+          >
+            <AlertCircle
+              className={cn(
+                'h-3.5 w-3.5',
+                visibleUnassignedBoarders.length > 0 && 'text-amber-500'
+              )}
+            />
+            <span className="hidden sm:inline">{t('hostel.waiting')}</span>
+            <span
+              className={cn(
+                'ml-1 text-[10px] font-semibold opacity-70',
+                visibleUnassignedBoarders.length > 0 &&
+                  'text-amber-600 opacity-100 dark:text-amber-400'
+              )}
+            >
+              ({visibleUnassignedBoarders.length})
+            </span>
+          </TabsTrigger>
+        </TabsList>
 
-          <DataTablePagination
-            table={table}
-            paginationMeta={paginationMeta}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-            showPageSizeSelector={true}
-            showTotalCount={true}
-          />
-        </CardContent>
-      </Card>
+        <TabsContent value="rooms" className="mt-0">
+          {filteredRooms.length > 0 ? (
+            <RoomsRegisterTable rooms={filteredRooms} labels={labels} t={t} />
+          ) : (
+            <EmptyState
+              icon={<BedDouble className="h-10 w-10 text-muted-foreground/30" />}
+              title={t('hostel.noRoomsMatch')}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="students" className="mt-0">
+          {assignedStudents.length > 0 ? (
+            <StudentsRegisterTable students={assignedStudents} labels={labels} t={t} />
+          ) : (
+            <EmptyState
+              icon={<Users className="h-10 w-10 text-muted-foreground/30" />}
+              title={t('hostel.noStudentsMatch')}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="waiting" className="mt-0">
+          {visibleUnassignedBoarders.length > 0 ? (
+            <WaitingRegisterTable boarders={visibleUnassignedBoarders} labels={labels} />
+          ) : (
+            <EmptyState
+              icon={
+                unassignedBoarders.length === 0 ? (
+                  <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+                ) : (
+                  <Users className="h-10 w-10 text-muted-foreground/30" />
+                )
+              }
+              title={
+                unassignedBoarders.length === 0 ? t('hostel.allPlaced') : t('hostel.noWaitingMatch')
+              }
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function BuildingOverviewTable({
+  buildings,
+  buildingFilter,
+  labels,
+  summary,
+  t,
+}: {
+  buildings: HostelBuildingReport[];
+  buildingFilter: string;
+  labels: HostelManagementLabels;
+  summary: HostelSummary;
+  t: ReturnType<typeof useLanguage>['t'];
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b bg-muted/20 px-5 py-3.5">
+        <div className="flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-primary" />
+          <div>
+            <h2 className="text-sm font-semibold">{labels.buildingOverview}</h2>
+            <p className="text-xs text-muted-foreground">
+              {summary.totalBuildings} {t('hostel.buildings').toLowerCase()}
+            </p>
+          </div>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {buildings.length} / {summary.totalBuildings}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table className="min-w-[780px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-left">{t('hostel.building')}</TableHead>
+              <TableHead>{t('hostel.rooms')}</TableHead>
+              <TableHead>{labels.occupiedRooms}</TableHead>
+              <TableHead>{labels.boardersCount}</TableHead>
+              <TableHead>{t('hostel.warden')}</TableHead>
+              <TableHead className="text-left">{t('hostel.overallOccupancy')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {buildings.map((building) => {
+              const rate = getOccupancyRate(building.occupiedRooms, building.roomCount);
+
+              return (
+                <TableRow
+                  key={building.id}
+                  className={cn(buildingFilter === building.id && 'bg-primary/5')}
+                >
+                  <TableCell className="text-left font-medium">{building.buildingName}</TableCell>
+                  <TableCell>{building.roomCount}</TableCell>
+                  <TableCell>{building.occupiedRooms}</TableCell>
+                  <TableCell>{building.studentsInRooms}</TableCell>
+                  <TableCell>{building.wardensAssigned}</TableCell>
+                  <TableCell className="w-[220px] text-left">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{rate}%</span>
+                        <span>
+                          {building.occupiedRooms} / {building.roomCount}
+                        </span>
+                      </div>
+                      <Progress value={rate} className="h-2" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function RoomsRegisterTable({
+  rooms,
+  labels,
+  t,
+}: {
+  rooms: HostelRoom[];
+  labels: HostelManagementLabels;
+  t: ReturnType<typeof useLanguage>['t'];
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b bg-muted/20 px-5 py-3.5">
+        <div>
+          <h2 className="text-sm font-semibold">{labels.roomsRegister}</h2>
+          <p className="text-xs text-muted-foreground">
+            {rooms.length} {t('hostel.rooms').toLowerCase()}
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table className="min-w-[1040px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-left">{t('hostel.room')}</TableHead>
+              <TableHead className="text-left">{t('hostel.building')}</TableHead>
+              <TableHead className="text-left">{t('hostel.warden')}</TableHead>
+              <TableHead>{labels.status}</TableHead>
+              <TableHead>{labels.capacity}</TableHead>
+              <TableHead>{labels.boardersCount}</TableHead>
+              <TableHead className="text-left">{t('hostel.students')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rooms.map((room) => {
+              const roomStatus = getHostelRoomStatus(room);
+              const statusMeta = getRoomStatusMeta(roomStatus, t);
+
+              return (
+                <TableRow key={room.id}>
+                  <TableCell className="text-left font-medium">{room.roomNumber}</TableCell>
+                  <TableCell className="text-left">
+                    {formatCellValue(room.buildingName, t('hostel.unassigned'))}
+                  </TableCell>
+                  <TableCell className="text-left">
+                    {formatCellValue(room.staffName, t('hostel.notAssigned'))}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={cn(
+                        'inline-flex rounded-lg border px-2 py-1 text-xs font-medium',
+                        statusMeta.className
+                      )}
+                    >
+                      {statusMeta.label}
+                    </span>
+                  </TableCell>
+                <TableCell>{room.capacity ?? '-'}</TableCell>
+                <TableCell>
+                  {room.capacity && room.capacity > 0
+                    ? `${room.occupants.length} / ${room.capacity}`
+                    : room.occupants.length}
+                </TableCell>
+                  <TableCell className="text-left">
+                    {room.occupants.length > 0 ? (
+                      <div className="space-y-2">
+                        {room.occupants.slice(0, 2).map((student) => (
+                          <div key={student.id}>
+                            <p className="text-sm font-medium">
+                              {student.studentName || labels.student}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {[student.className, student.admissionNumber]
+                                .filter(Boolean)
+                                .join(' / ') || formatCellValue(student.fatherName)}
+                            </p>
+                          </div>
+                        ))}
+                        {room.occupants.length > 2 && (
+                          <p className="text-xs font-medium text-muted-foreground">
+                            +{room.occupants.length - 2} {t('hostel.studentPlural')}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        {t('hostel.noStudentsAssigned')}
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function StudentsRegisterTable({
+  students,
+  labels,
+  t,
+}: {
+  students: HostelStudentDirectoryRow[];
+  labels: HostelManagementLabels;
+  t: ReturnType<typeof useLanguage>['t'];
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b bg-muted/20 px-5 py-3.5">
+        <div>
+          <h2 className="text-sm font-semibold">{labels.studentsRegister}</h2>
+          <p className="text-xs text-muted-foreground">
+            {students.length} {t('hostel.studentPlural')}
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table className="min-w-[1240px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-left">{labels.student}</TableHead>
+              <TableHead className="text-left">{labels.fatherName}</TableHead>
+              <TableHead className="text-left">{labels.classColumn}</TableHead>
+              <TableHead className="text-left">{labels.academicYear}</TableHead>
+              <TableHead className="text-left">{labels.admissionNumber}</TableHead>
+              <TableHead className="text-left">{t('hostel.building')}</TableHead>
+              <TableHead className="text-left">{t('hostel.room')}</TableHead>
+              <TableHead className="text-left">{t('hostel.warden')}</TableHead>
+              <TableHead>{labels.placement}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {students.map((student) => {
+              const placementMeta = getPlacementMeta(student.roomStatus, t);
+
+              return (
+                <TableRow key={student.id}>
+                  <TableCell className="text-left font-medium">
+                    {student.studentName || labels.student}
+                  </TableCell>
+                  <TableCell className="text-left">{formatCellValue(student.fatherName)}</TableCell>
+                  <TableCell className="text-left">{formatCellValue(student.className)}</TableCell>
+                  <TableCell className="text-left">
+                    {formatCellValue(student.academicYearName || student.admissionYear)}
+                  </TableCell>
+                  <TableCell className="text-left">
+                    {formatCellValue(student.admissionNumber)}
+                  </TableCell>
+                  <TableCell className="text-left">
+                    {formatCellValue(student.buildingName, t('hostel.unassigned'))}
+                  </TableCell>
+                  <TableCell className="text-left">{student.roomNumber}</TableCell>
+                  <TableCell className="text-left">
+                    {formatCellValue(student.staffName, t('hostel.notAssigned'))}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={cn(
+                        'inline-flex rounded-lg border px-2 py-1 text-xs font-medium',
+                        placementMeta.className
+                      )}
+                    >
+                      {placementMeta.label}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function WaitingRegisterTable({
+  boarders,
+  labels,
+}: {
+  boarders: HostelUnassignedBoarder[];
+  labels: HostelManagementLabels;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b bg-muted/20 px-5 py-3.5">
+        <div>
+          <h2 className="text-sm font-semibold">{labels.waitingRegister}</h2>
+          <p className="text-xs text-muted-foreground">
+            {boarders.length} {labels.waitingStatus.toLowerCase()}
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+          <AlertCircle className="h-3.5 w-3.5" />
+          {boarders.length}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table className="min-w-[1080px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-left">{labels.student}</TableHead>
+              <TableHead className="text-left">{labels.fatherName}</TableHead>
+              <TableHead className="text-left">{labels.classColumn}</TableHead>
+              <TableHead className="text-left">{labels.academicYear}</TableHead>
+              <TableHead className="text-left">{labels.admissionNumber}</TableHead>
+              <TableHead className="text-left">{labels.residencyType}</TableHead>
+              <TableHead>{labels.status}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {boarders.map((boarder) => (
+              <TableRow key={boarder.id}>
+                <TableCell className="text-left font-medium">
+                  {boarder.studentName || labels.student}
+                </TableCell>
+                <TableCell className="text-left">{formatCellValue(boarder.fatherName)}</TableCell>
+                <TableCell className="text-left">{formatCellValue(boarder.className)}</TableCell>
+                <TableCell className="text-left">
+                  {formatCellValue(boarder.academicYearName || boarder.admissionYear)}
+                </TableCell>
+                <TableCell className="text-left">
+                  {formatCellValue(boarder.admissionNumber)}
+                </TableCell>
+                <TableCell className="text-left">
+                  {formatCellValue(boarder.residencyTypeName)}
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+                    {labels.waitingStatus}
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+}: {
+  icon: ReactNode;
+  title: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-2xl border bg-card px-4 py-16 text-center shadow-sm">
+      {icon}
+      <div className="max-w-sm space-y-1">
+        <p className="text-sm font-semibold">{title}</p>
+      </div>
+    </div>
+  );
+}
+
+function SummaryMetricCard({
+  title,
+  value,
+  icon,
+  highlight = false,
+}: {
+  title: string;
+  value: number;
+  icon: ReactNode;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border bg-card p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-muted-foreground">{title}</span>
+        <span
+          className={cn(
+            'inline-flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground',
+            highlight && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+          )}
+        >
+          {icon}
+        </span>
+      </div>
+      <p
+        className={cn(
+          'mt-2 text-2xl font-semibold tracking-tight tabular-nums',
+          highlight && 'text-amber-600 dark:text-amber-400'
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }

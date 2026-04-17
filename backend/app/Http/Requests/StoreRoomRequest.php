@@ -44,6 +44,7 @@ class StoreRoomRequest extends FormRequest
             ],
             'building_id' => 'required|uuid|exists:buildings,id',
             'staff_id' => 'nullable|uuid|exists:staff,id',
+            'capacity' => 'nullable|integer|min:1|max:200',
         ];
     }
 

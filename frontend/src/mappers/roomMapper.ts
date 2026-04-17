@@ -10,6 +10,7 @@ export function mapRoomApiToDomain(api: RoomApi.Room): Room {
     return {
         id: api.id,
         roomNumber: api.room_number,
+        capacity: api.capacity,
         buildingId: api.building_id,
         schoolId: api.school_id,
         staffId: api.staff_id,
@@ -37,6 +38,7 @@ export function mapRoomApiToDomain(api: RoomApi.Room): Room {
 export function mapRoomDomainToInsert(domain: Partial<Room>): RoomApi.RoomInsert {
     return {
         room_number: domain.roomNumber || '',
+        capacity: domain.capacity ?? null,
         building_id: domain.buildingId || '',
         staff_id: domain.staffId || null,
     };

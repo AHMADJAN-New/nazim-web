@@ -5,8 +5,6 @@ import {
   Calendar,
   Check,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   ClipboardList,
   Clock,
   Heart,
@@ -22,16 +20,12 @@ import { ChevronsUpDown } from 'lucide-react';
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { FilterPanel } from '@/components/layout/FilterPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -375,7 +369,7 @@ export default function AttendanceMarking() {
         value={value}
         onChange={(event) => handleUpdateState(studentId, event.target.value as AttendanceDraftStatus)}
         disabled={session?.status === 'closed'}
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring sm:w-44"
+        className="w-full rounded-lg border border-input bg-background px-2.5 py-1.5 text-sm shadow-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring sm:w-40 transition-colors"
       >
         {!savedRecord && <option value={UNMARKED_STATUS}>{t('attendancePage.statusUnmarked') || 'Not marked'}</option>}
         {attendanceOptions.map((option) => (
@@ -882,473 +876,475 @@ export default function AttendanceMarking() {
     await closeSession.mutateAsync(selectedSessionId);
   };
 
+  // ─── shared table helpers ───────────────────────────────────────────────────
+
+  const StudentTable = ({
+    children,
+    colSpan = 7,
+  }: {
+    children: React.ReactNode;
+    colSpan?: number;
+  }) => (
+    <div className="rounded-xl border overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table>{children}</Table>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <ClipboardList className="h-5 w-5 text-muted-foreground" />
+    <div className="container mx-auto p-3 md:p-5 max-w-7xl overflow-x-hidden space-y-4">
+
+      {/* ── Top bar: title + session selector + close action ── */}
+      <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+        <div className="px-4 py-3.5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          {/* Title */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+              <ClipboardList className="h-5 w-5 text-primary" />
+            </div>
             <div>
-              <CardTitle>{t('dashboard.markAttendance') || 'Mark Attendance'}</CardTitle>
-              <CardDescription className="hidden md:block">
-                {t('attendancePage.markAttendanceDescription') || 'Track attendance with manual marking or barcode scans'}
-              </CardDescription>
+              <h1 className="font-semibold text-base leading-tight">
+                {t('dashboard.markAttendance') || 'Mark Attendance'}
+              </h1>
+              {!sessionsLoading && filteredSessions.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {filteredSessions.length} {t('attendancePage.openSessions') || 'open session(s)'}
+                  {pagination && pagination.total > filteredSessions.length && (
+                    <span className="ml-1">({pagination.total} total)</span>
+                  )}
+                </p>
+              )}
             </div>
           </div>
-        </CardHeader>
-      </Card>
 
-      <Card>
-        <Collapsible open={isSessionPanelOpen} onOpenChange={setIsSessionPanelOpen}>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{t('attendancePage.selectSession') || 'Select Session'}</CardTitle>
-                {isSessionPanelOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>{t('attendancePage.selectSession') || 'Select Session'}</Label>
-                  {!sessionsLoading && filteredSessions.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      {filteredSessions.length} {t('attendancePage.openSessions') || 'open session(s)'}
-                      {pagination && pagination.total > filteredSessions.length && <span className="ml-1">({pagination.total} total)</span>}
+          {/* Session combobox */}
+          <div className="flex-1 w-full min-w-0">
+            <Popover open={isSessionSelectOpen} onOpenChange={setIsSessionSelectOpen} modal={false}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={isSessionSelectOpen}
+                  className="w-full justify-between rounded-xl h-10"
+                  disabled={sessionsLoading}
+                >
+                  {selectedSessionId && session ? (
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      {session.classes?.length ? (
+                        session.classes.map((sc) => (
+                          <Badge key={sc.id} variant="secondary" className="text-xs shrink-0">
+                            {sc.name}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="font-medium truncate">{session.className || 'Class'}</span>
+                      )}
+                      <span className="text-xs text-muted-foreground shrink-0 ml-1">
+                        {formatDate(session.sessionDate, locale)}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {sessionsLoading
+                        ? t('common.loading') || 'Loading...'
+                        : t('attendancePage.selectSessionPlaceholder') || 'Choose a session...'}
                     </span>
                   )}
-                </div>
-                <Popover open={isSessionSelectOpen} onOpenChange={setIsSessionSelectOpen} modal={false}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" aria-expanded={isSessionSelectOpen} className="w-full justify-between" disabled={sessionsLoading}>
-                      {selectedSessionId && session ? (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {session.classes?.length ? (
-                            session.classes.map((sessionClass) => (
-                              <Badge key={sessionClass.id} variant="outline" className="text-xs">
-                                {sessionClass.name}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="font-medium">{session.className || 'Class'}</span>
-                          )}
-                          <span className="text-xs text-muted-foreground">{formatDate(session.sessionDate, locale)}</span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">{t('attendancePage.selectSessionPlaceholder') || 'Choose a session...'}</span>
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-50" align="start" onOpenAutoFocus={(event) => event.preventDefault()}>
-                    <Command shouldFilter={false}>
-                      <CommandInput placeholder={t('attendancePage.searchSessions') || 'Search sessions...'} value={sessionSearchTerm} onValueChange={setSessionSearchTerm} />
-                      <CommandList className="max-h-[300px]">
-                        <CommandEmpty>
-                          {sessionsLoading
-                            ? t('common.loading') || 'Loading...'
-                            : searchableSessions.length === 0 && filteredSessions.length > 0
-                              ? t('attendancePage.noSessionsMatchSearch') || 'No sessions match your search'
-                              : t('attendancePage.noSessions') || 'No open sessions available'}
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {searchableSessions.map((item) => (
-                            <CommandItem
-                              key={item.id}
-                              value={`${item.className || ''} ${item.classes?.map((sessionClass) => sessionClass.name).join(' ') || ''} ${formatDate(item.sessionDate, locale)}`}
-                              onSelect={() => {
-                                setSelectedSessionId(item.id);
-                                setIsSessionSelectOpen(false);
-                                setSessionSearchTerm('');
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <Check className={cn('mr-2 h-4 w-4', selectedSessionId === item.id ? 'opacity-100' : 'opacity-0')} />
-                              <div className="flex flex-col gap-1 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {item.classes?.length ? (
-                                    item.classes.map((sessionClass) => (
-                                      <Badge key={sessionClass.id} variant="outline" className="text-xs">
-                                        {sessionClass.name}
-                                      </Badge>
-                                    ))
-                                  ) : (
-                                    <span className="font-medium text-sm">{item.className || 'Class'}</span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span>{formatDate(item.sessionDate, locale)}</span>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {item.method === 'manual' ? t('attendancePage.manualTab') || 'Manual' : t('attendancePage.barcodeTab') || 'Barcode'}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[var(--radix-popover-trigger-width)] p-0 z-50"
+                align="start"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder={t('attendancePage.searchSessions') || 'Search sessions...'}
+                    value={sessionSearchTerm}
+                    onValueChange={setSessionSearchTerm}
+                  />
+                  <CommandList className="max-h-[300px]">
+                    <CommandEmpty>
+                      {sessionsLoading
+                        ? t('common.loading') || 'Loading...'
+                        : searchableSessions.length === 0 && filteredSessions.length > 0
+                          ? t('attendancePage.noSessionsMatchSearch') || 'No sessions match your search'
+                          : t('attendancePage.noSessions') || 'No open sessions available'}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {searchableSessions.map((item) => {
+                        const isToday =
+                          new Date(item.sessionDate).setHours(0, 0, 0, 0) ===
+                          new Date().setHours(0, 0, 0, 0);
+                        return (
+                          <CommandItem
+                            key={item.id}
+                            value={`${item.className || ''} ${item.classes?.map((c) => c.name).join(' ') || ''} ${formatDate(item.sessionDate, locale)}`}
+                            onSelect={() => {
+                              setSelectedSessionId(item.id);
+                              setIsSessionSelectOpen(false);
+                              setSessionSearchTerm('');
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4 shrink-0',
+                                selectedSessionId === item.id ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {item.classes?.length ? (
+                                  item.classes.map((c) => (
+                                    <span key={c.id} className="font-medium text-sm">
+                                      {c.name}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="font-medium text-sm">{item.className || 'Class'}</span>
+                                )}
+                                {isToday && (
+                                  <Badge variant="default" className="text-[10px] h-4 px-1.5">
+                                    {t('attendance.today') || 'Today'}
                                   </Badge>
-                                  {new Date(item.sessionDate).setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0) && (
-                                    <Badge variant="default" className="text-xs">
-                                      {t('attendance.today') || 'Today'}
-                                    </Badge>
-                                  )}
-                                </div>
+                                )}
                               </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>{formatDate(item.sessionDate, locale)}</span>
+                                <span className="opacity-40">·</span>
+                                <span>
+                                  {item.method === 'manual'
+                                    ? t('attendancePage.manualTab') || 'Manual'
+                                    : t('attendancePage.barcodeTab') || 'Barcode'}
+                                </span>
+                              </div>
+                            </div>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
 
-              {selectedSessionId && session && (
-                <div className="p-3 bg-muted rounded-md space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium">{t('attendancePage.currentSession') || 'Current Session:'}</span>
-                    {session.classes?.length ? (
-                      session.classes.map((sessionClass) => (
-                        <Badge key={sessionClass.id} variant="outline" className="text-xs">
-                          {sessionClass.name}
-                        </Badge>
-                      ))
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        {session.className || 'Class'}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{formatDate(session.sessionDate, locale)}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {session.method === 'manual' ? t('attendancePage.manualTab') || 'Manual' : t('attendancePage.barcodeTab') || 'Barcode'}
-                    </Badge>
-                    <Badge variant={session.status === 'open' ? 'default' : 'outline'} className="text-xs">
-                      {session.status === 'open' ? t('attendance.open') || 'Open' : t('attendance.closed') || 'Closed'}
-                    </Badge>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+          {/* Close session */}
+          {session?.status === 'open' ? (
+            <Button
+              variant="outline"
+              onClick={() => void handleCloseSession()}
+              disabled={closeSession.isPending || markAttendance.isPending}
+              className="shrink-0 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/5 hover:border-destructive transition-colors"
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              {closeSession.isPending
+                ? t('attendancePage.closingSession') || 'Closing...'
+                : t('attendancePage.closeSession') || 'Close session'}
+            </Button>
+          ) : session?.status === 'closed' ? (
+            <Badge variant="outline" className="shrink-0 text-muted-foreground border-muted">
+              {t('attendancePage.sessionClosed') || 'Session closed'}
+            </Badge>
+          ) : null}
+        </div>
+
+        {/* Session info strip */}
+        {selectedSessionId && session && (
+          <div className="px-4 py-2 border-t bg-muted/20 flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground">
+              {t('attendancePage.currentSession') || 'Session'}:
+            </span>
+            {session.classes?.length ? (
+              session.classes.map((sc) => (
+                <Badge key={sc.id} variant="outline" className="text-xs h-5">
+                  {sc.name}
+                </Badge>
+              ))
+            ) : (
+              <Badge variant="outline" className="text-xs h-5">
+                {session.className || 'Class'}
+              </Badge>
+            )}
+            <span className="text-xs text-muted-foreground">{formatDate(session.sessionDate, locale)}</span>
+            <Badge variant="secondary" className="text-xs h-5">
+              {session.method === 'manual'
+                ? t('attendancePage.manualTab') || 'Manual'
+                : t('attendancePage.barcodeTab') || 'Barcode'}
+            </Badge>
+            <Badge
+              variant={session.status === 'open' ? 'default' : 'outline'}
+              className="text-xs h-5"
+            >
+              {session.status === 'open'
+                ? t('attendance.open') || 'Open'
+                : t('attendance.closed') || 'Closed'}
+            </Badge>
+          </div>
+        )}
+      </div>
 
       {selectedSessionId && session ? (
-        <Card>
-          <CardHeader className="space-y-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <CardTitle>{t('dashboard.markAttendance') || 'Mark Attendance'}</CardTitle>
-                  <Badge variant="secondary">
-                    {session.method === 'manual' ? t('attendancePage.manualSession') || 'Manual session' : t('attendancePage.barcodeSession') || 'Barcode session'}
-                  </Badge>
-                  <Badge variant={session.status === 'open' ? 'default' : 'outline'}>
-                    {session.status === 'open' ? t('attendance.open') || 'Open' : t('attendance.closed') || 'Closed'}
-                  </Badge>
+        <>
+          {/* ── Stats ── */}
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+            {summaryCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <div
+                  key={card.title}
+                  className="rounded-2xl border bg-card p-4 flex items-start justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-muted-foreground truncate">{card.title}</p>
+                    <p className="text-3xl font-bold mt-1 tabular-nums leading-none">{card.value}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5 leading-snug hidden sm:block">
+                      {card.description}
+                    </p>
+                  </div>
+                  <div className={cn('p-2.5 rounded-xl shrink-0', card.color)}>
+                    <Icon className="h-4 w-4" />
+                  </div>
                 </div>
-                <CardDescription>
-                  {session.method === 'manual'
-                    ? t('attendancePage.manualWorkflowDescription') || 'Use the in-progress view to set statuses, save them, and close the session when the remaining students should become absent.'
-                    : t('attendancePage.barcodeWorkflowDescription') || 'Scans save present students immediately. Review the students without a saved status before closing so you can mark sick, leave, or other exceptions.'}
-                </CardDescription>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {session.status === 'open' ? (
-                <Button variant="outline" onClick={() => void handleCloseSession()} disabled={closeSession.isPending || markAttendance.isPending}>
-                    <XCircle className="h-4 w-4 mr-2" />
-                    {closeSession.isPending ? t('attendancePage.closingSession') || 'Closing session...' : t('attendancePage.closeSession') || 'Close session'}
-                  </Button>
-                ) : (
-                  <Badge variant="outline" className="text-xs text-muted-foreground">
-                    {t('attendancePage.sessionClosed') || 'Session closed'}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            {session.status === 'open' && sessionSummaryCounts.pending > 0 && (
-              <div className="rounded-lg border border-dashed border-red-300 bg-red-50/60 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">
-                <p className="font-medium">{t('attendancePage.pendingReviewBannerTitle') || 'Students still need review before close.'}</p>
-                <p className="mt-1">
+              );
+            })}
+          </div>
+
+          {/* ── Pending review banner ── */}
+          {session.status === 'open' && sessionSummaryCounts.pending > 0 && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 dark:border-amber-900 dark:bg-amber-950/20 px-4 py-3 flex items-start gap-3">
+              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  {t('attendancePage.pendingReviewBannerTitle') || 'Students still need review before close.'}
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
                   {sessionSummaryCounts.pending}{' '}
-                  {t('attendancePage.pendingReviewBannerDescription') || 'students do not have a saved status yet. If you close now, they will be marked absent.'}
+                  {t('attendancePage.pendingReviewBannerDescription') ||
+                    'students do not have a saved status yet. If you close now, they will be marked absent.'}
                 </p>
               </div>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {session.classes && session.classes.length > 1 && (
-              <FilterPanel title={t('attendancePage.filters') || 'Filters'} defaultOpenDesktop={true} defaultOpenMobile={false}>
-                <div className="space-y-2">
-                  <Label>{t('attendancePage.filterByClass') || 'Filter by class'}</Label>
-                  <Select value={filterClassId} onValueChange={(value) => setFilterClassId(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
-                      {session.classes.map((sessionClass) => (
-                        <SelectItem key={sessionClass.id} value={sessionClass.id}>
-                          {sessionClass.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </FilterPanel>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              {summaryCards.map((card) => {
-                const Icon = card.icon;
-                return (
-                  <Card key={card.title} className="relative overflow-hidden">
-                    <div className="absolute top-0 right-0 h-28 w-28 rounded-full -mr-8 -mt-8 bg-current/10 pointer-events-none opacity-40" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
-                      <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex-1 min-w-0">
-                        {card.title}
-                      </CardTitle>
-                      <div className={`p-2 rounded-lg flex-shrink-0 ${card.color}`}>
-                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-3">
-                      <div className="text-2xl sm:text-3xl font-bold">{card.value}</div>
-                      <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
             </div>
-            <Tabs value={session.method} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-1">
-                <TabsTrigger value={session.method} className="flex items-center gap-2">
-                  {session.method === 'manual' ? <ClipboardList className="h-4 w-4" /> : <QrCode className="h-4 w-4" />}
-                  <span>{session.method === 'manual' ? t('attendancePage.manualTab') || 'Manual' : t('attendancePage.barcodeTab') || 'Barcode'}</span>
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="manual" className="space-y-4">
-                <Tabs key={`${session.id}-manual`} defaultValue="in-progress" className="space-y-4">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="in-progress">{t('attendancePage.inProgressTab') || 'In progress'}</TabsTrigger>
-                    <TabsTrigger value="saved">{t('attendancePage.savedAttendanceTab') || 'Saved attendance'}</TabsTrigger>
-                  </TabsList>
+          )}
 
-                  <TabsContent value="in-progress" className="space-y-4">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                      <div className="flex-1 max-w-full sm:max-w-md">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {/* ── Marking area ── */}
+          <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+            {/* Class filter pills */}
+            {session.classes && session.classes.length > 1 && (
+              <div className="px-5 py-3 border-b bg-muted/20 flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-medium text-muted-foreground shrink-0">
+                  {t('attendancePage.filterByClass') || 'Filter:'}
+                </span>
+                <button
+                  onClick={() => setFilterClassId('all')}
+                  className={cn(
+                    'text-xs px-2.5 py-1 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary',
+                    filterClassId === 'all'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background border-border hover:border-primary/50 hover:bg-muted'
+                  )}
+                >
+                  {t('common.all') || 'All'}
+                </button>
+                {session.classes.map((sc) => (
+                  <button
+                    key={sc.id}
+                    onClick={() => setFilterClassId(sc.id)}
+                    className={cn(
+                      'text-xs px-2.5 py-1 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary',
+                      filterClassId === sc.id
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background border-border hover:border-primary/50 hover:bg-muted'
+                    )}
+                  >
+                    {sc.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="p-4 md:p-5">
+              <Tabs value={session.method}>
+                {/* ── MANUAL MODE ── */}
+                <TabsContent value="manual" className="mt-0">
+                  <Tabs key={`${session.id}-manual`} defaultValue="in-progress" className="space-y-4">
+                    <TabsList className="grid w-full grid-cols-2 rounded-xl h-9">
+                      <TabsTrigger value="in-progress" className="rounded-lg text-xs">
+                        {t('attendancePage.inProgressTab') || 'In progress'}
+                      </TabsTrigger>
+                      <TabsTrigger value="saved" className="rounded-lg text-xs">
+                        {t('attendancePage.savedAttendanceTab') || 'Saved attendance'}
+                      </TabsTrigger>
+                    </TabsList>
+
+                    {/* In progress */}
+                    <TabsContent value="in-progress" className="mt-0 space-y-3">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                        <div className="relative flex-1 max-w-full sm:max-w-sm">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                           <Input
-                            placeholder={t('attendancePage.searchRosterPlaceholder') || 'Search by name, admission, card, or code...'}
+                            placeholder={t('attendancePage.searchRosterPlaceholder') || 'Search by name, admission, card...'}
                             value={searchTerm}
-                            onChange={(event) => setSearchTerm(event.target.value)}
-                            className="w-full pl-9"
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9 rounded-xl h-9"
                           />
                         </div>
+                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleMarkAll('present')}
+                            className="rounded-lg h-8 text-xs"
+                          >
+                            {t('attendancePage.markAllPresent') || 'Mark all present'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMarkAll('absent')}
+                            className="rounded-lg h-8 text-xs"
+                          >
+                            {t('attendancePage.markAllAbsent') || 'Mark all absent'}
+                          </Button>
+                          <Button
+                            onClick={() => void handleSaveAttendance()}
+                            disabled={markAttendance.isPending || session.status === 'closed'}
+                            size="sm"
+                            className="rounded-lg h-8 text-xs gap-1.5"
+                          >
+                            <Save className="h-3.5 w-3.5" />
+                            {markAttendance.isPending
+                              ? t('attendancePage.saveInProgress') || 'Saving...'
+                              : t('attendancePage.saveButton') || 'Save attendance'}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <Button variant="secondary" size="sm" onClick={() => handleMarkAll('present')} className="flex-shrink-0">
-                          {t('attendancePage.markAllPresent') || 'Mark all present'}
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleMarkAll('absent')} className="flex-shrink-0">
-                          {t('attendancePage.markAllAbsent') || 'Mark all absent'}
-                        </Button>
-                        <Button onClick={() => void handleSaveAttendance()} disabled={markAttendance.isPending || session.status === 'closed'} className="flex-shrink-0">
-                          <Save className="h-4 w-4 mr-2" />
-                          {markAttendance.isPending ? t('attendancePage.saveInProgress') || 'Saving...' : t('attendancePage.saveButton') || 'Save attendance'}
-                        </Button>
-                      </div>
-                    </div>
 
-                    <div className="border rounded-md overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>{t('attendancePage.studentHeader') || 'Student'}</TableHead>
-                              <TableHead className="hidden sm:table-cell">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
-                              <TableHead className="hidden md:table-cell">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                              <TableHead className="hidden sm:table-cell">{t('attendancePage.admissionHeader') || 'Admission'}</TableHead>
-                              <TableHead className="hidden md:table-cell">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
-                              <TableHead>{t('attendancePage.statusHeader') || 'Status'}</TableHead>
-                              <TableHead className="hidden lg:table-cell">{t('attendancePage.reviewStateHeader') || 'Review state'}</TableHead>
+                      <StudentTable>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="text-xs">{t('attendancePage.studentHeader') || 'Student'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.admissionHeader') || 'Admission'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
+                            <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
+                            <TableHead className="hidden lg:table-cell text-xs">{t('attendancePage.reviewStateHeader') || 'Review state'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {orderedRoster.map((student) => (
+                            <TableRow key={student.id} className="hover:bg-muted/30 transition-colors">
+                              <TableCell className="font-medium py-2.5">
+                                <div className="flex flex-col sm:hidden gap-0.5">
+                                  <span className="text-sm">{student.full_name}</span>
+                                  <span className="text-xs text-muted-foreground">{student.admission_no}</span>
+                                </div>
+                                <span className="hidden sm:inline text-sm">{student.full_name}</span>
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm py-2.5">{student.father_name ?? '—'}</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm py-2.5">{student.class_name ?? '—'}</TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm py-2.5">{student.admission_no}</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm py-2.5">{student.card_number || '—'}</TableCell>
+                              <TableCell className="py-2.5">{renderStatusSelect(student.id)}</TableCell>
+                              <TableCell className="hidden lg:table-cell py-2.5">{renderReviewStateBadge(student.id)}</TableCell>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {orderedRoster.map((student) => (
-                              <TableRow key={student.id}>
-                                <TableCell className="font-medium">
-                                  <div className="flex flex-col sm:hidden gap-1">
-                                    <span>{student.full_name}</span>
-                                    <span className="text-xs text-muted-foreground">{student.admission_no}</span>
-                                  </div>
-                                  <span className="hidden sm:inline">{student.full_name}</span>
-                                </TableCell>
-                                <TableCell className="hidden sm:table-cell">{student.father_name ?? '—'}</TableCell>
-                                <TableCell className="hidden md:table-cell">{student.class_name ?? '—'}</TableCell>
-                                <TableCell className="hidden sm:table-cell">{student.admission_no}</TableCell>
-                                <TableCell className="hidden md:table-cell">{student.card_number || '—'}</TableCell>
-                                <TableCell>{renderStatusSelect(student.id)}</TableCell>
-                                <TableCell className="hidden lg:table-cell">{renderReviewStateBadge(student.id)}</TableCell>
-                              </TableRow>
-                            ))}
-                            {!orderedRoster.length && (
-                              <TableRow>
-                                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                                  {searchTerm.trim() || filterClassId !== 'all' ? t('attendancePage.noStudentsMatchSearch') || 'No students match your search' : t('attendancePage.emptyRoster') || 'Select a session with an assigned class to see students.'}
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="live-scans" className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <History className="h-4 w-4 text-muted-foreground" />
-                          <p className="font-semibold">{t('attendancePage.scanFeedTitle') || 'Live scans'}</p>
-                        </div>
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input placeholder={t('attendancePage.searchScans') || 'Search scans...'} value={scanFeedSearch} onChange={(event) => setScanFeedSearch(event.target.value)} className="w-full sm:w-48 pl-9" />
-                        </div>
-                      </div>
-                      <div className="border rounded-md overflow-hidden">
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>{t('attendancePage.studentHeader') || 'Student'}</TableHead>
-                                <TableHead className="hidden sm:table-cell">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
-                                <TableHead className="hidden md:table-cell">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                                <TableHead className="hidden sm:table-cell">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
-                                <TableHead>{t('attendancePage.statusHeader') || 'Status'}</TableHead>
-                                <TableHead className="hidden md:table-cell">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {filteredScanFeedForDisplay.map((record) => {
-                                const rosterInfo = rosterLookupByStudentId.get(record.studentId);
-                                return (
-                                  <TableRow key={record.id}>
-                                    <TableCell className="font-medium">
-                                      <div className="flex flex-col sm:hidden gap-1">
-                                        <span>{record.student?.fullName || rosterInfo?.full_name || record.studentId}</span>
-                                        <span className="text-xs text-muted-foreground">{record.student?.cardNumber || rosterInfo?.card_number || 'â€”'}</span>
-                                      </div>
-                                      <span className="hidden sm:inline">{record.student?.fullName || rosterInfo?.full_name || record.studentId}</span>
-                                    </TableCell>
-                                    <TableCell className="hidden sm:table-cell">{rosterInfo?.father_name ?? 'â€”'}</TableCell>
-                                    <TableCell className="hidden md:table-cell">{rosterInfo?.class_name ?? 'â€”'}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{record.student?.cardNumber || rosterInfo?.card_number || 'â€”'}</TableCell>
-                                    <TableCell>
-                                      <StatusBadge status={record.status} />
-                                    </TableCell>
-                                    <TableCell className="hidden md:table-cell">{format(record.markedAt, 'pp')}</TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                              {!filteredScanFeedForDisplay.length && (
-                                <TableRow>
-                                  <TableCell colSpan={6} className="text-center text-muted-foreground text-sm">
-                                    {!selectedSessionId
-                                      ? t('attendancePage.selectSessionForScan') || 'Select a session to enable barcode scanning.'
-                                      : scanFeedSearch.trim() || filterClassId !== 'all'
-                                        ? t('attendancePage.noScansMatchSearch') || 'No scans match your search'
-                                        : t('attendancePage.noScansYet') || 'No scans yet for this session.'}
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="saved" className="space-y-4">
-                    <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                      {t('attendancePage.savedAttendanceDescription') || 'These attendance records are already saved for this session.'}
-                    </div>
-                    <div className="border rounded-md overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
+                          ))}
+                          {!orderedRoster.length && (
                             <TableRow>
-                              <TableHead>{t('attendancePage.studentHeader') || 'Student'}</TableHead>
-                              <TableHead className="hidden sm:table-cell">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
-                              <TableHead className="hidden md:table-cell">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                              <TableHead className="hidden sm:table-cell">{t('attendancePage.admissionHeader') || 'Admission'}</TableHead>
-                              <TableHead>{t('attendancePage.statusHeader') || 'Status'}</TableHead>
-                              <TableHead className="hidden lg:table-cell">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
+                              <TableCell colSpan={7} className="text-center text-muted-foreground py-10 text-sm">
+                                {searchTerm.trim() || filterClassId !== 'all'
+                                  ? t('attendancePage.noStudentsMatchSearch') || 'No students match your search'
+                                  : t('attendancePage.emptyRoster') || 'Select a session with an assigned class to see students.'}
+                              </TableCell>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {savedAttendanceRows.map((record) => {
-                              const rosterInfo = rosterLookupByStudentId.get(record.studentId);
-                              return (
-                                <TableRow key={record.id}>
-                                  <TableCell className="font-medium">{record.student?.fullName || rosterInfo?.full_name || record.studentId}</TableCell>
-                                  <TableCell className="hidden sm:table-cell">{rosterInfo?.father_name ?? '—'}</TableCell>
-                                  <TableCell className="hidden md:table-cell">{rosterInfo?.class_name ?? '—'}</TableCell>
-                                  <TableCell className="hidden sm:table-cell">{record.student?.admissionNo || rosterInfo?.admission_no || '—'}</TableCell>
-                                  <TableCell>
-                                    <StatusBadge status={record.status} />
-                                  </TableCell>
-                                  <TableCell className="hidden lg:table-cell">{formatDateTime(record.markedAt, locale)}</TableCell>
-                                </TableRow>
-                              );
-                            })}
-                            {!savedAttendanceRows.length && (
-                              <TableRow>
-                                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                  {t('attendancePage.noSavedAttendance') || 'No saved attendance yet for this session.'}
+                          )}
+                        </TableBody>
+                      </StudentTable>
+                    </TabsContent>
+
+                    {/* Saved attendance */}
+                    <TabsContent value="saved" className="mt-0 space-y-3">
+                      <p className="text-xs text-muted-foreground px-1">
+                        {t('attendancePage.savedAttendanceDescription') || 'These attendance records are already saved for this session.'}
+                      </p>
+                      <StudentTable>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="text-xs">{t('attendancePage.studentHeader') || 'Student'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.admissionHeader') || 'Admission'}</TableHead>
+                            <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
+                            <TableHead className="hidden lg:table-cell text-xs">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {savedAttendanceRows.map((record) => {
+                            const rosterInfo = rosterLookupByStudentId.get(record.studentId);
+                            return (
+                              <TableRow key={record.id} className="hover:bg-muted/30 transition-colors">
+                                <TableCell className="font-medium text-sm py-2.5">
+                                  {record.student?.fullName || rosterInfo?.full_name || record.studentId}
+                                </TableCell>
+                                <TableCell className="hidden sm:table-cell text-sm py-2.5">{rosterInfo?.father_name ?? '—'}</TableCell>
+                                <TableCell className="hidden md:table-cell text-sm py-2.5">{rosterInfo?.class_name ?? '—'}</TableCell>
+                                <TableCell className="hidden sm:table-cell text-sm py-2.5">
+                                  {record.student?.admissionNo || rosterInfo?.admission_no || '—'}
+                                </TableCell>
+                                <TableCell className="py-2.5">
+                                  <StatusBadge status={record.status} />
+                                </TableCell>
+                                <TableCell className="hidden lg:table-cell text-sm py-2.5">
+                                  {formatDateTime(record.markedAt, locale)}
                                 </TableCell>
                               </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </TabsContent>
-              <TabsContent value="barcode" className="space-y-4">
-                <Tabs key={`${session.id}-barcode`} value={barcodeView} onValueChange={(nextValue) => setBarcodeView(nextValue as 'in-progress' | 'pending-review' | 'live-scans' | 'saved')} className="space-y-4">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="in-progress">{t('attendancePage.inProgressTab') || 'In progress'}</TabsTrigger>
-                    <TabsTrigger value="pending-review">{t('attendancePage.pendingReviewTitle') || 'Pending review'}</TabsTrigger>
-                    <TabsTrigger value="live-scans">{t('attendancePage.scanFeedTitle') || 'Live scans'}</TabsTrigger>
-                    <TabsTrigger value="saved">{t('attendancePage.savedAttendanceTab') || 'Saved attendance'}</TabsTrigger>
-                  </TabsList>
+                            );
+                          })}
+                          {!savedAttendanceRows.length && (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center text-muted-foreground py-10 text-sm">
+                                {t('attendancePage.noSavedAttendance') || 'No saved attendance yet for this session.'}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </StudentTable>
+                    </TabsContent>
+                  </Tabs>
+                </TabsContent>
 
-                  <TabsContent value="in-progress" className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>{t('attendancePage.cardNumberLabel') || 'Card number'}</Label>
+                {/* ── BARCODE MODE ── */}
+                <TabsContent value="barcode" className="mt-0 space-y-4">
+                  {/* Scan station */}
+                  <div className="rounded-2xl border-2 border-dashed border-primary/20 bg-primary/[0.02] dark:bg-primary/[0.04] p-4 md:p-5 space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ScanLine className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold">{t('attendancePage.barcodeTab') || 'Barcode Scanner'}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">{t('attendancePage.cardNumberLabel') || 'Card number'}</Label>
                         <div className="relative">
                           <Input
                             data-testid="attendance-scan-card-input"
                             ref={scanInputRef}
                             onChange={(event) => {
                               const value = event.target.value;
-                              if (scanError) {
-                                setScanError(null);
-                              }
+                              if (scanError) setScanError(null);
                               if (value.includes('\n') || value.includes('\r')) {
                                 const cleanValue = value.replace(/[\n\r]/g, '').trim();
                                 if (cleanValue) {
                                   event.target.value = cleanValue;
-                                  setTimeout(() => {
-                                    handleScanSubmit(cleanValue);
-                                  }, 0);
+                                  setTimeout(() => handleScanSubmit(cleanValue), 0);
                                 }
                               }
                             }}
-                            placeholder={t('attendancePage.scanPrompt') || 'Enter or scan a card number'}
+                            placeholder={t('attendancePage.scanPrompt') || 'Scan or enter card number...'}
                             onKeyDown={(event) => {
                               if (event.key === 'Enter') {
                                 event.preventDefault();
@@ -1357,326 +1353,351 @@ export default function AttendanceMarking() {
                             }}
                             autoFocus
                             autoComplete="off"
-                            className="text-lg"
+                            className="text-base h-11 rounded-xl pr-4 font-mono tracking-wide"
                           />
-                          {scanError && <div className="absolute -bottom-6 left-0 right-0 text-sm text-red-600 font-medium animate-in fade-in">{scanError}</div>}
+                          {scanError && (
+                            <p className="absolute -bottom-5 left-0 text-xs text-destructive font-medium">
+                              {scanError}
+                            </p>
+                          )}
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label>{t('attendancePage.noteLabel') || 'Note'}</Label>
-                        <Input value={scanNote} onChange={(event) => setScanNote(event.target.value)} placeholder={t('attendancePage.noteLabel') || 'Note'} />
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">{t('attendancePage.noteLabel') || 'Note (optional)'}</Label>
+                        <Input
+                          value={scanNote}
+                          onChange={(e) => setScanNote(e.target.value)}
+                          placeholder={t('attendancePage.noteLabel') || 'Add a note...'}
+                          className="h-11 rounded-xl"
+                        />
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-2 justify-end">
-                      <Button variant="secondary" onClick={() => scanInputRef.current?.focus()} className="flex-shrink-0">
-                        <Activity className="h-4 w-4 mr-2" />
+                    <div className="flex flex-col sm:flex-row gap-2 justify-end pt-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => scanInputRef.current?.focus()}
+                        className="rounded-xl h-9 text-xs gap-1.5"
+                      >
+                        <Activity className="h-3.5 w-3.5" />
                         {t('attendancePage.focusScanner') || 'Focus scanner'}
                       </Button>
-                      <Button variant="outline" onClick={() => void handleSaveAttendance()} disabled={markAttendance.isPending || session.status === 'closed'} className="flex-shrink-0">
-                        <Save className="h-4 w-4 mr-2" />
-                        {markAttendance.isPending ? t('attendancePage.saveInProgress') || 'Saving...' : t('attendancePage.saveButton') || 'Save attendance'}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleSaveAttendance()}
+                        disabled={markAttendance.isPending || session.status === 'closed'}
+                        className="rounded-xl h-9 text-xs gap-1.5"
+                      >
+                        <Save className="h-3.5 w-3.5" />
+                        {markAttendance.isPending
+                          ? t('attendancePage.saveInProgress') || 'Saving...'
+                          : t('attendancePage.saveButton') || 'Save attendance'}
                       </Button>
-                      <Button onClick={() => void handleScanSubmit()} disabled={!selectedSessionId || session.status === 'closed'} className="flex-shrink-0">
-                        <ScanLine className="h-4 w-4 mr-2" />
-                        {bufferedScanCount > 0 ? `${t('attendancePage.recordScan') || 'Record scan'} (${bufferedScanCount})` : t('attendancePage.recordScan') || 'Record scan'}
+                      <Button
+                        size="sm"
+                        onClick={() => void handleScanSubmit()}
+                        disabled={!selectedSessionId || session.status === 'closed'}
+                        className="rounded-xl h-9 text-xs gap-1.5"
+                      >
+                        <ScanLine className="h-3.5 w-3.5" />
+                        {bufferedScanCount > 0
+                          ? `${t('attendancePage.recordScan') || 'Record scan'} (${bufferedScanCount})`
+                          : t('attendancePage.recordScan') || 'Record scan'}
                       </Button>
                     </div>
+
+                    {/* Scan feedback */}
                     {scanFeedback && (
                       <div
                         aria-live="polite"
                         className={cn(
-                          'rounded-md border px-3 py-2 text-sm font-medium',
-                          scanFeedback.tone === 'success' && 'border-green-300 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/20 dark:text-green-300',
-                          scanFeedback.tone === 'error' && 'border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300',
-                          scanFeedback.tone === 'info' && 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-300'
+                          'rounded-xl border px-4 py-3 text-sm transition-all',
+                          scanFeedback.tone === 'success' &&
+                            'border-green-300 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300',
+                          scanFeedback.tone === 'error' &&
+                            'border-red-300 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300',
+                          scanFeedback.tone === 'info' &&
+                            'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300'
                         )}
                       >
                         <p className="font-semibold">{scanFeedback.title || scanFeedback.message}</p>
                         {!!scanFeedback.details?.length && (
-                          <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                          <div className="mt-2.5 grid gap-2 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
                             {scanFeedback.details.map((detail) => (
-                              <div key={`${detail.label}-${detail.value}`} className="rounded border border-current/15 bg-white/40 px-2 py-1 dark:bg-black/10">
-                                <p className="text-[11px] uppercase tracking-wide opacity-70">{detail.label}</p>
-                                <p className="truncate">{detail.value}</p>
+                              <div
+                                key={`${detail.label}-${detail.value}`}
+                                className="rounded-lg border border-current/15 bg-white/50 dark:bg-black/20 px-2.5 py-1.5"
+                              >
+                                <p className="text-[10px] uppercase tracking-wider opacity-60 font-medium">
+                                  {detail.label}
+                                </p>
+                                <p className="text-sm font-medium truncate mt-0.5">{detail.value}</p>
                               </div>
                             ))}
                           </div>
                         )}
-                        {scanFeedback.hint && <p className="mt-2 text-xs opacity-80">{scanFeedback.hint}</p>}
+                        {scanFeedback.hint && (
+                          <p className="mt-2 text-xs opacity-70">{scanFeedback.hint}</p>
+                        )}
                       </div>
                     )}
+                  </div>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">{t('attendancePage.inProgressTab') || 'In progress'}</CardTitle>
-                        <CardDescription>
-                          Buffered barcode scans stay here until scanning stops, or until you save or close the session.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="border rounded-md overflow-hidden">
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>{t('attendancePage.studentHeader') || 'Student'}</TableHead>
-                                  <TableHead className="hidden sm:table-cell">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
-                                  <TableHead className="hidden md:table-cell">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                                  <TableHead className="hidden sm:table-cell">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
-                                  <TableHead className="hidden lg:table-cell">{t('attendanceTotalsReport.room') || 'Room'}</TableHead>
-                                  <TableHead>{t('attendancePage.statusHeader') || 'Status'}</TableHead>
-                                  <TableHead className="hidden md:table-cell">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {inProgressRows.map((record) => (
-                                  <TableRow key={record.studentId}>
-                                    <TableCell className="font-medium">{record.fullName}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{record.fatherName}</TableCell>
-                                    <TableCell className="hidden md:table-cell">{record.className}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{record.cardNumber}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{record.roomName}</TableCell>
-                                    <TableCell>
-                                      <StatusBadge status={record.status} />
-                                    </TableCell>
-                                    <TableCell className="hidden md:table-cell">{record.updatedAt ? format(new Date(record.updatedAt), 'pp') : '-'}</TableCell>
-                                  </TableRow>
-                                ))}
-                                {!inProgressRows.length && (
-                                  <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-muted-foreground">
-                                      No draft attendance changes are waiting to be saved.
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  {/* Barcode sub-tabs */}
+                  <Tabs
+                    key={`${session.id}-barcode`}
+                    value={barcodeView}
+                    onValueChange={(v) =>
+                      setBarcodeView(v as 'in-progress' | 'pending-review' | 'live-scans' | 'saved')
+                    }
+                    className="space-y-4"
+                  >
+                    <TabsList className="grid w-full grid-cols-4 rounded-xl h-9">
+                      <TabsTrigger value="in-progress" className="rounded-lg text-xs">
+                        {t('attendancePage.inProgressTab') || 'In progress'}
+                        {bufferedScanCount > 0 && (
+                          <span className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                            {bufferedScanCount}
+                          </span>
+                        )}
+                      </TabsTrigger>
+                      <TabsTrigger value="pending-review" className="rounded-lg text-xs">
+                        {t('attendancePage.pendingReviewTitle') || 'Pending'}
+                        {sessionSummaryCounts.pending > 0 && (
+                          <span className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                            {sessionSummaryCounts.pending}
+                          </span>
+                        )}
+                      </TabsTrigger>
+                      <TabsTrigger value="live-scans" className="rounded-lg text-xs">
+                        <History className="h-3 w-3 mr-1" />
+                        {t('attendancePage.scanFeedTitle') || 'Live'}
+                      </TabsTrigger>
+                      <TabsTrigger value="saved" className="rounded-lg text-xs">
+                        {t('attendancePage.savedAttendanceTab') || 'Saved'}
+                      </TabsTrigger>
+                    </TabsList>
 
-                    {barcodeView === 'pending-review' && (
-                    <div className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">{t('attendancePage.pendingReviewTitle') || 'Pending review'}</CardTitle>
-                        <CardDescription>
-                          {t('attendancePage.pendingReviewDescription') || 'Students without a saved status will become absent when the session closes. Review exceptions here first.'}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="border rounded-md overflow-hidden">
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>{t('attendancePage.studentHeader') || 'Student'}</TableHead>
-                                  <TableHead className="hidden sm:table-cell">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
-                                  <TableHead className="hidden md:table-cell">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                                  <TableHead className="hidden sm:table-cell">{t('attendancePage.admissionHeader') || 'Admission'}</TableHead>
-                                  <TableHead>{t('attendancePage.statusHeader') || 'Status'}</TableHead>
-                                  <TableHead className="hidden lg:table-cell">{t('attendancePage.reviewStateHeader') || 'Review state'}</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {pendingReviewStudents.map((student) => (
-                                  <TableRow key={student.id}>
-                                    <TableCell className="font-medium">{student.full_name}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{student.father_name ?? '—'}</TableCell>
-                                    <TableCell className="hidden md:table-cell">{student.class_name ?? '—'}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{student.admission_no}</TableCell>
-                                    <TableCell>{renderStatusSelect(student.id)}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{renderReviewStateBadge(student.id)}</TableCell>
-                                  </TableRow>
-                                ))}
-                                {!pendingReviewStudents.length && (
-                                  <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                      {t('attendancePage.pendingReviewEmpty') || 'Everyone in this view already has a saved attendance status.'}
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    {/* In progress buffered scans */}
+                    <TabsContent value="in-progress" className="mt-0 space-y-2">
+                      <p className="text-xs text-muted-foreground px-1">
+                        Buffered barcode scans stay here until scanning stops, or until you save or close the session.
+                      </p>
+                      <StudentTable>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="text-xs">{t('attendancePage.studentHeader') || 'Student'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
+                            <TableHead className="hidden lg:table-cell text-xs">{t('attendanceTotalsReport.room') || 'Room'}</TableHead>
+                            <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {inProgressRows.map((record) => (
+                            <TableRow key={record.studentId} className="hover:bg-muted/30 transition-colors">
+                              <TableCell className="font-medium text-sm py-2.5">{record.fullName}</TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm py-2.5">{record.fatherName}</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm py-2.5">{record.className}</TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm py-2.5">{record.cardNumber}</TableCell>
+                              <TableCell className="hidden lg:table-cell text-sm py-2.5">{record.roomName}</TableCell>
+                              <TableCell className="py-2.5">
+                                <StatusBadge status={record.status} />
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell text-sm py-2.5">
+                                {record.updatedAt ? format(new Date(record.updatedAt), 'pp') : '-'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {!inProgressRows.length && (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center text-muted-foreground py-10 text-sm">
+                                No draft attendance changes are waiting to be saved.
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </StudentTable>
+                    </TabsContent>
 
-                    <div className="hidden space-y-2">
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                    {/* Pending review */}
+                    <TabsContent value="pending-review" className="mt-0 space-y-2">
+                      <p className="text-xs text-muted-foreground px-1">
+                        {t('attendancePage.pendingReviewDescription') ||
+                          'Students without a saved or draft status will become absent when the session closes. Review exceptions here first.'}
+                      </p>
+                      <StudentTable>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="text-xs">{t('attendancePage.studentHeader') || 'Student'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.admissionHeader') || 'Admission'}</TableHead>
+                            <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
+                            <TableHead className="hidden lg:table-cell text-xs">{t('attendancePage.reviewStateHeader') || 'Review state'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pendingReviewStudents.map((student) => (
+                            <TableRow key={student.id} className="hover:bg-muted/30 transition-colors">
+                              <TableCell className="font-medium text-sm py-2.5">{student.full_name}</TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm py-2.5">{student.father_name ?? '—'}</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm py-2.5">{student.class_name ?? '—'}</TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm py-2.5">{student.admission_no}</TableCell>
+                              <TableCell className="py-2.5">{renderStatusSelect(student.id)}</TableCell>
+                              <TableCell className="hidden lg:table-cell py-2.5">{renderReviewStateBadge(student.id)}</TableCell>
+                            </TableRow>
+                          ))}
+                          {!pendingReviewStudents.length && (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center text-muted-foreground py-10 text-sm">
+                                {t('attendancePage.pendingReviewEmpty') ||
+                                  'Everyone already has a saved or draft attendance status.'}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </StudentTable>
+                    </TabsContent>
+
+                    {/* Live scans */}
+                    <TabsContent value="live-scans" className="mt-0 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <History className="h-4 w-4 text-muted-foreground" />
-                          <p className="font-semibold">{t('attendancePage.scanFeedTitle') || 'Live scans'}</p>
+                          <p className="text-sm font-semibold">{t('attendancePage.scanFeedTitle') || 'Live scans'}</p>
                         </div>
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input placeholder={t('attendancePage.searchScans') || 'Search scans...'} value={scanFeedSearch} onChange={(event) => setScanFeedSearch(event.target.value)} className="w-full sm:w-48 pl-9" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                          <Input
+                            placeholder={t('attendancePage.searchScans') || 'Search...'}
+                            value={scanFeedSearch}
+                            onChange={(e) => setScanFeedSearch(e.target.value)}
+                            className="w-40 sm:w-48 pl-8 h-8 rounded-xl text-xs"
+                          />
                         </div>
                       </div>
-                      <div className="border rounded-md overflow-hidden">
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>{t('attendancePage.studentHeader') || 'Student'}</TableHead>
-                                <TableHead className="hidden sm:table-cell">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
-                                <TableHead className="hidden md:table-cell">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                                <TableHead className="hidden sm:table-cell">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
-                                <TableHead>{t('attendancePage.statusHeader') || 'Status'}</TableHead>
-                                <TableHead className="hidden md:table-cell">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {filteredScanFeedForDisplay.map((record) => {
-                                const rosterInfo = rosterLookupByStudentId.get(record.studentId);
-                                return (
-                                  <TableRow key={record.id} className={cn(lastScanId === record.id ? 'bg-primary/5' : undefined)}>
-                                    <TableCell className="font-medium">
-                                      <div className="flex flex-col sm:hidden gap-1">
-                                        <span>{record.student?.fullName || rosterInfo?.full_name || record.studentId}</span>
-                                        <span className="text-xs text-muted-foreground">{record.student?.cardNumber || rosterInfo?.card_number || '—'}</span>
-                                      </div>
-                                      <span className="hidden sm:inline">{record.student?.fullName || rosterInfo?.full_name || record.studentId}</span>
-                                    </TableCell>
-                                    <TableCell className="hidden sm:table-cell">{rosterInfo?.father_name ?? '—'}</TableCell>
-                                    <TableCell className="hidden md:table-cell">{rosterInfo?.class_name ?? '—'}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{record.student?.cardNumber || rosterInfo?.card_number || '—'}</TableCell>
-                                    <TableCell>
-                                      <StatusBadge status={record.status} />
-                                    </TableCell>
-                                    <TableCell className="hidden md:table-cell">{format(record.markedAt, 'pp')}</TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                              {!filteredScanFeedForDisplay.length && (
-                                <TableRow>
-                                  <TableCell colSpan={6} className="text-center text-muted-foreground text-sm">
-                                    {!selectedSessionId
-                                      ? t('attendancePage.selectSessionForScan') || 'Select a session to enable barcode scanning.'
-                                      : scanFeedSearch.trim() || filterClassId !== 'all'
-                                        ? t('attendancePage.noScansMatchSearch') || 'No scans match your search'
-                                        : t('attendancePage.noScansYet') || 'No scans yet for this session.'}
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </div>
-                    </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="pending-review" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">{t('attendancePage.pendingReviewTitle') || 'Pending review'}</CardTitle>
-                        <CardDescription>
-                          {t('attendancePage.pendingReviewDescription') || 'Students without a saved or draft status will become absent when the session closes. Review exceptions here first.'}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="border rounded-md overflow-hidden">
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>{t('attendancePage.studentHeader') || 'Student'}</TableHead>
-                                  <TableHead className="hidden sm:table-cell">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
-                                  <TableHead className="hidden md:table-cell">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                                  <TableHead className="hidden sm:table-cell">{t('attendancePage.admissionHeader') || 'Admission'}</TableHead>
-                                  <TableHead>{t('attendancePage.statusHeader') || 'Status'}</TableHead>
-                                  <TableHead className="hidden lg:table-cell">{t('attendancePage.reviewStateHeader') || 'Review state'}</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {pendingReviewStudents.map((student) => (
-                                  <TableRow key={student.id}>
-                                    <TableCell className="font-medium">{student.full_name}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{student.father_name ?? '-'}</TableCell>
-                                    <TableCell className="hidden md:table-cell">{student.class_name ?? '-'}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{student.admission_no}</TableCell>
-                                    <TableCell>{renderStatusSelect(student.id)}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{renderReviewStateBadge(student.id)}</TableCell>
-                                  </TableRow>
-                                ))}
-                                {!pendingReviewStudents.length && (
-                                  <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                      {t('attendancePage.pendingReviewEmpty') || 'Everyone already has a saved or draft attendance status.'}
-                                    </TableCell>
-                                  </TableRow>
+                      <StudentTable>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="text-xs">{t('attendancePage.studentHeader') || 'Student'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
+                            <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredScanFeedForDisplay.map((record) => {
+                            const rosterInfo = rosterLookupByStudentId.get(record.studentId);
+                            return (
+                              <TableRow
+                                key={record.id}
+                                className={cn(
+                                  'hover:bg-muted/30 transition-colors',
+                                  lastScanId === record.id ? 'bg-primary/5' : undefined
                                 )}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  <TabsContent value="saved" className="space-y-4">
-                    <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                      {t('attendancePage.savedAttendanceDescription') || 'These attendance records are already saved for this session.'}
-                    </div>
-                    <div className="border rounded-md overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
+                              >
+                                <TableCell className="font-medium py-2.5">
+                                  <div className="flex flex-col sm:hidden gap-0.5">
+                                    <span className="text-sm">{record.student?.fullName || rosterInfo?.full_name || record.studentId}</span>
+                                    <span className="text-xs text-muted-foreground">{record.student?.cardNumber || rosterInfo?.card_number || '—'}</span>
+                                  </div>
+                                  <span className="hidden sm:inline text-sm">{record.student?.fullName || rosterInfo?.full_name || record.studentId}</span>
+                                </TableCell>
+                                <TableCell className="hidden sm:table-cell text-sm py-2.5">{rosterInfo?.father_name ?? '—'}</TableCell>
+                                <TableCell className="hidden md:table-cell text-sm py-2.5">{rosterInfo?.class_name ?? '—'}</TableCell>
+                                <TableCell className="hidden sm:table-cell text-sm py-2.5">{record.student?.cardNumber || rosterInfo?.card_number || '—'}</TableCell>
+                                <TableCell className="py-2.5">
+                                  <StatusBadge status={record.status} />
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell text-sm py-2.5">{format(record.markedAt, 'pp')}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                          {!filteredScanFeedForDisplay.length && (
                             <TableRow>
-                              <TableHead>{t('attendancePage.studentHeader') || 'Student'}</TableHead>
-                              <TableHead className="hidden sm:table-cell">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
-                              <TableHead className="hidden md:table-cell">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                              <TableHead className="hidden sm:table-cell">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
-                              <TableHead>{t('attendancePage.statusHeader') || 'Status'}</TableHead>
-                              <TableHead className="hidden md:table-cell">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
+                              <TableCell colSpan={6} className="text-center text-muted-foreground py-10 text-sm">
+                                {!selectedSessionId
+                                  ? t('attendancePage.selectSessionForScan') || 'Select a session to enable barcode scanning.'
+                                  : scanFeedSearch.trim() || filterClassId !== 'all'
+                                    ? t('attendancePage.noScansMatchSearch') || 'No scans match your search'
+                                    : t('attendancePage.noScansYet') || 'No scans yet for this session.'}
+                              </TableCell>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {savedAttendanceRows.map((record) => {
-                              const rosterInfo = rosterLookupByStudentId.get(record.studentId);
-                              return (
-                                <TableRow key={record.id}>
-                                  <TableCell className="font-medium">{record.student?.fullName || rosterInfo?.full_name || record.studentId}</TableCell>
-                                  <TableCell className="hidden sm:table-cell">{rosterInfo?.father_name ?? '—'}</TableCell>
-                                  <TableCell className="hidden md:table-cell">{rosterInfo?.class_name ?? '—'}</TableCell>
-                                  <TableCell className="hidden sm:table-cell">{record.student?.cardNumber || rosterInfo?.card_number || '—'}</TableCell>
-                                  <TableCell>
-                                    <StatusBadge status={record.status} />
-                                  </TableCell>
-                                  <TableCell className="hidden md:table-cell">{formatDateTime(record.markedAt, locale)}</TableCell>
-                                </TableRow>
-                              );
-                            })}
-                            {!savedAttendanceRows.length && (
-                              <TableRow>
-                                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                  {t('attendancePage.noSavedAttendance') || 'No saved attendance yet for this session.'}
+                          )}
+                        </TableBody>
+                      </StudentTable>
+                    </TabsContent>
+
+                    {/* Saved */}
+                    <TabsContent value="saved" className="mt-0 space-y-2">
+                      <p className="text-xs text-muted-foreground px-1">
+                        {t('attendancePage.savedAttendanceDescription') || 'These attendance records are already saved for this session.'}
+                      </p>
+                      <StudentTable>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="text-xs">{t('attendancePage.studentHeader') || 'Student'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
+                            <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {savedAttendanceRows.map((record) => {
+                            const rosterInfo = rosterLookupByStudentId.get(record.studentId);
+                            return (
+                              <TableRow key={record.id} className="hover:bg-muted/30 transition-colors">
+                                <TableCell className="font-medium text-sm py-2.5">
+                                  {record.student?.fullName || rosterInfo?.full_name || record.studentId}
+                                </TableCell>
+                                <TableCell className="hidden sm:table-cell text-sm py-2.5">{rosterInfo?.father_name ?? '—'}</TableCell>
+                                <TableCell className="hidden md:table-cell text-sm py-2.5">{rosterInfo?.class_name ?? '—'}</TableCell>
+                                <TableCell className="hidden sm:table-cell text-sm py-2.5">
+                                  {record.student?.cardNumber || rosterInfo?.card_number || '—'}
+                                </TableCell>
+                                <TableCell className="py-2.5">
+                                  <StatusBadge status={record.status} />
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell text-sm py-2.5">
+                                  {formatDateTime(record.markedAt, locale)}
                                 </TableCell>
                               </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center space-y-2">
-              <p className="text-muted-foreground">{t('attendancePage.selectSessionForMarking') || 'Please select a session to mark attendance'}</p>
+                            );
+                          })}
+                          {!savedAttendanceRows.length && (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center text-muted-foreground py-10 text-sm">
+                                {t('attendancePage.noSavedAttendance') || 'No saved attendance yet for this session.'}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </StudentTable>
+                    </TabsContent>
+                  </Tabs>
+                </TabsContent>
+              </Tabs>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </>
+      ) : (
+        <div className="rounded-2xl border bg-card shadow-sm">
+          <div className="py-16 text-center space-y-2">
+            <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">
+              {t('attendancePage.selectSessionForMarking') || 'Select a session above to start marking attendance'}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

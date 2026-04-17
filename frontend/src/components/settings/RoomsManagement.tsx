@@ -63,6 +63,7 @@ import { formatDate, formatDateTime } from '@/lib/utils';
 
 const roomSchema = z.object({
   room_number: z.string().min(1, 'Room number is required').max(100, 'Room number must be 100 characters or less'),
+  capacity: z.number().int().min(1).max(200).default(4),
   building_id: z.string().min(1, 'Building is required'),
   staff_id: z.string().nullable().optional(),
 });
@@ -72,6 +73,7 @@ type RoomFormData = z.infer<typeof roomSchema>;
 // Room report row type - dates should be ISO strings for backend formatting
 interface RoomReportRow {
   room_number: string;
+  capacity: number | null;
   building_name: string;
   staff_name: string;
   school_name?: string;
@@ -115,6 +117,7 @@ export function RoomsManagement() {
   } = useForm<RoomFormData>({
     resolver: zodResolver(roomSchema),
     defaultValues: {
+      capacity: 4,
       staff_id: null,
     },
   });
@@ -132,6 +135,7 @@ export function RoomsManagement() {
       
       return {
         room_number: room.roomNumber,
+        capacity: room.capacity,
         building_name: roomBuilding?.buildingName || t('settings.rooms.na'),
         staff_name: staffDisplay,
         // Pass date as ISO string - backend DateConversionService will format it based on user's calendar preference
@@ -177,6 +181,11 @@ export function RoomsManagement() {
       accessorKey: 'building',
       header: t('settings.rooms.building'),
       cell: ({ row }) => row.original.building?.buildingName || t('settings.rooms.na'),
+    },
+    {
+      accessorKey: 'capacity',
+      header: t('academic.classes.capacity'),
+      cell: ({ row }) => row.original.capacity ?? '-',
     },
     {
       accessorKey: 'staff',
@@ -258,6 +267,7 @@ export function RoomsManagement() {
       if (room) {
         reset({
           room_number: room.roomNumber,
+          capacity: room.capacity ?? 4,
           building_id: room.buildingId,
           staff_id: room.staffId || null,
         });
@@ -266,6 +276,7 @@ export function RoomsManagement() {
     } else {
       reset({
         room_number: '',
+        capacity: 4,
         building_id: '',
         staff_id: null,
       });
@@ -303,6 +314,7 @@ export function RoomsManagement() {
         {
           id: selectedRoom,
           roomNumber: data.room_number,
+          capacity: data.capacity,
           buildingId: data.building_id,
           staffId: data.staff_id || null,
         },
@@ -316,6 +328,7 @@ export function RoomsManagement() {
       createRoom.mutate(
         {
           roomNumber: data.room_number,
+          capacity: data.capacity,
           buildingId: data.building_id,
           staffId: data.staff_id || null,
         },
@@ -363,6 +376,7 @@ export function RoomsManagement() {
             data={filteredRooms}
             columns={[
               { key: 'room_number', label: t('settings.rooms.roomNumber'), align: 'left' },
+              { key: 'capacity', label: t('academic.classes.capacity'), align: 'left' },
               { key: 'building_name', label: t('settings.rooms.building'), align: 'left' },
               { key: 'staff_name', label: t('settings.rooms.staffWarden'), align: 'left' },
               { key: 'created_at', label: t('settings.rooms.createdAt'), align: 'left' },
@@ -498,6 +512,19 @@ export function RoomsManagement() {
                 />
                 {errors.room_number && (
                   <p className="text-sm text-destructive">{errors.room_number.message}</p>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="capacity">{t('academic.classes.capacity')}</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  min={1}
+                  max={200}
+                  {...register('capacity', { valueAsNumber: true })}
+                />
+                {errors.capacity && (
+                  <p className="text-sm text-destructive">{errors.capacity.message}</p>
                 )}
               </div>
               <div className="grid gap-2">

@@ -144,6 +144,6 @@ export default {
       previousValue: "مخکنۍ ارزښت",
       newValue: "نوی ارزښت"
     },
-    warden: "وارډن (ساتونکی)"
+    warden: "نګران"
   }
 };

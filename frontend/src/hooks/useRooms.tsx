@@ -112,7 +112,12 @@ export const useCreateRoom = () => {
   const { user, profile } = useAuth();
 
   return useMutation({
-    mutationFn: async (roomData: { roomNumber: string; buildingId: string; staffId?: string | null }) => {
+    mutationFn: async (roomData: {
+      roomNumber: string;
+      capacity?: number | null;
+      buildingId: string;
+      staffId?: string | null;
+    }) => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
       }
@@ -131,6 +136,7 @@ export const useCreateRoom = () => {
       // Convert domain model to API insert payload
       const insertData = mapRoomDomainToInsert({
         roomNumber: trimmedNumber,
+        capacity: roomData.capacity ?? null,
         buildingId: roomData.buildingId,
         staffId: roomData.staffId || null,
       });
@@ -159,11 +165,13 @@ export const useUpdateRoom = () => {
     mutationFn: async ({
       id,
       roomNumber,
+      capacity,
       buildingId,
       staffId,
     }: {
       id: string;
       roomNumber?: string;
+      capacity?: number | null;
       buildingId?: string;
       staffId?: string | null;
     }) => {
@@ -183,6 +191,9 @@ export const useUpdateRoom = () => {
       }
       if (buildingId !== undefined) {
         updateData.buildingId = buildingId;
+      }
+      if (capacity !== undefined) {
+        updateData.capacity = capacity;
       }
       if (staffId !== undefined) {
         updateData.staffId = staffId || null;

@@ -3,6 +3,7 @@
 export interface Room {
     id: string;
     room_number: string;
+    capacity: number | null;
     building_id: string;
     school_id: string;
     staff_id: string | null;

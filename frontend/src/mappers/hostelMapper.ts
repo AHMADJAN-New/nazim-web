@@ -31,6 +31,7 @@ export const mapHostelSummaryApiToDomain = (summary: HostelApi.HostelSummary): H
 export const mapHostelRoomApiToDomain = (room: HostelApi.HostelRoom): HostelRoom => ({
   id: room.id,
   roomNumber: room.room_number,
+  capacity: room.capacity,
   buildingId: room.building_id,
   buildingName: room.building_name,
   staffId: room.staff_id,

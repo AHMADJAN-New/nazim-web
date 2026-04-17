@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Room;
 use App\Http\Requests\StoreRoomRequest;
 use App\Http\Requests\UpdateRoomRequest;
+use App\Models\Room;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,12 +20,12 @@ class RoomController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -37,11 +37,12 @@ class RoomController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$this->userHasPermission($user, 'rooms.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'rooms.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for rooms.read: " . $e->getMessage());
+            Log::warning('Permission check failed for rooms.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -64,16 +65,16 @@ class RoomController extends Controller
                 ->where('id', $request->building_id)
                 ->whereNull('deleted_at')
                 ->first();
-            
-            if (!$building) {
+
+            if (! $building) {
                 return response()->json(['error' => 'Building not found'], 404);
             }
-            
+
             // Check if building's school_id is in accessible schools
-            if (!in_array($building->school_id, $schoolIds)) {
+            if (! in_array($building->school_id, $schoolIds)) {
                 return response()->json(['error' => 'Building not accessible'], 403);
             }
-            
+
             $query->where('building_id', $request->building_id);
         }
 
@@ -84,19 +85,19 @@ class RoomController extends Controller
             $perPage = $request->input('per_page', 25);
             // Validate per_page is one of allowed values
             $allowedPerPage = [10, 25, 50, 100];
-            if (!in_array((int)$perPage, $allowedPerPage)) {
+            if (! in_array((int) $perPage, $allowedPerPage)) {
                 $perPage = 25; // Default to 25 if invalid
             }
-            
-            $rooms = $query->orderBy('room_number', 'asc')->paginate((int)$perPage);
-            
+
+            $rooms = $query->orderBy('room_number', 'asc')->paginate((int) $perPage);
+
             // Get building IDs and staff IDs for relationships
             $buildingIds = $rooms->pluck('building_id')->filter()->unique()->toArray();
             $staffIds = $rooms->pluck('staff_id')->filter()->unique()->toArray();
 
             // Fetch buildings - filter by accessible schools
             $buildings = [];
-            if (!empty($buildingIds)) {
+            if (! empty($buildingIds)) {
                 $buildings = DB::table('buildings')
                     ->whereIn('id', $buildingIds)
                     ->whereIn('school_id', $schoolIds) // CRITICAL: Only fetch buildings from accessible schools
@@ -108,7 +109,7 @@ class RoomController extends Controller
 
             // Fetch staff and profiles
             $staffMap = [];
-            if (!empty($staffIds) && Schema::hasTable('staff')) {
+            if (! empty($staffIds) && Schema::hasTable('staff')) {
                 $staffList = DB::table('staff')
                     ->whereIn('id', $staffIds)
                     ->whereNull('deleted_at')
@@ -117,13 +118,13 @@ class RoomController extends Controller
                 $profileIds = $staffList->pluck('profile_id')
                     ->filter(function ($id) {
                         // Filter out null, empty strings, 0, and ensure it's a valid UUID-like string
-                        return !empty($id) && $id !== '0' && $id !== 0 && is_string($id);
+                        return ! empty($id) && $id !== '0' && $id !== 0 && is_string($id);
                     })
                     ->unique()
                     ->values()
                     ->toArray();
                 $profiles = [];
-                if (!empty($profileIds)) {
+                if (! empty($profileIds)) {
                     $profiles = DB::table('profiles')
                         ->whereIn('id', $profileIds)
                         ->get()
@@ -133,7 +134,7 @@ class RoomController extends Controller
 
                 foreach ($staffList as $staff) {
                     $staffProfile = null;
-                    if (!empty($staff->profile_id) && isset($profiles[$staff->profile_id])) {
+                    if (! empty($staff->profile_id) && isset($profiles[$staff->profile_id])) {
                         $staffProfile = [
                             'full_name' => $profiles[$staff->profile_id]->full_name ?? null,
                         ];
@@ -164,7 +165,7 @@ class RoomController extends Controller
 
                 return $roomArray;
             });
-            
+
             // Return paginated response in Laravel's standard format
             return response()->json($rooms);
         }
@@ -178,7 +179,7 @@ class RoomController extends Controller
 
         // Fetch buildings - filter by accessible schools
         $buildings = [];
-        if (!empty($buildingIds)) {
+        if (! empty($buildingIds)) {
             $buildings = DB::table('buildings')
                 ->whereIn('id', $buildingIds)
                 ->whereIn('school_id', $schoolIds) // CRITICAL: Only fetch buildings from accessible schools
@@ -190,7 +191,7 @@ class RoomController extends Controller
 
         // Fetch staff and profiles
         $staffMap = [];
-        if (!empty($staffIds) && Schema::hasTable('staff')) {
+        if (! empty($staffIds) && Schema::hasTable('staff')) {
             $staffList = DB::table('staff')
                 ->whereIn('id', $staffIds)
                 ->whereNull('deleted_at')
@@ -199,13 +200,13 @@ class RoomController extends Controller
             $profileIds = $staffList->pluck('profile_id')
                 ->filter(function ($id) {
                     // Filter out null, empty strings, 0, and ensure it's a valid UUID-like string
-                    return !empty($id) && $id !== '0' && $id !== 0 && is_string($id);
+                    return ! empty($id) && $id !== '0' && $id !== 0 && is_string($id);
                 })
                 ->unique()
                 ->values()
                 ->toArray();
             $profiles = [];
-            if (!empty($profileIds)) {
+            if (! empty($profileIds)) {
                 $profiles = DB::table('profiles')
                     ->whereIn('id', $profileIds)
                     ->get()
@@ -215,7 +216,7 @@ class RoomController extends Controller
 
             foreach ($staffList as $staff) {
                 $staffProfile = null;
-                if (!empty($staff->profile_id) && isset($profiles[$staff->profile_id])) {
+                if (! empty($staff->profile_id) && isset($profiles[$staff->profile_id])) {
                     $staffProfile = [
                         'full_name' => $profiles[$staff->profile_id]->full_name ?? null,
                     ];
@@ -258,12 +259,12 @@ class RoomController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -274,11 +275,12 @@ class RoomController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('rooms.create')) {
+            if (! $user->hasPermissionTo('rooms.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for rooms.create: " . $e->getMessage());
+            Log::warning('Permission check failed for rooms.create: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -291,12 +293,12 @@ class RoomController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$building) {
+        if (! $building) {
             return response()->json(['error' => 'Building not found'], 404);
         }
 
         // Validate building belongs to accessible school
-        if (!in_array($building->school_id, $schoolIds)) {
+        if (! in_array($building->school_id, $schoolIds)) {
             return response()->json(['error' => 'Building does not belong to an accessible school'], 403);
         }
 
@@ -306,7 +308,7 @@ class RoomController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$school) {
+        if (! $school) {
             return response()->json(['error' => 'Building does not belong to an accessible school'], 404);
         }
 
@@ -317,6 +319,7 @@ class RoomController extends Controller
 
         $room = Room::create([
             'room_number' => trim($request->room_number),
+            'capacity' => $request->input('capacity', 4),
             'building_id' => $request->building_id,
             'school_id' => $building->school_id, // Inherit from building
             'staff_id' => $request->staff_id ?? null,
@@ -331,7 +334,7 @@ class RoomController extends Controller
         ];
 
         // Add staff if provided
-        if (!empty($room->staff_id) && Schema::hasTable('staff')) {
+        if (! empty($room->staff_id) && Schema::hasTable('staff')) {
             $staff = DB::table('staff')
                 ->where('id', $room->staff_id)
                 ->whereNull('deleted_at')
@@ -339,7 +342,7 @@ class RoomController extends Controller
 
             if ($staff) {
                 $staffProfile = null;
-                if (!empty($staff->profile_id) && $staff->profile_id !== '0' && $staff->profile_id !== 0) {
+                if (! empty($staff->profile_id) && $staff->profile_id !== '0' && $staff->profile_id !== 0) {
                     $staffProfile = DB::table('profiles')
                         ->where('id', $staff->profile_id)
                         ->first();
@@ -370,12 +373,12 @@ class RoomController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -387,11 +390,12 @@ class RoomController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$this->userHasPermission($user, 'rooms.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'rooms.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for rooms.read: " . $e->getMessage());
+            Log::warning('Permission check failed for rooms.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -400,12 +404,12 @@ class RoomController extends Controller
 
         $room = Room::whereNull('deleted_at')->find($id);
 
-        if (!$room) {
+        if (! $room) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
         // Validate room belongs to accessible school
-        if (!in_array($room->school_id, $schoolIds)) {
+        if (! in_array($room->school_id, $schoolIds)) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
@@ -415,7 +419,7 @@ class RoomController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$school) {
+        if (! $school) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
@@ -440,7 +444,7 @@ class RoomController extends Controller
         ] : null;
 
         // Add staff
-        if (!empty($room->staff_id) && Schema::hasTable('staff')) {
+        if (! empty($room->staff_id) && Schema::hasTable('staff')) {
             $staff = DB::table('staff')
                 ->where('id', $room->staff_id)
                 ->whereNull('deleted_at')
@@ -448,7 +452,7 @@ class RoomController extends Controller
 
             if ($staff) {
                 $staffProfile = null;
-                if (!empty($staff->profile_id) && $staff->profile_id !== '0' && $staff->profile_id !== 0) {
+                if (! empty($staff->profile_id) && $staff->profile_id !== '0' && $staff->profile_id !== 0) {
                     $staffProfile = DB::table('profiles')
                         ->where('id', $staff->profile_id)
                         ->first();
@@ -479,12 +483,12 @@ class RoomController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -495,11 +499,12 @@ class RoomController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('rooms.update')) {
+            if (! $user->hasPermissionTo('rooms.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for rooms.update: " . $e->getMessage());
+            Log::warning('Permission check failed for rooms.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -508,12 +513,12 @@ class RoomController extends Controller
 
         $room = Room::whereNull('deleted_at')->find($id);
 
-        if (!$room) {
+        if (! $room) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
         // Validate room belongs to accessible school
-        if (!in_array($room->school_id, $schoolIds)) {
+        if (! in_array($room->school_id, $schoolIds)) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
@@ -523,7 +528,7 @@ class RoomController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$school) {
+        if (! $school) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
@@ -540,12 +545,12 @@ class RoomController extends Controller
                 ->whereNull('deleted_at')
                 ->first();
 
-            if (!$newBuilding) {
+            if (! $newBuilding) {
                 return response()->json(['error' => 'Building not found'], 404);
             }
 
             // Validate new building belongs to accessible school
-            if (!in_array($newBuilding->school_id, $schoolIds)) {
+            if (! in_array($newBuilding->school_id, $schoolIds)) {
                 return response()->json(['error' => 'Building does not belong to an accessible school'], 403);
             }
 
@@ -555,7 +560,7 @@ class RoomController extends Controller
                 ->whereNull('deleted_at')
                 ->first();
 
-            if (!$newBuildingSchool) {
+            if (! $newBuildingSchool) {
                 return response()->json(['error' => 'Building does not belong to an accessible school'], 404);
             }
 
@@ -577,6 +582,9 @@ class RoomController extends Controller
         }
         if ($request->has('staff_id')) {
             $updateData['staff_id'] = $request->staff_id ?? null;
+        }
+        if ($request->has('capacity')) {
+            $updateData['capacity'] = $request->capacity;
         }
 
         $room->update($updateData);
@@ -600,7 +608,7 @@ class RoomController extends Controller
         ] : null;
 
         // Add staff
-        if (!empty($room->staff_id) && Schema::hasTable('staff')) {
+        if (! empty($room->staff_id) && Schema::hasTable('staff')) {
             $staff = DB::table('staff')
                 ->where('id', $room->staff_id)
                 ->whereNull('deleted_at')
@@ -608,7 +616,7 @@ class RoomController extends Controller
 
             if ($staff) {
                 $staffProfile = null;
-                if (!empty($staff->profile_id) && $staff->profile_id !== '0' && $staff->profile_id !== 0) {
+                if (! empty($staff->profile_id) && $staff->profile_id !== '0' && $staff->profile_id !== 0) {
                     $staffProfile = DB::table('profiles')
                         ->where('id', $staff->profile_id)
                         ->first();
@@ -639,12 +647,12 @@ class RoomController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
@@ -655,11 +663,12 @@ class RoomController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('rooms.delete')) {
+            if (! $user->hasPermissionTo('rooms.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for rooms.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for rooms.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -668,12 +677,12 @@ class RoomController extends Controller
 
         $room = Room::whereNull('deleted_at')->find($id);
 
-        if (!$room) {
+        if (! $room) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
         // Validate room belongs to accessible school
-        if (!in_array($room->school_id, $schoolIds)) {
+        if (! in_array($room->school_id, $schoolIds)) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
@@ -683,7 +692,7 @@ class RoomController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$school) {
+        if (! $school) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
@@ -709,5 +718,3 @@ class RoomController extends Controller
         return response()->json(['message' => 'Room deleted successfully'], 200);
     }
 }
-
-

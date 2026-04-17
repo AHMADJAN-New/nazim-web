@@ -72,6 +72,7 @@ class HostelController extends Controller
             ->select(
                 'rooms.id',
                 'rooms.room_number',
+                'rooms.capacity',
                 'rooms.building_id',
                 'rooms.staff_id',
                 'buildings.building_name',
@@ -277,6 +278,7 @@ class HostelController extends Controller
             $roomPayload[] = [
                 'id' => $room->id,
                 'room_number' => $room->room_number,
+                'capacity' => $room->capacity !== null ? (int) $room->capacity : null,
                 'building_id' => $buildingId,
                 'building_name' => $room->building_name,
                 'staff_id' => $room->staff_id,
