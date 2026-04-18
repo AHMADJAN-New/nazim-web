@@ -85,9 +85,13 @@ export async function generateLocalQrCodeDataUrl(value: string, sizePx: number):
             return;
           }
 
+          // Double rAF so qrcode.react has painted modules before snapshot (fixes blank QR
+          // when exporting multiple sides / rapid renders and Strict Mode timing).
           nextPaint(() => {
-            window.clearTimeout(timeoutId);
-            finish(() => resolve(canvas.toDataURL('image/png')));
+            nextPaint(() => {
+              window.clearTimeout(timeoutId);
+              finish(() => resolve(canvas.toDataURL('image/png')));
+            });
           });
         }}
       />

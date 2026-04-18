@@ -56,7 +56,8 @@ export function StudentIdCardPreview({
   // Fetch template if not provided
   const templateId = providedTemplate?.id || actualCard?.idCardTemplateId;
   const { data: fetchedTemplate, isLoading: templateLoading } = useIdCardTemplate(templateId || null);
-  const actualTemplate = providedTemplate || fetchedTemplate;
+  // Prefer GET response so layout (e.g. qrCode) matches export; list payloads can be stale.
+  const actualTemplate = fetchedTemplate ?? providedTemplate ?? null;
   
   // Convert StudentIdCard to Student format for renderer
   // Handles both regular students and course students
@@ -190,13 +191,19 @@ export function StudentIdCardPreview({
   // Student for rendering: from card (when assigned) or from props (preview before assignment)
   const studentForRender = actualCard ? getStudentForRenderer(actualCard) : studentProp ?? null;
 
+  // Keep canvas side in sync with parent (e.g. IdCardAssignment previewSide) and remounts
+  useEffect(() => {
+    setSide(initialSide);
+  }, [initialSide]);
+
   // Load preview image when card/student and template are available
   useEffect(() => {
-    if (!actualTemplate || cardLoading || templateLoading) {
+    if (cardLoading) {
       setPreviewImageUrl(null);
       return;
     }
-    if (!studentForRender) {
+    const templateForRender = fetchedTemplate ?? providedTemplate ?? null;
+    if (!templateForRender || !studentForRender) {
       setPreviewImageUrl(null);
       return;
     }
@@ -213,7 +220,7 @@ export function StudentIdCardPreview({
 
         // Use print quality so dialog preview matches downloaded output.
         const dataUrl = await renderIdCardToDataUrl(
-          actualTemplate,
+          templateForRender,
           studentForRender,
           side,
           {
@@ -248,23 +255,20 @@ export function StudentIdCardPreview({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [actualCard?.id, actualTemplate?.id, side, cardLoading, templateLoading, studentForRender?.id]);
+  }, [
+    actualCard?.id,
+    fetchedTemplate?.id,
+    providedTemplate?.id,
+    side,
+    cardLoading,
+    templateLoading,
+    studentForRender?.id,
+    studentForRender?.studentCode,
+    studentForRender?.admissionNumber,
+  ]);
 
   // Check if we have the necessary data (from card or from props for preview-before-assignment)
   const hasStudentData = (actualCard && (actualCard.student || actualCard.courseStudent)) || !!studentProp;
-
-  // Use the fetched template if available
-  const templateForPreview = actualTemplate || (actualCard?.template ? {
-    id: actualCard.template.id,
-    name: actualCard.template.name,
-    description: actualCard.template.description || null,
-    layout_config_front: actualTemplate?.layoutConfigFront || null,
-    layout_config_back: actualTemplate?.layoutConfigBack || null,
-    background_image_path_front: actualTemplate?.backgroundImagePathFront || null,
-    background_image_path_back: actualTemplate?.backgroundImagePathBack || null,
-    card_size: actualTemplate?.cardSize || 'CR80',
-    isActive: actualCard.template.isActive ?? true,
-  } : null);
 
   const handleDownload = async () => {
     if (!actualTemplate || !studentForRender) return;
@@ -391,7 +395,7 @@ export function StudentIdCardPreview({
     }
   };
 
-  if (cardLoading || templateLoading) {
+  if (cardLoading || (templateLoading && !actualTemplate)) {
     return (
       <Card className={className}>
         <CardContent className="pt-6">
@@ -429,7 +433,8 @@ export function StudentIdCardPreview({
               >
                 {t('idCards.front') || 'Front'}
               </Button>
-              {templateForPreview && (
+              {actualTemplate?.layoutConfigBack &&
+                (actualTemplate.layoutConfigBack.enabledFields?.length ?? 0) > 0 && (
                 <Button
                   variant={side === 'back' ? 'default' : 'outline'}
                   size="sm"
@@ -569,7 +574,7 @@ export function StudentIdCardPreview({
             <p className="text-sm text-muted-foreground mb-4">
               {t('idCards.clickPreviewToGenerate') || 'Click Preview button to generate card image'}
             </p>
-            {!templateForPreview && (
+            {!actualTemplate && (
               <p className="text-xs text-muted-foreground">
                 {t('idCards.templateNotLoaded') || 'Template not loaded'}
               </p>

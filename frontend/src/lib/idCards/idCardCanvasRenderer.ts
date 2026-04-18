@@ -655,9 +655,6 @@ export async function renderIdCardToCanvas(
     const pos = getPixelPosition(getPositionOrDefault('qrCodePosition', layout.qrCodePosition));
     if (pos && pos.width && pos.height) {
       try {
-        // Use smaller dimension for square QR code
-        const qrSize = Math.min(pos.width, pos.height);
-        
         // Get QR code value source from layout config (default to student_code)
         const valueSource = layout.qrCodeValueSource || 'student_code';
         
@@ -668,7 +665,8 @@ export async function renderIdCardToCanvas(
             qrValue = student.id;
             break;
           case 'student_code':
-            qrValue = student.studentCode;
+            // Prefer code; many records still scan by admission # until backfilled
+            qrValue = student.studentCode || student.admissionNumber || student.id;
             break;
           case 'admission_number':
             qrValue = student.admissionNumber;
@@ -689,15 +687,53 @@ export async function renderIdCardToCanvas(
         }
         
         if (qrValue) {
-          const qrBase64 = await generateQRCode(qrValue, Math.round(qrSize));
+          const boxW = pos.width!;
+          const boxH = pos.height!;
+          const framePadding = Math.max(2, Math.min(boxW, boxH) * 0.045);
+          const innerW = Math.max(1, boxW - framePadding * 2);
+          const innerH = Math.max(1, boxH - framePadding * 2);
+          const innerQrSize = Math.min(innerW, innerH);
+          const qrPixelSize = Math.max(32, Math.round(innerQrSize));
+
+          const qrBase64 = await generateQRCode(qrValue, qrPixelSize);
           if (qrBase64) {
             const qrImg = new Image();
             await new Promise((resolve, reject) => {
               qrImg.onload = () => {
-                // Center-based positioning, square size
-                const drawX = pos.x! - qrSize / 2;
-                const drawY = pos.y! - qrSize / 2;
-                ctx.drawImage(qrImg, drawX, drawY, qrSize, qrSize);
+                ctx.save();
+                ctx.lineWidth = 0;
+                ctx.strokeStyle = 'transparent';
+
+                const boxX = pos.x! - boxW / 2;
+                const boxY = pos.y! - boxH / 2;
+                const frameRadius = Math.max(4, Math.min(boxW, boxH) * 0.08);
+                const innerX = boxX + framePadding;
+                const innerY = boxY + framePadding;
+                const innerRadius = Math.max(2, frameRadius - framePadding);
+
+                ctx.shadowColor = 'rgba(15, 23, 42, 0.14)';
+                ctx.shadowBlur = Math.max(3, framePadding * 1.5);
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = Math.max(1, framePadding * 0.6);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                traceRoundedRect(boxX, boxY, boxW, boxH, frameRadius);
+                ctx.fill();
+                ctx.shadowColor = 'transparent';
+
+                ctx.lineWidth = Math.max(1, Math.min(boxW, boxH) * 0.02);
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.85)';
+                traceRoundedRect(boxX, boxY, boxW, boxH, frameRadius);
+                ctx.stroke();
+
+                traceRoundedRect(innerX, innerY, innerW, innerH, innerRadius);
+                ctx.clip();
+
+                const drawSize = qrPixelSize;
+                const drawX = pos.x! - drawSize / 2;
+                const drawY = pos.y! - drawSize / 2;
+                ctx.drawImage(qrImg, drawX, drawY, drawSize, drawSize);
+
+                ctx.restore();
                 resolve(null);
               };
               qrImg.onerror = reject;

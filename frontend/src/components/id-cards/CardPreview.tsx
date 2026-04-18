@@ -49,6 +49,28 @@ async function convertImageToBase64(url: string): Promise<string | null> {
   }
 }
 
+function traceRoundedRectForIdCard(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  rectWidth: number,
+  rectHeight: number,
+  radius: number
+) {
+  const safeRadius = Math.max(0, Math.min(radius, rectWidth / 2, rectHeight / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + safeRadius, y);
+  ctx.lineTo(x + rectWidth - safeRadius, y);
+  ctx.quadraticCurveTo(x + rectWidth, y, x + rectWidth, y + safeRadius);
+  ctx.lineTo(x + rectWidth, y + rectHeight - safeRadius);
+  ctx.quadraticCurveTo(x + rectWidth, y + rectHeight, x + rectWidth - safeRadius, y + rectHeight);
+  ctx.lineTo(x + safeRadius, y + rectHeight);
+  ctx.quadraticCurveTo(x, y + rectHeight, x, y + rectHeight - safeRadius);
+  ctx.lineTo(x, y + safeRadius);
+  ctx.quadraticCurveTo(x, y, x + safeRadius, y);
+  ctx.closePath();
+}
+
 interface IdCardLayoutConfig {
   enabledFields?: string[];
   studentNamePosition?: { x: number; y: number; width?: number; height?: number };
@@ -302,18 +324,54 @@ export function CardPreview({
       }
     }
 
-    // QR Code
+    // QR Code (same framed treatment as idCardCanvasRenderer student photo)
     if (layout.enabledFields?.includes('qrCode') && student.studentCode) {
       const pos = getPixelPosition(layout.qrCodePosition);
       if (pos && pos.width && pos.height) {
         try {
-          const qrSize = Math.min(pos.width, pos.height);
-          const qrBase64 = await generateQRCode(student.studentCode, qrSize);
+          const boxW = pos.width!;
+          const boxH = pos.height!;
+          const framePadding = Math.max(2, Math.min(boxW, boxH) * 0.045);
+          const innerW = Math.max(1, boxW - framePadding * 2);
+          const innerH = Math.max(1, boxH - framePadding * 2);
+          const qrPixelSize = Math.max(32, Math.round(Math.min(innerW, innerH)));
+          const qrBase64 = await generateQRCode(student.studentCode, qrPixelSize);
           if (qrBase64) {
             const qrImg = new Image();
             await new Promise((resolve, reject) => {
               qrImg.onload = () => {
-                ctx.drawImage(qrImg, pos.x! - pos.width! / 2, pos.y! - pos.height! / 2, pos.width!, pos.height!);
+                ctx.save();
+                ctx.lineWidth = 0;
+                ctx.strokeStyle = 'transparent';
+
+                const boxX = pos.x! - boxW / 2;
+                const boxY = pos.y! - boxH / 2;
+                const frameRadius = Math.max(4, Math.min(boxW, boxH) * 0.08);
+                const innerX = boxX + framePadding;
+                const innerY = boxY + framePadding;
+                const innerRadius = Math.max(2, frameRadius - framePadding);
+
+                ctx.shadowColor = 'rgba(15, 23, 42, 0.14)';
+                ctx.shadowBlur = Math.max(3, framePadding * 1.5);
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = Math.max(1, framePadding * 0.6);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                traceRoundedRectForIdCard(ctx, boxX, boxY, boxW, boxH, frameRadius);
+                ctx.fill();
+                ctx.shadowColor = 'transparent';
+
+                ctx.lineWidth = Math.max(1, Math.min(boxW, boxH) * 0.02);
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.85)';
+                traceRoundedRectForIdCard(ctx, boxX, boxY, boxW, boxH, frameRadius);
+                ctx.stroke();
+
+                traceRoundedRectForIdCard(ctx, innerX, innerY, innerW, innerH, innerRadius);
+                ctx.clip();
+
+                const drawSize = qrPixelSize;
+                ctx.drawImage(qrImg, pos.x! - drawSize / 2, pos.y! - drawSize / 2, drawSize, drawSize);
+
+                ctx.restore();
                 resolve(null);
               };
               qrImg.onerror = reject;
