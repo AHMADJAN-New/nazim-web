@@ -1710,18 +1710,37 @@ export function IdCardLayoutEditor({
                                     />
                                   </div>
                                 ) : field.id === 'qrCode' && qrCodeUrl ? (
-                                  <img
-                                    src={qrCodeUrl}
-                                    alt="QR Code"
+                                  <div
                                     style={{
                                       width: '100%',
                                       height: '100%',
-                                      objectFit: 'contain',
-                                      pointerEvents: 'none', // Allow resize handles to receive mouse events
-                                      // Force square container for QR codes
-                                      aspectRatio: '1 / 1',
+                                      padding: '4px',
+                                      borderRadius: '6px',
+                                      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                                      border: '1px solid rgba(148, 163, 184, 0.85)',
+                                      boxShadow: '0 2px 6px rgba(15, 23, 42, 0.14)',
+                                      overflow: 'hidden',
+                                      pointerEvents: 'none',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
                                     }}
-                                  />
+                                  >
+                                    <img
+                                      src={qrCodeUrl}
+                                      alt="QR Code"
+                                      style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        maxWidth: '100%',
+                                        maxHeight: '100%',
+                                        objectFit: 'contain',
+                                        pointerEvents: 'none',
+                                        aspectRatio: '1 / 1',
+                                        borderRadius: '4px',
+                                      }}
+                                    />
+                                  </div>
                                 ) : (
                                   <>
                                     <span className="text-2xl" style={{ pointerEvents: 'none' }}>{displayText}</span>

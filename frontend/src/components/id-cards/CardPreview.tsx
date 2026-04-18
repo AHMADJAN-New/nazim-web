@@ -371,6 +371,12 @@ export function CardPreview({
                 const drawSize = qrPixelSize;
                 ctx.drawImage(qrImg, pos.x! - drawSize / 2, pos.y! - drawSize / 2, drawSize, drawSize);
 
+                ctx.beginPath();
+                traceRoundedRectForIdCard(ctx, innerX, innerY, innerW, innerH, innerRadius);
+                ctx.lineWidth = Math.max(1, Math.min(boxW, boxH) * 0.02);
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.85)';
+                ctx.stroke();
+
                 ctx.restore();
                 resolve(null);
               };

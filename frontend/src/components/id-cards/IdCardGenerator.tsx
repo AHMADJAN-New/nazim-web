@@ -473,6 +473,12 @@ export function IdCardGenerator({
                   const drawY = pos.y - qrSizePx / 2;
                   ctx.drawImage(qrImg, drawX, drawY, qrSizePx, qrSizePx);
 
+                  ctx.beginPath();
+                  traceRoundedRectForIdCard(ctx, innerX, innerY, innerW, innerH, innerRadius);
+                  ctx.lineWidth = Math.max(1, Math.min(boxW, boxH) * 0.02);
+                  ctx.strokeStyle = 'rgba(148, 163, 184, 0.85)';
+                  ctx.stroke();
+
                   ctx.restore();
                   resolve(null);
                 };

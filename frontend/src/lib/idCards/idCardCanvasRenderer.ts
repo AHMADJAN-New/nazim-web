@@ -733,6 +733,13 @@ export async function renderIdCardToCanvas(
                 const drawY = pos.y! - drawSize / 2;
                 ctx.drawImage(qrImg, drawX, drawY, drawSize, drawSize);
 
+                // Inner frame: outer stroke alone is easy to miss on white QR padding (same tone as photo inner edge).
+                ctx.beginPath();
+                traceRoundedRect(innerX, innerY, innerW, innerH, innerRadius);
+                ctx.lineWidth = Math.max(1, Math.min(boxW, boxH) * 0.02);
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.85)';
+                ctx.stroke();
+
                 ctx.restore();
                 resolve(null);
               };
