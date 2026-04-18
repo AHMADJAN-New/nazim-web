@@ -721,8 +721,7 @@ class StudentImportService
 
             $reservedCodes = [];
             if ($codesNeeded > 0) {
-                CodeGenerator::syncStudentCounterFromExistingStudentCodes($organizationId);
-                $reservedCodes = CodeGenerator::generateStudentCodesBatch($organizationId, $codesNeeded);
+                $reservedCodes = CodeGenerator::generateStudentCodesBatch($organizationId, $schoolId, $codesNeeded);
             }
             $reservedCodeIndex = 0;
 
@@ -829,12 +828,12 @@ class StudentImportService
         // If admission_no is blank, generate a student_code and set admission_no = student_code
         if ($admissionNo === '') {
             if ($studentCode === '') {
-                $studentCode = $prefilledStudentCode ?? CodeGenerator::generateStudentCode($organizationId);
+                $studentCode = $prefilledStudentCode ?? CodeGenerator::generateStudentCode($organizationId, $schoolId);
             }
             $admissionNo = $studentCode;
         } elseif ($studentCode === '') {
             // Row supplied admission_no but no student_code — assign reserved/generated code (import uses DB::insert, not Eloquent boot)
-            $studentCode = $prefilledStudentCode ?? CodeGenerator::generateStudentCode($organizationId);
+            $studentCode = $prefilledStudentCode ?? CodeGenerator::generateStudentCode($organizationId, $schoolId);
         }
 
         $data = [

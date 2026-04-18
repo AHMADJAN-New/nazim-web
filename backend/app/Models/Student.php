@@ -105,7 +105,10 @@ class Student extends Model
             
             // Generate student_code if not provided and organization_id exists
             if (empty($model->student_code) && !empty($model->organization_id)) {
-                $model->student_code = CodeGenerator::generateStudentCode($model->organization_id);
+                $schoolId = is_string($model->school_id ?? null) && $model->school_id !== ''
+                    ? (string) $model->school_id
+                    : null;
+                $model->student_code = CodeGenerator::generateStudentCode($model->organization_id, $schoolId);
             }
         });
     }

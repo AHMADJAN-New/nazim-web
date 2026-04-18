@@ -9,15 +9,62 @@ class CodeGenerator
 {
     /**
      * Generate a student code for the given organization.
-     * Format: ST-{YYYY}-{SEQUENCE} (four-digit calendar year).
+     * Format: ST-{SEGMENT}-{SEQUENCE} where SEGMENT is the first 4-digit year in the
+     * current academic year's name for this org/school (fallback: calendar year).
      */
-    public static function generateStudentCode(string $organizationId): string
+    public static function generateStudentCode(string $organizationId, ?string $schoolId = null): string
     {
         return self::generateCode(
             $organizationId,
             OrganizationCounter::COUNTER_TYPE_STUDENTS,
-            'ST'
+            'ST',
+            $schoolId
         );
+    }
+
+    /**
+     * First 4-digit sequence in academic year name (e.g. "1405-1406" → "1405", "2024-2025" → "2024").
+     */
+    public static function fourDigitsFromAcademicYearName(?string $name): ?string
+    {
+        if ($name === null || trim($name) === '') {
+            return null;
+        }
+        if (preg_match('/(\d{4})/u', $name, $m)) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Middle segment for ST-* codes from academic_years (current row), else calendar YYYY.
+     */
+    public static function studentCodeMiddleSegmentFromAcademicYear(string $organizationId, ?string $schoolId): string
+    {
+        $base = DB::table('academic_years')
+            ->where('organization_id', $organizationId)
+            ->where('is_current', true)
+            ->whereNull('deleted_at');
+
+        if (is_string($schoolId) && $schoolId !== '') {
+            $row = (clone $base)->where('school_id', $schoolId)->orderByDesc('start_date')->first(['name']);
+            if ($row && ($seg = self::fourDigitsFromAcademicYearName($row->name))) {
+                return $seg;
+            }
+        }
+
+        $row = (clone $base)->whereNull('school_id')->orderByDesc('start_date')->first(['name']);
+        if ($row && ($seg = self::fourDigitsFromAcademicYearName($row->name))) {
+            return $seg;
+        }
+
+        $row = (clone $base)->orderByDesc('start_date')->first(['name']);
+        if ($row && ($seg = self::fourDigitsFromAcademicYearName($row->name))) {
+            return $seg;
+        }
+
+        return date('Y');
     }
 
     /**
@@ -41,13 +88,14 @@ class CodeGenerator
     }
 
     /**
-     * Which student_code values would be issued next (same order as backfill), without writing DB.
+     * Preview ST-* codes in the same order as backfill/import (per-row academic year segment).
      *
+     * @param  array<int, string|null>  $schoolIdsOrdered  school_id per code slot (null = org-level lookup only)
      * @return string[]
      */
-    public static function previewStudentCodesAfterSync(string $organizationId, int $count): array
+    public static function previewStudentCodesInAssignmentOrder(string $organizationId, array $schoolIdsOrdered): array
     {
-        if ($count <= 0) {
+        if ($schoolIdsOrdered === []) {
             return [];
         }
 
@@ -57,14 +105,66 @@ class CodeGenerator
             ->where('counter_type', OrganizationCounter::COUNTER_TYPE_STUDENTS)
             ->value('last_value');
         $L = max($counterLast, $maxSeq);
-        $year = date('Y');
+
         $codes = [];
-        for ($n = 1; $n <= $count; $n++) {
-            $seq = $L + $n;
-            $codes[] = 'ST-'.$year.'-'.self::formatStudentSequence($seq);
+        foreach ($schoolIdsOrdered as $i => $schoolId) {
+            $seq = $L + $i + 1;
+            $middle = self::studentCodeMiddleSegmentFromAcademicYear(
+                $organizationId,
+                is_string($schoolId) && $schoolId !== '' ? $schoolId : null
+            );
+            $codes[] = 'ST-'.$middle.'-'.self::formatStudentSequence($seq);
         }
 
         return $codes;
+    }
+
+    /**
+     * Allocate the next N student codes after syncing counter with existing ST-* max (one transaction).
+     *
+     * @param  array<int, string|null>  $schoolIdsPerCode
+     * @return string[]
+     */
+    public static function allocateStudentCodesAfterSync(string $organizationId, array $schoolIdsPerCode): array
+    {
+        if ($schoolIdsPerCode === []) {
+            return [];
+        }
+
+        return DB::transaction(function () use ($organizationId, $schoolIdsPerCode) {
+            $maxSeq = self::maxStudentSequenceFromExistingCodes($organizationId);
+
+            $counter = OrganizationCounter::lockForUpdate()
+                ->where('organization_id', $organizationId)
+                ->where('counter_type', OrganizationCounter::COUNTER_TYPE_STUDENTS)
+                ->first();
+
+            if (! $counter) {
+                $counter = OrganizationCounter::create([
+                    'organization_id' => $organizationId,
+                    'counter_type' => OrganizationCounter::COUNTER_TYPE_STUDENTS,
+                    'last_value' => 0,
+                ]);
+            }
+
+            if ($counter->last_value < $maxSeq) {
+                $counter->update(['last_value' => $maxSeq]);
+            }
+            $counter->refresh();
+
+            $codes = [];
+            foreach ($schoolIdsPerCode as $schoolId) {
+                $counter->increment('last_value');
+                $counter->refresh();
+                $middle = self::studentCodeMiddleSegmentFromAcademicYear(
+                    $organizationId,
+                    is_string($schoolId) && $schoolId !== '' ? $schoolId : null
+                );
+                $codes[] = 'ST-'.$middle.'-'.self::formatStudentSequence((int) $counter->last_value);
+            }
+
+            return $codes;
+        });
     }
 
     /**
@@ -102,39 +202,15 @@ class CodeGenerator
         });
     }
 
-    public static function generateStudentCodesBatch(string $organizationId, int $count): array
+    public static function generateStudentCodesBatch(string $organizationId, ?string $schoolId, int $count): array
     {
         if ($count <= 0) {
             return [];
         }
 
-        return DB::transaction(function () use ($organizationId, $count) {
-            $counter = OrganizationCounter::lockForUpdate()
-                ->where('organization_id', $organizationId)
-                ->where('counter_type', OrganizationCounter::COUNTER_TYPE_STUDENTS)
-                ->first();
+        $schoolIds = array_fill(0, $count, $schoolId);
 
-            if (! $counter) {
-                $counter = OrganizationCounter::create([
-                    'organization_id' => $organizationId,
-                    'counter_type' => OrganizationCounter::COUNTER_TYPE_STUDENTS,
-                    'last_value' => 0,
-                ]);
-            }
-
-            $start = ((int) $counter->last_value) + 1;
-            $end = $start + $count - 1;
-            $counter->update(['last_value' => $end]);
-
-            $year = date('Y');
-            $codes = [];
-            for ($i = $start; $i <= $end; $i++) {
-                $sequence = self::formatStudentSequence($i);
-                $codes[] = "ST-{$year}-{$sequence}";
-            }
-
-            return $codes;
-        });
+        return self::allocateStudentCodesAfterSync($organizationId, $schoolIds);
     }
 
     /**
@@ -167,9 +243,9 @@ class CodeGenerator
      * Generate a code for the given organization and counter type
      * Uses database transaction with lockForUpdate() for concurrency safety
      */
-    private static function generateCode(string $organizationId, string $counterType, string $prefix): string
+    private static function generateCode(string $organizationId, string $counterType, string $prefix, ?string $studentSchoolId = null): string
     {
-        return DB::transaction(function () use ($organizationId, $counterType, $prefix) {
+        return DB::transaction(function () use ($organizationId, $counterType, $prefix, $studentSchoolId) {
             // Lock the counter row (or create if missing) for this organization and counter type
             $counter = OrganizationCounter::lockForUpdate()
                 ->where('organization_id', $organizationId)
@@ -189,9 +265,9 @@ class CodeGenerator
             $counter->increment('last_value');
             $counter->refresh();
 
-            // Student codes: full calendar year (4 digits). Other counters: two-digit year (legacy).
-            $year = $counterType === OrganizationCounter::COUNTER_TYPE_STUDENTS
-                ? date('Y')
+            // Student ST-*: middle segment from current academic year name; other counters: two-digit year (legacy).
+            $middle = $counterType === OrganizationCounter::COUNTER_TYPE_STUDENTS && $prefix === 'ST'
+                ? self::studentCodeMiddleSegmentFromAcademicYear($organizationId, $studentSchoolId)
                 : date('y');
 
             // Student codes use configurable padding (default: 4) to avoid overly long leading zeros.
@@ -202,7 +278,7 @@ class CodeGenerator
                 $sequence = str_pad((string) $counter->last_value, 6, '0', STR_PAD_LEFT);
             }
 
-            return "{$prefix}-{$year}-{$sequence}";
+            return "{$prefix}-{$middle}-{$sequence}";
         });
     }
 

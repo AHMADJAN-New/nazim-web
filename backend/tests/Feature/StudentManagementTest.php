@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicYear;
 use App\Models\Organization;
 use App\Models\SchoolBranding;
 use App\Models\Student;
@@ -177,6 +178,14 @@ class StudentManagementTest extends TestCase
     public function student_code_is_auto_generated()
     {
         $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        AcademicYear::factory()->current()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'name' => '3098-3099',
+        ]);
 
         $studentData = [
             'admission_no' => 'ADM-2001',
@@ -197,6 +206,7 @@ class StudentManagementTest extends TestCase
         $student = Student::latest()->first();
         $this->assertNotNull($student->student_code);
         $this->assertMatchesRegularExpression('/^ST-\d{4}-\d+$/', $student->student_code);
+        $this->assertStringStartsWith('ST-3098-', $student->student_code);
     }
 
     /** @test */

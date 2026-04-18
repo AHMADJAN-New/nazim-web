@@ -79,15 +79,17 @@ class BackfillStudentCodes extends Command
         $rows = (clone $query)
             ->orderBy('created_at')
             ->orderBy('id')
-            ->get(['id', 'organization_id']);
+            ->get(['id', 'organization_id', 'school_id']);
 
         $updated = 0;
         foreach ($rows->groupBy('organization_id') as $orgId => $group) {
             $orgIdStr = (string) $orgId;
-            CodeGenerator::syncStudentCounterFromExistingStudentCodes($orgIdStr);
 
             foreach ($group->chunk(500) as $chunk) {
-                $codes = CodeGenerator::generateStudentCodesBatch($orgIdStr, $chunk->count());
+                $schoolOrder = $chunk->pluck('school_id')->map(function ($sid) {
+                    return is_string($sid) && $sid !== '' ? $sid : null;
+                })->all();
+                $codes = CodeGenerator::allocateStudentCodesAfterSync($orgIdStr, $schoolOrder);
                 foreach ($chunk->values() as $i => $row) {
                     DB::table('students')->where('id', $row->id)->update([
                         'student_code' => $codes[$i],
@@ -120,7 +122,7 @@ class BackfillStudentCodes extends Command
             $listedQuery->limit($maxList);
         }
 
-        $all = $listedQuery->get(['id', 'admission_no', 'student_code', 'full_name', 'organization_id']);
+        $all = $listedQuery->get(['id', 'admission_no', 'student_code', 'full_name', 'organization_id', 'school_id']);
 
         if ($maxList !== null && $totalInScope > $maxList) {
             $this->warn("Listing first {$maxList} of {$totalInScope} students. Use --limit=0 for the full list.");
@@ -129,8 +131,11 @@ class BackfillStudentCodes extends Command
         $codesByOrg = [];
         foreach ($all->pluck('organization_id')->unique()->filter() as $oid) {
             $oidStr = (string) $oid;
-            $nullCount = $all->where('organization_id', $oidStr)->filter(fn (Student $s) => $s->student_code === null || $s->student_code === '')->count();
-            $codesByOrg[$oidStr] = CodeGenerator::previewStudentCodesAfterSync($oidStr, $nullCount);
+            $nullOrdered = $all->filter(fn (Student $s) => (string) $s->organization_id === $oidStr && ($s->student_code === null || $s->student_code === ''))->values();
+            $schoolOrder = $nullOrdered->pluck('school_id')->map(function ($sid) {
+                return is_string($sid) && $sid !== '' ? $sid : null;
+            })->all();
+            $codesByOrg[$oidStr] = CodeGenerator::previewStudentCodesInAssignmentOrder($oidStr, $schoolOrder);
         }
 
         $ptr = [];

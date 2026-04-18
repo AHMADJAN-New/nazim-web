@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicYear;
 use App\Models\Organization;
 use App\Models\SchoolBranding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,6 +19,12 @@ class BackfillStudentCodesCommandTest extends TestCase
     {
         $organization = Organization::factory()->create();
         $school = SchoolBranding::factory()->for($organization)->create();
+
+        AcademicYear::factory()->current()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'name' => '1405-1406',
+        ]);
 
         $id1 = (string) Str::uuid();
         $id2 = (string) Str::uuid();
@@ -57,6 +64,7 @@ class BackfillStudentCodesCommandTest extends TestCase
 
         $this->assertNotNull(DB::table('students')->where('id', $id1)->value('student_code'));
         $this->assertNotNull(DB::table('students')->where('id', $id2)->value('student_code'));
+        $this->assertMatchesRegularExpression('/^ST-1405-\d+$/', (string) DB::table('students')->where('id', $id1)->value('student_code'));
     }
 
     /** @test */
@@ -64,6 +72,13 @@ class BackfillStudentCodesCommandTest extends TestCase
     {
         $organization = Organization::factory()->create();
         $school = SchoolBranding::factory()->for($organization)->create();
+
+        AcademicYear::factory()->current()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'name' => '1405-1406',
+        ]);
+
         $id = (string) Str::uuid();
         $now = now();
 
@@ -94,7 +109,13 @@ class BackfillStudentCodesCommandTest extends TestCase
         $organization = Organization::factory()->create();
         $school = SchoolBranding::factory()->for($organization)->create();
 
-        $year = date('Y');
+        AcademicYear::factory()->current()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'name' => '2099-2100',
+        ]);
+
+        $year = '2099';
         $existingId = (string) Str::uuid();
         $newId = (string) Str::uuid();
         $now = now();
