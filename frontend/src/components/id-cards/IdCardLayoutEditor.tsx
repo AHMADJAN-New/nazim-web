@@ -1710,36 +1710,25 @@ export function IdCardLayoutEditor({
                                     />
                                   </div>
                                 ) : field.id === 'qrCode' && qrCodeUrl ? (
-                                  <div
-                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      padding: '4px',
-                                      borderRadius: '6px',
-                                      backgroundColor: 'rgba(255, 255, 255, 0.92)',
-                                      border: '1px solid rgba(148, 163, 184, 0.85)',
-                                      boxShadow: '0 2px 6px rgba(15, 23, 42, 0.14)',
-                                      overflow: 'hidden',
-                                      pointerEvents: 'none',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
-                                  >
-                                    <img
-                                      src={qrCodeUrl}
-                                      alt="QR Code"
+                                  <div className="flex h-full w-full items-center justify-center pointer-events-none">
+                                    <div
+                                      className="aspect-square max-h-full max-w-full flex items-center justify-center"
                                       style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        maxWidth: '100%',
-                                        maxHeight: '100%',
-                                        objectFit: 'contain',
-                                        pointerEvents: 'none',
-                                        aspectRatio: '1 / 1',
-                                        borderRadius: '4px',
+                                        padding: '4px',
+                                        borderRadius: '6px',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                                        border: '1px solid rgba(148, 163, 184, 0.85)',
+                                        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.14)',
+                                        overflow: 'hidden',
+                                        boxSizing: 'border-box',
                                       }}
-                                    />
+                                    >
+                                      <img
+                                        src={qrCodeUrl}
+                                        alt="QR Code"
+                                        className="max-h-full max-w-full rounded object-contain pointer-events-none aspect-square"
+                                      />
+                                    </div>
                                   </div>
                                 ) : (
                                   <>

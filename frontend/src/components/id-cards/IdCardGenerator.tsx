@@ -426,12 +426,14 @@ export function IdCardGenerator({
           const qrHeightPercent = qrPos?.height ?? 10;
           const qrWidth = (qrWidthPercent / 100) * width;
           const qrHeight = (qrHeightPercent / 100) * height;
-          const boxW = qrWidth;
-          const boxH = qrHeight;
-          const framePadding = Math.max(2, Math.min(boxW, boxH) * 0.045);
-          const innerW = Math.max(1, boxW - framePadding * 2);
-          const innerH = Math.max(1, boxH - framePadding * 2);
-          const qrSizePx = Math.max(64, Math.round(Math.min(innerW, innerH)));
+          const boxSide = Math.min(qrWidth, qrHeight);
+          const boxW = boxSide;
+          const boxH = boxSide;
+          const framePadding = Math.max(2, boxSide * 0.045);
+          const innerSide = Math.max(1, boxSide - framePadding * 2);
+          const innerW = innerSide;
+          const innerH = innerSide;
+          const qrSizePx = Math.max(64, Math.round(innerSide));
 
           // Use studentCode, admissionNumber, or id as QR value
           const qrValue = student.studentCode || student.admissionNumber || student.id;

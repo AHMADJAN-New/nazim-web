@@ -687,13 +687,17 @@ export async function renderIdCardToCanvas(
         }
         
         if (qrValue) {
-          const boxW = pos.width!;
-          const boxH = pos.height!;
-          const framePadding = Math.max(2, Math.min(boxW, boxH) * 0.045);
-          const innerW = Math.max(1, boxW - framePadding * 2);
-          const innerH = Math.max(1, boxH - framePadding * 2);
-          const innerQrSize = Math.min(innerW, innerH);
-          const qrPixelSize = Math.max(32, Math.round(innerQrSize));
+          // QR is always square; frame must match or the border stretches when layout % differs by axis.
+          const rawW = pos.width!;
+          const rawH = pos.height!;
+          const boxSide = Math.min(rawW, rawH);
+          const boxW = boxSide;
+          const boxH = boxSide;
+          const framePadding = Math.max(2, boxSide * 0.045);
+          const innerSide = Math.max(1, boxSide - framePadding * 2);
+          const innerW = innerSide;
+          const innerH = innerSide;
+          const qrPixelSize = Math.max(32, Math.round(innerSide));
 
           const qrBase64 = await generateQRCode(qrValue, qrPixelSize);
           if (qrBase64) {
