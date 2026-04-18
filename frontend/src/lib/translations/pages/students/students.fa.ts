@@ -137,7 +137,7 @@ export default {
     idCardDownload: "بارگیری کارت شناسایی",
     importLimited: "فایل شما شامل {validRows} ردیف معتبر است، اما فقط {remaining} جای شاگرد باقی مانده. فقط اولین {remaining} ردیف(های) معتبر وارد خواهد شد.",
     importNow: "ورود",
-    importRulesHint: "اگر admission_no خالی باشد، سیستم به صورت خودکار student_code تولید کرده و به عنوان admission_no استفاده می‌کند.",
+    importRulesHint: "اگر admission_no خالی باشد، سیستم student_code می‌سازد و همان را به‌عنوان admission_no استفاده می‌کند. اگر admission_no پر باشد اما student_code خالی بماند، سیستم یک student_code جداگانه اختصاص می‌دهد (مثل ثبت‌نام تازه).",
     importSubtitle: "قالبی بسازید، در اکسل پر کنید، سپس بارگذاری کنید تا شاگردان را به صورت گروهی وارد کنید.",
     importTitle: "ورود گروهی شاگردان",
     inactive: "غیرفعال",

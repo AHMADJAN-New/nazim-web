@@ -137,7 +137,7 @@ export default {
     idCardDownload: "ID Card Download",
     importLimited: "Your file contains {validRows} valid rows, but only {remaining} student slot(s) remaining. Only the first {remaining} valid row(s) will be imported.",
     importNow: "Import",
-    importRulesHint: "If admission_no is blank, the system will auto-generate student_code and use it as admission_no.",
+    importRulesHint: "If admission_no is blank, the system will auto-generate student_code and use it as admission_no. If admission_no is set but student_code is left blank, the system assigns a separate student_code (same as new registrations).",
     importSubtitle: "Create a template, fill it in Excel, then upload to import students in bulk.",
     importTitle: "Bulk Import Students",
     inactive: "Inactive",

@@ -2,13 +2,11 @@
 
 namespace App\Services\Imports;
 
-use App\Models\Student;
-use App\Models\StudentAdmission;
 use App\Models\ClassAcademicYear;
+use App\Models\Student;
 use App\Services\CodeGenerator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -19,6 +17,7 @@ class StudentImportService
     private const REQUIRED_STUDENT_FIELDS = ['full_name', 'father_name'];
 
     private const STUDENT_STATUS = ['applied', 'admitted', 'active', 'withdrawn'];
+
     private const ADMISSION_FEE_STATUS = ['paid', 'pending', 'waived', 'partial'];
 
     private const ENROLLMENT_STATUS = ['pending', 'admitted', 'active', 'inactive', 'suspended', 'withdrawn', 'graduated'];
@@ -36,23 +35,23 @@ class StudentImportService
         $reader = IOFactory::createReader('Xlsx');
         $reader->setReadDataOnly(true);
         $filePath = is_string($file) ? $file : $file->getRealPath();
-        if (!is_string($filePath) || trim($filePath) === '') {
+        if (! is_string($filePath) || trim($filePath) === '') {
             throw new \InvalidArgumentException('Invalid import file');
         }
         $spreadsheet = $reader->load($filePath);
 
         $metaSheet = $spreadsheet->getSheetByName(StudentImportXlsxService::META_SHEET_NAME);
-        if (!$metaSheet) {
+        if (! $metaSheet) {
             throw new \InvalidArgumentException('Invalid template: missing _meta sheet');
         }
 
         $metaRaw = $metaSheet->getCell('A2')->getValue();
-        if (!is_string($metaRaw) || trim($metaRaw) === '') {
+        if (! is_string($metaRaw) || trim($metaRaw) === '') {
             throw new \InvalidArgumentException('Invalid template: missing metadata');
         }
 
         $meta = json_decode($metaRaw, true);
-        if (!is_array($meta) || ($meta['template'] ?? null) !== 'student_import') {
+        if (! is_array($meta) || ($meta['template'] ?? null) !== 'student_import') {
             throw new \InvalidArgumentException('Invalid template: bad metadata');
         }
 
@@ -90,11 +89,11 @@ class StudentImportService
 
                 for ($c = 1; $c <= $expectedColCount; $c++) {
                     $key = $fieldOrder[$c - 1];
-                    $cellRef = Coordinate::stringFromColumnIndex($c) . $r;
+                    $cellRef = Coordinate::stringFromColumnIndex($c).$r;
                     $cell = $sheet->getCell($cellRef);
                     $value = $cell->getValue();
                     $value = $this->normalizeCellValue($value, $key, $cell->getFormattedValue());
-                    if (!($value === null || $value === '')) {
+                    if (! ($value === null || $value === '')) {
                         $allEmpty = false;
                     }
                     $row[$key] = $value;
@@ -224,7 +223,7 @@ class StudentImportService
             // Sheet meta consistency checks (applies even if there are zero rows)
             if (is_string($metaClassAcademicYearId) && trim($metaClassAcademicYearId) !== '') {
                 $metaCay = trim($metaClassAcademicYearId);
-                if (!isset($classYearMap[$metaCay])) {
+                if (! isset($classYearMap[$metaCay])) {
                     $errors[] = ['row' => 0, 'field' => 'class_academic_year_id', 'message' => 'Invalid or unauthorized class_academic_year_id in template metadata'];
                 } else {
                     $expectedClassId = $classYearMap[$metaCay]['class_id'];
@@ -253,20 +252,20 @@ class StudentImportService
                 $hasAdmissionContext = ($resolvedAcademicYearId || $resolvedClassAcademicYearId || $resolvedClassId);
 
                 if ($hasAdmissionContext) {
-                    if (!$resolvedAcademicYearId || !is_string($resolvedAcademicYearId) || trim($resolvedAcademicYearId) === '') {
+                    if (! $resolvedAcademicYearId || ! is_string($resolvedAcademicYearId) || trim($resolvedAcademicYearId) === '') {
                         $rowErrors[] = ['row' => $rowNumber, 'field' => 'academic_year_id', 'message' => 'academic_year_id is required for admissions'];
                     }
-                    if ($resolvedClassAcademicYearId && (!$resolvedClassId || !is_string($resolvedClassId))) {
+                    if ($resolvedClassAcademicYearId && (! $resolvedClassId || ! is_string($resolvedClassId))) {
                         // We can derive class_id from class_academic_year_id later on commit, but require it for clarity now.
                         // We'll attempt to derive if possible.
                         $derived = $this->deriveClassIdFromClassAcademicYear((string) $resolvedClassAcademicYearId, $organizationId);
-                        if (!$derived) {
+                        if (! $derived) {
                             $rowErrors[] = ['row' => $rowNumber, 'field' => 'class_id', 'message' => 'class_id is required (or class_academic_year_id must be valid)'];
                         }
                     }
                     if ($resolvedClassAcademicYearId && is_string($resolvedClassAcademicYearId) && trim($resolvedClassAcademicYearId) !== '') {
                         $cay = trim($resolvedClassAcademicYearId);
-                        if (!isset($classYearMap[$cay])) {
+                        if (! isset($classYearMap[$cay])) {
                             $rowErrors[] = ['row' => $rowNumber, 'field' => 'class_academic_year_id', 'message' => 'Invalid or unauthorized class_academic_year_id'];
                         } else {
                             if ($resolvedClassId && is_string($resolvedClassId) && trim($resolvedClassId) !== '' && trim($resolvedClassId) !== $classYearMap[$cay]['class_id']) {
@@ -280,12 +279,12 @@ class StudentImportService
                     // Defaults sanity (avoid user guessing IDs)
                     if (isset($sheetDefaults['room_id']) && is_string($sheetDefaults['room_id']) && trim($sheetDefaults['room_id']) !== '') {
                         // Existence is enforced at template generation time; we still validate UUID format lightly
-                        if (!preg_match('/^[0-9a-fA-F-]{36}$/', $sheetDefaults['room_id'])) {
+                        if (! preg_match('/^[0-9a-fA-F-]{36}$/', $sheetDefaults['room_id'])) {
                             $rowErrors[] = ['row' => $rowNumber, 'field' => 'room_id', 'message' => 'Invalid default room_id in template'];
                         }
                     }
                     if (isset($sheetDefaults['residency_type_id']) && is_string($sheetDefaults['residency_type_id']) && trim($sheetDefaults['residency_type_id']) !== '') {
-                        if (!preg_match('/^[0-9a-fA-F-]{36}$/', $sheetDefaults['residency_type_id'])) {
+                        if (! preg_match('/^[0-9a-fA-F-]{36}$/', $sheetDefaults['residency_type_id'])) {
                             $rowErrors[] = ['row' => $rowNumber, 'field' => 'residency_type_id', 'message' => 'Invalid default residency_type_id in template'];
                         }
                     }
@@ -331,7 +330,7 @@ class StudentImportService
         foreach (self::REQUIRED_STUDENT_FIELDS as $field) {
             $val = $row[$field] ?? null;
             $isEmpty = false;
-            
+
             if ($val === null) {
                 $isEmpty = true;
             } elseif (is_string($val)) {
@@ -347,7 +346,7 @@ class StudentImportService
                 $strVal = (string) $val;
                 $isEmpty = trim($strVal) === '';
             }
-            
+
             if ($isEmpty) {
                 $errors[] = ['row' => $rowNumber, 'field' => $field, 'message' => "{$field} is required"];
             }
@@ -371,8 +370,8 @@ class StudentImportService
                 $genderStr = (string) $gender;
                 $isGenderEmpty = trim($genderStr) === '';
             }
-            
-            if (!$isGenderEmpty) {
+
+            if (! $isGenderEmpty) {
                 // Convert to string for processing
                 $genderStr = is_string($gender) ? $gender : (string) $gender;
                 $g = $this->normalizeGender(trim($genderStr));
@@ -405,11 +404,11 @@ class StudentImportService
 
         // Enums
         $feeStatus = $row['admission_fee_status'] ?? null;
-        if (is_string($feeStatus) && trim($feeStatus) !== '' && !in_array(strtolower(trim($feeStatus)), self::ADMISSION_FEE_STATUS, true)) {
+        if (is_string($feeStatus) && trim($feeStatus) !== '' && ! in_array(strtolower(trim($feeStatus)), self::ADMISSION_FEE_STATUS, true)) {
             $errors[] = ['row' => $rowNumber, 'field' => 'admission_fee_status', 'message' => 'Invalid admission_fee_status'];
         }
         $studentStatus = $row['student_status'] ?? null;
-        if (is_string($studentStatus) && trim($studentStatus) !== '' && !in_array(strtolower(trim($studentStatus)), self::STUDENT_STATUS, true)) {
+        if (is_string($studentStatus) && trim($studentStatus) !== '' && ! in_array(strtolower(trim($studentStatus)), self::STUDENT_STATUS, true)) {
             $errors[] = ['row' => $rowNumber, 'field' => 'student_status', 'message' => 'Invalid student_status'];
         }
 
@@ -454,7 +453,7 @@ class StudentImportService
         $errors = [];
 
         $enrollmentStatus = $row['enrollment_status'] ?? null;
-        if (is_string($enrollmentStatus) && trim($enrollmentStatus) !== '' && !in_array(strtolower(trim($enrollmentStatus)), self::ENROLLMENT_STATUS, true)) {
+        if (is_string($enrollmentStatus) && trim($enrollmentStatus) !== '' && ! in_array(strtolower(trim($enrollmentStatus)), self::ENROLLMENT_STATUS, true)) {
             $errors[] = ['row' => $rowNumber, 'field' => 'enrollment_status', 'message' => 'Invalid enrollment_status'];
         }
 
@@ -482,12 +481,14 @@ class StudentImportService
                 return $sm;
             }
         }
+
         return [];
     }
 
     private function getSheetDefaults(array $sheetMeta): array
     {
         $defaults = $sheetMeta['defaults'] ?? null;
+
         return is_array($defaults) ? $defaults : [];
     }
 
@@ -497,7 +498,9 @@ class StudentImportService
             ->where('id', $classAcademicYearId)
             ->whereNull('deleted_at')
             ->first();
-        if (!$inst) return null;
+        if (! $inst) {
+            return null;
+        }
 
         // Org scoping: class_academic_years can be org-scoped; if present, must match.
         if ($inst->organization_id !== null && $inst->organization_id !== $organizationId) {
@@ -511,40 +514,62 @@ class StudentImportService
      * Normalize gender value to 'male' or 'female'.
      * Accepts: Male, male, MALE, M, m, Female, female, FEMALE, F, f, etc.
      *
-     * @param string $value
      * @return string|null Returns 'male', 'female', or null if invalid
      */
     private function normalizeGender(string $value): ?string
     {
         $normalized = strtolower(trim($value));
-        
+
         // Handle single letter abbreviations
-        if ($normalized === 'm') return 'male';
-        if ($normalized === 'f') return 'female';
-        
+        if ($normalized === 'm') {
+            return 'male';
+        }
+        if ($normalized === 'f') {
+            return 'female';
+        }
+
         // Handle full words (case-insensitive)
-        if ($normalized === 'male') return 'male';
-        if ($normalized === 'female') return 'female';
-        
+        if ($normalized === 'male') {
+            return 'male';
+        }
+        if ($normalized === 'female') {
+            return 'female';
+        }
+
         // Handle common misspellings or partial matches
         // Male variations
-        if (str_starts_with($normalized, 'mal')) return 'male';
+        if (str_starts_with($normalized, 'mal')) {
+            return 'male';
+        }
         // Female variations
-        if (str_starts_with($normalized, 'fem')) return 'female';
-        
+        if (str_starts_with($normalized, 'fem')) {
+            return 'female';
+        }
+
         return null;
     }
 
     private function parseBoolean(mixed $value): ?bool
     {
-        if (is_bool($value)) return $value;
-        if (is_int($value)) return $value === 1 ? true : ($value === 0 ? false : null);
-        if (is_float($value)) return ((int) $value) === 1 ? true : (((int) $value) === 0 ? false : null);
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_int($value)) {
+            return $value === 1 ? true : ($value === 0 ? false : null);
+        }
+        if (is_float($value)) {
+            return ((int) $value) === 1 ? true : (((int) $value) === 0 ? false : null);
+        }
         if (is_string($value)) {
             $v = strtolower(trim($value));
-            if (in_array($v, ['1', 'true', 'yes', 'y'], true)) return true;
-            if (in_array($v, ['0', 'false', 'no', 'n'], true)) return false;
+            if (in_array($v, ['1', 'true', 'yes', 'y'], true)) {
+                return true;
+            }
+            if (in_array($v, ['0', 'false', 'no', 'n'], true)) {
+                return false;
+            }
         }
+
         return null;
     }
 
@@ -555,7 +580,9 @@ class StudentImportService
         }
         if (is_string($value)) {
             $v = trim($value);
-            if ($v === '') return null;
+            if ($v === '') {
+                return null;
+            }
             $dt = \DateTime::createFromFormat('Y-m-d', $v);
             if ($dt && $dt->format('Y-m-d') === $v) {
                 return $v;
@@ -565,27 +592,33 @@ class StudentImportService
             if ($dt2) {
                 return $dt2->format('Y-m-d');
             }
+
             return null;
         }
         if (is_numeric($value)) {
             try {
                 $dt = ExcelDate::excelToDateTimeObject((float) $value);
+
                 return $dt->format('Y-m-d');
             } catch (\Exception $e) {
                 return null;
             }
         }
+
         return null;
     }
 
     private function normalizeCellValue(mixed $raw, string $key, ?string $formatted): mixed
     {
         // Prefer formatted for strings, but keep raw for numeric/date conversions
-        if ($raw === null) return null;
+        if ($raw === null) {
+            return null;
+        }
 
         // Normalize Excel formulas results etc.
         if (is_string($raw)) {
             $trim = trim($raw);
+
             return $trim === '' ? null : $trim;
         }
 
@@ -594,6 +627,7 @@ class StudentImportService
             if (is_numeric($raw)) {
                 try {
                     $dt = ExcelDate::excelToDateTimeObject((float) $raw);
+
                     return $dt->format('Y-m-d');
                 } catch (\Exception $e) {
                     // If conversion fails, keep as numeric for parseDateYmd to handle
@@ -627,13 +661,12 @@ class StudentImportService
      *   is_valid: bool,
      *   sheets?: array<int, array{sheet_name:string, valid_row_numbers?: array<int>}>
      * }|null $precomputedValidation
-     *
      * @return array{created_students:int, created_admissions:int}
      */
     public function commit(array $parsed, string $organizationId, string $schoolId, ?array $precomputedValidation = null): array
     {
         $validation = $precomputedValidation ?? $this->validateImport($parsed, $organizationId);
-        if (!($validation['is_valid'] ?? false)) {
+        if (! ($validation['is_valid'] ?? false)) {
             throw new \RuntimeException('Import validation failed');
         }
 
@@ -666,6 +699,8 @@ class StudentImportService
             $now = now();
 
             // Count rows that need generated student codes once, then reserve in one DB counter transaction.
+            // Reserve codes for every row where the sheet has no student_code: bulk insert bypasses
+            // Student model boot(), so we must assign codes here (admission-only rows included).
             $codesNeeded = 0;
             foreach (($parsed['sheets'] ?? []) as $sheet) {
                 $sheetName = (string) ($sheet['sheet_name'] ?? 'Sheet');
@@ -674,20 +709,21 @@ class StudentImportService
 
                 foreach ($rows as $row) {
                     $rowNumber = (int) ($row['__row'] ?? 0);
-                    if (!isset($validRowLookup[$rowNumber])) {
+                    if (! isset($validRowLookup[$rowNumber])) {
                         continue;
                     }
-                    $admissionNo = is_string($row['admission_no'] ?? null) ? trim((string) $row['admission_no']) : '';
                     $studentCode = is_string($row['student_code'] ?? null) ? trim((string) $row['student_code']) : '';
-                    if ($admissionNo === '' && $studentCode === '') {
+                    if ($studentCode === '') {
                         $codesNeeded++;
                     }
                 }
             }
 
-            $reservedCodes = $codesNeeded > 0
-                ? CodeGenerator::generateStudentCodesBatch($organizationId, $codesNeeded)
-                : [];
+            $reservedCodes = [];
+            if ($codesNeeded > 0) {
+                CodeGenerator::syncStudentCounterFromExistingStudentCodes($organizationId);
+                $reservedCodes = CodeGenerator::generateStudentCodesBatch($organizationId, $codesNeeded);
+            }
             $reservedCodeIndex = 0;
 
             foreach (($parsed['sheets'] ?? []) as $sheet) {
@@ -705,14 +741,14 @@ class StudentImportService
 
                 foreach ($rows as $row) {
                     $rowNumber = (int) ($row['__row'] ?? 0);
-                    if (!isset($validRowLookup[$rowNumber])) {
+                    if (! isset($validRowLookup[$rowNumber])) {
                         continue;
                     }
 
                     $prefilledStudentCode = null;
                     $admissionNo = is_string($row['admission_no'] ?? null) ? trim((string) $row['admission_no']) : '';
                     $studentCode = is_string($row['student_code'] ?? null) ? trim((string) $row['student_code']) : '';
-                    if ($admissionNo === '' && $studentCode === '') {
+                    if ($studentCode === '') {
                         $prefilledStudentCode = $reservedCodes[$reservedCodeIndex] ?? null;
                         $reservedCodeIndex++;
                     }
@@ -732,7 +768,7 @@ class StudentImportService
 
                     $hasAdmissionContext = ($resolvedAcademicYearId || $resolvedClassAcademicYearId || $resolvedClassId);
                     if ($hasAdmissionContext && is_string($resolvedAcademicYearId) && trim($resolvedAcademicYearId) !== '') {
-                        if ($resolvedClassAcademicYearId && !$resolvedClassId) {
+                        if ($resolvedClassAcademicYearId && ! $resolvedClassId) {
                             $resolvedClassId = $this->deriveClassIdFromClassAcademicYear((string) $resolvedClassAcademicYearId, $organizationId);
                         }
 
@@ -796,6 +832,9 @@ class StudentImportService
                 $studentCode = $prefilledStudentCode ?? CodeGenerator::generateStudentCode($organizationId);
             }
             $admissionNo = $studentCode;
+        } elseif ($studentCode === '') {
+            // Row supplied admission_no but no student_code — assign reserved/generated code (import uses DB::insert, not Eloquent boot)
+            $studentCode = $prefilledStudentCode ?? CodeGenerator::generateStudentCode($organizationId);
         }
 
         $data = [
@@ -819,23 +858,28 @@ class StudentImportService
         ];
 
         foreach ($optional as $key) {
-            if (!array_key_exists($key, $row)) continue;
+            if (! array_key_exists($key, $row)) {
+                continue;
+            }
             $val = $row[$key];
 
             if (in_array($key, ['birth_date'], true)) {
                 $parsed = $this->parseDateYmd($val);
                 $data[$key] = $parsed;
+
                 continue;
             }
 
             if (in_array($key, ['is_orphan'], true)) {
                 $parsed = $this->parseBoolean($val);
                 $data[$key] = $parsed ?? false;
+
                 continue;
             }
 
             if (in_array($key, ['age'], true)) {
                 $data[$key] = is_numeric($val) ? (int) $val : null;
+
                 continue;
             }
 
@@ -906,23 +950,32 @@ class StudentImportService
         ];
 
         foreach ($optional as $key) {
-            if (!array_key_exists($key, $row)) continue;
+            if (! array_key_exists($key, $row)) {
+                continue;
+            }
             $val = $row[$key];
 
             if ($key === 'admission_date') {
                 $parsed = $this->parseDateYmd($val);
-                if ($parsed) $data['admission_date'] = $parsed;
+                if ($parsed) {
+                    $data['admission_date'] = $parsed;
+                }
+
                 continue;
             }
 
             if ($key === 'is_boarder') {
                 $parsed = $this->parseBoolean($val);
-                if ($parsed !== null) $data['is_boarder'] = $parsed;
+                if ($parsed !== null) {
+                    $data['is_boarder'] = $parsed;
+                }
+
                 continue;
             }
 
             if ($key === 'enrollment_status' && is_string($val)) {
                 $data['enrollment_status'] = strtolower(trim($val));
+
                 continue;
             }
 
@@ -937,4 +990,3 @@ class StudentImportService
         return $data;
     }
 }
-

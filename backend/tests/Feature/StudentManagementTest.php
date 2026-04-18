@@ -196,6 +196,7 @@ class StudentManagementTest extends TestCase
 
         $student = Student::latest()->first();
         $this->assertNotNull($student->student_code);
+        $this->assertMatchesRegularExpression('/^ST-\d{4}-\d+$/', $student->student_code);
     }
 
     /** @test */

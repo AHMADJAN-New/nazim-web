@@ -137,7 +137,7 @@ export default {
     idCardDownload: "تحميل بطاقة الهوية",
     importLimited: "يحتوي ملفك على {validRows} صفوف صالحة، لكن فقط {remaining} مكان(أماكن) طالب متبقي. سيتم استيراد أول {remaining} صف(صفوف) صالحة فقط.",
     importNow: "استيراد",
-    importRulesHint: "إذا كان admission_no فارغًا، سيقوم النظام بإنشاء student_code واستخدامه كـ admission_no.",
+    importRulesHint: "إذا كان admission_no فارغًا، سيُنشئ النظام student_code ويستخدمه كـ admission_no. إذا وُجد admission_no وتركت خانة student_code فارغة، يُخصص النظام student_code منفصلًا (كما في التسجيل الجديد).",
     importSubtitle: "أنشئ قالبًا، املأه في Excel، ثم ارفعه لاستيراد الطلاب دفعة واحدة.",
     importTitle: "استيراد جماعي للطلاب",
     inactive: "غير نشط",

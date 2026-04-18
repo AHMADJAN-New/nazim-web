@@ -214,13 +214,22 @@ export function StudentAdmissions() {
       },
     },
     {
-      accessorKey: 'studentCode',
-      header: 'ID',
+      id: 'admissionNumber',
+      accessorFn: (row) => row.student?.admissionNumber ?? row.student?.studentCode ?? '',
+      header: t('admissions.admissionNumber') || 'Admission #',
       cell: ({ row }) => {
-        const admission = row.original;
+        const s = row.original.student;
+        const primary = s?.admissionNumber || s?.studentCode || '—';
+        const showSystemCode =
+          !!s?.studentCode && !!s?.admissionNumber && s.studentCode !== s.admissionNumber;
         return (
-          <div className="font-mono text-sm font-medium">
-            {admission.student?.studentCode || admission.student?.admissionNumber || '—'}
+          <div className="space-y-0.5">
+            <div className="font-mono text-sm font-medium">{primary}</div>
+            {showSystemCode && (
+              <div className="text-xs text-muted-foreground font-normal font-mono">
+                {t('students.studentCode')}: {s.studentCode}
+              </div>
+            )}
           </div>
         );
       },
@@ -260,9 +269,19 @@ export function StudentAdmissions() {
                 {t('admissions.admissionNumber') || 'Admission #'}: {admission.student.admissionNumber}
               </div>
             )}
-            {/* Show ID on mobile since ID column is hidden */}
-            <div className="text-xs text-muted-foreground sm:hidden font-mono">
-              ID: {admission.student?.studentCode || admission.student?.admissionNumber || '—'}
+            {/* Show admission # on mobile (same as desktop admission column) */}
+            <div className="text-xs text-muted-foreground sm:hidden space-y-0.5">
+              <div className="font-mono">
+                {t('admissions.admissionNumber')}:{' '}
+                {admission.student?.admissionNumber || admission.student?.studentCode || '—'}
+              </div>
+              {admission.student?.studentCode &&
+                admission.student?.admissionNumber &&
+                admission.student.studentCode !== admission.student.admissionNumber && (
+                  <div className="font-mono">
+                    {t('students.studentCode')}: {admission.student.studentCode}
+                  </div>
+                )}
             </div>
           </div>
         );
@@ -679,7 +698,7 @@ export function StudentAdmissions() {
                           const columnId = header.column.id;
                           let headerClassName = '';
                           if (columnId === 'picture') headerClassName = 'w-[60px]';
-                          else if (columnId === 'studentCode') headerClassName = 'hidden sm:table-cell';
+                          else if (columnId === 'admissionNumber') headerClassName = 'hidden sm:table-cell';
                           else if (columnId === 'school') headerClassName = 'hidden md:table-cell';
                           else if (columnId === 'residency') headerClassName = 'hidden lg:table-cell';
                           else if (columnId === 'room') headerClassName = 'hidden lg:table-cell';
@@ -717,7 +736,7 @@ export function StudentAdmissions() {
                             const columnId = cell.column.id;
                             let cellClassName = '';
                             if (columnId === 'picture') cellClassName = 'w-[60px]';
-                            else if (columnId === 'studentCode') cellClassName = 'hidden sm:table-cell';
+                            else if (columnId === 'admissionNumber') cellClassName = 'hidden sm:table-cell';
                             else if (columnId === 'school') cellClassName = 'hidden md:table-cell';
                             else if (columnId === 'residency') cellClassName = 'hidden lg:table-cell';
                             else if (columnId === 'room') cellClassName = 'hidden lg:table-cell';

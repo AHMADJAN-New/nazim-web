@@ -8,11 +8,8 @@ use Illuminate\Support\Facades\DB;
 class CodeGenerator
 {
     /**
-     * Generate a student code for the given organization
- * Format: ST-{YY}-{SEQUENCE}
-     * 
-     * @param string $organizationId
-     * @return string
+     * Generate a student code for the given organization.
+     * Format: ST-{YYYY}-{SEQUENCE} (four-digit calendar year).
      */
     public static function generateStudentCode(string $organizationId): string
     {
@@ -24,12 +21,87 @@ class CodeGenerator
     }
 
     /**
-     * Generate multiple student codes in a single counter transaction.
+     * Highest numeric sequence segment from existing ST-* student_code values (read-only).
+     */
+    public static function maxStudentSequenceFromExistingCodes(string $organizationId): int
+    {
+        $row = DB::selectOne(
+            <<<'SQL'
+            SELECT COALESCE(MAX((regexp_match(student_code, '^ST-(?:[0-9]{2}|[0-9]{4})-([0-9]+)$'))[1]::int), 0) AS max_seq
+            FROM students
+            WHERE organization_id = ?
+              AND deleted_at IS NULL
+              AND student_code IS NOT NULL
+              AND student_code ~ '^ST-(?:[0-9]{2}|[0-9]{4})-[0-9]+$'
+            SQL,
+            [$organizationId]
+        );
+
+        return (int) ($row->max_seq ?? 0);
+    }
+
+    /**
+     * Which student_code values would be issued next (same order as backfill), without writing DB.
      *
-     * @param string $organizationId
-     * @param int $count
      * @return string[]
      */
+    public static function previewStudentCodesAfterSync(string $organizationId, int $count): array
+    {
+        if ($count <= 0) {
+            return [];
+        }
+
+        $maxSeq = self::maxStudentSequenceFromExistingCodes($organizationId);
+        $counterLast = (int) DB::table('organization_counters')
+            ->where('organization_id', $organizationId)
+            ->where('counter_type', OrganizationCounter::COUNTER_TYPE_STUDENTS)
+            ->value('last_value');
+        $L = max($counterLast, $maxSeq);
+        $year = date('Y');
+        $codes = [];
+        for ($n = 1; $n <= $count; $n++) {
+            $seq = $L + $n;
+            $codes[] = 'ST-'.$year.'-'.self::formatStudentSequence($seq);
+        }
+
+        return $codes;
+    }
+
+    /**
+     * Align organization_counters.last_value with the highest numeric suffix already used
+     * in student_code (ST-{2 or 4 digit year}-{digits}) for this organization.
+     * Does not modify any student rows — only ensures the next issued codes continue the sequence.
+     */
+    public static function syncStudentCounterFromExistingStudentCodes(string $organizationId): int
+    {
+        return (int) DB::transaction(function () use ($organizationId) {
+            $maxSeq = self::maxStudentSequenceFromExistingCodes($organizationId);
+
+            $counter = OrganizationCounter::lockForUpdate()
+                ->where('organization_id', $organizationId)
+                ->where('counter_type', OrganizationCounter::COUNTER_TYPE_STUDENTS)
+                ->first();
+
+            if (! $counter) {
+                if ($maxSeq > 0) {
+                    OrganizationCounter::create([
+                        'organization_id' => $organizationId,
+                        'counter_type' => OrganizationCounter::COUNTER_TYPE_STUDENTS,
+                        'last_value' => $maxSeq,
+                    ]);
+                }
+
+                return $maxSeq;
+            }
+
+            if ($counter->last_value < $maxSeq) {
+                $counter->update(['last_value' => $maxSeq]);
+            }
+
+            return max($maxSeq, (int) $counter->refresh()->last_value);
+        });
+    }
+
     public static function generateStudentCodesBatch(string $organizationId, int $count): array
     {
         if ($count <= 0) {
@@ -42,7 +114,7 @@ class CodeGenerator
                 ->where('counter_type', OrganizationCounter::COUNTER_TYPE_STUDENTS)
                 ->first();
 
-            if (!$counter) {
+            if (! $counter) {
                 $counter = OrganizationCounter::create([
                     'organization_id' => $organizationId,
                     'counter_type' => OrganizationCounter::COUNTER_TYPE_STUDENTS,
@@ -54,7 +126,7 @@ class CodeGenerator
             $end = $start + $count - 1;
             $counter->update(['last_value' => $end]);
 
-            $year = date('y');
+            $year = date('Y');
             $codes = [];
             for ($i = $start; $i <= $end; $i++) {
                 $sequence = self::formatStudentSequence($i);
@@ -67,10 +139,7 @@ class CodeGenerator
 
     /**
      * Generate a staff code for the given organization
- * Format: STF-{YY}-{000000}
-     * 
-     * @param string $organizationId
-     * @return string
+     * Format: STF-{YY}-{000000}
      */
     public static function generateStaffCode(string $organizationId): string
     {
@@ -83,10 +152,7 @@ class CodeGenerator
 
     /**
      * Generate an admission number for the given organization
- * Format: AD-{YY}-{000000}
-     *
-     * @param string $organizationId
-     * @return string
+     * Format: AD-{YY}-{000000}
      */
     public static function generateAdmissionNumber(string $organizationId): string
     {
@@ -100,11 +166,6 @@ class CodeGenerator
     /**
      * Generate a code for the given organization and counter type
      * Uses database transaction with lockForUpdate() for concurrency safety
-     * 
-     * @param string $organizationId
-     * @param string $counterType
-     * @param string $prefix
-     * @return string
      */
     private static function generateCode(string $organizationId, string $counterType, string $prefix): string
     {
@@ -115,7 +176,7 @@ class CodeGenerator
                 ->where('counter_type', $counterType)
                 ->first();
 
-            if (!$counter) {
+            if (! $counter) {
                 // Create counter if it doesn't exist
                 $counter = OrganizationCounter::create([
                     'organization_id' => $organizationId,
@@ -128,8 +189,10 @@ class CodeGenerator
             $counter->increment('last_value');
             $counter->refresh();
 
-            // Get current year (last 2 digits)
-            $year = date('y'); // e.g., 25 for 2025
+            // Student codes: full calendar year (4 digits). Other counters: two-digit year (legacy).
+            $year = $counterType === OrganizationCounter::COUNTER_TYPE_STUDENTS
+                ? date('Y')
+                : date('y');
 
             // Student codes use configurable padding (default: 4) to avoid overly long leading zeros.
             // Other counters keep legacy 6-digit padding for backward compatibility.
@@ -156,4 +219,3 @@ class CodeGenerator
         return str_pad((string) $value, $padding, '0', STR_PAD_LEFT);
     }
 }
-
