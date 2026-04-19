@@ -90,6 +90,7 @@ interface AdmissionFormDialogProps {
   onOpenChange: (open: boolean) => void;
   admission?: StudentAdmission | null;
   admissions?: StudentAdmission[];
+  preselectedStudentId?: string | null;
 }
 
 export function AdmissionFormDialog({
@@ -97,6 +98,7 @@ export function AdmissionFormDialog({
   onOpenChange,
   admission,
   admissions = [],
+  preselectedStudentId = null,
 }: AdmissionFormDialogProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -158,6 +160,7 @@ export function AdmissionFormDialog({
     control,
     reset,
     setValue,
+    getValues,
     watch,
     formState: { errors },
   } = formMethods;
@@ -177,6 +180,7 @@ export function AdmissionFormDialog({
 
   // Refs for keyboard flow
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const appliedPreselectedStudentIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (formAcademicYear) setSelectedAcademicYear(formAcademicYear);
@@ -199,6 +203,14 @@ export function AdmissionFormDialog({
     }
     return new Set(ids);
   }, [admissions]);
+
+  const preselectedStudent = useMemo(() => {
+    if (!preselectedStudentId || !students || students.length === 0) {
+      return null;
+    }
+
+    return students.find((student) => student.id === preselectedStudentId) ?? null;
+  }, [preselectedStudentId, students]);
   
   const availableStudents = useMemo(() => {
     // Debug: Log students data
@@ -260,7 +272,15 @@ export function AdmissionFormDialog({
     });
     
     // If all students are filtered out, show all students anyway (data might be inconsistent)
-    const result = filtered.length > 0 ? filtered : students;
+    let result = filtered.length > 0 ? filtered : students;
+
+    if (
+      !isEdit &&
+      preselectedStudent &&
+      !result.some((student) => student.id === preselectedStudent.id)
+    ) {
+      result = [preselectedStudent, ...result];
+    }
     
     if (import.meta.env.DEV) {
       console.log('[AdmissionFormDialog] Filtered students result:', {
@@ -274,7 +294,7 @@ export function AdmissionFormDialog({
     }
     
     return result;
-  }, [students, admittedStudentIds, isEdit, isLoadingStudents, studentsError, orgIdForQuery]);
+  }, [students, admittedStudentIds, isEdit, isLoadingStudents, studentsError, orgIdForQuery, preselectedStudent]);
 
   // Options (memoized for performance)
   const studentOptions: ComboboxOption[] = useMemo(() => {
@@ -334,12 +354,43 @@ export function AdmissionFormDialog({
         enrollment_status: 'admitted',
         is_boarder: false,
         admission_year: undefined,
+        student_id: preselectedStudentId ?? undefined,
+        school_id: preselectedStudent?.schoolId ?? undefined,
       });
       setSelectedAcademicYear(undefined);
       setTab('basic');
       setQuickMode(true);
     }
-  }, [admission, isEdit, reset]);
+  }, [admission, isEdit, preselectedStudent?.schoolId, preselectedStudentId, reset]);
+
+  useEffect(() => {
+    if (!open || isEdit) {
+      appliedPreselectedStudentIdRef.current = null;
+      return;
+    }
+
+    if (!preselectedStudentId || !preselectedStudent) {
+      return;
+    }
+
+    if (appliedPreselectedStudentIdRef.current === preselectedStudentId) {
+      return;
+    }
+
+    setValue('student_id', preselectedStudentId, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+
+    if (!getValues('school_id') && preselectedStudent.schoolId) {
+      setValue('school_id', preselectedStudent.schoolId, {
+        shouldValidate: false,
+        shouldDirty: false,
+      });
+    }
+
+    appliedPreselectedStudentIdRef.current = preselectedStudentId;
+  }, [getValues, isEdit, open, preselectedStudent, preselectedStudentId, setValue]);
 
   const resolveCurrentAcademicYearName = () => {
     if (!academicYears || academicYears.length === 0) return undefined;

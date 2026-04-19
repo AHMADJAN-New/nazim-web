@@ -16,7 +16,7 @@ class StudentImportService
 {
     private const REQUIRED_STUDENT_FIELDS = ['full_name', 'father_name'];
 
-    private const STUDENT_STATUS = ['applied', 'admitted', 'active', 'withdrawn'];
+    private const STUDENT_STATUS = ['applied', 'admitted', 'active', 'suspended', 'graduated', 'withdrawn'];
 
     private const ADMISSION_FEE_STATUS = ['paid', 'pending', 'waived', 'partial'];
 

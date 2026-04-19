@@ -1,8 +1,23 @@
 // Student API Types - Match Laravel API response (snake_case, DB columns)
 
-export type StudentStatus = 'applied' | 'admitted' | 'active' | 'withdrawn';
+export type StudentStatus = 'applied' | 'admitted' | 'active' | 'suspended' | 'graduated' | 'withdrawn';
 export type AdmissionFeeStatus = 'paid' | 'pending' | 'waived' | 'partial';
 export type Gender = 'male' | 'female';
+export type LatestAdmissionStatus = 'pending' | 'admitted' | 'active' | 'inactive' | 'suspended' | 'withdrawn' | 'graduated';
+
+export interface StudentLatestAdmission {
+  id: string;
+  enrollment_status: LatestAdmissionStatus;
+  class_id: string | null;
+  class_academic_year_id: string | null;
+  class_name: string | null;
+  section_name: string | null;
+  shift: string | null;
+  academic_year_id: string | null;
+  academic_year_name: string | null;
+  is_current_enrollment: boolean;
+  is_assigned_to_class: boolean;
+}
 
 // Student interface matching the database schema
 export interface Student {
@@ -70,6 +85,7 @@ export interface Student {
     code?: string;
     grade_level?: string;
   } | null;
+  latest_admission?: StudentLatestAdmission | null;
 }
 
 export interface StudentInsert {

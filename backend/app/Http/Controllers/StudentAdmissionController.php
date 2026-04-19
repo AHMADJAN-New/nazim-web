@@ -6,6 +6,7 @@ use App\Http\Requests\StoreStudentAdmissionRequest;
 use App\Http\Requests\UpdateStudentAdmissionRequest;
 use App\Models\ClassAcademicYear;
 use App\Models\ResidencyType;
+use App\Models\Room;
 use App\Models\Student;
 use App\Models\StudentAdmission;
 use App\Services\ActivityLogService;
@@ -64,12 +65,14 @@ class StudentAdmissionController extends Controller
         $schoolIds = [$currentSchoolId];
 
         $query = StudentAdmission::with([
-            'student:id,full_name,admission_no,student_code,gender,admission_year,guardian_phone,guardian_name,card_number,father_name,picture_path',
+            'student:id,full_name,admission_no,student_code,gender,admission_year,guardian_phone,guardian_name,card_number,father_name,picture_path,student_status',
             'organization',
             'school',
             'academicYear',
             'class',
-            'classAcademicYear',
+            'classAcademicYear.teacher:id,full_name',
+            'classAcademicYear.room:id,room_number',
+            'classAcademicYear.room.building:id,building_name',
             'residencyType',
             'room',
         ])
@@ -131,6 +134,10 @@ class StudentAdmissionController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate((int) $perPage);
 
+            $admissions->setCollection(
+                $this->attachAdmissionListMeta($admissions->getCollection(), $profile->organization_id, $currentSchoolId)
+            );
+
             // Return paginated response in Laravel's standard format
             return response()->json($admissions);
         }
@@ -139,6 +146,8 @@ class StudentAdmissionController extends Controller
         $admissions = $query->orderBy('admission_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
+
+        $admissions = $this->attachAdmissionListMeta($admissions, $profile->organization_id, $currentSchoolId);
 
         return response()->json($admissions);
     }
@@ -150,6 +159,7 @@ class StudentAdmissionController extends Controller
     {
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->getCurrentSchoolId(request());
 
         if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -171,7 +181,9 @@ class StudentAdmissionController extends Controller
             'school',
             'academicYear',
             'class',
-            'classAcademicYear',
+            'classAcademicYear.teacher:id,full_name',
+            'classAcademicYear.room:id,room_number',
+            'classAcademicYear.room.building:id,building_name',
             'residencyType',
             'room',
         ])
@@ -185,6 +197,10 @@ class StudentAdmissionController extends Controller
         $orgIds = $this->getAccessibleOrgIds($profile);
 
         if (! in_array($admission->organization_id, $orgIds)) {
+            return response()->json(['error' => 'Student admission not found'], 404);
+        }
+
+        if ($admission->school_id !== $currentSchoolId) {
             return response()->json(['error' => 'Student admission not found'], 404);
         }
 
@@ -295,13 +311,17 @@ class StudentAdmissionController extends Controller
 
         $admission = StudentAdmission::create($validated);
 
+        $this->syncStudentStatusFromAdmissions($admission->student_id, $organizationId, $currentSchoolId);
+
         $admission->load([
             'student',
             'organization',
             'school',
             'academicYear',
             'class',
-            'classAcademicYear',
+            'classAcademicYear.teacher:id,full_name',
+            'classAcademicYear.room:id,room_number',
+            'classAcademicYear.room.building:id,building_name',
             'residencyType',
             'room',
         ]);
@@ -361,6 +381,7 @@ class StudentAdmissionController extends Controller
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -394,6 +415,10 @@ class StudentAdmissionController extends Controller
             return response()->json(['error' => 'Cannot update admission from different organization'], 403);
         }
 
+        if ($admission->school_id !== $currentSchoolId) {
+            return response()->json(['error' => 'Cannot update admission from different school'], 403);
+        }
+
         $validated = $request->validated();
 
         // Remove organization_id from update data to prevent changes
@@ -414,13 +439,18 @@ class StudentAdmissionController extends Controller
         $newStatus = $validated['enrollment_status'] ?? $oldStatus;
 
         $admission->update($validated);
+
+        $this->syncStudentStatusFromAdmissions($admission->student_id, $profile->organization_id, $currentSchoolId);
+
         $admission->load([
             'student',
             'organization',
             'school',
             'academicYear',
             'class',
-            'classAcademicYear',
+            'classAcademicYear.teacher:id,full_name',
+            'classAcademicYear.room:id,room_number',
+            'classAcademicYear.room.building:id,building_name',
             'residencyType',
             'room',
         ]);
@@ -494,6 +524,7 @@ class StudentAdmissionController extends Controller
     {
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->getCurrentSchoolId(request());
 
         if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -529,13 +560,21 @@ class StudentAdmissionController extends Controller
             return response()->json(['error' => 'Cannot delete admission from different organization'], 403);
         }
 
+        if ($admission->school_id !== $currentSchoolId) {
+            return response()->json(['error' => 'Cannot delete admission from different school'], 403);
+        }
+
         // Store data for notification before deletion
         $studentName = $admission->student->full_name ?? 'Student';
         $className = $admission->class->name ?? 'class';
         $academicYearName = $admission->academicYear->name ?? 'academic year';
         $admissionData = $admission->toArray();
+        $studentId = $admission->student_id;
+        $organizationId = $admission->organization_id;
 
         $admission->delete();
+
+        $this->syncStudentStatusFromAdmissions($studentId, $organizationId, $currentSchoolId);
 
         // Log student admission deletion
         try {
@@ -1135,6 +1174,7 @@ class StudentAdmissionController extends Controller
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -1163,9 +1203,10 @@ class StudentAdmissionController extends Controller
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
-        // Get admissions and verify they belong to user's organization
+        // Get admissions and verify they belong to user's organization and current school
         $admissions = StudentAdmission::whereIn('id', $validated['admission_ids'])
             ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
@@ -1175,6 +1216,7 @@ class StudentAdmissionController extends Controller
 
         $deactivated = 0;
         $skipped = 0;
+        $touchedStudentIds = [];
 
         DB::beginTransaction();
         try {
@@ -1183,10 +1225,15 @@ class StudentAdmissionController extends Controller
                 if ($admission->enrollment_status === 'active') {
                     $admission->enrollment_status = 'inactive';
                     $admission->save();
+                    $touchedStudentIds[] = $admission->student_id;
                     $deactivated++;
                 } else {
                     $skipped++;
                 }
+            }
+
+            foreach (array_values(array_unique($touchedStudentIds)) as $studentId) {
+                $this->syncStudentStatusFromAdmissions($studentId, $profile->organization_id, $currentSchoolId);
             }
 
             DB::commit();
@@ -1206,6 +1253,346 @@ class StudentAdmissionController extends Controller
     }
 
     /**
+     * Bulk update student admission statuses and synchronize the linked student master status.
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        if (! $profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (! $user->hasPermissionTo('student_admissions.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for student_admissions.bulk_update_status: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'admission_ids' => 'required|array|min:1',
+            'admission_ids.*' => 'required|uuid|exists:student_admissions,id',
+            'enrollment_status' => 'required|string|in:pending,admitted,active,inactive,suspended,withdrawn,graduated',
+        ]);
+
+        $orgIds = $this->getAccessibleOrgIds($profile);
+
+        $admissions = StudentAdmission::whereIn('id', $validated['admission_ids'])
+            ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($admissions->isEmpty()) {
+            return response()->json(['error' => 'No valid admissions found'], 404);
+        }
+
+        $targetStatus = $validated['enrollment_status'];
+        $updated = 0;
+        $skipped = 0;
+        $touchedStudentIds = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ($admissions as $admission) {
+                if ($admission->enrollment_status === $targetStatus) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $admission->enrollment_status = $targetStatus;
+                $admission->save();
+                $touchedStudentIds[] = $admission->student_id;
+                $updated++;
+            }
+
+            foreach (array_values(array_unique($touchedStudentIds)) as $studentId) {
+                $this->syncStudentStatusFromAdmissions($studentId, $profile->organization_id, $currentSchoolId);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Bulk admission status update completed',
+                'updated_count' => $updated,
+                'skipped_count' => $skipped,
+                'total_processed' => $admissions->count(),
+                'enrollment_status' => $targetStatus,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Bulk admission status update failed: '.$e->getMessage());
+
+            return response()->json(['error' => 'Bulk admission status update failed', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Bulk assign class section (class academic year), boarder/day, residency type, and optional hostel room.
+     * Pass either admission_ids or student_ids (students must have an admission row for the same academic year as the section).
+     */
+    public function bulkAssignPlacement(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        if (! $profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (! $user->hasPermissionTo('student_admissions.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for student_admissions.bulk_assign_placement: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'student_ids' => 'sometimes|array',
+            'student_ids.*' => 'uuid|exists:students,id',
+            'admission_ids' => 'sometimes|array',
+            'admission_ids.*' => 'uuid|exists:student_admissions,id',
+            'class_academic_year_id' => 'required|uuid|exists:class_academic_years,id',
+            'is_boarder' => 'required|boolean',
+            'residency_type_id' => 'nullable|uuid|exists:residency_types,id',
+            'room_id' => 'nullable|uuid|exists:rooms,id',
+            'enrollment_status' => 'nullable|string|in:pending,admitted,active,inactive,suspended,withdrawn,graduated',
+            'shift' => 'nullable|string|max:50',
+            'placement_notes' => 'nullable|string|max:500',
+            'only_without_class' => 'sometimes|boolean',
+        ]);
+
+        $studentIds = array_values(array_filter($validated['student_ids'] ?? []));
+        $admissionIds = array_values(array_filter($validated['admission_ids'] ?? []));
+        if ((count($studentIds) === 0 && count($admissionIds) === 0) || (count($studentIds) > 0 && count($admissionIds) > 0)) {
+            return response()->json(['error' => 'Provide exactly one of student_ids or admission_ids (non-empty).'], 422);
+        }
+
+        $organizationId = $profile->organization_id;
+        $orgIds = $this->getAccessibleOrgIds($profile);
+
+        $classAcademicYear = ClassAcademicYear::query()
+            ->with(['class:id,default_capacity'])
+            ->where('id', $validated['class_academic_year_id'])
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $classAcademicYear) {
+            return response()->json(['error' => 'Class section not found for this school'], 404);
+        }
+
+        $targetCayId = $classAcademicYear->id;
+        $targetClassId = $classAcademicYear->class_id;
+        $targetYearId = $classAcademicYear->academic_year_id;
+
+        if (! empty($validated['room_id'])) {
+            $roomOk = Room::query()
+                ->where('id', $validated['room_id'])
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (! $roomOk) {
+                return response()->json(['error' => 'Room not found for this school'], 422);
+            }
+        }
+
+        if (! empty($validated['residency_type_id'])) {
+            $rtOk = ResidencyType::query()
+                ->where('id', $validated['residency_type_id'])
+                ->where('organization_id', $organizationId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (! $rtOk) {
+                return response()->json(['error' => 'Residency type not found for this organization'], 422);
+            }
+        }
+
+        $onlyWithoutClass = (bool) ($validated['only_without_class'] ?? true);
+
+        /** @var \Illuminate\Support\Collection<int, StudentAdmission> $admissions */
+        $admissions = collect();
+        $resolutionErrors = [];
+
+        if (count($admissionIds) > 0) {
+            $admissions = StudentAdmission::query()
+                ->whereIn('id', $admissionIds)
+                ->whereIn('organization_id', $orgIds)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->get();
+
+            if ($admissions->isEmpty()) {
+                return response()->json(['error' => 'No valid admissions found'], 404);
+            }
+
+            foreach ($admissions as $admission) {
+                if ((string) $admission->academic_year_id !== (string) $targetYearId) {
+                    return response()->json([
+                        'error' => 'Academic year mismatch',
+                        'message' => 'All selected admissions must be for the same academic year as the chosen class section.',
+                    ], 422);
+                }
+            }
+        } else {
+            foreach ($studentIds as $studentId) {
+                $student = Student::query()
+                    ->where('id', $studentId)
+                    ->where('organization_id', $organizationId)
+                    ->where('school_id', $currentSchoolId)
+                    ->whereNull('deleted_at')
+                    ->first();
+                if (! $student) {
+                    $resolutionErrors[] = ['student_id' => $studentId, 'reason' => 'student_not_found'];
+
+                    continue;
+                }
+
+                $query = StudentAdmission::query()
+                    ->where('student_id', $studentId)
+                    ->where('organization_id', $organizationId)
+                    ->where('school_id', $currentSchoolId)
+                    ->where('academic_year_id', $targetYearId)
+                    ->whereNull('deleted_at');
+
+                if ($onlyWithoutClass) {
+                    $query->whereNull('class_academic_year_id');
+                }
+
+                $admission = $query->orderByDesc('admission_date')->orderByDesc('created_at')->first();
+
+                if (! $admission) {
+                    $reason = $onlyWithoutClass ? 'no_unassigned_admission_for_year' : 'no_admission_for_year';
+                    $resolutionErrors[] = ['student_id' => $studentId, 'reason' => $reason];
+
+                    continue;
+                }
+
+                $admissions->push($admission);
+            }
+
+            if ($admissions->isEmpty()) {
+                return response()->json([
+                    'error' => 'No admissions could be resolved',
+                    'errors' => $resolutionErrors,
+                ], 422);
+            }
+        }
+
+        $admissions = $admissions->unique('id')->values();
+
+        $joiningCount = $admissions->filter(fn (StudentAdmission $a) => (string) $a->class_academic_year_id !== (string) $targetCayId)->count();
+        $effectiveCapacity = $classAcademicYear->capacity ?? $classAcademicYear->class?->default_capacity;
+        if ($effectiveCapacity !== null) {
+            $currentOnTarget = StudentAdmission::query()
+                ->where('class_academic_year_id', $targetCayId)
+                ->whereNull('deleted_at')
+                ->whereIn('enrollment_status', ['active', 'admitted'])
+                ->count();
+
+            if ($currentOnTarget + $joiningCount > (int) $effectiveCapacity) {
+                return response()->json([
+                    'error' => 'Class capacity exceeded',
+                    'message' => "This section allows {$effectiveCapacity} active/admitted students; assigning {$joiningCount} more would exceed capacity (currently {$currentOnTarget}).",
+                    'capacity' => (int) $effectiveCapacity,
+                    'current_on_section' => $currentOnTarget,
+                    'requested_new_placements' => $joiningCount,
+                ], 422);
+            }
+        }
+
+        $updated = 0;
+        $skipped = 0;
+        $rowErrors = $resolutionErrors;
+        $touchedStudentIds = [];
+
+        $patch = [
+            'class_academic_year_id' => $targetCayId,
+            'class_id' => $targetClassId,
+            'academic_year_id' => $targetYearId,
+            'is_boarder' => (bool) $validated['is_boarder'],
+        ];
+
+        if (array_key_exists('residency_type_id', $validated)) {
+            $patch['residency_type_id'] = $validated['residency_type_id'];
+        }
+        if (array_key_exists('shift', $validated)) {
+            $patch['shift'] = $validated['shift'];
+        }
+        if (array_key_exists('placement_notes', $validated)) {
+            $patch['placement_notes'] = $validated['placement_notes'];
+        }
+        if (! empty($validated['enrollment_status'])) {
+            $patch['enrollment_status'] = $validated['enrollment_status'];
+        }
+
+        if ($patch['is_boarder'] && ! empty($validated['room_id'])) {
+            $patch['room_id'] = $validated['room_id'];
+        } else {
+            $patch['room_id'] = null;
+        }
+
+        $this->applyDayResidencyClearsBoarding($patch);
+
+        foreach ($admissions as $admission) {
+            if ((string) $admission->class_academic_year_id === (string) $targetCayId
+                && $admission->is_boarder === $patch['is_boarder']
+                && (string) ($admission->residency_type_id ?? '') === (string) ($patch['residency_type_id'] ?? '')
+                && (string) ($admission->room_id ?? '') === (string) ($patch['room_id'] ?? '')
+                && (empty($patch['enrollment_status']) || $admission->enrollment_status === $patch['enrollment_status'])) {
+                $skipped++;
+
+                continue;
+            }
+
+            try {
+                $admission->fill($patch);
+                $admission->save();
+                $touchedStudentIds[] = $admission->student_id;
+                $updated++;
+            } catch (\Exception $e) {
+                Log::warning('Bulk assign placement row failed', [
+                    'admission_id' => $admission->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $rowErrors[] = ['admission_id' => $admission->id, 'student_id' => $admission->student_id, 'reason' => 'save_failed', 'message' => $e->getMessage()];
+            }
+        }
+
+        foreach (array_values(array_unique($touchedStudentIds)) as $studentId) {
+            $this->syncStudentStatusFromAdmissions($studentId, $organizationId, $currentSchoolId);
+        }
+
+        return response()->json([
+            'message' => 'Bulk placement completed',
+            'updated_count' => $updated,
+            'skipped_count' => $skipped,
+            'errors' => $rowErrors,
+            'total_candidates' => $admissions->count(),
+        ], 200);
+    }
+
+    /**
      * Bulk deactivate student admissions by student IDs and batch context
      * Used from graduation batches page
      */
@@ -1213,6 +1600,7 @@ class StudentAdmissionController extends Controller
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -1248,6 +1636,7 @@ class StudentAdmissionController extends Controller
             ->where('class_id', $validated['class_id'])
             ->where('academic_year_id', $validated['academic_year_id'])
             ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId)
             ->where('enrollment_status', 'active')
             ->whereNull('deleted_at')
             ->get();
@@ -1262,13 +1651,19 @@ class StudentAdmissionController extends Controller
         }
 
         $deactivated = 0;
+        $touchedStudentIds = [];
 
         DB::beginTransaction();
         try {
             foreach ($admissions as $admission) {
                 $admission->enrollment_status = 'inactive';
                 $admission->save();
+                $touchedStudentIds[] = $admission->student_id;
                 $deactivated++;
+            }
+
+            foreach (array_values(array_unique($touchedStudentIds)) as $studentId) {
+                $this->syncStudentStatusFromAdmissions($studentId, $profile->organization_id, $currentSchoolId);
             }
 
             DB::commit();
@@ -1285,6 +1680,90 @@ class StudentAdmissionController extends Controller
 
             return response()->json(['error' => 'Bulk deactivation failed', 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Mark the latest admission row for each student on the current result set.
+     */
+    private function attachAdmissionListMeta($admissions, string $organizationId, string $schoolId)
+    {
+        $studentIds = $admissions->pluck('student_id')->filter()->unique()->values();
+        if ($studentIds->isEmpty()) {
+            return $admissions;
+        }
+
+        $latestAdmissionIdByStudentId = [];
+
+        $latestAdmissions = StudentAdmission::query()
+            ->select(['id', 'student_id'])
+            ->whereIn('student_id', $studentIds)
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->orderByDesc('admission_date')
+            ->orderByDesc('created_at')
+            ->get();
+
+        foreach ($latestAdmissions as $admission) {
+            if (! array_key_exists($admission->student_id, $latestAdmissionIdByStudentId)) {
+                $latestAdmissionIdByStudentId[$admission->student_id] = $admission->id;
+            }
+        }
+
+        return $admissions->map(function ($admission) use ($latestAdmissionIdByStudentId) {
+            $admission->is_latest_admission_for_student = ($latestAdmissionIdByStudentId[$admission->student_id] ?? null) === $admission->id;
+
+            return $admission;
+        });
+    }
+
+    private function syncStudentStatusFromAdmissions(string $studentId, string $organizationId, string $schoolId): void
+    {
+        $student = Student::query()
+            ->where('id', $studentId)
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $student) {
+            return;
+        }
+
+        $latestAdmission = StudentAdmission::query()
+            ->where('student_id', $studentId)
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->orderByDesc('admission_date')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $latestAdmission) {
+            return;
+        }
+
+        $mappedStatus = $this->mapEnrollmentStatusToStudentStatus($latestAdmission->enrollment_status);
+
+        if ($student->student_status !== $mappedStatus) {
+            $student->update([
+                'student_status' => $mappedStatus,
+            ]);
+        }
+    }
+
+    private function mapEnrollmentStatusToStudentStatus(string $enrollmentStatus): string
+    {
+        return match ($enrollmentStatus) {
+            'pending' => 'applied',
+            'admitted' => 'admitted',
+            'active' => 'active',
+            'inactive' => 'admitted',
+            'suspended' => 'suspended',
+            'graduated' => 'graduated',
+            'withdrawn' => 'withdrawn',
+            default => 'active',
+        };
     }
 
     /**

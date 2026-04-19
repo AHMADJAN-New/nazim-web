@@ -288,6 +288,20 @@ export default {
     fatherName: "د پلار نوم",
     motherName: "د مور نوم",
     cardNumber: "د کارت شمېره",
-    searchPlaceholder: "زده کوونکي وپلټئ..."
+    searchPlaceholder: "زده کوونکي وپلټئ...",
+    tableAdmissionColumn: "داخله",
+    tableCurrentClassColumn: "اوسنی ټولګی",
+    noAdmissionRecord: "داخله نشته",
+    currentEnrollmentActive: "فعاله داخله",
+    currentEnrollmentInactive: "فعاله داخله نشته",
+    waitingForClass: "د ټولګي انتظار",
+    notInClass: "په ټولګي کې نه دی",
+    mobileAdmissionPrefix: "داخله",
+    mobileClassPrefix: "ټولګی",
+    selectStudent: "غوره کول",
+    selectAllOnPage: "ټول په پاڼه کې",
+    clearSelection: "غوره والي پاک کړئ",
+    selectedCount: "{count} غوره شوي",
+    bulkAssignToClass: "ټولګي ته ګډه ورکړه",
   }
 };

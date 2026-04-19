@@ -161,7 +161,7 @@ class StudentController extends Controller
             $students = $query->orderBy('created_at', 'desc')->paginate((int) $perPage);
 
             $students->setCollection(
-                $this->attachCurrentClassData($students->getCollection(), $profile->organization_id, $currentSchoolId)
+                $this->attachAdmissionSummaryData($students->getCollection(), $profile->organization_id, $currentSchoolId)
             );
 
             // Return paginated response in Laravel's standard format
@@ -177,7 +177,7 @@ class StudentController extends Controller
 
         $students = $query->orderBy('created_at', 'desc')->limit($nonPaginatedLimit)->get();
 
-        $students = $this->attachCurrentClassData($students, $profile->organization_id, $currentSchoolId);
+        $students = $this->attachAdmissionSummaryData($students, $profile->organization_id, $currentSchoolId);
 
         return response()->json($students);
     }
@@ -185,7 +185,7 @@ class StudentController extends Controller
     /**
      * Attach current class information to each student without N+1 queries.
      */
-    private function attachCurrentClassData($students, string $organizationId, string $schoolId)
+    private function attachAdmissionSummaryData($students, string $organizationId, string $schoolId)
     {
         $studentIds = $students->pluck('id')->filter()->unique()->values();
         if ($studentIds->isEmpty()) {
@@ -209,12 +209,38 @@ class StudentController extends Controller
         }
 
         return $students->map(function ($student) use ($latestAdmissionByStudentId) {
+            $student->current_class = null;
+            $student->current_section = null;
+            $student->current_academic_year = null;
+            $student->room_number = null;
+            $student->latest_admission = null;
+
             $admission = $latestAdmissionByStudentId[$student->id] ?? null;
             if ($admission) {
-                $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
-                $student->current_section = $admission->classAcademicYear?->section_name;
-                $student->current_academic_year = $admission->academicYear?->name;
-                $student->room_number = $admission->room?->room_number;
+                $resolvedClass = $admission->classAcademicYear?->class ?? $admission->class;
+                $isCurrentEnrollment = StudentAdmission::isCurrentEnrollmentStatus($admission->enrollment_status);
+
+                if ($isCurrentEnrollment && $resolvedClass) {
+                    $student->current_class = $resolvedClass;
+                    $student->current_section = $admission->classAcademicYear?->section_name;
+                    $student->current_academic_year = $admission->academicYear?->name;
+                    $student->room_number = $admission->room?->room_number;
+                }
+
+                $student->latest_admission = [
+                    'id' => $admission->id,
+                    'enrollment_status' => $admission->enrollment_status,
+                    'class_id' => $admission->class_id,
+                    'class_academic_year_id' => $admission->class_academic_year_id,
+                    'class_name' => $resolvedClass?->name,
+                    'section_name' => $admission->classAcademicYear?->section_name,
+                    'shift' => $admission->shift,
+                    'academic_year_id' => $admission->academic_year_id,
+                    'academic_year_name' => $admission->academicYear?->name,
+                    'is_current_enrollment' => $isCurrentEnrollment,
+                    'is_assigned_to_class' => $isCurrentEnrollment
+                        && ($admission->class_id !== null || $admission->class_academic_year_id !== null),
+                ];
             }
 
             return $student;
@@ -257,26 +283,18 @@ class StudentController extends Controller
             ], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $student = Student::with(['organization', 'school'])
             ->whereNull('deleted_at')
-            ->where('school_id', $this->getCurrentSchoolId($request))
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        // Get current class from student admissions
-        $admission = \App\Models\StudentAdmission::where('student_id', $student->id)
-            ->whereNull('deleted_at')
-            ->with(['classAcademicYear.class', 'class', 'room:id,room_number'])
-            ->orderBy('admission_date', 'desc')
-            ->first();
-
-        if ($admission) {
-            $student->current_class = $admission->classAcademicYear?->class ?? $admission->class;
-            $student->room_number = $admission->room?->room_number;
-        }
+        $student = $this->attachAdmissionSummaryData(collect([$student]), $profile->organization_id, $currentSchoolId)->first();
 
         // Org access is implicitly enforced by organization middleware + school scope.
 

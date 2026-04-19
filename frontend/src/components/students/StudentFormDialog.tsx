@@ -210,6 +210,8 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                     student.status === 'applied' ||
                     student.status === 'admitted' ||
                     student.status === 'active' ||
+                    student.status === 'suspended' ||
+                    student.status === 'graduated' ||
                     student.status === 'withdrawn'
                 )
                     ? student.status
@@ -921,13 +923,15 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                                         <SelectTrigger>
                                                             <SelectValue placeholder={t('students.statusOptions.label') ?? t('students.status') ?? 'Status'} />
                                                         </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
-                                                            <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
-                                                            <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
-                                                            <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
+                                                            <SelectContent>
+                                                                <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
+                                                                <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
+                                                                <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
+                                                                <SelectItem value="suspended">{t('students.suspended') || 'Suspended'}</SelectItem>
+                                                                <SelectItem value="graduated">{t('students.graduated') || 'Graduated'}</SelectItem>
+                                                                <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
                                                 )}
                                             />
                                         </div>

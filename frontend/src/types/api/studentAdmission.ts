@@ -23,11 +23,13 @@ export interface StudentAdmission {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  is_latest_admission_for_student?: boolean;
   student?: {
     id: string;
     full_name: string;
     admission_no: string;
     student_code: string | null;
+    student_status?: 'applied' | 'admitted' | 'active' | 'suspended' | 'graduated' | 'withdrawn' | null;
     card_number: string | null;
     father_name: string | null;
     gender: string | null;
@@ -54,6 +56,19 @@ export interface StudentAdmission {
   class_academic_year?: {
     id: string;
     section_name: string | null;
+    notes?: string | null;
+    teacher?: {
+      id: string;
+      full_name: string;
+    };
+    room?: {
+      id: string;
+      room_number: string;
+      building?: {
+        id: string;
+        building_name: string;
+      };
+    };
   };
   residency_type?: {
     id: string;

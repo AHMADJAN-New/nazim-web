@@ -1,5 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
-import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, DollarSign, X, MoreVertical } from 'lucide-react';
+import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, DollarSign, MoreVertical } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PictureCell } from '@/components/shared/PictureCell';
@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
@@ -23,7 +24,7 @@ import {
   useAdmissionStats,
   useDeleteStudentAdmission,
   useStudentAdmissions,
-  useBulkDeactivateAdmissions,
+  useBulkUpdateAdmissionStatus,
   type StudentAdmission,
   type AdmissionStatus,
 } from '@/hooks/useStudentAdmissions';
@@ -45,6 +46,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AdmissionFormDialog } from '@/components/admissions/AdmissionFormDialog';
 import { AdmissionDetailsPanel } from '@/components/admissions/AdmissionDetailsPanel';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const statusVariant = (status: AdmissionStatus): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
   switch (status) {
@@ -64,6 +73,9 @@ const statusVariant = (status: AdmissionStatus): 'success' | 'info' | 'warning' 
       return 'secondary';
   }
 };
+
+const isCurrentAdmissionStatus = (status: AdmissionStatus): boolean =>
+  status === 'pending' || status === 'admitted' || status === 'active';
 
 export function StudentAdmissions() {
   const { t } = useLanguage();
@@ -126,7 +138,7 @@ export function StudentAdmissions() {
   const { data: rooms } = useRooms(undefined, orgIdForQuery);
 
   const deleteAdmission = useDeleteStudentAdmission();
-  const bulkDeactivate = useBulkDeactivateAdmissions();
+  const bulkStatusUpdate = useBulkUpdateAdmissionStatus();
   
   // Check subscription limits for students
   const studentUsage = useResourceUsage('students');
@@ -137,7 +149,8 @@ export function StudentAdmissions() {
   const [selectedAdmission, setSelectedAdmission] = useState<StudentAdmission | null>(null);
   const [admissionToDelete, setAdmissionToDelete] = useState<StudentAdmission | null>(null);
   const [selectedAdmissionIds, setSelectedAdmissionIds] = useState<Set<string>>(new Set());
-  const [isBulkDeactivateDialogOpen, setIsBulkDeactivateDialogOpen] = useState(false);
+  const [isBulkStatusDialogOpen, setIsBulkStatusDialogOpen] = useState(false);
+  const [bulkStatusValue, setBulkStatusValue] = useState<AdmissionStatus>('active');
   useEffect(() => {
     setClassFilter('all');
   }, [selectedAcademicYearId]);
@@ -151,6 +164,27 @@ export function StudentAdmissions() {
   const filteredAdmissions = useMemo(() => {
     return admissions || [];
   }, [admissions]);
+
+  const getAdmissionStatusLabel = (status: AdmissionStatus) => {
+    switch (status) {
+      case 'pending':
+        return t('admissions.pending') || 'Pending';
+      case 'admitted':
+        return t('admissions.admitted') || 'Admitted';
+      case 'active':
+        return t('events.active') || 'Active';
+      case 'inactive':
+        return t('events.inactive') || 'Inactive';
+      case 'suspended':
+        return t('students.suspended') || 'Suspended';
+      case 'withdrawn':
+        return t('admissions.withdrawn') || 'Withdrawn';
+      case 'graduated':
+        return t('students.graduated') || 'Graduated';
+      default:
+        return status;
+    }
+  };
 
   // Component for displaying student picture in admission table cell
   // Uses centralized PictureCell component with image caching
@@ -248,14 +282,7 @@ export function StudentAdmissions() {
               <span className="font-semibold break-words min-w-0">{admission.student?.fullName || t('hostel.unassigned')}</span>
               {admission.enrollmentStatus && (
                 <Badge variant={statusVariant(admission.enrollmentStatus)} className="shrink-0 text-xs">
-                  {admission.enrollmentStatus === 'pending' ? t('admissions.pending') :
-                   admission.enrollmentStatus === 'admitted' ? t('admissions.admitted') :
-                   admission.enrollmentStatus === 'active' ? t('events.active') :
-                   admission.enrollmentStatus === 'inactive' ? t('events.inactive') :
-                   admission.enrollmentStatus === 'suspended' ? t('students.suspended') :
-                   admission.enrollmentStatus === 'withdrawn' ? t('admissions.withdrawn') :
-                   admission.enrollmentStatus === 'graduated' ? t('students.graduated') :
-                   admission.enrollmentStatus}
+                  {getAdmissionStatusLabel(admission.enrollmentStatus)}
                 </Badge>
               )}
               {admission.isBoarder && (
@@ -352,21 +379,31 @@ export function StudentAdmissions() {
     },
     {
       accessorKey: 'status',
-      header: t('events.status') || 'Status',
+      header: t('admissions.placementColumn'),
       cell: ({ row }) => {
-        const status = row.original.enrollmentStatus;
-        return status ? (
-          <Badge variant={statusVariant(status)}>
-            {status === 'pending' ? t('admissions.pending') :
-             status === 'admitted' ? t('admissions.admitted') :
-             status === 'active' ? t('events.active') :
-             status === 'inactive' ? t('events.inactive') :
-             status === 'suspended' ? t('students.suspended') :
-             status === 'withdrawn' ? t('admissions.withdrawn') :
-             status === 'graduated' ? t('students.graduated') :
-             status}
-          </Badge>
-        ) : '—';
+        const admission = row.original;
+        const isLatestAdmission = admission.isLatestAdmissionForStudent ?? false;
+        const isCurrentAdmission = isLatestAdmission && isCurrentAdmissionStatus(admission.enrollmentStatus);
+        const isAssignedToClass = isCurrentAdmission && Boolean(admission.classId || admission.classAcademicYearId);
+
+        return (
+          <div className="space-y-1">
+            <Badge variant={isCurrentAdmission ? 'success' : isLatestAdmission ? 'warning' : 'secondary'}>
+              {isCurrentAdmission
+                ? t('admissions.placementCurrent')
+                : isLatestAdmission
+                  ? t('admissions.placementClosed')
+                  : t('admissions.placementHistory')}
+            </Badge>
+            <div className="text-xs text-muted-foreground">
+              {isAssignedToClass
+                ? t('admissions.placementInClass')
+                : isCurrentAdmission
+                  ? t('admissions.placementNeedsClass')
+                  : t('admissions.placementNotCurrent')}
+            </div>
+          </div>
+        );
       },
     },
     {
@@ -488,22 +525,26 @@ export function StudentAdmissions() {
     }
   };
 
-  const handleBulkDeactivate = async () => {
+  const handleBulkStatusUpdate = async () => {
     if (selectedAdmissionIds.size === 0) return;
-    
+
     const admissionIds = Array.from(selectedAdmissionIds);
-    await bulkDeactivate.mutateAsync(admissionIds, {
-      onSuccess: () => {
-        setSelectedAdmissionIds(new Set());
-        setIsBulkDeactivateDialogOpen(false);
+    await bulkStatusUpdate.mutateAsync(
+      {
+        admission_ids: admissionIds,
+        enrollment_status: bulkStatusValue,
       },
-    });
+      {
+        onSuccess: () => {
+          setSelectedAdmissionIds(new Set());
+          setIsBulkStatusDialogOpen(false);
+        },
+      }
+    );
   };
 
   const selectedCount = selectedAdmissionIds.size;
-  const canBulkDeactivate = selectedCount > 0 && filteredAdmissions.some(
-    (adm) => selectedAdmissionIds.has(adm.id) && adm.enrollmentStatus === 'active'
-  );
+  const canBulkUpdateStatus = selectedCount > 0;
 
   const handleOpenCreateDialog = () => {
     if (isLimitReached) {
@@ -530,14 +571,14 @@ export function StudentAdmissions() {
           disabled: isLimitReached,
         }}
         secondaryActions={
-          canBulkDeactivate
+          canBulkUpdateStatus
             ? [
                 {
-                  label: t('admissions.bulkDeactivate') || `Deactivate (${selectedCount})`,
-                  onClick: () => setIsBulkDeactivateDialogOpen(true),
-                  icon: <X className="h-4 w-4" />,
+                  label: t('admissions.bulkStatusAction', { count: selectedCount }),
+                  onClick: () => setIsBulkStatusDialogOpen(true),
+                  icon: <UserCheck className="h-4 w-4" />,
                   variant: 'outline',
-                  disabled: bulkDeactivate.isPending,
+                  disabled: bulkStatusUpdate.isPending,
                 },
               ]
             : []
@@ -562,6 +603,7 @@ export function StudentAdmissions() {
         admission={selectedAdmission}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onSelectAdmission={(next) => setSelectedAdmission(next)}
       />
 
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -788,30 +830,41 @@ export function StudentAdmissions() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isBulkDeactivateDialogOpen} onOpenChange={setIsBulkDeactivateDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('admissions.bulkDeactivateTitle') || 'Deactivate Students'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('admissions.bulkDeactivateDescription') || 
-                `Are you sure you want to deactivate ${selectedCount} selected student admission(s)? This will set their enrollment status to inactive.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={bulkDeactivate.isPending}>
-              {t('events.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleBulkDeactivate}
-              disabled={bulkDeactivate.isPending}
-            >
-              {bulkDeactivate.isPending 
-                ? (t('events.processing') || 'Processing...') 
-                : (t('admissions.deactivate') || 'Deactivate')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog open={isBulkStatusDialogOpen} onOpenChange={setIsBulkStatusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admissions.bulkStatusTitle')}</DialogTitle>
+            <DialogDescription>{t('admissions.bulkStatusDescription', { count: selectedCount })}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Label htmlFor="bulk-admission-status">{t('admissions.enrollmentStatus') || 'Enrollment Status'}</Label>
+            <Select value={bulkStatusValue} onValueChange={(value) => setBulkStatusValue(value as AdmissionStatus)}>
+              <SelectTrigger id="bulk-admission-status">
+                <SelectValue placeholder={t('events.status') || 'Status'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">{getAdmissionStatusLabel('pending')}</SelectItem>
+                <SelectItem value="admitted">{getAdmissionStatusLabel('admitted')}</SelectItem>
+                <SelectItem value="active">{getAdmissionStatusLabel('active')}</SelectItem>
+                <SelectItem value="inactive">{getAdmissionStatusLabel('inactive')}</SelectItem>
+                <SelectItem value="suspended">{getAdmissionStatusLabel('suspended')}</SelectItem>
+                <SelectItem value="withdrawn">{getAdmissionStatusLabel('withdrawn')}</SelectItem>
+                <SelectItem value="graduated">{getAdmissionStatusLabel('graduated')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBulkStatusDialogOpen(false)} disabled={bulkStatusUpdate.isPending}>
+              {t('events.cancel') || 'Cancel'}
+            </Button>
+            <Button onClick={handleBulkStatusUpdate} disabled={bulkStatusUpdate.isPending}>
+              {bulkStatusUpdate.isPending ? (t('events.processing') || 'Processing...') : t('admissions.bulkStatusUpdate')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

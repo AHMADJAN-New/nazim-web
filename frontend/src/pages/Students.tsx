@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef } from '@tanstack/react-table';
-import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign, History, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign, History, Download, GraduationCap, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -37,6 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useDataTable } from '@/hooks/use-data-table';
 import {
   Dialog,
@@ -56,7 +58,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { AdmissionFormDialog } from '@/components/admissions/AdmissionFormDialog';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
+import StudentAdmissionsDialog from '@/components/students/StudentAdmissionsDialog';
+import { BulkAssignAdmissionFromStudentsDialog } from '@/components/students/BulkAssignAdmissionFromStudentsDialog';
 import StudentProfileView from '@/components/students/StudentProfileView';
 import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
 import { StudentDocumentsDialog } from '@/components/students/StudentDocumentsDialog';
@@ -68,6 +73,7 @@ import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog'
 import { PictureCell } from '@/components/shared/PictureCell';
 import { showToast } from '@/lib/toast';
 import type { StudentIdCard } from '@/types/domain/studentIdCard';
+import type { StudentAdmission } from '@/hooks/useStudentAdmissions';
 
 
 // Helper function to convert StudentFormData to domain Student format
@@ -219,6 +225,33 @@ const statusBadge = (status: Student['status']): 'success' | 'info' | 'warning' 
       return 'info';
     case 'applied':
       return 'warning';
+    case 'suspended':
+      return 'warning';
+    case 'graduated':
+      return 'success';
+    case 'withdrawn':
+      return 'destructive';
+    default:
+      return 'secondary';
+  }
+};
+
+const admissionStatusBadge = (
+  status: NonNullable<Student['latestAdmission']>['enrollmentStatus']
+): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
+  switch (status) {
+    case 'active':
+      return 'success';
+    case 'admitted':
+      return 'info';
+    case 'pending':
+      return 'warning';
+    case 'inactive':
+      return 'secondary';
+    case 'suspended':
+      return 'warning';
+    case 'graduated':
+      return 'success';
     case 'withdrawn':
       return 'destructive';
     default:
@@ -244,6 +277,10 @@ export function Students() {
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const { data: profile } = useProfile();
+  const canReadStudentAdmissions = useHasPermission('student_admissions.read');
+  const canCreateStudentAdmissions = useHasPermission('student_admissions.create');
+  const canUpdateStudentAdmissions = useHasPermission('student_admissions.update');
+  const canManageStudentAdmissions = Boolean(canReadStudentAdmissions || canCreateStudentAdmissions);
   const orgIdForQuery = profile?.organization_id;
 
   const { data: academicYears = [] } = useAcademicYears(orgIdForQuery);
@@ -307,12 +344,19 @@ export function Students() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [studentToView, setStudentToView] = useState<Student | null>(null);
+  const [studentForAdmissionsDialog, setStudentForAdmissionsDialog] = useState<Student | null>(null);
+  const [isStudentAdmissionsDialogOpen, setIsStudentAdmissionsDialogOpen] = useState(false);
+  const [isAdmissionFormOpen, setIsAdmissionFormOpen] = useState(false);
+  const [selectedAdmission, setSelectedAdmission] = useState<StudentAdmission | null>(null);
+  const [preselectedAdmissionStudent, setPreselectedAdmissionStudent] = useState<Student | null>(null);
   // Dialog states for documents, history, and discipline from main table
   const [documentsDialogStudent, setDocumentsDialogStudent] = useState<Student | null>(null);
   const [historyDialogStudent, setHistoryDialogStudent] = useState<Student | null>(null);
   const [disciplineDialogStudent, setDisciplineDialogStudent] = useState<Student | null>(null);
   const [assignedCardPreview, setAssignedCardPreview] = useState<StudentIdCard | null>(null);
   const [isAssignedCardPreviewOpen, setIsAssignedCardPreviewOpen] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(() => new Set());
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
 
   // Debug logging removed for performance (was causing excessive re-renders)
 
@@ -678,6 +722,25 @@ export function Students() {
     setIsViewOpen(true);
   };
 
+  const handleManageAdmissions = (student: Student) => {
+    setStudentForAdmissionsDialog(student);
+    setIsStudentAdmissionsDialogOpen(true);
+  };
+
+  const handleCreateAdmissionForStudent = (student: Student) => {
+    setSelectedAdmission(null);
+    setPreselectedAdmissionStudent(student);
+    setIsStudentAdmissionsDialogOpen(false);
+    setIsAdmissionFormOpen(true);
+  };
+
+  const handleEditAdmission = (admission: StudentAdmission) => {
+    setSelectedAdmission(admission);
+    setPreselectedAdmissionStudent(studentForAdmissionsDialog);
+    setIsStudentAdmissionsDialogOpen(false);
+    setIsAdmissionFormOpen(true);
+  };
+
   const handleDelete = (student: Student) => {
     setStudentToDelete(student);
   };
@@ -766,6 +829,100 @@ export function Students() {
     return students || [];
   }, [students]);
 
+  const visibleStudentIds = useMemo(() => filteredStudents.map((s) => s.id), [filteredStudents]);
+  const allVisibleSelected =
+    visibleStudentIds.length > 0 && visibleStudentIds.every((id) => selectedStudentIds.has(id));
+
+  const toggleStudentRowSelected = useCallback((studentId: string) => {
+    setSelectedStudentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(studentId)) {
+        next.delete(studentId);
+      } else {
+        next.add(studentId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAllVisible = useCallback(() => {
+    setSelectedStudentIds((prev) => {
+      if (visibleStudentIds.length === 0) {
+        return prev;
+      }
+      if (visibleStudentIds.every((id) => prev.has(id))) {
+        const next = new Set(prev);
+        visibleStudentIds.forEach((id) => next.delete(id));
+        return next;
+      }
+      const next = new Set(prev);
+      visibleStudentIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }, [visibleStudentIds]);
+
+  const bulkAssignPreviewStudents = useMemo(() => {
+    const list = students || [];
+    return Array.from(selectedStudentIds)
+      .map((id) => list.find((s) => s.id === id))
+      .filter((s): s is Student => Boolean(s));
+  }, [selectedStudentIds, students]);
+
+  const getStudentStatusLabel = useCallback((status: Student['status']) => {
+    switch (status) {
+      case 'applied':
+        return t('students.applied');
+      case 'admitted':
+        return t('students.admitted');
+      case 'active':
+        return t('events.active');
+      case 'suspended':
+        return t('students.suspended') || 'Suspended';
+      case 'graduated':
+        return t('students.graduated') || 'Graduated';
+      case 'withdrawn':
+        return t('students.withdrawn');
+      default:
+        return status;
+    }
+  }, [t]);
+
+  const getAdmissionStatusLabel = useCallback((status: NonNullable<Student['latestAdmission']>['enrollmentStatus']) => {
+    switch (status) {
+      case 'pending':
+        return t('admissions.pending') || 'Pending';
+      case 'admitted':
+        return t('admissions.admitted') || 'Admitted';
+      case 'active':
+        return t('events.active') || 'Active';
+      case 'inactive':
+        return t('events.inactive') || 'Inactive';
+      case 'suspended':
+        return t('students.suspended') || 'Suspended';
+      case 'withdrawn':
+        return t('students.withdrawn') || 'Withdrawn';
+      case 'graduated':
+        return t('students.graduated') || 'Graduated';
+      default:
+        return status;
+    }
+  }, [t]);
+
+  const getCurrentClassLabel = useCallback(
+    (student: Student) => {
+      if (student.latestAdmission?.isAssignedToClass && student.currentClass?.name) {
+        return student.currentClass.name;
+      }
+
+      if (student.latestAdmission?.isCurrentEnrollment) {
+        return t('students.waitingForClass');
+      }
+
+      return t('students.notInClass');
+    },
+    [t]
+  );
+
   // Define columns for DataTable
   const columns: ColumnDef<Student>[] = [
     {
@@ -784,20 +941,16 @@ export function Students() {
       cell: ({ row }) => {
         const student = row.original;
         return (
-          <div className="space-y-1 min-w-[200px]">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold break-words">{student.fullName}</span>
-              <Badge variant={statusBadge(student.status)} className="shrink-0">
-                {student.status === 'applied' ? t('students.applied') :
-                 student.status === 'admitted' ? t('students.admitted') :
-                 student.status === 'active' ? t('events.active') :
-                 student.status === 'withdrawn' ? t('students.withdrawn') :
-                 student.status}
-              </Badge>
-              {student.isOrphan && (
-                <Badge variant="destructive" className="shrink-0">
-                  {t('students.orphan') || 'Orphan'}
+            <div className="space-y-1 min-w-[200px]">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold break-words">{student.fullName}</span>
+                <Badge variant={statusBadge(student.status)} className="shrink-0">
+                  {getStudentStatusLabel(student.status)}
                 </Badge>
+                {student.isOrphan && (
+                  <Badge variant="destructive" className="shrink-0">
+                    {t('students.orphan') || 'Orphan'}
+                  </Badge>
               )}
             </div>
             <div className="text-xs text-muted-foreground flex flex-wrap gap-2 items-center">
@@ -805,6 +958,15 @@ export function Students() {
               {student.guardianPhone && (
                 <span className="break-words">{t('students.guardian') || 'Guardian'}: {student.guardianPhone}</span>
               )}
+            </div>
+            <div className="text-xs text-muted-foreground sm:hidden">
+              {t('students.mobileAdmissionPrefix')}:{' '}
+              {student.latestAdmission
+                ? getAdmissionStatusLabel(student.latestAdmission.enrollmentStatus)
+                : t('students.noAdmissionRecord')}
+            </div>
+            <div className="text-xs text-muted-foreground sm:hidden">
+              {t('students.mobileClassPrefix')}: {getCurrentClassLabel(student)}
             </div>
           </div>
         );
@@ -816,6 +978,54 @@ export function Students() {
       cell: ({ row }) => {
         const school = schools?.find((s) => s.id === row.original.schoolId);
         return school?.school_name || row.original.school?.schoolName || '—';
+      },
+    },
+    {
+      accessorKey: 'latestAdmission',
+      header: t('students.tableAdmissionColumn'),
+      cell: ({ row }) => {
+        const latestAdmission = row.original.latestAdmission;
+
+        if (!latestAdmission) {
+          return <span className="text-muted-foreground text-sm">{t('students.noAdmissionRecord')}</span>;
+        }
+
+        return (
+          <div className="space-y-1">
+            <Badge variant={admissionStatusBadge(latestAdmission.enrollmentStatus)}>
+              {getAdmissionStatusLabel(latestAdmission.enrollmentStatus)}
+            </Badge>
+            <div className="text-xs text-muted-foreground">
+              {latestAdmission.isCurrentEnrollment
+                ? t('students.currentEnrollmentActive')
+                : t('students.currentEnrollmentInactive')}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'currentClass',
+      header: t('students.tableCurrentClassColumn'),
+      cell: ({ row }) => {
+        const student = row.original;
+
+        if (student.latestAdmission?.isAssignedToClass && student.currentClass?.name) {
+          return (
+            <div className="space-y-1">
+              <div className="font-medium">{student.currentClass.name}</div>
+              {student.latestAdmission.sectionName && (
+                <div className="text-xs text-muted-foreground">{student.latestAdmission.sectionName}</div>
+              )}
+            </div>
+          );
+        }
+
+        return (
+          <span className="text-sm text-muted-foreground">
+            {getCurrentClassLabel(student)}
+          </span>
+        );
       },
     },
     {
@@ -850,6 +1060,12 @@ export function Students() {
                 <Eye className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 {t('students.viewProfile') || 'View Profile'}
               </DropdownMenuItem>
+              {canManageStudentAdmissions ? (
+                <DropdownMenuItem onClick={() => handleManageAdmissions(row.original)}>
+                  <GraduationCap className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  {t('nav.admissions') || 'Admissions'}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onClick={() => handlePrint(row.original)}>
                 <Printer className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 {t('students.printProfile') || 'Print Profile'}
@@ -1026,6 +1242,8 @@ export function Students() {
               <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
               <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
               <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
+              <SelectItem value="suspended">{t('students.suspended') || 'Suspended'}</SelectItem>
+              <SelectItem value="graduated">{t('students.graduated') || 'Graduated'}</SelectItem>
               <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
             </SelectContent>
           </Select>
@@ -1041,6 +1259,21 @@ export function Students() {
           </Select>
         </div>
       </FilterPanel>
+
+      {canUpdateStudentAdmissions && selectedStudentIds.size > 0 ? (
+        <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-medium">{t('students.selectedCount', { count: selectedStudentIds.size })}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => setBulkAssignOpen(true)} className="gap-2 flex-shrink-0" aria-label={t('students.bulkAssignToClass')}>
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('students.bulkAssignToClass')}</span>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setSelectedStudentIds(new Set())}>
+              {t('students.clearSelection')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -1058,23 +1291,53 @@ export function Students() {
                   <Table className="w-full">
                     <TableHeader>
                       <TableRow>
+                        {canUpdateStudentAdmissions ? (
+                          <TableHead className="w-[44px] px-2">
+                            <Checkbox
+                              checked={allVisibleSelected}
+                              onCheckedChange={() => toggleSelectAllVisible()}
+                              disabled={visibleStudentIds.length === 0}
+                              aria-label={t('students.selectAllOnPage')}
+                              className={visibleStudentIds.length === 0 ? 'opacity-40' : undefined}
+                            />
+                          </TableHead>
+                        ) : null}
                         <TableHead className="w-[60px]">{t('students.picture') || 'Picture'}</TableHead>
                         <TableHead className="hidden sm:table-cell">{t('examReports.admissionNo') || 'Admission #'}</TableHead>
                         <TableHead className="min-w-[200px]">{t('students.student') || 'Student'}</TableHead>
                         <TableHead className="hidden md:table-cell">{t('students.school') || 'School'}</TableHead>
+                        <TableHead className="hidden lg:table-cell">{t('students.tableAdmissionColumn')}</TableHead>
+                        <TableHead className="hidden xl:table-cell">{t('students.tableCurrentClassColumn')}</TableHead>
                         <TableHead className="hidden lg:table-cell">{t('students.gender') || 'Gender'}</TableHead>
-                        <TableHead className="hidden lg:table-cell">{t('students.applyingGrade') || 'Applying Grade'}</TableHead>
+                        <TableHead className="hidden xl:table-cell">{t('students.applyingGrade') || 'Applying Grade'}</TableHead>
                         <TableHead className="text-right w-[100px]">{t('events.actions') || 'Actions'}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredStudents.length > 0 ? (
                         filteredStudents.map((student) => (
-                          <TableRow 
+                          <TableRow
                             key={student.id}
-                            onClick={() => handleView(student)}
+                            onClick={(e) => {
+                              const el = e.target as HTMLElement;
+                              if (el.closest('[data-student-row-toggle]')) return;
+                              handleView(student);
+                            }}
                             className="cursor-pointer hover:bg-muted/50"
                           >
+                            {canUpdateStudentAdmissions ? (
+                              <TableCell
+                                className="w-[44px] px-2 align-middle"
+                                data-student-row-toggle
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Checkbox
+                                  checked={selectedStudentIds.has(student.id)}
+                                  onCheckedChange={() => toggleStudentRowSelected(student.id)}
+                                  aria-label={t('students.selectStudent')}
+                                />
+                              </TableCell>
+                            ) : null}
                             <TableCell className="w-[60px]">
                               <StudentPictureCell student={student} />
                             </TableCell>
@@ -1084,11 +1347,7 @@ export function Students() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-semibold break-words min-w-0">{student.fullName}</span>
                                   <Badge variant={statusBadge(student.status)} className="shrink-0 text-xs">
-                                    {student.status === 'applied' ? t('students.applied') :
-                                     student.status === 'admitted' ? t('students.admitted') :
-                                     student.status === 'active' ? t('events.active') :
-                                     student.status === 'withdrawn' ? t('students.withdrawn') :
-                                     student.status}
+                                    {getStudentStatusLabel(student.status)}
                                   </Badge>
                                   {student.isOrphan && (
                                     <Badge variant="destructive" className="shrink-0 text-xs">
@@ -1106,17 +1365,54 @@ export function Students() {
                                 <div className="text-xs text-muted-foreground sm:hidden">
                                   {t('examReports.admissionNo') || 'Admission #'}: {student.admissionNumber}
                                 </div>
+                                <div className="text-xs text-muted-foreground sm:hidden">
+                                  {t('students.mobileAdmissionPrefix')}:{' '}
+                                  {student.latestAdmission
+                                    ? getAdmissionStatusLabel(student.latestAdmission.enrollmentStatus)
+                                    : t('students.noAdmissionRecord')}
+                                </div>
+                                <div className="text-xs text-muted-foreground sm:hidden">
+                                  {t('students.mobileClassPrefix')}: {getCurrentClassLabel(student)}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               {schools?.find((school) => school.id === student.schoolId)?.school_name || student.school?.schoolName || '—'}
                             </TableCell>
                             <TableCell className="hidden lg:table-cell">
+                              {student.latestAdmission ? (
+                                <div className="space-y-1">
+                                  <Badge variant={admissionStatusBadge(student.latestAdmission.enrollmentStatus)}>
+                                    {getAdmissionStatusLabel(student.latestAdmission.enrollmentStatus)}
+                                  </Badge>
+                                  <div className="text-xs text-muted-foreground">
+                                    {student.latestAdmission.isCurrentEnrollment
+                                      ? t('students.currentEnrollmentActive')
+                                      : t('students.currentEnrollmentInactive')}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">{t('students.noAdmissionRecord')}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="hidden xl:table-cell">
+                              {student.latestAdmission?.isAssignedToClass && student.currentClass?.name ? (
+                                <div className="space-y-1">
+                                  <div className="font-medium">{student.currentClass.name}</div>
+                                  {student.latestAdmission.sectionName && (
+                                    <div className="text-xs text-muted-foreground">{student.latestAdmission.sectionName}</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">{getCurrentClassLabel(student)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell">
                               <Badge variant={student.gender === 'male' ? 'info' : 'muted'}>
                                 {student.gender === 'male' ? t('students.male') : t('students.female')}
                               </Badge>
                             </TableCell>
-                            <TableCell className="hidden lg:table-cell">{student.applyingGrade || '—'}</TableCell>
+                            <TableCell className="hidden xl:table-cell">{student.applyingGrade || '—'}</TableCell>
                             <TableCell className="text-right w-[100px]" onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -1131,6 +1427,12 @@ export function Students() {
                                     <Eye className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                                     {t('students.viewProfile') || 'View Profile'}
                                   </DropdownMenuItem>
+                                  {canManageStudentAdmissions ? (
+                                    <DropdownMenuItem onClick={() => handleManageAdmissions(student)}>
+                                      <GraduationCap className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                      {t('nav.admissions') || 'Admissions'}
+                                    </DropdownMenuItem>
+                                  ) : null}
                                   <DropdownMenuItem onClick={() => handlePrint(student)}>
                                     <Printer className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                                     {t('students.printProfile') || 'Print Profile'}
@@ -1186,7 +1488,7 @@ export function Students() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
+                          <TableCell colSpan={canUpdateStudentAdmissions ? 10 : 9} className="h-24 text-center">
                             {t('students.noDataFound') || 'No data found.'}
                           </TableCell>
                         </TableRow>
@@ -1227,6 +1529,43 @@ export function Students() {
           if (!open) setStudentToView(null);
         }}
         student={studentToView}
+        onManageAdmissions={handleManageAdmissions}
+      />
+
+      <StudentAdmissionsDialog
+        open={isStudentAdmissionsDialogOpen}
+        onOpenChange={(open) => {
+          setIsStudentAdmissionsDialogOpen(open);
+          if (!open) {
+            setStudentForAdmissionsDialog(null);
+          }
+        }}
+        student={studentForAdmissionsDialog}
+        onCreateAdmission={handleCreateAdmissionForStudent}
+        onEditAdmission={handleEditAdmission}
+      />
+
+      <AdmissionFormDialog
+        open={isAdmissionFormOpen}
+        onOpenChange={(open) => {
+          setIsAdmissionFormOpen(open);
+          if (!open) {
+            setSelectedAdmission(null);
+            setPreselectedAdmissionStudent(null);
+          }
+        }}
+        admission={selectedAdmission}
+        admissions={[]}
+        preselectedStudentId={selectedAdmission ? null : preselectedAdmissionStudent?.id ?? null}
+      />
+
+      <BulkAssignAdmissionFromStudentsDialog
+        open={bulkAssignOpen}
+        onOpenChange={setBulkAssignOpen}
+        studentIds={Array.from(selectedStudentIds)}
+        studentsPreview={bulkAssignPreviewStudents}
+        defaultAcademicYearId={selectedAcademicYearId ?? null}
+        onSuccess={() => setSelectedStudentIds(new Set())}
       />
 
       <Dialog

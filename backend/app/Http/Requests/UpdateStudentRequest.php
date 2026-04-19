@@ -25,7 +25,7 @@ class UpdateStudentRequest extends FormRequest
         $studentId = $this->route('student');
         $user = $this->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
-        
+
         // Get the student's organization_id
         // If student doesn't exist, let controller handle 404 - use profile's org_id for validation
         $student = DB::table('students')->where('id', $studentId)->whereNull('deleted_at')->first();
@@ -42,6 +42,7 @@ class UpdateStudentRequest extends FormRequest
                     // Don't allow empty strings
                     if (trim($value) === '') {
                         $fail('The admission number cannot be empty.');
+
                         return;
                     }
                     if ($organizationId) {
@@ -133,7 +134,7 @@ class UpdateStudentRequest extends FormRequest
             'applying_grade' => 'nullable|string|max:50',
             'is_orphan' => 'boolean',
             'admission_fee_status' => 'nullable|string|in:paid,pending,waived,partial',
-            'student_status' => 'nullable|string|in:applied,admitted,active,withdrawn',
+            'student_status' => 'nullable|string|in:applied,admitted,active,suspended,graduated,withdrawn',
             'disability_status' => 'nullable|string|max:150',
             'emergency_contact_name' => 'nullable|string|max:150',
             'emergency_contact_phone' => 'nullable|string|max:25',
@@ -175,7 +176,7 @@ class UpdateStudentRequest extends FormRequest
             }
         }
 
-        if (!empty($data)) {
+        if (! empty($data)) {
             $this->merge($data);
         }
 

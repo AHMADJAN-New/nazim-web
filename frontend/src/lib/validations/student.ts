@@ -53,7 +53,7 @@ export const studentSchema = z.object({
   applying_grade: optionalStringLength(50, 'Applying grade'),
   is_orphan: z.boolean().default(false),
   admission_fee_status: z.enum(['paid', 'pending', 'waived', 'partial']).default('pending'),
-  student_status: z.enum(['applied', 'admitted', 'active', 'withdrawn']).default('active'),
+  student_status: z.enum(['applied', 'admitted', 'active', 'suspended', 'graduated', 'withdrawn']).default('active'),
   disability_status: optionalStringLength(150, 'Disability info'),
   emergency_contact_name: optionalStringLength(150, 'Emergency contact'),
   emergency_contact_phone: phoneSchema,

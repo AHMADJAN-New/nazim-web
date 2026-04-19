@@ -111,6 +111,13 @@ compose exec -T php sh -c '
   find /var/www/backend/storage -type f -exec chmod 664 {} \; 2>/dev/null || true
 ' || true
 
+# CRITICAL: `compose up -d` often does NOT recreate running containers when only git/code changed.
+# Long-running queue workers keep old PHP/opcache; PDF reports (Browsershot) run in queue.
+# PHP-FPM can also serve stale code. Restart so report generation + download use the same
+# filesystem config (local disk = storage/app/private) and avoid "Report file not found".
+echo "[update-app] Restarting php, queue, and scheduler to reload code, config, and storage layout..."
+compose restart php queue scheduler 2>/dev/null || compose up -d php queue scheduler
+
 if [[ "$SYNC_PERMISSIONS" == "true" ]]; then
   echo "[update-app] Syncing default role permissions..."
   compose exec -T php sh -lc 'php artisan permissions:sync-default-roles' || true

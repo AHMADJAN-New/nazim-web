@@ -9,12 +9,13 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class StudentImportXlsxService
 {
     public const TEMPLATE_VERSION = 1;
+
     public const META_SHEET_NAME = '_meta';
 
     /** @var string[] */
@@ -64,7 +65,7 @@ class StudentImportXlsxService
         'applying_grade' => ['label' => 'Applying Grade'],
         'is_orphan' => ['label' => 'Is Orphan (true/false)'],
         'admission_fee_status' => ['label' => 'Admission Fee Status (paid/pending/waived/partial)'],
-        'student_status' => ['label' => 'Student Status (applied/admitted/active/withdrawn)'],
+        'student_status' => ['label' => 'Student Status (applied/admitted/active/suspended/graduated/withdrawn)'],
         'disability_status' => ['label' => 'Disability Status'],
         'emergency_contact_name' => ['label' => 'Emergency Contact Name'],
         'emergency_contact_phone' => ['label' => 'Emergency Contact Phone'],
@@ -118,10 +119,6 @@ class StudentImportXlsxService
      *     is_boarder?: bool|null
      *   }>
      * } $spec
-     *
-     * @param string $organizationId
-     * @param string $schoolId
-     *
      * @return array{filename:string, content:string, mime:string}
      */
     public function generateTemplate(array $spec, string $organizationId, string $schoolId): array
@@ -145,14 +142,14 @@ class StudentImportXlsxService
             }
         }
 
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $spreadsheet->removeSheetByIndex(0);
 
         $sheetsMeta = [];
         $fieldOrder = array_values(array_merge($studentFields, $admissionFields));
         // Never show ID columns to end users. Scope/default IDs live in hidden metadata.
         $fieldOrder = array_values(array_filter($fieldOrder, function ($k) {
-            return !in_array($k, [
+            return ! in_array($k, [
                 'organization_id',
                 'school_id',
                 'academic_year_id',
@@ -183,8 +180,8 @@ class StudentImportXlsxService
 
             foreach ($instances as $instance) {
                 $className = $instance->class?->name ?? 'Class';
-                $section = $instance->section_name ? ('-' . $instance->section_name) : '';
-                $sheetTitle = $this->sanitizeSheetTitle($className . $section);
+                $section = $instance->section_name ? ('-'.$instance->section_name) : '';
+                $sheetTitle = $this->sanitizeSheetTitle($className.$section);
 
                 $sheet = new Worksheet($spreadsheet, $sheetTitle);
                 $spreadsheet->addSheet($sheet);
@@ -258,9 +255,9 @@ class StudentImportXlsxService
     }
 
     /**
-     * @param string[] $requested
-     * @param string[] $allowed
-     * @param string[] $required
+     * @param  string[]  $requested
+     * @param  string[]  $allowed
+     * @param  string[]  $required
      * @return string[]
      */
     private function normalizeFields(array $requested, array $allowed, array $required): array
@@ -278,7 +275,7 @@ class StudentImportXlsxService
         }
 
         foreach ($required as $req) {
-            if (!in_array($req, $out, true)) {
+            if (! in_array($req, $out, true)) {
                 $out[] = $req;
             }
         }
@@ -290,8 +287,8 @@ class StudentImportXlsxService
     }
 
     /**
-     * @param string[] $fieldOrder
-     * @param array<string, string> $fieldLabels
+     * @param  string[]  $fieldOrder
+     * @param  array<string, string>  $fieldLabels
      */
     private function buildDataSheet(Worksheet $sheet, array $fieldOrder, array $fieldLabels): void
     {
@@ -339,7 +336,7 @@ class StudentImportXlsxService
     }
 
     /**
-     * @param string[] $fieldOrder
+     * @param  string[]  $fieldOrder
      * @return array<string, string>
      */
     private function getFieldLabels(array $fieldOrder): array
@@ -348,25 +345,29 @@ class StudentImportXlsxService
         foreach ($fieldOrder as $key) {
             if (isset(self::STUDENT_FIELD_DEFS[$key]['label'])) {
                 $labels[$key] = self::STUDENT_FIELD_DEFS[$key]['label'];
+
                 continue;
             }
             if (isset(self::ADMISSION_FIELD_DEFS[$key]['label'])) {
                 $labels[$key] = self::ADMISSION_FIELD_DEFS[$key]['label'];
+
                 continue;
             }
             $labels[$key] = $this->humanizeKey($key);
         }
+
         return $labels;
     }
 
     private function humanizeKey(string $key): string
     {
         $s = str_replace('_', ' ', $key);
+
         return ucwords($s);
     }
 
     /**
-     * @param array<int, array<string, mixed>> $sheetsMeta
+     * @param  array<int, array<string, mixed>>  $sheetsMeta
      */
     private function buildInstructionsSheet(Worksheet $sheet, array $sheetsMeta, string $organizationId, string $schoolId): void
     {
@@ -455,16 +456,23 @@ class StudentImportXlsxService
             $row++;
         }
 
-        foreach (['A','B','C','D','E','F'] as $col) {
+        foreach (['A', 'B', 'C', 'D', 'E', 'F'] as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
     }
 
     private function toStr(mixed $v): string
     {
-        if ($v === null) return '';
-        if (is_bool($v)) return $v ? 'true' : 'false';
-        if (is_scalar($v)) return (string) $v;
+        if ($v === null) {
+            return '';
+        }
+        if (is_bool($v)) {
+            return $v ? 'true' : 'false';
+        }
+        if (is_scalar($v)) {
+            return (string) $v;
+        }
+
         return '';
     }
 
@@ -482,10 +490,10 @@ class StudentImportXlsxService
             if ($content === false) {
                 throw new \RuntimeException('Failed to read generated XLSX');
             }
+
             return $content;
         } finally {
             @unlink($tmp);
         }
     }
 }
-

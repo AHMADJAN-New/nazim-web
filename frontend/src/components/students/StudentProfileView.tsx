@@ -12,6 +12,7 @@ import {
   Home,
   UserCircle,
   Printer,
+  GraduationCap,
   BookOpen,
   AlertTriangle,
   Download,
@@ -45,6 +46,7 @@ interface StudentProfileViewProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   student: Student | null;
+  onManageAdmissions?: (student: Student) => void;
 }
 
 interface InfoRowProps {
@@ -81,12 +83,14 @@ function InfoSection({ title, children }: { title: string; children: React.React
 }
 
 // PERFORMANCE: Memoized to prevent unnecessary re-renders
-export const StudentProfileView = memo(function StudentProfileView({ open, onOpenChange, student }: StudentProfileViewProps) {
+export const StudentProfileView = memo(function StudentProfileView({ open, onOpenChange, student, onManageAdmissions }: StudentProfileViewProps) {
   const { data: profile } = useProfile();
   const { isRTL, t } = useLanguage();
   const yesText = isRTL ? 'هو' : 'Yes';
   const noText = isRTL ? 'نه' : 'No';
-  const hasStudentsPermission = useHasPermission('students.read');
+  const canReadAdmissions = useHasPermission('student_admissions.read');
+  const canCreateAdmissions = useHasPermission('student_admissions.create');
+  const canManageAdmissions = Boolean(onManageAdmissions && (canReadAdmissions || canCreateAdmissions));
   const orgIdForQuery = profile?.organization_id;
   const { data: schools } = useSchools(orgIdForQuery);
   
@@ -377,22 +381,40 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto w-[95vw] md:w-full">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div>
               <DialogTitle className="text-2xl">{t('students.studentProfile') || 'Student Profile'}</DialogTitle>
               <DialogDescription>
                 {t('students.studentProfile') || 'Complete student information and records'}
               </DialogDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrint}
-              className="no-print"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              {t('events.print') || 'Print'}
-            </Button>
+            <div className="flex flex-wrap justify-end gap-2 no-print">
+              {canManageAdmissions ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!student || !onManageAdmissions) {
+                      return;
+                    }
+
+                    onOpenChange(false);
+                    onManageAdmissions(student);
+                  }}
+                >
+                  <GraduationCap className="h-4 w-4 mr-2" />
+                  {t('nav.admissions') || 'Admissions'}
+                </Button>
+              ) : null}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                {t('events.print') || 'Print'}
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 

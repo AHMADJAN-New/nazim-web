@@ -55,7 +55,25 @@ describe('mapStudentApiToDomain', () => {
       deleted_at: null,
       organization: null,
       school: null,
-      current_class: null,
+      current_class: {
+        id: 'class-1',
+        name: 'Grade 8',
+        code: 'G8',
+        grade_level: '8',
+      },
+      latest_admission: {
+        id: 'admission-1',
+        enrollment_status: 'active',
+        class_id: 'class-1',
+        class_academic_year_id: 'cay-1',
+        class_name: 'Grade 8',
+        section_name: 'A',
+        shift: 'Morning',
+        academic_year_id: 'year-1',
+        academic_year_name: '1403',
+        is_current_enrollment: true,
+        is_assigned_to_class: true,
+      },
       picture_path: null,
     });
 
@@ -75,6 +93,18 @@ describe('mapStudentApiToDomain', () => {
       relationship: 'Father',
       phone: '0700',
       isPrimary: true,
+    });
+    expect(student.currentClass).toMatchObject({
+      id: 'class-1',
+      name: 'Grade 8',
+    });
+    expect(student.latestAdmission).toMatchObject({
+      id: 'admission-1',
+      enrollmentStatus: 'active',
+      className: 'Grade 8',
+      sectionName: 'A',
+      isCurrentEnrollment: true,
+      isAssignedToClass: true,
     });
   });
 });

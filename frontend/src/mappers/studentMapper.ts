@@ -175,6 +175,19 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
       code: api.current_class.code,
       gradeLevel: api.current_class.grade_level,
     } : null,
+    latestAdmission: api.latest_admission ? {
+      id: api.latest_admission.id,
+      enrollmentStatus: api.latest_admission.enrollment_status,
+      classId: api.latest_admission.class_id,
+      classAcademicYearId: api.latest_admission.class_academic_year_id,
+      className: api.latest_admission.class_name,
+      sectionName: api.latest_admission.section_name,
+      shift: api.latest_admission.shift,
+      academicYearId: api.latest_admission.academic_year_id,
+      academicYearName: api.latest_admission.academic_year_name,
+      isCurrentEnrollment: api.latest_admission.is_current_enrollment,
+      isAssignedToClass: api.latest_admission.is_assigned_to_class,
+    } : null,
   };
 }
 

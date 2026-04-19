@@ -110,6 +110,9 @@ compose exec -T php sh -c '
   find /var/www/backend/storage -type d -exec chmod 775 {} \; 2>/dev/null || true
   find /var/www/backend/storage -type f -exec chmod 664 {} \; 2>/dev/null || true
 ' || echo -e "${YELLOW}⚠️  Storage permission fix completed (may have warnings)${NC}"
+
+echo -e "${GREEN}Restarting php, queue, and scheduler (reload after storage permissions / report fixes)...${NC}"
+compose restart php queue scheduler 2>/dev/null || compose up -d php queue scheduler
 echo ""
 
 # Step 6: Clean up old images

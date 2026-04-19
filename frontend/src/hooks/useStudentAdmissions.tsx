@@ -67,6 +67,7 @@ export type { StudentAdmission, StudentAdmissionInsert, StudentAdmissionUpdate, 
 
 export interface StudentAdmissionFilters {
   search?: string;
+  student_id?: string;
   enrollment_status?: string;
   academic_year_id?: string;
   class_id?: string;
@@ -79,7 +80,8 @@ export interface StudentAdmissionFilters {
 export const useStudentAdmissions = (
   organizationId?: string, 
   usePaginated?: boolean,
-  filters?: StudentAdmissionFilters
+  filters?: StudentAdmissionFilters,
+  enabled = true
 ) => {
   const { user, profile } = useAuth();
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
@@ -103,6 +105,7 @@ export const useStudentAdmissions = (
 
         const params: { 
           organization_id?: string; 
+          student_id?: string;
           page?: number; 
           per_page?: number;
           enrollment_status?: string;
@@ -125,6 +128,9 @@ export const useStudentAdmissions = (
 
         // Add filters if provided
         if (filters) {
+          if (filters.student_id) {
+            params.student_id = filters.student_id;
+          }
           if (filters.enrollment_status) {
             params.enrollment_status = filters.enrollment_status;
           }
@@ -195,7 +201,7 @@ export const useStudentAdmissions = (
         throw error;
       }
     },
-    enabled: !!user && !!profile,
+    enabled: enabled && !!user && !!profile,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
@@ -264,6 +270,7 @@ export const useCreateStudentAdmission = () => {
       showToast.success('toast.studentAdmissions.admitted');
       await refetchAllStudentAdmissionListQueries(queryClient);
       void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['students'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
       void queryClient.refetchQueries({ queryKey: ['hostel-overview'] });
     },
@@ -293,6 +300,7 @@ export const useUpdateStudentAdmission = () => {
       showToast.success('toast.studentAdmissions.updated');
       mergeUpdatedAdmissionIntoStudentAdmissionsCaches(queryClient, updated);
       void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['students'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
       void queryClient.refetchQueries({ queryKey: ['hostel-overview'] });
       // Background sync so filters / pagination totals stay correct without a full page reload.
@@ -321,6 +329,7 @@ export const useDeleteStudentAdmission = () => {
       showToast.success('toast.studentAdmissions.removed');
       removeAdmissionFromStudentAdmissionsCaches(queryClient, id);
       void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['students'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
       void refetchAllStudentAdmissionListQueries(queryClient);
     },
@@ -378,16 +387,96 @@ export const useBulkDeactivateAdmissions = () => {
       };
     },
     onSuccess: async (result) => {
-      showToast.success(
-        `toast.studentAdmissions.bulkDeactivated` || 
-        `${result.deactivated_count} student(s) deactivated successfully`
-      );
+      showToast.success(result.message || `${result.deactivated_count} student(s) deactivated successfully`);
       await refetchAllStudentAdmissionListQueries(queryClient);
       void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['students'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentAdmissions.bulkDeactivateFailed' || 'Failed to deactivate students');
+    },
+  });
+};
+
+export const useBulkUpdateAdmissionStatus = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+
+  return useMutation({
+    mutationFn: async (data: {
+      admission_ids: string[];
+      enrollment_status: AdmissionStatus;
+    }) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      const result = await studentAdmissionsApi.bulkStatus(data);
+
+      return result as {
+        message: string;
+        updated_count: number;
+        skipped_count: number;
+        total_processed: number;
+        enrollment_status: AdmissionStatus;
+      };
+    },
+    onSuccess: async (result) => {
+      showToast.success(result.message || `${result.updated_count} admission(s) updated successfully`);
+      await refetchAllStudentAdmissionListQueries(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['students'] });
+      void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to update admissions');
+    },
+  });
+};
+
+export const useBulkAssignAdmissionPlacement = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+
+  return useMutation({
+    mutationFn: async (data: {
+      student_ids?: string[];
+      admission_ids?: string[];
+      class_academic_year_id: string;
+      is_boarder: boolean;
+      residency_type_id?: string | null;
+      room_id?: string | null;
+      enrollment_status?: StudentAdmissionApi.StudentAdmission['enrollment_status'];
+      shift?: string | null;
+      placement_notes?: string | null;
+      only_without_class?: boolean;
+    }) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      return studentAdmissionsApi.bulkAssignPlacement(data);
+    },
+    onSuccess: async (result) => {
+      const errCount = Array.isArray(result.errors) ? result.errors.length : 0;
+      if (errCount > 0) {
+        showToast.warning('admissions.bulkAssignPlacementPartial', {
+          updated: result.updated_count,
+          skipped: result.skipped_count + errCount,
+        });
+      } else if (result.updated_count === 0 && (result.skipped_count ?? 0) > 0) {
+        showToast.info('admissions.bulkAssignPlacementNoop', { skipped: result.skipped_count });
+      } else {
+        showToast.success('admissions.bulkAssignPlacementSuccess', { updated: result.updated_count });
+      }
+      await refetchAllStudentAdmissionListQueries(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['students'] });
+      void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'admissions.bulkAssignPlacementFailed');
     },
   });
 };
@@ -416,12 +505,10 @@ export const useBulkDeactivateAdmissionsByStudentIds = () => {
       };
     },
     onSuccess: async (result) => {
-      showToast.success(
-        `toast.studentAdmissions.bulkDeactivated` || 
-        `${result.deactivated_count} student(s) deactivated successfully`
-      );
+      showToast.success(result.message || `${result.deactivated_count} student(s) deactivated successfully`);
       await refetchAllStudentAdmissionListQueries(queryClient);
       void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['students'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
       void queryClient.invalidateQueries({ queryKey: ['graduation-batch'] });
     },

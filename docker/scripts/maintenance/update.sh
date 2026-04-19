@@ -48,6 +48,9 @@ compose exec -T php sh -c '
 echo "[update] Running migrations + optimize..."
 compose exec -T php sh -lc 'php artisan migrate --force && php artisan optimize || true'
 
+echo "[update] Restarting php, queue, and scheduler (reload workers after deploy; fixes stale report paths)..."
+compose restart php queue scheduler 2>/dev/null || compose up -d php queue scheduler
+
 echo "[update] Syncing default role permissions (staff + accountant)..."
 compose exec -T php sh -lc 'php artisan permissions:sync-default-roles' || true
 

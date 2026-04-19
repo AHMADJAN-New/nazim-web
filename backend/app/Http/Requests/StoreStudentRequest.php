@@ -98,7 +98,7 @@ class StoreStudentRequest extends FormRequest
             'applying_grade' => 'nullable|string|max:50',
             'is_orphan' => 'boolean',
             'admission_fee_status' => 'nullable|string|in:paid,pending,waived,partial',
-            'student_status' => 'nullable|string|in:applied,admitted,active,withdrawn',
+            'student_status' => 'nullable|string|in:applied,admitted,active,suspended,graduated,withdrawn',
             'disability_status' => 'nullable|string|max:150',
             'emergency_contact_name' => 'nullable|string|max:150',
             'emergency_contact_phone' => 'nullable|string|max:25',
@@ -132,7 +132,7 @@ class StoreStudentRequest extends FormRequest
             }
         }
 
-        if (!empty($data)) {
+        if (! empty($data)) {
             $this->merge($data);
         }
 

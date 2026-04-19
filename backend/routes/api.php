@@ -756,6 +756,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::get('/student-admissions/{student_admission}', [StudentAdmissionController::class, 'show']);
         Route::middleware(['subscription:write'])->group(function () {
             Route::post('/student-admissions/export', [StudentAdmissionController::class, 'export']);
+            Route::post('/student-admissions/bulk-status', [StudentAdmissionController::class, 'bulkUpdateStatus']);
+            Route::post('/student-admissions/bulk-assign-placement', [StudentAdmissionController::class, 'bulkAssignPlacement']);
             Route::post('/student-admissions/bulk-deactivate', [StudentAdmissionController::class, 'bulkDeactivate']);
             Route::post('/student-admissions/bulk-deactivate-by-student-ids', [StudentAdmissionController::class, 'bulkDeactivateByStudentIds']);
             Route::post('/student-admissions', [StudentAdmissionController::class, 'store'])->middleware('limit:students');

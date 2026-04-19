@@ -2335,6 +2335,34 @@ export const studentAdmissionsApi = {
     return apiClient.post('/student-admissions/bulk-deactivate', data);
   },
 
+  bulkStatus: async (data: {
+    admission_ids: string[];
+    enrollment_status: 'pending' | 'admitted' | 'active' | 'inactive' | 'suspended' | 'withdrawn' | 'graduated';
+  }) => {
+    return apiClient.post('/student-admissions/bulk-status', data);
+  },
+
+  bulkAssignPlacement: async (data: {
+    student_ids?: string[];
+    admission_ids?: string[];
+    class_academic_year_id: string;
+    is_boarder: boolean;
+    residency_type_id?: string | null;
+    room_id?: string | null;
+    enrollment_status?: 'pending' | 'admitted' | 'active' | 'inactive' | 'suspended' | 'withdrawn' | 'graduated';
+    shift?: string | null;
+    placement_notes?: string | null;
+    only_without_class?: boolean;
+  }) => {
+    return apiClient.post<{
+      message: string;
+      updated_count: number;
+      skipped_count: number;
+      errors: Array<{ student_id?: string; admission_id?: string; reason: string; message?: string }>;
+      total_candidates: number;
+    }>('/student-admissions/bulk-assign-placement', data);
+  },
+
   bulkDeactivateByStudentIds: async (data: {
     student_ids: string[];
     class_id: string;
@@ -5637,4 +5665,3 @@ export const activityLogsApi = {
     }>('/activity-logs/stats');
   },
 };
-

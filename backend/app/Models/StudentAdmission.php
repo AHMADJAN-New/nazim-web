@@ -11,11 +11,16 @@ class StudentAdmission extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const CURRENT_ENROLLMENT_STATUSES = ['pending', 'admitted', 'active'];
+
     protected $connection = 'pgsql';
+
     protected $table = 'student_admissions';
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -178,5 +183,9 @@ class StudentAdmission extends Model
     {
         return $query->where('enrollment_status', 'active');
     }
-}
 
+    public static function isCurrentEnrollmentStatus(?string $status): bool
+    {
+        return is_string($status) && in_array($status, self::CURRENT_ENROLLMENT_STATUSES, true);
+    }
+}

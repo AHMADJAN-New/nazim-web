@@ -13,6 +13,15 @@ export type StudentStatus =
   | 'withdrawn'
   | 'alumni';
 
+export type LatestAdmissionStatus =
+  | 'pending'
+  | 'admitted'
+  | 'active'
+  | 'inactive'
+  | 'suspended'
+  | 'withdrawn'
+  | 'graduated';
+
 export type AdmissionFeeStatus = 'paid' | 'pending' | 'waived' | 'partial';
 export type Gender = 'male' | 'female';
 
@@ -191,6 +200,19 @@ export interface Student {
     name: string;
     code?: string;
     gradeLevel?: string;
+  } | null;
+  latestAdmission?: {
+    id: string;
+    enrollmentStatus: LatestAdmissionStatus;
+    classId: string | null;
+    classAcademicYearId: string | null;
+    className: string | null;
+    sectionName: string | null;
+    shift: string | null;
+    academicYearId: string | null;
+    academicYearName: string | null;
+    isCurrentEnrollment: boolean;
+    isAssignedToClass: boolean;
   } | null;
 }
 

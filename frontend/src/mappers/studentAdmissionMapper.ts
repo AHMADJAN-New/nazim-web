@@ -28,11 +28,13 @@ export function mapStudentAdmissionApiToDomain(api: StudentAdmissionApi.StudentA
     createdAt: new Date(api.created_at),
     updatedAt: new Date(api.updated_at),
     deletedAt: api.deleted_at ? new Date(api.deleted_at) : null,
+    isLatestAdmissionForStudent: api.is_latest_admission_for_student ?? false,
     student: api.student ? {
       id: api.student.id,
       fullName: api.student.full_name,
       admissionNumber: api.student.admission_no,
       studentCode: api.student.student_code || null,
+      status: api.student.student_status || null,
       cardNumber: api.student.card_number || null,
       fatherName: api.student.father_name || null,
       gender: api.student.gender,
@@ -49,10 +51,30 @@ export function mapStudentAdmissionApiToDomain(api: StudentAdmissionApi.StudentA
       endDate: new Date(api.academic_year.end_date),
     } : undefined,
     class: api.class,
-    classAcademicYear: api.class_academic_year ? {
-      id: api.class_academic_year.id,
-      sectionName: api.class_academic_year.section_name,
-    } : undefined,
+    classAcademicYear: api.class_academic_year
+      ? {
+          id: api.class_academic_year.id,
+          sectionName: api.class_academic_year.section_name,
+          notes: api.class_academic_year.notes ?? null,
+          teacher: api.class_academic_year.teacher
+            ? {
+                id: api.class_academic_year.teacher.id,
+                fullName: api.class_academic_year.teacher.full_name,
+              }
+            : undefined,
+          room: api.class_academic_year.room
+            ? {
+                id: api.class_academic_year.room.id,
+                roomNumber: api.class_academic_year.room.room_number,
+                building: api.class_academic_year.room.building
+                  ? {
+                      buildingName: api.class_academic_year.room.building.building_name,
+                    }
+                  : undefined,
+              }
+            : undefined,
+        }
+      : undefined,
     residencyType: api.residency_type,
     room: api.room ? {
       id: api.room.id,
