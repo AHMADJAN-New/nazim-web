@@ -234,11 +234,13 @@ class ActivityLogService
         ?string $logName = null,
         ?string $event = null,
         ?array $properties = null,
-        ?Request $request = null
+        ?Request $request = null,
+        $subject = null
     ): ActivityContract {
         return $this->log(
             description: $description,
             logName: $logName,
+            subject: $subject,
             event: $event,
             properties: $properties,
             request: $request

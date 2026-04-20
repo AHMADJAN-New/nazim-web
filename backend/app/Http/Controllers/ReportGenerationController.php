@@ -328,40 +328,137 @@ class ReportGenerationController extends Controller
             ], 404);
         }
 
-        // Use FileStorageService to check if file exists (local disk root = storage/app/private)
-        $disk = 'local';
-        if (!$this->fileStorageService->fileExists($reportRun->output_path, $disk)) {
-            // Fallback: try 'private' disk in case config differs
-            if ($this->fileStorageService->fileExists($reportRun->output_path, 'private')) {
-                $disk = 'private';
-            } else {
-                \Log::error('Report file not found', [
-                    'report_id' => $id,
-                    'output_path' => $reportRun->output_path,
-                    'status' => $reportRun->status,
-                    'file_name' => $reportRun->file_name,
-                    'storage_exists' => Storage::disk('local')->exists($reportRun->output_path),
-                    'absolute_path' => storage_path('app/private/' . $reportRun->output_path),
-                ]);
-                // Mark as failed so UI can show "missing" and offer regenerate instead of repeated failed downloads
-                $reportRun->markFailed('Report file missing from storage. Please regenerate the report.', 0);
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Report file not found. The file may have been removed or the report was generated in a different environment. Please regenerate the report.',
-                ], 404);
-            }
+        $resolvedFile = $this->resolveDownloadTarget($reportRun);
+
+        if (!$resolvedFile) {
+            $relativePath = ltrim($reportRun->output_path, '/');
+
+            \Log::error('Report file not found', [
+                'report_id' => $id,
+                'output_path' => $reportRun->output_path,
+                'status' => $reportRun->status,
+                'file_name' => $reportRun->file_name,
+                'storage_exists' => Storage::disk('local')->exists($relativePath),
+                'absolute_path' => storage_path('app/private/' . $relativePath),
+                'physical_exists' => is_file(storage_path('app/private/' . $relativePath)),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Report file not found. The file may have been removed or generated in a different runtime. Please regenerate the report.',
+            ], 404);
         }
 
         $fileName = $reportRun->file_name ?? "report.{$reportRun->getFileExtension()}";
 
+        if (!empty($resolvedFile['path']) && $resolvedFile['path'] !== $reportRun->output_path) {
+            $reportRun->forceFill([
+                'output_path' => $resolvedFile['path'],
+            ])->save();
+        }
+
         \Log::debug('Serving report file', [
             'report_id' => $id,
-            'output_path' => $reportRun->output_path,
+            'output_path' => $resolvedFile['path'] ?? $reportRun->output_path,
             'file_name' => $fileName,
+            'disk' => $resolvedFile['disk'] ?? null,
+            'absolute_path' => $resolvedFile['absolute_path'] ?? null,
         ]);
 
-        // Use FileStorageService to download file (use disk that had the file)
-        return $this->fileStorageService->downloadFile($reportRun->output_path, $fileName, $disk);
+        if (!empty($resolvedFile['absolute_path'])) {
+            return response()->download($resolvedFile['absolute_path'], $fileName);
+        }
+
+        return $this->fileStorageService->downloadFile(
+            $resolvedFile['path'],
+            $fileName,
+            $resolvedFile['disk'] ?? 'local'
+        );
+    }
+
+    /**
+     * Resolve a downloadable report file across relative disk paths and direct filesystem paths.
+     *
+     * @return array{disk: string|null, path: string, absolute_path: string|null}|null
+     */
+    private function resolveDownloadTarget(ReportRun $reportRun): ?array
+    {
+        $relativePath = ltrim((string) $reportRun->output_path, '/');
+
+        if ($relativePath === '') {
+            return null;
+        }
+
+        $relativeCandidates = array_values(array_filter(array_unique([
+            $relativePath,
+            preg_replace('#^private/#', '', $relativePath) ?: null,
+            preg_replace('#^app/private/#', '', $relativePath) ?: null,
+            preg_replace('#^app/#', '', $relativePath) ?: null,
+        ])));
+
+        foreach (['local', 'private'] as $disk) {
+            foreach ($relativeCandidates as $candidate) {
+                if ($this->fileStorageService->fileExists($candidate, $disk)) {
+                    return [
+                        'disk' => $disk,
+                        'path' => $candidate,
+                        'absolute_path' => null,
+                    ];
+                }
+            }
+        }
+
+        foreach ($relativeCandidates as $candidate) {
+            foreach ([
+                storage_path('app/private/' . $candidate),
+                storage_path('app/' . $candidate),
+                storage_path($candidate),
+            ] as $absolutePath) {
+                if (is_file($absolutePath)) {
+                    return [
+                        'disk' => null,
+                        'path' => $candidate,
+                        'absolute_path' => $absolutePath,
+                    ];
+                }
+            }
+        }
+
+        $fileName = $reportRun->file_name ?: basename($relativePath);
+        $directoryCandidates = array_values(array_filter(array_unique([
+            $reportRun->organization_id && $reportRun->branding_id
+                ? "organizations/{$reportRun->organization_id}/schools/{$reportRun->branding_id}/reports/{$reportRun->report_key}"
+                : null,
+            $reportRun->organization_id && $reportRun->branding_id
+                ? "organizations/{$reportRun->organization_id}/schools/{$reportRun->branding_id}/reports"
+                : null,
+            $reportRun->organization_id
+                ? "organizations/{$reportRun->organization_id}/reports/{$reportRun->report_key}"
+                : null,
+            $reportRun->report_key
+                ? "reports/{$reportRun->report_key}"
+                : null,
+        ])));
+
+        foreach (['local', 'private'] as $disk) {
+            foreach ($directoryCandidates as $directory) {
+                try {
+                    foreach (Storage::disk($disk)->allFiles($directory) as $path) {
+                        if (basename($path) === $fileName) {
+                            return [
+                                'disk' => $disk,
+                                'path' => $path,
+                                'absolute_path' => null,
+                            ];
+                        }
+                    }
+                } catch (\Throwable) {
+                    continue;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

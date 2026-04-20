@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IdCardLayoutEditor } from '@/components/id-cards/IdCardLayoutEditor';
@@ -60,6 +60,7 @@ vi.mock('@/lib/api/client', () => ({
 
 describe('IdCardLayoutEditor', () => {
   beforeEach(() => {
+    cleanup();
     vi.restoreAllMocks();
     vi.stubGlobal(
       'fetch',
@@ -111,5 +112,55 @@ describe('IdCardLayoutEditor', () => {
     expect(screen.queryByText('Old Student')).not.toBeInTheDocument();
     expect(screen.queryByText('Old Father')).not.toBeInTheDocument();
     expect(screen.queryByText('STD-OLD')).not.toBeInTheDocument();
+  });
+
+  it('allows independent student photo width and height changes and keeps the preview framed to card width', async () => {
+    const onSave = vi.fn();
+
+    render(
+      <IdCardLayoutEditor
+        templateId="template-1"
+        backgroundImageUrlFront={null}
+        backgroundImageUrlBack={null}
+        layoutConfigFront={{
+          enabledFields: ['studentPhoto', 'qrCode'],
+          studentPhotoPosition: { x: 20, y: 50, width: 18, height: 28 },
+          qrCodePosition: { x: 75, y: 50, width: 10, height: 10 },
+          fontSize: 12,
+          fontFamily: 'Arial',
+          textColor: '#000000',
+          rtl: false,
+        }}
+        layoutConfigBack={{ enabledFields: [] }}
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />
+    );
+
+    expect(await screen.findByTestId('id-card-layout-preview-front')).toHaveStyle({ maxWidth: '634px' });
+
+    fireEvent.mouseDown(screen.getByTestId('id-card-field-studentPhoto'));
+
+    const widthInput = screen.getByLabelText('Photo Width (%)');
+    const heightInput = screen.getByLabelText('Photo Height (%)');
+
+    expect(widthInput).toHaveValue(18);
+    expect(heightInput).toHaveValue(28);
+
+    fireEvent.change(widthInput, { target: { value: '24' } });
+    fireEvent.change(heightInput, { target: { value: '32' } });
+
+    expect(widthInput).toHaveValue(24);
+    expect(heightInput).toHaveValue(32);
+
+    fireEvent.click(screen.getByRole('button', { name: 'events.save' }));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const [savedFrontConfig] = onSave.mock.calls[0];
+
+    expect(savedFrontConfig.studentPhotoPosition).toMatchObject({
+      width: 24,
+      height: 32,
+    });
   });
 });

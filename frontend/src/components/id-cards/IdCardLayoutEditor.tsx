@@ -21,7 +21,6 @@ import {
   normalizeIdCardText,
   resolveIdCardDefaultFontFamily,
   resolveIdCardFieldValue,
-  scaleUniformImageDimensions,
 } from '@/lib/idCards/idCardFieldUtils';
 import { generateLocalQrCodeDataUrl } from '@/lib/idCards/idCardQr';
 import {
@@ -71,6 +70,14 @@ const AVAILABLE_FONTS = [
 const DEFAULT_STUDENT_PHOTO_WIDTH = 18;
 const DEFAULT_STUDENT_PHOTO_HEIGHT = 28;
 const DEFAULT_QR_CODE_SIZE = 10;
+
+const clampImageDimensionPercent = (value: number, fallback: number): number => {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.max(1, Math.min(100, value));
+};
 
 const backgroundImageBlobCache = new Map<string, Blob>();
 const studentPhotoBlobCache = new Map<string, Blob | null>();
@@ -383,21 +390,33 @@ export function IdCardLayoutEditor({
   const currentImageLoaded = activeTab === 'front' ? backgroundImageLoadedFront : backgroundImageLoadedBack;
   const currentImageError = activeTab === 'front' ? backgroundImageErrorFront : backgroundImageErrorBack;
 
-  const getImageFieldSizePercent = useCallback(
+  const getImageFieldDimensions = useCallback(
     (fieldId: 'studentPhoto' | 'qrCode') => {
       if (fieldId === 'qrCode') {
-        return (currentConfig.qrCodePosition as { width?: number } | undefined)?.width ?? DEFAULT_QR_CODE_SIZE;
+        const qrPosition = currentConfig.qrCodePosition as { width?: number; height?: number } | undefined;
+        const size = qrPosition?.width ?? qrPosition?.height ?? DEFAULT_QR_CODE_SIZE;
+
+        return {
+          width: size,
+          height: size,
+        };
       }
 
-      return (currentConfig.studentPhotoPosition as { width?: number } | undefined)?.width ?? DEFAULT_STUDENT_PHOTO_WIDTH;
+      const photoPosition = currentConfig.studentPhotoPosition as { width?: number; height?: number } | undefined;
+
+      return {
+        width: photoPosition?.width ?? DEFAULT_STUDENT_PHOTO_WIDTH,
+        height: photoPosition?.height ?? DEFAULT_STUDENT_PHOTO_HEIGHT,
+      };
     },
     [currentConfig.qrCodePosition, currentConfig.studentPhotoPosition]
   );
 
-  const setImageFieldSizePercent = useCallback(
-    (fieldId: 'studentPhoto' | 'qrCode', nextSize: number) => {
-      const boundedSize = Math.max(1, Math.min(100, Number.isFinite(nextSize) ? nextSize : 1));
-
+  const setImageFieldDimensions = useCallback(
+    (
+      fieldId: 'studentPhoto' | 'qrCode',
+      nextDimensions: Partial<{ width: number; height: number }>
+    ) => {
       setCurrentConfig((prev) => {
         if (fieldId === 'qrCode') {
           const current = (prev.qrCodePosition as { x?: number; y?: number; width?: number; height?: number } | undefined) || {
@@ -406,6 +425,13 @@ export function IdCardLayoutEditor({
             width: DEFAULT_QR_CODE_SIZE,
             height: DEFAULT_QR_CODE_SIZE,
           };
+          const requestedSize =
+            nextDimensions.width ??
+            nextDimensions.height ??
+            current.width ??
+            current.height ??
+            DEFAULT_QR_CODE_SIZE;
+          const boundedSize = clampImageDimensionPercent(requestedSize, DEFAULT_QR_CODE_SIZE);
 
           return {
             ...prev,
@@ -423,16 +449,21 @@ export function IdCardLayoutEditor({
           width: DEFAULT_STUDENT_PHOTO_WIDTH,
           height: DEFAULT_STUDENT_PHOTO_HEIGHT,
         };
-        const currentWidth = current.width ?? DEFAULT_STUDENT_PHOTO_WIDTH;
-        const currentHeight = current.height ?? DEFAULT_STUDENT_PHOTO_HEIGHT;
-        const nextDimensions = scaleUniformImageDimensions(currentWidth, currentHeight, boundedSize);
+        const nextWidth = clampImageDimensionPercent(
+          nextDimensions.width ?? current.width ?? DEFAULT_STUDENT_PHOTO_WIDTH,
+          current.width ?? DEFAULT_STUDENT_PHOTO_WIDTH
+        );
+        const nextHeight = clampImageDimensionPercent(
+          nextDimensions.height ?? current.height ?? DEFAULT_STUDENT_PHOTO_HEIGHT,
+          current.height ?? DEFAULT_STUDENT_PHOTO_HEIGHT
+        );
 
         return {
           ...prev,
           studentPhotoPosition: {
             ...current,
-            width: nextDimensions.width,
-            height: nextDimensions.height,
+            width: nextWidth,
+            height: nextHeight,
           },
         };
       });
@@ -1082,44 +1113,56 @@ export function IdCardLayoutEditor({
 
         const deltaX = currentX - resizeStart.x;
         const deltaY = currentY - resizeStart.y;
-        const resizeContributions: number[] = [];
-
-        if (resizeHandle?.includes('e')) {
-          resizeContributions.push(deltaX);
-        }
-        if (resizeHandle?.includes('w')) {
-          resizeContributions.push(-deltaX);
-        }
-        if (resizeHandle?.includes('s')) {
-          resizeContributions.push(deltaY);
-        }
-        if (resizeHandle?.includes('n')) {
-          resizeContributions.push(-deltaY);
-        }
-        if (resizeContributions.length === 0) {
-          resizeContributions.push(deltaX, deltaY);
-        }
-
-        const sizeDelta =
-          resizeContributions.reduce((sum, value) => sum + value, 0) / resizeContributions.length;
-        const nextSize = Math.max(1, Math.min(100, resizeStart.width + sizeDelta));
-
-        let newWidth = nextSize;
-        let newHeight = nextSize;
+        let newWidth = resizeStart.width;
+        let newHeight = resizeStart.height;
 
         if (import.meta.env.DEV) {
           console.log('[IdCardLayoutEditor] Resize values:', {
-            currentX, currentY, deltaX, deltaY, resizeHandle, sizeDelta, nextSize
+            currentX, currentY, deltaX, deltaY, resizeHandle
           });
         }
 
         if (selectedField === 'qrCode') {
+          const resizeContributions: number[] = [];
+
+          if (resizeHandle?.includes('e')) {
+            resizeContributions.push(deltaX);
+          }
+          if (resizeHandle?.includes('w')) {
+            resizeContributions.push(-deltaX);
+          }
+          if (resizeHandle?.includes('s')) {
+            resizeContributions.push(deltaY);
+          }
+          if (resizeHandle?.includes('n')) {
+            resizeContributions.push(-deltaY);
+          }
+          if (resizeContributions.length === 0) {
+            resizeContributions.push(deltaX, deltaY);
+          }
+
+          const sizeDelta =
+            resizeContributions.reduce((sum, value) => sum + value, 0) / resizeContributions.length;
+          const nextSize = clampImageDimensionPercent(
+            resizeStart.width + sizeDelta,
+            resizeStart.width || DEFAULT_QR_CODE_SIZE
+          );
           newWidth = nextSize;
           newHeight = nextSize;
         } else if (selectedField === 'studentPhoto') {
-          const nextDimensions = scaleUniformImageDimensions(resizeStart.width, resizeStart.height, nextSize);
-          newWidth = nextDimensions.width;
-          newHeight = nextDimensions.height;
+          const widthDelta =
+            resizeHandle?.includes('e') ? deltaX : resizeHandle?.includes('w') ? -deltaX : 0;
+          const heightDelta =
+            resizeHandle?.includes('s') ? deltaY : resizeHandle?.includes('n') ? -deltaY : 0;
+
+          newWidth = clampImageDimensionPercent(
+            resizeStart.width + widthDelta,
+            resizeStart.width || DEFAULT_STUDENT_PHOTO_WIDTH
+          );
+          newHeight = clampImageDimensionPercent(
+            resizeStart.height + heightDelta,
+            resizeStart.height || DEFAULT_STUDENT_PHOTO_HEIGHT
+          );
         }
 
         // Update width and height in config
@@ -1480,10 +1523,13 @@ export function IdCardLayoutEditor({
                 <CardContent>
                   <div
                     ref={containerRef}
+                    data-testid="id-card-layout-preview-front"
                     className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-visible"
                     style={{
                       aspectRatio: CARD_ASPECT_RATIO,
+                      maxWidth: `${DEFAULT_SCREEN_WIDTH_PX}px`,
                       maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
+                      margin: '0 auto',
                       padding: 0,
                     }}
                     onClick={handleCanvasBackgroundClick}
@@ -1606,6 +1652,7 @@ export function IdCardLayoutEditor({
                       return (
                         <div
                           key={field.id}
+                          data-testid={`id-card-field-${field.id}`}
                           style={fieldStyle}
                           onMouseDown={(e) => handleMouseDown(e, field.id)}
                           onClick={(e) => e.stopPropagation()}
@@ -1680,10 +1727,11 @@ export function IdCardLayoutEditor({
                                 </>
                               )}
 
-                              <div className="flex items-center justify-center gap-1">
-                                <GripVertical className="h-4 w-4 opacity-50" />
+                              <div className="relative h-full w-full pointer-events-none">
+                                <GripVertical className="absolute left-2 top-2 h-4 w-4 opacity-50" />
                                 {field.id === 'studentPhoto' && studentPhotoUrl ? (
                                   <div
+                                    className="h-full w-full"
                                     style={{
                                       width: '100%',
                                       height: '100%',
@@ -1710,7 +1758,7 @@ export function IdCardLayoutEditor({
                                     />
                                   </div>
                                 ) : field.id === 'qrCode' && qrCodeUrl ? (
-                                  <div className="flex h-full w-full items-center justify-center pointer-events-none">
+                                  <div className="flex h-full w-full items-center justify-center">
                                     <div
                                       className="aspect-square max-h-full max-w-full flex items-center justify-center"
                                       style={{
@@ -1731,10 +1779,10 @@ export function IdCardLayoutEditor({
                                     </div>
                                   </div>
                                 ) : (
-                                  <>
-                                    <span className="text-2xl" style={{ pointerEvents: 'none' }}>{displayText}</span>
-                                    <span className="text-xs" style={{ pointerEvents: 'none' }}>{field.id === 'qrCode' ? 'QR' : 'Photo'}</span>
-                                  </>
+                                  <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-center">
+                                    <span className="text-2xl">{displayText}</span>
+                                    <span className="text-xs">{field.id === 'qrCode' ? 'QR' : 'Photo'}</span>
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -1969,26 +2017,68 @@ export function IdCardLayoutEditor({
                     {/* Image Field Settings */}
                     {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
                       <div className="space-y-3 pt-2 border-t">
-                        <div className="space-y-2">
-                          <Label className="text-sm">{selectedField === 'qrCode' ? 'QR Code Size (%)' : 'Photo Size (%)'}</Label>
-                          <Input
-                            type="number"
-                            value={getImageFieldSizePercent(selectedField)}
-                            onChange={(e) => {
-                              const value = Number(e.target.value);
-                              if (!Number.isNaN(value)) {
-                                setImageFieldSizePercent(selectedField, value);
-                              }
-                            }}
-                            min="1"
-                            max="100"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            {selectedField === 'qrCode'
-                              ? 'One size control keeps the QR square in preview and export.'
-                              : 'One size control keeps the photo proportional and matches export framing.'}
-                          </p>
-                        </div>
+                        {selectedField === 'studentPhoto' ? (
+                          <>
+                            <div className="space-y-2">
+                              <Label className="text-sm" htmlFor="student-photo-width-input">Photo Width (%)</Label>
+                              <Input
+                                id="student-photo-width-input"
+                                aria-label="Photo Width (%)"
+                                type="number"
+                                value={getImageFieldDimensions('studentPhoto').width}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value);
+                                  if (!Number.isNaN(value)) {
+                                    setImageFieldDimensions('studentPhoto', { width: value });
+                                  }
+                                }}
+                                min="1"
+                                max="100"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm" htmlFor="student-photo-height-input">Photo Height (%)</Label>
+                              <Input
+                                id="student-photo-height-input"
+                                aria-label="Photo Height (%)"
+                                type="number"
+                                value={getImageFieldDimensions('studentPhoto').height}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value);
+                                  if (!Number.isNaN(value)) {
+                                    setImageFieldDimensions('studentPhoto', { height: value });
+                                  }
+                                }}
+                                min="1"
+                                max="100"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Adjust width and height separately so portrait photos match the printed card layout.
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="space-y-2">
+                            <Label className="text-sm" htmlFor="qr-code-size-input">QR Code Size (%)</Label>
+                            <Input
+                              id="qr-code-size-input"
+                              aria-label="QR Code Size (%)"
+                              type="number"
+                              value={getImageFieldDimensions('qrCode').width}
+                              onChange={(e) => {
+                                const value = Number(e.target.value);
+                                if (!Number.isNaN(value)) {
+                                  setImageFieldDimensions('qrCode', { width: value });
+                                }
+                              }}
+                              min="1"
+                              max="100"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              One size control keeps the QR square in preview and export.
+                            </p>
+                          </div>
+                        )}
                         
                         {/* QR Code Value Source Selector */}
                         {selectedField === 'qrCode' && (
@@ -2257,10 +2347,13 @@ export function IdCardLayoutEditor({
                 <CardContent>
                   <div
                     ref={containerRef}
+                    data-testid="id-card-layout-preview-back"
                     className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-visible"
                     style={{
                       aspectRatio: CARD_ASPECT_RATIO,
+                      maxWidth: `${DEFAULT_SCREEN_WIDTH_PX}px`,
                       maxHeight: `${DEFAULT_SCREEN_HEIGHT_PX}px`,
+                      margin: '0 auto',
                       padding: 0,
                     }}
                     onClick={handleCanvasBackgroundClick}
@@ -2724,27 +2817,71 @@ export function IdCardLayoutEditor({
                     {/* Image Sizing Controls */}
                     {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
                       <div className="space-y-3 pt-2 border-t">
-                        <div className="space-y-2">
-                          <Label className="text-sm">{selectedField === 'qrCode' ? t('idCards.qrCodeSize') || 'QR Code Size (%)' : t('idCards.photoSize') || 'Photo Size (%)'}</Label>
-                          <Input
-                            type="number"
-                            value={getImageFieldSizePercent(selectedField)}
-                            onChange={(e) => {
-                              const value = Number(e.target.value);
-                              if (!Number.isNaN(value)) {
-                                setImageFieldSizePercent(selectedField, value);
-                              }
-                            }}
-                            min="1"
-                            max="100"
-                            className="h-8 text-xs"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            {selectedField === 'qrCode'
-                              ? t('idCards.sizeDescription') || 'One size control keeps the QR square.'
-                              : t('idCards.sizeDescription') || 'One size control keeps the photo proportional.'}
-                          </p>
-                        </div>
+                        {selectedField === 'studentPhoto' ? (
+                          <>
+                            <div className="space-y-2">
+                              <Label className="text-sm" htmlFor="student-photo-width-input-back">{t('idCards.photoWidth') || 'Photo Width (%)'}</Label>
+                              <Input
+                                id="student-photo-width-input-back"
+                                aria-label={t('idCards.photoWidth') || 'Photo Width (%)'}
+                                type="number"
+                                value={getImageFieldDimensions('studentPhoto').width}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value);
+                                  if (!Number.isNaN(value)) {
+                                    setImageFieldDimensions('studentPhoto', { width: value });
+                                  }
+                                }}
+                                min="1"
+                                max="100"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm" htmlFor="student-photo-height-input-back">{t('idCards.photoHeight') || 'Photo Height (%)'}</Label>
+                              <Input
+                                id="student-photo-height-input-back"
+                                aria-label={t('idCards.photoHeight') || 'Photo Height (%)'}
+                                type="number"
+                                value={getImageFieldDimensions('studentPhoto').height}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value);
+                                  if (!Number.isNaN(value)) {
+                                    setImageFieldDimensions('studentPhoto', { height: value });
+                                  }
+                                }}
+                                min="1"
+                                max="100"
+                                className="h-8 text-xs"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                {t('idCards.photoDimensionsDescription') || 'Adjust width and height separately so portrait photos match the printed card layout.'}
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="space-y-2">
+                            <Label className="text-sm" htmlFor="qr-code-size-input-back">{t('idCards.qrCodeSize') || 'QR Code Size (%)'}</Label>
+                            <Input
+                              id="qr-code-size-input-back"
+                              aria-label={t('idCards.qrCodeSize') || 'QR Code Size (%)'}
+                              type="number"
+                              value={getImageFieldDimensions('qrCode').width}
+                              onChange={(e) => {
+                                const value = Number(e.target.value);
+                                if (!Number.isNaN(value)) {
+                                  setImageFieldDimensions('qrCode', { width: value });
+                                }
+                              }}
+                              min="1"
+                              max="100"
+                              className="h-8 text-xs"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {t('idCards.sizeDescription') || 'One size control keeps the QR square.'}
+                            </p>
+                          </div>
+                        )}
                         
                         {/* QR Code Value Source Selector */}
                         {selectedField === 'qrCode' && (

@@ -217,7 +217,10 @@ export function ReportExportButtons<T extends Record<string, any>>({
           filters_summary: filtersSummary || undefined,
           ...parameters,
         },
-        async: true,
+        // Run shared table exports synchronously so the same PHP request that
+        // generates the file can immediately serve it back, even when queue
+        // workers are isolated from the API process storage.
+        async: false,
         onProgress: (progress, message) => {
           if (import.meta.env.DEV) {
             console.log(`Report progress: ${progress}%${message ? ` - ${message}` : ''}`);
@@ -337,4 +340,3 @@ export function ReportExportButtons<T extends Record<string, any>>({
     </TooltipProvider>
   );
 }
-
