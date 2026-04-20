@@ -105,6 +105,8 @@ export default {
     bulkAssignPlacementPartial: "تم تحديث {updated}؛ تم تخطي البقية أو حدثت أخطاء.",
     bulkAssignPlacementNoop: "لا تغييرات ({skipped} كانت مطابقة بالفعل).",
     bulkAssignPlacementFailed: "فشل التعيين الجماعي",
+    bulkAssignPlacementNoneResolved:
+      "لم يُطبَّق أي تعيين ({count} طالبًا). قد يكون لديهم شعبة بالفعل لهذا العام—عطّل \"فقط من بلا شعبة صف\" لنقلهم—أو لا يوجد قبول لهذا العام الدراسي.",
     placementNotes: "ملاحظات الموضع",
     quick: "سريع",
     quickMode: "الوضع السريع",

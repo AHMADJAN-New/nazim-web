@@ -122,6 +122,9 @@ export default {
       searchRoomsTablePlaceholder: "Search by student, father, class, admission #, room, building, or academic year...",
     },
     room: "Room",
+    roomClickRowHint: "Click a room row to see every student assigned there.",
+    roomOccupantsTitle: "Students in room {room}",
+    roomOccupantsEmpty: "No students are assigned to this room yet.",
     rooms: "Rooms",
     searchRoomsPlaceholder: "Search rooms, wardens, or students",
     student: "Student",
@@ -179,5 +182,15 @@ export default {
     waiting: "Waiting",
     waitingRegister: "Waiting register",
     waitingForPlacement: "Waiting for placement",
+    waitingAssignRoomTitle: "Assign hostel room",
+    waitingAssignRoomDescription: "Pick a building and hostel room for {name}. They remain a boarder.",
+    waitingClickRowToAssign: "Click a row to assign a room.",
+    waitingNoSchoolContext: "Your profile has no default school, so buildings and rooms cannot be loaded.",
+    waitingRoomBuildingHint: "Choose a building first, then pick a room in that building.",
+    waitingSaveAssignment: "Save room",
+    waitingSelectBuilding: "Select building",
+    waitingSelectRoom: "Select room",
+    waitingUpdatePermissionRequired:
+      "You need permission to update student admissions to save a room assignment.",
   }
 };

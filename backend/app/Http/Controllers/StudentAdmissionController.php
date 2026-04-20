@@ -1490,13 +1490,6 @@ class StudentAdmissionController extends Controller
 
                 $admissions->push($admission);
             }
-
-            if ($admissions->isEmpty()) {
-                return response()->json([
-                    'error' => 'No admissions could be resolved',
-                    'errors' => $resolutionErrors,
-                ], 422);
-            }
         }
 
         $admissions = $admissions->unique('id')->values();
@@ -1583,8 +1576,13 @@ class StudentAdmissionController extends Controller
             $this->syncStudentStatusFromAdmissions($studentId, $organizationId, $currentSchoolId);
         }
 
+        $message = 'Bulk placement completed';
+        if ($admissions->isEmpty() && count($resolutionErrors) > 0) {
+            $message = 'No student admissions matched the current placement filters.';
+        }
+
         return response()->json([
-            'message' => 'Bulk placement completed',
+            'message' => $message,
             'updated_count' => $updated,
             'skipped_count' => $skipped,
             'errors' => $rowErrors,

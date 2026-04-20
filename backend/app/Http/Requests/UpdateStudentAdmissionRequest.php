@@ -67,10 +67,17 @@ class UpdateStudentAdmissionRequest extends FormRequest
      * Prepare the data for validation.
      * Remove school_id and organization_id before validation - the API client may add
      * school_id as a query param for users with schools_access_all; we ignore it.
+     *
+     * Note: Laravel merges query string into $this->all() for validation. replace() only
+     * overwrites the JSON/body parameter bag, so query params would still fail 'prohibited'.
+     * EnsureSchoolContext has already read school_id before validation runs.
      */
     protected function prepareForValidation(): void
     {
-        // Strip school_id and organization_id so they don't trigger 'prohibited' validation
+        $this->query->remove('school_id');
+        $this->query->remove('organization_id');
+
+        // Strip from body as well (defense in depth if client sends them in JSON).
         $input = $this->except(['school_id', 'organization_id']);
         $this->replace($input);
 

@@ -122,6 +122,9 @@ export default {
       searchRoomsTablePlaceholder: "د زده کوونکي، پلار، ټولګي، شمولیت شمېرې، اتاق، ودانۍ یا تعلیمي کال له مخې لټون...",
     },
     room: "اتاق",
+    roomClickRowHint: "د ټولو زده کوونکو لیدو لپاره د اتاق کرښه کلیک کړئ.",
+    roomOccupantsTitle: "په {room} اتاق کې زده کوونکي",
+    roomOccupantsEmpty: "په دې اتاق کې لا هیڅ زده کوونکی نه دی ټاکل شوی.",
     rooms: "اتاقونه",
     searchRoomsPlaceholder: "اتاقونه، نګران یا زده کوونکي وپلټئ",
     student: "زده کوونکی",
@@ -179,5 +182,15 @@ export default {
     waiting: "انتظار",
     waitingRegister: "د انتظار راجستر",
     waitingForPlacement: "د ځای ټاکلو انتظار",
+    waitingAssignRoomTitle: "د لیلې اتاق ټاکل",
+    waitingAssignRoomDescription: "د {name} لپاره ودانۍ او لیلې اتاق غوره کړئ. هغه لاهم بورډر پاتې کیږي.",
+    waitingClickRowToAssign: "د اتاق ټاکلو لپاره کرښه کلیک کړئ.",
+    waitingNoSchoolContext: "ستاسو پروفایل کې ډیفالټ ښوونځی نشته، نو ودانۍ او اتاقونه نه شي بارېدلی.",
+    waitingRoomBuildingHint: "لومړی ودانۍ غوره کړئ، بیا په هغې کې اتاق.",
+    waitingSaveAssignment: "اتاق خوندي کړئ",
+    waitingSelectBuilding: "ودانۍ غوره کړئ",
+    waitingSelectRoom: "اتاق غوره کړئ",
+    waitingUpdatePermissionRequired:
+      "د داخلو تازه کولو اجازه پکار ده ترڅو اتاق خوندي شي.",
   }
 };

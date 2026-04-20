@@ -105,6 +105,8 @@ export default {
     bulkAssignPlacementPartial: "{updated} به‌روز شد؛ بقیه رد شدند یا خطا داشتند.",
     bulkAssignPlacementNoop: "تغییری اعمال نشد ({skipped} از قبل یکسان بودند).",
     bulkAssignPlacementFailed: "تعیین گروهی ناموفق بود",
+    bulkAssignPlacementNoneResolved:
+      "هیچ تعیینی اعمال نشد ({count} شاگرد). ممکن است از قبل بخش صنف برای این سال داشته باشند—گزینه «فقط بدون بخش صنف» را خاموش کنید تا جابه‌جا شوند—یا برای این سال پذیرش ندارند.",
     placementNotes: "یادداشت‌های تعیین موقعیت",
     quick: "سریع",
     quickMode: "حالت سریع",

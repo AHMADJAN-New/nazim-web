@@ -155,4 +155,40 @@ class StudentAdmissionBoardingRoomTest extends TestCase
         $this->assertNull($admission->room_id);
         $this->assertSame($day->id, $admission->residency_type_id);
     }
+
+    #[Test]
+    public function put_update_accepts_school_id_as_query_param_without_prohibited_validation_error(): void
+    {
+        $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUserWithAdmissionUpdatePermission($organization, $school);
+
+        $academicYear = $this->createAcademicYearForSchool($organization, $school);
+        $class = $this->createClassForSchool($organization, $school);
+        $cay = $this->createClassAcademicYearForSchool($organization, $school, $class, $academicYear);
+        $student = $this->createStudentForSchool($organization, $school);
+
+        $admission = StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'class_academic_year_id' => $cay->id,
+            'admission_year' => (string) now()->year,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'admitted',
+            'is_boarder' => false,
+            'placement_notes' => null,
+        ]);
+
+        $uri = '/api/student-admissions/'.$admission->id.'?school_id='.urlencode($school->id);
+
+        $response = $this->jsonAs($user, 'PUT', $uri, [
+            'placement_notes' => 'Updated with school_id in query string',
+        ]);
+
+        $response->assertOk();
+        $this->assertSame('Updated with school_id in query string', $admission->fresh()->placement_notes);
+    }
 }
