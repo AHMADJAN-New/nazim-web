@@ -90,7 +90,7 @@ export default {
       "د {count} غوره شویو ریکارډونو لپاره د داخلې حالت تازه کول. د زده کوونکي اصلي حالت به اتوماتیک همغږی شي.",
     bulkStatusUpdate: "حالت تازه کړئ",
     bulkStatusAction: "ګډ حالت ({count})",
-    bulkAssignFromStudentsTitle: "ټولګي ته ګډه ورکړه",
+    bulkAssignFromStudentsTitle: "ټولو ته داخله ورکړئ",
     bulkAssignFromStudentsDescription:
       "د {count} غوره شویو زده کوونکو لپاره یو شان ټولګی، استوګنه او اختیاري hostel کوټه ټاکئ. هر زده کوونکی باید د ټاکل شوي کال لپاره داخله ولري.",
     bulkAssignPreviewHeading: "غوره شوي زده کوونکي",
@@ -104,7 +104,9 @@ export default {
     bulkAssignPlacementSuccess: "د {updated} زده کوونکو لپاره ټولګی/تنظیم تازه شو.",
     bulkAssignPlacementPartial: "{updated} تازه شول؛ نور پرېښودل شول یا ستونزې ول.",
     bulkAssignPlacementNoop: "بدلون نشته ({skipped} لا دمخه ورته وو).",
-    bulkAssignPlacementFailed: "ګډه ورکړه ناکامه شوه",
+    bulkAssignPlacementFailed: "داخله ورکول  ناکامه شوه",
+    bulkAssignPlacementNoneResolved:
+      "هیڅ ټاکنه نه ده شوې ({count} زده کوونکي). ممکن د دې کال لپاره لا ټولګی ولري—\"یوازې هغه چې لا ټولګی نه لري\" بند کړئ څو لیږد وشي—یا د دې کال پذیرش نه لري.",
     placementNotes: "د تنظیم یادښتونه",
     quick: "چټک",
     quickMode: "چټک حالت",

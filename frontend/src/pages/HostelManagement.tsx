@@ -45,6 +45,8 @@ import {
   type HostelRoomStatus,
 } from '@/lib/hostelManagementView';
 import { cn } from '@/lib/utils';
+import { HostelRoomOccupantsDialog } from '@/components/hostel/HostelRoomOccupantsDialog';
+import { HostelWaitingRoomAssignDialog } from '@/components/hostel/HostelWaitingRoomAssignDialog';
 import type {
   HostelBuildingReport,
   HostelRoom,
@@ -53,7 +55,7 @@ import type {
 } from '@/types/domain/hostel';
 
 type RoomStatusFilter = HostelRoomStatus | 'all';
-type HostelTab = 'rooms' | 'students' | 'waiting';
+type HostelTab = 'buildings' | 'rooms' | 'students' | 'waiting';
 
 interface SelectOption {
   value: string;
@@ -186,6 +188,8 @@ export function HostelManagement() {
   const [roomFilter, setRoomFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
+  const [waitingBoarder, setWaitingBoarder] = useState<HostelUnassignedBoarder | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<HostelRoom | null>(null);
 
   const rooms: HostelRoom[] = hostelOverview?.rooms ?? [];
   const buildings: HostelBuildingReport[] = hostelOverview?.buildings ?? [];
@@ -239,22 +243,23 @@ export function HostelManagement() {
     [t]
   );
 
-  const isRoomScopedTab = activeTab !== 'waiting';
+  /** Building/room/status filters apply to Rooms and Students tab lists only. */
+  const isRoomsOrStudentsTab = activeTab === 'rooms' || activeTab === 'students';
   const allAssignedStudents = useMemo(() => flattenAssignedBoarders(rooms), [rooms]);
 
   const filteredRooms = useMemo(
     () =>
       filterHostelRooms(rooms, {
-        buildingId: isRoomScopedTab && buildingFilter !== 'all' ? buildingFilter : undefined,
-        roomId: isRoomScopedTab && roomFilter !== 'all' ? roomFilter : undefined,
+        buildingId: isRoomsOrStudentsTab && buildingFilter !== 'all' ? buildingFilter : undefined,
+        roomId: isRoomsOrStudentsTab && roomFilter !== 'all' ? roomFilter : undefined,
         academicYearId: academicYearFilter !== 'all' ? academicYearFilter : undefined,
         classId: classFilter !== 'all' ? classFilter : undefined,
         search: deferredSearch,
-        status: isRoomScopedTab ? roomStatusFilter : 'all',
+        status: isRoomsOrStudentsTab ? roomStatusFilter : 'all',
       }),
     [
       rooms,
-      isRoomScopedTab,
+      isRoomsOrStudentsTab,
       buildingFilter,
       roomFilter,
       academicYearFilter,
@@ -267,16 +272,16 @@ export function HostelManagement() {
   const assignedStudents = useMemo(
     () =>
       filterAssignedBoarders(allAssignedStudents, {
-        buildingId: isRoomScopedTab && buildingFilter !== 'all' ? buildingFilter : undefined,
-        roomId: isRoomScopedTab && roomFilter !== 'all' ? roomFilter : undefined,
+        buildingId: isRoomsOrStudentsTab && buildingFilter !== 'all' ? buildingFilter : undefined,
+        roomId: isRoomsOrStudentsTab && roomFilter !== 'all' ? roomFilter : undefined,
         academicYearId: academicYearFilter !== 'all' ? academicYearFilter : undefined,
         classId: classFilter !== 'all' ? classFilter : undefined,
         search: deferredSearch,
-        roomStatus: isRoomScopedTab ? roomStatusFilter : 'all',
+        roomStatus: isRoomsOrStudentsTab ? roomStatusFilter : 'all',
       }),
     [
       allAssignedStudents,
-      isRoomScopedTab,
+      isRoomsOrStudentsTab,
       buildingFilter,
       roomFilter,
       academicYearFilter,
@@ -449,6 +454,10 @@ export function HostelManagement() {
       setRoomFilter('all');
       setRoomStatusFilter('all');
     }
+    if (resolvedTab === 'buildings') {
+      setRoomFilter('all');
+      setRoomStatusFilter('all');
+    }
   };
 
   const clearFilters = () => {
@@ -547,16 +556,6 @@ export function HostelManagement() {
         </div>
       </div>
 
-      {visibleBuildings.length > 0 && (
-        <BuildingOverviewTable
-          buildings={visibleBuildings}
-          buildingFilter={buildingFilter}
-          labels={labels}
-          summary={summary}
-          t={t}
-        />
-      )}
-
       <FilterPanel title={t('hostel.filters')} defaultOpenDesktop defaultOpenMobile={false}>
         <div className="space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -610,7 +609,7 @@ export function HostelManagement() {
                 setBuildingFilter(value);
                 setRoomFilter('all');
               }}
-              disabled={!isRoomScopedTab}
+              disabled={activeTab === 'waiting'}
             >
               <SelectTrigger className="h-10 w-full sm:w-[180px]">
                 <SelectValue placeholder={t('hostel.allBuildingsOption')} />
@@ -624,7 +623,7 @@ export function HostelManagement() {
               </SelectContent>
             </Select>
 
-            <Select value={roomFilter} onValueChange={setRoomFilter} disabled={!isRoomScopedTab}>
+            <Select value={roomFilter} onValueChange={setRoomFilter} disabled={!isRoomsOrStudentsTab}>
               <SelectTrigger className="h-10 w-full sm:w-[180px]">
                 <SelectValue placeholder={labels.allRooms} />
               </SelectTrigger>
@@ -640,7 +639,7 @@ export function HostelManagement() {
             <Select
               value={roomStatusFilter}
               onValueChange={(value) => setRoomStatusFilter(value as RoomStatusFilter)}
-              disabled={!isRoomScopedTab}
+              disabled={!isRoomsOrStudentsTab}
             >
               <SelectTrigger className="h-10 w-full sm:w-[170px]">
                 <SelectValue placeholder={labels.status} />
@@ -689,7 +688,16 @@ export function HostelManagement() {
       </FilterPanel>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-        <TabsList className="grid h-11 w-full grid-cols-3 rounded-2xl p-1">
+        <TabsList className="grid min-h-11 w-full grid-cols-2 gap-1 rounded-2xl p-1 sm:grid-cols-4">
+          <TabsTrigger
+            value="buildings"
+            className="gap-1.5 rounded-xl text-xs sm:text-sm"
+            aria-label={t('hostel.buildingOverview')}
+          >
+            <Building2 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{t('hostel.buildingOverview')}</span>
+            <span className="ml-1 text-[10px] font-semibold opacity-70">({visibleBuildings.length})</span>
+          </TabsTrigger>
           <TabsTrigger value="rooms" className="gap-1.5 rounded-xl text-xs sm:text-sm" aria-label={t('hostel.rooms')}>
             <BedDouble className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{t('hostel.rooms')}</span>
@@ -730,9 +738,31 @@ export function HostelManagement() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="buildings" className="mt-0">
+          {visibleBuildings.length > 0 ? (
+            <BuildingOverviewTable
+              buildings={visibleBuildings}
+              buildingFilter={buildingFilter}
+              labels={labels}
+              summary={summary}
+              t={t}
+            />
+          ) : (
+            <EmptyState
+              icon={<Building2 className="h-10 w-10 text-muted-foreground/30" />}
+              title={t('hostel.reports.noBuildingDataAvailable')}
+            />
+          )}
+        </TabsContent>
+
         <TabsContent value="rooms" className="mt-0">
           {filteredRooms.length > 0 ? (
-            <RoomsRegisterTable rooms={filteredRooms} labels={labels} t={t} />
+            <RoomsRegisterTable
+              rooms={filteredRooms}
+              labels={labels}
+              t={t}
+              onSelectRoom={(room) => setSelectedRoom(room)}
+            />
           ) : (
             <EmptyState
               icon={<BedDouble className="h-10 w-10 text-muted-foreground/30" />}
@@ -754,7 +784,12 @@ export function HostelManagement() {
 
         <TabsContent value="waiting" className="mt-0">
           {visibleUnassignedBoarders.length > 0 ? (
-            <WaitingRegisterTable boarders={visibleUnassignedBoarders} labels={labels} />
+            <WaitingRegisterTable
+              boarders={visibleUnassignedBoarders}
+              labels={labels}
+              t={t}
+              onSelectBoarder={(boarder) => setWaitingBoarder(boarder)}
+            />
           ) : (
             <EmptyState
               icon={
@@ -771,6 +806,27 @@ export function HostelManagement() {
           )}
         </TabsContent>
       </Tabs>
+
+      <HostelWaitingRoomAssignDialog
+        open={waitingBoarder !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setWaitingBoarder(null);
+          }
+        }}
+        boarder={waitingBoarder}
+        onSuccess={() => void refetch()}
+      />
+
+      <HostelRoomOccupantsDialog
+        open={selectedRoom !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedRoom(null);
+          }
+        }}
+        room={selectedRoom}
+      />
     </div>
   );
 }
@@ -856,20 +912,25 @@ function RoomsRegisterTable({
   rooms,
   labels,
   t,
+  onSelectRoom,
 }: {
   rooms: HostelRoom[];
   labels: HostelManagementLabels;
   t: ReturnType<typeof useLanguage>['t'];
+  onSelectRoom: (room: HostelRoom) => void;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-      <div className="flex items-center justify-between gap-2 border-b bg-muted/20 px-5 py-3.5">
+      <div className="flex flex-col gap-1 border-b bg-muted/20 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold">{labels.roomsRegister}</h2>
           <p className="text-xs text-muted-foreground">
             {rooms.length} {t('hostel.rooms').toLowerCase()}
           </p>
         </div>
+        <p className="text-xs text-muted-foreground sm:max-w-[280px] sm:text-end">
+          {t('hostel.roomClickRowHint')}
+        </p>
       </div>
 
       <div className="overflow-x-auto">
@@ -891,7 +952,20 @@ function RoomsRegisterTable({
               const statusMeta = getRoomStatusMeta(roomStatus, t);
 
               return (
-                <TableRow key={room.id}>
+                <TableRow
+                  key={room.id}
+                  className="cursor-pointer hover:bg-muted/50 focus-visible:bg-muted/50"
+                  tabIndex={0}
+                  role="button"
+                  aria-label={t('hostel.roomOccupantsTitle', { room: room.roomNumber })}
+                  onClick={() => onSelectRoom(room)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onSelectRoom(room);
+                    }
+                  }}
+                >
                   <TableCell className="text-left font-medium">{room.roomNumber}</TableCell>
                   <TableCell className="text-left">
                     {formatCellValue(room.buildingName, t('hostel.unassigned'))}
@@ -1034,19 +1108,26 @@ function StudentsRegisterTable({
 function WaitingRegisterTable({
   boarders,
   labels,
+  t,
+  onSelectBoarder,
 }: {
   boarders: HostelUnassignedBoarder[];
   labels: HostelManagementLabels;
+  t: ReturnType<typeof useLanguage>['t'];
+  onSelectBoarder: (boarder: HostelUnassignedBoarder) => void;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-      <div className="flex items-center justify-between gap-2 border-b bg-muted/20 px-5 py-3.5">
+      <div className="flex flex-col gap-1 border-b bg-muted/20 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold">{labels.waitingRegister}</h2>
           <p className="text-xs text-muted-foreground">
             {boarders.length} {labels.waitingStatus.toLowerCase()}
           </p>
         </div>
+        <p className="text-xs text-muted-foreground sm:max-w-[280px] sm:text-end">
+          {t('hostel.waitingClickRowToAssign')}
+        </p>
         <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
           <AlertCircle className="h-3.5 w-3.5" />
           {boarders.length}
@@ -1068,7 +1149,20 @@ function WaitingRegisterTable({
           </TableHeader>
           <TableBody>
             {boarders.map((boarder) => (
-              <TableRow key={boarder.id}>
+              <TableRow
+                key={boarder.id}
+                className="cursor-pointer hover:bg-muted/50 focus-visible:bg-muted/50"
+                tabIndex={0}
+                role="button"
+                aria-label={t('hostel.waitingAssignRoomTitle')}
+                onClick={() => onSelectBoarder(boarder)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSelectBoarder(boarder);
+                  }
+                }}
+              >
                 <TableCell className="text-left font-medium">
                   {boarder.studentName || labels.student}
                 </TableCell>

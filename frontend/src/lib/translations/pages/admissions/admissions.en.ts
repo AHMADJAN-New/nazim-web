@@ -105,6 +105,8 @@ export default {
     bulkAssignPlacementPartial: "Updated {updated} student(s); others were skipped or could not be resolved.",
     bulkAssignPlacementNoop: "No rows changed ({skipped} already matched).",
     bulkAssignPlacementFailed: "Bulk placement failed",
+    bulkAssignPlacementNoneResolved:
+      "No placements applied ({count} student(s)). They may already have a class for this year—turn off \"Only students still without a class section\" to move them—or have no admission for this academic year.",
     placementNotes: "Placement Notes",
     quick: "Quick",
     quickMode: "Quick mode",

@@ -459,16 +459,38 @@ export const useBulkAssignAdmissionPlacement = () => {
       return studentAdmissionsApi.bulkAssignPlacement(data);
     },
     onSuccess: async (result) => {
-      const errCount = Array.isArray(result.errors) ? result.errors.length : 0;
-      if (errCount > 0) {
+      const errors = Array.isArray(result.errors) ? result.errors : [];
+      const errCount = errors.length;
+      const updated = result.updated_count ?? 0;
+      const skipped = result.skipped_count ?? 0;
+      const resolutionReasons = new Set([
+        'no_unassigned_admission_for_year',
+        'no_admission_for_year',
+        'student_not_found',
+      ]);
+      const allResolutionLike =
+        errCount > 0 &&
+        updated === 0 &&
+        errors.every(
+          (e: { reason?: string }) => typeof e.reason === 'string' && resolutionReasons.has(e.reason)
+        );
+
+      if (errCount > 0 && updated > 0) {
         showToast.warning('admissions.bulkAssignPlacementPartial', {
-          updated: result.updated_count,
-          skipped: result.skipped_count + errCount,
+          updated,
+          skipped: skipped + errCount,
         });
-      } else if (result.updated_count === 0 && (result.skipped_count ?? 0) > 0) {
-        showToast.info('admissions.bulkAssignPlacementNoop', { skipped: result.skipped_count });
+      } else if (allResolutionLike) {
+        showToast.warning('admissions.bulkAssignPlacementNoneResolved', { count: errCount });
+      } else if (errCount > 0 && updated === 0) {
+        showToast.warning('admissions.bulkAssignPlacementPartial', {
+          updated: 0,
+          skipped: skipped + errCount,
+        });
+      } else if (updated === 0 && skipped > 0) {
+        showToast.info('admissions.bulkAssignPlacementNoop', { skipped });
       } else {
-        showToast.success('admissions.bulkAssignPlacementSuccess', { updated: result.updated_count });
+        showToast.success('admissions.bulkAssignPlacementSuccess', { updated });
       }
       await refetchAllStudentAdmissionListQueries(queryClient);
       void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });

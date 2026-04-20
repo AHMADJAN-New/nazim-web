@@ -302,6 +302,6 @@ export default {
     selectAllOnPage: "ټول په پاڼه کې",
     clearSelection: "غوره والي پاک کړئ",
     selectedCount: "{count} غوره شوي",
-    bulkAssignToClass: "ټولګي ته ګډه ورکړه",
+    bulkAssignToClass: "ټولو ته داخله ورکړئ",
   }
 };

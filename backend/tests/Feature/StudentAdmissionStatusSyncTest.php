@@ -141,6 +141,59 @@ class StudentAdmissionStatusSyncTest extends TestCase
     }
 
     #[Test]
+    public function bulk_assign_placement_by_student_ids_returns_ok_when_only_without_class_excludes_placed_students(): void
+    {
+        $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUserWithPermissions($organization, $school, ['student_admissions.update']);
+
+        $academicYear = $this->createAcademicYearForSchool($organization, $school);
+        $class = $this->createClassForSchool($organization, $school);
+        $cayA = $this->createClassAcademicYearForSchool($organization, $school, $class, $academicYear, ['section_name' => 'A']);
+        $cayB = $this->createClassAcademicYearForSchool($organization, $school, $class, $academicYear, ['section_name' => 'B']);
+
+        $student = $this->createStudentForSchool($organization, $school);
+        $admission = $this->createStudentAdmissionForSchool(
+            $organization,
+            $school,
+            $student,
+            $academicYear,
+            $class,
+            null,
+            [
+                'class_id' => null,
+                'class_academic_year_id' => null,
+                'enrollment_status' => 'pending',
+            ]
+        );
+
+        $this->jsonAs($user, 'POST', '/api/student-admissions/bulk-assign-placement', [
+            'student_ids' => [$student->id],
+            'class_academic_year_id' => $cayB->id,
+            'is_boarder' => false,
+            'only_without_class' => true,
+        ])->assertOk()->assertJsonFragment(['updated_count' => 1]);
+
+        $response = $this->jsonAs($user, 'POST', '/api/student-admissions/bulk-assign-placement', [
+            'student_ids' => [$student->id],
+            'class_academic_year_id' => $cayA->id,
+            'is_boarder' => false,
+            'only_without_class' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('updated_count', 0)
+            ->assertJsonPath('skipped_count', 0)
+            ->assertJsonPath('total_candidates', 0)
+            ->assertJsonPath('errors.0.reason', 'no_unassigned_admission_for_year');
+
+        $this->assertDatabaseHas('student_admissions', [
+            'id' => $admission->id,
+            'class_academic_year_id' => $cayB->id,
+        ]);
+    }
+
+    #[Test]
     public function student_list_uses_the_latest_admission_summary_to_show_current_class_state(): void
     {
         $organization = Organization::factory()->create();
