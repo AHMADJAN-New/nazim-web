@@ -129,6 +129,11 @@ export default {
     selectStudents: "انتخاب شاگردان",
     selectTemplatePlaceholder: "محل انتخاب قالب",
     selectUnprinted: "انتخاب چاپ نشده",
+    markSelectedAsPrinted: "انتخاب‌شده‌ها را به‌عنوان چاپ‌شده علامت بزنید",
+    markAllUnprintedAsPrinted: "همه چاپ‌نشده‌ها را علامت بزنید (فیلترشده)",
+    confirmMarkAllPrintedTitle: "همه کارت‌های چاپ‌نشده به‌عنوان چاپ‌شده علامت شوند؟",
+    confirmMarkAllPrintedDescription:
+      "این کار {count} کارت شناسایی چاپ‌نشده را بر اساس فیلترهای فعلی شما به‌عنوان چاپ‌شده علامت می‌زند. از اینجا قابل بازگشت نیست.",
     selectUseGlobalFont: "گزینه \"استفاده از فونت عمومی\" را انتخاب کنید تا از تنظیمات فونت عمومی استفاده شود",
     sizeDescription: "مقادیر درصدی از کارت هستند. برای استفاده از اندازه پیش‌فرض خالی بگذارید.",
     status: {

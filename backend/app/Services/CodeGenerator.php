@@ -152,15 +152,29 @@ class CodeGenerator
             }
             $counter->refresh();
 
+            $count = count($schoolIdsPerCode);
+            if ($count === 0) {
+                return [];
+            }
+
+            // One counter update for the whole batch (import used N× increment+refresh before).
+            $start = (int) $counter->last_value;
+            $newLast = $start + $count;
+            $counter->update(['last_value' => $newLast]);
+
+            $middleCache = [];
             $codes = [];
-            foreach ($schoolIdsPerCode as $schoolId) {
-                $counter->increment('last_value');
-                $counter->refresh();
-                $middle = self::studentCodeMiddleSegmentFromAcademicYear(
-                    $organizationId,
-                    is_string($schoolId) && $schoolId !== '' ? $schoolId : null
-                );
-                $codes[] = 'ST-'.$middle.'-'.self::formatStudentSequence((int) $counter->last_value);
+            for ($i = 0; $i < $count; $i++) {
+                $schoolId = $schoolIdsPerCode[$i];
+                $cacheKey = is_string($schoolId) && $schoolId !== '' ? $schoolId : '';
+                if (! array_key_exists($cacheKey, $middleCache)) {
+                    $middleCache[$cacheKey] = self::studentCodeMiddleSegmentFromAcademicYear(
+                        $organizationId,
+                        is_string($schoolId) && $schoolId !== '' ? $schoolId : null
+                    );
+                }
+                $seq = $start + $i + 1;
+                $codes[] = 'ST-'.$middleCache[$cacheKey].'-'.self::formatStudentSequence($seq);
             }
 
             return $codes;

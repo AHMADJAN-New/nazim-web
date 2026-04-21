@@ -61,6 +61,8 @@ export interface StudentAdmissionReportFilters {
   isBoarder?: boolean;
   fromDate?: string;
   toDate?: string;
+  /** Student name, admission number, or card number (server-side). */
+  search?: string;
   page?: number;
   perPage?: number;
 }

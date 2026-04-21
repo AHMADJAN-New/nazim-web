@@ -103,11 +103,23 @@ export const useFinanceBaseCurrency = () => {
 // Finance Account Hooks
 // ============================================
 
-export const useFinanceAccounts = (params?: { schoolId?: string; type?: string; isActive?: boolean }) => {
+export const useFinanceAccounts = (params?: {
+    schoolId?: string;
+    type?: string;
+    isActive?: boolean;
+    /** When false, skips the query (e.g. lazy-load until a dialog opens). Default true. */
+    queryEnabled?: boolean;
+}) => {
     const { user, profile } = useAuth();
+    const queryEnabled = params?.queryEnabled ?? true;
+    const cacheParams = {
+        schoolId: params?.schoolId,
+        type: params?.type,
+        isActive: params?.isActive,
+    };
 
     return useQuery<FinanceAccount[]>({
-        queryKey: ['finance-accounts', profile?.organization_id, profile?.default_school_id ?? null, params],
+        queryKey: ['finance-accounts', profile?.organization_id, profile?.default_school_id ?? null, cacheParams],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await financeAccountsApi.list({
@@ -116,7 +128,7 @@ export const useFinanceAccounts = (params?: { schoolId?: string; type?: string; 
             });
             return (data as FinanceApi.FinanceAccount[]).map(mapFinanceAccountApiToDomain);
         },
-        enabled: !!user && !!profile?.organization_id,
+        enabled: queryEnabled && !!user && !!profile?.organization_id,
         staleTime: 5 * 60 * 1000,
     });
 };
@@ -199,11 +211,21 @@ export const useDeleteFinanceAccount = () => {
 // Income Category Hooks
 // ============================================
 
-export const useIncomeCategories = (params?: { schoolId?: string; isActive?: boolean }) => {
+export const useIncomeCategories = (params?: {
+    schoolId?: string;
+    isActive?: boolean;
+    /** When false, skips the query (e.g. lazy-load until a dialog opens). Default true. */
+    queryEnabled?: boolean;
+}) => {
     const { user, profile } = useAuth();
+    const queryEnabled = params?.queryEnabled ?? true;
+    const cacheParams = {
+        schoolId: params?.schoolId,
+        isActive: params?.isActive,
+    };
 
     return useQuery<IncomeCategory[]>({
-        queryKey: ['income-categories', profile?.organization_id, profile?.default_school_id ?? null, params],
+        queryKey: ['income-categories', profile?.organization_id, profile?.default_school_id ?? null, cacheParams],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await incomeCategoriesApi.list({
@@ -211,7 +233,7 @@ export const useIncomeCategories = (params?: { schoolId?: string; isActive?: boo
             });
             return (data as FinanceApi.IncomeCategory[]).map(mapIncomeCategoryApiToDomain);
         },
-        enabled: !!user && !!profile?.organization_id,
+        enabled: queryEnabled && !!user && !!profile?.organization_id,
         staleTime: 5 * 60 * 1000,
     });
 };

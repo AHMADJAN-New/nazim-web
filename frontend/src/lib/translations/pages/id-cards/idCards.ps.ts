@@ -130,6 +130,11 @@ export default {
     selectStudents: "زده کوونکي وټاکئ",
     selectTemplatePlaceholder: "قالب وټاکئ",
     selectUnprinted: "نا چاپ وټاکئ",
+    markSelectedAsPrinted: "ټاکل شوي د چاپ په توګه نښه کړئ",
+    markAllUnprintedAsPrinted: "ټول نا چاپ د چاپ په توګه نښه کړئ (فلټر شوي)",
+    confirmMarkAllPrintedTitle: "ټول نا چاپ ID کارتونه د چاپ په توګه نښه کړئ؟",
+    confirmMarkAllPrintedDescription:
+      "دا به ستاسو د اوسني فلټر پر بنسټ {count} نا چاپ ID کارت(ونه) د چاپ په توګه نښه کړي. دلته له دې څخه بیرته نشي کیدی.",
     selectUseGlobalFont: "د عمومي فونټ کارولو لپاره \"Use Global Font\" وټاکئ",
     sizeDescription: "ارزښتونه د کارت سلنه ده. د اصلي اندازې لپاره خالي پریږدئ.",
     status: {

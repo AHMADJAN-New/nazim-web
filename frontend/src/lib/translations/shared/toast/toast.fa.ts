@@ -388,6 +388,8 @@ export default {
     idCardFeeMarkPaidFailed: "علامت‌گذاری فیس کارت شناسایی ناموفق بود",
     idCardMarkedPrinted: "کارت شناسایی به عنوان چاپ‌شده علامت‌گذاری شد",
     idCardMarkPrintedFailed: "علامت‌گذاری چاپ کارت شناسایی ناموفق بود",
+    idCardsMarkedPrintedBulk: "{count} کارت شناسایی به‌عنوان چاپ‌شده علامت شد",
+    idCardsMarkPrintedBulkFailed: "علامت‌گذاری کارت‌های شناسایی به‌عنوان چاپ‌شده ناموفق بود",
     idCardPreviewFailed: "داده شاگرد موجود نیست",
     idCardsAssigned: "کارت‌های شناسایی تخصیص داده شدند",
     idCardsExported: "کارت‌های شناسایی صادر شدند",

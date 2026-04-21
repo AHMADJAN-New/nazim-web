@@ -37,6 +37,7 @@ export const useStudentAdmissionReport = (
         is_boarder: normalizedFilters.isBoarder,
         from_date: normalizedFilters.fromDate,
         to_date: normalizedFilters.toDate,
+        search: normalizedFilters.search?.trim() || undefined,
         page: normalizedFilters.page || 1,
         per_page: normalizedFilters.perPage || 25,
       };

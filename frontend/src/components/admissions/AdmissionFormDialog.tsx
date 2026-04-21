@@ -308,6 +308,7 @@ export function AdmissionFormDialog({
     return list.map((student) => ({
       value: student.id,
       label: `${student.fullName || student.full_name || 'Unknown'} (${student.admissionNumber || student.admission_no || 'N/A'})`,
+      filterKeywords: student.cardNumber ? String(student.cardNumber) : '',
     }));
   }, [availableStudents]);
 

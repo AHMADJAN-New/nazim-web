@@ -103,6 +103,8 @@ export default {
       databaseOnlyDescription: "سيستبدل هذا بيانات قاعدة البيانات فقط. سيتم الحفاظ على ملفات التخزين الحالية.",
       databaseAndFilesDescription: "سيستبدل هذا جميع البيانات الحالية في قاعدة البيانات والتخزين بالبيانات من هذا النسخ الاحتياطي."
     },
+    restoreUploadEntityTooLarge:
+      "تم رفض الرفع لأن حجم الطلب كبير جدًا (HTTP 413). في Nginx اضبط client_max_body_size إلى 512M على الأقل. في PHP اضبط upload_max_filesize وpost_max_size إلى 512M على الأقل. ملاحظة: php artisan serve يستخدم PHP من سطر الأوامر (CLI) ولا يحمّل ملف php.ini الخاص بوحدة Apache في WAMP. نفّذ php --ini في الطرفية وعدّل ملف «Loaded Configuration File» الظاهر، ثم أعد تشغيل Artisan. أو من مجلد backend شغّل composer run serve (أو مهمة VS Code «Backend: Start Laravel Server») التي تفرض 512M عبر -d. ملف public/.user.ini يفيد Apache/FPM وليس خادم CLI المدمج.",
     backupType: {
       label: "نوع النسخ الاحتياطي",
       databaseOnly: "قاعدة البيانات فقط",

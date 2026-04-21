@@ -288,7 +288,7 @@ export default {
     fatherName: "د پلار نوم",
     motherName: "د مور نوم",
     cardNumber: "د کارت شمېره",
-    searchPlaceholder: "زده کوونکي وپلټئ...",
+    searchPlaceholder: "د زده کوونکي نوم، د شمولیت شمېرې یا د کارت شمېرې له مخې لټون",
     tableAdmissionColumn: "داخله",
     tableCurrentClassColumn: "اوسنی ټولګی",
     noAdmissionRecord: "داخله نشته",

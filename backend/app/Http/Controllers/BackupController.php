@@ -603,6 +603,39 @@ class BackupController extends Controller
     }
 
     /**
+     * Parse PHP memory_limit (e.g. 128M, 512M, 134217728) to bytes. -1 means unlimited.
+     */
+    private function parseMemoryLimitToBytes(string $limit): int
+    {
+        $limit = trim($limit);
+        if ($limit === '' || strcasecmp($limit, '-1') === 0) {
+            return PHP_INT_MAX;
+        }
+        if (preg_match('/^\d+$/', $limit)) {
+            return (int) $limit;
+        }
+        $unit = strtoupper(substr($limit, -1));
+        $num = (float) preg_replace('/[^0-9.]/', '', $limit);
+
+        return match ($unit) {
+            'G' => (int) ($num * 1024 * 1024 * 1024),
+            'M' => (int) ($num * 1024 * 1024),
+            'K' => (int) ($num * 1024),
+            default => (int) $num,
+        };
+    }
+
+    /**
+     * Format a byte count as an ini memory_limit value (whole megabytes, at least 1M).
+     */
+    private function formatBytesAsMemoryIni(int $bytes): string
+    {
+        $mb = max(1, (int) ceil($bytes / (1024 * 1024)));
+
+        return $mb.'M';
+    }
+
+    /**
      * Restore database from SQL file (plain format, preferred) or custom format dump (tar/dump)
      * Plain SQL format (.sql) is restored using psql for maximum compatibility
      * Custom formats (.tar, .dump) are restored using pg_restore
@@ -631,8 +664,26 @@ class BackupController extends Controller
             // Pre-process SQL file to fix common restore issues
             // This prevents "function already exists" and "role does not exist" errors during restore
             if (str_ends_with($normalizedDbFile, '.sql')) {
+                $previousMemoryLimit = ini_get('memory_limit');
                 try {
                     $originalFileSize = File::size($normalizedDbFile);
+                    // Loading the full dump + regex passes can need several × file size in RAM
+                    $targetBytes = (int) min(
+                        max($originalFileSize * 4 + 64 * 1024 * 1024, 512 * 1024 * 1024),
+                        2 * 1024 * 1024 * 1024
+                    );
+                    $currentBytes = $this->parseMemoryLimitToBytes($previousMemoryLimit);
+                    if ($currentBytes < $targetBytes && strcasecmp((string) $previousMemoryLimit, '-1') !== 0) {
+                        $newLimit = $this->formatBytesAsMemoryIni($targetBytes);
+                        if (@ini_set('memory_limit', $newLimit) !== false) {
+                            \Log::info('Raised memory_limit for SQL preprocessing', [
+                                'from' => $previousMemoryLimit,
+                                'to' => ini_get('memory_limit'),
+                                'file_size' => $originalFileSize,
+                            ]);
+                        }
+                    }
+
                     $sqlContent = File::get($normalizedDbFile);
 
                     \Log::info('Starting SQL file preprocessing', [
@@ -726,6 +777,10 @@ class BackupController extends Controller
                 } catch (\Exception $e) {
                     \Log::warning('Failed to pre-process SQL file (continuing anyway): '.$e->getMessage());
                     // Don't throw - continue with restore even if preprocessing fails
+                } finally {
+                    if ($previousMemoryLimit !== false && $previousMemoryLimit !== '') {
+                        @ini_set('memory_limit', $previousMemoryLimit);
+                    }
                 }
             }
         }

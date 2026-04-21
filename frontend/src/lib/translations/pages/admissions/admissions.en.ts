@@ -134,7 +134,7 @@ export default {
     schoolRequiredForExport: "A school is required to export the report.",
     schoolSwitched: "School switched successfully",
     searchRoom: "Search rooms...",
-    searchStudent: "Search by name or admission number...",
+    searchStudent: "Search by student name, admission number, or card number",
     section: "Section",
     selectAcademicYear: "Select academic year",
     shortcutsHint: "Shortcuts: Esc = close, Ctrl/Cmd+Enter = save",

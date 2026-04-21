@@ -24,7 +24,7 @@
         {
             "label": "Backend: Start Laravel Server",
             "type": "shell",
-            "command": "php artisan serve",
+            "command": "php -d post_max_size=512M -d upload_max_filesize=512M -d max_execution_time=0 -d max_input_time=600 artisan serve",
             "options": {
                 "cwd": "${workspaceFolder}/backend"
             },

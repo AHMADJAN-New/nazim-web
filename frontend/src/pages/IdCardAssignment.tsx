@@ -83,6 +83,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { showToast } from '@/lib/toast';
+import { studentIdCardsApi } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
@@ -136,6 +137,8 @@ export default function IdCardAssignment() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [markAllPrintedDialogOpen, setMarkAllPrintedDialogOpen] = useState(false);
+  const [isBulkMarkingPrinted, setIsBulkMarkingPrinted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasAppliedNavigationPreset, setHasAppliedNavigationPreset] = useState(false);
   const presetStudentType = searchParams.get('studentType');
@@ -157,17 +160,26 @@ export default function IdCardAssignment() {
   const { data: courses = [], refetch: refetchCourses } = useShortTermCourses(organizationId, false);
   
   // Regular students (only fetch when in regular mode)
-  const { data: studentAdmissions = [], refetch: refetchStudentAdmissions } = useStudentAdmissions(organizationId, false, {
-    academic_year_id: academicYearId || undefined,
-    school_id: schoolId || undefined,
-    class_id: classId || undefined,
-    class_academic_year_id: classAcademicYearId || undefined,
-    enrollment_status: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
-  });
+  const { data: studentAdmissions = [], refetch: refetchStudentAdmissions } = useStudentAdmissions(
+    organizationId,
+    false,
+    {
+      academic_year_id: academicYearId || undefined,
+      school_id: schoolId || undefined,
+      class_id: classId || undefined,
+      class_academic_year_id: classAcademicYearId || undefined,
+      enrollment_status: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
+    },
+    studentType === 'regular' && !!academicYearId,
+  );
 
-  // Course students (only fetch when in course mode)
+  // Course students: only when course mode (avoids listing all org course students on regular tab)
   const effectiveCourseId = courseId || undefined;
-  const { data: courseStudents = [], refetch: refetchCourseStudents } = useCourseStudents(effectiveCourseId, false);
+  const { data: courseStudents = [], refetch: refetchCourseStudents } = useCourseStudents(
+    effectiveCourseId,
+    false,
+    studentType === 'course',
+  );
 
   // Filters for ID cards (needed for useStudentIdCards, which is used in refreshAssignmentData)
   const cardFilters: StudentIdCardFilters = useMemo(() => ({
@@ -191,7 +203,7 @@ export default function IdCardAssignment() {
     }
   }, [currentAcademicYear?.id, academicYearId]);
 
-  // Refresh data on page navigation/mount so newly admitted students appear immediately.
+  // Manual refresh: refetch ID-card–related queries (hooks already load on mount; avoid duplicate full refetch on mount).
   const refreshAssignmentData = useCallback(async (showSuccessToast = true) => {
     setIsRefreshing(true);
     try {
@@ -203,10 +215,6 @@ export default function IdCardAssignment() {
         refetchStudentAdmissions(),
         refetchCourseStudents(),
         refetchIdCards(),
-        queryClient.invalidateQueries({ queryKey: ['classes'] }),
-        queryClient.refetchQueries({ queryKey: ['classes'] }),
-        queryClient.invalidateQueries({ queryKey: ['schools'] }),
-        queryClient.refetchQueries({ queryKey: ['schools'] }),
       ]);
 
       if (showSuccessToast) {
@@ -218,7 +226,6 @@ export default function IdCardAssignment() {
       setIsRefreshing(false);
     }
   }, [
-    queryClient,
     refetchAcademicYears,
     refetchCurrentAcademicYear,
     refetchTemplates,
@@ -228,11 +235,6 @@ export default function IdCardAssignment() {
     refetchIdCards,
     t,
   ]);
-
-  useEffect(() => {
-    void refreshAssignmentData(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Refetch admissions when page becomes visible (e.g. user navigates back from Admissions) so newly added students appear
   useEffect(() => {
@@ -312,9 +314,17 @@ export default function IdCardAssignment() {
     courseStudents,
   ]);
 
+  const financeQueriesEnabled = cardFeePaid || isAssignDialogOpen || isEditDialogOpen;
+
   // Finance and ID card mutation hooks
-  const { data: financeAccounts = [] } = useFinanceAccounts({ isActive: true });
-  const { data: incomeCategories = [] } = useIncomeCategories({ isActive: true });
+  const { data: financeAccounts = [] } = useFinanceAccounts({
+    isActive: true,
+    queryEnabled: financeQueriesEnabled,
+  });
+  const { data: incomeCategories = [] } = useIncomeCategories({
+    isActive: true,
+    queryEnabled: financeQueriesEnabled,
+  });
   const assignCards = useAssignIdCards();
   const updateCard = useUpdateStudentIdCard();
   const markPrinted = useMarkCardPrinted();
@@ -647,6 +657,76 @@ export default function IdCardAssignment() {
     });
   }, [idCards, searchQuery]);
 
+  const unprintedCards = useMemo(
+    () => filteredCards.filter((card) => !card.isPrinted),
+    [filteredCards]
+  );
+
+  useEffect(() => {
+    const validIds = new Set(unprintedCards.map((c) => c.id));
+    setSelectedCardsForBulkAction((prev) => {
+      let pruned = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (validIds.has(id)) {
+          next.add(id);
+        } else {
+          pruned = true;
+        }
+      }
+      if (!pruned && next.size === prev.size) {
+        return prev;
+      }
+      return next;
+    });
+  }, [unprintedCards]);
+
+  const selectAllUnprintedInView = useCallback(() => {
+    setSelectedCardsForBulkAction((prev) => {
+      if (prev.size === unprintedCards.length && unprintedCards.length > 0) {
+        return new Set();
+      }
+      return new Set(unprintedCards.map((c) => c.id));
+    });
+  }, [unprintedCards]);
+
+  const toggleUnprintedCardSelected = useCallback((id: string) => {
+    setSelectedCardsForBulkAction((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const markCardIdsPrintedBulk = useCallback(
+    async (ids: string[]) => {
+      const unique = [...new Set(ids)].filter(Boolean);
+      if (unique.length === 0) {
+        return;
+      }
+      setIsBulkMarkingPrinted(true);
+      try {
+        for (const id of unique) {
+          await studentIdCardsApi.markPrinted(id);
+        }
+        showToast.success('toast.idCardsMarkedPrintedBulk', { count: unique.length });
+        await queryClient.invalidateQueries({ queryKey: ['student-id-cards'] });
+        await queryClient.refetchQueries({ queryKey: ['student-id-cards'] });
+        setSelectedCardsForBulkAction(new Set());
+      } catch (error) {
+        showToast.error((error as Error).message || 'toast.idCardsMarkPrintedBulkFailed');
+        throw error;
+      } finally {
+        setIsBulkMarkingPrinted(false);
+      }
+    },
+    [queryClient]
+  );
+
   // Report export columns (handles both regular and course students)
   const reportColumns = useMemo(() => [
     { key: 'student_name', label: t('students.student') || 'Student' },
@@ -720,7 +800,7 @@ export default function IdCardAssignment() {
   }, [academicYearId, schoolId, classId, courseId, studentType, templateId, enrollmentStatus, searchQuery, academicYears, schools, classes, courses, templates, t]);
 
   return (
-    <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
+    <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4 overflow-x-hidden">
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -1300,7 +1380,7 @@ export default function IdCardAssignment() {
                       {t('subjects.all') || 'All'} ({filteredCards.length})
                     </TabsTrigger>
                     <TabsTrigger value="unprinted">
-                      {t('idCards.unprinted') || 'Unprinted'} ({filteredCards.filter(c => !c.isPrinted).length})
+                      {t('idCards.unprinted') || 'Unprinted'} ({unprintedCards.length})
                     </TabsTrigger>
                     <TabsTrigger value="printed">
                       {t('idCards.printed') || 'Printed'} ({filteredCards.filter(c => c.isPrinted).length})
@@ -1411,101 +1491,186 @@ export default function IdCardAssignment() {
                   </TabsContent>
 
                   <TabsContent value="unprinted" className="mt-4">
-                    {filteredCards.filter(c => !c.isPrinted).length === 0 ? (
+                    {unprintedCards.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         {t('idCards.noUnprintedCards') || 'No unprinted cards found'}
                       </div>
                     ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{t('students.student') || 'Student'}</TableHead>
-                            <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
-                            <TableHead>{studentType === 'course' ? (t('courses.course') || 'Course') : (t('search.class') || 'Class')}</TableHead>
-                            <TableHead>{t('idCards.template') || 'Template'}</TableHead>
-                            <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
-                            <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
-                            <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredCards.filter(c => !c.isPrinted).map(card => (
-                            <TableRow key={card.id}>
-                              <TableCell className="font-medium">
-                                {card.student?.fullName || '-'}
-                              </TableCell>
-                              <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
-                              <TableCell>
-                                {card.courseStudentId 
-                                  ? (card.courseStudent?.course?.name || '-')
-                                  : (card.class?.name || '-')}
-                              </TableCell>
-                              <TableCell>{card.template?.name || '-'}</TableCell>
-                              <TableCell>
-                                <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
-                                  {card.cardFeePaid
-                                    ? t('courses.feePaid') || 'Paid'
-                                    : t('idCards.feeUnpaid') || 'Unpaid'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="secondary">
-                                  {t('idCards.unprinted') || 'Unprinted'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      const studentId = card.courseStudentId || card.studentAdmissionId;
-                                      setPreviewStudentId(studentId);
-                                      setPreviewSide('front');
-                                      handlePreview(card.id, 'front');
+                      <div className="space-y-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="text-sm text-muted-foreground">
+                            {t('idCards.selectedCards') || 'Selected cards'}: {selectedCardsForBulkAction.size} /{' '}
+                            {unprintedCards.length}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="flex-shrink-0"
+                              onClick={selectAllUnprintedInView}
+                              disabled={isBulkMarkingPrinted}
+                            >
+                              {selectedCardsForBulkAction.size === unprintedCards.length ? (
+                                <>
+                                  <Square className="h-4 w-4 shrink-0" />
+                                  <span className="hidden sm:inline ml-2">{t('events.deselectAll') || 'Deselect All'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckSquare className="h-4 w-4 shrink-0" />
+                                  <span className="hidden sm:inline ml-2">{t('events.selectAll') || 'Select All'}</span>
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="flex-shrink-0"
+                              aria-label={t('idCards.markSelectedAsPrinted') || 'Mark selected as printed'}
+                              disabled={selectedCardsForBulkAction.size === 0 || isBulkMarkingPrinted}
+                              onClick={() => void markCardIdsPrintedBulk(Array.from(selectedCardsForBulkAction))}
+                            >
+                              <Printer className="h-4 w-4 shrink-0" />
+                              <span className="hidden sm:inline ml-2">{t('idCards.markSelectedAsPrinted') || 'Mark selected as printed'}</span>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              className="flex-shrink-0"
+                              aria-label={t('idCards.markAllUnprintedAsPrinted') || 'Mark all as printed (filtered)'}
+                              disabled={unprintedCards.length === 0 || isBulkMarkingPrinted}
+                              onClick={() => setMarkAllPrintedDialogOpen(true)}
+                            >
+                              <Printer className="h-4 w-4 shrink-0" />
+                              <span className="hidden sm:inline ml-2">{t('idCards.markAllUnprintedAsPrinted') || 'Mark all as printed (filtered)'}</span>
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="overflow-x-auto rounded-md border">
+                          <Table className="min-w-[720px]">
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-12">
+                                  <Checkbox
+                                    aria-label={t('events.selectAll') || 'Select all'}
+                                    checked={
+                                      unprintedCards.length === 0
+                                        ? false
+                                        : selectedCardsForBulkAction.size === unprintedCards.length
+                                          ? true
+                                          : selectedCardsForBulkAction.size > 0
+                                            ? 'indeterminate'
+                                            : false
+                                    }
+                                    disabled={isBulkMarkingPrinted}
+                                    onCheckedChange={(checked) => {
+                                      if (checked === true) {
+                                        setSelectedCardsForBulkAction(new Set(unprintedCards.map((c) => c.id)));
+                                      } else {
+                                        setSelectedCardsForBulkAction(new Set());
+                                      }
                                     }}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleMarkPrinted(card.id)}
-                                  >
-                                    <Printer className="h-4 w-4" />
-                                  </Button>
-                                  {!card.cardFeePaid && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleMarkFeePaid(card.id)}
-                                    >
-                                      <DollarSign className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditCard(card)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setDeleteCardId(card.id);
-                                      setIsDeleteDialogOpen(true);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                                  />
+                                </TableHead>
+                                <TableHead>{t('students.student') || 'Student'}</TableHead>
+                                <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
+                                <TableHead>{studentType === 'course' ? (t('courses.course') || 'Course') : (t('search.class') || 'Class')}</TableHead>
+                                <TableHead>{t('idCards.template') || 'Template'}</TableHead>
+                                <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
+                                <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
+                                <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {unprintedCards.map((card) => (
+                                <TableRow key={card.id}>
+                                  <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                                    <Checkbox
+                                      checked={selectedCardsForBulkAction.has(card.id)}
+                                      disabled={isBulkMarkingPrinted}
+                                      onCheckedChange={() => toggleUnprintedCardSelected(card.id)}
+                                    />
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {card.student?.fullName || '-'}
+                                  </TableCell>
+                                  <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
+                                  <TableCell>
+                                    {card.courseStudentId
+                                      ? (card.courseStudent?.course?.name || '-')
+                                      : (card.class?.name || '-')}
+                                  </TableCell>
+                                  <TableCell>{card.template?.name || '-'}</TableCell>
+                                  <TableCell>
+                                    <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
+                                      {card.cardFeePaid
+                                        ? t('courses.feePaid') || 'Paid'
+                                        : t('idCards.feeUnpaid') || 'Unpaid'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="secondary">
+                                      {t('idCards.unprinted') || 'Unprinted'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          const studentId = card.courseStudentId || card.studentAdmissionId;
+                                          setPreviewStudentId(studentId);
+                                          setPreviewSide('front');
+                                          handlePreview(card.id, 'front');
+                                        }}
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled={isBulkMarkingPrinted}
+                                        onClick={() => handleMarkPrinted(card.id)}
+                                      >
+                                        <Printer className="h-4 w-4" />
+                                      </Button>
+                                      {!card.cardFeePaid && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleMarkFeePaid(card.id)}
+                                        >
+                                          <DollarSign className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleEditCard(card)}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setDeleteCardId(card.id);
+                                          setIsDeleteDialogOpen(true);
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
                     )}
                   </TabsContent>
 
@@ -1732,6 +1897,39 @@ export default function IdCardAssignment() {
             <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteCard} disabled={deleteCard.isPending}>
               {deleteCard.isPending ? t('events.deleting') || 'Deleting...' : t('events.delete') || 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={markAllPrintedDialogOpen} onOpenChange={setMarkAllPrintedDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('idCards.confirmMarkAllPrintedTitle') || 'Mark all unprinted cards as printed?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('idCards.confirmMarkAllPrintedDescription', { count: unprintedCards.length }) ||
+                `This will mark ${unprintedCards.length} unprinted ID card(s) as printed based on your current filters.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkMarkingPrinted}>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isBulkMarkingPrinted}
+              onClick={(e) => {
+                e.preventDefault();
+                void (async () => {
+                  try {
+                    await markCardIdsPrintedBulk(unprintedCards.map((c) => c.id));
+                    setMarkAllPrintedDialogOpen(false);
+                  } catch {
+                    // Error toast handled in markCardIdsPrintedBulk; keep dialog open for retry
+                  }
+                })();
+              }}
+            >
+              {isBulkMarkingPrinted ? t('events.processing') || 'Processing...' : t('events.confirm') || 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

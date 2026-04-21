@@ -134,7 +134,7 @@ export default {
     schoolRequiredForExport: "برای صدور گزارش، انتخاب مکتب الزامی است.",
     schoolSwitched: "مکتب با موفقیت تغییر کرد",
     searchRoom: "جستجوی اتاق‌ها...",
-    searchStudent: "جستجو با نام یا شماره شمولیت...",
+    searchStudent: "جستجو بر اساس نام شاگرد، شماره شمولیت، یا شماره کارت",
     section: "بخش",
     selectAcademicYear: "سال تعلیمی را انتخاب کنید",
     selectSchool: "مکتب را انتخاب کنید",

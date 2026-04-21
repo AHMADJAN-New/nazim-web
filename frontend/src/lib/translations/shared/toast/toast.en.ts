@@ -388,6 +388,8 @@ export default {
     idCardFeeMarkPaidFailed: "Id card fee mark paid failed",
     idCardMarkedPrinted: "Id card marked printed",
     idCardMarkPrintedFailed: "Id card mark printed failed",
+    idCardsMarkedPrintedBulk: "Marked {count} ID card(s) as printed",
+    idCardsMarkPrintedBulkFailed: "Failed to mark ID cards as printed",
     idCardPreviewFailed: "Student data not available",
     idCardsAssigned: "Id cards assigned",
     idCardsExported: "Id cards exported",

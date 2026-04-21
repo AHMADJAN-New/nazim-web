@@ -136,7 +136,7 @@ export default {
     schoolRequiredForExport: "د راپور صادرو لپاره د ښوونځي انتخاب اړین دی.",
     schoolSwitched: "ښوونځی بدل شو",
     searchRoom: "اتاق لټول...",
-    searchStudent: "د نوم یا داخلې شمېره له مخې لټون...",
+    searchStudent: "د زده کوونکي نوم، د شمولیت شمېرې یا د کارت شمېرې له مخې لټون",
     section: "څانګه",
     selectAcademicYear: "تعليمي کال وټاکئ",
     selectAcademicYearFirst: "لومړی تعليمي کال وټاکئ",

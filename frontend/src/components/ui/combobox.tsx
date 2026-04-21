@@ -21,6 +21,8 @@ export interface ComboboxOption {
   value: string
   label: string
   disabled?: boolean
+  /** Included in cmdk filter value only (not shown). */
+  filterKeywords?: string
 }
 
 interface ComboboxProps {
@@ -71,7 +73,7 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={`${option.label} ${option.value}`}
+                  value={`${option.label} ${option.value}${option.filterKeywords ? ` ${option.filterKeywords}` : ''}`}
                   disabled={option.disabled}
                   onSelect={() => {
                     onValueChange(option.value === value ? "" : option.value)

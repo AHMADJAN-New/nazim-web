@@ -304,6 +304,62 @@ class StudentManagementTest extends TestCase
     }
 
     /** @test */
+    public function user_can_search_students_by_admission_number_and_card_number()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'full_name' => 'Zaid Ali',
+            'admission_no' => 'ADM-SPEC-SEARCH-999',
+            'card_number' => 'CARD-SPEC-SEARCH-777',
+        ]);
+
+        $byAdmission = $this->jsonAs($user, 'GET', '/api/students', [
+            'search' => 'ADM-SPEC-SEARCH',
+        ]);
+        $byAdmission->assertStatus(200);
+        $admissionMatches = collect($byAdmission->json())->pluck('admission_no')->all();
+        $this->assertContains('ADM-SPEC-SEARCH-999', $admissionMatches);
+
+        $byCard = $this->jsonAs($user, 'GET', '/api/students', [
+            'search' => 'CARD-SPEC-SEARCH-777',
+        ]);
+        $byCard->assertStatus(200);
+        $cardMatches = collect($byCard->json())->pluck('card_number')->all();
+        $this->assertContains('CARD-SPEC-SEARCH-777', $cardMatches);
+    }
+
+    /** @test */
+    public function student_list_search_does_not_match_father_name_or_guardian_fields()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $target = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'full_name' => 'Plain Student Name',
+            'father_name' => 'UniqueFatherToken73192xx',
+            'guardian_name' => 'UniqueGuardianToken88291xx',
+            'guardian_phone' => '+999000112233',
+            'phone' => '+888000445566',
+            'tazkira_number' => 'TazkiraUnique66192xx',
+        ]);
+
+        foreach (['UniqueFatherToken73192xx', 'UniqueGuardianToken88291xx', '+999000112233', 'TazkiraUnique66192xx'] as $term) {
+            $response = $this->jsonAs($user, 'GET', '/api/students', ['search' => $term]);
+            $response->assertStatus(200);
+            $ids = collect($response->json())->pluck('id')->all();
+            $this->assertNotContains($target->id, $ids, "Search term {$term} should not match non-indexed fields");
+        }
+    }
+
+    /** @test */
     public function orphan_students_can_be_identified()
     {
         $user = $this->authenticate();

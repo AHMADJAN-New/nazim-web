@@ -103,6 +103,8 @@ export default {
       databaseOnlyDescription: "دا به یوازې د ډیټابیس ډیټا بدل کړي. اوسنۍ ذخیره فایلونه به وساتل شي.",
       databaseAndFilesDescription: "دا به د بیک اپ څخه د ډیټابیس او ذخیره کولو ټول اوسنۍ ډیټا بدل کړي."
     },
+    restoreUploadEntityTooLarge:
+      "پورته کول رد شول ځکه چې غوښتنه ډېره لویه وه (HTTP 413). د Nginx لپاره client_max_body_size لږترلږه 512M وټاکئ. د PHP لپاره upload_max_filesize او post_max_size لږترلږه 512M. یادونه: php artisan serve د PHP CLI کاروي — د WAMP «PHP → php.ini [Apache module]» فایل نه لوستل کیږي. په ټرمینل کې php --ini ووهئ او هغه «Loaded Configuration File» سم کړئ، بیا Artisan بیا پیل کړئ. یا له backend فولډر څخه composer run serve ووهئ (یا VS Code د «Backend: Start Laravel Server» ټاسک) چې د -d له لارې 512M زوروي. public/.user.ini د Apache/FPM لپاره مرسته کوي، د CLI built-in سرور لپاره نه.",
     backupType: {
       label: "د بیک اپ ډول",
       databaseOnly: "یوازې ډیټابیس",

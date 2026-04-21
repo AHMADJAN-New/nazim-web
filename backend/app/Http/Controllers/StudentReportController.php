@@ -3,13 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
-use App\Services\Reports\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentReportController extends Controller
 {
@@ -17,21 +16,22 @@ class StudentReportController extends Controller
         private ReportService $reportService,
         private DateConversionService $dateService
     ) {}
+
     private function ensureAuthorizedUser(Request $request)
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return [null, response()->json(['error' => 'Profile not found'], 404)];
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return [null, response()->json(['error' => 'User must be assigned to an organization'], 403)];
         }
 
         try {
-            if (!$user->hasPermissionTo('student_reports.read')) {
+            if (! $user->hasPermissionTo('student_reports.read')) {
                 return [null, response()->json([
                     'error' => 'Access Denied',
                     'message' => 'You do not have permission to access this resource.',
@@ -39,7 +39,8 @@ class StudentReportController extends Controller
                 ], 403)];
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for student_reports.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for student_reports.read: '.$e->getMessage());
+
             return [null, response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
@@ -77,10 +78,8 @@ class StudentReportController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('full_name', 'ilike', "%{$search}%")
-                    ->orWhere('father_name', 'ilike', "%{$search}%")
                     ->orWhere('admission_no', 'ilike', "%{$search}%")
-                    ->orWhere('guardian_name', 'ilike', "%{$search}%")
-                    ->orWhere('guardian_phone', 'ilike', "%{$search}%");
+                    ->orWhere('card_number', 'ilike', "%{$search}%");
             });
         }
 
@@ -154,20 +153,20 @@ class StudentReportController extends Controller
 
         // Build filter summary
         $filterSummary = [];
-        if (!empty($filters['student_status'])) {
-            $filterSummary[] = 'Status: ' . $filters['student_status'];
+        if (! empty($filters['student_status'])) {
+            $filterSummary[] = 'Status: '.$filters['student_status'];
         }
-        if (!empty($filters['gender'])) {
-            $filterSummary[] = 'Gender: ' . $filters['gender'];
+        if (! empty($filters['gender'])) {
+            $filterSummary[] = 'Gender: '.$filters['gender'];
         }
-        if (!empty($filters['is_orphan'])) {
-            $filterSummary[] = 'Orphan: ' . ($filters['is_orphan'] ? 'Yes' : 'No');
+        if (! empty($filters['is_orphan'])) {
+            $filterSummary[] = 'Orphan: '.($filters['is_orphan'] ? 'Yes' : 'No');
         }
-        if (!empty($filters['admission_fee_status'])) {
-            $filterSummary[] = 'Fee Status: ' . $filters['admission_fee_status'];
+        if (! empty($filters['admission_fee_status'])) {
+            $filterSummary[] = 'Fee Status: '.$filters['admission_fee_status'];
         }
-        if (!empty($filters['search'])) {
-            $filterSummary[] = 'Search: ' . $filters['search'];
+        if (! empty($filters['search'])) {
+            $filterSummary[] = 'Search: '.$filters['search'];
         }
 
         // Query students with filters
@@ -247,7 +246,7 @@ class StudentReportController extends Controller
             'calendar_preference' => $calendarPreference,
             'language' => $language,
             'parameters' => [
-                'filters_summary' => !empty($filterSummary) ? implode(' | ', $filterSummary) : null,
+                'filters_summary' => ! empty($filterSummary) ? implode(' | ', $filterSummary) : null,
                 'total_count' => count($rows),
                 'date_range' => null, // Students report doesn't have date range
                 'show_totals' => true, // Show totals row in Excel
@@ -277,12 +276,12 @@ class StudentReportController extends Controller
                 'message' => 'Report generation started',
             ]);
         } catch (\Exception $e) {
-            Log::error('Student report generation failed: ' . $e->getMessage(), [
+            Log::error('Student report generation failed: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
-                'error' => 'Failed to generate report: ' . $e->getMessage(),
+                'error' => 'Failed to generate report: '.$e->getMessage(),
             ], 500);
         }
     }

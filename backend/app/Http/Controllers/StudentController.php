@@ -116,12 +116,8 @@ class StudentController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('full_name', 'ilike', "%{$search}%")
-                    ->orWhere('father_name', 'ilike', "%{$search}%")
                     ->orWhere('admission_no', 'ilike', "%{$search}%")
-                    ->orWhere('guardian_name', 'ilike', "%{$search}%")
-                    ->orWhere('guardian_phone', 'ilike', "%{$search}%")
-                    ->orWhere('phone', 'ilike', "%{$search}%")
-                    ->orWhere('tazkira_number', 'ilike', "%{$search}%");
+                    ->orWhere('card_number', 'ilike', "%{$search}%");
             });
         }
 

@@ -1,5 +1,5 @@
 import { Download, Upload, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -127,9 +127,20 @@ type ClassSheetDefaults = {
   is_boarder?: boolean | null;
 };
 
+const IMPORT_STATUS_POLL_MS = 3000;
+
 export default function StudentsImport() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  /** Stop status polling if the user leaves this page while an import is running. */
+  const importPollCancelledRef = useRef(false);
+
+  useEffect(() => {
+    importPollCancelledRef.current = false;
+    return () => {
+      importPollCancelledRef.current = true;
+    };
+  }, []);
 
   const { data: academicYears } = useAcademicYears();
   const [academicYearId, setAcademicYearId] = useState<string | null>(null);
@@ -338,10 +349,18 @@ export default function StudentsImport() {
 
       loadingToastId = showToast.loading('toast.processing');
       const jobId = resp.job_id;
-      const maxPollAttempts = 900; // ~30 minutes (900 * 2s)
+      const maxPollAttempts = 600; // ~30 minutes at IMPORT_STATUS_POLL_MS
 
       for (let attempt = 0; attempt < maxPollAttempts; attempt++) {
-        await sleep(2000);
+        if (importPollCancelledRef.current) {
+          showToast.dismiss(loadingToastId);
+          return;
+        }
+        await sleep(IMPORT_STATUS_POLL_MS);
+        if (importPollCancelledRef.current) {
+          showToast.dismiss(loadingToastId);
+          return;
+        }
         const status = (await studentImportApi.commitStatus(jobId)) as ImportCommitStatusResponse;
 
         if (status.status === 'completed') {

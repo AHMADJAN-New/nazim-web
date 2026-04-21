@@ -1,4 +1,4 @@
-import { BarChart3, RefreshCw, UserCheck, Building2, AlertTriangle } from 'lucide-react';
+import { BarChart3, RefreshCw, UserCheck, Building2, AlertTriangle, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -162,6 +162,7 @@ const StudentAdmissionsReport = () => {
       residencyTypeId: undefined,
       enrollmentStatus: undefined,
       isBoarder: undefined,
+      search: undefined,
       page: 1,
       perPage: 25,
     });
@@ -235,6 +236,9 @@ const StudentAdmissionsReport = () => {
     if (filters.fromDate && filters.toDate) {
       filterParts.push(`Date Range: ${filters.fromDate} to ${filters.toDate}`);
     }
+    if (filters.search?.trim()) {
+      filterParts.push(`Search: ${filters.search.trim()}`);
+    }
     return filterParts.join(' | ');
   };
 
@@ -252,6 +256,7 @@ const StudentAdmissionsReport = () => {
       is_boarder: filters.isBoarder,
       from_date: filters.fromDate,
       to_date: filters.toDate,
+      search: filters.search?.trim() || undefined,
       per_page: pageSize,
     };
 
@@ -280,7 +285,8 @@ const StudentAdmissionsReport = () => {
       filters.enrollmentStatus ||
       filters.isBoarder ||
       filters.fromDate ||
-      filters.toDate
+      filters.toDate ||
+      filters.search?.trim()
     );
   }, [filters]);
 
@@ -345,6 +351,7 @@ const StudentAdmissionsReport = () => {
                 is_boarder: filters.isBoarder || undefined,
                 from_date: filters.fromDate || undefined,
                 to_date: filters.toDate || undefined,
+                search: filters.search?.trim() || undefined,
               }}
             />
           ) : null
@@ -364,6 +371,21 @@ const StudentAdmissionsReport = () => {
         }
       >
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-2 lg:col-span-2">
+            <Label>{t('admissions.searchStudent')}</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder={t('admissions.searchStudent')}
+                value={filters.search ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  handleFilterChange('search', v.trim() === '' ? undefined : v);
+                }}
+                className="pl-9"
+              />
+            </div>
+          </div>
           <div className="space-y-2">
             <Label>{t('admissions.school') || 'School'}</Label>
             <Combobox

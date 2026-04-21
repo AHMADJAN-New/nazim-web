@@ -276,7 +276,7 @@ export default {
     fatherName: "نام پدر",
     motherName: "نام مادر",
     cardNumber: "شماره کارت",
-    searchPlaceholder: "جستجوی شاگردان...",
+    searchPlaceholder: "جستجو بر اساس نام شاگرد، شماره شمولیت، یا شماره کارت",
     tableAdmissionColumn: "شمولیت",
     tableCurrentClassColumn: "صنف فعلی",
     noAdmissionRecord: "شمولیت وجود ندارد",

@@ -103,6 +103,8 @@ export default {
       databaseOnlyDescription: "This will replace only the database data. Current storage files will be preserved.",
       databaseAndFilesDescription: "This will replace ALL current data in your database and storage with the data from this backup."
     },
+    restoreUploadEntityTooLarge:
+      "The upload was rejected because the request body is too large (HTTP 413). For Nginx set client_max_body_size to at least 512M. For PHP set upload_max_filesize and post_max_size to at least 512M. Note: php artisan serve uses PHP CLI—it does not load WAMP’s “PHP → php.ini [Apache module]” file. Run php --ini in a terminal and edit the “Loaded Configuration File” shown there, then restart Artisan. Or from the backend folder run composer run serve (or use the VS Code task “Backend: Start Laravel Server”), which forces 512M via -d flags. public/.user.ini helps Apache/FPM for web requests, not the built-in CLI server.",
     backupType: {
       label: "Backup Type",
       databaseOnly: "Database Only",

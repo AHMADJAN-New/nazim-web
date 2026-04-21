@@ -134,7 +134,7 @@ export default {
     schoolRequiredForExport: "A school is required to export the report.",
     schoolSwitched: "School switched successfully",
     searchRoom: "Search rooms...",
-    searchStudent: "Search by name or admission number...",
+    searchStudent: "البحث باسم الطالب أو رقم القبول أو رقم البطاقة",
     section: "Section",
     selectAcademicYear: "اختر السنة الأكاديمية",
     selectSchool: "اختر المدرسة",

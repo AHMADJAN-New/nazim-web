@@ -99,6 +99,11 @@ export default function PlatformRestorePage() {
       void queryClient.invalidateQueries({ queryKey: ['platform-backups'] });
     },
     onError: (error: Error) => {
+      const status = (error as Error & { status?: number }).status;
+      if (status === 413) {
+        showToast.error(t('platform.restoreUploadEntityTooLarge'));
+        return;
+      }
       showToast.error(error.message || 'Restore failed');
     },
   });

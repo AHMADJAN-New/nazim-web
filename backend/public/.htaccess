@@ -1,3 +1,9 @@
+# Large multipart uploads (platform admin backup upload-restore). Requires mod_php; PHP-FPM uses php.ini / .user.ini instead.
+<IfModule mod_php.c>
+    php_value upload_max_filesize 512M
+    php_value post_max_size 512M
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

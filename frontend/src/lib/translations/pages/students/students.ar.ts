@@ -276,7 +276,7 @@ export default {
     fatherName: "اسم الأب",
     motherName: "اسم الأم",
     cardNumber: "رقم البطاقة",
-    searchPlaceholder: "البحث عن الطلاب...",
+    searchPlaceholder: "البحث باسم الطالب أو رقم القبول أو رقم البطاقة",
     tableAdmissionColumn: "القبول",
     tableCurrentClassColumn: "الصف الحالي",
     noAdmissionRecord: "لا يوجد قبول",

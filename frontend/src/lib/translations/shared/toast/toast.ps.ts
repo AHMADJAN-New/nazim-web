@@ -388,6 +388,8 @@ export default {
     idCardFeeMarkPaidFailed: "د آی ډي کارت فیس تادیه شوی نښه کول ناکام شول",
     idCardMarkedPrinted: "آی ډي کارت چاپ شوی نښه شو",
     idCardMarkPrintedFailed: "د آی ډي کارت چاپ شوی نښه کول ناکام شول",
+    idCardsMarkedPrintedBulk: "{count} آی ډي کارت(ونه) د چاپ په توګه نښه شول",
+    idCardsMarkPrintedBulkFailed: "د آی ډي کارتونو د چاپ په توګه نښه کول ناکام شول",
     idCardPreviewFailed: "د زده کوونکي ډاټا شتون نلري",
     idCardsAssigned: "آی ډي کارتونه ورکړل شول",
     idCardsExported: "آی ډي کارتونه صادر شول",

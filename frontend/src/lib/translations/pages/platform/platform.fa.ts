@@ -103,6 +103,8 @@ export default {
       databaseOnlyDescription: "این فقط داده‌های پایگاه داده را جایگزین می‌کند. فایل‌های ذخیره‌سازی فعلی حفظ خواهند شد.",
       databaseAndFilesDescription: "این تمام داده‌های فعلی در پایگاه داده و ذخیره‌سازی شما را با داده‌های این بکاپ جایگزین می‌کند."
     },
+    restoreUploadEntityTooLarge:
+      "بارگذاری رد شد زیرا بدنهٔ درخواست خیلی بزرگ است (HTTP 413). در Nginx مقدار client_max_body_size را حداقل 512M بگذارید. در PHP مقدار upload_max_filesize و post_max_size را حداقل 512M. توجه: php artisan serve از PHP CLI استفاده می‌کند — فایل php.ini ماژول Apache در WAMP اینجا بارگذاری نمی‌شود. در ترمینال php --ini را اجرا کنید و فایل «Loaded Configuration File» را ویرایش کنید، سپس Artisan را دوباره راه‌اندازی کنید. یا از پوشهٔ backend دستور composer run serve را اجرا کنید (یا وظیفهٔ VS Code «Backend: Start Laravel Server») که با -d مقدار 512M را اعمال می‌کند. public/.user.ini برای Apache/FPM است، نه برای سرور داخلی CLI.",
     backupType: {
       label: "نوع بکاپ",
       databaseOnly: "فقط پایگاه داده",

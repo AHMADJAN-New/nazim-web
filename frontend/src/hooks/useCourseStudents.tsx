@@ -20,7 +20,7 @@ export interface CourseStudentsSummary {
 }
 
 
-export const useCourseStudents = (courseId?: string, usePaginated?: boolean) => {
+export const useCourseStudents = (courseId?: string, usePaginated?: boolean, queryEnabled = true) => {
   const { user, profile } = useAuth();
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
     initialPage: 1,
@@ -104,7 +104,7 @@ export const useCourseStudents = (courseId?: string, usePaginated?: boolean) => 
       }
       return [];
     },
-    enabled: !!user && !!profile,
+    enabled: queryEnabled && !!user && !!profile,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

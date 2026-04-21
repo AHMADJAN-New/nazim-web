@@ -278,7 +278,7 @@ export default {
     fatherName: "Father Name",
     motherName: "Mother Name",
     cardNumber: "Card Number",
-    searchPlaceholder: "Search students...",
+    searchPlaceholder: "Search by student name, admission number, or card number",
     tableAdmissionColumn: "Admission",
     tableCurrentClassColumn: "Current Class",
     noAdmissionRecord: "No admission",

@@ -129,6 +129,11 @@ export default {
     selectStudents: "Select students",
     selectTemplatePlaceholder: "Select template placeholder",
     selectUnprinted: "Select Unprinted",
+    markSelectedAsPrinted: "Mark selected as printed",
+    markAllUnprintedAsPrinted: "Mark all as printed (filtered)",
+    confirmMarkAllPrintedTitle: "Mark all unprinted cards as printed?",
+    confirmMarkAllPrintedDescription:
+      "This will mark {count} unprinted ID card(s) as printed based on your current filters. This cannot be undone from here.",
     selectUseGlobalFont: "Select \"Use Global Font\" to use the global font setting",
     sizeDescription: "Values are percentages of the card. Leave empty to use default size.",
     status: {

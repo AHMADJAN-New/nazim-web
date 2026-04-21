@@ -180,7 +180,8 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true, // Enable WebSocket proxying
-        timeout: 30000, // 30 second timeout for mobile connections
+        // Large uploads (e.g. platform backup restore) can exceed 30s; 413 is from the upstream server body limits, not this timeout
+        timeout: 600000, // 10 minutes
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, res) => {
             console.log('proxy error', err);

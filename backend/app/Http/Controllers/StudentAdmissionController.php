@@ -43,6 +43,25 @@ class StudentAdmissionController extends Controller
     }
 
     /**
+     * Narrow admissions queries by student name, admission number, or card number only.
+     */
+    private function applyAdmissionsStudentSearch($query, ?string $search): void
+    {
+        if ($search === null || trim($search) === '') {
+            return;
+        }
+
+        $term = trim($search);
+        $query->whereHas('student', function ($studentQuery) use ($term) {
+            $studentQuery->where(function ($q) use ($term) {
+                $q->where('full_name', 'ilike', "%{$term}%")
+                    ->orWhere('admission_no', 'ilike', "%{$term}%")
+                    ->orWhere('card_number', 'ilike', "%{$term}%");
+            });
+        });
+    }
+
+    /**
      * Display a listing of student admissions
      */
     public function index(Request $request)
@@ -107,16 +126,7 @@ class StudentAdmissionController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->whereHas('student', function ($studentQuery) use ($search) {
-                $studentQuery->where(function ($q) use ($search) {
-                    $q->where('full_name', 'ilike', "%{$search}%")
-                        ->orWhere('admission_no', 'ilike', "%{$search}%")
-                        ->orWhere('student_code', 'ilike', "%{$search}%")
-                        ->orWhere('card_number', 'ilike', "%{$search}%")
-                        ->orWhere('father_name', 'ilike', "%{$search}%");
-                });
-            });
+            $this->applyAdmissionsStudentSearch($query, $request->input('search'));
         }
 
         // Client-provided school_id is ignored; current school is enforced.
@@ -695,6 +705,7 @@ class StudentAdmissionController extends Controller
             'is_boarder' => 'nullable|boolean',
             'from_date' => 'nullable|date',
             'to_date' => 'nullable|date',
+            'search' => 'nullable|string|max:255',
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
@@ -762,6 +773,10 @@ class StudentAdmissionController extends Controller
             } catch (\Exception $e) {
                 Log::info('Invalid to_date provided for admissions report', ['value' => $filters['to_date']]);
             }
+        }
+
+        if (! empty($filters['search'])) {
+            $this->applyAdmissionsStudentSearch($query, $filters['search']);
         }
 
         $totalsQuery = clone $query;
@@ -913,6 +928,7 @@ class StudentAdmissionController extends Controller
             'is_boarder' => 'nullable|boolean',
             'from_date' => 'nullable|date',
             'to_date' => 'nullable|date',
+            'search' => 'nullable|string|max:255',
             'calendar_preference' => 'nullable|in:gregorian,jalali,qamari',
             'language' => 'nullable|in:en,ps,fa,ar',
         ]);
@@ -970,6 +986,10 @@ class StudentAdmissionController extends Controller
             }
         }
 
+        if (! empty($filters['search'])) {
+            $this->applyAdmissionsStudentSearch($query, $filters['search']);
+        }
+
         // Get all admissions (no pagination for export)
         $admissions = $query
             ->with([
@@ -1009,6 +1029,9 @@ class StudentAdmissionController extends Controller
         }
         if (! empty($filters['from_date']) && ! empty($filters['to_date'])) {
             $filterSummary[] = 'Date Range: '.$filters['from_date'].' to '.$filters['to_date'];
+        }
+        if (! empty($filters['search'])) {
+            $filterSummary[] = 'Search: '.$filters['search'];
         }
 
         // Map admissions to report rows
