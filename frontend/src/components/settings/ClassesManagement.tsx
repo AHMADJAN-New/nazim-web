@@ -64,7 +64,7 @@ const classSchema = z.object({
     code: z.string().min(1, 'Code is required').max(50, 'Code must be 50 characters or less'),
     grade_level: z.number().int().min(0).max(12).nullable().optional(),
     description: z.string().max(500, 'Description must be 500 characters or less').optional().nullable(),
-    default_capacity: z.number().int().min(1).max(200).default(30),
+    default_capacity: z.number().int().min(1).max(500).default(30),
     is_active: z.boolean().default(true),
 });
 
@@ -73,7 +73,7 @@ const assignClassSchema = z.object({
     academic_year_id: z.string().uuid('Invalid academic year'),
     section_name: z.string().max(50, 'Section name must be 50 characters or less').optional().nullable(),
     room_id: z.string().uuid().optional().nullable(),
-    capacity: z.number().int().min(1).max(200).optional().nullable(),
+    capacity: z.number().int().min(1).max(500).optional().nullable(),
     notes: z.string().max(500, 'Notes must be 500 characters or less').optional().nullable(),
 });
 
@@ -88,7 +88,7 @@ const bulkSectionsSchema = z.object({
         { message: 'Invalid sections format. Use comma-separated values (e.g., A, B, C, D)' }
     ),
     default_room_id: z.string().uuid().optional().nullable(),
-    default_capacity: z.number().int().min(1).max(200).optional().nullable(),
+    default_capacity: z.number().int().min(1).max(500).optional().nullable(),
 });
 
 const copyClassesSchema = z.object({
@@ -1079,7 +1079,7 @@ export function ClassesManagement() {
                                     id="default_capacity"
                                     type="number"
                                     min="1"
-                                    max="200"
+                                    max="500"
                                     {...registerClass('default_capacity', { valueAsNumber: true })}
                                 />
                                 {classErrors.default_capacity && (
@@ -1230,7 +1230,7 @@ export function ClassesManagement() {
                                     id="capacity"
                                     type="number"
                                     min="1"
-                                    max="200"
+                                    max="500"
                                     {...registerAssign('capacity', { valueAsNumber: true })}
                                     placeholder={t('events.overrideCapacity')}
                                 />
@@ -1385,7 +1385,7 @@ export function ClassesManagement() {
                                     id="bulk_default_capacity"
                                     type="number"
                                     min="1"
-                                    max="200"
+                                    max="500"
                                     {...registerBulkSections('default_capacity', { valueAsNumber: true })}
                                     placeholder={t('events.overrideCapacityAll')}
                                 />

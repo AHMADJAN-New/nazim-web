@@ -28,7 +28,7 @@ class BulkAssignSectionsRequest extends FormRequest
             'sections' => 'required|array|min:1',
             'sections.*' => 'required|string|max:50',
             'default_room_id' => 'nullable|uuid|exists:rooms,id',
-            'default_capacity' => 'nullable|integer|min:1|max:200',
+            'default_capacity' => 'nullable|integer|min:1|max:500',
         ];
     }
 }

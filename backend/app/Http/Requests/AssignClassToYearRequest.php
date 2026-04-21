@@ -26,7 +26,7 @@ class AssignClassToYearRequest extends FormRequest
             'section_name' => 'nullable|string|max:50',
             'room_id' => 'nullable|uuid|exists:rooms,id',
             'teacher_id' => 'nullable|uuid|exists:profiles,id',
-            'capacity' => 'nullable|integer|min:1|max:200',
+            'capacity' => 'nullable|integer|min:1|max:500',
             'notes' => 'nullable|string|max:500',
         ];
     }

@@ -47,7 +47,7 @@ class UpdateClassRequest extends FormRequest
             ],
             'grade_level' => 'nullable|integer|min:0|max:12',
             'description' => 'nullable|string|max:500',
-            'default_capacity' => 'sometimes|required|integer|min:1|max:200',
+            'default_capacity' => 'sometimes|required|integer|min:1|max:500',
             'is_active' => 'sometimes|boolean',
         ];
     }

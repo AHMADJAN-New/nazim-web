@@ -594,7 +594,7 @@ class ClassController extends Controller
         $request->validate([
             'section_name' => 'nullable|string|max:50',
             'room_id' => 'nullable|uuid|exists:rooms,id',
-            'capacity' => 'nullable|integer|min:1|max:200',
+            'capacity' => 'nullable|integer|min:1|max:500',
             'teacher_id' => 'nullable|uuid|exists:profiles,id',
             'is_active' => 'boolean',
             'notes' => 'nullable|string|max:500',
