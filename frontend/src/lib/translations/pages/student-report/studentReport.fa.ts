@@ -49,6 +49,8 @@ export default {
     selectColumns: "انتخاب ستون‌ها",
     selectAllColumns: "انتخاب همه",
     studentId: "شناسه",
+    withAnyAdmission: "با شمولیت",
+    withoutAdmission: "بدون شمولیت",
     withdrawn: "انصراف داده"
   },
   studentReportCard: {

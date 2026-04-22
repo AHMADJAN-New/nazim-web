@@ -49,6 +49,8 @@ export default {
     selectColumns: "کالمونه وټاکئ",
     selectAllColumns: "ټولې وټاکئ",
     studentId: "شمېره",
+    withAnyAdmission: "د داخلې سره",
+    withoutAdmission: "بې داخله",
     withdrawn: "خارج شوی"
   },
   studentReportCard: {

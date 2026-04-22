@@ -18,6 +18,8 @@ import { useSearchParams } from 'react-router-dom';
 
 import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { PictureCell } from '@/components/shared/PictureCell';
+import { CourseStudentPictureCell } from '@/components/short-term-courses/CourseStudentPictureCell';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,6 +89,46 @@ import { studentIdCardsApi } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
+
+/** Avatar for assigned ID card rows (regular student or course student). */
+function AssignedIdCardStudentAvatar({ card }: { card: StudentIdCard }) {
+  if (card.courseStudentId && card.courseStudent?.id) {
+    const cs = card.courseStudent;
+    const path = cs.picturePath?.trim() ? cs.picturePath : null;
+    return (
+      <PictureCell
+        type="course-student"
+        entityId={cs.id}
+        picturePath={path}
+        alt={cs.fullName}
+        size="sm"
+        className="shrink-0"
+      />
+    );
+  }
+  if (card.student?.id) {
+    return (
+      <PictureCell
+        type="student"
+        entityId={card.student.id}
+        picturePath={card.student.picturePath}
+        alt={card.student.fullName || 'Student'}
+        size="sm"
+        className="shrink-0"
+      />
+    );
+  }
+  return (
+    <PictureCell
+      type="student"
+      entityId={undefined}
+      picturePath={undefined}
+      alt="-"
+      size="sm"
+      className="shrink-0"
+    />
+  );
+}
 
 export default function IdCardAssignment() {
   const { t } = useLanguage();
@@ -1047,6 +1089,9 @@ export default function IdCardAssignment() {
                                 }}
                               />
                             </div>
+                            <div className="flex-shrink-0">
+                              <CourseStudentPictureCell student={courseStudent} size="sm" />
+                            </div>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium truncate">{courseStudent.fullName}</div>
                               <div className="text-sm text-muted-foreground">
@@ -1116,6 +1161,15 @@ export default function IdCardAssignment() {
                                     });
                                   }
                                 }}
+                              />
+                            </div>
+                            <div className="flex-shrink-0">
+                              <PictureCell
+                                type="student"
+                                entityId={student.id}
+                                picturePath={student.picturePath}
+                                alt={student.fullName || 'Student'}
+                                size="sm"
                               />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -1371,6 +1425,144 @@ export default function IdCardAssignment() {
                   </div>
                 </CardHeader>
                 <CardContent>
+              {/* Shared filters (same as assignment tab) */}
+              <div className="space-y-4 mb-4">
+                <div className="flex gap-2">
+                  <Tabs value={studentType} onValueChange={(value) => {
+                    setStudentType(value as 'regular' | 'course');
+                    if (value === 'course') {
+                      setClassId('');
+                      setClassAcademicYearId('');
+                    } else {
+                      setCourseId('');
+                    }
+                  }}>
+                    <TabsList>
+                      <TabsTrigger value="regular">
+                        {t('students.students') || 'Regular Students'}
+                      </TabsTrigger>
+                      <TabsTrigger value="course">
+                        {t('courses.courseStudents') || 'Course Students'}
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div>
+                    <Label>{t('academic.academicYears.academicYear') || 'Academic Year'}</Label>
+                    <Select value={academicYearId} onValueChange={setAcademicYearId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('events.select') || 'Select'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {academicYears.map(year => (
+                          <SelectItem key={year.id} value={year.id}>
+                            {year.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>{t('schools.school') || 'School'}</Label>
+                    <Select value={schoolIdForSelect} onValueChange={(value) => setSchoolId(value === 'all' ? '' : value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('subjects.all') || 'All'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                        {schools.map(school => (
+                          <SelectItem key={school.id} value={school.id}>
+                            {school.schoolName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {studentType === 'regular' ? (
+                    <div>
+                      <Label>{t('search.class') || 'Class'}</Label>
+                      <Select value={classIdForSelect} onValueChange={(value) => setClassId(value === 'all' ? '' : value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('subjects.all') || 'All'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                          {classes.map(cls => (
+                            <SelectItem key={cls.id} value={cls.id}>
+                              {cls.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label>{t('courses.course') || 'Course'}</Label>
+                      <Select value={courseIdForSelect} onValueChange={(value) => setCourseId(value === 'all' ? '' : value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('subjects.all') || 'All'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                          {courses.map(course => (
+                            <SelectItem key={course.id} value={course.id}>
+                              {course.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div>
+                    <Label>{t('students.enrollmentStatus') || 'Enrollment Status'}</Label>
+                    <Select value={enrollmentStatus} onValueChange={setEnrollmentStatus}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                        <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
+                        <SelectItem value="inactive">{t('events.inactive') || 'Inactive'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>{t('idCards.template') || 'Template'}</Label>
+                    <Select value={templateIdForSelect} onValueChange={(value) => setTemplateId(value === 'all' ? '' : value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('subjects.all') || 'All'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                        {templates.map(template => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder={t('events.search') || 'Search students...'}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {cardsLoading ? (
                 <div className="text-center py-8">{t('common.loading') || 'Loading...'}</div>
               ) : (
@@ -1408,10 +1600,21 @@ export default function IdCardAssignment() {
                         <TableBody>
                           {filteredCards.map(card => (
                             <TableRow key={card.id}>
-                              <TableCell className="font-medium">
-                                {card.student?.fullName || '-'}
+                              <TableCell>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <AssignedIdCardStudentAvatar card={card} />
+                                  <span className="font-medium truncate">
+                                    {card.courseStudentId
+                                      ? (card.courseStudent?.fullName || card.student?.fullName || '-')
+                                      : (card.student?.fullName || '-')}
+                                  </span>
+                                </div>
                               </TableCell>
-                              <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
+                              <TableCell>
+                                {card.courseStudentId
+                                  ? (card.courseStudent?.admissionNo || card.student?.admissionNumber || '-')
+                                  : (card.student?.admissionNumber || '-')}
+                              </TableCell>
                               <TableCell>
                                 {card.courseStudentId 
                                   ? (card.courseStudent?.course?.name || '-')
@@ -1593,10 +1796,21 @@ export default function IdCardAssignment() {
                                       onCheckedChange={() => toggleUnprintedCardSelected(card.id)}
                                     />
                                   </TableCell>
-                                  <TableCell className="font-medium">
-                                    {card.student?.fullName || '-'}
+                                  <TableCell>
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <AssignedIdCardStudentAvatar card={card} />
+                                      <span className="font-medium truncate">
+                                        {card.courseStudentId
+                                          ? (card.courseStudent?.fullName || card.student?.fullName || '-')
+                                          : (card.student?.fullName || '-')}
+                                      </span>
+                                    </div>
                                   </TableCell>
-                                  <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
+                                  <TableCell>
+                                    {card.courseStudentId
+                                      ? (card.courseStudent?.admissionNo || card.student?.admissionNumber || '-')
+                                      : (card.student?.admissionNumber || '-')}
+                                  </TableCell>
                                   <TableCell>
                                     {card.courseStudentId
                                       ? (card.courseStudent?.course?.name || '-')
@@ -1695,10 +1909,21 @@ export default function IdCardAssignment() {
                         <TableBody>
                           {filteredCards.filter(c => c.isPrinted).map(card => (
                             <TableRow key={card.id}>
-                              <TableCell className="font-medium">
-                                {card.student?.fullName || '-'}
+                              <TableCell>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <AssignedIdCardStudentAvatar card={card} />
+                                  <span className="font-medium truncate">
+                                    {card.courseStudentId
+                                      ? (card.courseStudent?.fullName || card.student?.fullName || '-')
+                                      : (card.student?.fullName || '-')}
+                                  </span>
+                                </div>
                               </TableCell>
-                              <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
+                              <TableCell>
+                                {card.courseStudentId
+                                  ? (card.courseStudent?.admissionNo || card.student?.admissionNumber || '-')
+                                  : (card.student?.admissionNumber || '-')}
+                              </TableCell>
                               <TableCell>
                                 {card.courseStudentId 
                                   ? (card.courseStudent?.course?.name || '-')

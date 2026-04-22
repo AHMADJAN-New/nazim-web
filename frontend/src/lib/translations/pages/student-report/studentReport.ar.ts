@@ -49,6 +49,8 @@ export default {
     selectColumns: "اختيار الأعمدة",
     selectAllColumns: "تحديد الكل",
     studentId: "الرقم",
+    withAnyAdmission: "مع قبول",
+    withoutAdmission: "بدون قبول",
     withdrawn: "منسحب"
   },
   studentReportCard: {

@@ -299,14 +299,24 @@ export function Students() {
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [classAcademicYears]);
 
-  const [statusFilter, setStatusFilter] = useState<'all' | Student['status']>('all');
+  type StudentStatusFilter = 'all' | Student['status'] | 'with_admission' | 'without_admission';
+  const [statusFilter, setStatusFilter] = useState<StudentStatusFilter>('all');
   const [originalProvinceFilter, setOriginalProvinceFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const { data: studentAutocomplete } = useStudentAutocomplete();
 
   const studentFilters = useMemo(() => ({
     search: searchQuery.trim() || undefined,
-    student_status: statusFilter !== 'all' ? statusFilter : undefined,
+    student_status:
+      statusFilter !== 'all' && statusFilter !== 'with_admission' && statusFilter !== 'without_admission'
+        ? statusFilter
+        : undefined,
+    admission_presence:
+      statusFilter === 'with_admission'
+        ? 'with_admission'
+        : statusFilter === 'without_admission'
+          ? 'without_admission'
+          : undefined,
     orig_province: originalProvinceFilter !== 'all' ? originalProvinceFilter : undefined,
     academic_year_id: selectedAcademicYearId,
     class_id: classFilter !== 'all' ? classFilter : undefined,
@@ -386,7 +396,8 @@ export function Students() {
     values: StudentFormData,
     isEdit: boolean,
     pictureFile?: File | null,
-    guardianPictureFile?: File | null
+    guardianPictureFile?: File | null,
+    options?: { openAdmissionFormAfterCreate?: boolean }
   ) => {
     // Use same cleaning as existing submit
     const cleanedData = cleanStudentData(values as StudentFormData);
@@ -656,6 +667,17 @@ export function Students() {
                   console.error('Failed to upload guardian picture:', error);
                 }
               }
+            }
+            if (
+              options?.openAdmissionFormAfterCreate &&
+              createdStudent &&
+              canCreateStudentAdmissions
+            ) {
+              setSelectedAdmission(null);
+              setPreselectedAdmissionStudent(createdStudent);
+              window.setTimeout(() => {
+                setIsAdmissionFormOpen(true);
+              }, 0);
             }
             resolve();
           },
@@ -1259,6 +1281,8 @@ export function Students() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('userManagement.allStatus') || 'All Status'}</SelectItem>
+              <SelectItem value="with_admission">{t('students.withAnyAdmission') || 'With admission'}</SelectItem>
+              <SelectItem value="without_admission">{t('students.withoutAdmission') || 'Without admission'}</SelectItem>
               <SelectItem value="applied">{t('students.applied') || 'Applied'}</SelectItem>
               <SelectItem value="admitted">{t('students.admitted') || 'Admitted'}</SelectItem>
               <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>

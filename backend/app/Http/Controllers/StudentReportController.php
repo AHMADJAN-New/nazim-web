@@ -62,6 +62,30 @@ class StudentReportController extends Controller
             $query->where('student_status', $request->student_status);
         }
 
+        if ($request->filled('admission_presence') && $request->admission_presence) {
+            $admissionPresence = $request->input('admission_presence');
+
+            if ($admissionPresence === 'with_admission') {
+                $query->whereExists(function ($subQuery) use ($orgId, $currentSchoolId) {
+                    $subQuery->select(DB::raw('1'))
+                        ->from('student_admissions as sa')
+                        ->whereColumn('sa.student_id', 'students.id')
+                        ->whereNull('sa.deleted_at')
+                        ->where('sa.organization_id', $orgId)
+                        ->where('sa.school_id', $currentSchoolId);
+                });
+            } elseif ($admissionPresence === 'without_admission') {
+                $query->whereNotExists(function ($subQuery) use ($orgId, $currentSchoolId) {
+                    $subQuery->select(DB::raw('1'))
+                        ->from('student_admissions as sa')
+                        ->whereColumn('sa.student_id', 'students.id')
+                        ->whereNull('sa.deleted_at')
+                        ->where('sa.organization_id', $orgId)
+                        ->where('sa.school_id', $currentSchoolId);
+                });
+            }
+        }
+
         if ($request->filled('gender')) {
             $query->where('gender', $request->gender);
         }
@@ -138,6 +162,9 @@ class StudentReportController extends Controller
         if ($request->filled('student_status')) {
             $filters['student_status'] = $request->student_status;
         }
+        if ($request->filled('admission_presence')) {
+            $filters['admission_presence'] = $request->admission_presence;
+        }
         if ($request->filled('gender')) {
             $filters['gender'] = $request->gender;
         }
@@ -155,6 +182,9 @@ class StudentReportController extends Controller
         $filterSummary = [];
         if (! empty($filters['student_status'])) {
             $filterSummary[] = 'Status: '.$filters['student_status'];
+        }
+        if (! empty($filters['admission_presence'])) {
+            $filterSummary[] = 'Admission: '.$filters['admission_presence'];
         }
         if (! empty($filters['gender'])) {
             $filterSummary[] = 'Gender: '.$filters['gender'];

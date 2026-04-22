@@ -49,6 +49,8 @@ export default {
     selectAllColumns: "Select all",
     selectColumns: "Select Columns",
     studentId: "ID",
+    withAnyAdmission: "With any admission",
+    withoutAdmission: "Without admission",
     withdrawn: "Withdrawn"
   },
   studentReportCard: {

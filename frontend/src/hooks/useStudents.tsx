@@ -36,6 +36,7 @@ export type {
 export interface StudentFilters {
   search?: string;
   student_status?: string;
+  admission_presence?: 'with_admission' | 'without_admission';
   gender?: string;
   orig_province?: string;
   applying_grade?: string;
@@ -77,6 +78,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
           per_page?: number;
           search?: string;
           student_status?: string;
+          admission_presence?: 'with_admission' | 'without_admission';
           gender?: string;
           orig_province?: string;
           applying_grade?: string;
@@ -98,6 +100,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
         if (filters) {
           if (filters.search) params.search = filters.search;
           if (filters.student_status) params.student_status = filters.student_status;
+          if (filters.admission_presence) params.admission_presence = filters.admission_presence;
           if (filters.gender) params.gender = filters.gender;
           if (filters.orig_province) params.orig_province = filters.orig_province;
           if (filters.applying_grade) params.applying_grade = filters.applying_grade;

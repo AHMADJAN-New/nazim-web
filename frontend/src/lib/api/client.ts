@@ -1914,6 +1914,7 @@ export const studentsApi = {
     organization_id?: string;
     school_id?: string;
     student_status?: string;
+    admission_presence?: 'with_admission' | 'without_admission';
     gender?: string;
     orig_province?: string;
     applying_grade?: string;
@@ -1933,6 +1934,7 @@ export const studentsApi = {
     organization_id?: string;
     school_id?: string;
     student_status?: string;
+    admission_presence?: 'with_admission' | 'without_admission';
     gender?: string;
     orig_province?: string;
     applying_grade?: string;

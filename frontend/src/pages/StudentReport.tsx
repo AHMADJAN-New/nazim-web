@@ -118,7 +118,8 @@ const StudentReport = () => {
   const { data: schools } = useSchools(orgIdForQuery);
   const { data: academicYears = [] } = useAcademicYears(orgIdForQuery);
 
-  const [statusFilter, setStatusFilter] = useState<'all' | string>('all');
+  type StudentStatusFilter = 'all' | Student['status'] | 'with_admission' | 'without_admission';
+  const [statusFilter, setStatusFilter] = useState<StudentStatusFilter>('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
   const [originalProvinceFilter, setOriginalProvinceFilter] = useState<'all' | string>('all');
   const [applyingGradeFilter, setApplyingGradeFilter] = useState<'all' | string>('all');
@@ -145,7 +146,16 @@ const StudentReport = () => {
 
   const studentFilters = useMemo(() => ({
     search: searchQuery.trim() || undefined,
-    student_status: statusFilter !== 'all' ? statusFilter : undefined,
+    student_status:
+      statusFilter !== 'all' && statusFilter !== 'with_admission' && statusFilter !== 'without_admission'
+        ? statusFilter
+        : undefined,
+    admission_presence:
+      statusFilter === 'with_admission'
+        ? 'with_admission'
+        : statusFilter === 'without_admission'
+          ? 'without_admission'
+          : undefined,
     gender: genderFilter !== 'all' ? genderFilter : undefined,
     orig_province: originalProvinceFilter !== 'all' ? originalProvinceFilter : undefined,
     applying_grade: applyingGradeFilter !== 'all' ? applyingGradeFilter : undefined,
@@ -182,6 +192,7 @@ const StudentReport = () => {
       school_id: profile?.default_school_id || undefined,
       search: studentFilters.search,
       student_status: studentFilters.student_status,
+      admission_presence: studentFilters.admission_presence,
       gender: studentFilters.gender,
       orig_province: studentFilters.orig_province,
       applying_grade: studentFilters.applying_grade,
@@ -243,7 +254,13 @@ const StudentReport = () => {
   const buildFiltersSummary = () => {
     const filters: string[] = [];
     if (statusFilter !== 'all') {
-      filters.push(`Status: ${statusFilter}`);
+      if (statusFilter === 'with_admission') {
+        filters.push(t('studentReport.withAnyAdmission'));
+      } else if (statusFilter === 'without_admission') {
+        filters.push(t('studentReport.withoutAdmission'));
+      } else {
+        filters.push(`Status: ${statusFilter}`);
+      }
     }
     if (genderFilter !== 'all') {
       filters.push(`Gender: ${genderFilter}`);
@@ -622,6 +639,8 @@ const StudentReport = () => {
               <SelectItem value="admitted">{t('studentReport.admitted') || 'Admitted'}</SelectItem>
               <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
               <SelectItem value="withdrawn">{t('studentReport.withdrawn') || 'Withdrawn'}</SelectItem>
+              <SelectItem value="with_admission">{t('studentReport.withAnyAdmission')}</SelectItem>
+              <SelectItem value="without_admission">{t('studentReport.withoutAdmission')}</SelectItem>
             </SelectContent>
           </Select>
           <Select

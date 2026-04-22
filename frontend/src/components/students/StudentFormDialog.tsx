@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import React, { useEffect, useState, memo } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { GraduationCap } from 'lucide-react';
+import React, { useEffect, useState, memo, useRef } from 'react';
+import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 
 import { StudentAutocompleteInput } from './StudentAutocompleteInput';
 import { StudentDisciplineRecordsDialog } from './StudentDisciplineRecordsDialog';
@@ -49,12 +50,23 @@ import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
 
+export type StudentFormSubmitOptions = {
+    /** After creating a student, open the admission form with this student pre-selected. */
+    openAdmissionFormAfterCreate?: boolean;
+};
+
 export interface StudentFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     student?: Student | null;
     onSuccess?: () => void;
-    onSubmitData?: (values: StudentFormValues, isEdit: boolean, pictureFile?: File | null, guardianPictureFile?: File | null) => Promise<void> | void;
+    onSubmitData?: (
+        values: StudentFormValues,
+        isEdit: boolean,
+        pictureFile?: File | null,
+        guardianPictureFile?: File | null,
+        options?: StudentFormSubmitOptions
+    ) => Promise<void> | void;
 }
 
 // Use StudentFormData from shared validation schema
@@ -129,6 +141,8 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
     const { data: profile } = useProfile();
     const hasCreatePermission = useHasPermission('students.create');
     const hasUpdatePermission = useHasPermission('students.update');
+    const canSaveAndAdmit = useHasPermission('student_admissions.create');
+    const submitIntentRef = useRef<'save' | 'save_and_admit'>('save');
     const hasStudentsPermission = hasCreatePermission || hasUpdatePermission;
     const orgIdForQuery = profile?.organization_id;
     const { data: schools } = useSchools(orgIdForQuery);
@@ -328,6 +342,38 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, isEdit, academicYears]);
 
+    useEffect(() => {
+        if (open && !student) {
+            submitIntentRef.current = 'save';
+        }
+    }, [open, student]);
+
+    const onValidationError = (errors: FieldErrors<StudentFormValues>) => {
+        if (import.meta.env.DEV) {
+            console.error('[StudentFormDialog] Form validation errors:', errors);
+        }
+        const firstError = Object.values(errors)[0] as { message?: string } | undefined;
+        if (firstError?.message) {
+            showToast.error(firstError.message);
+        } else {
+            showToast.error(t('events.validationError') || 'Please fix form errors before submitting');
+        }
+        const errorField = Object.keys(errors)[0];
+        if (errorField) {
+            if (['admission_no', 'card_number', 'applying_grade', 'admission_year', 'school_id'].includes(errorField)) {
+                setActiveTab('admission');
+            } else if (['full_name', 'father_name', 'grandfather_name', 'mother_name', 'gender', 'birth_year', 'birth_date', 'age', 'preferred_language', 'nationality', 'previous_school', 'tazkira_number', 'phone'].includes(errorField)) {
+                setActiveTab('personal');
+            } else if (['orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'home_address'].includes(errorField)) {
+                setActiveTab('address');
+            } else if (['guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address'].includes(errorField)) {
+                setActiveTab('guardian');
+            } else {
+                setActiveTab('additional');
+            }
+        }
+    };
+
     const onSubmit = async (values: StudentFormValues) => {
         // Check subscription limits for new students
         if (!isEdit && !studentUsage.canCreate) {
@@ -366,8 +412,13 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
 
         if (onSubmitData) {
             try {
+                const intent = submitIntentRef.current;
+                submitIntentRef.current = 'save';
+                const openAdmissionFormAfterCreate = !isEdit && intent === 'save_and_admit';
                 // Pass the selected picture and guardian picture files to the parent so it can upload after student creation
-                await onSubmitData(values, isEdit, selectedPictureFile, selectedGuardianPictureFile);
+                await onSubmitData(values, isEdit, selectedPictureFile, selectedGuardianPictureFile, {
+                    openAdmissionFormAfterCreate,
+                });
                 // Only close dialog and call onSuccess if submission was successful
                 onSuccess?.();
                 setSelectedPictureFile(null);
@@ -390,6 +441,8 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
             onOpenChange(false);
         }
     };
+
+    const submitStudentForm = handleSubmit(onSubmit, onValidationError);
 
     return (
     <>
@@ -430,34 +483,13 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit(onSubmit, (errors) => {
-                    if (import.meta.env.DEV) {
-                        console.error('[StudentFormDialog] Form validation errors:', errors);
-                    }
-                    // Show first validation error to user
-                    const firstError = Object.values(errors)[0];
-                    if (firstError?.message) {
-                        showToast.error(firstError.message);
-                    } else {
-                        showToast.error(t('events.validationError') || 'Please fix form errors before submitting');
-                    }
-                    // Switch to the tab containing the first error
-                    if (firstError) {
-                        const errorField = Object.keys(errors)[0];
-                        // Map field names to tabs
-                        if (['admission_no', 'card_number', 'applying_grade', 'admission_year', 'school_id'].includes(errorField)) {
-                            setActiveTab('admission');
-                        } else if (['full_name', 'father_name', 'grandfather_name', 'mother_name', 'gender', 'birth_year', 'birth_date', 'age', 'preferred_language', 'nationality', 'previous_school', 'tazkira_number', 'phone'].includes(errorField)) {
-                            setActiveTab('personal');
-                        } else if (['orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'home_address'].includes(errorField)) {
-                            setActiveTab('address');
-                        } else if (['guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address'].includes(errorField)) {
-                            setActiveTab('guardian');
-                        } else {
-                            setActiveTab('additional');
-                        }
-                    }
-                })} className="flex flex-col flex-1 min-h-0">
+                <form
+                    onSubmit={(e) => {
+                        submitIntentRef.current = 'save';
+                        void submitStudentForm(e);
+                    }}
+                    className="flex flex-col flex-1 min-h-0"
+                >
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 px-4 sm:px-6">
                         <TabsList className="flex w-full gap-1 h-auto mb-3 sm:mb-4 flex-shrink-0 overflow-x-auto pb-1 scrollbar-hide">
                             <TabsTrigger value="admission" className="text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-shrink-0 min-w-fit">
@@ -1064,13 +1096,31 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                                         </Button>
                                     )}
                                 </div>
-                                <Button 
-                                    type="submit" 
-                                    className="w-full sm:w-auto sm:min-w-[150px] order-1 sm:order-2 text-sm"
-                                    disabled={!isEdit && !studentUsage.canCreate}
-                                >
-                                    {isEdit ? t('events.save') || 'Update Student' : t('events.add') || 'Register Student'}
-                                </Button>
+                                <div className="flex flex-col gap-2 w-full sm:flex-row sm:justify-end sm:items-center sm:gap-2 order-1 sm:order-2">
+                                    {!isEdit && canSaveAndAdmit ? (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full sm:w-auto text-sm flex-shrink-0"
+                                            disabled={!studentUsage.canCreate}
+                                            onClick={() => {
+                                                submitIntentRef.current = 'save_and_admit';
+                                                void submitStudentForm();
+                                            }}
+                                            aria-label={t('students.saveAndAdmit')}
+                                        >
+                                            <GraduationCap className="h-4 w-4 sm:mr-2 shrink-0" />
+                                            <span className="truncate">{t('students.saveAndAdmit')}</span>
+                                        </Button>
+                                    ) : null}
+                                    <Button
+                                        type="submit"
+                                        className="w-full sm:w-auto sm:min-w-[150px] text-sm flex-shrink-0"
+                                        disabled={!isEdit && !studentUsage.canCreate}
+                                    >
+                                        {isEdit ? t('events.save') || 'Update Student' : t('events.add') || 'Register Student'}
+                                    </Button>
+                                </div>
                             </div>
                         </DialogFooter>
                     </Tabs>

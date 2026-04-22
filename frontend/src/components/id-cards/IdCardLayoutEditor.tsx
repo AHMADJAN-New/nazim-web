@@ -128,8 +128,14 @@ const withDefaultLabelValues = (fieldValues?: Record<string, string | null>): Re
   ...(fieldValues || {}),
 });
 
-const mergeEnabledFields = (enabledFields: string[] | undefined, defaults: string[]): string[] =>
-  Array.from(new Set([...(enabledFields || []), ...defaults]));
+/**
+ * Legacy templates omit `enabledFields`; then use full defaults.
+ * When `enabledFields` is present (including []), honor it exactly so unchecked fields stay off after save/reload.
+ */
+const resolveEnabledFieldsFromStorage = (
+  enabledFields: string[] | undefined | null,
+  defaults: string[]
+): string[] => (enabledFields == null ? [...defaults] : Array.from(new Set(enabledFields)));
 
 const getFieldPreviewText = (
   field: FieldConfig,
@@ -214,14 +220,14 @@ export function IdCardLayoutEditor({
   
   const [configFront, setConfigFront] = useState<IdCardLayoutConfig>(() => ({
     ...layoutConfigFront,
-    enabledFields: mergeEnabledFields(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
+    enabledFields: resolveEnabledFieldsFromStorage(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
     fieldFonts: layoutConfigFront.fieldFonts || {},
     fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues),
   }));
 
   const [configBack, setConfigBack] = useState<IdCardLayoutConfig>(() => ({
     ...layoutConfigBack,
-    enabledFields: mergeEnabledFields(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
+    enabledFields: resolveEnabledFieldsFromStorage(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
     fieldFonts: layoutConfigBack.fieldFonts || {},
     fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues),
   }));
@@ -230,7 +236,7 @@ export function IdCardLayoutEditor({
   useEffect(() => {
     const updatedConfig = {
       ...layoutConfigFront,
-      enabledFields: mergeEnabledFields(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
+      enabledFields: resolveEnabledFieldsFromStorage(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
       fieldFonts: layoutConfigFront.fieldFonts || {},
       fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues),
     };
@@ -264,7 +270,7 @@ export function IdCardLayoutEditor({
   useEffect(() => {
     setConfigBack({
       ...layoutConfigBack,
-      enabledFields: mergeEnabledFields(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
+      enabledFields: resolveEnabledFieldsFromStorage(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
       fieldFonts: layoutConfigBack.fieldFonts || {},
       fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues),
     });

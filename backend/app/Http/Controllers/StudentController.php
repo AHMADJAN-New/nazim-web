@@ -100,6 +100,30 @@ class StudentController extends Controller
             $query->where('student_status', $request->student_status);
         }
 
+        if ($request->has('admission_presence') && $request->admission_presence) {
+            $admissionPresence = $request->input('admission_presence');
+
+            if ($admissionPresence === 'with_admission') {
+                $query->whereExists(function ($subQuery) use ($profile, $currentSchoolId) {
+                    $subQuery->select(DB::raw('1'))
+                        ->from('student_admissions as sa')
+                        ->whereColumn('sa.student_id', 'students.id')
+                        ->whereNull('sa.deleted_at')
+                        ->where('sa.organization_id', $profile->organization_id)
+                        ->where('sa.school_id', $currentSchoolId);
+                });
+            } elseif ($admissionPresence === 'without_admission') {
+                $query->whereNotExists(function ($subQuery) use ($profile, $currentSchoolId) {
+                    $subQuery->select(DB::raw('1'))
+                        ->from('student_admissions as sa')
+                        ->whereColumn('sa.student_id', 'students.id')
+                        ->whereNull('sa.deleted_at')
+                        ->where('sa.organization_id', $profile->organization_id)
+                        ->where('sa.school_id', $currentSchoolId);
+                });
+            }
+        }
+
         if ($request->has('gender') && $request->gender) {
             $query->where('gender', $request->gender);
         }

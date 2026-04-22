@@ -114,6 +114,42 @@ describe('IdCardLayoutEditor', () => {
     expect(screen.queryByText('STD-OLD')).not.toBeInTheDocument();
   });
 
+  it('does not re-enable unchecked fields from saved enabledFields after load (e.g. room)', async () => {
+    render(
+      <IdCardLayoutEditor
+        templateId="template-1"
+        backgroundImageUrlFront={null}
+        backgroundImageUrlBack={null}
+        layoutConfigFront={{
+          enabledFields: [
+            'studentName',
+            'fatherName',
+            'studentCode',
+            'admissionNumber',
+            'class',
+            // 'room' intentionally omitted — must not appear in preview
+          ],
+          studentNamePosition: { x: 30, y: 30 },
+          fatherNamePosition: { x: 30, y: 40 },
+          studentCodePosition: { x: 30, y: 50 },
+          admissionNumberPosition: { x: 30, y: 60 },
+          classPosition: { x: 30, y: 70 },
+          roomPosition: { x: 30, y: 80 },
+          fontSize: 12,
+          fontFamily: 'Arial',
+          textColor: '#000000',
+          rtl: false,
+        }}
+        layoutConfigBack={{ enabledFields: [] }}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    expect(await screen.findByText('Latest Student')).toBeInTheDocument();
+    expect(screen.queryByText('Room 11')).not.toBeInTheDocument();
+  });
+
   it('allows independent student photo width and height changes and keeps the preview framed to card width', async () => {
     const onSave = vi.fn();
 

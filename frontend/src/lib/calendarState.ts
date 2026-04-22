@@ -16,10 +16,17 @@ class CalendarState {
 
   constructor() {
     // Initialize from localStorage if available
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(DATE_PREFERENCE_KEY);
-      if (saved && Object.values(CALENDAR_TYPES).includes(saved as CalendarType)) {
-        this.currentCalendar = saved as CalendarType;
+    if (
+      typeof window !== 'undefined' &&
+      typeof localStorage?.getItem === 'function'
+    ) {
+      try {
+        const saved = localStorage.getItem(DATE_PREFERENCE_KEY);
+        if (saved && Object.values(CALENDAR_TYPES).includes(saved as CalendarType)) {
+          this.currentCalendar = saved as CalendarType;
+        }
+      } catch {
+        // Ignore storage errors (e.g. broken or stubbed localStorage in tests)
       }
     }
   }
