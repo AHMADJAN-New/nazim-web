@@ -45,6 +45,7 @@ import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
+import { useStudentAutocomplete } from '@/hooks/useStudentAutocomplete';
 import { studentsApi } from '@/lib/api/client';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 import {
@@ -119,6 +120,8 @@ const StudentReport = () => {
 
   const [statusFilter, setStatusFilter] = useState<'all' | string>('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
+  const [originalProvinceFilter, setOriginalProvinceFilter] = useState<'all' | string>('all');
+  const [applyingGradeFilter, setApplyingGradeFilter] = useState<'all' | string>('all');
   const [academicYearFilter, setAcademicYearFilter] = useState<'all' | string>('all');
   const [classFilter, setClassFilter] = useState<'all' | string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -127,6 +130,9 @@ const StudentReport = () => {
 
   const selectedAcademicYearId = academicYearFilter !== 'all' ? academicYearFilter : undefined;
   const { data: classAcademicYears = [] } = useClassAcademicYears(selectedAcademicYearId, orgIdForQuery);
+  const { data: studentAutocomplete } = useStudentAutocomplete();
+  const originalProvinceOptions = studentAutocomplete?.origProvinces ?? [];
+  const applyingGradeOptions = studentAutocomplete?.applyingGrades ?? [];
   const classOptions = useMemo(() => {
     const map = new Map<string, string>();
     classAcademicYears.forEach((entry) => {
@@ -141,9 +147,11 @@ const StudentReport = () => {
     search: searchQuery.trim() || undefined,
     student_status: statusFilter !== 'all' ? statusFilter : undefined,
     gender: genderFilter !== 'all' ? genderFilter : undefined,
+    orig_province: originalProvinceFilter !== 'all' ? originalProvinceFilter : undefined,
+    applying_grade: applyingGradeFilter !== 'all' ? applyingGradeFilter : undefined,
     academic_year_id: selectedAcademicYearId,
     class_id: classFilter !== 'all' ? classFilter : undefined,
-  }), [searchQuery, statusFilter, genderFilter, selectedAcademicYearId, classFilter]);
+  }), [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter]);
 
   const {
     data: studentsData,
@@ -175,6 +183,8 @@ const StudentReport = () => {
       search: studentFilters.search,
       student_status: studentFilters.student_status,
       gender: studentFilters.gender,
+      orig_province: studentFilters.orig_province,
+      applying_grade: studentFilters.applying_grade,
       academic_year_id: studentFilters.academic_year_id,
       class_id: studentFilters.class_id,
     });
@@ -192,7 +202,7 @@ const StudentReport = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter, genderFilter, selectedAcademicYearId, classFilter]);
+  }, [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter]);
 
   const handleViewDetails = (student: Student) => {
     setSelectedStudent(student);
@@ -237,6 +247,12 @@ const StudentReport = () => {
     }
     if (genderFilter !== 'all') {
       filters.push(`Gender: ${genderFilter}`);
+    }
+    if (originalProvinceFilter !== 'all') {
+      filters.push(`Original Province: ${originalProvinceFilter}`);
+    }
+    if (applyingGradeFilter !== 'all') {
+      filters.push(`Applying Grade: ${applyingGradeFilter}`);
     }
     if (selectedAcademicYearId) {
       const yearName = academicYears.find((year) => year.id === selectedAcademicYearId)?.name;
@@ -338,21 +354,46 @@ const StudentReport = () => {
       accessorKey: 'admissionNumber',
       header: t('examReports.admissionNo') || 'Admission #',
       cell: ({ row }) => (
-        <div className="font-medium">{row.original.admissionNumber || '—'}</div>
+        <div className="space-y-1">
+          <div className="font-medium">{row.original.admissionNumber || '—'}</div>
+          <div className="text-xs text-muted-foreground">{row.original.cardNumber || '—'}</div>
+        </div>
       ),
     },
     {
       accessorKey: 'fullName',
       header: t('userManagement.fullName') || 'Name',
       cell: ({ row }) => (
-        <div className="font-semibold min-w-0 break-words">
-          {row.original.fullName}
-          {/* Show ID on mobile since ID column is hidden */}
-          <div className="text-xs text-muted-foreground sm:hidden font-mono mt-1">
+        <div className="min-w-0 space-y-1">
+          <div className="font-semibold break-words">{row.original.fullName}</div>
+          <div className="text-xs text-muted-foreground break-words">
+            {row.original.fatherName || '—'}
+          </div>
+          <div className="flex items-center gap-2 sm:hidden">
+            <Badge variant="secondary" className="text-[10px]">
+              {row.original.applyingGrade || (t('students.applyingGrade') || 'Applying Grade')}
+            </Badge>
+            {row.original.origProvince ? (
+              <Badge variant="outline" className="text-[10px]">
+                {row.original.origProvince}
+              </Badge>
+            ) : null}
+          </div>
+          <div className="text-xs text-muted-foreground sm:hidden font-mono">
             ID: {row.original.studentCode || row.original.admissionNumber || '—'}
           </div>
         </div>
       ),
+    },
+    {
+      accessorKey: 'applyingGrade',
+      header: t('students.applyingGrade') || 'Applying Grade',
+      cell: ({ row }) => (
+        <Badge variant="secondary">{row.original.applyingGrade || '—'}</Badge>
+      ),
+      meta: {
+        className: 'hidden md:table-cell',
+      },
     },
     {
       accessorKey: 'cardNumber',
@@ -362,6 +403,16 @@ const StudentReport = () => {
       ),
       meta: {
         className: 'hidden md:table-cell',
+      },
+    },
+    {
+      accessorKey: 'origProvince',
+      header: t('students.origProvince') || 'Original Province',
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.origProvince || '—'}</div>
+      ),
+      meta: {
+        className: 'hidden lg:table-cell',
       },
     },
     {
@@ -505,7 +556,7 @@ const StudentReport = () => {
       />
 
       <FilterPanel title={t('events.filters') || 'Filters'}>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <div className="relative min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -589,6 +640,44 @@ const StudentReport = () => {
               <SelectItem value="female">{t('studentReport.female') || 'Female'}</SelectItem>
             </SelectContent>
           </Select>
+          <Select
+            value={originalProvinceFilter}
+            onValueChange={(value) => {
+              setOriginalProvinceFilter(value as typeof originalProvinceFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('students.origProvince') || 'Original Province'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{`${t('common.all') || 'All'} ${t('students.origProvince') || 'Provinces'}`}</SelectItem>
+              {originalProvinceOptions.map((province) => (
+                <SelectItem key={province} value={province}>
+                  {province}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={applyingGradeFilter}
+            onValueChange={(value) => {
+              setApplyingGradeFilter(value as typeof applyingGradeFilter);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('students.applyingGrade') || 'Applying Grade'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{`${t('common.all') || 'All'} ${t('students.applyingGrade') || 'Grades'}`}</SelectItem>
+              {applyingGradeOptions.map((grade) => (
+                <SelectItem key={grade} value={grade}>
+                  {grade}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </FilterPanel>
 
@@ -614,7 +703,9 @@ const StudentReport = () => {
                             let headerClassName = '';
                             if (columnId === 'avatar') headerClassName = 'w-[60px]';
                             else if (columnId === 'studentCode') headerClassName = 'hidden sm:table-cell';
+                            else if (columnId === 'applyingGrade') headerClassName = 'hidden md:table-cell';
                             else if (columnId === 'cardNumber') headerClassName = 'hidden md:table-cell';
+                            else if (columnId === 'origProvince') headerClassName = 'hidden lg:table-cell';
                             else if (columnId === 'originLocation') headerClassName = 'hidden lg:table-cell';
                             else if (columnId === 'birthYear') headerClassName = 'hidden lg:table-cell';
                             else if (columnId === 'actions') headerClassName = 'w-[60px]';
@@ -647,7 +738,9 @@ const StudentReport = () => {
                             let cellClassName = '';
                             if (columnId === 'avatar') cellClassName = 'w-[60px]';
                             else if (columnId === 'studentCode') cellClassName = 'hidden sm:table-cell';
+                            else if (columnId === 'applyingGrade') cellClassName = 'hidden md:table-cell';
                             else if (columnId === 'cardNumber') cellClassName = 'hidden md:table-cell';
+                            else if (columnId === 'origProvince') cellClassName = 'hidden lg:table-cell';
                             else if (columnId === 'originLocation') cellClassName = 'hidden lg:table-cell';
                             else if (columnId === 'birthYear') cellClassName = 'hidden lg:table-cell';
                             else if (columnId === 'actions') cellClassName = 'w-[60px]';

@@ -5002,6 +5002,7 @@ export const TRANSLATION_KEYS = [
   "students.notes",
   "students.notesPlaceholder",
   "students.organization",
+  "students.origProvince",
   "students.originAddress",
   "students.originDistrict",
   "students.originProvince",

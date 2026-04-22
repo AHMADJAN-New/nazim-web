@@ -6,6 +6,7 @@ import { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { useStudents } from '../hooks/useStudents';
+import { studentsApi } from '@/lib/api/client';
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
@@ -81,5 +82,41 @@ describe('useStudents', () => {
     expect(result.current.error).toBeFalsy();
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0]).toMatchObject({ admissionNumber: 'ADM-1', fullName: 'Test Student' });
+  });
+
+  it('passes original province filter to students API', async () => {
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    renderHook(() => useStudents('org-1', false, { orig_province: 'Kabul' }), { wrapper });
+
+    await waitFor(() => {
+      expect(studentsApi.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organization_id: 'org-1',
+          orig_province: 'Kabul',
+        })
+      );
+    });
+  });
+
+  it('passes applying grade filter to students API', async () => {
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    renderHook(() => useStudents('org-1', false, { applying_grade: 'Grade 7' } as any), { wrapper });
+
+    await waitFor(() => {
+      expect(studentsApi.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organization_id: 'org-1',
+          applying_grade: 'Grade 7',
+        })
+      );
+    });
   });
 });

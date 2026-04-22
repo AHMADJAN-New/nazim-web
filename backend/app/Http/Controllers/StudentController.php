@@ -104,6 +104,14 @@ class StudentController extends Controller
             $query->where('gender', $request->gender);
         }
 
+        if ($request->has('orig_province') && $request->orig_province) {
+            $query->where('orig_province', $request->orig_province);
+        }
+
+        if ($request->has('applying_grade') && $request->applying_grade) {
+            $query->where('applying_grade', $request->applying_grade);
+        }
+
         if ($request->has('is_orphan') && $request->is_orphan !== null) {
             $query->where('is_orphan', filter_var($request->is_orphan, FILTER_VALIDATE_BOOLEAN));
         }
@@ -1045,6 +1053,7 @@ class StudentController extends Controller
                 'fatherNames' => [],
                 'grandfatherNames' => [],
                 'origProvinces' => [],
+                'applyingGrades' => [],
                 'currProvinces' => [],
                 'origDistricts' => [],
                 'currDistricts' => [],
@@ -1065,6 +1074,7 @@ class StudentController extends Controller
         $fatherNames = (clone $query)->whereNotNull('father_name')->where('father_name', '!=', '')->distinct()->pluck('father_name')->sort()->values()->toArray();
         $grandfatherNames = (clone $query)->whereNotNull('grandfather_name')->where('grandfather_name', '!=', '')->distinct()->pluck('grandfather_name')->sort()->values()->toArray();
         $origProvinces = (clone $query)->whereNotNull('orig_province')->where('orig_province', '!=', '')->distinct()->pluck('orig_province')->sort()->values()->toArray();
+        $applyingGrades = (clone $query)->whereNotNull('applying_grade')->where('applying_grade', '!=', '')->distinct()->pluck('applying_grade')->sort()->values()->toArray();
         $currProvinces = (clone $query)->whereNotNull('curr_province')->where('curr_province', '!=', '')->distinct()->pluck('curr_province')->sort()->values()->toArray();
         $origDistricts = (clone $query)->whereNotNull('orig_district')->where('orig_district', '!=', '')->distinct()->pluck('orig_district')->sort()->values()->toArray();
         $currDistricts = (clone $query)->whereNotNull('curr_district')->where('curr_district', '!=', '')->distinct()->pluck('curr_district')->sort()->values()->toArray();
@@ -1078,6 +1088,7 @@ class StudentController extends Controller
             'fatherNames' => $fatherNames,
             'grandfatherNames' => $grandfatherNames,
             'origProvinces' => $origProvinces,
+            'applyingGrades' => $applyingGrades,
             'currProvinces' => $currProvinces,
             'origDistricts' => $origDistricts,
             'currDistricts' => $currDistricts,

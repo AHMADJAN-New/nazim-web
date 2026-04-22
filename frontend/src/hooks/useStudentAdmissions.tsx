@@ -67,6 +67,7 @@ export type { StudentAdmission, StudentAdmissionInsert, StudentAdmissionUpdate, 
 
 export interface StudentAdmissionFilters {
   search?: string;
+  orig_province?: string;
   student_id?: string;
   enrollment_status?: string;
   academic_year_id?: string;
@@ -114,6 +115,7 @@ export const useStudentAdmissions = (
           class_academic_year_id?: string;
           residency_type_id?: string;
           is_boarder?: boolean;
+          orig_province?: string;
           search?: string;
           school_id?: string;
         } = {
@@ -151,6 +153,9 @@ export const useStudentAdmissions = (
           }
           if (filters.search) {
             params.search = filters.search;
+          }
+          if (filters.orig_province) {
+            params.orig_province = filters.orig_province;
           }
           if (filters.school_id) {
             params.school_id = filters.school_id;

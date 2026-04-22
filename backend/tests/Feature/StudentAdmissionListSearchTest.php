@@ -85,4 +85,39 @@ class StudentAdmissionListSearchTest extends TestCase
         $byCard->assertStatus(200);
         $this->assertSame(1, $byCard->json('pagination.total'));
     }
+
+    #[Test]
+    public function admissions_list_can_be_filtered_by_student_origin_province(): void
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $academicYear = $this->createAcademicYearForSchool($organization, $school);
+        $class = $this->createClassForSchool($organization, $school);
+        $classAcademicYear = $this->createClassAcademicYearForSchool($organization, $school, $class, $academicYear);
+
+        $kabulStudent = $this->createStudentForSchool($organization, $school, [
+            'full_name' => 'Kabul Province Student',
+            'orig_province' => 'Kabul',
+        ]);
+        $this->createStudentAdmissionForSchool($organization, $school, $kabulStudent, $academicYear, $class, $classAcademicYear);
+
+        $heratStudent = $this->createStudentForSchool($organization, $school, [
+            'full_name' => 'Herat Province Student',
+            'orig_province' => 'Herat',
+        ]);
+        $this->createStudentAdmissionForSchool($organization, $school, $heratStudent, $academicYear, $class, $classAcademicYear);
+
+        $response = $this->jsonAs($user, 'GET', '/api/student-admissions', [
+            'page' => 1,
+            'per_page' => 25,
+            'orig_province' => 'Kabul',
+        ]);
+
+        $response->assertStatus(200);
+        $rows = $response->json('data');
+        $this->assertCount(1, $rows);
+        $this->assertSame($kabulStudent->id, $rows[0]['student_id']);
+    }
 }

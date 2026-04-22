@@ -178,6 +178,7 @@ export default {
     organization: "Organization",
     originAddress: "Origin Address",
     originDistrict: "Origin District",
+    origProvince: "Origin Province",
     originProvince: "Origin Province",
     originVillage: "Origin Village",
     orphan: "Orphan",

@@ -274,6 +274,70 @@ class StudentManagementTest extends TestCase
     }
 
     /** @test */
+    public function user_can_filter_students_by_origin_province()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        Student::factory()->count(3)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'orig_province' => 'Kabul',
+        ]);
+
+        Student::factory()->count(2)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'orig_province' => 'Herat',
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students', [
+            'orig_province' => 'Kabul',
+        ]);
+
+        $response->assertStatus(200);
+        $students = $response->json();
+
+        $this->assertCount(3, $students);
+        foreach ($students as $student) {
+            $this->assertEquals('Kabul', $student['orig_province']);
+        }
+    }
+
+    /** @test */
+    public function user_can_filter_students_by_applying_grade()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        Student::factory()->count(2)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'applying_grade' => 'Grade 7',
+        ]);
+
+        Student::factory()->count(3)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'applying_grade' => 'Grade 8',
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students', [
+            'applying_grade' => 'Grade 7',
+        ]);
+
+        $response->assertStatus(200);
+        $students = $response->json();
+
+        $this->assertCount(2, $students);
+        foreach ($students as $student) {
+            $this->assertEquals('Grade 7', $student['applying_grade']);
+        }
+    }
+
+    /** @test */
     public function user_can_search_students_by_name()
     {
         $user = $this->authenticate();

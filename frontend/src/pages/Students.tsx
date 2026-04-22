@@ -31,6 +31,7 @@ import type { Student } from '@/types/domain/student';
 import { useStudentGuardianPictureUpload } from '@/hooks/useStudentGuardianPictureUpload';
 import { useStudentIdCards, useExportIndividualIdCard } from '@/hooks/useStudentIdCards';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
+import { useStudentAutocomplete } from '@/hooks/useStudentAutocomplete';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -299,16 +300,17 @@ export function Students() {
   }, [classAcademicYears]);
 
   const [statusFilter, setStatusFilter] = useState<'all' | Student['status']>('all');
-  const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
+  const [originalProvinceFilter, setOriginalProvinceFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const { data: studentAutocomplete } = useStudentAutocomplete();
 
   const studentFilters = useMemo(() => ({
     search: searchQuery.trim() || undefined,
     student_status: statusFilter !== 'all' ? statusFilter : undefined,
-    gender: genderFilter !== 'all' ? genderFilter : undefined,
+    orig_province: originalProvinceFilter !== 'all' ? originalProvinceFilter : undefined,
     academic_year_id: selectedAcademicYearId,
     class_id: classFilter !== 'all' ? classFilter : undefined,
-  }), [searchQuery, statusFilter, genderFilter, selectedAcademicYearId, classFilter]);
+  }), [searchQuery, statusFilter, originalProvinceFilter, selectedAcademicYearId, classFilter]);
 
   // Use paginated version of the hook
   const { 
@@ -822,12 +824,30 @@ export function Students() {
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter, genderFilter, selectedAcademicYearId, classFilter, setPage]);
+  }, [searchQuery, statusFilter, originalProvinceFilter, selectedAcademicYearId, classFilter, setPage]);
 
   // Server-side filtering returns only matching records.
   const filteredStudents = useMemo(() => {
     return students || [];
   }, [students]);
+  const filteredRecordsCount = pagination?.total ?? filteredStudents.length;
+  const originalProvinceOptions = useMemo(() => {
+    const options = new Set<string>();
+
+    (studentAutocomplete?.origProvinces ?? []).forEach((province) => {
+      if (province && province.trim()) {
+        options.add(province.trim());
+      }
+    });
+
+    (students ?? []).forEach((student) => {
+      if (student.origProvince && student.origProvince.trim()) {
+        options.add(student.origProvince.trim());
+      }
+    });
+
+    return Array.from(options).sort((a, b) => a.localeCompare(b));
+  }, [studentAutocomplete?.origProvinces, students]);
 
   const visibleStudentIds = useMemo(() => filteredStudents.map((s) => s.id), [filteredStudents]);
   const allVisibleSelected =
@@ -1247,14 +1267,24 @@ export function Students() {
               <SelectItem value="withdrawn">{t('students.withdrawn') || 'Withdrawn'}</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={genderFilter} onValueChange={(value) => setGenderFilter(value as typeof genderFilter)}>
-            <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder={t('students.gender') || 'Gender'} />
+          <Select value={originalProvinceFilter} onValueChange={setOriginalProvinceFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t('students.originProvince') || 'Original Province'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('students.allGenders') || 'All Genders'}</SelectItem>
-              <SelectItem value="male">{t('students.male') || 'Male'}</SelectItem>
-              <SelectItem value="female">{t('students.female') || 'Female'}</SelectItem>
+              <SelectItem value="all">
+                {`${t('common.all') || 'All'} ${t('students.originProvince') || 'Provinces'}`}
+              </SelectItem>
+              {originalProvinceOptions.map((province) => (
+                <SelectItem key={province} value={province}>
+                  {province}
+                </SelectItem>
+              ))}
+              {originalProvinceOptions.length === 0 ? (
+                <SelectItem value="no-province-options" disabled>
+                  {t('students.noDataFound') || 'No data found.'}
+                </SelectItem>
+              ) : null}
             </SelectContent>
           </Select>
         </div>
@@ -1277,7 +1307,12 @@ export function Students() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('students.list') || 'Student Registrations'}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <span>{t('students.list') || 'Student Registrations'}</span>
+            <Badge variant="outline" className="text-xs font-normal">
+              {t('websitePublic.filteredResults') || 'Filtered Results'}: {filteredRecordsCount}
+            </Badge>
+          </CardTitle>
           <CardDescription>{t('students.listDescription') || 'Search, filter and update admissions.'}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1303,7 +1338,7 @@ export function Students() {
                           </TableHead>
                         ) : null}
                         <TableHead className="w-[60px]">{t('students.picture') || 'Picture'}</TableHead>
-                        <TableHead className="hidden sm:table-cell">{t('examReports.admissionNo') || 'Admission #'}</TableHead>
+                        <TableHead className="hidden sm:table-cell">{t('students.admissionNumber') || 'Admission #'}</TableHead>
                         <TableHead className="min-w-[200px]">{t('students.student') || 'Student'}</TableHead>
                         <TableHead className="hidden md:table-cell">{t('students.school') || 'School'}</TableHead>
                         <TableHead className="hidden lg:table-cell">{t('students.tableAdmissionColumn')}</TableHead>
@@ -1341,7 +1376,12 @@ export function Students() {
                             <TableCell className="w-[60px]">
                               <StudentPictureCell student={student} />
                             </TableCell>
-                            <TableCell className="font-medium hidden sm:table-cell">{student.admissionNumber}</TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                              <div className="space-y-1">
+                                <div className="font-medium">داخله نمبر: {student.admissionNumber || '—'}</div>
+                                <div className="text-xs text-muted-foreground">کارت: {student.cardNumber || '—'}</div>
+                              </div>
+                            </TableCell>
                             <TableCell className="min-w-[200px]">
                               <div className="space-y-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -1364,6 +1404,9 @@ export function Students() {
                                 {/* Show admission number on mobile */}
                                 <div className="text-xs text-muted-foreground sm:hidden">
                                   {t('examReports.admissionNo') || 'Admission #'}: {student.admissionNumber}
+                                </div>
+                                <div className="text-xs text-muted-foreground sm:hidden">
+                                  {t('students.cardNumber') || 'Card Number'}: {student.cardNumber || '—'}
                                 </div>
                                 <div className="text-xs text-muted-foreground sm:hidden">
                                   {t('students.mobileAdmissionPrefix')}:{' '}

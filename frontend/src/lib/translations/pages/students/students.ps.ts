@@ -178,6 +178,7 @@ export default {
     organization: "سازمان",
     originAddress: "اصلي پته",
     originDistrict: "اصلي ولسوالۍ",
+    origProvince: "اصلي ولایت",
     originProvince: "اصلي ولایت",
     originVillage: "اصلي کلی",
     orphan: "یتیم",

@@ -1915,6 +1915,8 @@ export const studentsApi = {
     school_id?: string;
     student_status?: string;
     gender?: string;
+    orig_province?: string;
+    applying_grade?: string;
     is_orphan?: boolean;
     admission_fee_status?: string;
     academic_year_id?: string;
@@ -1932,6 +1934,8 @@ export const studentsApi = {
     school_id?: string;
     student_status?: string;
     gender?: string;
+    orig_province?: string;
+    applying_grade?: string;
     is_orphan?: boolean;
     admission_fee_status?: string;
     academic_year_id?: string;
@@ -2235,6 +2239,7 @@ export const studentAdmissionsApi = {
     enrollment_status?: string;
     is_boarder?: boolean;
     residency_type_id?: string;
+    orig_province?: string;
     search?: string;
     school_id?: string;
     page?: number;

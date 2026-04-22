@@ -178,6 +178,7 @@ export default {
     organization: "سازمان",
     originAddress: "آدرس اصلی",
     originDistrict: "ولسوالی اصلی",
+    origProvince: "ولایت اصلی",
     originProvince: "ولایت اصلی",
     originVillage: "قریه اصلی",
     orphan: "یتیم",

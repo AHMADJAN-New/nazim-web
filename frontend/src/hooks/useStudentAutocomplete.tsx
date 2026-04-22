@@ -9,6 +9,7 @@ export interface StudentAutocompleteData {
     fatherNames: string[];
     grandfatherNames: string[];
     origProvinces: string[];
+    applyingGrades: string[];
     currProvinces: string[];
     origDistricts: string[];
     currDistricts: string[];
@@ -31,6 +32,7 @@ export function useStudentAutocomplete() {
                     fatherNames: [],
                     grandfatherNames: [],
                     origProvinces: [],
+                    applyingGrades: [],
                     currProvinces: [],
                     origDistricts: [],
                     currDistricts: [],

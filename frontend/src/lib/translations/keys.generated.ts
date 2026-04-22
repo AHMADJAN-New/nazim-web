@@ -5983,6 +5983,7 @@ export const TRANSLATION_KEYS = [
   "students.notesPlaceholder",
   "students.notInClass",
   "students.organization",
+  "students.origProvince",
   "students.originAddress",
   "students.originDistrict",
   "students.originProvince",

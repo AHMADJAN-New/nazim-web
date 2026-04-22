@@ -18,6 +18,7 @@ import { useSchools } from '@/hooks/useSchools';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useStudents } from '@/hooks/useStudents';
+import { useStudentAutocomplete } from '@/hooks/useStudentAutocomplete';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
 import { useRooms } from '@/hooks/useRooms';
 import {
@@ -88,6 +89,7 @@ export function StudentAdmissions() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [academicYearFilter, setAcademicYearFilter] = useState<string>('all');
   const [classFilter, setClassFilter] = useState<string>('all');
+  const [originalProvinceFilter, setOriginalProvinceFilter] = useState<string>('all');
 
   const selectedAcademicYearId = academicYearFilter !== 'all' ? academicYearFilter : undefined;
   const { data: academicYears = [] } = useAcademicYears(orgIdForQuery);
@@ -104,11 +106,12 @@ export function StudentAdmissions() {
 
   const admissionFilters = useMemo(() => ({
     search: searchQuery.trim() || undefined,
+    orig_province: originalProvinceFilter !== 'all' ? originalProvinceFilter : undefined,
     enrollment_status: statusFilter !== 'all' ? statusFilter : undefined,
     residency_type_id: residencyFilter !== 'all' ? residencyFilter : undefined,
     academic_year_id: selectedAcademicYearId,
     class_id: classFilter !== 'all' ? classFilter : undefined,
-  }), [searchQuery, statusFilter, residencyFilter, selectedAcademicYearId, classFilter]);
+  }), [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter]);
 
   const { 
     admissions, 
@@ -133,6 +136,7 @@ export function StudentAdmissions() {
   }, [admissions, admissionsError]);
   const { stats } = useAdmissionStats(orgIdForQuery);
   const { data: students } = useStudents(orgIdForQuery);
+  const { data: studentAutocomplete } = useStudentAutocomplete();
   const { data: schools } = useSchools(orgIdForQuery);
   const { data: residencyTypes } = useResidencyTypes(orgIdForQuery);
   const { data: rooms } = useRooms(undefined, orgIdForQuery);
@@ -158,12 +162,31 @@ export function StudentAdmissions() {
   useEffect(() => {
     setPage(1);
     setSelectedAdmissionIds(new Set());
-  }, [searchQuery, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, setPage]);
+  }, [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, setPage]);
 
   // Server-side filtering returns only matching records.
   const filteredAdmissions = useMemo(() => {
     return admissions || [];
   }, [admissions]);
+  const filteredRecordsCount = pagination?.total ?? filteredAdmissions.length;
+  const originalProvinceOptions = useMemo(() => {
+    const options = new Set<string>();
+
+    (studentAutocomplete?.origProvinces ?? []).forEach((province) => {
+      if (province && province.trim()) {
+        options.add(province.trim());
+      }
+    });
+
+    (students ?? []).forEach((student) => {
+      const province = student.origProvince;
+      if (province && province.trim()) {
+        options.add(province.trim());
+      }
+    });
+
+    return Array.from(options).sort((a, b) => a.localeCompare(b));
+  }, [studentAutocomplete?.origProvinces, students]);
 
   const getAdmissionStatusLabel = (status: AdmissionStatus) => {
     switch (status) {
@@ -291,16 +314,16 @@ export function StudentAdmissions() {
                 </Badge>
               )}
             </div>
-            {admission.student?.admissionNumber && (
+            {admission.student?.cardNumber && (
               <div className="text-xs text-muted-foreground">
-                {t('admissions.admissionNumber') || 'Admission #'}: {admission.student.admissionNumber}
+                {t('students.cardNumber') || 'Card Number'}: {admission.student.cardNumber}
               </div>
             )}
-            {/* Show admission # on mobile (same as desktop admission column) */}
+            {/* Show card number on mobile under student details */}
             <div className="text-xs text-muted-foreground sm:hidden space-y-0.5">
               <div className="font-mono">
-                {t('admissions.admissionNumber')}:{' '}
-                {admission.student?.admissionNumber || admission.student?.studentCode || '—'}
+                {t('students.cardNumber') || 'Card Number'}:{' '}
+                {admission.student?.cardNumber || '—'}
               </div>
               {admission.student?.studentCode &&
                 admission.student?.admissionNumber &&
@@ -706,12 +729,37 @@ export function StudentAdmissions() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={originalProvinceFilter} onValueChange={setOriginalProvinceFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t('students.originProvince') || 'Original Province'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                {`${t('common.all') || 'All'} ${t('students.originProvince') || 'Provinces'}`}
+              </SelectItem>
+              {originalProvinceOptions.map((province) => (
+                <SelectItem key={province} value={province}>
+                  {province}
+                </SelectItem>
+              ))}
+              {originalProvinceOptions.length === 0 ? (
+                <SelectItem value="no-province-options" disabled>
+                  {t('admissions.noDataFound') || 'No data found.'}
+                </SelectItem>
+              ) : null}
+            </SelectContent>
+          </Select>
         </div>
       </FilterPanel>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('admissions.list') || 'Admissions'}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <span>{t('admissions.list') || 'Admissions'}</span>
+            <Badge variant="outline" className="text-xs font-normal">
+              {t('websitePublic.filteredResults') || 'Filtered Results'}: {filteredRecordsCount}
+            </Badge>
+          </CardTitle>
           <CardDescription>{t('admissions.listDescription') || 'Overview of class placements and residency tracking.'}</CardDescription>
         </CardHeader>
         <CardContent>

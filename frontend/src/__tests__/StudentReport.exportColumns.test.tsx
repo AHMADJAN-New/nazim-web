@@ -83,6 +83,15 @@ vi.mock('@/hooks/useStudents', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useStudentAutocomplete', () => ({
+  useStudentAutocomplete: () => ({
+    data: {
+      origProvinces: ['Kabul', 'Herat'],
+      applyingGrades: ['Grade 7', 'Grade 8'],
+    },
+  }),
+}));
+
 vi.mock('@/hooks/use-data-table', () => ({
   useDataTable: () => ({
     table: {

@@ -37,6 +37,8 @@ export interface StudentFilters {
   search?: string;
   student_status?: string;
   gender?: string;
+  orig_province?: string;
+  applying_grade?: string;
   is_orphan?: boolean;
   admission_fee_status?: string;
   academic_year_id?: string;
@@ -76,6 +78,8 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
           search?: string;
           student_status?: string;
           gender?: string;
+          orig_province?: string;
+          applying_grade?: string;
           is_orphan?: boolean;
           admission_fee_status?: string;
           academic_year_id?: string;
@@ -95,6 +99,8 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
           if (filters.search) params.search = filters.search;
           if (filters.student_status) params.student_status = filters.student_status;
           if (filters.gender) params.gender = filters.gender;
+          if (filters.orig_province) params.orig_province = filters.orig_province;
+          if (filters.applying_grade) params.applying_grade = filters.applying_grade;
           if (typeof filters.is_orphan === 'boolean') params.is_orphan = filters.is_orphan;
           if (filters.admission_fee_status) params.admission_fee_status = filters.admission_fee_status;
           if (filters.academic_year_id) params.academic_year_id = filters.academic_year_id;

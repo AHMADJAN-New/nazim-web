@@ -125,6 +125,12 @@ class StudentAdmissionController extends Controller
             $query->where('residency_type_id', $request->residency_type_id);
         }
 
+        if ($request->has('orig_province') && $request->orig_province) {
+            $query->whereHas('student', function ($studentQuery) use ($request) {
+                $studentQuery->where('orig_province', $request->orig_province);
+            });
+        }
+
         if ($request->filled('search')) {
             $this->applyAdmissionsStudentSearch($query, $request->input('search'));
         }

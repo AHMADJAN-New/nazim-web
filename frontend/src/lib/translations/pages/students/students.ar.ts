@@ -178,6 +178,7 @@ export default {
     organization: "المنظمة",
     originAddress: "العنوان الأصلي",
     originDistrict: "المنطقة الأصلية",
+    origProvince: "المحافظة الأصلية",
     originProvince: "المحافظة الأصلية",
     originVillage: "القرية الأصلية",
     orphan: "يتيم",
