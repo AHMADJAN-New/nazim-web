@@ -204,13 +204,23 @@ class StudentImportController extends Controller
             ];
             Cache::put($this->statusKey($jobId), $statusPayload, now()->addHours(6));
 
-            StudentImportCommitJob::dispatch(
-                $jobId,
-                $storedPath,
-                $organizationId,
-                $schoolId,
-                (string) $user->id
-            );
+            if ($this->shouldDispatchAfterResponse()) {
+                StudentImportCommitJob::dispatchAfterResponse(
+                    $jobId,
+                    $storedPath,
+                    $organizationId,
+                    $schoolId,
+                    (string) $user->id
+                );
+            } else {
+                StudentImportCommitJob::dispatch(
+                    $jobId,
+                    $storedPath,
+                    $organizationId,
+                    $schoolId,
+                    (string) $user->id
+                );
+            }
 
             return response()->json([
                 'accepted' => true,
@@ -307,6 +317,12 @@ class StudentImportController extends Controller
     {
         return "student_import_job:{$jobId}";
     }
-}
 
+    private function shouldDispatchAfterResponse(): bool
+    {
+        $queueConnection = (string) config('queue.default', 'database');
+
+        return $queueConnection === 'database' && app()->environment(['local', 'testing']);
+    }
+}
 

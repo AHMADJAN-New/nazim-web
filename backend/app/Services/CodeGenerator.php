@@ -150,17 +150,27 @@ class CodeGenerator
             if ($counter->last_value < $maxSeq) {
                 $counter->update(['last_value' => $maxSeq]);
             }
-            $counter->refresh();
+            $startSequence = max($maxSeq, (int) $counter->last_value) + 1;
+            $endSequence = $startSequence + count($schoolIdsPerCode) - 1;
 
+            if ((int) $counter->last_value !== $endSequence) {
+                $counter->update(['last_value' => $endSequence]);
+            }
+
+            $middleSegmentsBySchool = [];
             $codes = [];
-            foreach ($schoolIdsPerCode as $schoolId) {
-                $counter->increment('last_value');
-                $counter->refresh();
-                $middle = self::studentCodeMiddleSegmentFromAcademicYear(
-                    $organizationId,
-                    is_string($schoolId) && $schoolId !== '' ? $schoolId : null
-                );
-                $codes[] = 'ST-'.$middle.'-'.self::formatStudentSequence((int) $counter->last_value);
+            foreach ($schoolIdsPerCode as $offset => $schoolId) {
+                $normalizedSchoolId = is_string($schoolId) && $schoolId !== '' ? $schoolId : null;
+                $segmentKey = $normalizedSchoolId ?? '__org__';
+
+                if (! array_key_exists($segmentKey, $middleSegmentsBySchool)) {
+                    $middleSegmentsBySchool[$segmentKey] = self::studentCodeMiddleSegmentFromAcademicYear(
+                        $organizationId,
+                        $normalizedSchoolId
+                    );
+                }
+
+                $codes[] = 'ST-'.$middleSegmentsBySchool[$segmentKey].'-'.self::formatStudentSequence($startSequence + $offset);
             }
 
             return $codes;
