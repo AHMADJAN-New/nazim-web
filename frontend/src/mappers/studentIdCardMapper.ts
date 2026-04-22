@@ -51,6 +51,7 @@ export function mapStudentIdCardApiToDomain(api: StudentIdCardApi.StudentIdCard)
     studentAdmission: api.student_admission ? {
       id: api.student_admission.id,
       enrollmentStatus: api.student_admission.enrollment_status,
+      isBoarder: api.student_admission.is_boarder,
       classId: api.student_admission.class_id,
       classAcademicYearId: api.student_admission.class_academic_year_id,
       room: api.student_admission.room ? {

@@ -36,6 +36,7 @@ export interface StudentIdCard {
   studentAdmission?: {
     id: string;
     enrollmentStatus: string;
+    isBoarder?: boolean;
     classId: string | null;
     classAcademicYearId: string | null;
     room?: {

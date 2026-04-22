@@ -38,6 +38,7 @@ export interface StudentIdCard {
   student_admission?: {
     id: string;
     enrollment_status: string;
+    is_boarder?: boolean;
     class_id: string | null;
     class_academic_year_id: string | null;
     room?: {

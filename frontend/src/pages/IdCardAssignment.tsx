@@ -130,6 +130,10 @@ function AssignedIdCardStudentAvatar({ card }: { card: StudentIdCard }) {
   );
 }
 
+function formatRoomLabel(roomNumber?: string | null) {
+  return roomNumber?.trim() ? roomNumber : '—';
+}
+
 export default function IdCardAssignment() {
   const { t } = useLanguage();
   const { profile } = useAuth();
@@ -704,6 +708,28 @@ export default function IdCardAssignment() {
     [filteredCards]
   );
 
+  const getResidencyLabel = useCallback(
+    (isBoarder?: boolean | null) =>
+      isBoarder == null
+        ? '—'
+        : isBoarder
+        ? t('admissions.boarderYes') || t('admissions.boarder') || 'Boarder'
+        : t('admissions.boarderNo') || 'Day Scholar',
+    [t],
+  );
+
+  const renderResidencyBadge = useCallback(
+    (isBoarder?: boolean | null) =>
+      isBoarder == null ? (
+        <span className="text-muted-foreground">—</span>
+      ) : (
+        <Badge variant={isBoarder ? 'default' : 'secondary'}>
+          {getResidencyLabel(isBoarder)}
+        </Badge>
+      ),
+    [getResidencyLabel],
+  );
+
   useEffect(() => {
     const validIds = new Set(unprintedCards.map((c) => c.id));
     setSelectedCardsForBulkAction((prev) => {
@@ -1097,6 +1123,9 @@ export default function IdCardAssignment() {
                               <div className="text-sm text-muted-foreground">
                                 {t('examReports.admissionNo') || 'Admission'}: {courseStudent.admissionNo}
                               </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {(t('admissions.room') || 'Room')}: {formatRoomLabel(null)} • {getResidencyLabel(undefined)}
+                              </div>
                               <div className="flex gap-1 mt-1">
                                 {item.hasCard ? (
                                   <Badge variant="default" className="text-xs">
@@ -1176,6 +1205,9 @@ export default function IdCardAssignment() {
                               <div className="font-medium truncate">{student.fullName}</div>
                               <div className="text-sm text-muted-foreground">
                                 {t('examReports.admissionNo') || 'Admission'}: {student.admissionNumber}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {(t('admissions.room') || 'Room')}: {formatRoomLabel(admission.room?.roomNumber)} • {getResidencyLabel(admission.isBoarder)}
                               </div>
                               <div className="flex gap-1 mt-1">
                                 {item.hasCard ? (
@@ -1585,12 +1617,15 @@ export default function IdCardAssignment() {
                         {t('idCards.noCards') || 'No ID cards found'}
                       </div>
                     ) : (
-                      <Table>
+                      <div className="overflow-x-auto rounded-md border">
+                      <Table className="min-w-[1040px]">
                         <TableHeader>
                           <TableRow>
                             <TableHead>{t('students.student') || 'Student'}</TableHead>
                             <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
                             <TableHead>{studentType === 'course' ? (t('courses.course') || 'Course') : (t('search.class') || 'Class')}</TableHead>
+                            <TableHead>{t('admissions.room') || 'Room'}</TableHead>
+                            <TableHead>{t('admissions.boarder') || 'Residency'}</TableHead>
                             <TableHead>{t('idCards.template') || 'Template'}</TableHead>
                             <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
                             <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
@@ -1620,6 +1655,8 @@ export default function IdCardAssignment() {
                                   ? (card.courseStudent?.course?.name || '-')
                                   : (card.class?.name || '-')}
                               </TableCell>
+                              <TableCell>{formatRoomLabel(card.studentAdmission?.room?.roomNumber)}</TableCell>
+                              <TableCell>{renderResidencyBadge(card.studentAdmission?.isBoarder)}</TableCell>
                               <TableCell>{card.template?.name || '-'}</TableCell>
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
@@ -1690,6 +1727,7 @@ export default function IdCardAssignment() {
                           ))}
                         </TableBody>
                       </Table>
+                      </div>
                     )}
                   </TabsContent>
 
@@ -1752,7 +1790,7 @@ export default function IdCardAssignment() {
                           </div>
                         </div>
                         <div className="overflow-x-auto rounded-md border">
-                          <Table className="min-w-[720px]">
+                          <Table className="min-w-[1120px]">
                             <TableHeader>
                               <TableRow>
                                 <TableHead className="w-12">
@@ -1780,6 +1818,8 @@ export default function IdCardAssignment() {
                                 <TableHead>{t('students.student') || 'Student'}</TableHead>
                                 <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
                                 <TableHead>{studentType === 'course' ? (t('courses.course') || 'Course') : (t('search.class') || 'Class')}</TableHead>
+                                <TableHead>{t('admissions.room') || 'Room'}</TableHead>
+                                <TableHead>{t('admissions.boarder') || 'Residency'}</TableHead>
                                 <TableHead>{t('idCards.template') || 'Template'}</TableHead>
                                 <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
                                 <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
@@ -1816,6 +1856,8 @@ export default function IdCardAssignment() {
                                       ? (card.courseStudent?.course?.name || '-')
                                       : (card.class?.name || '-')}
                                   </TableCell>
+                                  <TableCell>{formatRoomLabel(card.studentAdmission?.room?.roomNumber)}</TableCell>
+                                  <TableCell>{renderResidencyBadge(card.studentAdmission?.isBoarder)}</TableCell>
                                   <TableCell>{card.template?.name || '-'}</TableCell>
                                   <TableCell>
                                     <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
@@ -1894,12 +1936,15 @@ export default function IdCardAssignment() {
                         {t('idCards.noPrintedCards') || 'No printed cards found'}
                       </div>
                     ) : (
-                      <Table>
+                      <div className="overflow-x-auto rounded-md border">
+                        <Table className="min-w-[1040px]">
                         <TableHeader>
                           <TableRow>
                             <TableHead>{t('students.student') || 'Student'}</TableHead>
                             <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
                             <TableHead>{studentType === 'course' ? (t('courses.course') || 'Course') : (t('search.class') || 'Class')}</TableHead>
+                            <TableHead>{t('admissions.room') || 'Room'}</TableHead>
+                            <TableHead>{t('admissions.boarder') || 'Residency'}</TableHead>
                             <TableHead>{t('idCards.template') || 'Template'}</TableHead>
                             <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
                             <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
@@ -1929,6 +1974,8 @@ export default function IdCardAssignment() {
                                   ? (card.courseStudent?.course?.name || '-')
                                   : (card.class?.name || '-')}
                               </TableCell>
+                              <TableCell>{formatRoomLabel(card.studentAdmission?.room?.roomNumber)}</TableCell>
+                              <TableCell>{renderResidencyBadge(card.studentAdmission?.isBoarder)}</TableCell>
                               <TableCell>{card.template?.name || '-'}</TableCell>
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
@@ -1987,7 +2034,8 @@ export default function IdCardAssignment() {
                             </TableRow>
                           ))}
                         </TableBody>
-                      </Table>
+                        </Table>
+                      </div>
                     )}
                   </TabsContent>
                 </Tabs>
@@ -2180,4 +2228,3 @@ export default function IdCardAssignment() {
     </div>
   );
 }
-
