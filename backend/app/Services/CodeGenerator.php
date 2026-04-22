@@ -150,31 +150,23 @@ class CodeGenerator
             if ($counter->last_value < $maxSeq) {
                 $counter->update(['last_value' => $maxSeq]);
             }
-            $counter->refresh();
+            $startSequence = max($maxSeq, (int) $counter->last_value) + 1;
+            $endSequence = $startSequence + count($schoolIdsPerCode) - 1;
 
-            $count = count($schoolIdsPerCode);
-            if ($count === 0) {
-                return [];
+            if ((int) $counter->last_value !== $endSequence) {
+                $counter->update(['last_value' => $endSequence]);
             }
 
-            // One counter update for the whole batch (import used N× increment+refresh before).
-            $start = (int) $counter->last_value;
-            $newLast = $start + $count;
-            $counter->update(['last_value' => $newLast]);
-
-            $middleCache = [];
+            $middleSegmentsBySchool = [];
             $codes = [];
-            for ($i = 0; $i < $count; $i++) {
-                $schoolId = $schoolIdsPerCode[$i];
-                $cacheKey = is_string($schoolId) && $schoolId !== '' ? $schoolId : '';
-                if (! array_key_exists($cacheKey, $middleCache)) {
-                    $middleCache[$cacheKey] = self::studentCodeMiddleSegmentFromAcademicYear(
-                        $organizationId,
-                        is_string($schoolId) && $schoolId !== '' ? $schoolId : null
-                    );
-                }
-                $seq = $start + $i + 1;
-                $codes[] = 'ST-'.$middleCache[$cacheKey].'-'.self::formatStudentSequence($seq);
+            foreach ($schoolIdsPerCode as $schoolId) {
+                $counter->increment('last_value');
+                $counter->refresh();
+                $middle = self::studentCodeMiddleSegmentFromAcademicYear(
+                    $organizationId,
+                    is_string($schoolId) && $schoolId !== '' ? $schoolId : null
+                );
+                $codes[] = 'ST-'.$middle.'-'.self::formatStudentSequence((int) $counter->last_value);
             }
 
             return $codes;
