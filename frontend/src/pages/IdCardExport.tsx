@@ -11,6 +11,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { PictureCell } from '@/components/shared/PictureCell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -72,6 +73,46 @@ interface ExportSettings {
   quality?: 'standard' | 'high';
   includeUnprinted?: boolean;
   includeUnpaid?: boolean;
+}
+
+function ExportIdCardStudentAvatar({ card }: { card: StudentIdCard }) {
+  if (card.courseStudentId && card.courseStudent?.id) {
+    const courseStudent = card.courseStudent;
+    return (
+      <PictureCell
+        type="course-student"
+        entityId={courseStudent.id}
+        picturePath={courseStudent.picturePath}
+        alt={courseStudent.fullName}
+        size="sm"
+        className="shrink-0"
+      />
+    );
+  }
+
+  if (card.student?.id) {
+    return (
+      <PictureCell
+        type="student"
+        entityId={card.student.id}
+        picturePath={card.student.picturePath}
+        alt={card.student.fullName}
+        size="sm"
+        className="shrink-0"
+      />
+    );
+  }
+
+  return (
+    <PictureCell
+      type="student"
+      entityId={undefined}
+      picturePath={undefined}
+      alt="-"
+      size="sm"
+      className="shrink-0"
+    />
+  );
 }
 
 function loadSettings(): ExportSettings {
@@ -718,8 +759,8 @@ export default function IdCardExport() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-auto rounded-md border max-h-[min(500px,60vh)]">
-              <Table className="min-w-[640px]">
+            <div className="rounded-md border max-h-[min(500px,60vh)] overflow-auto">
+              <Table className="w-full table-fixed">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12">
@@ -728,12 +769,12 @@ export default function IdCardExport() {
                             onCheckedChange={selectAllCards}
                           />
                         </TableHead>
-                        <TableHead>{t('students.student') || 'Student'}</TableHead>
-                        <TableHead>{t('examReports.admissionNo') || 'Admission No'}</TableHead>
-                        <TableHead>{studentType === 'regular' ? (t('search.class') || 'Class') : (t('courses.course') || 'Course')}</TableHead>
-                        <TableHead>{t('idCards.template') || 'Template'}</TableHead>
-                        <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
-                        <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
+                        <TableHead className="w-[24%] text-right">{t('students.student') || 'Student'}</TableHead>
+                        <TableHead className="w-[14%] text-right whitespace-nowrap">{t('examReports.admissionNo') || 'Admission No'}</TableHead>
+                        <TableHead className="w-[16%] text-right whitespace-nowrap">{studentType === 'regular' ? (t('search.class') || 'Class') : (t('courses.course') || 'Course')}</TableHead>
+                        <TableHead className="w-[16%] text-right whitespace-nowrap">{t('idCards.template') || 'Template'}</TableHead>
+                        <TableHead className="w-[15%] whitespace-nowrap">{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
+                        <TableHead className="w-[15%] whitespace-nowrap">{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -761,17 +802,42 @@ export default function IdCardExport() {
                                   onCheckedChange={() => toggleCardSelection(card.id)}
                                 />
                               </TableCell>
-                              <TableCell className="font-medium">
-                                {card.student?.fullName || card.courseStudent?.fullName || '-'}
+                              <TableCell className="text-right py-3">
+                                <div className="flex items-center justify-start gap-3 min-w-0">
+                                  <ExportIdCardStudentAvatar card={card} />
+                                  <div className="min-w-0">
+                                    <div className="font-medium truncate">
+                                      {card.student?.fullName || card.courseStudent?.fullName || '-'}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground truncate">
+                                      {card.student?.fatherName || card.courseStudent?.fatherName || (t('idCards.export.noParentName') || 'No parent name')}
+                                    </div>
+                                  </div>
+                                </div>
                               </TableCell>
-                              <TableCell>{card.student?.admissionNumber || card.courseStudent?.admissionNo || '-'}</TableCell>
-                              <TableCell>
-                                {studentType === 'regular' 
-                                  ? (card.class?.name || '-')
-                                  : (card.courseStudent?.course?.name || '-')
-                                }
+                              <TableCell className="text-right font-mono text-xs sm:text-sm whitespace-nowrap">
+                                {card.student?.admissionNumber || card.courseStudent?.admissionNo || '-'}
                               </TableCell>
-                              <TableCell>{card.template?.name || '-'}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="min-w-0">
+                                  <div className="truncate">
+                                    {studentType === 'regular'
+                                      ? (card.class?.name || '-')
+                                      : (card.courseStudent?.course?.name || '-')
+                                    }
+                                  </div>
+                                  {studentType === 'regular' && card.classAcademicYear?.sectionName && (
+                                    <div className="text-xs text-muted-foreground truncate">
+                                      {card.classAcademicYear.sectionName}
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="truncate" title={card.template?.name || '-'}>
+                                  {card.template?.name || '-'}
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
                                   {card.cardFeePaid
@@ -832,5 +898,3 @@ export default function IdCardExport() {
     </div>
   );
 }
-
-

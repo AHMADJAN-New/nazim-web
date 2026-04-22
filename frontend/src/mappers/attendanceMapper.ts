@@ -67,11 +67,13 @@ export const mapAttendanceRecordDomainToInsert = (record: AttendanceRecordInsert
 
 export const mapAttendanceSessionDomainToUpdate = (session: AttendanceSessionUpdate): Partial<AttendanceApi.AttendanceSessionInsert> => ({
   class_id: session.classId,
+  class_ids: session.classIds,
   school_id: session.schoolId,
   academic_year_id: session.academicYearId,
   session_date: session.sessionDate ? session.sessionDate.toISOString() : undefined,
   method: session.method,
   status: session.status,
   remarks: session.remarks,
+  student_type: session.studentType,
   records: session.records?.map(mapAttendanceRecordDomainToInsert),
 });

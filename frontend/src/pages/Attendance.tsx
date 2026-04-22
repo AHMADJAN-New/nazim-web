@@ -1,22 +1,31 @@
 import { format } from 'date-fns';
-import { BookOpen, CalendarDays, ChevronRight, ClipboardList, GraduationCap, Pencil, QrCode, School, ScanLine, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { BookOpen, CalendarDays, ChevronRight, ClipboardList, GraduationCap, Pencil, QrCode, School, ScanLine, Sparkles, Users } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useAttendanceSessions, useCreateAttendanceSession } from '@/hooks/useAttendance';
+import { useAttendanceSessions, useCreateAttendanceSession, useUpdateAttendanceSession } from '@/hooks/useAttendance';
 import { useClasses } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useSchools } from '@/hooks/useSchools';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
-import type { AttendanceSessionInsert } from '@/types/domain/attendance';
+import type { AttendanceSession, AttendanceSessionInsert } from '@/types/domain/attendance';
+
+type AttendanceStudentType = 'all' | 'boarders' | 'day_scholars';
+type FrequentClassGroup = {
+  count: number;
+  ids: string[];
+  key: string;
+  label: string;
+};
 
 
 export default function Attendance() {
@@ -27,14 +36,19 @@ export default function Attendance() {
   const [sessionDate, setSessionDate] = useState<string>('');
   const [sessionMethod, setSessionMethod] = useState<'manual' | 'barcode'>('manual');
   const [sessionRemarks, setSessionRemarks] = useState<string>('');
-  const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<string>('all');
-  const [studentType, setStudentType] = useState<'all' | 'boarders' | 'day_scholars'>('all');
+  const [studentType, setStudentType] = useState<AttendanceStudentType>('all');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingClassIds, setEditingClassIds] = useState<string[]>([]);
+  const [editingRemarks, setEditingRemarks] = useState<string>('');
+  const [editingStudentType, setEditingStudentType] = useState<AttendanceStudentType>('all');
 
 
   const { sessions, pagination, page, pageSize, setPage, setPageSize, isLoading: sessionsLoading } = useAttendanceSessions({}, true);
   const createSession = useCreateAttendanceSession();
+  const updateSession = useUpdateAttendanceSession();
 
   useEffect(() => {
     const sessionId = searchParams.get('session');
@@ -50,6 +64,11 @@ export default function Attendance() {
   const { data: classes } = useClasses();
   const { data: schools } = useSchools();
 
+  const classMap = useMemo(
+    () => new Map((classes || []).map(cls => [cls.id, cls])),
+    [classes]
+  );
+
   useEffect(() => {
     if (schools && schools.length === 1 && selectedSchool === 'all') {
       setSelectedSchool(schools[0].id);
@@ -57,7 +76,7 @@ export default function Attendance() {
   }, [schools, selectedSchool]);
 
   const handleCreateSession = async () => {
-    const classIdsToUse = selectedClassIds.length > 0 ? selectedClassIds : (selectedClass ? [selectedClass] : []);
+    const classIdsToUse = selectedClassIds;
 
     if (classIdsToUse.length === 0 || !sessionDate) {
       showToast.error(t('attendancePage.sessionHint') || 'Please select at least one class and date');
@@ -77,7 +96,6 @@ export default function Attendance() {
     try {
       const created = await createSession.mutateAsync(payload);
       setSelectedSessionId(created.id);
-      setSelectedClass('');
       setSelectedClassIds([]);
       setSessionDate('');
       setSessionRemarks('');
@@ -92,6 +110,115 @@ export default function Attendance() {
     setSelectedClassIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
+  };
+
+  const toggleEditClass = (id: string) => {
+    setEditingClassIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const buildSessionClassIds = (session: AttendanceSession) => {
+    if (session.classes?.length) {
+      return session.classes.map(sessionClass => sessionClass.id);
+    }
+
+    return session.classId ? [session.classId] : [];
+  };
+
+  const frequentClassGroups = useMemo<FrequentClassGroup[]>(() => {
+    const groups = new Map<string, FrequentClassGroup>();
+
+    for (const session of sessions || []) {
+      const ids = buildSessionClassIds(session)
+        .filter((id, index, allIds) => !!id && allIds.indexOf(id) === index)
+        .filter(id => classMap.has(id))
+        .sort((a, b) => {
+          const classA = classMap.get(a)?.name || '';
+          const classB = classMap.get(b)?.name || '';
+          return classA.localeCompare(classB);
+        });
+
+      if (!ids.length) {
+        continue;
+      }
+
+      const key = ids.join('|');
+      const label = ids
+        .map(id => classMap.get(id)?.name)
+        .filter((name): name is string => typeof name === 'string' && name.length > 0)
+        .join(' + ');
+
+      if (!label) {
+        continue;
+      }
+
+      const existing = groups.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        groups.set(key, { count: 1, ids, key, label });
+      }
+    }
+
+    return Array.from(groups.values())
+      .sort((a, b) => {
+        if (b.count !== a.count) {
+          return b.count - a.count;
+        }
+
+        if (b.ids.length !== a.ids.length) {
+          return b.ids.length - a.ids.length;
+        }
+
+        return a.label.localeCompare(b.label);
+      })
+      .slice(0, 6);
+  }, [classMap, sessions]);
+
+  const frequentSingleClasses = useMemo(
+    () => frequentClassGroups.filter(group => group.ids.length === 1).slice(0, 6),
+    [frequentClassGroups]
+  );
+  const frequentMultiClassGroups = useMemo(
+    () => frequentClassGroups.filter(group => group.ids.length > 1).slice(0, 4),
+    [frequentClassGroups]
+  );
+
+  const openEditDialog = (session: AttendanceSession) => {
+    setEditingSessionId(session.id);
+    setEditingClassIds(buildSessionClassIds(session));
+    setEditingRemarks(session.remarks || '');
+    setEditingStudentType(session.studentType || 'all');
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveSessionEdits = async () => {
+    if (!editingSessionId) {
+      return;
+    }
+
+    if (editingClassIds.length === 0) {
+      showToast.error(t('attendancePage.selectAtLeastOneClass') || 'Select at least one class');
+      return;
+    }
+
+    try {
+      await updateSession.mutateAsync({
+        id: editingSessionId,
+        data: {
+          classId: editingClassIds[0],
+          classIds: editingClassIds,
+          remarks: editingRemarks || null,
+          studentType: editingStudentType,
+        },
+      });
+
+      setIsEditDialogOpen(false);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('events.error');
+      showToast.error(message || t('events.error'));
+    }
   };
 
   const studentTypeOptions = [
@@ -121,6 +248,84 @@ export default function Attendance() {
             </div>
 
             <div className="p-6 space-y-6">
+
+              {(frequentMultiClassGroups.length > 0 || frequentSingleClasses.length > 0) && (
+                <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">
+                        {t('attendancePage.frequentClassesTitle') || 'Frequent classes'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('attendancePage.frequentClassesHint') || 'Reuse common class picks from recent attendance sessions.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {frequentMultiClassGroups.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {t('attendancePage.frequentGroupsLabel') || 'Class groups'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {frequentMultiClassGroups.map(group => (
+                          <button
+                            key={group.key}
+                            type="button"
+                            onClick={() => setSelectedClassIds(group.ids)}
+                            className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
+                          >
+                            <span className="font-medium">{group.label}</span>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                              {group.count}x
+                            </Badge>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {frequentSingleClasses.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {t('attendancePage.frequentSinglesLabel') || 'Quick add'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {frequentSingleClasses.map(group => {
+                          const classId = group.ids[0];
+                          const isSelected = selectedClassIds.includes(classId);
+
+                          return (
+                            <button
+                              key={group.key}
+                              type="button"
+                              onClick={() => toggleClass(classId)}
+                              className={cn(
+                                'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors',
+                                isSelected
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : 'bg-background hover:border-primary/50 hover:bg-primary/5'
+                              )}
+                            >
+                              <span>{group.label}</span>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  'text-[10px] px-1.5 py-0 h-5',
+                                  isSelected ? 'border-primary-foreground/30 text-primary-foreground' : ''
+                                )}
+                              >
+                                {group.count}x
+                              </Badge>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Class Selection */}
               <div className="space-y-2.5">
@@ -373,6 +578,20 @@ export default function Attendance() {
                           size="sm"
                           onClick={e => {
                             e.stopPropagation();
+                            openEditDialog(item);
+                          }}
+                          className="h-7 w-7 p-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
+                          title={t('attendancePage.editSession') || 'Edit session'}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {item.status === 'open' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={e => {
+                            e.stopPropagation();
                             navigate(`/attendance/marking?session=${item.id}`);
                           }}
                           className="h-7 w-7 p-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
@@ -436,6 +655,128 @@ export default function Attendance() {
         </div>
 
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('attendancePage.editSessionTitle') || 'Edit attendance session'}</DialogTitle>
+            <DialogDescription>
+              {t('attendancePage.editSessionDescription') || 'Add or remove classes for this session, and update session notes or student type.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            {frequentMultiClassGroups.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  {t('attendancePage.frequentGroupsLabel') || 'Class groups'}
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {frequentMultiClassGroups.map(group => (
+                    <button
+                      key={`edit-${group.key}`}
+                      type="button"
+                      onClick={() => setEditingClassIds(group.ids)}
+                      className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
+                    >
+                      <span className="font-medium">{group.label}</span>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                        {group.count}x
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                  {t('attendancePage.classLabel')}
+                </Label>
+                {editingClassIds.length > 0 && (
+                  <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                    {editingClassIds.length} selected
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 rounded-xl border bg-muted/20 p-3 max-h-52 overflow-y-auto">
+                {(classes || []).map(cls => {
+                  const isSelected = editingClassIds.includes(cls.id);
+                  return (
+                    <button
+                      key={`edit-class-${cls.id}`}
+                      type="button"
+                      onClick={() => toggleEditClass(cls.id)}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 select-none border',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                        isSelected
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : 'bg-background text-foreground border-border hover:border-primary/50 hover:bg-muted'
+                      )}
+                    >
+                      {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground/70" />}
+                      {cls.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <Label className="text-sm font-medium">{t('attendancePage.studentTypeLabel') || 'Student Type'}</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {studentTypeOptions.map(opt => {
+                  const Icon = opt.icon;
+                  const active = editingStudentType === opt.value;
+                  return (
+                    <button
+                      key={`edit-student-type-${opt.value}`}
+                      type="button"
+                      onClick={() => setEditingStudentType(opt.value)}
+                      className={cn(
+                        'flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border text-center transition-all duration-150',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                        active
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : 'bg-background border-border hover:border-primary/40 hover:bg-muted/50'
+                      )}
+                    >
+                      <Icon className={cn('h-4 w-4', active ? 'text-primary-foreground' : 'text-muted-foreground')} />
+                      <span className={cn('text-xs font-medium leading-tight', active ? 'text-primary-foreground' : 'text-foreground')}>
+                        {opt.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <Label className="text-sm font-medium">{t('attendancePage.notesLabel')}</Label>
+              <Textarea
+                value={editingRemarks}
+                onChange={e => setEditingRemarks(e.target.value)}
+                placeholder={t('attendancePage.notesLabel')}
+                className="rounded-xl resize-none min-h-[80px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              {t('common.cancel') || 'Cancel'}
+            </Button>
+            <Button onClick={handleSaveSessionEdits} disabled={updateSession.isPending}>
+              {updateSession.isPending
+                ? (t('attendancePage.savingSessionChanges') || 'Saving...')
+                : (t('attendancePage.saveSessionChanges') || 'Save changes')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

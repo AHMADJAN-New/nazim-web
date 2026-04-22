@@ -286,6 +286,10 @@ class AttendanceSessionController extends Controller
         $validated = $request->validate([
             'status' => 'nullable|string|in:open,closed',
             'remarks' => 'nullable|string',
+            'student_type' => 'nullable|string|in:all,boarders,day_scholars',
+            'class_id' => 'nullable|uuid|exists:classes,id',
+            'class_ids' => 'nullable|array|min:1',
+            'class_ids.*' => 'required|uuid|exists:classes,id',
         ]);
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
@@ -298,19 +302,62 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
+        $classIds = null;
+        if (array_key_exists('class_ids', $validated) || array_key_exists('class_id', $validated)) {
+            $classIds = ! empty($validated['class_ids']) ? $validated['class_ids'] :
+                (! empty($validated['class_id']) ? [$validated['class_id']] : []);
+
+            if (empty($classIds)) {
+                return response()->json(['error' => 'At least one class is required'], 422);
+            }
+
+            $classes = ClassModel::whereIn('id', $classIds)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->get();
+
+            if ($classes->count() !== count($classIds)) {
+                return response()->json(['error' => 'One or more classes not found for this school'], 404);
+            }
+        }
+
         // Capture old values before update
-        $oldValues = $session->only(['status', 'remarks']);
+        $oldValues = [
+            'status' => $session->status,
+            'remarks' => $session->remarks,
+            'student_type' => $session->student_type,
+            'class_id' => $session->class_id,
+            'class_ids' => $this->getSessionClassIds($session),
+        ];
 
         // Track old status for status change notification
         $oldStatus = $session->status;
         $nextStatus = $validated['status'] ?? $session->status;
 
-        DB::transaction(function () use ($session, $validated, $nextStatus, $oldStatus, $profile, $currentSchoolId, $user) {
+        DB::transaction(function () use ($session, $validated, $nextStatus, $oldStatus, $profile, $currentSchoolId, $user, $classIds) {
+            $primaryClassId = $classIds[0] ?? $session->class_id;
+
             $session->update([
                 'status' => $nextStatus,
                 'remarks' => $validated['remarks'] ?? $session->remarks,
+                'student_type' => $validated['student_type'] ?? $session->student_type,
+                'class_id' => $primaryClassId,
                 'closed_at' => $nextStatus === 'closed' ? now() : null,
             ]);
+
+            if (is_array($classIds)) {
+                $pivot = [
+                    'organization_id' => $profile->organization_id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+                if (Schema::hasColumn('attendance_session_classes', 'school_id')) {
+                    $pivot['school_id'] = $currentSchoolId;
+                }
+
+                $session->classes()->syncWithPivotValues($classIds, $pivot);
+            }
 
             if ($nextStatus === 'closed' && $oldStatus !== 'closed') {
                 $this->finalizeUnmarkedStudentsAsAbsent(
@@ -334,7 +381,13 @@ class AttendanceSessionController extends Controller
                 properties: [
                     'attendance_session_id' => $session->id,
                     'old_values' => $oldValues,
-                    'new_values' => $session->only(['status', 'remarks']),
+                    'new_values' => [
+                        'status' => $session->status,
+                        'remarks' => $session->remarks,
+                        'student_type' => $session->student_type,
+                        'class_id' => $session->class_id,
+                        'class_ids' => $this->getSessionClassIds($session),
+                    ],
                 ],
                 request: $request
             );
