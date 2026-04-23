@@ -1,0 +1,17 @@
+---
+source_file: "frontend\src\platform\components\ContactMessagesManagement.tsx"
+type: "code"
+community: "Message & Contact"
+location: "L224"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Message_&_Contact
+---
+
+# handleDelete()
+
+## Connections
+- [[ContactMessagesManagement.tsx]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Message_&_Contact

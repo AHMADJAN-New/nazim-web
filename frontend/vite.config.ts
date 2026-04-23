@@ -108,6 +108,12 @@ export default defineConfig({
             return 'vendor-pdfmake';
           }
 
+          // Non-critical bootstrap modules - split so they don't block initial paint.
+          // These are dynamically imported from RootBootstrap.
+          if (id.includes('/src/lib/security-core')) return 'bootstrap-security';
+          if (id.includes('/src/lib/performance')) return 'bootstrap-performance';
+          if (id.includes('/src/lib/accessibility')) return 'bootstrap-accessibility';
+
           // Recharts - DO NOT code-split separately (causes initialization errors)
           // Keep it with other vendors or let Vite handle it automatically
           // Recharts has internal circular dependencies that break when split

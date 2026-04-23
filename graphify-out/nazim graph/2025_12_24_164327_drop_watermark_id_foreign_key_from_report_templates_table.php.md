@@ -1,0 +1,18 @@
+---
+source_file: "backend\database\migrations\2025_12_24_164327_drop_watermark_id_foreign_key_from_report_templates_table.php"
+type: "code"
+community: "ID & Report"
+location: "L1"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/ID_&_Report
+---
+
+# 2025_12_24_164327_drop_watermark_id_foreign_key_from_report_templates_table.php
+
+## Connections
+- [[down()_107]] - `contains` [EXTRACTED]
+- [[up()_107]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/ID_&_Report

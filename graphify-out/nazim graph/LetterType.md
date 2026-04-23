@@ -1,0 +1,24 @@
+---
+source_file: "backend\app\Models\LetterType.php"
+type: "code"
+community: "Letter & DMS"
+location: "L9"
+tags:
+  - graphify/code
+  - graphify/INFERRED
+  - community/Letter_&_DMS
+---
+
+# LetterType
+
+## Connections
+- [[.boot()_88]] - `method` [EXTRACTED]
+- [[.createLetterTypesForSchool()]] - `calls` [INFERRED]
+- [[.destroy()_97]] - `calls` [INFERRED]
+- [[.index()_108]] - `calls` [INFERRED]
+- [[.show()_84]] - `calls` [INFERRED]
+- [[.store()_100]] - `calls` [INFERRED]
+- [[.update()_91]] - `calls` [INFERRED]
+- [[LetterType.php]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/INFERRED #community/Letter_&_DMS

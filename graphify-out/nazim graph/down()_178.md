@@ -1,0 +1,17 @@
+---
+source_file: "backend\database\migrations\2026_01_01_110036_fix_maintenance_logs_foreign_keys.php"
+type: "code"
+community: "Fix & Maintenance"
+location: "L53"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Fix_&_Maintenance
+---
+
+# down()
+
+## Connections
+- [[2026_01_01_110036_fix_maintenance_logs_foreign_keys.php]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Fix_&_Maintenance

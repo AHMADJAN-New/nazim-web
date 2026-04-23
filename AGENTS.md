@@ -5984,3 +5984,13 @@ const count = DB::raw("SELECT COUNT(*) FROM students WHERE deleted_at IS NULL");
 ```
 
 Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices. **ALWAYS use Laravel Boost and Shadcn UI MCP servers for all relevant tasks.** For Organization Admin area (`/org-admin`), HR hub, staff/assignments lists, and school scoping rules, use the **nazim-org-admin-setup** skill (`.cursor/skills/nazim-org-admin-setup/SKILL.md`).
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/.
+
+Rules:
+- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
+- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
+- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)

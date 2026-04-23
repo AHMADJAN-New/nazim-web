@@ -1,0 +1,17 @@
+---
+source_file: "frontend\src\components\settings\ExamsManagement.tsx"
+type: "code"
+community: "Exam 5"
+location: "L295"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Exam_5
+---
+
+# onDraftChange()
+
+## Connections
+- [[ExamsManagement.tsx]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Exam_5

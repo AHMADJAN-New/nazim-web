@@ -1,0 +1,17 @@
+---
+source_file: "backend\database\migrations\2026_01_04_000002_add_student_history_performance_indexes.php"
+type: "code"
+community: "Student & Performance"
+location: "L65"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Student_&_Performance
+---
+
+# down()
+
+## Connections
+- [[2026_01_04_000002_add_student_history_performance_indexes.php]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Student_&_Performance

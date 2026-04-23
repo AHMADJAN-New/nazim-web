@@ -1,0 +1,17 @@
+---
+source_file: "backend\app\Http\Controllers\SchoolAdmissionRulesController.php"
+type: "code"
+community: "Exam & Student"
+location: "L1"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Exam_&_Student
+---
+
+# SchoolAdmissionRulesController.php
+
+## Connections
+- [[SchoolAdmissionRulesController]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Student

@@ -1,0 +1,220 @@
+{
+  "main": {
+    "id": "22cf8b1eab5be320",
+    "type": "split",
+    "children": [
+      {
+        "id": "5dc5a68fb47a23ed",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "95daf19ba432e24e",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "9d60361834d78466",
+    "type": "split",
+    "children": [
+      {
+        "id": "e5b53cb567aadeb4",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "42667c5b10bead15",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "3ee69ac1eef24d55",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "b33a255341ff8a2f",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 299.5
+  },
+  "right": {
+    "id": "81d548be351610de",
+    "type": "split",
+    "children": [
+      {
+        "id": "66d4a736c36ec431",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8e71b7ea956c6bcc",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "8c55ade9a4af93e6",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "833dee8ccab1e705",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "6d56be9ed3694653",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "fa022314647f8461",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Untitled.base",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Untitled"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "95daf19ba432e24e",
+  "lastOpenFiles": [
+    "graphify-out/nazim graph/_COMMUNITY_Order & Organization.md",
+    "graphify-out/nazim graph/_COMMUNITY_Calendar & Converter.md",
+    "graphify-out/nazim graph/_COMMUNITY_Login & Attempt.md",
+    "graphify-out/nazim graph/_COMMUNITY_Image & Student.md",
+    "graphify-out/nazim graph/_COMMUNITY_Settings & Website.md",
+    "graphify-out/nazim graph/_COMMUNITY_Report & Certificate.md",
+    "graphify-out/nazim graph/_COMMUNITY_Admission & Student.md",
+    "graphify-out/nazim graph/_COMMUNITY_Website & Scholar.md",
+    "graphify-out/nazim graph/_COMMUNITY_Seeder & Database.md",
+    "graphify-out/nazim graph/_COMMUNITY_Permissions & Fees.md",
+    "graphify-out/cache/33269364c749d934730af9503e092852a02603a9ee071c5b630c54cc2845c1cd.json",
+    "graphify-out/cache/97d22ddaf678e536dcf1f8f4987eebd4098ede064a40855a0dec4958766ccfe2.json",
+    "graphify-out/cache/11070cc569acb490f0157db65fdc1d4842db795bbd3e478a3ee61d6699e990f0.json",
+    "graphify-out/cache/f49e71a9b31f6f7d8f31ba6212721501af504018632c5d818846c550a20b154a.json",
+    "graphify-out/cache/ae44f9ce79a537068ec3f9178a9a0ff18364f8a23c18143f855d2a249f56065d.json",
+    "graphify-out/cache/e6767199eada3621ef507dc796b633010dd42d5d3c3475050e741c10445c74c1.json",
+    "graphify-out/cache/a89bfe7735222e9cfa4ab774a6ce40472fa8d839ccf267f54c3a61abb206f9e1.json",
+    "graphify-out/cache/7b555c956b8b26b17bdfd48f5ec1031f1b4e00019389c3b8de3d35e9835b83c1.json",
+    "graphify-out/cache/27e7b393c3bbb5bfdc5994286d7c0060b5d1c6e4ca77d50464e2979247a76876.json",
+    "graphify-out/cache/8d66d0a2c47e322796ff7f33c9cffaec9ca441f8192a75fb6499a5e7929db208.json",
+    "graphify-out/nazim graph/_COMMUNITY_Class & Academic.md",
+    "graphify-out/nazim graph/_COMMUNITY_Permission & Role.md",
+    "graphify-out/nazim graph/_COMMUNITY_Organization & Finance.md",
+    "graphify-out/nazim graph/_COMMUNITY_License & Key.md",
+    "graphify-out/nazim graph/_COMMUNITY_Admin & Finance.md",
+    "graphify-out/nazim graph/_COMMUNITY_Timetable & Insert.md",
+    "graphify-out/nazim graph/_COMMUNITY_Staff.md",
+    "graphify-out/nazim graph/_COMMUNITY_Facility.md",
+    "graphify-out/nazim graph/_COMMUNITY_Fee.md",
+    "graphify-out/nazim graph/_COMMUNITY_Finance.md",
+    "graphify-out/nazim graph/_COMMUNITY_Performance & Tour.md",
+    "graphify-out/nazim graph/_COMMUNITY_Notification & Timetable.md",
+    "graphify-out/nazim graph/_COMMUNITY_Finance & Facility.md",
+    "graphify-out/nazim graph/_COMMUNITY_Database & Create.md",
+    "graphify-out/nazim graph/_COMMUNITY_Image & Cache.md",
+    "graphify-out/nazim graph/_COMMUNITY_Landing & Admin.md",
+    "graphify-out/nazim graph/graph.canvas",
+    "Untitled.canvas"
+  ]
+}

@@ -1,0 +1,17 @@
+---
+source_file: "backend\database\migrations\2025_12_27_123340_add_schools_access_all_to_profiles_table.php"
+type: "code"
+community: "School 3"
+location: "L31"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/School_3
+---
+
+# down()
+
+## Connections
+- [[2025_12_27_123340_add_schools_access_all_to_profiles_table.php]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/School_3

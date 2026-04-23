@@ -26,9 +26,8 @@
     <meta name="twitter:description" content="Complete school management system for Nazim" />
     <meta name="twitter:image" content="/icons/icon-512x512.png" />
 
-    <!-- Preload critical fonts for faster rendering -->
+    <!-- Preload only the above-the-fold critical font. Bold/Titr fonts load on demand via @font-face. -->
     <link rel="preload" href="/fonts/Bahij%20Nassim-Regular.woff" as="font" type="font/woff" crossorigin="anonymous" />
-    <link rel="preload" href="/fonts/Bahij%20Nassim-Bold.woff" as="font" type="font/woff" crossorigin="anonymous" />
 
     <!-- Crypto.randomUUID polyfill (external file avoids inline script). pdfmake needs script-src 'unsafe-eval' (nginx CSP). -->
     <script src="/crypto-randomuuid-polyfill.js"></script>

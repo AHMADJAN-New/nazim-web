@@ -1,0 +1,17 @@
+---
+source_file: "backend\app\Models\Staff.php"
+type: "code"
+community: "Student"
+location: "L1"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Student
+---
+
+# Staff.php
+
+## Connections
+- [[Staff]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Student

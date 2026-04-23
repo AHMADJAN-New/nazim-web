@@ -1,0 +1,17 @@
+---
+source_file: "backend\database\migrations\2026_01_01_184722_add_contextual_help_fields_to_help_center_articles.php"
+type: "code"
+community: "Student & Exam"
+location: "L37"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Student_&_Exam
+---
+
+# down()
+
+## Connections
+- [[2026_01_01_184722_add_contextual_help_fields_to_help_center_articles.php]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Student_&_Exam

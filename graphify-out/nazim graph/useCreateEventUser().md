@@ -1,0 +1,18 @@
+---
+source_file: "frontend\src\hooks\useEventUsers.tsx"
+type: "code"
+community: "Website & Exam"
+location: "L25"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Website_&_Exam
+---
+
+# useCreateEventUser()
+
+## Connections
+- [[useEventUsers.tsx]] - `contains` [EXTRACTED]
+- [[useLanguage()]] - `calls` [INFERRED]
+
+#graphify/code #graphify/EXTRACTED #community/Website_&_Exam

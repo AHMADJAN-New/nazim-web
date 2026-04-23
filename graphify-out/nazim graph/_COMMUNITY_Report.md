@@ -1,0 +1,488 @@
+---
+type: community
+members: 438
+---
+
+# Report
+
+**Members:** 438 nodes
+
+## Members
+- [[.__construct()_59]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.__construct()_60]] - code - backend\app\Http\Controllers\ReportGenerationController.php
+- [[.__construct()_65]] - code - backend\app\Http\Controllers\StaffReportController.php
+- [[.__construct()_76]] - code - backend\app\Http\Controllers\StudentReportController.php
+- [[.__construct()_84]] - code - backend\app\Http\Controllers\Certificates\IssuedCertificateController.php
+- [[.__construct()_109]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.__construct()_113]] - code - backend\app\Mail\ActionRequiredMail.php
+- [[.__construct()_114]] - code - backend\app\Mail\DailyDigestMail.php
+- [[.__construct()_118]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.__construct()_122]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.__construct()_123]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[.__construct()_124]] - code - backend\app\Services\Reports\ReportConfig.php
+- [[.__construct()_125]] - code - backend\app\Services\Reports\ReportService.php
+- [[.addFooterSection()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.addHeaderSection()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.addLogo()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.addNotesSection()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.addTableSection()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.addTitleSection()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.addWatermark()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.addWatermarkImage()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.addWatermarkText()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.applyFilters()]] - code - backend\app\Http\Controllers\StaffReportController.php
+- [[.applyFilters()_1]] - code - backend\app\Http\Controllers\StudentReportController.php
+- [[.applyPageSettings()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.applyPlaceholders()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.autoSelectTemplate()]] - code - backend\app\Services\Reports\ReportConfig.php
+- [[.batch()_2]] - code - backend\app\Models\IssuedCertificate.php
+- [[.boot()_10]] - code - backend\app\Models\BrandingLayout.php
+- [[.boot()_11]] - code - backend\app\Models\BrandingNote.php
+- [[.boot()_12]] - code - backend\app\Models\BrandingWatermark.php
+- [[.boot()_109]] - code - backend\app\Models\OrganizationOrderForm.php
+- [[.boot()_123]] - code - backend\app\Models\ReportRun.php
+- [[.boot()_124]] - code - backend\app\Models\ReportTemplate.php
+- [[.boot()_137]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.booted()_3]] - code - backend\app\Models\IssuedCertificate.php
+- [[.branding()]] - code - backend\app\Models\BrandingLayout.php
+- [[.branding()_1]] - code - backend\app\Models\BrandingNote.php
+- [[.branding()_2]] - code - backend\app\Models\BrandingWatermark.php
+- [[.branding()_3]] - code - backend\app\Models\ReportRun.php
+- [[.build()]] - code - backend\app\Mail\ActionRequiredMail.php
+- [[.build()_1]] - code - backend\app\Mail\DailyDigestMail.php
+- [[.buildContext()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.buildContext()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.buildDataSheet()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.buildDefaults()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.buildExcelSheetsData()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.buildExcelSheetsData()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.buildFooterHtml()]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[.buildInstructionsSheet()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.buildProfileReportData()]] - code - backend\app\Http\Controllers\StudentController.php
+- [[.buildReportContext()]] - code - backend\tests\Unit\ReportTableFormattingTest.php
+- [[.buildSubscriptionContext()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.bytesToHuman()]] - code - backend\app\Services\Reports\LogoCompressionService.php
+- [[.calculateColumnWidth()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.calculateColumnWidths()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.calculateColumnWidths()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.calculateFinancials()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.clampFontSize()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.clearAllCache()]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[.clearLayoutCache()]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[.colorToArgb()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.compressLogo()]] - code - backend\app\Services\Reports\LogoCompressionService.php
+- [[.compressLogoFromBase64()]] - code - backend\app\Services\Reports\LogoCompressionService.php
+- [[.convertToBytes()]] - code - backend\app\Services\Reports\LogoCompressionService.php
+- [[.createReportRun()]] - code - backend\app\Services\Reports\ReportService.php
+- [[.createdBy()_8]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.createdByUser()_1]] - code - backend\app\Models\OrganizationOrderForm.php
+- [[.defaultBody()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.documents()_1]] - code - backend\app\Models\OrganizationOrderForm.php
+- [[.download()_6]] - code - backend\app\Http\Controllers\ReportGenerationController.php
+- [[.downloadBatchZip()]] - code - backend\app\Http\Controllers\Certificates\IssuedCertificateController.php
+- [[.downloadPdf()_1]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.downloadPdfWithData()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.export()_1]] - code - backend\app\Http\Controllers\StaffReportController.php
+- [[.export()_3]] - code - backend\app\Http\Controllers\StudentReportController.php
+- [[.failed()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.fetchStudentHistoryData()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.fetchStudentHistoryData()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.findChromePath()]] - code - backend\app\Services\OrganizationOrderFormPdfService.php
+- [[.findChromePath()_1]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[.formatBranding()]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[.formatDate()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.formatDateFieldsInRows()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.fromArray()]] - code - backend\app\Services\Reports\ReportConfig.php
+- [[.generate()_1]] - code - backend\app\Http\Controllers\ReportGenerationController.php
+- [[.generate()_3]] - code - backend\app\Services\OrganizationOrderFormPdfService.php
+- [[.generate()_5]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.generate()_6]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[.generateFilename()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.generateFilename()_1]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[.generateFormNumber()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.generateHtmlFromLayoutConfig()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.generatePdf()_1]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[.generateReport()_2]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.generateReport()_3]] - code - backend\app\Services\Reports\ReportService.php
+- [[.generateTemplate()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.generateWithBrowsershot()]] - code - backend\app\Services\OrganizationOrderFormPdfService.php
+- [[.generateWithDompdf()]] - code - backend\app\Services\OrganizationOrderFormPdfService.php
+- [[.getAvailableAdmissionFields()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.getAvailableStudentFields()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.getBranding()]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[.getCertificateData()_1]] - code - backend\app\Http\Controllers\Certificates\IssuedCertificateController.php
+- [[.getColumnIndex()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.getColumnLetter()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.getCssPosition()]] - code - backend\app\Models\BrandingWatermark.php
+- [[.getCssTransform()]] - code - backend\app\Models\BrandingWatermark.php
+- [[.getCurrentSubscription()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.getDateService()]] - code - backend\app\Services\Reports\ReportService.php
+- [[.getDefaultBranding()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.getDefaultBranding()_2]] - code - backend\app\Services\Reports\ReportService.php
+- [[.getDefaultLayout()_1]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[.getDefaultLayoutSettings()]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[.getDownloadPath()]] - code - backend\app\Services\Reports\ReportService.php
+- [[.getFieldLabels()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.getFileExtension()]] - code - backend\app\Models\ReportRun.php
+- [[.getImageDataUri()]] - code - backend\app\Models\BrandingWatermark.php
+- [[.getLayout()]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[.getMarginsArray()]] - code - backend\app\Models\BrandingLayout.php
+- [[.getMimeType()]] - code - backend\app\Models\ReportRun.php
+- [[.getNazimLogoDataUri()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.getNotes()]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[.getOrCreateOrderForm()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.getOrientation()]] - code - backend\app\Services\Reports\ReportConfig.php
+- [[.getPageSize()_1]] - code - backend\app\Services\Reports\ReportConfig.php
+- [[.getPageSizeForCss()]] - code - backend\app\Models\BrandingLayout.php
+- [[.getProfile()_12]] - code - backend\app\Http\Controllers\Certificates\IssuedCertificateController.php
+- [[.getReportRun()]] - code - backend\app\Services\Reports\ReportService.php
+- [[.getWatermark()]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[.handle()_41]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.hasClearance()_1]] - code - backend\app\Policies\OutgoingDocumentPolicy.php
+- [[.humanizeKey()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.index()_75]] - code - backend\app\Http\Controllers\ReportGenerationController.php
+- [[.index()_102]] - code - backend\app\Http\Controllers\Certificates\IssuedCertificateController.php
+- [[.isCompleted()]] - code - backend\app\Models\ReportRun.php
+- [[.isExcel()]] - code - backend\app\Services\Reports\ReportConfig.php
+- [[.isFailed()]] - code - backend\app\Models\ReportRun.php
+- [[.isImage()]] - code - backend\app\Models\BrandingWatermark.php
+- [[.isImage()_1]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.isPdf()]] - code - backend\app\Services\Reports\ReportConfig.php
+- [[.isProcessing()]] - code - backend\app\Models\ReportRun.php
+- [[.isText()]] - code - backend\app\Models\BrandingWatermark.php
+- [[.issueCertificates()_1]] - code - backend\app\Services\Certificates\GraduationBatchService.php
+- [[.layout()]] - code - backend\app\Models\ReportRun.php
+- [[.loadBranding()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.loadBranding()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.loadLayout()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.loadLayout()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.loadNotes()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.loadNotes()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.loadReportTemplate()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.loadReportTemplate()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.loadWatermark()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.loadWatermark()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.mapLayout()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.mapStaff()]] - code - backend\app\Http\Controllers\StaffReportController.php
+- [[.mapStudents()]] - code - backend\app\Http\Controllers\StudentReportController.php
+- [[.markCompleted()_2]] - code - backend\app\Models\ReportRun.php
+- [[.markFailed()]] - code - backend\app\Models\ReportRun.php
+- [[.markProcessing()]] - code - backend\app\Models\ReportRun.php
+- [[.mergeReportTemplate()]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[.mergeReportTemplate()_1]] - code - backend\app\Services\Reports\ReportService.php
+- [[.normalizeFields()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.normalizeSpreadsheetValue()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.organization()_4]] - code - backend\app\Models\BrandingLayout.php
+- [[.organization()_5]] - code - backend\app\Models\BrandingNote.php
+- [[.organization()_6]] - code - backend\app\Models\BrandingWatermark.php
+- [[.organization()_59]] - code - backend\app\Models\OrganizationOrderForm.php
+- [[.organization()_70]] - code - backend\app\Models\ReportRun.php
+- [[.organization()_71]] - code - backend\app\Models\ReportTemplate.php
+- [[.organization()_82]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.parseFontSize()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.parseMargins()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.parseMargins()_1]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[.pdfDirectory()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.plan()]] - code - backend\app\Models\OrganizationOrderForm.php
+- [[.prepareGraduationFieldData()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.previewTemplate()]] - code - backend\app\Http\Controllers\ReportGenerationController.php
+- [[.printProfile()]] - code - backend\app\Http\Controllers\StudentController.php
+- [[.renderHtml()]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[.renderSingle()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.renderWithBodyHtml()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.renderWithLayoutConfig()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.reportProgress()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.reportProgress()_1]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[.resolveDownloadTarget()]] - code - backend\app\Http\Controllers\ReportGenerationController.php
+- [[.resolvedBy()_1]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.rules()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.sanitizeSheetTitle()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.sanitizeSheetTitle()_1]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.saveToFile()]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[.school()_32]] - code - backend\app\Models\IssuedCertificate.php
+- [[.school()_44]] - code - backend\app\Models\ReportTemplate.php
+- [[.school()_52]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.scopeActive()]] - code - backend\app\Models\BrandingLayout.php
+- [[.scopeActive()_1]] - code - backend\app\Models\BrandingNote.php
+- [[.scopeActive()_2]] - code - backend\app\Models\BrandingWatermark.php
+- [[.scopeActive()_29]] - code - backend\app\Models\ReportTemplate.php
+- [[.scopeBySeverity()]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.scopeCompleted()_2]] - code - backend\app\Models\ReportRun.php
+- [[.scopeDefault()]] - code - backend\app\Models\BrandingLayout.php
+- [[.scopeDefault()_4]] - code - backend\app\Models\ReportTemplate.php
+- [[.scopeFailed()]] - code - backend\app\Models\ReportRun.php
+- [[.scopeForBranding()]] - code - backend\app\Models\BrandingLayout.php
+- [[.scopeForBranding()_1]] - code - backend\app\Models\BrandingNote.php
+- [[.scopeForBranding()_2]] - code - backend\app\Models\BrandingWatermark.php
+- [[.scopeForOrganization()_4]] - code - backend\app\Models\BrandingLayout.php
+- [[.scopeForOrganization()_5]] - code - backend\app\Models\BrandingNote.php
+- [[.scopeForOrganization()_6]] - code - backend\app\Models\BrandingWatermark.php
+- [[.scopeForOrganization()_37]] - code - backend\app\Models\ReportRun.php
+- [[.scopeForOrganization()_38]] - code - backend\app\Models\ReportTemplate.php
+- [[.scopeForOrganization()_45]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.scopeForReport()]] - code - backend\app\Models\BrandingNote.php
+- [[.scopeForReport()_1]] - code - backend\app\Models\BrandingWatermark.php
+- [[.scopeForSchool()_7]] - code - backend\app\Models\ReportTemplate.php
+- [[.scopeForStudent()_4]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.scopeInLocation()]] - code - backend\app\Models\BrandingNote.php
+- [[.scopeOrdered()]] - code - backend\app\Models\BrandingNote.php
+- [[.scopeOrdered()_1]] - code - backend\app\Models\BrandingWatermark.php
+- [[.scopePending()_3]] - code - backend\app\Models\ReportRun.php
+- [[.scopeProcessing()]] - code - backend\app\Models\ReportRun.php
+- [[.scopeResolved()]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.scopeShowOn()]] - code - backend\app\Models\BrandingNote.php
+- [[.scopeUnresolved()]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.scopeWithStatus()_2]] - code - backend\app\Models\ReportRun.php
+- [[.search()]] - code - backend\app\Http\Controllers\CertificateVerifyController.php
+- [[.serializeDate()]] - code - backend\app\Models\SchoolBranding.php
+- [[.serializeDocument()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.serializeDocuments()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.serializeOrderForm()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.show()_6]] - code - backend\app\Http\Controllers\CertificateVerifyController.php
+- [[.show()_55]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.show()_78]] - code - backend\app\Http\Controllers\Certificates\IssuedCertificateController.php
+- [[.status()_2]] - code - backend\app\Http\Controllers\ReportGenerationController.php
+- [[.student()_7]] - code - backend\app\Models\IssuedCertificate.php
+- [[.student()_11]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[.subscription()_1]] - code - backend\app\Models\OrganizationOrderForm.php
+- [[.template()_1]] - code - backend\app\Models\IssuedCertificate.php
+- [[.test_a3_landscape_template_no_longer_renders_tiny_table_fonts()]] - code - backend\tests\Unit\ReportTableFormattingTest.php
+- [[.test_build_context_clamps_table_font_size_to_14px_for_small_report_fonts()]] - code - backend\tests\Unit\ReportTableFormattingTest.php
+- [[.test_build_context_preserves_larger_table_font_sizes()]] - code - backend\tests\Unit\ReportTableFormattingTest.php
+- [[.test_excel_table_headers_and_rows_use_table_font_size_minimum()]] - code - backend\tests\Unit\ReportTableFormattingTest.php
+- [[.toArray()]] - code - backend\app\Models\BrandingWatermark.php
+- [[.toStr()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[.updateProgress()]] - code - backend\app\Models\ReportRun.php
+- [[.updatedByUser()]] - code - backend\app\Models\OrganizationOrderForm.php
+- [[.uploadDocument()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.upsert()]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[.user()_6]] - code - backend\app\Models\ReportRun.php
+- [[.view()_4]] - code - backend\app\Policies\OutgoingDocumentPolicy.php
+- [[.viewAny()_3]] - code - backend\app\Policies\OutgoingDocumentPolicy.php
+- [[.watermark()_1]] - code - backend\app\Models\ReportRun.php
+- [[.watermark()_2]] - code - backend\app\Models\ReportTemplate.php
+- [[.wrapHtml()]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[.writeToString()]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[ActionRequiredMail]] - code - backend\app\Mail\ActionRequiredMail.php
+- [[ActionRequiredMail.php]] - code - backend\app\Mail\ActionRequiredMail.php
+- [[AttendanceTotalsReports.tsx]] - code - frontend\src\pages\AttendanceTotalsReports.tsx
+- [[BrandingCacheService]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[BrandingCacheService.php]] - code - backend\app\Services\Reports\BrandingCacheService.php
+- [[BrandingLayout]] - code - backend\app\Models\BrandingLayout.php
+- [[BrandingLayout.php]] - code - backend\app\Models\BrandingLayout.php
+- [[BrandingNote]] - code - backend\app\Models\BrandingNote.php
+- [[BrandingNote.php]] - code - backend\app\Models\BrandingNote.php
+- [[BrandingWatermark]] - code - backend\app\Models\BrandingWatermark.php
+- [[BrandingWatermark.php]] - code - backend\app\Models\BrandingWatermark.php
+- [[CertificatePdfGenerator.tsx]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[CertificateRenderService]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[CertificateRenderService.php]] - code - backend\app\Services\Certificates\CertificateRenderService.php
+- [[CertificateVerifyController]] - code - backend\app\Http\Controllers\CertificateVerifyController.php
+- [[CertificateVerifyController.php]] - code - backend\app\Http\Controllers\CertificateVerifyController.php
+- [[DailyDigestMail]] - code - backend\app\Mail\DailyDigestMail.php
+- [[DailyDigestMail.php]] - code - backend\app\Mail\DailyDigestMail.php
+- [[DateBadge()]] - code - frontend\src\components\ui\date-display.tsx
+- [[DateDisplay()]] - code - frontend\src\components\ui\date-display.tsx
+- [[DateTimeDisplay()]] - code - frontend\src\components\ui\date-display.tsx
+- [[DesktopReleasesManagement.tsx]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[ExcelReportService]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[ExcelReportService.php]] - code - backend\app\Services\Reports\ExcelReportService.php
+- [[FeeAssignmentTable.tsx]] - code - frontend\src\components\fees\FeeAssignmentTable.tsx
+- [[FeeStatement.tsx]] - code - frontend\src\components\fees\FeeStatement.tsx
+- [[FinanceDocuments.tsx]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[GenerateReportJob]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[GenerateReportJob.php]] - code - backend\app\Jobs\GenerateReportJob.php
+- [[InfoRow()_1]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[InfoSection()]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[IssuedCertificate]] - code - backend\app\Models\IssuedCertificate.php
+- [[IssuedCertificate.php]] - code - backend\app\Models\IssuedCertificate.php
+- [[IssuedCertificateController]] - code - backend\app\Http\Controllers\Certificates\IssuedCertificateController.php
+- [[IssuedCertificateController.php]] - code - backend\app\Http\Controllers\Certificates\IssuedCertificateController.php
+- [[LeaveReports.tsx]] - code - frontend\src\pages\LeaveReports.tsx
+- [[LibraryReports.tsx]] - code - frontend\src\pages\LibraryReports.tsx
+- [[LogoCompressionService]] - code - backend\app\Services\Reports\LogoCompressionService.php
+- [[LogoCompressionService.php]] - code - backend\app\Services\Reports\LogoCompressionService.php
+- [[MaintenancePage.tsx]] - code - frontend\src\pages\MaintenancePage.tsx
+- [[OrgAdminFinanceDocumentsPage.tsx]] - code - frontend\src\organization-admin\pages\OrgAdminFinanceDocumentsPage.tsx
+- [[OrganizationDashboard.tsx]] - code - frontend\src\pages\OrganizationDashboard.tsx
+- [[OrganizationOrderForm]] - code - backend\app\Models\OrganizationOrderForm.php
+- [[OrganizationOrderForm.php]] - code - backend\app\Models\OrganizationOrderForm.php
+- [[OrganizationOrderFormPdfService]] - code - backend\app\Services\OrganizationOrderFormPdfService.php
+- [[OrganizationOrderFormPdfService.php]] - code - backend\app\Services\OrganizationOrderFormPdfService.php
+- [[OutgoingDocumentPolicy]] - code - backend\app\Policies\OutgoingDocumentPolicy.php
+- [[OutgoingDocumentPolicy.php]] - code - backend\app\Policies\OutgoingDocumentPolicy.php
+- [[PdfReportService]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[PdfReportService.php]] - code - backend\app\Services\Reports\PdfReportService.php
+- [[PlatformOrganizationOrderFormController]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[PlatformOrganizationOrderFormController.php]] - code - backend\app\Http\Controllers\PlatformOrganizationOrderFormController.php
+- [[PublicDonationsPage.tsx]] - code - frontend\src\website\pages\PublicDonationsPage.tsx
+- [[ReportConfig]] - code - backend\app\Services\Reports\ReportConfig.php
+- [[ReportConfig.php]] - code - backend\app\Services\Reports\ReportConfig.php
+- [[ReportGenerationController]] - code - backend\app\Http\Controllers\ReportGenerationController.php
+- [[ReportGenerationController.php]] - code - backend\app\Http\Controllers\ReportGenerationController.php
+- [[ReportRun]] - code - backend\app\Models\ReportRun.php
+- [[ReportRun.php]] - code - backend\app\Models\ReportRun.php
+- [[ReportService]] - code - backend\app\Services\Reports\ReportService.php
+- [[ReportService.php]] - code - backend\app\Services\Reports\ReportService.php
+- [[ReportTableFormattingTest]] - code - backend\tests\Unit\ReportTableFormattingTest.php
+- [[ReportTableFormattingTest.php]] - code - backend\tests\Unit\ReportTableFormattingTest.php
+- [[ReportTemplate]] - code - backend\app\Models\ReportTemplate.php
+- [[ReportTemplate.php]] - code - backend\app\Models\ReportTemplate.php
+- [[ShortDateDisplay()]] - code - frontend\src\components\ui\date-display.tsx
+- [[StaffReportController]] - code - backend\app\Http\Controllers\StaffReportController.php
+- [[StaffReportController.php]] - code - backend\app\Http\Controllers\StaffReportController.php
+- [[StudentDisciplineRecord]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[StudentDisciplineRecord.php]] - code - backend\app\Models\StudentDisciplineRecord.php
+- [[StudentFullDetailsSection.tsx]] - code - frontend\src\components\students\history\StudentFullDetailsSection.tsx
+- [[StudentImportXlsxService]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[StudentImportXlsxService.php]] - code - backend\app\Services\Imports\StudentImportXlsxService.php
+- [[StudentProfileView.tsx]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[StudentReport.tsx]] - code - frontend\src\pages\StudentReport.tsx
+- [[StudentReportController]] - code - backend\app\Http\Controllers\StudentReportController.php
+- [[StudentReportController.php]] - code - backend\app\Http\Controllers\StudentReportController.php
+- [[SummaryCard()]] - code - frontend\src\pages\AttendanceTotalsReports.tsx
+- [[TableDateCell()]] - code - frontend\src\components\ui\date-display.tsx
+- [[TableDateTimeCell()]] - code - frontend\src\components\ui\date-display.tsx
+- [[UploadProgressBar()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[async()_1]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[blobToBase64()]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[blobToBase64()_1]] - code - frontend\src\lib\studentProfilePdf.ts
+- [[boolToText()_1]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[buildFiltersSummary()_4]] - code - frontend\src\pages\StudentReport.tsx
+- [[buildLocation()_1]] - code - frontend\src\pages\StudentReport.tsx
+- [[buildPdfDocument()]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[closePrereqDialog()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[closeReleaseDialog()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[cn()_2]] - code - frontend\src\lib\utils.ts
+- [[convertImageToBase64()_3]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[dataURLtoBlob()_1]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[date-display.tsx]] - code - frontend\src\components\ui\date-display.tsx
+- [[dateFrom()_2]] - code - frontend\src\pages\LeaveReports.tsx
+- [[dateFrom()_3]] - code - frontend\src\pages\LibraryReports.tsx
+- [[dateTo()_2]] - code - frontend\src\pages\LeaveReports.tsx
+- [[dateTo()_3]] - code - frontend\src\pages\LibraryReports.tsx
+- [[displayValue()_1]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[endDate()]] - code - frontend\src\organization-admin\pages\OrgAdminFinanceDocumentsPage.tsx
+- [[endDate()_1]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[ensureCanvasFontsLoaded()_1]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[ensureVfsInitialized()]] - code - frontend\src\lib\studentProfilePdf.ts
+- [[escapeHtml()_1]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[feeStatusBadgeVariant()]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[fetchAllFilteredStudentsForExport()]] - code - frontend\src\pages\StudentReport.tsx
+- [[fetchImage()_7]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[findRobotoFont()_1]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[format()]] - code - frontend\src\pages\AttendanceReports.tsx
+- [[formatAmount()]] - code - frontend\src\organization-admin\pages\OrgAdminFinanceDocumentsPage.tsx
+- [[formatAmount()_1]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[formatBytes()_1]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[formatCurrency()]] - code - frontend\src\lib\utils.ts
+- [[formatCurrency()_2]] - code - frontend\src\website\pages\PublicDonationsPage.tsx
+- [[formatDate()]] - code - frontend\src\components\fees\FeeAssignmentTable.tsx
+- [[formatDate()_1]] - code - frontend\src\components\fees\FeeStatement.tsx
+- [[formatDate()_2]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[formatDate()_5]] - code - frontend\src\lib\utils.ts
+- [[formatDate()_12]] - code - frontend\src\pages\StudentReport.tsx
+- [[formatDate()_21]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[formatDateStr()]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[formatDateTime()_1]] - code - frontend\src\lib\utils.ts
+- [[formatFileSize()_5]] - code - frontend\src\organization-admin\pages\OrgAdminFinanceDocumentsPage.tsx
+- [[formatFileSize()_8]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[formatLastSeen()]] - code - frontend\src\pages\UserSettings.tsx
+- [[formatNumber()]] - code - frontend\src\pages\OrganizationDashboard.tsx
+- [[formatPercent()]] - code - frontend\src\pages\AttendanceTotalsReports.tsx
+- [[formatPercentage()]] - code - frontend\src\pages\OrganizationDashboard.tsx
+- [[formatStatus()_1]] - code - frontend\src\pages\StudentReport.tsx
+- [[generateJpgPreview()_1]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[generateQrCodeDataUrl()_2]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[generateStudentProfilePdf()]] - code - frontend\src\lib\studentProfilePdf.ts
+- [[getAccountCurrencyCode()]] - code - frontend\src\lib\utils.ts
+- [[getDocumentTypeBadgeColor()]] - code - frontend\src\organization-admin\pages\OrgAdminFinanceDocumentsPage.tsx
+- [[getDocumentTypeBadgeColor()_1]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[getDocumentTypeLabel()]] - code - frontend\src\organization-admin\pages\OrgAdminFinanceDocumentsPage.tsx
+- [[getDocumentTypeLabel()_1]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[getFileIcon()_2]] - code - frontend\src\organization-admin\pages\OrgAdminFinanceDocumentsPage.tsx
+- [[getFileIcon()_5]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[getPageSize()]] - code - frontend\src\services\dms\LetterCanvasRenderer.ts
+- [[getPdfMakeInstance()_1]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[getPdfMakeInstance()_3]] - code - frontend\src\lib\studentProfilePdf.ts
+- [[handleClose()_4]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[handleDateRangePreset()]] - code - frontend\src\pages\AttendanceTotalsReports.tsx
+- [[handleDelete()_16]] - code - frontend\src\organization-admin\pages\OrgAdminFinanceDocumentsPage.tsx
+- [[handleDelete()_28]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[handleDownload()_11]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[handleDownloadImage()_2]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[handleExportBooks()]] - code - frontend\src\pages\LibraryReports.tsx
+- [[handleFilterChange()_2]] - code - frontend\src\pages\AttendanceTotalsReports.tsx
+- [[handleGeneratePdf()_1]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[handlePrereqSubmit()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[handlePrint()_4]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[handleQuickRange()]] - code - frontend\src\pages\LeaveReports.tsx
+- [[handleReleaseSubmit()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[handleResetFilters()_1]] - code - frontend\src\pages\AttendanceTotalsReports.tsx
+- [[handleRetry()]] - code - frontend\src\pages\MaintenancePage.tsx
+- [[handleViewDetails()_2]] - code - frontend\src\pages\StudentReport.tsx
+- [[loadCustomFonts()]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[loadCustomFonts()_1]] - code - frontend\src\lib\studentProfilePdf.ts
+- [[normalizeCanvasFontFamily()_1]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[openEdit()]] - code - frontend\src\components\assets\AssetAssignmentsTab.tsx
+- [[openEdit()_2]] - code - frontend\src\components\assets\AssetMaintenanceTab.tsx
+- [[openEditPrereq()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[openEditRelease()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[openNewPrereq()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[openNewRelease()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[printableDate()]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[printableValue()]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[renderCertificateToDataUrl()_1]] - code - frontend\src\components\short-term-courses\CertificatePdfGenerator.tsx
+- [[renderField()]] - code - frontend\src\components\students\history\StudentFullDetailsSection.tsx
+- [[startDate()_1]] - code - frontend\src\organization-admin\pages\OrgAdminFinanceDocumentsPage.tsx
+- [[startDate()_2]] - code - frontend\src\pages\FinanceDocuments.tsx
+- [[statusBadge()_1]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[statusBadgeVariant()]] - code - frontend\src\components\students\StudentProfileView.tsx
+- [[statusBadgeVariant()_2]] - code - frontend\src\pages\StudentReport.tsx
+- [[studentProfilePdf.ts]] - code - frontend\src\lib\studentProfilePdf.ts
+- [[toFormDefaults()]] - code - frontend\src\pages\fees\FeeStructuresPage.tsx
+- [[transformStudentData()]] - code - frontend\src\pages\StudentReport.tsx
+- [[updateProgress()]] - code - frontend\src\pages\MaintenancePage.tsx
+- [[updateTimeUntilEnd()]] - code - frontend\src\pages\MaintenancePage.tsx
+- [[uploadWithProgress()]] - code - frontend\src\platform\pages\admin\DesktopReleasesManagement.tsx
+- [[utils.ts]] - code - frontend\src\lib\utils.ts
+
+## Live Query (requires Dataview plugin)
+
+```dataview
+TABLE source_file, type FROM #community/Report
+SORT file.name ASC
+```
+
+## Connections to other communities
+- 150 edges to [[_COMMUNITY_Exam & Student]]
+- 63 edges to [[_COMMUNITY_Student & Admin]]
+- 25 edges to [[_COMMUNITY_Student & Library]]
+- 20 edges to [[_COMMUNITY_Letter & DMS]]
+- 14 edges to [[_COMMUNITY_Finance]]
+- 12 edges to [[_COMMUNITY_Subscription]]
+- 12 edges to [[_COMMUNITY_Storage]]
+- 8 edges to [[_COMMUNITY_Event & Admission]]
+- 4 edges to [[_COMMUNITY_Website & Media]]
+- 4 edges to [[_COMMUNITY_Finance & Admin]]
+- 4 edges to [[_COMMUNITY_Website]]
+- 3 edges to [[_COMMUNITY_Student & Fee]]
+- 3 edges to [[_COMMUNITY_Student]]
+- 3 edges to [[_COMMUNITY_Student & Exam]]
+- 2 edges to [[_COMMUNITY_Login & Exam]]
+- 2 edges to [[_COMMUNITY_Graduation]]
+- 2 edges to [[_COMMUNITY_Exam]]
+- 2 edges to [[_COMMUNITY_ID]]
+- 2 edges to [[_COMMUNITY_Calendar]]
+- 2 edges to [[_COMMUNITY_Report & Fee]]
+- 1 edge to [[_COMMUNITY_Organization]]
+- 1 edge to [[_COMMUNITY_Course & Student]]
+- 1 edge to [[_COMMUNITY_Website & Exam]]
+- 1 edge to [[_COMMUNITY_Help]]
+
+## Top bridge nodes
+- [[format()]] - degree 98, connects to 16 communities
+- [[.generate()_6]] - degree 21, connects to 5 communities
+- [[.formatDate()_1]] - degree 27, connects to 4 communities
+- [[formatDate()_21]] - degree 26, connects to 4 communities
+- [[.printProfile()]] - degree 24, connects to 4 communities

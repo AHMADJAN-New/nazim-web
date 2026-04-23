@@ -1,0 +1,30 @@
+---
+source_file: "frontend\src\lib\access\schoolAdminRestrictions.ts"
+type: "code"
+community: "Exam & Student"
+location: "L9"
+tags:
+  - graphify/code
+  - graphify/INFERRED
+  - community/Exam_&_Student
+---
+
+# isProtectedOrganizationRole()
+
+## Connections
+- [[.assignPermissionToRole()]] - `calls` [INFERRED]
+- [[.assignRoleToUser()]] - `calls` [INFERRED]
+- [[.destroy()_72]] - `calls` [INFERRED]
+- [[.removePermissionFromRole()]] - `calls` [INFERRED]
+- [[.removeRoleFromUser()]] - `calls` [INFERRED]
+- [[.rolePermissions()]] - `calls` [INFERRED]
+- [[.show()_61]] - `calls` [INFERRED]
+- [[.store()_73]] - `calls` [INFERRED]
+- [[.store()_92]] - `calls` [INFERRED]
+- [[.update()_61]] - `calls` [INFERRED]
+- [[.update()_65]] - `calls` [INFERRED]
+- [[.update()_83]] - `calls` [INFERRED]
+- [[canSchoolScopedAdminManageRole()]] - `calls` [EXTRACTED]
+- [[schoolAdminRestrictions.ts]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/INFERRED #community/Exam_&_Student

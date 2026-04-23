@@ -1,0 +1,17 @@
+---
+source_file: "frontend\src\pages\organization\hr\OrganizationHrAssignmentsPage.tsx"
+type: "code"
+community: "Website"
+location: "L170"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Website
+---
+
+# handleCreateSubmit()
+
+## Connections
+- [[OrganizationHrAssignmentsPage.tsx]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Website
