@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Services\LicenseSigningService.php"
 type: "code"
-community: "License & Signing"
+community: "Public"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/License_&_Signing
+  - community/Public
 ---
 
 # LicenseSigningService.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[LicenseSigningService]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/License_&_Signing
+#graphify/code #graphify/EXTRACTED #community/Public

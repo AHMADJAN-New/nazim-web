@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\performance.ts"
 type: "code"
-community: "Finance"
+community: "Performance"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Performance
 ---
 
 # performance.ts
@@ -23,4 +23,4 @@ tags:
 - [[useVirtualScroll()]] - `contains` [EXTRACTED]
 - [[withPerformanceTracking()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Performance

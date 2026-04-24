@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\website\hooks\useWebsiteAuditLogs.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L12"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useWebsiteAuditLogs()
@@ -17,4 +17,4 @@ tags:
 - [[useProfile()]] - `calls` [INFERRED]
 - [[useWebsiteAuditLogs.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

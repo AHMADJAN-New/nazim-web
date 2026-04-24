@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useNotifications.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L23"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # updateCachedNotifications()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useNotifications.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

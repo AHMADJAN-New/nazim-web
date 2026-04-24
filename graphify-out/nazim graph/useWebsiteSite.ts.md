@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\website\hooks\useWebsiteSite.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useWebsiteSite.ts
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useWebsiteSite()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

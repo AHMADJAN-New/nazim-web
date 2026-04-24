@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\ExamPaperItem.php"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # ExamPaperItem
@@ -34,4 +34,4 @@ tags:
 - [[.updater()]] - `method` [EXTRACTED]
 - [[ExamPaperItem.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Onboarding

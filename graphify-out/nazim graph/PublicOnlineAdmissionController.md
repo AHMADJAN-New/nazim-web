@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Controllers\Website\PublicOnlineAdmissionController.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L16"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # PublicOnlineAdmissionController
@@ -19,4 +19,4 @@ tags:
 - [[.submit()]] - `method` [EXTRACTED]
 - [[PublicOnlineAdmissionController.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

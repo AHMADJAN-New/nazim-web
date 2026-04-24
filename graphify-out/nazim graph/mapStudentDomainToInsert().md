@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\mappers\studentMapper.ts"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L197"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # mapStudentDomainToInsert()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[studentMapper.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Translation_&_I18n
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Requests\UpdateTimetableRequest.php"
 type: "code"
-community: "Timetable 3"
+community: "Timetable 4"
 location: "L7"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Timetable_3
+  - community/Timetable_4
 ---
 
 # UpdateTimetableRequest
@@ -17,4 +17,4 @@ tags:
 - [[.rules()_52]] - `method` [EXTRACTED]
 - [[UpdateTimetableRequest.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Timetable_3
+#graphify/code #graphify/EXTRACTED #community/Timetable_4

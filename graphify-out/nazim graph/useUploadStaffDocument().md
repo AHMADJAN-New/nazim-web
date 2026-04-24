@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useStaff.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L346"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useUploadStaffDocument()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useStaff.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\HelpCenterArticleView.php"
 type: "code"
-community: "Event & Admission"
+community: "Help & Article"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Help_&_Article
 ---
 
 # HelpCenterArticleView
@@ -18,4 +18,4 @@ tags:
 - [[.user()_2]] - `method` [EXTRACTED]
 - [[HelpCenterArticleView.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Help_&_Article

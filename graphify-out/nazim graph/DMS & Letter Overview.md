@@ -1,0 +1,232 @@
+---
+type: community
+members: 195
+---
+
+# DMS & Letter
+
+**Members:** 195 nodes
+
+## Members
+- [[.__construct()_85]] - code - backend\app\Http\Controllers\Dms\DocumentFilesController.php
+- [[.__construct()_86]] - code - backend\app\Http\Controllers\Dms\IncomingDocumentsController.php
+- [[.__construct()_87]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.__construct()_88]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.__invoke()]] - code - backend\app\Http\Controllers\Dms\ArchiveSearchController.php
+- [[.academicYear()_7]] - code - backend\app\Models\IncomingDocument.php
+- [[.academicYear()_9]] - code - backend\app\Models\OutgoingDocument.php
+- [[.authorize()_61]] - code - backend\app\Http\Requests\StudentImport\ValidateStudentImportFileRequest.php
+- [[.bodyTextToSafeHtml()]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.boot()_26]] - code - backend\app\Models\Department.php
+- [[.boot()_35]] - code - backend\app\Models\DocumentSequence.php
+- [[.boot()_36]] - code - backend\app\Models\DocumentSetting.php
+- [[.boot()_88]] - code - backend\app\Models\LetterType.php
+- [[.boot()_130]] - code - backend\app\Models\SecurityLevel.php
+- [[.buildHtmlDocument()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.buildLetterheadHtml()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.buildLetterheadStyles()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.buildOutgoingDocumentVariablesFromModel()]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.buildOutgoingDocumentVariablesFromPayload()]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.buildPdfFilename()]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.buildPreviewCspMeta()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.buildStyles()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.buildVariablesForOutgoingDocument()]] - code - backend\app\Services\FieldMappingService.php
+- [[.buildWatermarkHtml()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.canView()]] - code - backend\app\Services\SecurityGateService.php
+- [[.cleanup()]] - code - frontend\src\lib\performance.ts
+- [[.clear()_1]] - code - frontend\src\lib\security-utils.ts
+- [[.convertPdfToImageData()]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[.convertPdfToImagePath()]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[.convertToHijri()]] - code - backend\app\Services\DocumentNumberingService.php
+- [[.convertToShamsi()]] - code - backend\app\Services\DocumentNumberingService.php
+- [[.create()]] - code - backend\app\Policies\DocumentFilePolicy.php
+- [[.create()_1]] - code - backend\app\Policies\IncomingDocumentPolicy.php
+- [[.dashboard()_3]] - code - backend\app\Http\Controllers\Dms\DocumentReportsController.php
+- [[.defaultPrefix()]] - code - backend\app\Services\DocumentNumberingService.php
+- [[.delete()]] - code - backend\app\Policies\IncomingDocumentPolicy.php
+- [[.destroy()_94]] - code - backend\app\Http\Controllers\Dms\DepartmentsController.php
+- [[.destroy()_95]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[.destroy()_96]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.destroy()_97]] - code - backend\app\Http\Controllers\Dms\LetterTypesController.php
+- [[.distribution()]] - code - backend\app\Http\Controllers\Dms\DocumentReportsController.php
+- [[.download()_9]] - code - backend\app\Http\Controllers\Dms\DocumentFilesController.php
+- [[.downloadPdf()_3]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.duplicate()_2]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.formatBodyText()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.formatBodyTextWithPositions()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.generateIncomingNumber()]] - code - backend\app\Services\DocumentNumberingService.php
+- [[.generateNumber()]] - code - backend\app\Services\DocumentNumberingService.php
+- [[.generateOutgoingNumber()]] - code - backend\app\Services\DocumentNumberingService.php
+- [[.generatePdf()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.generatePdfContent()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.generatePdfToStorage()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.generatePreview()]] - code - backend\app\Services\LetterheadPreviewService.php
+- [[.getApplicantData()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getApplicantFields()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getAvailableFields()]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.getAvailableFields()_1]] - code - backend\app\Services\FieldMappingService.php
+- [[.getGeneralData()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getGeneralFields()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getMockData()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getPageSize()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.getPreviewUrl()]] - code - backend\app\Services\LetterheadPreviewService.php
+- [[.getRecipientData()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getStaffData()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getStaffFields()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getStudentData()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getStudentFields()]] - code - backend\app\Services\FieldMappingService.php
+- [[.getYearKey()]] - code - backend\app\Services\DocumentNumberingService.php
+- [[.hasClearance()]] - code - backend\app\Policies\IncomingDocumentPolicy.php
+- [[.hasOwnerAccess()]] - code - backend\app\Policies\DocumentFilePolicy.php
+- [[.index()_103]] - code - backend\app\Http\Controllers\Dms\DepartmentsController.php
+- [[.index()_104]] - code - backend\app\Http\Controllers\Dms\DocumentFilesController.php
+- [[.index()_105]] - code - backend\app\Http\Controllers\Dms\IncomingDocumentsController.php
+- [[.index()_106]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[.index()_107]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.index()_108]] - code - backend\app\Http\Controllers\Dms\LetterTypesController.php
+- [[.index()_109]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.isLikelyHtml()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.letterhead()]] - code - backend\app\Models\LetterTemplate.php
+- [[.letterhead()_1]] - code - backend\app\Models\OutgoingDocument.php
+- [[.preview()_3]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[.preview()_4]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.previewDraft()]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.previewPdf()]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.processLetterheadFile()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.render()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.renderLegacy()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.renderTablePayload()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.renderWithLetterhead()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.replaceFieldsWithData()]] - code - backend\app\Services\FieldMappingService.php
+- [[.replaceTemplateVariables()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.requireOrganizationContext()]] - code - backend\app\Http\Controllers\Dms\BaseDmsController.php
+- [[.resolveLetterheadRenderPath()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.resolveOwnerDocument()]] - code - backend\app\Http\Controllers\Dms\DocumentFilesController.php
+- [[.routingDepartment()]] - code - backend\app\Models\IncomingDocument.php
+- [[.rules()_62]] - code - backend\app\Http\Requests\StudentImport\ValidateStudentImportFileRequest.php
+- [[.sanitizeRichHtml()]] - code - backend\app\Services\DocumentRenderingService.php
+- [[.serve()]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[.show()_79]] - code - backend\app\Http\Controllers\Dms\DepartmentsController.php
+- [[.show()_80]] - code - backend\app\Http\Controllers\Dms\DocumentSettingsController.php
+- [[.show()_81]] - code - backend\app\Http\Controllers\Dms\IncomingDocumentsController.php
+- [[.show()_82]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[.show()_83]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.show()_84]] - code - backend\app\Http\Controllers\Dms\LetterTypesController.php
+- [[.show()_85]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.stats()_10]] - code - backend\app\Http\Controllers\Dms\DepartmentsController.php
+- [[.store()_95]] - code - backend\app\Http\Controllers\Dms\DepartmentsController.php
+- [[.store()_96]] - code - backend\app\Http\Controllers\Dms\DocumentFilesController.php
+- [[.store()_97]] - code - backend\app\Http\Controllers\Dms\IncomingDocumentsController.php
+- [[.store()_98]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[.store()_99]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.store()_100]] - code - backend\app\Http\Controllers\Dms\LetterTypesController.php
+- [[.store()_101]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.template()_2]] - code - backend\app\Models\OutgoingDocument.php
+- [[.update()_86]] - code - backend\app\Http\Controllers\Dms\DepartmentsController.php
+- [[.update()_87]] - code - backend\app\Http\Controllers\Dms\DocumentSettingsController.php
+- [[.update()_88]] - code - backend\app\Http\Controllers\Dms\IncomingDocumentsController.php
+- [[.update()_89]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[.update()_90]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[.update()_91]] - code - backend\app\Http\Controllers\Dms\LetterTypesController.php
+- [[.update()_92]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[.update()_116]] - code - backend\app\Policies\IncomingDocumentPolicy.php
+- [[.userClearanceRank()]] - code - backend\app\Http\Controllers\Dms\BaseDmsController.php
+- [[.view()]] - code - backend\app\Policies\DocumentFilePolicy.php
+- [[.view()_1]] - code - backend\app\Policies\IncomingDocumentPolicy.php
+- [[.viewAny()]] - code - backend\app\Policies\IncomingDocumentPolicy.php
+- [[.watermark()]] - code - backend\app\Models\LetterTemplate.php
+- [[ArchiveSearchController]] - code - backend\app\Http\Controllers\Dms\ArchiveSearchController.php
+- [[ArchiveSearchController.php]] - code - backend\app\Http\Controllers\Dms\ArchiveSearchController.php
+- [[BaseDmsController]] - code - backend\app\Http\Controllers\Dms\BaseDmsController.php
+- [[BaseDmsController.php]] - code - backend\app\Http\Controllers\Dms\BaseDmsController.php
+- [[Department]] - code - backend\app\Models\Department.php
+- [[Department.php]] - code - backend\app\Models\Department.php
+- [[DepartmentsController]] - code - backend\app\Http\Controllers\Dms\DepartmentsController.php
+- [[DepartmentsController.php]] - code - backend\app\Http\Controllers\Dms\DepartmentsController.php
+- [[DocumentFile]] - code - backend\app\Models\DocumentFile.php
+- [[DocumentFile.php]] - code - backend\app\Models\DocumentFile.php
+- [[DocumentFilePolicy]] - code - backend\app\Policies\DocumentFilePolicy.php
+- [[DocumentFilePolicy.php]] - code - backend\app\Policies\DocumentFilePolicy.php
+- [[DocumentFilesController]] - code - backend\app\Http\Controllers\Dms\DocumentFilesController.php
+- [[DocumentFilesController.php]] - code - backend\app\Http\Controllers\Dms\DocumentFilesController.php
+- [[DocumentNumberingService]] - code - backend\app\Services\DocumentNumberingService.php
+- [[DocumentNumberingService.php]] - code - backend\app\Services\DocumentNumberingService.php
+- [[DocumentRenderingService]] - code - backend\app\Services\DocumentRenderingService.php
+- [[DocumentRenderingService.php]] - code - backend\app\Services\DocumentRenderingService.php
+- [[DocumentReportsController]] - code - backend\app\Http\Controllers\Dms\DocumentReportsController.php
+- [[DocumentReportsController.php]] - code - backend\app\Http\Controllers\Dms\DocumentReportsController.php
+- [[DocumentSequence]] - code - backend\app\Models\DocumentSequence.php
+- [[DocumentSequence.php]] - code - backend\app\Models\DocumentSequence.php
+- [[DocumentSetting]] - code - backend\app\Models\DocumentSetting.php
+- [[DocumentSetting.php]] - code - backend\app\Models\DocumentSetting.php
+- [[DocumentSettingsController]] - code - backend\app\Http\Controllers\Dms\DocumentSettingsController.php
+- [[DocumentSettingsController.php]] - code - backend\app\Http\Controllers\Dms\DocumentSettingsController.php
+- [[FieldMappingService]] - code - backend\app\Services\FieldMappingService.php
+- [[FieldMappingService.php]] - code - backend\app\Services\FieldMappingService.php
+- [[IncomingDocument]] - code - backend\app\Models\IncomingDocument.php
+- [[IncomingDocument.php]] - code - backend\app\Models\IncomingDocument.php
+- [[IncomingDocumentPolicy]] - code - backend\app\Policies\IncomingDocumentPolicy.php
+- [[IncomingDocumentPolicy.php]] - code - backend\app\Policies\IncomingDocumentPolicy.php
+- [[IncomingDocumentsController]] - code - backend\app\Http\Controllers\Dms\IncomingDocumentsController.php
+- [[IncomingDocumentsController.php]] - code - backend\app\Http\Controllers\Dms\IncomingDocumentsController.php
+- [[LetterTemplate]] - code - backend\app\Models\LetterTemplate.php
+- [[LetterTemplate.php]] - code - backend\app\Models\LetterTemplate.php
+- [[LetterTemplatesController]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[LetterTemplatesController.php]] - code - backend\app\Http\Controllers\Dms\LetterTemplatesController.php
+- [[LetterType]] - code - backend\app\Models\LetterType.php
+- [[LetterType.php]] - code - backend\app\Models\LetterType.php
+- [[LetterTypesController]] - code - backend\app\Http\Controllers\Dms\LetterTypesController.php
+- [[LetterTypesController.php]] - code - backend\app\Http\Controllers\Dms\LetterTypesController.php
+- [[LetterheadPreviewService]] - code - backend\app\Services\LetterheadPreviewService.php
+- [[LetterheadPreviewService.php]] - code - backend\app\Services\LetterheadPreviewService.php
+- [[LetterheadsController]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[LetterheadsController.php]] - code - backend\app\Http\Controllers\Dms\LetterheadsController.php
+- [[LetterheadsPage.tsx]] - code - frontend\src\pages\dms\LetterheadsPage.tsx
+- [[OrganizationCreationPreview.tsx]] - code - frontend\src\components\settings\OrganizationCreationPreview.tsx
+- [[OutgoingDocument]] - code - backend\app\Models\OutgoingDocument.php
+- [[OutgoingDocument.php]] - code - backend\app\Models\OutgoingDocument.php
+- [[OutgoingDocumentsController]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[OutgoingDocumentsController.php]] - code - backend\app\Http\Controllers\Dms\OutgoingDocumentsController.php
+- [[SecurityGateService]] - code - backend\app\Services\SecurityGateService.php
+- [[SecurityGateService.php]] - code - backend\app\Services\SecurityGateService.php
+- [[SecurityLevel]] - code - backend\app\Models\SecurityLevel.php
+- [[SecurityLevel.php]] - code - backend\app\Models\SecurityLevel.php
+- [[ValidateStudentImportFileRequest]] - code - backend\app\Http\Requests\StudentImport\ValidateStudentImportFileRequest.php
+- [[ValidateStudentImportFileRequest.php]] - code - backend\app\Http\Requests\StudentImport\ValidateStudentImportFileRequest.php
+- [[clearRegistry()]] - code - frontend\src\onboarding\TourRegistry.ts
+- [[fetchPreview()]] - code - frontend\src\components\settings\OrganizationCreationPreview.tsx
+- [[getPageNumbers()_3]] - code - frontend\src\pages\dms\LetterheadsPage.tsx
+- [[handleDelete()_36]] - code - frontend\src\pages\dms\LetterheadsPage.tsx
+- [[handleFormSubmit()_2]] - code - frontend\src\pages\dms\LetterheadsPage.tsx
+- [[openDeleteDialog()_4]] - code - frontend\src\pages\dms\LetterheadsPage.tsx
+- [[openEditDialog()_8]] - code - frontend\src\pages\dms\LetterheadsPage.tsx
+- [[openPreviewDialog()]] - code - frontend\src\pages\dms\LetterheadsPage.tsx
+- [[openViewDialog()_2]] - code - frontend\src\pages\dms\LetterheadsPage.tsx
+- [[replaceTemplateVariables()]] - code - frontend\src\services\dms\LetterCanvasRenderer.ts
+
+## Live Query (requires Dataview plugin)
+
+```dataview
+TABLE source_file, type FROM #community/DMS_&_Letter
+SORT file.name ASC
+```
+
+## Connections to other communities
+- 53 edges to [[Exam & Student Overview|Exam & Student]]
+- 18 edges to [[Report Overview|Report]]
+- 10 edges to [[Student & Admin Overview|Student & Admin]]
+- 10 edges to [[Admission & Event Overview|Admission & Event]]
+- 4 edges to [[Storage Overview|Storage]]
+- 3 edges to [[Letter & Translation Overview|Letter & Translation]]
+- 3 edges to [[Student & Library Overview|Student & Library]]
+- 2 edges to [[Exam & Onboarding Overview|Exam & Onboarding]]
+- 1 edge to [[Login & Exam Overview|Login & Exam]]
+- 1 edge to [[Finance Overview|Finance]]
+- 1 edge to [[Performance Overview|Performance]]
+
+## Top bridge nodes
+- [[.downloadPdf()_3]] - degree 13, connects to 3 communities
+- [[.clear()_1]] - degree 8, connects to 3 communities
+- [[.requireOrganizationContext()]] - degree 53, connects to 2 communities
+- [[.render()]] - degree 18, connects to 2 communities
+- [[IncomingDocument]] - degree 14, connects to 2 communities

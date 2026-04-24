@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\course-attendance\CourseReportTable.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # CourseReportTable.tsx
@@ -15,4 +15,4 @@ tags:
 - [[CourseReportTable()]] - `contains` [EXTRACTED]
 - [[getAttendanceRateColor()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

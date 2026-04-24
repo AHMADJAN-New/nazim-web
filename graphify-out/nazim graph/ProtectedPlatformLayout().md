@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\App.tsx"
 type: "code"
-community: "Exam & Student"
+community: "Exam"
 location: "L41"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam_&_Student
+  - community/Exam
 ---
 
 # ProtectedPlatformLayout()
@@ -21,4 +21,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[usePlatformAdminPermissions()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Exam_&_Student
+#graphify/code #graphify/INFERRED #community/Exam

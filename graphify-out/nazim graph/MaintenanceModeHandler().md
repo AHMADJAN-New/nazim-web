@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\MaintenanceModeHandler.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L23"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # MaintenanceModeHandler()
@@ -15,4 +15,4 @@ tags:
 - [[MaintenanceModeHandler.tsx]] - `contains` [EXTRACTED]
 - [[useAuth()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

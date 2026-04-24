@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\redirectUtils.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L15"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # getPostLoginRedirectPath()
@@ -17,4 +17,4 @@ tags:
 - [[shouldDefaultToOrgAdminArea()]] - `calls` [INFERRED]
 - [[usePostLoginRedirectPath()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useQuestions.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L37"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useQuestions()
@@ -16,4 +16,4 @@ tags:
 - [[usePagination()]] - `calls` [INFERRED]
 - [[useQuestions.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

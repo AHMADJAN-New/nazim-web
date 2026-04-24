@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\dismissedTours.ts"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L13"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # getDismissedTours()
@@ -19,4 +19,4 @@ tags:
 - [[isTourDismissed()]] - `calls` [EXTRACTED]
 - [[undismissTour()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Onboarding

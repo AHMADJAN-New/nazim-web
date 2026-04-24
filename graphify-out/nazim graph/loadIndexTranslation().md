@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\index\translations\useIndexTranslations.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L13"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # loadIndexTranslation()
@@ -15,4 +15,4 @@ tags:
 - [[.import()]] - `calls` [INFERRED]
 - [[useIndexTranslations.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

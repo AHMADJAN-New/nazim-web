@@ -279,9 +279,7 @@ IRREGULAR_NORMALIZATION = {
     "websites": "website",
 }
 
-MANUAL_OVERRIDES = {
-    37: "Attendance",
-}
+MANUAL_OVERRIDES: dict[int, str] = {}
 
 
 def split_words(text: str) -> list[str]:
@@ -314,6 +312,22 @@ def safe_name(label: str) -> str:
     cleaned = re.sub(r'[\\/*?:"<>|#^[\]]', "", label.replace("\r\n", " ").replace("\r", " ").replace("\n", " ")).strip()
     cleaned = re.sub(r"\.(md|mdx|markdown)$", "", cleaned, flags=re.IGNORECASE)
     return cleaned or "unnamed"
+
+
+def community_note_stem(label: str) -> str:
+    return safe_name(f"{label} Overview")
+
+
+def build_community_note_filenames(labels: dict[int, str]) -> dict[int, str]:
+    filenames: dict[int, str] = {}
+    seen: Counter[str] = Counter()
+    for cid, label in labels.items():
+        base = community_note_stem(label)
+        count = seen[base]
+        seen[base] += 1
+        stem = base if count == 0 else f"{base} {count + 1}"
+        filenames[cid] = f"{stem}.md"
+    return filenames
 
 
 def communities_from_graph(graph) -> dict[int, list[str]]:
@@ -473,7 +487,7 @@ def detection_from_report(report_path: Path) -> dict | None:
         return None
 
     text = report_path.read_text(encoding="utf-8")
-    counts_match = re.search(r"- (\d+) files · ~([\d,]+) words", text)
+    counts_match = re.search(r"- (\d+) files [·Â]+ ~([\d,]+) words", text)
     if counts_match:
         return {
             "total_files": int(counts_match.group(1)),
@@ -489,6 +503,54 @@ def detection_from_report(report_path: Path) -> dict | None:
         }
 
     return None
+
+
+def rewrite_community_links(
+    text: str,
+    labels: dict[int, str],
+    community_note_filenames: dict[int, str],
+) -> str:
+    rewritten = text
+    for cid, label in labels.items():
+        old_stem = f"_COMMUNITY_{safe_name(label)}"
+        new_stem = Path(community_note_filenames[cid]).stem
+        rewritten = rewritten.replace(f"[[{old_stem}|{label}]]", f"[[{new_stem}|{label}]]")
+        rewritten = rewritten.replace(f"[[{old_stem}]]", f"[[{new_stem}|{label}]]")
+    return rewritten
+
+
+def cleanup_report_text(
+    text: str,
+    labels: dict[int, str],
+    community_note_filenames: dict[int, str],
+) -> str:
+    cleaned = rewrite_community_links(text, labels, community_note_filenames)
+    cleaned = re.sub(r'^### Community \d+ - "(.+)"$', r"### \1", cleaned, flags=re.MULTILINE)
+    return cleaned
+
+
+def rename_community_notes(
+    vault_dir: Path,
+    labels: dict[int, str],
+    community_note_filenames: dict[int, str],
+) -> None:
+    for cid, label in labels.items():
+        old_path = vault_dir / f"_COMMUNITY_{safe_name(label)}.md"
+        new_path = vault_dir / community_note_filenames[cid]
+        if old_path.exists():
+            old_path.rename(new_path)
+
+
+def rewrite_vault_markdown_links(
+    vault_dir: Path,
+    labels: dict[int, str],
+    community_note_filenames: dict[int, str],
+) -> None:
+    for path in vault_dir.glob("*.md"):
+        content = path.read_text(encoding="utf-8")
+        updated = rewrite_community_links(content, labels, community_note_filenames)
+        if updated != content:
+            path.write_text(updated, encoding="utf-8")
 
 
 def write_home(vault_dir: Path, graph, communities: dict[int, list[str]], written_count: int, detect_result: dict) -> None:
@@ -512,7 +574,7 @@ def write_home(vault_dir: Path, graph, communities: dict[int, list[str]], writte
         "## Quick Start",
         "- [[GRAPH_REPORT]]",
         "- [[graph.canvas]]",
-        "- Open any `_COMMUNITY_*.md` note or use Obsidian Graph View.",
+        "- Open any `* Overview.md` note or use Obsidian Graph View.",
         "",
         "## Snapshot",
         f"- Files in corpus: {detect_result.get('total_files', 0):,}",
@@ -545,6 +607,7 @@ def main() -> None:
 
     communities = communities_from_graph(graph)
     labels = build_labels(graph, communities)
+    community_note_filenames = build_community_note_filenames(labels)
 
     labels_path.write_text(
         json.dumps({str(cid): label for cid, label in labels.items()}, indent=2),
@@ -568,7 +631,10 @@ def main() -> None:
         repo.name,
         suggested_questions=questions,
     )
-    report_path.write_text(report, encoding="utf-8")
+    report_path.write_text(
+        cleanup_report_text(report, labels, community_note_filenames),
+        encoding="utf-8",
+    )
 
     vault_dir.mkdir(parents=True, exist_ok=True)
     obsidian_dir = vault_dir / ".obsidian"
@@ -583,12 +649,14 @@ def main() -> None:
 
     written_count = export.to_obsidian(graph, communities, str(vault_dir), community_labels=labels)
     export.to_canvas(graph, communities, str(vault_dir / "graph.canvas"), community_labels=labels)
+    rename_community_notes(vault_dir, labels, community_note_filenames)
     shutil.copy2(report_path, vault_dir / "GRAPH_REPORT.md")
     write_home(vault_dir, graph, communities, written_count, detect_result)
+    rewrite_vault_markdown_links(vault_dir, labels, community_note_filenames)
     update_workspace(vault_dir)
 
     print(f"Communities relabeled: {len(labels)}")
-    print(f"Sample: 33 -> {labels.get(33)}")
+    print(f"Sample: 37 -> {labels.get(37)}")
     print(f"Vault updated: {vault_dir}")
 
 

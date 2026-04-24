@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\Activity.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L8"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # Activity
@@ -28,4 +28,4 @@ tags:
 - [[.stats()]] - `calls` [INFERRED]
 - [[Activity.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\timetable\TeacherPreferencesDialog.tsx"
 type: "code"
-community: "Timetable 7"
+community: "Timetable 8"
 location: "L90"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Timetable_7
+  - community/Timetable_8
 ---
 
 # handleSave()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[TeacherPreferencesDialog.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Timetable_7
+#graphify/code #graphify/EXTRACTED #community/Timetable_8

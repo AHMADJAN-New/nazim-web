@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useStudentAutocomplete.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L22"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useStudentAutocomplete()
@@ -16,4 +16,4 @@ tags:
 - [[useProfile()]] - `calls` [INFERRED]
 - [[useStudentAutocomplete.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

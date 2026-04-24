@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\dms\ArchiveSearch.tsx"
 type: "code"
-community: "Report & Fee"
+community: "DMS 4"
 location: "L297"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Report_&_Fee
+  - community/DMS_4
 ---
 
 # getOutgoingExportData()
@@ -15,4 +15,4 @@ tags:
 - [[ArchiveSearch.tsx]] - `contains` [EXTRACTED]
 - [[fetchAllArchiveDocumentsForExport()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Report_&_Fee
+#graphify/code #graphify/INFERRED #community/DMS_4

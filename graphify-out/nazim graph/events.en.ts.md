@@ -1,14 +1,14 @@
 ---
 source_file: "frontend\src\lib\translations\pages\events\events.en.ts"
 type: "code"
-community: "Event 10"
+community: "Event 12"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_10
+  - community/Event_12
 ---
 
 # events.en.ts
 
-#graphify/code #graphify/EXTRACTED #community/Event_10
+#graphify/code #graphify/EXTRACTED #community/Event_12

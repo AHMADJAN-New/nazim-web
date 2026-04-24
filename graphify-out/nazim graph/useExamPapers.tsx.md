@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useExamPapers.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useExamPapers.tsx
@@ -29,4 +29,4 @@ tags:
 - [[useUpdateExamPaperTemplate()]] - `contains` [EXTRACTED]
 - [[useUpdatePrintStatus()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

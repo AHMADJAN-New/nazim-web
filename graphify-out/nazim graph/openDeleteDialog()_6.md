@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\dms\TemplatesPage.tsx"
 type: "code"
-community: "DMS 3"
+community: "DMS 5"
 location: "L172"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/DMS_3
+  - community/DMS_5
 ---
 
 # openDeleteDialog()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[TemplatesPage.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/DMS_3
+#graphify/code #graphify/EXTRACTED #community/DMS_5

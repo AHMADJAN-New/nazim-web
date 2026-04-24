@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\StudentDisciplineRecord.php"
 type: "code"
-community: "Report"
+community: "Admission & Event"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Report
+  - community/Admission_&_Event
 ---
 
 # StudentDisciplineRecord
@@ -31,4 +31,4 @@ tags:
 - [[.update()_75]] - `calls` [INFERRED]
 - [[StudentDisciplineRecord.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Report
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

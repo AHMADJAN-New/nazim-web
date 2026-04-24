@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\dms\TemplatesPage.tsx"
 type: "code"
-community: "DMS 3"
+community: "DMS 5"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/DMS_3
+  - community/DMS_5
 ---
 
 # TemplatesPage.tsx
@@ -20,4 +20,4 @@ tags:
 - [[openPreviewDialog()_1]] - `contains` [EXTRACTED]
 - [[openViewDialog()_4]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/DMS_3
+#graphify/code #graphify/EXTRACTED #community/DMS_5

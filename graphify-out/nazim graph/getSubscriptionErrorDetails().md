@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useSubscriptionErrorHandler.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L161"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # getSubscriptionErrorDetails()
@@ -15,4 +15,4 @@ tags:
 - [[isSubscriptionError()]] - `calls` [EXTRACTED]
 - [[useSubscriptionErrorHandler.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

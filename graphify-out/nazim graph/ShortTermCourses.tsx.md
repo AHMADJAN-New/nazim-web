@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\ShortTermCourses.tsx"
 type: "code"
-community: "Course 2"
+community: "Course & Student"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Course_2
+  - community/Course_&_Student
 ---
 
 # ShortTermCourses.tsx
@@ -22,4 +22,4 @@ tags:
 - [[handleReopen()]] - `contains` [EXTRACTED]
 - [[handleViewStudents()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Course_2
+#graphify/code #graphify/EXTRACTED #community/Course_&_Student

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\subscription\MaintenanceFeesPage.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L22"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # MaintenanceFeesPage()
@@ -18,4 +18,4 @@ tags:
 - [[useMaintenanceInvoices()_1]] - `calls` [INFERRED]
 - [[useMaintenancePaymentHistory()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

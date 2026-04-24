@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useLanguage.tsx"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L31"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # LanguageProvider()
@@ -18,4 +18,4 @@ tags:
 - [[isRTL()_1]] - `calls` [INFERRED]
 - [[useLanguage.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Exam
+#graphify/code #graphify/INFERRED #community/Exam_&_Onboarding

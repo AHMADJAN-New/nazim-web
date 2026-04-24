@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\ui\pagination.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L8"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # Pagination()
@@ -15,4 +15,4 @@ tags:
 - [[pagination.tsx]] - `contains` [EXTRACTED]
 - [[useLanguage()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

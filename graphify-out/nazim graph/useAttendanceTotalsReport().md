@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useAttendanceTotalsReport.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L14"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useAttendanceTotalsReport()
@@ -15,4 +15,4 @@ tags:
 - [[useAttendanceTotalsReport.tsx]] - `contains` [EXTRACTED]
 - [[useAuth()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

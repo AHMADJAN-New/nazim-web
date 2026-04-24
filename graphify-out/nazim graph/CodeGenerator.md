@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Services\CodeGenerator.php"
 type: "code"
-community: "Student"
+community: "Student & Staff"
 location: "L8"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student
+  - community/Student_&_Staff
 ---
 
 # CodeGenerator
@@ -36,4 +36,4 @@ tags:
 - [[.syncStudentCounterFromExistingStudentCodes()]] - `method` [EXTRACTED]
 - [[CodeGenerator.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student
+#graphify/code #graphify/EXTRACTED #community/Student_&_Staff

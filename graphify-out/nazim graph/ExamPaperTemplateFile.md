@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\ExamPaperTemplateFile.php"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # ExamPaperTemplateFile
@@ -31,4 +31,4 @@ tags:
 - [[.update()_24]] - `calls` [INFERRED]
 - [[ExamPaperTemplateFile.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Onboarding

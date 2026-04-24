@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Controllers\HelpCenterArticleController.php"
 type: "code"
-community: "Exam & Student"
+community: "Help & Article"
 location: "L14"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_&_Student
+  - community/Help_&_Article
 ---
 
 # HelpCenterArticleController
@@ -40,4 +40,4 @@ tags:
 - [[.update()_36]] - `method` [EXTRACTED]
 - [[HelpCenterArticleController.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_&_Student
+#graphify/code #graphify/EXTRACTED #community/Help_&_Article

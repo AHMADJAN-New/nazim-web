@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\ExamPaperPreview.tsx"
 type: "code"
-community: "Exam 7"
+community: "Exam 8"
 location: "L49"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_7
+  - community/Exam_8
 ---
 
 # handlePrint()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[ExamPaperPreview.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_7
+#graphify/code #graphify/EXTRACTED #community/Exam_8

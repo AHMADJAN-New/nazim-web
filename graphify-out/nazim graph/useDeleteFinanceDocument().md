@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useFinanceDocuments.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L120"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useDeleteFinanceDocument()
@@ -16,4 +16,4 @@ tags:
 - [[useFinanceDocuments.ts]] - `contains` [EXTRACTED]
 - [[useLanguage()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

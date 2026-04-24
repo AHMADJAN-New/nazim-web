@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\reporting\paginatedExport.ts"
 type: "code"
-community: "Report & Fee"
+community: "Student & Admin"
 location: "L7"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Report_&_Fee
+  - community/Student_&_Admin
 ---
 
 # fetchAllPaginatedRows()
@@ -22,4 +22,4 @@ tags:
 - [[fetchAllStructuresForExport()]] - `calls` [INFERRED]
 - [[paginatedExport.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Report_&_Fee
+#graphify/code #graphify/INFERRED #community/Student_&_Admin

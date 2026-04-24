@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\mappers\classMapper.ts"
 type: "code"
-community: "Class & Academic"
+community: "Class"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Class_&_Academic
+  - community/Class
 ---
 
 # classMapper.ts
@@ -19,4 +19,4 @@ tags:
 - [[mapClassDomainToInsert()]] - `contains` [EXTRACTED]
 - [[mapClassDomainToUpdate()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Class_&_Academic
+#graphify/code #graphify/EXTRACTED #community/Class

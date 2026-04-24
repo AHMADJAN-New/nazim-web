@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\events\FormDesigner.tsx"
 type: "code"
-community: "Event"
+community: "Event 2"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event
+  - community/Event_2
 ---
 
 # FormDesigner.tsx
@@ -25,4 +25,4 @@ tags:
 - [[toggleFieldEnabled()]] - `contains` [EXTRACTED]
 - [[updateOption()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event
+#graphify/code #graphify/EXTRACTED #community/Event_2

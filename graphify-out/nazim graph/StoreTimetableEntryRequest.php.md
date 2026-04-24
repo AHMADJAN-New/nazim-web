@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Requests\StoreTimetableEntryRequest.php"
 type: "code"
-community: "Timetable 5"
+community: "Timetable 6"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Timetable_5
+  - community/Timetable_6
 ---
 
 # StoreTimetableEntryRequest.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[StoreTimetableEntryRequest]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Timetable_5
+#graphify/code #graphify/EXTRACTED #community/Timetable_6

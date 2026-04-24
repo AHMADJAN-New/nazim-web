@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Requests\StoreTeacherTimetablePreferenceRequest.php"
 type: "code"
-community: "Timetable 4"
+community: "Timetable 5"
 location: "L7"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Timetable_4
+  - community/Timetable_5
 ---
 
 # StoreTeacherTimetablePreferenceRequest
@@ -16,4 +16,4 @@ tags:
 - [[.rules()_29]] - `method` [EXTRACTED]
 - [[StoreTeacherTimetablePreferenceRequest.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Timetable_4
+#graphify/code #graphify/EXTRACTED #community/Timetable_5

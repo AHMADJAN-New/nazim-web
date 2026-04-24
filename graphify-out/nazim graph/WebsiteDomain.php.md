@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\WebsiteDomain.php"
 type: "code"
-community: "Finance"
+community: "Student & Library"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Student_&_Library
 ---
 
 # WebsiteDomain.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[WebsiteDomain]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Student_&_Library

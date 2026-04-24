@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\attendance\attendanceReportUtils.ts"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L37"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # buildAttendanceReportParams()
@@ -15,4 +15,4 @@ tags:
 - [[.entries()_1]] - `calls` [INFERRED]
 - [[attendanceReportUtils.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Translation_&_I18n
+#graphify/code #graphify/INFERRED #community/Letter_&_Translation

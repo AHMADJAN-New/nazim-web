@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\reporting\financeEntriesExport.ts"
 type: "code"
-community: "Report & Fee"
+community: "Student & Admin"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Report_&_Fee
+  - community/Student_&_Admin
 ---
 
 # fetchAllFinanceEntriesForExport()
@@ -15,4 +15,4 @@ tags:
 - [[fetchAllPaginatedRows()]] - `calls` [INFERRED]
 - [[financeEntriesExport.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Report_&_Fee
+#graphify/code #graphify/EXTRACTED #community/Student_&_Admin

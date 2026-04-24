@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useAccessibleOrganizations.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L7"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useAccessibleOrganizations()
@@ -41,4 +41,4 @@ tags:
 - [[useUserPermissions()]] - `calls` [INFERRED]
 - [[useUsers()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

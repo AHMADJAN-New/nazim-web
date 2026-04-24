@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\CourseDocuments.tsx"
 type: "code"
-community: "Finance"
+community: "Course 2"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Course_2
 ---
 
 # CourseDocuments.tsx
@@ -23,4 +23,4 @@ tags:
 - [[handleOpenDialog()_12]] - `contains` [EXTRACTED]
 - [[handleUploadClick()_2]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Course_2

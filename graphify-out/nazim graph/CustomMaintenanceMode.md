@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Middleware\CustomMaintenanceMode.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L14"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # CustomMaintenanceMode
@@ -16,4 +16,4 @@ tags:
 - [[.handle()_28]] - `method` [EXTRACTED]
 - [[CustomMaintenanceMode.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

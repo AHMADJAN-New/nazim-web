@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\imageCache.ts"
 type: "code"
-community: "Finance"
+community: "Student & Admin"
 location: "L15"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Student_&_Admin
 ---
 
 # ImageCache
@@ -22,4 +22,4 @@ tags:
 - [[.startCleanupInterval()]] - `method` [EXTRACTED]
 - [[imageCache.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Student_&_Admin

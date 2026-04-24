@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\DocumentAuditLog.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # DocumentAuditLog
@@ -15,4 +15,4 @@ tags:
 - [[.boot()_32]] - `method` [EXTRACTED]
 - [[DocumentAuditLog.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

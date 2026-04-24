@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\CourseAttendanceRecord.php"
 type: "code"
-community: "Event & Admission"
+community: "Help & Article"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Help_&_Article
 ---
 
 # CourseAttendanceRecord
@@ -26,4 +26,4 @@ tags:
 - [[.sessionReport()]] - `calls` [INFERRED]
 - [[CourseAttendanceRecord.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Help_&_Article

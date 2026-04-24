@@ -1,11 +1,11 @@
 ---
 source_file: "backend/resources/help-center/articles/dms/ar/dms-incoming.md"
 type: "document"
-community: "DMS & Letter"
+community: "DMS 3"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/DMS_&_Letter
+  - community/DMS_3
 ---
 
 # DMS Incoming (Arabic)
@@ -16,4 +16,4 @@ tags:
 - [[DMS Outgoing (Arabic)]] - `conceptually_related_to` [INFERRED]
 - [[Document Management System (DMS)]] - `conceptually_related_to` [INFERRED]
 
-#graphify/document #graphify/INFERRED #community/DMS_&_Letter
+#graphify/document #graphify/INFERRED #community/DMS_3

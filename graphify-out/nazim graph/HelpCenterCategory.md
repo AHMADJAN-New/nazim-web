@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\HelpCenterCategory.php"
 type: "code"
-community: "Exam & Student"
+community: "Help & Article"
 location: "L10"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam_&_Student
+  - community/Help_&_Article
 ---
 
 # HelpCenterCategory
@@ -47,4 +47,4 @@ tags:
 - [[.updateArticleCount()]] - `method` [EXTRACTED]
 - [[HelpCenterCategory.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Exam_&_Student
+#graphify/code #graphify/INFERRED #community/Help_&_Article

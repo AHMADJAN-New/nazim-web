@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\Event.php"
 type: "code"
-community: "Event & Admission"
+community: "Event"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Event
 ---
 
 # Event
@@ -29,4 +29,4 @@ tags:
 - [[.scopeUpcoming()]] - `method` [EXTRACTED]
 - [[Event.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Event

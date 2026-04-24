@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\settings\OrganizationCreationPreview.tsx"
 type: "code"
-community: "Letter & DMS"
+community: "DMS & Letter"
 location: "L56"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Letter_&_DMS
+  - community/DMS_&_Letter
 ---
 
 # fetchPreview()
@@ -15,4 +15,4 @@ tags:
 - [[.preview()_4]] - `calls` [INFERRED]
 - [[OrganizationCreationPreview.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Letter_&_DMS
+#graphify/code #graphify/INFERRED #community/DMS_&_Letter

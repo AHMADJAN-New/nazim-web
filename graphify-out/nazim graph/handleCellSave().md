@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\TranslationEditor.tsx"
 type: "code"
-community: "Finance"
+community: "Exam & Student"
 location: "L198"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/Exam_&_Student
 ---
 
 # handleCellSave()
@@ -16,4 +16,4 @@ tags:
 - [[.delete()_4]] - `calls` [INFERRED]
 - [[TranslationEditor.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/Exam_&_Student

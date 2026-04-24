@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\WebsiteSetting.php"
 type: "code"
-community: "Website & Public"
+community: "ID"
 location: "L10"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Public
+  - community/ID
 ---
 
 # WebsiteSetting
@@ -22,4 +22,4 @@ tags:
 - [[.upsert()_1]] - `calls` [INFERRED]
 - [[WebsiteSetting.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Public
+#graphify/code #graphify/INFERRED #community/ID

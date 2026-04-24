@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\PermissionGroup.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # PermissionGroup
@@ -17,4 +17,4 @@ tags:
 - [[.permissions()_1]] - `method` [EXTRACTED]
 - [[PermissionGroup.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

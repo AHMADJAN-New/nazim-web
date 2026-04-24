@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\services\dms\LetterCanvasRenderer.ts"
 type: "code"
-community: "Letter & DMS"
+community: "Letter & Translation"
 location: "L617"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Letter_&_DMS
+  - community/Letter_&_Translation
 ---
 
 # renderLetterToDataUrl()
@@ -16,4 +16,4 @@ tags:
 - [[generateLetterPdf()]] - `calls` [INFERRED]
 - [[renderLetterToCanvas()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Letter_&_DMS
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\services\dms\LetterCanvasRenderer.ts"
 type: "code"
-community: "Letter & DMS"
+community: "Letter & Translation"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Letter_&_DMS
+  - community/Letter_&_Translation
 ---
 
 # LetterCanvasRenderer.ts
@@ -33,4 +33,4 @@ tags:
 - [[toNumber()]] - `contains` [EXTRACTED]
 - [[wrapText()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Letter_&_DMS
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\AssetCopy.php"
 type: "code"
-community: "Exam & Student"
+community: "Admission & Event"
 location: "L10"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam_&_Student
+  - community/Admission_&_Event
 ---
 
 # AssetCopy
@@ -25,4 +25,4 @@ tags:
 - [[.updateAssetStatus()]] - `calls` [INFERRED]
 - [[AssetCopy.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Exam_&_Student
+#graphify/code #graphify/INFERRED #community/Admission_&_Event

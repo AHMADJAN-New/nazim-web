@@ -1,14 +1,14 @@
 ---
 source_file: "frontend\src\lib\translations\pages\id-cards\idCards.en.ts"
 type: "code"
-community: "ID 8"
+community: "ID 9"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/ID_8
+  - community/ID_9
 ---
 
 # idCards.en.ts
 
-#graphify/code #graphify/EXTRACTED #community/ID_8
+#graphify/code #graphify/EXTRACTED #community/ID_9

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\hooks\usePlatformAdminComplete.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L690"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # usePlatformDeletePermissionGroup()
@@ -15,4 +15,4 @@ tags:
 - [[useLanguage()]] - `calls` [INFERRED]
 - [[usePlatformAdminComplete.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

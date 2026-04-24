@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\i18n.ts"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L48"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # loadTranslation()
@@ -18,4 +18,4 @@ tags:
 - [[t()_1]] - `calls` [EXTRACTED]
 - [[translateMessage()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Exam
+#graphify/code #graphify/INFERRED #community/Exam_&_Onboarding

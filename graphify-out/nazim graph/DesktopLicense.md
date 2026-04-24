@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\DesktopLicense.php"
 type: "code"
-community: "Exam & Student"
+community: "Public"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_&_Student
+  - community/Public
 ---
 
 # DesktopLicense
@@ -25,4 +25,4 @@ tags:
 - [[.saveAsDatFile()]] - `method` [EXTRACTED]
 - [[DesktopLicense.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_&_Student
+#graphify/code #graphify/EXTRACTED #community/Public

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useLeaveRequests.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L27"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useLeaveRequests()
@@ -16,4 +16,4 @@ tags:
 - [[useLeaveRequests.tsx]] - `contains` [EXTRACTED]
 - [[usePagination()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

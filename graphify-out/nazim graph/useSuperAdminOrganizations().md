@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useOrganizations.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L252"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useSuperAdminOrganizations()
@@ -16,4 +16,4 @@ tags:
 - [[useOrganizations()]] - `calls` [EXTRACTED]
 - [[useOrganizations.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

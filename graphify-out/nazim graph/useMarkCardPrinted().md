@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useStudentIdCards.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L187"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useMarkCardPrinted()
@@ -15,4 +15,4 @@ tags:
 - [[useLanguage()]] - `calls` [INFERRED]
 - [[useStudentIdCards.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

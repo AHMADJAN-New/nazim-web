@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\fees\FeeAssignmentsPage.tsx"
 type: "code"
-community: "Report & Fee"
+community: "Student & Admin"
 location: "L241"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Report_&_Fee
+  - community/Student_&_Admin
 ---
 
 # getStatusBadge()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[FeeAssignmentsPage.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Report_&_Fee
+#graphify/code #graphify/EXTRACTED #community/Student_&_Admin

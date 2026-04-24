@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Controllers\Website\PublicFatwaController.php"
 type: "code"
-community: "Fatwa & Website"
+community: "Exam & Student"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Fatwa_&_Website
+  - community/Exam_&_Student
 ---
 
 # PublicFatwaController
@@ -18,4 +18,4 @@ tags:
 - [[.storeQuestion()]] - `method` [EXTRACTED]
 - [[PublicFatwaController.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Fatwa_&_Website
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Student

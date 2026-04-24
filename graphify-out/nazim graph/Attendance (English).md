@@ -1,11 +1,11 @@
 ---
 source_file: "backend/resources/help-center/articles/attendance/en/attendance.md"
 type: "document"
-community: "Attendance"
+community: "Attendance & Report"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Attendance
+  - community/Attendance_&_Report
 ---
 
 # Attendance (English)
@@ -20,4 +20,4 @@ tags:
 - [[Attendance Totals Report (English)]] - `references` [EXTRACTED]
 - [[Mark Attendance (English)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Attendance
+#graphify/document #graphify/EXTRACTED #community/Attendance_&_Report

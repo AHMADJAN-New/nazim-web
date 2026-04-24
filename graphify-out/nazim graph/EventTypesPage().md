@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\events\EventTypesPage.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L6"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # EventTypesPage()
@@ -15,4 +15,4 @@ tags:
 - [[EventTypesPage.tsx]] - `contains` [EXTRACTED]
 - [[useAuth()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\scripts\i18n\check-bad-patterns.js"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # check-bad-patterns.js
@@ -20,4 +20,4 @@ tags:
 - [[walkFiles()]] - `contains` [EXTRACTED]
 - [[writeBaseline()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Translation_&_I18n
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

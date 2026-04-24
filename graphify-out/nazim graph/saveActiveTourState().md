@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\sessionStorage.ts"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L20"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # saveActiveTourState()
@@ -16,4 +16,4 @@ tags:
 - [[.warn()]] - `calls` [INFERRED]
 - [[sessionStorage.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Exam
+#graphify/code #graphify/INFERRED #community/Exam_&_Onboarding

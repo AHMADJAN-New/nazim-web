@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Middleware\BypassMaintenanceForRoutes.php"
 type: "code"
-community: "Exam & Student"
+community: "ID"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_&_Student
+  - community/ID
 ---
 
 # BypassMaintenanceForRoutes.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[BypassMaintenanceForRoutes]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_&_Student
+#graphify/code #graphify/EXTRACTED #community/ID

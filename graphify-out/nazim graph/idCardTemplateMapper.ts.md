@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\mappers\idCardTemplateMapper.ts"
 type: "code"
-community: "ID 3"
+community: "ID 4"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/ID_3
+  - community/ID_4
 ---
 
 # idCardTemplateMapper.ts
@@ -16,4 +16,4 @@ tags:
 - [[mapIdCardTemplateDomainToInsert()]] - `contains` [EXTRACTED]
 - [[mapIdCardTemplateDomainToUpdate()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/ID_3
+#graphify/code #graphify/EXTRACTED #community/ID_4

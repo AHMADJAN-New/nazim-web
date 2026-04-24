@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\organization\hr\OrganizationHrPayrollPage.tsx"
 type: "code"
-community: "Organization & Staff"
+community: "Exam"
 location: "L266"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Organization_&_Staff
+  - community/Exam
 ---
 
 # handleRunSubmit()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[OrganizationHrPayrollPage.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Organization_&_Staff
+#graphify/code #graphify/EXTRACTED #community/Exam

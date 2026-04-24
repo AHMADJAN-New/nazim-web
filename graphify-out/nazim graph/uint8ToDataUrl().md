@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\reporting\branding.ts"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L7"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # uint8ToDataUrl()
@@ -16,4 +16,4 @@ tags:
 - [[branding.ts]] - `contains` [EXTRACTED]
 - [[resolveReportBranding()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Translation_&_I18n
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

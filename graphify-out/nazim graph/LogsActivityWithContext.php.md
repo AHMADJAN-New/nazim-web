@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Traits\LogsActivityWithContext.php"
 type: "code"
-community: "Exam & Student"
+community: "Help & Article"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_&_Student
+  - community/Help_&_Article
 ---
 
 # LogsActivityWithContext.php
@@ -15,4 +15,4 @@ tags:
 - [[getActivitylogOptions()]] - `contains` [EXTRACTED]
 - [[tapActivity()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_&_Student
+#graphify/code #graphify/EXTRACTED #community/Help_&_Article

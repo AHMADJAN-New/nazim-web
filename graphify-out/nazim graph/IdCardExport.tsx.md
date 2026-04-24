@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\IdCardExport.tsx"
 type: "code"
-community: "Student & Admin"
+community: "ID 3"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student_&_Admin
+  - community/ID_3
 ---
 
 # IdCardExport.tsx
@@ -20,4 +20,4 @@ tags:
 - [[selectByStatus()]] - `contains` [EXTRACTED]
 - [[toggleCardSelection()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student_&_Admin
+#graphify/code #graphify/EXTRACTED #community/ID_3

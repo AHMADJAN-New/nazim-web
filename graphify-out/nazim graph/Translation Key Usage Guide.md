@@ -1,11 +1,11 @@
 ---
 source_file: "frontend/scripts/i18n/TRANSLATION-USAGE-GUIDE.md"
 type: "document"
-community: "I18n"
+community: "Translation & I18n"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/I18n
+  - community/Translation_&_I18n
 ---
 
 # Translation Key Usage Guide
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Translation Management Best Practices]] - `conceptually_related_to` [INFERRED]
 
-#graphify/document #graphify/INFERRED #community/I18n
+#graphify/document #graphify/INFERRED #community/Translation_&_I18n

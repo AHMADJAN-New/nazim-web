@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\Student.php"
 type: "code"
-community: "Student"
+community: "Student & Staff"
 location: "L13"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student
+  - community/Student_&_Staff
 ---
 
 # Student
@@ -29,4 +29,4 @@ tags:
 - [[.scopeOrphans()]] - `method` [EXTRACTED]
 - [[Student.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student
+#graphify/code #graphify/EXTRACTED #community/Student_&_Staff

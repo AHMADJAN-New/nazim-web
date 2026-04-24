@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\dms\LetterheadsPage.tsx"
 type: "code"
-community: "Letter & DMS"
+community: "DMS & Letter"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Letter_&_DMS
+  - community/DMS_&_Letter
 ---
 
 # LetterheadsPage.tsx
@@ -21,4 +21,4 @@ tags:
 - [[openPreviewDialog()]] - `contains` [EXTRACTED]
 - [[openViewDialog()_2]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Letter_&_DMS
+#graphify/code #graphify/EXTRACTED #community/DMS_&_Letter

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Controllers\Website\WebsiteSettingsController.php"
 type: "code"
-community: "Website & Public"
+community: "ID"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Public
+  - community/ID
 ---
 
 # WebsiteSettingsController.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[WebsiteSettingsController]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Public
+#graphify/code #graphify/EXTRACTED #community/ID

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\StaffReport.tsx"
 type: "code"
-community: "Report & Fee"
+community: "Student & Admin"
 location: "L97"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Report_&_Fee
+  - community/Student_&_Admin
 ---
 
 # formatDate()
@@ -15,4 +15,4 @@ tags:
 - [[StaffReport.tsx]] - `contains` [EXTRACTED]
 - [[format()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Report_&_Fee
+#graphify/code #graphify/INFERRED #community/Student_&_Admin

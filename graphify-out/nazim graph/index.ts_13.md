@@ -1,14 +1,14 @@
 ---
 source_file: "frontend\src\pages\events\index.ts"
 type: "code"
-community: "Event 16"
+community: "Event 18"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_16
+  - community/Event_18
 ---
 
 # index.ts
 
-#graphify/code #graphify/EXTRACTED #community/Event_16
+#graphify/code #graphify/EXTRACTED #community/Event_18

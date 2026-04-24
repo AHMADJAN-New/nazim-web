@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\reporting\reportColumnSelection.ts"
 type: "code"
-community: "Finance"
+community: "Report 2"
 location: "L34"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/Report_2
 ---
 
 # toggleSelectedReportColumnKey()
@@ -17,4 +17,4 @@ tags:
 - [[normalizeSelectedReportColumnKeys()]] - `calls` [EXTRACTED]
 - [[reportColumnSelection.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/Report_2

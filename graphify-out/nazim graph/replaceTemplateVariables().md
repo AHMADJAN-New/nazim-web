@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\services\dms\LetterCanvasRenderer.ts"
 type: "code"
-community: "Letter & DMS"
+community: "DMS & Letter"
 location: "L144"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Letter_&_DMS
+  - community/DMS_&_Letter
 ---
 
 # replaceTemplateVariables()
@@ -21,4 +21,4 @@ tags:
 - [[LetterCanvasRenderer.ts]] - `contains` [EXTRACTED]
 - [[renderLetterToCanvas()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Letter_&_DMS
+#graphify/code #graphify/INFERRED #community/DMS_&_Letter

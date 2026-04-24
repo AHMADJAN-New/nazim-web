@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\hooks\useLoginAudit.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L47"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useLoginAttemptsByOrganization()
@@ -15,4 +15,4 @@ tags:
 - [[useLoginAudit.ts]] - `contains` [EXTRACTED]
 - [[usePlatformAdminPermissions()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

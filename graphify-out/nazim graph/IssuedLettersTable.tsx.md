@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\dms\IssuedLettersTable.tsx"
 type: "code"
-community: "Letter 2"
+community: "Letter & DMS"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Letter_2
+  - community/Letter_&_DMS
 ---
 
 # IssuedLettersTable.tsx
@@ -16,4 +16,4 @@ tags:
 - [[getRecipientName()]] - `contains` [EXTRACTED]
 - [[toDate()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Letter_2
+#graphify/code #graphify/EXTRACTED #community/Letter_&_DMS

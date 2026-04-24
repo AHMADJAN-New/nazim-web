@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useLanguage.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L136"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useLanguage()
@@ -332,4 +332,4 @@ tags:
 - [[useWebsiteImageUpload()]] - `calls` [INFERRED]
 - [[useWebsiteSite()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

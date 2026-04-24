@@ -1,12 +1,12 @@
 ---
 source_file: "backend\database\migrations\2025_12_06_135203_fix_library_copies_uuid_ids.php"
 type: "code"
-community: "Finance"
+community: "Subscription"
 location: "L76"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Subscription
 ---
 
 # down()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[2025_12_06_135203_fix_library_copies_uuid_ids.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Subscription

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\timetableSolver.ts"
 type: "code"
-community: "Finance"
+community: "Timetable"
 location: "L68"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Timetable
 ---
 
 # TimetableSolver
@@ -21,4 +21,4 @@ tags:
 - [[.unplace()]] - `method` [EXTRACTED]
 - [[timetableSolver.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Timetable

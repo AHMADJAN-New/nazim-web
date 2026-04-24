@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useSubscriptionAdmin.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useSubscriptionAdmin.tsx
@@ -41,4 +41,4 @@ tags:
 - [[useUpdateDiscountCode()]] - `contains` [EXTRACTED]
 - [[useUpdatePlan()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

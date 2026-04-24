@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\events\CheckinScreen.tsx"
 type: "code"
-community: "Exam & Student"
+community: "Event 3"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_&_Student
+  - community/Event_3
 ---
 
 # CheckinScreen.tsx
@@ -18,4 +18,4 @@ tags:
 - [[handleConfirmCheckin()]] - `contains` [EXTRACTED]
 - [[handleManualSubmit()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_&_Student
+#graphify/code #graphify/EXTRACTED #community/Event_3

@@ -1,14 +1,14 @@
 ---
 source_file: "frontend\src\components\events\EventTypesList.tsx"
 type: "code"
-community: "Event 8"
+community: "Event 10"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_8
+  - community/Event_10
 ---
 
 # EventTypesList.tsx
 
-#graphify/code #graphify/EXTRACTED #community/Event_8
+#graphify/code #graphify/EXTRACTED #community/Event_10

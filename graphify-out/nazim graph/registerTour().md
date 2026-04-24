@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\TourRegistry.ts"
 type: "code"
-community: "Finance"
+community: "Exam & Onboarding"
 location: "L18"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/Exam_&_Onboarding
 ---
 
 # registerTour()
@@ -18,4 +18,4 @@ tags:
 - [[.warn()]] - `calls` [INFERRED]
 - [[TourRegistry.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/Exam_&_Onboarding

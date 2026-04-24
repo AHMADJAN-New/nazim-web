@@ -1,11 +1,11 @@
 ---
 source_file: "backend/resources/help-center/articles/dms/ar/dms-dashboard.md"
 type: "document"
-community: "DMS & Letter"
+community: "DMS 3"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/DMS_&_Letter
+  - community/DMS_3
 ---
 
 # Document Management System (DMS)
@@ -23,4 +23,4 @@ tags:
 - [[DMS Settings (Arabic)]] - `conceptually_related_to` [INFERRED]
 - [[DMS Templates (Arabic)]] - `conceptually_related_to` [INFERRED]
 
-#graphify/document #graphify/INFERRED #community/DMS_&_Letter
+#graphify/document #graphify/INFERRED #community/DMS_3

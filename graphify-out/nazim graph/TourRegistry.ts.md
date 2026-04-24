@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\TourRegistry.ts"
 type: "code"
-community: "Finance"
+community: "Exam & Onboarding"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Exam_&_Onboarding
 ---
 
 # TourRegistry.ts
@@ -22,4 +22,4 @@ tags:
 - [[registerTour()]] - `contains` [EXTRACTED]
 - [[unregisterTour()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Onboarding

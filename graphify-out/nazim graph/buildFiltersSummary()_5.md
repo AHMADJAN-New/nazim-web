@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\dms\ArchiveSearch.tsx"
 type: "code"
-community: "Report & Fee"
+community: "DMS 4"
 location: "L315"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Report_&_Fee
+  - community/DMS_4
 ---
 
 # buildFiltersSummary()
@@ -15,4 +15,4 @@ tags:
 - [[ArchiveSearch.tsx]] - `contains` [EXTRACTED]
 - [[t()_3]] - `calls` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Report_&_Fee
+#graphify/code #graphify/EXTRACTED #community/DMS_4

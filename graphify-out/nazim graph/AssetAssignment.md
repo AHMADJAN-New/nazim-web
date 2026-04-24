@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\AssetAssignment.php"
 type: "code"
-community: "Exam & Student"
+community: "Admission & Event"
 location: "L9"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam_&_Student
+  - community/Admission_&_Event
 ---
 
 # AssetAssignment
@@ -25,4 +25,4 @@ tags:
 - [[.updateAssetStatus()]] - `calls` [INFERRED]
 - [[AssetAssignment.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Exam_&_Student
+#graphify/code #graphify/INFERRED #community/Admission_&_Event

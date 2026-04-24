@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\ExamAttendancePage.tsx"
 type: "code"
-community: "Finance"
+community: "Exam & Student"
 location: "L357"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/Exam_&_Student
 ---
 
 # handleSelectStudent()
@@ -16,4 +16,4 @@ tags:
 - [[.delete()_4]] - `calls` [INFERRED]
 - [[ExamAttendancePage.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/Exam_&_Student

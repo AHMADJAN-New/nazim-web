@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\organization\hr\OrganizationHrPayrollPage.tsx"
 type: "code"
-community: "Organization & Staff"
+community: "Exam"
 location: "L79"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Organization_&_Staff
+  - community/Exam
 ---
 
 # formatStaffName()
@@ -15,4 +15,4 @@ tags:
 - [[OrganizationHrPayrollPage.tsx]] - `contains` [EXTRACTED]
 - [[StaffPictureCell()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Organization_&_Staff
+#graphify/code #graphify/INFERRED #community/Exam

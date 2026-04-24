@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\usePermissions.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L16"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # usePermissions()
@@ -16,4 +16,4 @@ tags:
 - [[usePermissions.tsx]] - `contains` [EXTRACTED]
 - [[useUserPermissionsForUser()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

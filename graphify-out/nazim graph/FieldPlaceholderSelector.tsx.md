@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\dms\FieldPlaceholderSelector.tsx"
 type: "code"
-community: "DMS 7"
+community: "DMS 9"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/DMS_7
+  - community/DMS_9
 ---
 
 # FieldPlaceholderSelector.tsx
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[handleInsertField()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/DMS_7
+#graphify/code #graphify/EXTRACTED #community/DMS_9

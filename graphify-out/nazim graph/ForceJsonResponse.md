@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Middleware\ForceJsonResponse.php"
 type: "code"
-community: "Finance"
+community: "ID"
 location: "L13"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/ID
 ---
 
 # ForceJsonResponse
@@ -15,4 +15,4 @@ tags:
 - [[.handle()_36]] - `method` [EXTRACTED]
 - [[ForceJsonResponse.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/ID

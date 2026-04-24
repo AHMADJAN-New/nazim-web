@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\StaffReport.tsx"
 type: "code"
-community: "Report & Fee"
+community: "Student & Admin"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Report_&_Fee
+  - community/Student_&_Admin
 ---
 
 # StaffReport.tsx
@@ -23,4 +23,4 @@ tags:
 - [[statusBadgeVariant()_1]] - `contains` [EXTRACTED]
 - [[transformStaffData()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Report_&_Fee
+#graphify/code #graphify/EXTRACTED #community/Student_&_Admin

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Controllers\Website\WebsiteFatwaCategoryController.php"
 type: "code"
-community: "Fatwa & Website"
+community: "Exam & Student"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Fatwa_&_Website
+  - community/Exam_&_Student
 ---
 
 # WebsiteFatwaCategoryController.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[WebsiteFatwaCategoryController]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Fatwa_&_Website
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Student

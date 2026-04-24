@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\use-toast.ts"
 type: "code"
-community: "Finance"
+community: "ID"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/ID
 ---
 
 # use-toast.ts
@@ -19,4 +19,4 @@ tags:
 - [[toast()]] - `contains` [EXTRACTED]
 - [[useToast()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/ID

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\IncomeCategory.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L12"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # IncomeCategory
@@ -22,4 +22,4 @@ tags:
 - [[.scopeOrdered()_5]] - `method` [EXTRACTED]
 - [[IncomeCategory.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

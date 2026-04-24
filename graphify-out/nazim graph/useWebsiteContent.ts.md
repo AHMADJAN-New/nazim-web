@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\website\hooks\useWebsiteContent.ts"
 type: "code"
-community: "Website & Exam"
+community: "Website & Content"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Website_&_Content
 ---
 
 # useWebsiteContent.ts
@@ -40,4 +40,4 @@ tags:
 - [[useWebsitePublicBooks()]] - `contains` [EXTRACTED]
 - [[useWebsiteScholars()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Website_&_Content

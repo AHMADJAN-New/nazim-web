@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\OutgoingDocument.php"
 type: "code"
-community: "Letter & DMS"
+community: "DMS & Letter"
 location: "L9"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Letter_&_DMS
+  - community/DMS_&_Letter
 ---
 
 # OutgoingDocument
@@ -27,4 +27,4 @@ tags:
 - [[.update()_92]] - `calls` [INFERRED]
 - [[OutgoingDocument.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Letter_&_DMS
+#graphify/code #graphify/INFERRED #community/DMS_&_Letter

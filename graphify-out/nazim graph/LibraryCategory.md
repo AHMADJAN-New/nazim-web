@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\LibraryCategory.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L10"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # LibraryCategory
@@ -27,4 +27,4 @@ tags:
 - [[.user_can_create_library_book()]] - `calls` [INFERRED]
 - [[LibraryCategory.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Event_&_Admission
+#graphify/code #graphify/INFERRED #community/Admission_&_Event

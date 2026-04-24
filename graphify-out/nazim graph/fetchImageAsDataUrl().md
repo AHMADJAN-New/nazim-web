@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\services\dms\LetterCanvasRenderer.ts"
 type: "code"
-community: "Letter & DMS"
+community: "Letter & Translation"
 location: "L298"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Letter_&_DMS
+  - community/Letter_&_Translation
 ---
 
 # fetchImageAsDataUrl()
@@ -19,4 +19,4 @@ tags:
 - [[LetterCanvasRenderer.ts]] - `contains` [EXTRACTED]
 - [[loadImage()_3]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Letter_&_DMS
+#graphify/code #graphify/INFERRED #community/Letter_&_Translation

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\scripts\i18n\generate-translation-keys.ts"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L49"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # main()
@@ -19,4 +19,4 @@ tags:
 - [[flattenToDotKeys()]] - `calls` [EXTRACTED]
 - [[generate-translation-keys.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Translation_&_I18n
+#graphify/code #graphify/INFERRED #community/Letter_&_Translation

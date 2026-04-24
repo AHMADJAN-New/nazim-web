@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useAttendance.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L250"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useScanAttendance()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useAttendance.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

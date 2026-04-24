@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useStudentIdCards.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useStudentIdCards.tsx
@@ -24,4 +24,4 @@ tags:
 - [[useStudentIdCards()]] - `contains` [EXTRACTED]
 - [[useUpdateStudentIdCard()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

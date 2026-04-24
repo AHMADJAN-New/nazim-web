@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\website\hooks\useWebsiteManager.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L450"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useDeleteWebsiteMediaCategory()
@@ -15,4 +15,4 @@ tags:
 - [[useLanguage()]] - `calls` [INFERRED]
 - [[useWebsiteManager.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

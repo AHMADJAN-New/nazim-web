@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useExams.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L762"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useExamAttendance()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useExams.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

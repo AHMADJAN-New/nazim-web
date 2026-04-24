@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\dms\IssuedLettersTable.tsx"
 type: "code"
-community: "Letter 2"
+community: "Letter & DMS"
 location: "L189"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Letter_2
+  - community/Letter_&_DMS
 ---
 
 # fromDate()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[IssuedLettersTable.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Letter_2
+#graphify/code #graphify/EXTRACTED #community/Letter_&_DMS

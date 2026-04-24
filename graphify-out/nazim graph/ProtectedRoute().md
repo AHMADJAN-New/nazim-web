@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\ProtectedRoute.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L41"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # ProtectedRoute()
@@ -18,4 +18,4 @@ tags:
 - [[useProfile()]] - `calls` [INFERRED]
 - [[useSubscriptionGateStatus()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

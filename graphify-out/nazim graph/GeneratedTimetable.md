@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\GeneratedTimetable.php"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # GeneratedTimetable
@@ -28,4 +28,4 @@ tags:
 - [[.update()_82]] - `calls` [INFERRED]
 - [[GeneratedTimetable.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Translation_&_I18n
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

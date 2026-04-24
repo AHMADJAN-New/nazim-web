@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Middleware\ResolvePublicWebsiteSchool.php"
 type: "code"
-community: "Finance"
+community: "ID"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/ID
 ---
 
 # ResolvePublicWebsiteSchool.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[ResolvePublicWebsiteSchool]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/ID

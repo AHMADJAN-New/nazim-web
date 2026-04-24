@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\pages\admin\LoginAuditPage.tsx"
 type: "code"
-community: "Finance"
+community: "ID"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/ID
 ---
 
 # LoginAuditPage.tsx
@@ -19,4 +19,4 @@ tags:
 - [[handleFilterChange()_8]] - `contains` [EXTRACTED]
 - [[handleRowClick()_6]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/ID

@@ -15,16 +15,16 @@ This vault contains the full Graphify export with renamed community labels:
 ## Quick Start
 - [[GRAPH_REPORT]]
 - [[graph.canvas]]
-- Open any `_COMMUNITY_*.md` note or use Obsidian Graph View.
+- Open any `* Overview.md` note or use Obsidian Graph View.
 
 ## Snapshot
 - Files in corpus: 2,305
-- Approximate words in corpus: 3,503,727
-- Graph nodes: 11,354
-- Graph edges: 23,893
-- Community groups in graph data: 1,125
-- Markdown files currently in this vault root: 12,474
+- Approximate words in corpus: 3,506,012
+- Graph nodes: 11,360
+- Graph edges: 23,912
+- Community groups in graph data: 1,134
+- Markdown files currently in this vault root: 12,489
 - Canvas files currently in this vault root: 1
-- Exported notes written this pass: 12,479
+- Exported notes written this pass: 12,494
 
 #graphify/index #graphify/vault

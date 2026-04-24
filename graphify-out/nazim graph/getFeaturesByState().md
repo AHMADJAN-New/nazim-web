@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\pages\admin\OrganizationSubscriptionDetail.tsx"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L291"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # getFeaturesByState()
@@ -16,4 +16,4 @@ tags:
 - [[OrganizationSubscriptionDetail.tsx]] - `contains` [EXTRACTED]
 - [[OrganizationSubscriptionDetail.tsx_1]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Translation_&_I18n
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

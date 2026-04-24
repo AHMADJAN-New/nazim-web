@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\performance.ts"
 type: "code"
-community: "Finance"
+community: "Performance"
 location: "L159"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Performance
 ---
 
 # withPerformanceTracking()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[performance.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Performance

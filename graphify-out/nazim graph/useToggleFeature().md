@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useSubscriptionAdmin.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L846"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useToggleFeature()
@@ -16,4 +16,4 @@ tags:
 - [[useLanguage()]] - `calls` [INFERRED]
 - [[useSubscriptionAdmin.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

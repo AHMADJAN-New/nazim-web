@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Services\Certificates\GraduationBatchService.php"
 type: "code"
-community: "Graduation"
+community: "Exam & Student"
 location: "L20"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Graduation
+  - community/Exam_&_Student
 ---
 
 # GraduationBatchService
@@ -23,4 +23,4 @@ tags:
 - [[.updateBatch()]] - `method` [EXTRACTED]
 - [[GraduationBatchService.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Graduation
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Student

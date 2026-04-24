@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\pages\admin\TranslationsManagement.tsx"
 type: "code"
-community: "Finance"
+community: "Student & Admin"
 location: "L897"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Student_&_Admin
 ---
 
 # if()
@@ -16,4 +16,4 @@ tags:
 - [[getStatusBadge()_8]] - `calls` [INFERRED]
 - [[handleCellSave()_1]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Student_&_Admin

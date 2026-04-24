@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Controllers\DesktopReleaseController.php"
 type: "code"
-community: "Finance"
+community: "Exam & Student"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Exam_&_Student
 ---
 
 # DesktopReleaseController
@@ -37,4 +37,4 @@ tags:
 - [[.uploadUpdatesFile()]] - `method` [EXTRACTED]
 - [[DesktopReleaseController.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Student

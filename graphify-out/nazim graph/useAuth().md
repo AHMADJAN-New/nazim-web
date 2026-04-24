@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useAuth.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L285"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useAuth()
@@ -416,4 +416,4 @@ tags:
 - [[useWebsitePosts()]] - `calls` [INFERRED]
 - [[useWebsiteSettings()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

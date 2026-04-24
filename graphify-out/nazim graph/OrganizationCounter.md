@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\OrganizationCounter.php"
 type: "code"
-community: "Student"
+community: "Student & Staff"
 location: "L9"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Student
+  - community/Student_&_Staff
 ---
 
 # OrganizationCounter
@@ -24,4 +24,4 @@ tags:
 - [[.syncStudentCounterFromExistingStudentCodes()]] - `calls` [INFERRED]
 - [[OrganizationCounter.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Student
+#graphify/code #graphify/INFERRED #community/Student_&_Staff

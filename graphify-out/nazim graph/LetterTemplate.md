@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\LetterTemplate.php"
 type: "code"
-community: "Letter & DMS"
+community: "DMS & Letter"
 location: "L9"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Letter_&_DMS
+  - community/DMS_&_Letter
 ---
 
 # LetterTemplate
@@ -26,4 +26,4 @@ tags:
 - [[.watermark()]] - `method` [EXTRACTED]
 - [[LetterTemplate.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Letter_&_DMS
+#graphify/code #graphify/INFERRED #community/DMS_&_Letter

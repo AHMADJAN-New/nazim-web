@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\PermissionGroupItem.php"
 type: "code"
-community: "Exam & Student"
+community: "Admission & Event"
 location: "L8"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_&_Student
+  - community/Admission_&_Event
 ---
 
 # PermissionGroupItem
@@ -19,4 +19,4 @@ tags:
 - [[.platformAdminUpdatePermissionGroup()]] - `calls` [INFERRED]
 - [[PermissionGroupItem.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_&_Student
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\tours\schoolSetup\content.ts"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L13"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # getLang()
@@ -17,4 +17,4 @@ tags:
 - [[getCurrentLanguage()_1]] - `calls` [INFERRED]
 - [[getStepContent()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Onboarding

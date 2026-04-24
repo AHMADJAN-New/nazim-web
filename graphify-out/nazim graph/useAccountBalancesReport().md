@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useFinance.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1026"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useAccountBalancesReport()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useFinance.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

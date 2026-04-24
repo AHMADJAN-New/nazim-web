@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\StaffList.tsx"
 type: "code"
-community: "Organization & Staff"
+community: "Exam"
 location: "L117"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Organization_&_Staff
+  - community/Exam
 ---
 
 # StaffPictureCell()
@@ -17,4 +17,4 @@ tags:
 - [[t()_3]] - `calls` [INFERRED]
 - [[useLanguage()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Organization_&_Staff
+#graphify/code #graphify/INFERRED #community/Exam

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useFees.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L217"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useDeleteFeeStructure()
@@ -15,4 +15,4 @@ tags:
 - [[useFees.tsx]] - `contains` [EXTRACTED]
 - [[useLanguage()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

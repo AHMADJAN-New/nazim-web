@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useUpcomingEvents.tsx"
 type: "code"
-community: "Event 3"
+community: "Event 5"
 location: "L12"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_3
+  - community/Event_5
 ---
 
 # useUpcomingEvents()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useUpcomingEvents.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_3
+#graphify/code #graphify/EXTRACTED #community/Event_5

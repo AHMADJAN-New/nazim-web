@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\services\dms\LetterCanvasRenderer.ts"
 type: "code"
-community: "Letter & DMS"
+community: "Letter & Translation"
 location: "L70"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Letter_&_DMS
+  - community/Letter_&_Translation
 ---
 
 # buildFontStack()
@@ -17,4 +17,4 @@ tags:
 - [[drawWrappedTextBlock()]] - `calls` [EXTRACTED]
 - [[renderLetterToCanvas()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Letter_&_DMS
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\OrganizationAdminRoute.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L16"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # OrganizationAdminRoute()
@@ -19,4 +19,4 @@ tags:
 - [[useOrganizationPlanSlug()]] - `calls` [INFERRED]
 - [[useUserPermissions()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

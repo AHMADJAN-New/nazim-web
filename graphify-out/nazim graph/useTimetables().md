@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useTimetables.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L25"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useTimetables()
@@ -17,4 +17,4 @@ tags:
 - [[useProfile()]] - `calls` [INFERRED]
 - [[useTimetables.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

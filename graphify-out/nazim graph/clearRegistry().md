@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\TourRegistry.ts"
 type: "code"
-community: "Finance"
+community: "DMS & Letter"
 location: "L119"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/DMS_&_Letter
 ---
 
 # clearRegistry()
@@ -15,4 +15,4 @@ tags:
 - [[.clear()_1]] - `calls` [INFERRED]
 - [[TourRegistry.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/DMS_&_Letter

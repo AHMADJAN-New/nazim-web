@@ -1,14 +1,14 @@
 ---
 source_file: "frontend\src\types\domain\examType.ts"
 type: "code"
-community: "Exam 21"
+community: "Exam 22"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_21
+  - community/Exam_22
 ---
 
 # examType.ts
 
-#graphify/code #graphify/EXTRACTED #community/Exam_21
+#graphify/code #graphify/EXTRACTED #community/Exam_22

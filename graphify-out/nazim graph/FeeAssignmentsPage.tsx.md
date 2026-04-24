@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\fees\FeeAssignmentsPage.tsx"
 type: "code"
-community: "Report & Fee"
+community: "Student & Admin"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Report_&_Fee
+  - community/Student_&_Admin
 ---
 
 # FeeAssignmentsPage.tsx
@@ -23,4 +23,4 @@ tags:
 - [[handleSubmit()_15]] - `contains` [EXTRACTED]
 - [[handleView()_3]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Report_&_Fee
+#graphify/code #graphify/EXTRACTED #community/Student_&_Admin

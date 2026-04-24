@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useEventUsers.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L12"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useEventUsers()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useEventUsers.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

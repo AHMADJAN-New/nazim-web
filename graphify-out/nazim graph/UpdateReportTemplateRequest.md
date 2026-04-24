@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Requests\UpdateReportTemplateRequest.php"
 type: "code"
-community: "Report 3"
+community: "Report 4"
 location: "L8"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Report_3
+  - community/Report_4
 ---
 
 # UpdateReportTemplateRequest
@@ -17,4 +17,4 @@ tags:
 - [[.rules()_39]] - `method` [EXTRACTED]
 - [[UpdateReportTemplateRequest.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Report_3
+#graphify/code #graphify/EXTRACTED #community/Report_4

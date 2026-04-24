@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Services\Notifications\NotificationRuleRegistry.php"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # NotificationRuleRegistry.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[NotificationRuleRegistry]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Translation_&_I18n
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

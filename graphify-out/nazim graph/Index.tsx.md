@@ -1,14 +1,14 @@
 ---
 source_file: "frontend\src\pages\exams\index.tsx"
 type: "code"
-community: "Exam 13"
+community: "Exam 14"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_13
+  - community/Exam_14
 ---
 
 # index.tsx
 
-#graphify/code #graphify/EXTRACTED #community/Exam_13
+#graphify/code #graphify/EXTRACTED #community/Exam_14

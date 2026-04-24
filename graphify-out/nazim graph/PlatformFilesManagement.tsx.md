@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\pages\admin\PlatformFilesManagement.tsx"
 type: "code"
-community: "Student & Admin"
+community: "Report"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student_&_Admin
+  - community/Report
 ---
 
 # PlatformFilesManagement.tsx
@@ -16,4 +16,4 @@ tags:
 - [[handleDownloadOrgDocument()]] - `contains` [EXTRACTED]
 - [[handleDownloadPlatformFile()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student_&_Admin
+#graphify/code #graphify/EXTRACTED #community/Report

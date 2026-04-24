@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useExams.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L128"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useCreateExam()
@@ -15,4 +15,4 @@ tags:
 - [[useExams.tsx]] - `contains` [EXTRACTED]
 - [[useLanguage()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

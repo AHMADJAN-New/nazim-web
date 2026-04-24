@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useCertificateTemplates.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L183"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useUpdateCertificateTemplate()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useCertificateTemplates.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

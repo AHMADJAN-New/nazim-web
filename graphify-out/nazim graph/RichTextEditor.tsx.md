@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\dms\RichTextEditor.tsx"
 type: "code"
-community: "DMS 5"
+community: "DMS 7"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/DMS_5
+  - community/DMS_7
 ---
 
 # RichTextEditor.tsx
@@ -15,4 +15,4 @@ tags:
 - [[execCommand()]] - `contains` [EXTRACTED]
 - [[handleInput()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/DMS_5
+#graphify/code #graphify/EXTRACTED #community/DMS_7

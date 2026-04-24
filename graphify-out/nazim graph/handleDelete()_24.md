@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\ExamDocuments.tsx"
 type: "code"
-community: "Finance"
+community: "Exam 2"
 location: "L146"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Exam_2
 ---
 
 # handleDelete()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[ExamDocuments.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Exam_2

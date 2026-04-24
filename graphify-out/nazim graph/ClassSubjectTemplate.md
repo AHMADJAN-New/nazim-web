@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\ClassSubjectTemplate.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L11"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # ClassSubjectTemplate
@@ -25,4 +25,4 @@ tags:
 - [[.update()_10]] - `calls` [INFERRED]
 - [[ClassSubjectTemplate.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Event_&_Admission
+#graphify/code #graphify/INFERRED #community/Admission_&_Event

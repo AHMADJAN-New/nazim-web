@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\fees\FeeAssignmentsPage.tsx"
 type: "code"
-community: "Report & Fee"
+community: "Student & Admin"
 location: "L708"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Report_&_Fee
+  - community/Student_&_Admin
 ---
 
 # async()
@@ -15,4 +15,4 @@ tags:
 - [[FeeAssignmentsPage.tsx]] - `contains` [EXTRACTED]
 - [[refetchAssignments()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Report_&_Fee
+#graphify/code #graphify/INFERRED #community/Student_&_Admin

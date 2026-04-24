@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useOrganizationPlanSlug.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L10"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useOrganizationPlanSlug()
@@ -16,4 +16,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useOrganizationPlanSlug.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

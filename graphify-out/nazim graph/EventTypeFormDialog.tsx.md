@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\events\EventTypeFormDialog.tsx"
 type: "code"
-community: "Event 2"
+community: "Event 4"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_2
+  - community/Event_4
 ---
 
 # EventTypeFormDialog.tsx
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[onSubmit()_5]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_2
+#graphify/code #graphify/EXTRACTED #community/Event_4

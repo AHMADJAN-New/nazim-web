@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useWatermarks.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L16"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useWatermarks()
@@ -16,4 +16,4 @@ tags:
 - [[useLanguage()]] - `calls` [INFERRED]
 - [[useWatermarks.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

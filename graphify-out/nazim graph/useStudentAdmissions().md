@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useStudentAdmissions.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L81"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useStudentAdmissions()
@@ -16,4 +16,4 @@ tags:
 - [[usePagination()]] - `calls` [INFERRED]
 - [[useStudentAdmissions.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

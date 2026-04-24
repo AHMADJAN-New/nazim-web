@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\ContactMessage.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L10"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # ContactMessage
@@ -25,4 +25,4 @@ tags:
 - [[.update()_11]] - `calls` [INFERRED]
 - [[ContactMessage.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Event_&_Admission
+#graphify/code #graphify/INFERRED #community/Admission_&_Event

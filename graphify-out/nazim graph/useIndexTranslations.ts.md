@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\index\translations\useIndexTranslations.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useIndexTranslations.ts
@@ -15,4 +15,4 @@ tags:
 - [[loadIndexTranslation()]] - `contains` [EXTRACTED]
 - [[useIndexTranslations()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

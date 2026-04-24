@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\Building.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # Building
@@ -19,4 +19,4 @@ tags:
 - [[.scopeForSchool()_1]] - `method` [EXTRACTED]
 - [[Building.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

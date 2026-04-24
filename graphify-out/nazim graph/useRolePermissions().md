@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\usePermissions.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L41"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useRolePermissions()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[usePermissions.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

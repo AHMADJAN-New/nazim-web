@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\TourRegistry.ts"
 type: "code"
-community: "Finance"
+community: "Exam & Onboarding"
 location: "L55"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/Exam_&_Onboarding
 ---
 
 # getEligibleTours()
@@ -17,4 +17,4 @@ tags:
 - [[TourRegistry.ts]] - `contains` [EXTRACTED]
 - [[getAllTours()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/Exam_&_Onboarding

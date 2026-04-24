@@ -1,12 +1,12 @@
 ---
 source_file: "backend\tests\Feature\FileStorageTest.php"
 type: "code"
-community: "Student & Library"
+community: "Storage"
 location: "L15"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student_&_Library
+  - community/Storage
 ---
 
 # FileStorageTest
@@ -28,4 +28,4 @@ tags:
 - [[.test_student_picture_upload_creates_private_file()]] - `method` [EXTRACTED]
 - [[FileStorageTest.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student_&_Library
+#graphify/code #graphify/EXTRACTED #community/Storage

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\OnlineAdmissionDocument.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # OnlineAdmissionDocument
@@ -20,4 +20,4 @@ tags:
 - [[.uploadedBy()_3]] - `method` [EXTRACTED]
 - [[OnlineAdmissionDocument.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\fees\FeeReportsPage.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L69"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # FeeReportsPage()
@@ -25,4 +25,4 @@ tags:
 - [[useLanguage()]] - `calls` [INFERRED]
 - [[useStudentFees()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

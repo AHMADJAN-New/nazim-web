@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\short-term-courses\CourseStudentPictureUpload.tsx"
 type: "code"
-community: "Student & Admin"
+community: "Exam & Student"
 location: "L197"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Student_&_Admin
+  - community/Exam_&_Student
 ---
 
 # handleAutoUpload()
@@ -20,4 +20,4 @@ tags:
 - [[error()]] - `calls` [INFERRED]
 - [[fetchUploadedImage()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Student_&_Admin
+#graphify/code #graphify/INFERRED #community/Exam_&_Student

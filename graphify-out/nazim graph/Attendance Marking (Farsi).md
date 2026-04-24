@@ -1,11 +1,11 @@
 ---
 source_file: "backend/resources/help-center/articles/attendance/fa/attendance-marking.md"
 type: "document"
-community: "Attendance"
+community: "Attendance & Report"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Attendance
+  - community/Attendance_&_Report
 ---
 
 # Attendance Marking (Farsi)
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Mark Attendance (English)]] - `semantically_similar_to` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Attendance
+#graphify/document #graphify/EXTRACTED #community/Attendance_&_Report

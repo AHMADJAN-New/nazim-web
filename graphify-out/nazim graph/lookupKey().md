@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\i18n.ts"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L22"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # lookupKey()
@@ -16,4 +16,4 @@ tags:
 - [[isRecord()]] - `calls` [EXTRACTED]
 - [[t()_1]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Onboarding

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useExamNumbers.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L358"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useSecretLabelsHtml()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useExamNumbers.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

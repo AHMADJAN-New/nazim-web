@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\layout\AppHeader.tsx"
 type: "code"
-community: "Student & Admin"
+community: "Header"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student_&_Admin
+  - community/Header
 ---
 
 # AppHeader.tsx
@@ -20,4 +20,4 @@ tags:
 - [[handleSearchFocus()]] - `contains` [EXTRACTED]
 - [[toggleTheme()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student_&_Admin
+#graphify/code #graphify/EXTRACTED #community/Header

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\short-term-courses\CourseStudentPictureUpload.tsx"
 type: "code"
-community: "Student & Admin"
+community: "Exam & Student"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student_&_Admin
+  - community/Exam_&_Student
 ---
 
 # CourseStudentPictureUpload.tsx
@@ -20,4 +20,4 @@ tags:
 - [[handleUploadClick()]] - `contains` [EXTRACTED]
 - [[onFileChange()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student_&_Admin
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Student

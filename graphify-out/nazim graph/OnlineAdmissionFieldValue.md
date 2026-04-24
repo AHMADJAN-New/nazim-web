@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\OnlineAdmissionFieldValue.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # OnlineAdmissionFieldValue
@@ -20,4 +20,4 @@ tags:
 - [[.submit()]] - `calls` [INFERRED]
 - [[OnlineAdmissionFieldValue.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

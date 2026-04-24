@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useMaintenanceLicenseFees.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L70"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # mapPaymentRecordApiToDomain()
@@ -15,4 +15,4 @@ tags:
 - [[mapMaintenanceInvoiceApiToDomain()]] - `calls` [EXTRACTED]
 - [[useMaintenanceLicenseFees.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

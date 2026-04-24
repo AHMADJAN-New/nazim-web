@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\CourseStudents.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # CourseStudents.tsx
@@ -25,4 +25,4 @@ tags:
 - [[handleMarkDropped()]] - `contains` [EXTRACTED]
 - [[handleViewDetails()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

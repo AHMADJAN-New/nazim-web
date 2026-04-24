@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\ExamAttendancePage.tsx"
 type: "code"
-community: "Finance"
+community: "ID"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/ID
 ---
 
 # ExamAttendancePage.tsx
@@ -26,4 +26,4 @@ tags:
 - [[updateStudentSeatNumber()]] - `contains` [EXTRACTED]
 - [[updateStudentStatus()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/ID

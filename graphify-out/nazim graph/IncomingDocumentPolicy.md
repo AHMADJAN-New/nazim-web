@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Policies\IncomingDocumentPolicy.php"
 type: "code"
-community: "Letter & DMS"
+community: "DMS & Letter"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Letter_&_DMS
+  - community/DMS_&_Letter
 ---
 
 # IncomingDocumentPolicy
@@ -20,4 +20,4 @@ tags:
 - [[.viewAny()]] - `method` [EXTRACTED]
 - [[IncomingDocumentPolicy.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Letter_&_DMS
+#graphify/code #graphify/EXTRACTED #community/DMS_&_Letter

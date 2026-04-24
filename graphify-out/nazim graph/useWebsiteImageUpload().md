@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\website\hooks\useWebsiteImageUpload.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L13"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useWebsiteImageUpload()
@@ -15,4 +15,4 @@ tags:
 - [[useLanguage()]] - `calls` [INFERRED]
 - [[useWebsiteImageUpload.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

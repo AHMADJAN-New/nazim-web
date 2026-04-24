@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Traits\LogsActivityWithContext.php"
 type: "code"
-community: "Exam & Student"
+community: "Help & Article"
 location: "L33"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam_&_Student
+  - community/Help_&_Article
 ---
 
 # tapActivity()
@@ -16,4 +16,4 @@ tags:
 - [[.session()_1]] - `calls` [INFERRED]
 - [[LogsActivityWithContext.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Exam_&_Student
+#graphify/code #graphify/INFERRED #community/Help_&_Article

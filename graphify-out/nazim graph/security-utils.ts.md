@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\security-utils.ts"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # security-utils.ts
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[RateLimiter]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

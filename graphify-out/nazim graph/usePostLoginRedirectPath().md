@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\redirectUtils.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L66"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # usePostLoginRedirectPath()
@@ -18,4 +18,4 @@ tags:
 - [[useFeatures()]] - `calls` [INFERRED]
 - [[useUserPermissions()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

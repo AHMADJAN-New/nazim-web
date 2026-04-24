@@ -1,11 +1,11 @@
 ---
 source_file: "backend/resources/help-center/articles/attendance/en/attendance-reports-totals.md"
 type: "document"
-community: "Attendance"
+community: "Attendance & Report"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Attendance
+  - community/Attendance_&_Report
 ---
 
 # Attendance Totals Report
@@ -14,4 +14,4 @@ tags:
 - [[Attendance Reports Module]] - `conceptually_related_to` [INFERRED]
 - [[Attendance Totals Report (English)]] - `conceptually_related_to` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Attendance
+#graphify/document #graphify/EXTRACTED #community/Attendance_&_Report

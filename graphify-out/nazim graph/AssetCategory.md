@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\AssetCategory.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L10"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # AssetCategory
@@ -26,4 +26,4 @@ tags:
 - [[.update()_2]] - `calls` [INFERRED]
 - [[AssetCategory.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Event_&_Admission
+#graphify/code #graphify/INFERRED #community/Admission_&_Event

@@ -1,0 +1,269 @@
+---
+type: community
+members: 226
+---
+
+# Storage
+
+**Members:** 226 nodes
+
+## Members
+- [[.__construct()_58]] - code - backend\app\Http\Controllers\PlatformFilesController.php
+- [[.__construct()_67]] - code - backend\app\Http\Controllers\StorageController.php
+- [[.__construct()_97]] - code - backend\app\Http\Controllers\Website\WebsiteMediaController.php
+- [[.__construct()_98]] - code - backend\app\Http\Controllers\Website\WebsiteOnlineAdmissionController.php
+- [[.__construct()_101]] - code - backend\app\Http\Controllers\Website\WebsiteScholarsController.php
+- [[.__construct()_126]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.__construct()_127]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.__construct()_128]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[.accept()]] - code - backend\app\Http\Controllers\Website\WebsiteOnlineAdmissionController.php
+- [[.assertStringContains()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.boot()_120]] - code - backend\app\Models\PlatformFile.php
+- [[.boot()_133]] - code - backend\app\Models\StaffDocument.php
+- [[.boot()_138]] - code - backend\app\Models\StudentDocument.php
+- [[.boot()_139]] - code - backend\app\Models\StudentEducationalHistory.php
+- [[.boot()_167]] - code - backend\app\Models\WebsiteMedia.php
+- [[.boot()_173]] - code - backend\app\Models\WebsiteScholar.php
+- [[.buildPath()]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.buildPath()_1]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.canStoreFile()]] - code - backend\app\Services\Subscription\UsageTrackingService.php
+- [[.category()_4]] - code - backend\app\Models\WebsiteMedia.php
+- [[.checkStorageLimit()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.clearPublicCaches()_9]] - code - backend\app\Http\Controllers\Website\WebsiteMediaController.php
+- [[.clearPublicCaches()_14]] - code - backend\app\Http\Controllers\Website\WebsiteScholarsController.php
+- [[.compressImage()]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[.copyAdmissionFileToGuardianPicture()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.copyAdmissionFileToStudentDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.copyAdmissionFileToStudentPicture()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.copyFile()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.createdBy()_9]] - code - backend\app\Models\StudentEducationalHistory.php
+- [[.deleteResourceFiles()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.download()_5]] - code - backend\app\Http\Controllers\PlatformFilesController.php
+- [[.download()_7]] - code - backend\app\Http\Controllers\StorageController.php
+- [[.encodeImage()]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[.extractOrganizationIdFromPath()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.fileExists()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.forceDownload()]] - code - backend\app\Http\Controllers\StorageController.php
+- [[.formatBytes()_1]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[.getAllowedDocumentExtensions()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.getExtensionFromFormat()]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[.getFile()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.getFileSize()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.getGuardianPicture()]] - code - backend\app\Http\Controllers\StudentController.php
+- [[.getMimeType()_1]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.getMimeTypeFromExtension()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.getMimeTypeFromFormat()]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[.getOrganizationFiles()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.getOutputFormat()]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[.getPhoto()_1]] - code - backend\app\Http\Controllers\Website\WebsiteScholarsController.php
+- [[.getPicture()_2]] - code - backend\app\Http\Controllers\StudentController.php
+- [[.getPrivateDownloadUrl()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.getPublicDisk()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.getSchoolFiles()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.index()_71]] - code - backend\app\Http\Controllers\PlatformFilesController.php
+- [[.index()_127]] - code - backend\app\Http\Controllers\Website\WebsiteMediaController.php
+- [[.initializeImageManager()]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[.libraryBookFile()]] - code - backend\app\Http\Controllers\Website\PublicWebsiteController.php
+- [[.migrateCourseFiles()]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.migrateDmsFiles()]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.migrateOrganization()]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.migrateReportFiles()]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.migrateResource()]] - code - backend\app\Console\Commands\MigrateFileStorage.php
+- [[.migrateStaffFiles()]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.migrateStudentFiles()]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.migrateTemplateFile()]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.migrateTemplateFiles()]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[.moveFile()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.organization()_66]] - code - backend\app\Models\PlatformFile.php
+- [[.organization()_78]] - code - backend\app\Models\StaffDocument.php
+- [[.organization()_83]] - code - backend\app\Models\StudentDocument.php
+- [[.organization()_84]] - code - backend\app\Models\StudentEducationalHistory.php
+- [[.put()]] - code - frontend\src\lib\api\client.ts
+- [[.sanitizePathSegment()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.scholarPhoto()]] - code - backend\app\Http\Controllers\Website\PublicWebsiteController.php
+- [[.school()_49]] - code - backend\app\Models\StaffDocument.php
+- [[.school()_53]] - code - backend\app\Models\StudentDocument.php
+- [[.school()_54]] - code - backend\app\Models\StudentEducationalHistory.php
+- [[.school()_66]] - code - backend\app\Models\WebsiteMedia.php
+- [[.school()_72]] - code - backend\app\Models\WebsiteScholar.php
+- [[.scopeByType()_5]] - code - backend\app\Models\StudentDocument.php
+- [[.scopeFeatured()_4]] - code - backend\app\Models\WebsiteScholar.php
+- [[.scopeForOrganization()_46]] - code - backend\app\Models\StudentDocument.php
+- [[.scopeForOrganization()_47]] - code - backend\app\Models\StudentEducationalHistory.php
+- [[.scopeForStudent()_5]] - code - backend\app\Models\StudentDocument.php
+- [[.scopeForStudent()_6]] - code - backend\app\Models\StudentEducationalHistory.php
+- [[.scopePublished()_5]] - code - backend\app\Models\WebsiteScholar.php
+- [[.serializeFile()]] - code - backend\app\Http\Controllers\PlatformFilesController.php
+- [[.servePublic()]] - code - backend\app\Http\Controllers\StorageController.php
+- [[.setUp()_7]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.shouldCompress()]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[.staff()_3]] - code - backend\app\Models\StaffDocument.php
+- [[.store()_68]] - code - backend\app\Http\Controllers\PlatformFilesController.php
+- [[.store()_115]] - code - backend\app\Http\Controllers\Website\WebsiteMediaController.php
+- [[.store()_121]] - code - backend\app\Http\Controllers\Website\WebsiteScholarsController.php
+- [[.storeCertificateTemplateBackground()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeCourseDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeDmsFile()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeEventAttachment()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeEventBannerPublic()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeEventGuestPhoto()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeEventGuestPhotoPublic()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeEventGuestPhotoThumbnail()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeEventThumbnailPublic()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeExamDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeFacilityDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeFile()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeFinanceDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeIdCardTemplateBackground()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeOnlineAdmissionDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeOnlineAdmissionPhoto()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeOrganizationOrderFormDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storePlatformFile()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeReport()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeReportFile()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeStaffDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeStaffPicturePrivate()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeStaffPicturePublic()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeStudentDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeStudentGuardianPicture()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeStudentPicture()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsiteCourseCover()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsiteDocument()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsiteForm()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsiteImage()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsiteLibraryCover()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsiteLibraryPdf()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsiteMediaCategoryCover()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsiteMediaItem()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsitePageImage()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.storeWebsiteScholarPhoto()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.student()_12]] - code - backend\app\Models\StudentDocument.php
+- [[.student()_13]] - code - backend\app\Models\StudentEducationalHistory.php
+- [[.test_certificate_template_background_includes_template_id()]] - code - backend\tests\Feature\FileStorageTest.php
+- [[.test_copy_file_creates_copy()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_delete_file_removes_existing_file()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_delete_file_returns_false_for_nonexistent_file()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_delete_resource_files_removes_directory()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_dms_file_upload_is_school_scoped()]] - code - backend\tests\Feature\FileStorageTest.php
+- [[.test_file_deletion_removes_file()]] - code - backend\tests\Feature\FileStorageTest.php
+- [[.test_file_exists_returns_correct_status()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_files_are_isolated_by_school()]] - code - backend\tests\Feature\FileStorageTest.php
+- [[.test_get_allowed_document_extensions()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_get_allowed_image_extensions()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_get_file_returns_content()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_get_file_returns_null_for_nonexistent_file()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_get_file_size_returns_correct_size()]] - code - backend\tests\Feature\FileStorageTest.php
+- [[.test_get_file_size_returns_correct_size()_1]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_get_mime_type_from_extension()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_get_mime_type_returns_correct_type()]] - code - backend\tests\Feature\FileStorageTest.php
+- [[.test_get_private_disk()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_get_private_download_url()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_get_public_disk()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_id_card_template_background_includes_template_id()]] - code - backend\tests\Feature\FileStorageTest.php
+- [[.test_move_file_moves_file()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_report_storage_includes_organization_and_school()]] - code - backend\tests\Feature\FileStorageTest.php
+- [[.test_store_certificate_template_background()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_course_document_creates_correct_path()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_dms_file_creates_correct_path()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_id_card_template_background()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_report_creates_file()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_report_throws_when_storage_write_fails()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_staff_document_uses_private_disk()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_staff_picture_public_uses_public_disk()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_student_document_creates_correct_path()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_student_picture_creates_correct_path()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.test_store_student_picture_with_school_id()]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[.transformAdmissionDetail()]] - code - backend\app\Http\Controllers\Website\WebsiteOnlineAdmissionController.php
+- [[.transformAdmissionSummary()]] - code - backend\app\Http\Controllers\Website\WebsiteOnlineAdmissionController.php
+- [[.update()_107]] - code - backend\app\Http\Controllers\Website\WebsiteMediaController.php
+- [[.update()_114]] - code - backend\app\Http\Controllers\Website\WebsiteScholarsController.php
+- [[.updateStorageUsage()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.updateStorageUsageForContent()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.uploadDocument()_1]] - code - backend\app\Http\Controllers\StaffController.php
+- [[.uploadImage()]] - code - backend\app\Http\Controllers\Website\WebsiteMediaController.php
+- [[.uploadPhoto()_1]] - code - backend\app\Http\Controllers\Website\WebsiteScholarsController.php
+- [[.uploadUpdatesFile()]] - code - backend\app\Http\Controllers\DesktopReleaseController.php
+- [[.uploadedBy()_4]] - code - backend\app\Models\StaffDocument.php
+- [[.uploadedBy()_5]] - code - backend\app\Models\StudentDocument.php
+- [[.uploadedByUser()_1]] - code - backend\app\Models\PlatformFile.php
+- [[2024_01_01_000002_create_permission_tables_with_organization.php]] - code - backend\database\migrations\2024_01_01_000002_create_permission_tables_with_organization.php
+- [[2025_12_01_070154_ensure_organizations_permissions_for_admin.php]] - code - backend\database\migrations\2025_12_01_070154_ensure_organizations_permissions_for_admin.php
+- [[FileMigrationService]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[FileMigrationService.php]] - code - backend\app\Services\Storage\FileMigrationService.php
+- [[FileStorageService]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[FileStorageService.php]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[FileStorageServiceTest]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[FileStorageServiceTest.php]] - code - backend\tests\Unit\FileStorageServiceTest.php
+- [[FileStorageTest]] - code - backend\tests\Feature\FileStorageTest.php
+- [[FileStorageTest.php]] - code - backend\tests\Feature\FileStorageTest.php
+- [[ImageCompressionService]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[ImageCompressionService.php]] - code - backend\app\Services\Storage\ImageCompressionService.php
+- [[PlatformFile]] - code - backend\app\Models\PlatformFile.php
+- [[PlatformFile.php]] - code - backend\app\Models\PlatformFile.php
+- [[PlatformFilesController]] - code - backend\app\Http\Controllers\PlatformFilesController.php
+- [[PlatformFilesController.php]] - code - backend\app\Http\Controllers\PlatformFilesController.php
+- [[StaffDocument]] - code - backend\app\Models\StaffDocument.php
+- [[StaffDocument.php]] - code - backend\app\Models\StaffDocument.php
+- [[StorageController]] - code - backend\app\Http\Controllers\StorageController.php
+- [[StorageController.php]] - code - backend\app\Http\Controllers\StorageController.php
+- [[StudentDocument]] - code - backend\app\Models\StudentDocument.php
+- [[StudentDocument.php]] - code - backend\app\Models\StudentDocument.php
+- [[StudentEducationalHistory]] - code - backend\app\Models\StudentEducationalHistory.php
+- [[StudentEducationalHistory.php]] - code - backend\app\Models\StudentEducationalHistory.php
+- [[WebsiteMedia]] - code - backend\app\Models\WebsiteMedia.php
+- [[WebsiteMedia.php]] - code - backend\app\Models\WebsiteMedia.php
+- [[WebsiteMediaController]] - code - backend\app\Http\Controllers\Website\WebsiteMediaController.php
+- [[WebsiteMediaController.php]] - code - backend\app\Http\Controllers\Website\WebsiteMediaController.php
+- [[WebsiteOnlineAdmissionController]] - code - backend\app\Http\Controllers\Website\WebsiteOnlineAdmissionController.php
+- [[WebsiteOnlineAdmissionController.php]] - code - backend\app\Http\Controllers\Website\WebsiteOnlineAdmissionController.php
+- [[WebsiteScholar]] - code - backend\app\Models\WebsiteScholar.php
+- [[WebsiteScholar.php]] - code - backend\app\Models\WebsiteScholar.php
+- [[WebsiteScholarsController]] - code - backend\app\Http\Controllers\Website\WebsiteScholarsController.php
+- [[WebsiteScholarsController.php]] - code - backend\app\Http\Controllers\Website\WebsiteScholarsController.php
+- [[cacheFirstStrategy()]] - code - frontend\public\sw.js
+- [[clearAllCaches()]] - code - frontend\public\sw.js
+- [[doBackgroundSync()]] - code - frontend\public\sw.js
+- [[down()_4]] - code - backend\database\migrations\2024_01_01_000002_create_permission_tables_with_organization.php
+- [[down()_8]] - code - backend\database\migrations\2025_12_01_070154_ensure_organizations_permissions_for_admin.php
+- [[getFailedRequests()]] - code - frontend\public\sw.js
+- [[getOfflineResponse()]] - code - frontend\public\sw.js
+- [[handleRequest()]] - code - frontend\public\sw.js
+- [[networkFirstStrategy()]] - code - frontend\public\sw.js
+- [[networkFirstWithOfflinePage()]] - code - frontend\public\sw.js
+- [[removeFailedRequest()]] - code - frontend\public\sw.js
+- [[sw.js]] - code - frontend\public\sw.js
+- [[up()_4]] - code - backend\database\migrations\2024_01_01_000002_create_permission_tables_with_organization.php
+- [[up()_8]] - code - backend\database\migrations\2025_12_01_070154_ensure_organizations_permissions_for_admin.php
+
+## Live Query (requires Dataview plugin)
+
+```dataview
+TABLE source_file, type FROM #community/Storage
+SORT file.name ASC
+```
+
+## Connections to other communities
+- 176 edges to [[Exam & Student Overview|Exam & Student]]
+- 25 edges to [[Student & Library Overview|Student & Library]]
+- 18 edges to [[Student & Admin Overview|Student & Admin]]
+- 11 edges to [[Subscription Overview|Subscription]]
+- 10 edges to [[Admission & Event Overview|Admission & Event]]
+- 8 edges to [[Report Overview|Report]]
+- 7 edges to [[Finance Overview|Finance]]
+- 7 edges to [[Website & Public Overview|Website & Public]]
+- 4 edges to [[DMS & Letter Overview|DMS & Letter]]
+- 4 edges to [[Student & Exam Overview|Student & Exam]]
+- 1 edge to [[Student Overview|Student]]
+- 1 edge to [[Website & Media Overview|Website & Media]]
+- 1 edge to [[Student & Staff Overview|Student & Staff]]
+- 1 edge to [[ID Overview|ID]]
+- 1 edge to [[Public Overview|Public]]
+- 1 edge to [[DMS 2 Overview|DMS 2]]
+- 1 edge to [[Letter & Translation Overview|Letter & Translation]]
+
+## Top bridge nodes
+- [[FileStorageService]] - degree 68, connects to 5 communities
+- [[.put()]] - degree 24, connects to 4 communities
+- [[.getMimeTypeFromExtension()]] - degree 22, connects to 4 communities
+- [[.getMimeType()_1]] - degree 17, connects to 4 communities
+- [[.accept()]] - degree 15, connects to 4 communities

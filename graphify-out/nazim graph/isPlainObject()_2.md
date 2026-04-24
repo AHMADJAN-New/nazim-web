@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\scripts\i18n\migrate-to-page-structure.ts"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L144"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # isPlainObject()
@@ -15,4 +15,4 @@ tags:
 - [[migrate-to-page-structure.ts]] - `contains` [EXTRACTED]
 - [[serializeToTS()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Translation_&_I18n
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

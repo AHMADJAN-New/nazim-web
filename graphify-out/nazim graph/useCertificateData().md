@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useCertificateTemplates.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L282"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useCertificateData()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useCertificateTemplates.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

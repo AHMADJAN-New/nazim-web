@@ -1,12 +1,12 @@
 ---
 source_file: "backend\database\seeders\QuestionSeeder.php"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L15"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # QuestionSeeder
@@ -20,4 +20,4 @@ tags:
 - [[.run()_41]] - `method` [EXTRACTED]
 - [[QuestionSeeder.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Onboarding

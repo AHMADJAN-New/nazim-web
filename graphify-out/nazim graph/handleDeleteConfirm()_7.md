@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\CourseStudents.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L325"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # handleDeleteConfirm()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[CourseStudents.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

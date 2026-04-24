@@ -1,12 +1,12 @@
 ---
 source_file: "input_tester.py"
 type: "code"
-community: "Finance"
+community: "ID"
 location: "L515"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/ID
 ---
 
 # main()
@@ -15,4 +15,4 @@ tags:
 - [[AttendanceInputTester]] - `calls` [EXTRACTED]
 - [[input_tester.py]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/ID

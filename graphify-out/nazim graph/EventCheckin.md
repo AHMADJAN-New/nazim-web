@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\EventCheckin.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # EventCheckin
@@ -24,4 +24,4 @@ tags:
 - [[.user()_1]] - `method` [EXTRACTED]
 - [[EventCheckin.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

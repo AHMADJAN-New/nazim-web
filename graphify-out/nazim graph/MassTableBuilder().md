@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\dms\MassTableBuilder.tsx"
 type: "code"
-community: "DMS 8"
+community: "DMS 10"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/DMS_8
+  - community/DMS_10
 ---
 
 # MassTableBuilder()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[MassTableBuilder.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/DMS_8
+#graphify/code #graphify/EXTRACTED #community/DMS_10

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\rtl.ts"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L15"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # isRTL()
@@ -23,4 +23,4 @@ tags:
 - [[getToastPosition()]] - `calls` [INFERRED]
 - [[rtl.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Exam
+#graphify/code #graphify/INFERRED #community/Exam_&_Onboarding

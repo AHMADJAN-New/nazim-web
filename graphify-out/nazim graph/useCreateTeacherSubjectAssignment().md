@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useTeacherSubjectAssignments.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L214"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useCreateTeacherSubjectAssignment()
@@ -16,4 +16,4 @@ tags:
 - [[useProfile()]] - `calls` [INFERRED]
 - [[useTeacherSubjectAssignments.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

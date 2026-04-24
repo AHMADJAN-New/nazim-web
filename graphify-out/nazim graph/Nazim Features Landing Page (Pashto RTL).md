@@ -1,11 +1,11 @@
 ---
 source_file: "frontend/public/nazim-features.html"
 type: "document"
-community: "Public 3"
+community: "Public 4"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Public_3
+  - community/Public_4
 ---
 
 # Nazim Features Landing Page (Pashto RTL)
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Nazim Brand Identity (Dark Blue + Gold)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Public_3
+#graphify/document #graphify/EXTRACTED #community/Public_4

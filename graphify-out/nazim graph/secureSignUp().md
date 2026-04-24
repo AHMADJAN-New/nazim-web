@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useSecureAuth.tsx"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L79"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # secureSignUp()
@@ -20,4 +20,4 @@ tags:
 - [[useSecureAuth.tsx]] - `contains` [EXTRACTED]
 - [[validatePasswordStrength()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Translation_&_I18n
+#graphify/code #graphify/INFERRED #community/Letter_&_Translation

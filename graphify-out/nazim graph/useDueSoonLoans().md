@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useLibrary.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L237"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useDueSoonLoans()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useLibrary.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

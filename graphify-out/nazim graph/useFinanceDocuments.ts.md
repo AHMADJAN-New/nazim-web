@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useFinanceDocuments.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useFinanceDocuments.ts
@@ -17,4 +17,4 @@ tags:
 - [[useDownloadFinanceDocument()]] - `contains` [EXTRACTED]
 - [[useFinanceDocuments()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

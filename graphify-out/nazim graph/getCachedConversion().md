@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\ui\calendar-date-picker.tsx"
 type: "code"
-community: "Finance"
+community: "Exam & Student"
 location: "L83"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/Exam_&_Student
 ---
 
 # getCachedConversion()
@@ -19,4 +19,4 @@ tags:
 - [[calendar-date-picker.tsx]] - `contains` [EXTRACTED]
 - [[convertToCalendar()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/Exam_&_Student

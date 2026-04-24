@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useStudentIdCards.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L276"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # getStudentForRenderer()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useStudentIdCards.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

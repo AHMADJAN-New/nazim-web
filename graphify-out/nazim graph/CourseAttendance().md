@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\CourseAttendance.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L106"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # CourseAttendance()
@@ -29,4 +29,4 @@ tags:
 - [[useScanCourseAttendance()]] - `calls` [INFERRED]
 - [[useShortTermCourses()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

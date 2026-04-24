@@ -1,12 +1,12 @@
 ---
 source_file: "backend\database\factories\LibraryBookFactory.php"
 type: "code"
-community: "Student & Library"
+community: "Finance"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student_&_Library
+  - community/Finance
 ---
 
 # LibraryBookFactory.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[LibraryBookFactory]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student_&_Library
+#graphify/code #graphify/EXTRACTED #community/Finance

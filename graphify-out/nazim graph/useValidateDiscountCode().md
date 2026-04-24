@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useSubscription.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L626"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useValidateDiscountCode()
@@ -15,4 +15,4 @@ tags:
 - [[RenewPage()]] - `calls` [INFERRED]
 - [[useSubscription.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

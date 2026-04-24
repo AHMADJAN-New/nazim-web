@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useCourseStudentDisciplineRecords.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L62"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useCourseStudentDisciplineRecords()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useCourseStudentDisciplineRecords.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

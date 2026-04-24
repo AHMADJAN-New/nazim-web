@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useGraduation.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L333"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useIssuedCertificates()
@@ -16,4 +16,4 @@ tags:
 - [[useGraduation.tsx]] - `contains` [EXTRACTED]
 - [[useHasPermission()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

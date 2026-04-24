@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useOrganizationDashboardOverview.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L99"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useOrganizationDashboardOverview()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useOrganizationDashboardOverview.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

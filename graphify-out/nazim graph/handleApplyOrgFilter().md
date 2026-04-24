@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\pages\admin\LoginAuditPage.tsx"
 type: "code"
-community: "Finance"
+community: "ID"
 location: "L159"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/ID
 ---
 
 # handleApplyOrgFilter()
@@ -17,4 +17,4 @@ tags:
 - [[.set()]] - `calls` [INFERRED]
 - [[LoginAuditPage.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/ID

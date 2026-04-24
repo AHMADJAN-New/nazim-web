@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\website\pages\PublicGalleryPage.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L33"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # PublicGalleryPage()
@@ -15,4 +15,4 @@ tags:
 - [[PublicGalleryPage.tsx]] - `contains` [EXTRACTED]
 - [[useLanguage()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

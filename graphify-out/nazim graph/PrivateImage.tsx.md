@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\PrivateImage.tsx"
 type: "code"
-community: "Student & Admin"
+community: "Letter & Translation"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student_&_Admin
+  - community/Letter_&_Translation
 ---
 
 # PrivateImage.tsx
@@ -15,4 +15,4 @@ tags:
 - [[handleClick()]] - `contains` [EXTRACTED]
 - [[isPrivateStorageUrl()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student_&_Admin
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

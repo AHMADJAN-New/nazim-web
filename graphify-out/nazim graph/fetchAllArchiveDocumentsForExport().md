@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\reporting\dmsArchiveExport.ts"
 type: "code"
-community: "Report & Fee"
+community: "DMS 4"
 location: "L21"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Report_&_Fee
+  - community/DMS_4
 ---
 
 # fetchAllArchiveDocumentsForExport()
@@ -17,4 +17,4 @@ tags:
 - [[getIncomingExportData()]] - `calls` [INFERRED]
 - [[getOutgoingExportData()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Report_&_Fee
+#graphify/code #graphify/INFERRED #community/DMS_4

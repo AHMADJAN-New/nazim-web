@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Services\Subscription\FeaturePermissionRevokeService.php"
 type: "code"
-community: "Finance"
+community: "Subscription"
 location: "L14"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Subscription
 ---
 
 # FeaturePermissionRevokeService
@@ -18,4 +18,4 @@ tags:
 - [[.revokePermissionsForFeature()]] - `method` [EXTRACTED]
 - [[FeaturePermissionRevokeService.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Subscription

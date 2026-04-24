@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\scripts\i18n\check-bad-patterns.js"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L94"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # readBaseline()
@@ -17,4 +17,4 @@ tags:
 - [[isPlainObject()]] - `calls` [EXTRACTED]
 - [[main()_1]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Translation_&_I18n
+#graphify/code #graphify/EXTRACTED #community/Letter_&_Translation

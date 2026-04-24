@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\pages\admin\TranslationsManagement.tsx"
 type: "code"
-community: "Finance"
+community: "Student & Admin"
 location: "L202"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/Student_&_Admin
 ---
 
 # handleCellSave()
@@ -17,4 +17,4 @@ tags:
 - [[TranslationsManagement.tsx]] - `contains` [EXTRACTED]
 - [[if()_7]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/Student_&_Admin

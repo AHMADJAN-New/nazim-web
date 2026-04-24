@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useBuildings.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L19"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useBuildings()
@@ -16,4 +16,4 @@ tags:
 - [[useBuildings.tsx]] - `contains` [EXTRACTED]
 - [[usePagination()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

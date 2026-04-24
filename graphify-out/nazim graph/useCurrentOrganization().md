@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useOrganizations.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L146"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useCurrentOrganization()
@@ -16,4 +16,4 @@ tags:
 - [[useOrganizations.tsx]] - `contains` [EXTRACTED]
 - [[useSubscriptionStatus()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Controllers\Dms\LetterheadsController.php"
 type: "code"
-community: "Letter & DMS"
+community: "DMS & Letter"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Letter_&_DMS
+  - community/DMS_&_Letter
 ---
 
 # LetterheadsController
@@ -24,4 +24,4 @@ tags:
 - [[.update()_89]] - `method` [EXTRACTED]
 - [[LetterheadsController.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Letter_&_DMS
+#graphify/code #graphify/EXTRACTED #community/DMS_&_Letter

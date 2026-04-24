@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\StudentAdmissionsReport.tsx"
 type: "code"
-community: "Report & Fee"
+community: "Student & Admin"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Report_&_Fee
+  - community/Student_&_Admin
 ---
 
 # StudentAdmissionsReport.tsx
@@ -22,4 +22,4 @@ tags:
 - [[statusVariant()_2]] - `contains` [EXTRACTED]
 - [[transformAdmissionData()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Report_&_Fee
+#graphify/code #graphify/EXTRACTED #community/Student_&_Admin

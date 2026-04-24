@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\ExamAttendance.php"
 type: "code"
-community: "Class"
+community: "Attendance"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Class
+  - community/Attendance
 ---
 
 # ExamAttendance
@@ -48,4 +48,4 @@ tags:
 - [[.validateAttendanceData()]] - `method` [EXTRACTED]
 - [[ExamAttendance.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Class
+#graphify/code #graphify/EXTRACTED #community/Attendance

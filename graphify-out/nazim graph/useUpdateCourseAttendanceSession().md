@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useCourseAttendance.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L118"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useUpdateCourseAttendanceSession()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useCourseAttendance.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

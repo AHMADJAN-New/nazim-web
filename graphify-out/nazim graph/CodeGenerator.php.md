@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Services\CodeGenerator.php"
 type: "code"
-community: "Student"
+community: "Student & Staff"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Student
+  - community/Student_&_Staff
 ---
 
 # CodeGenerator.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[CodeGenerator]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Student
+#graphify/code #graphify/EXTRACTED #community/Student_&_Staff

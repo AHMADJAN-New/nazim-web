@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\WebsiteDomain.php"
 type: "code"
-community: "Finance"
+community: "Student & Library"
 location: "L10"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Finance
+  - community/Student_&_Library
 ---
 
 # WebsiteDomain
@@ -26,4 +26,4 @@ tags:
 - [[.update()_98]] - `calls` [INFERRED]
 - [[WebsiteDomain.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Finance
+#graphify/code #graphify/INFERRED #community/Student_&_Library

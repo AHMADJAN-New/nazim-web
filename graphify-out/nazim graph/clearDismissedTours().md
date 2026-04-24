@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\dismissedTours.ts"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L53"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # clearDismissedTours()
@@ -16,4 +16,4 @@ tags:
 - [[.warn()]] - `calls` [INFERRED]
 - [[dismissedTours.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Exam
+#graphify/code #graphify/INFERRED #community/Exam_&_Onboarding

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\short-term-courses\CourseStudentPictureUpload.tsx"
 type: "code"
-community: "Student & Admin"
+community: "Exam & Student"
 location: "L150"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Student_&_Admin
+  - community/Exam_&_Student
 ---
 
 # applyCroppedFile()
@@ -17,4 +17,4 @@ tags:
 - [[CourseStudentPictureUpload.tsx]] - `contains` [EXTRACTED]
 - [[handleAutoUpload()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Student_&_Admin
+#graphify/code #graphify/INFERRED #community/Exam_&_Student

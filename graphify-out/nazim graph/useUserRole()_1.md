@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useUserRole.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L3"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useUserRole()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useUserRole.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

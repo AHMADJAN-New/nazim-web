@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\subscription\RenewPage.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L35"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # RenewPage()
@@ -20,4 +20,4 @@ tags:
 - [[useSubscriptionPlans()]] - `calls` [INFERRED]
 - [[useValidateDiscountCode()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

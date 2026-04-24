@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\dms\ArchiveSearch.tsx"
 type: "code"
-community: "Report & Fee"
+community: "DMS 4"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Report_&_Fee
+  - community/DMS_4
 ---
 
 # ArchiveSearch.tsx
@@ -21,4 +21,4 @@ tags:
 - [[mapIncomingDocForExport()]] - `contains` [EXTRACTED]
 - [[mapOutgoingDocForExport()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Report_&_Fee
+#graphify/code #graphify/EXTRACTED #community/DMS_4

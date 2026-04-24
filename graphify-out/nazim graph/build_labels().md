@@ -2,7 +2,7 @@
 source_file: "scripts\rename_graphify_communities.py"
 type: "code"
 community: "Login & Exam"
-location: "L411"
+location: "L425"
 tags:
   - graphify/code
   - graphify/EXTRACTED

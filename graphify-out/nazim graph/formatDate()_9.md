@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\ExamAttendancePage.tsx"
 type: "code"
-community: "Finance"
+community: "ID"
 location: "L589"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/ID
 ---
 
 # formatDate()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[ExamAttendancePage.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/ID

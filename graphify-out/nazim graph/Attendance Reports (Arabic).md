@@ -1,11 +1,11 @@
 ---
 source_file: "backend/resources/help-center/articles/attendance/ar/attendance-reports.md"
 type: "document"
-community: "Attendance"
+community: "Attendance & Report"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Attendance
+  - community/Attendance_&_Report
 ---
 
 # Attendance Reports (Arabic)
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Attendance Reports (English)]] - `semantically_similar_to` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Attendance
+#graphify/document #graphify/EXTRACTED #community/Attendance_&_Report

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\HostelManagement.tsx"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L108"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # buildUniqueOptions()
@@ -15,4 +15,4 @@ tags:
 - [[.entries()_1]] - `calls` [INFERRED]
 - [[HostelManagement.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Translation_&_I18n
+#graphify/code #graphify/INFERRED #community/Letter_&_Translation

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\WebsiteFatwa.php"
 type: "code"
-community: "Fatwa & Website"
+community: "Exam & Student"
 location: "L10"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Fatwa_&_Website
+  - community/Exam_&_Student
 ---
 
 # WebsiteFatwa
@@ -23,4 +23,4 @@ tags:
 - [[.update()_102]] - `calls` [INFERRED]
 - [[WebsiteFatwa.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Fatwa_&_Website
+#graphify/code #graphify/INFERRED #community/Exam_&_Student

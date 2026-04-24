@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\pages\admin\OrganizationLimitsOverview.tsx"
 type: "code"
-community: "Finance"
+community: "Student & Admin"
 location: "L45"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Student_&_Admin
 ---
 
 # getStatusBadge()
@@ -15,4 +15,4 @@ tags:
 - [[OrganizationLimitsOverview.tsx]] - `contains` [EXTRACTED]
 - [[if()_7]] - `calls` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Student_&_Admin

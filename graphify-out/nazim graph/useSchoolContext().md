@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\contexts\SchoolContext.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L82"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useSchoolContext()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[SchoolContext.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

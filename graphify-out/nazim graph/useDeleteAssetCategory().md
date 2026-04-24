@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useAssetCategories.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L92"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useDeleteAssetCategory()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useAssetCategories.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

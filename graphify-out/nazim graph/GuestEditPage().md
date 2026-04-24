@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\events\GuestEditPage.tsx"
 type: "code"
-community: "Event 6"
+community: "Event 8"
 location: "L7"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_6
+  - community/Event_8
 ---
 
 # GuestEditPage()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[GuestEditPage.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_6
+#graphify/code #graphify/EXTRACTED #community/Event_8

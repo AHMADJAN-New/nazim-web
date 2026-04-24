@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\OrganizationOrderFormDocument.php"
 type: "code"
-community: "Finance"
+community: "Report"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Report
 ---
 
 # OrganizationOrderFormDocument.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[OrganizationOrderFormDocument]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Report

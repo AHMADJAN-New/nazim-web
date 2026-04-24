@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\CourseDocuments.tsx"
 type: "code"
-community: "Finance"
+community: "Course 2"
 location: "L156"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Course_2
 ---
 
 # handleDelete()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[CourseDocuments.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Course_2

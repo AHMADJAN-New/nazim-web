@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useOrganizations.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L128"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useDeleteOrganization()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useOrganizations.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\timetableSolver.ts"
 type: "code"
-community: "Finance"
+community: "Timetable"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Timetable
 ---
 
 # timetableSolver.ts
@@ -15,4 +15,4 @@ tags:
 - [[TimetableSolver]] - `contains` [EXTRACTED]
 - [[timeToMinutes()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Timetable

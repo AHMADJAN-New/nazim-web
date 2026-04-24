@@ -1,12 +1,12 @@
 ---
 source_file: "backend\tests\Feature\LoginRateLimitTest.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # LoginRateLimitTest.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[LoginRateLimitTest]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

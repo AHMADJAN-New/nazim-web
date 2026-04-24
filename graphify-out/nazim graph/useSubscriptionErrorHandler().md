@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useSubscriptionErrorHandler.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L31"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useSubscriptionErrorHandler()
@@ -15,4 +15,4 @@ tags:
 - [[useLanguage()]] - `calls` [INFERRED]
 - [[useSubscriptionErrorHandler.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useAssets.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L32"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useAssets()
@@ -17,4 +17,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[usePagination()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

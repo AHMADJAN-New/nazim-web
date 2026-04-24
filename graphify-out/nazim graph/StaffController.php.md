@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Controllers\StaffController.php"
 type: "code"
-community: "Storage"
+community: "Exam & Student"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Storage
+  - community/Exam_&_Student
 ---
 
 # StaffController.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[StaffController]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Storage
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Student

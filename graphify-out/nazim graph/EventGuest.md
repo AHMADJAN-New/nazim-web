@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\EventGuest.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # EventGuest
@@ -43,4 +43,4 @@ tags:
 - [[.uploadPhoto()]] - `calls` [INFERRED]
 - [[EventGuest.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

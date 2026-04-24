@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useTimetables.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useTimetables.tsx
@@ -21,4 +21,4 @@ tags:
 - [[useUpdateTimetable()]] - `contains` [EXTRACTED]
 - [[useUpsertTeacherPreference()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

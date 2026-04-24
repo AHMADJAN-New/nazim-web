@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\FacilityStaff.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # FacilityStaff
@@ -18,4 +18,4 @@ tags:
 - [[.staff()]] - `method` [EXTRACTED]
 - [[FacilityStaff.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

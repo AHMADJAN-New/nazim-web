@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\DesktopPrerequisite.php"
 type: "code"
-community: "Finance"
+community: "Exam & Student"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Exam_&_Student
 ---
 
 # DesktopPrerequisite.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[DesktopPrerequisite]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Student

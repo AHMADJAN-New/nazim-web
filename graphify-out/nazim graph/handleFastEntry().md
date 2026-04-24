@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\ExamMarks.tsx"
 type: "code"
-community: "Exam 2"
+community: "Exam 3"
 location: "L381"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_2
+  - community/Exam_3
 ---
 
 # handleFastEntry()
@@ -15,4 +15,4 @@ tags:
 - [[ExamMarks.tsx]] - `contains` [EXTRACTED]
 - [[handleFastEntryKeyDown()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_2
+#graphify/code #graphify/EXTRACTED #community/Exam_3

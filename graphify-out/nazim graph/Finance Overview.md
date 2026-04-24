@@ -1,0 +1,320 @@
+---
+type: community
+members: 285
+---
+
+# Finance
+
+**Members:** 285 nodes
+
+## Members
+- [[.__construct()_55]] - code - backend\app\Http\Controllers\OrgFacilityDocumentController.php
+- [[.__construct()_56]] - code - backend\app\Http\Controllers\OrgFinanceDocumentController.php
+- [[.account()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.account()_2]] - code - backend\app\Models\FinanceDocument.php
+- [[.account()_3]] - code - backend\app\Models\IncomeEntry.php
+- [[.accountBalances()_1]] - code - backend\app\Http\Controllers\OrgFinanceReportController.php
+- [[.approvedBy()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.assets()_1]] - code - backend\app\Models\FinanceAccount.php
+- [[.boot()_37]] - code - backend\app\Models\Donor.php
+- [[.boot()_57]] - code - backend\app\Models\ExchangeRate.php
+- [[.boot()_59]] - code - backend\app\Models\ExpenseEntry.php
+- [[.boot()_60]] - code - backend\app\Models\FacilityDocument.php
+- [[.boot()_69]] - code - backend\app\Models\FinanceAccount.php
+- [[.boot()_70]] - code - backend\app\Models\FinanceDocument.php
+- [[.boot()_71]] - code - backend\app\Models\FinanceProject.php
+- [[.boot()_81]] - code - backend\app\Models\IncomeEntry.php
+- [[.boot()_113]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[.casts()_2]] - code - backend\app\Models\FacilityDocument.php
+- [[.casts()_6]] - code - backend\app\Models\OrgFacility.php
+- [[.convert()_1]] - code - backend\app\Http\Controllers\OrgFinanceExchangeRateController.php
+- [[.convertAmount()_1]] - code - backend\app\Services\Reports\FinanceReportingService.php
+- [[.createdBy()_5]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[.currency()_1]] - code - backend\app\Models\ExpenseEntry.php
+- [[.currency()_6]] - code - backend\app\Models\FinanceAccount.php
+- [[.currency()_7]] - code - backend\app\Models\FinanceProject.php
+- [[.currency()_8]] - code - backend\app\Models\IncomeEntry.php
+- [[.currency()_10]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[.dailyCashbook()_1]] - code - backend\app\Http\Controllers\OrgFinanceReportController.php
+- [[.dailyCashbook()_2]] - code - backend\app\Services\Reports\FinanceReportingService.php
+- [[.dashboard()_1]] - code - backend\app\Http\Controllers\OrgFinanceReportController.php
+- [[.dashboard()_5]] - code - backend\app\Services\Reports\FinanceReportingService.php
+- [[.definition()_13]] - code - backend\database\factories\LibraryBookFactory.php
+- [[.destroy()_49]] - code - backend\app\Http\Controllers\OrgFacilityController.php
+- [[.destroy()_50]] - code - backend\app\Http\Controllers\OrgFacilityDocumentController.php
+- [[.destroy()_51]] - code - backend\app\Http\Controllers\OrgFacilityMaintenanceController.php
+- [[.destroy()_52]] - code - backend\app\Http\Controllers\OrgFacilityStaffController.php
+- [[.destroy()_53]] - code - backend\app\Http\Controllers\OrgFacilityTypeController.php
+- [[.destroy()_54]] - code - backend\app\Http\Controllers\OrgFinanceAccountController.php
+- [[.destroy()_55]] - code - backend\app\Http\Controllers\OrgFinanceCurrencyController.php
+- [[.destroy()_57]] - code - backend\app\Http\Controllers\OrgFinanceDonorController.php
+- [[.destroy()_58]] - code - backend\app\Http\Controllers\OrgFinanceExchangeRateController.php
+- [[.destroy()_59]] - code - backend\app\Http\Controllers\OrgFinanceExpenseCategoryController.php
+- [[.destroy()_60]] - code - backend\app\Http\Controllers\OrgFinanceExpenseEntryController.php
+- [[.destroy()_61]] - code - backend\app\Http\Controllers\OrgFinanceIncomeCategoryController.php
+- [[.destroy()_62]] - code - backend\app\Http\Controllers\OrgFinanceIncomeEntryController.php
+- [[.destroy()_63]] - code - backend\app\Http\Controllers\OrgFinanceProjectController.php
+- [[.donor()]] - code - backend\app\Models\FinanceDocument.php
+- [[.donor()_1]] - code - backend\app\Models\IncomeEntry.php
+- [[.donorSummary()_1]] - code - backend\app\Http\Controllers\OrgFinanceReportController.php
+- [[.donorSummary()_2]] - code - backend\app\Services\Reports\FinanceReportingService.php
+- [[.download()_3]] - code - backend\app\Http\Controllers\OrgFacilityDocumentController.php
+- [[.download()_4]] - code - backend\app\Http\Controllers\OrgFinanceDocumentController.php
+- [[.downloadFile()]] - code - backend\app\Services\Storage\FileStorageService.php
+- [[.expenseCategory()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.expenseEntries()_1]] - code - backend\app\Models\FinanceAccount.php
+- [[.expenseEntries()_2]] - code - backend\app\Models\FinanceProject.php
+- [[.expenseEntry()_1]] - code - backend\app\Models\FinanceDocument.php
+- [[.facility()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.facility()_1]] - code - backend\app\Models\FacilityDocument.php
+- [[.facility()_4]] - code - backend\app\Models\IncomeEntry.php
+- [[.facilityDocuments()]] - code - backend\app\Models\OrgFacility.php
+- [[.facilityMaintenance()]] - code - backend\app\Models\OrgFacility.php
+- [[.facilityStaff()]] - code - backend\app\Models\OrgFacility.php
+- [[.facilityType()]] - code - backend\app\Models\OrgFacility.php
+- [[.feeCollection()]] - code - backend\app\Models\FinanceDocument.php
+- [[.financeAccount()_2]] - code - backend\app\Models\OrgFacility.php
+- [[.fromCurrency()]] - code - backend\app\Models\ExchangeRate.php
+- [[.getActivitylogOptions()_1]] - code - backend\app\Models\Donor.php
+- [[.getActivitylogOptions()_3]] - code - backend\app\Models\ExpenseEntry.php
+- [[.getActivitylogOptions()_4]] - code - backend\app\Models\FinanceAccount.php
+- [[.getActivitylogOptions()_5]] - code - backend\app\Models\FinanceProject.php
+- [[.getActivitylogOptions()_7]] - code - backend\app\Models\IncomeEntry.php
+- [[.getDonationsForPeriod()]] - code - backend\app\Models\Donor.php
+- [[.getFacilityForOrg()]] - code - backend\app\Http\Controllers\OrgFacilityMaintenanceController.php
+- [[.getFacilityForOrg()_1]] - code - backend\app\Http\Controllers\OrgFacilityStaffController.php
+- [[.getRate()]] - code - backend\app\Models\ExchangeRate.php
+- [[.getRemainingBalanceAttribute()]] - code - backend\app\Models\FinanceProject.php
+- [[.getReportingService()]] - code - backend\app\Http\Controllers\OrgFinanceReportController.php
+- [[.incomeCategory()]] - code - backend\app\Models\IncomeEntry.php
+- [[.incomeEntries()]] - code - backend\app\Models\Donor.php
+- [[.incomeEntries()_1]] - code - backend\app\Models\FinanceAccount.php
+- [[.incomeEntries()_2]] - code - backend\app\Models\FinanceProject.php
+- [[.incomeEntry()_1]] - code - backend\app\Models\FinanceDocument.php
+- [[.incomeEntry()_2]] - code - backend\app\Models\StudentIdCard.php
+- [[.incomeVsExpense()_1]] - code - backend\app\Http\Controllers\OrgFinanceReportController.php
+- [[.incomeVsExpense()_2]] - code - backend\app\Services\Reports\FinanceReportingService.php
+- [[.index()_53]] - code - backend\app\Http\Controllers\OrgFacilityController.php
+- [[.index()_54]] - code - backend\app\Http\Controllers\OrgFacilityDocumentController.php
+- [[.index()_55]] - code - backend\app\Http\Controllers\OrgFacilityMaintenanceController.php
+- [[.index()_56]] - code - backend\app\Http\Controllers\OrgFacilityStaffController.php
+- [[.index()_57]] - code - backend\app\Http\Controllers\OrgFacilityTypeController.php
+- [[.index()_58]] - code - backend\app\Http\Controllers\OrgFinanceAccountController.php
+- [[.index()_59]] - code - backend\app\Http\Controllers\OrgFinanceCurrencyController.php
+- [[.index()_60]] - code - backend\app\Http\Controllers\OrgFinanceDocumentController.php
+- [[.index()_61]] - code - backend\app\Http\Controllers\OrgFinanceDonorController.php
+- [[.index()_62]] - code - backend\app\Http\Controllers\OrgFinanceExchangeRateController.php
+- [[.index()_63]] - code - backend\app\Http\Controllers\OrgFinanceExpenseCategoryController.php
+- [[.index()_64]] - code - backend\app\Http\Controllers\OrgFinanceExpenseEntryController.php
+- [[.index()_65]] - code - backend\app\Http\Controllers\OrgFinanceIncomeCategoryController.php
+- [[.index()_66]] - code - backend\app\Http\Controllers\OrgFinanceIncomeEntryController.php
+- [[.index()_67]] - code - backend\app\Http\Controllers\OrgFinanceProjectController.php
+- [[.index()_68]] - code - backend\app\Http\Controllers\OrgFinanceTransferController.php
+- [[.libraryBooks()]] - code - backend\app\Models\FinanceAccount.php
+- [[.orgAccount()]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[.orgExpenseEntry()]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[.organization()_18]] - code - backend\app\Models\Donor.php
+- [[.organization()_32]] - code - backend\app\Models\ExchangeRate.php
+- [[.organization()_34]] - code - backend\app\Models\ExpenseEntry.php
+- [[.organization()_35]] - code - backend\app\Models\FacilityDocument.php
+- [[.organization()_41]] - code - backend\app\Models\FinanceAccount.php
+- [[.organization()_42]] - code - backend\app\Models\FinanceDocument.php
+- [[.organization()_43]] - code - backend\app\Models\FinanceProject.php
+- [[.organization()_50]] - code - backend\app\Models\IncomeEntry.php
+- [[.organization()_62]] - code - backend\app\Models\OrgFacility.php
+- [[.organization()_63]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[.project()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.project()_1]] - code - backend\app\Models\FinanceDocument.php
+- [[.project()_2]] - code - backend\app\Models\IncomeEntry.php
+- [[.projectSummary()_1]] - code - backend\app\Http\Controllers\OrgFinanceReportController.php
+- [[.recalculateBalance()]] - code - backend\app\Models\FinanceAccount.php
+- [[.recalculateTotalDonated()]] - code - backend\app\Models\Donor.php
+- [[.recalculateTotals()]] - code - backend\app\Models\FinanceProject.php
+- [[.receivedBy()_1]] - code - backend\app\Models\IncomeEntry.php
+- [[.requireFinanceDocumentsRead()]] - code - backend\app\Http\Controllers\OrgFinanceDocumentController.php
+- [[.school()_20]] - code - backend\app\Models\ExpenseEntry.php
+- [[.school()_24]] - code - backend\app\Models\FinanceAccount.php
+- [[.school()_25]] - code - backend\app\Models\FinanceDocument.php
+- [[.school()_26]] - code - backend\app\Models\FinanceProject.php
+- [[.school()_31]] - code - backend\app\Models\IncomeEntry.php
+- [[.school()_41]] - code - backend\app\Models\OrgFacility.php
+- [[.school()_42]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[.schoolAccount()]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[.schoolAccounts()]] - code - backend\app\Http\Controllers\OrgFinanceTransferController.php
+- [[.schoolIncomeCategories()]] - code - backend\app\Http\Controllers\OrgFinanceTransferController.php
+- [[.schoolIncomeEntry()]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[.scopeActive()_9]] - code - backend\app\Models\Donor.php
+- [[.scopeActive()_13]] - code - backend\app\Models\ExchangeRate.php
+- [[.scopeActive()_17]] - code - backend\app\Models\FinanceAccount.php
+- [[.scopeActive()_18]] - code - backend\app\Models\FinanceProject.php
+- [[.scopeActive()_27]] - code - backend\app\Models\OrgFacility.php
+- [[.scopeApproved()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.scopeByDateRange()]] - code - backend\app\Models\FinanceDocument.php
+- [[.scopeByType()_3]] - code - backend\app\Models\FinanceDocument.php
+- [[.scopeDateRange()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.scopeDateRange()_1]] - code - backend\app\Models\IncomeEntry.php
+- [[.scopeForAccount()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.scopeForAccount()_1]] - code - backend\app\Models\FinanceDocument.php
+- [[.scopeForAccount()_2]] - code - backend\app\Models\IncomeEntry.php
+- [[.scopeForCategory()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.scopeForCategory()_1]] - code - backend\app\Models\IncomeEntry.php
+- [[.scopeForDate()]] - code - backend\app\Models\ExchangeRate.php
+- [[.scopeForDonor()]] - code - backend\app\Models\FinanceDocument.php
+- [[.scopeForDonor()_1]] - code - backend\app\Models\IncomeEntry.php
+- [[.scopeForExpenseEntry()]] - code - backend\app\Models\FinanceDocument.php
+- [[.scopeForFacility()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.scopeForFacility()_1]] - code - backend\app\Models\IncomeEntry.php
+- [[.scopeForIncomeEntry()]] - code - backend\app\Models\FinanceDocument.php
+- [[.scopeForOrganization()_10]] - code - backend\app\Models\Donor.php
+- [[.scopeForOrganization()_18]] - code - backend\app\Models\ExchangeRate.php
+- [[.scopeForOrganization()_20]] - code - backend\app\Models\ExpenseEntry.php
+- [[.scopeForOrganization()_24]] - code - backend\app\Models\FinanceAccount.php
+- [[.scopeForOrganization()_25]] - code - backend\app\Models\FinanceProject.php
+- [[.scopeForOrganization()_31]] - code - backend\app\Models\IncomeEntry.php
+- [[.scopeForOrganization()_34]] - code - backend\app\Models\OrgFacility.php
+- [[.scopeForProject()]] - code - backend\app\Models\ExpenseEntry.php
+- [[.scopeForProject()_1]] - code - backend\app\Models\FinanceDocument.php
+- [[.scopeForProject()_2]] - code - backend\app\Models\IncomeEntry.php
+- [[.scopeForStaff()]] - code - backend\app\Models\FinanceDocument.php
+- [[.scopeForStudent()_2]] - code - backend\app\Models\FinanceDocument.php
+- [[.scopeOrgAndSchool()]] - code - backend\app\Services\Reports\FinanceReportingService.php
+- [[.scopeStatus()_1]] - code - backend\app\Models\ExpenseEntry.php
+- [[.scopeStatus()_2]] - code - backend\app\Models\FinanceProject.php
+- [[.scopeType()]] - code - backend\app\Models\Donor.php
+- [[.show()_42]] - code - backend\app\Http\Controllers\OrgFacilityController.php
+- [[.show()_43]] - code - backend\app\Http\Controllers\OrgFacilityDocumentController.php
+- [[.show()_44]] - code - backend\app\Http\Controllers\OrgFacilityTypeController.php
+- [[.show()_45]] - code - backend\app\Http\Controllers\OrgFinanceAccountController.php
+- [[.show()_46]] - code - backend\app\Http\Controllers\OrgFinanceCurrencyController.php
+- [[.show()_47]] - code - backend\app\Http\Controllers\OrgFinanceDocumentController.php
+- [[.show()_48]] - code - backend\app\Http\Controllers\OrgFinanceDonorController.php
+- [[.show()_49]] - code - backend\app\Http\Controllers\OrgFinanceExchangeRateController.php
+- [[.show()_50]] - code - backend\app\Http\Controllers\OrgFinanceExpenseCategoryController.php
+- [[.show()_51]] - code - backend\app\Http\Controllers\OrgFinanceExpenseEntryController.php
+- [[.show()_52]] - code - backend\app\Http\Controllers\OrgFinanceIncomeCategoryController.php
+- [[.show()_53]] - code - backend\app\Http\Controllers\OrgFinanceIncomeEntryController.php
+- [[.show()_54]] - code - backend\app\Http\Controllers\OrgFinanceProjectController.php
+- [[.staff()_1]] - code - backend\app\Models\FinanceDocument.php
+- [[.store()_51]] - code - backend\app\Http\Controllers\OrgFacilityController.php
+- [[.store()_52]] - code - backend\app\Http\Controllers\OrgFacilityDocumentController.php
+- [[.store()_53]] - code - backend\app\Http\Controllers\OrgFacilityMaintenanceController.php
+- [[.store()_54]] - code - backend\app\Http\Controllers\OrgFacilityStaffController.php
+- [[.store()_55]] - code - backend\app\Http\Controllers\OrgFacilityTypeController.php
+- [[.store()_56]] - code - backend\app\Http\Controllers\OrgFinanceAccountController.php
+- [[.store()_57]] - code - backend\app\Http\Controllers\OrgFinanceCurrencyController.php
+- [[.store()_58]] - code - backend\app\Http\Controllers\OrgFinanceDocumentController.php
+- [[.store()_59]] - code - backend\app\Http\Controllers\OrgFinanceDonorController.php
+- [[.store()_60]] - code - backend\app\Http\Controllers\OrgFinanceExchangeRateController.php
+- [[.store()_61]] - code - backend\app\Http\Controllers\OrgFinanceExpenseCategoryController.php
+- [[.store()_62]] - code - backend\app\Http\Controllers\OrgFinanceExpenseEntryController.php
+- [[.store()_63]] - code - backend\app\Http\Controllers\OrgFinanceIncomeCategoryController.php
+- [[.store()_64]] - code - backend\app\Http\Controllers\OrgFinanceIncomeEntryController.php
+- [[.store()_65]] - code - backend\app\Http\Controllers\OrgFinanceProjectController.php
+- [[.store()_66]] - code - backend\app\Http\Controllers\OrgFinanceTransferController.php
+- [[.student()_5]] - code - backend\app\Models\FinanceDocument.php
+- [[.summary()_4]] - code - backend\app\Http\Controllers\OrgFinanceDonorController.php
+- [[.summary()_5]] - code - backend\app\Http\Controllers\OrgFinanceProjectController.php
+- [[.toCurrency()]] - code - backend\app\Models\ExchangeRate.php
+- [[.update()_46]] - code - backend\app\Http\Controllers\OrgFacilityController.php
+- [[.update()_47]] - code - backend\app\Http\Controllers\OrgFacilityMaintenanceController.php
+- [[.update()_48]] - code - backend\app\Http\Controllers\OrgFacilityStaffController.php
+- [[.update()_49]] - code - backend\app\Http\Controllers\OrgFacilityTypeController.php
+- [[.update()_50]] - code - backend\app\Http\Controllers\OrgFinanceAccountController.php
+- [[.update()_51]] - code - backend\app\Http\Controllers\OrgFinanceCurrencyController.php
+- [[.update()_52]] - code - backend\app\Http\Controllers\OrgFinanceDonorController.php
+- [[.update()_53]] - code - backend\app\Http\Controllers\OrgFinanceExchangeRateController.php
+- [[.update()_54]] - code - backend\app\Http\Controllers\OrgFinanceExpenseCategoryController.php
+- [[.update()_55]] - code - backend\app\Http\Controllers\OrgFinanceExpenseEntryController.php
+- [[.update()_56]] - code - backend\app\Http\Controllers\OrgFinanceIncomeCategoryController.php
+- [[.update()_57]] - code - backend\app\Http\Controllers\OrgFinanceIncomeEntryController.php
+- [[.update()_58]] - code - backend\app\Http\Controllers\OrgFinanceProjectController.php
+- [[.updateRelatedBalances()_1]] - code - backend\app\Models\ExpenseEntry.php
+- [[.updateRelatedBalances()_2]] - code - backend\app\Models\IncomeEntry.php
+- [[.uploadedBy()_2]] - code - backend\app\Models\FinanceDocument.php
+- [[Donor]] - code - backend\app\Models\Donor.php
+- [[Donor.php]] - code - backend\app\Models\Donor.php
+- [[ExchangeRate]] - code - backend\app\Models\ExchangeRate.php
+- [[ExchangeRate.php]] - code - backend\app\Models\ExchangeRate.php
+- [[ExpenseEntry]] - code - backend\app\Models\ExpenseEntry.php
+- [[ExpenseEntry.php]] - code - backend\app\Models\ExpenseEntry.php
+- [[FacilityDocument]] - code - backend\app\Models\FacilityDocument.php
+- [[FacilityDocument.php]] - code - backend\app\Models\FacilityDocument.php
+- [[FinanceAccount]] - code - backend\app\Models\FinanceAccount.php
+- [[FinanceAccount.php]] - code - backend\app\Models\FinanceAccount.php
+- [[FinanceDocument]] - code - backend\app\Models\FinanceDocument.php
+- [[FinanceDocument.php]] - code - backend\app\Models\FinanceDocument.php
+- [[FinanceProject]] - code - backend\app\Models\FinanceProject.php
+- [[FinanceProject.php]] - code - backend\app\Models\FinanceProject.php
+- [[FinanceReportingService]] - code - backend\app\Services\Reports\FinanceReportingService.php
+- [[FinanceReportingService.php]] - code - backend\app\Services\Reports\FinanceReportingService.php
+- [[IncomeEntry]] - code - backend\app\Models\IncomeEntry.php
+- [[IncomeEntry.php]] - code - backend\app\Models\IncomeEntry.php
+- [[LibraryBookFactory]] - code - backend\database\factories\LibraryBookFactory.php
+- [[LibraryBookFactory.php]] - code - backend\database\factories\LibraryBookFactory.php
+- [[OrgFacility]] - code - backend\app\Models\OrgFacility.php
+- [[OrgFacility.php]] - code - backend\app\Models\OrgFacility.php
+- [[OrgFacilityController]] - code - backend\app\Http\Controllers\OrgFacilityController.php
+- [[OrgFacilityController.php]] - code - backend\app\Http\Controllers\OrgFacilityController.php
+- [[OrgFacilityDocumentController]] - code - backend\app\Http\Controllers\OrgFacilityDocumentController.php
+- [[OrgFacilityDocumentController.php]] - code - backend\app\Http\Controllers\OrgFacilityDocumentController.php
+- [[OrgFacilityMaintenanceController]] - code - backend\app\Http\Controllers\OrgFacilityMaintenanceController.php
+- [[OrgFacilityMaintenanceController.php]] - code - backend\app\Http\Controllers\OrgFacilityMaintenanceController.php
+- [[OrgFacilityStaffController]] - code - backend\app\Http\Controllers\OrgFacilityStaffController.php
+- [[OrgFacilityStaffController.php]] - code - backend\app\Http\Controllers\OrgFacilityStaffController.php
+- [[OrgFacilityTypeController]] - code - backend\app\Http\Controllers\OrgFacilityTypeController.php
+- [[OrgFacilityTypeController.php]] - code - backend\app\Http\Controllers\OrgFacilityTypeController.php
+- [[OrgFinanceAccountController]] - code - backend\app\Http\Controllers\OrgFinanceAccountController.php
+- [[OrgFinanceAccountController.php]] - code - backend\app\Http\Controllers\OrgFinanceAccountController.php
+- [[OrgFinanceCurrencyController]] - code - backend\app\Http\Controllers\OrgFinanceCurrencyController.php
+- [[OrgFinanceCurrencyController.php]] - code - backend\app\Http\Controllers\OrgFinanceCurrencyController.php
+- [[OrgFinanceDocumentController]] - code - backend\app\Http\Controllers\OrgFinanceDocumentController.php
+- [[OrgFinanceDocumentController.php]] - code - backend\app\Http\Controllers\OrgFinanceDocumentController.php
+- [[OrgFinanceDonorController]] - code - backend\app\Http\Controllers\OrgFinanceDonorController.php
+- [[OrgFinanceDonorController.php]] - code - backend\app\Http\Controllers\OrgFinanceDonorController.php
+- [[OrgFinanceExchangeRateController]] - code - backend\app\Http\Controllers\OrgFinanceExchangeRateController.php
+- [[OrgFinanceExchangeRateController.php]] - code - backend\app\Http\Controllers\OrgFinanceExchangeRateController.php
+- [[OrgFinanceExpenseCategoryController]] - code - backend\app\Http\Controllers\OrgFinanceExpenseCategoryController.php
+- [[OrgFinanceExpenseCategoryController.php]] - code - backend\app\Http\Controllers\OrgFinanceExpenseCategoryController.php
+- [[OrgFinanceExpenseEntryController]] - code - backend\app\Http\Controllers\OrgFinanceExpenseEntryController.php
+- [[OrgFinanceExpenseEntryController.php]] - code - backend\app\Http\Controllers\OrgFinanceExpenseEntryController.php
+- [[OrgFinanceIncomeCategoryController]] - code - backend\app\Http\Controllers\OrgFinanceIncomeCategoryController.php
+- [[OrgFinanceIncomeCategoryController.php]] - code - backend\app\Http\Controllers\OrgFinanceIncomeCategoryController.php
+- [[OrgFinanceIncomeEntryController]] - code - backend\app\Http\Controllers\OrgFinanceIncomeEntryController.php
+- [[OrgFinanceIncomeEntryController.php]] - code - backend\app\Http\Controllers\OrgFinanceIncomeEntryController.php
+- [[OrgFinanceProjectController]] - code - backend\app\Http\Controllers\OrgFinanceProjectController.php
+- [[OrgFinanceProjectController.php]] - code - backend\app\Http\Controllers\OrgFinanceProjectController.php
+- [[OrgFinanceReportController]] - code - backend\app\Http\Controllers\OrgFinanceReportController.php
+- [[OrgFinanceReportController.php]] - code - backend\app\Http\Controllers\OrgFinanceReportController.php
+- [[OrgFinanceScope.php]] - code - backend\app\Http\Controllers\Concerns\OrgFinanceScope.php
+- [[OrgFinanceTransferController]] - code - backend\app\Http\Controllers\OrgFinanceTransferController.php
+- [[OrgFinanceTransferController.php]] - code - backend\app\Http\Controllers\OrgFinanceTransferController.php
+- [[OrgSchoolTransfer]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[OrgSchoolTransfer.php]] - code - backend\app\Models\OrgSchoolTransfer.php
+- [[getOrgIdFromProfile()]] - code - backend\app\Http\Controllers\Concerns\OrgFinanceScope.php
+- [[requireOrgFinanceCreate()]] - code - backend\app\Http\Controllers\Concerns\OrgFinanceScope.php
+- [[requireOrgFinanceRead()]] - code - backend\app\Http\Controllers\Concerns\OrgFinanceScope.php
+
+## Live Query (requires Dataview plugin)
+
+```dataview
+TABLE source_file, type FROM #community/Finance
+SORT file.name ASC
+```
+
+## Connections to other communities
+- 191 edges to [[Exam & Student Overview|Exam & Student]]
+- 22 edges to [[Student & Admin Overview|Student & Admin]]
+- 22 edges to [[Student & Library Overview|Student & Library]]
+- 12 edges to [[Admission & Event Overview|Admission & Event]]
+- 7 edges to [[Storage Overview|Storage]]
+- 4 edges to [[Report Overview|Report]]
+- 3 edges to [[Organization Overview|Organization]]
+- 2 edges to [[Student & Fee Overview|Student & Fee]]
+- 1 edge to [[DMS & Letter Overview|DMS & Letter]]
+
+## Top bridge nodes
+- [[.downloadFile()]] - degree 12, connects to 5 communities
+- [[.financeAccount()_2]] - degree 42, connects to 4 communities
+- [[.recalculateBalance()]] - degree 20, connects to 4 communities
+- [[.incomeEntry()_2]] - degree 18, connects to 4 communities
+- [[.currency()_10]] - degree 40, connects to 3 communities

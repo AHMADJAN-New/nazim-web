@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\mappers\examPaperTemplateFileMapper.ts"
 type: "code"
-community: "Exam 6"
+community: "Exam 7"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_6
+  - community/Exam_7
 ---
 
 # mapExamPaperTemplateFileApiToDomain()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[examPaperTemplateFileMapper.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_6
+#graphify/code #graphify/EXTRACTED #community/Exam_7

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\dms\VariableEditor.tsx"
 type: "code"
-community: "DMS 4"
+community: "DMS 6"
 location: "L62"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/DMS_4
+  - community/DMS_6
 ---
 
 # startEdit()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[VariableEditor.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/DMS_4
+#graphify/code #graphify/EXTRACTED #community/DMS_6

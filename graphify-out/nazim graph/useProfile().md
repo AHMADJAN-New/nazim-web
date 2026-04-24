@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useProfiles.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L18"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useProfile()
@@ -86,4 +86,4 @@ tags:
 - [[useWebsitePosts()]] - `calls` [INFERRED]
 - [[useWebsiteSettings()]] - `calls` [INFERRED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

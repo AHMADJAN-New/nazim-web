@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\organization-admin\lib\access.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L36"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # hasOrgAdminEntryPermission()
@@ -15,4 +15,4 @@ tags:
 - [[access.ts]] - `contains` [EXTRACTED]
 - [[canAccessOrgAdminArea()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\actions\uiActions.ts"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L17"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # setNavigateFunction()
@@ -16,4 +16,4 @@ tags:
 - [[.setNavigate()]] - `calls` [INFERRED]
 - [[uiActions.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Exam
+#graphify/code #graphify/INFERRED #community/Exam_&_Onboarding

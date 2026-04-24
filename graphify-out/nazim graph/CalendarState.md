@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\calendarState.ts"
 type: "code"
-community: "Finance"
+community: "ID"
 location: "L13"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/ID
 ---
 
 # CalendarState
@@ -19,4 +19,4 @@ tags:
 - [[.subscribe()]] - `method` [EXTRACTED]
 - [[calendarState.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/ID

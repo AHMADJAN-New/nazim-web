@@ -1,12 +1,12 @@
 ---
 source_file: "backend\database\seeders\WebsitePagesAndNavigationSeeder.php"
 type: "code"
-community: "Finance"
+community: "Website & Translation"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Finance
+  - community/Website_&_Translation
 ---
 
 # WebsitePagesAndNavigationSeeder
@@ -22,4 +22,4 @@ tags:
 - [[.seedPages()]] - `method` [EXTRACTED]
 - [[WebsitePagesAndNavigationSeeder.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Finance
+#graphify/code #graphify/EXTRACTED #community/Website_&_Translation

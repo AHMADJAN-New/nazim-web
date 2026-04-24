@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useGraduation.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L14"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useGraduationBatches()
@@ -15,4 +15,4 @@ tags:
 - [[useAuth()]] - `calls` [INFERRED]
 - [[useGraduation.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

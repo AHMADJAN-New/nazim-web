@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Models\IdCardTemplate.php"
 type: "code"
-community: "Event & Admission"
+community: "Admission & Event"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_&_Admission
+  - community/Admission_&_Event
 ---
 
 # IdCardTemplate
@@ -32,4 +32,4 @@ tags:
 - [[.updatedBy()]] - `method` [EXTRACTED]
 - [[IdCardTemplate.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_&_Admission
+#graphify/code #graphify/EXTRACTED #community/Admission_&_Event

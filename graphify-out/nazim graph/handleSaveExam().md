@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\components\settings\ExamsManagement.tsx"
 type: "code"
-community: "Exam 5"
+community: "Exam 6"
 location: "L321"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_5
+  - community/Exam_6
 ---
 
 # handleSaveExam()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[ExamsManagement.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_5
+#graphify/code #graphify/EXTRACTED #community/Exam_6

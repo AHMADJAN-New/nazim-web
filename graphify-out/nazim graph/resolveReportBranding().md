@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\lib\reporting\branding.ts"
 type: "code"
-community: "Translation & I18n"
+community: "Letter & Translation"
 location: "L30"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Translation_&_I18n
+  - community/Letter_&_Translation
 ---
 
 # resolveReportBranding()
@@ -17,4 +17,4 @@ tags:
 - [[exportReport()]] - `calls` [INFERRED]
 - [[uint8ToDataUrl()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Translation_&_I18n
+#graphify/code #graphify/INFERRED #community/Letter_&_Translation

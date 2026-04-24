@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\website\hooks\useWebsiteAdmissions.ts"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L225"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # usePublicAdmissionFields()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[useWebsiteAdmissions.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

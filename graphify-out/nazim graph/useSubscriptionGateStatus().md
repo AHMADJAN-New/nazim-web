@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\hooks\useSubscription.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L217"
 tags:
   - graphify/code
   - graphify/INFERRED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # useSubscriptionGateStatus()
@@ -17,4 +17,4 @@ tags:
 - [[useSubscription.tsx]] - `contains` [EXTRACTED]
 - [[useSubscriptionAccess()]] - `calls` [EXTRACTED]
 
-#graphify/code #graphify/INFERRED #community/Website_&_Exam
+#graphify/code #graphify/INFERRED #community/Exam

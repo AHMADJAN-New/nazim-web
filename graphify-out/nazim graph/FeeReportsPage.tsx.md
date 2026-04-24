@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\fees\FeeReportsPage.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # FeeReportsPage.tsx
@@ -15,4 +15,4 @@ tags:
 - [[FeeReportsPage()]] - `contains` [EXTRACTED]
 - [[formatCurrency()_1]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

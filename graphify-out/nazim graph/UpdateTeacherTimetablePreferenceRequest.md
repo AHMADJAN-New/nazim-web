@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Http\Requests\UpdateTeacherTimetablePreferenceRequest.php"
 type: "code"
-community: "Timetable 6"
+community: "Timetable 7"
 location: "L7"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Timetable_6
+  - community/Timetable_7
 ---
 
 # UpdateTeacherTimetablePreferenceRequest
@@ -16,4 +16,4 @@ tags:
 - [[.rules()_51]] - `method` [EXTRACTED]
 - [[UpdateTeacherTimetablePreferenceRequest.php]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Timetable_6
+#graphify/code #graphify/EXTRACTED #community/Timetable_7

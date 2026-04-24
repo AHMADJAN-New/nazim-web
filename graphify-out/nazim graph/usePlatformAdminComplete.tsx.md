@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\platform\hooks\usePlatformAdminComplete.tsx"
 type: "code"
-community: "Website & Exam"
+community: "Exam"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Website_&_Exam
+  - community/Exam
 ---
 
 # usePlatformAdminComplete.tsx
@@ -51,4 +51,4 @@ tags:
 - [[usePlatformUpdatePermissionGroup()]] - `contains` [EXTRACTED]
 - [[usePlatformUserPermissions()]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Website_&_Exam
+#graphify/code #graphify/EXTRACTED #community/Exam

@@ -1,12 +1,12 @@
 ---
 source_file: "backend\app\Services\DocumentPdfService.php"
 type: "code"
-community: "Exam & Student"
+community: "Report"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam_&_Student
+  - community/Report
 ---
 
 # DocumentPdfService.php
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[DocumentPdfService]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam_&_Student
+#graphify/code #graphify/EXTRACTED #community/Report

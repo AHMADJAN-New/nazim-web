@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\pages\events\GuestDetailPage.tsx"
 type: "code"
-community: "Event 5"
+community: "Event 7"
 location: "L5"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Event_5
+  - community/Event_7
 ---
 
 # GuestDetailPage()
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[GuestDetailPage.tsx]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Event_5
+#graphify/code #graphify/EXTRACTED #community/Event_7

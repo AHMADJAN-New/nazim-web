@@ -1,12 +1,12 @@
 ---
 source_file: "frontend\src\onboarding\iconUtils.ts"
 type: "code"
-community: "Exam"
+community: "Exam & Onboarding"
 location: "L55"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Exam
+  - community/Exam_&_Onboarding
 ---
 
 # getIconSvg()
@@ -15,4 +15,4 @@ tags:
 - [[.createStepOptions()]] - `calls` [INFERRED]
 - [[iconUtils.ts]] - `contains` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Exam
+#graphify/code #graphify/EXTRACTED #community/Exam_&_Onboarding
