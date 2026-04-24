@@ -108,6 +108,11 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const formatAttendanceRound = (roundNumber: number, sessionLabel: string | null) => {
+  const roundLabel = `Round ${roundNumber || 1}`;
+  return sessionLabel ? `${roundLabel} - ${sessionLabel}` : roundLabel;
+};
+
 export default function AttendanceReports() {
   const { t, language } = useLanguage();
   const { calendar } = useDatePreference();
@@ -365,6 +370,15 @@ export default function AttendanceReports() {
             <div className="text-sm font-medium">{format(row.original.sessionDate, 'MMM dd, yyyy')}</div>
             <div className="text-xs text-muted-foreground">{format(row.original.markedAt, 'HH:mm')}</div>
           </div>
+        ),
+      },
+      {
+        accessorKey: 'roundNumber',
+        header: t('attendanceReports.round') || 'Round',
+        cell: ({ row }) => (
+          <Badge variant="outline" className="font-normal text-xs">
+            {formatAttendanceRound(row.original.roundNumber, row.original.sessionLabel)}
+          </Badge>
         ),
       },
       {

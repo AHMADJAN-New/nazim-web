@@ -141,6 +141,12 @@ class AttendanceSessionController extends Controller
                 'class_id' => $primaryClassId, // Keep for backward compatibility
                 'academic_year_id' => $validated['academic_year_id'] ?? null,
                 'session_date' => Carbon::parse($validated['session_date'])->toDateString(),
+                'session_label' => $validated['session_label'] ?? null,
+                'round_number' => $this->nextAttendanceRoundNumber(
+                    $profile->organization_id,
+                    $currentSchoolId,
+                    Carbon::parse($validated['session_date'])->toDateString()
+                ),
                 'method' => $validated['method'],
                 'status' => $validated['status'] ?? 'open',
                 'remarks' => $validated['remarks'] ?? null,
@@ -285,6 +291,8 @@ class AttendanceSessionController extends Controller
 
         $validated = $request->validate([
             'status' => 'nullable|string|in:open,closed',
+            'session_date' => 'nullable|date',
+            'session_label' => 'nullable|string|max:100',
             'remarks' => 'nullable|string',
             'student_type' => 'nullable|string|in:all,boarders,day_scholars',
             'class_id' => 'nullable|uuid|exists:classes,id',
@@ -300,6 +308,10 @@ class AttendanceSessionController extends Controller
 
         if (! $session) {
             return response()->json(['error' => 'Attendance session not found'], 404);
+        }
+
+        if ($session->status === 'closed') {
+            return response()->json(['error' => 'Closed attendance sessions cannot be edited'], 422);
         }
 
         $classIds = null;
@@ -325,6 +337,9 @@ class AttendanceSessionController extends Controller
         // Capture old values before update
         $oldValues = [
             'status' => $session->status,
+            'session_date' => optional($session->session_date)->toDateString(),
+            'session_label' => $session->session_label,
+            'round_number' => $session->round_number,
             'remarks' => $session->remarks,
             'student_type' => $session->student_type,
             'class_id' => $session->class_id,
@@ -334,12 +349,22 @@ class AttendanceSessionController extends Controller
         // Track old status for status change notification
         $oldStatus = $session->status;
         $nextStatus = $validated['status'] ?? $session->status;
+        $currentSessionDate = $session->session_date ? Carbon::parse($session->session_date)->toDateString() : null;
+        $nextSessionDate = ! empty($validated['session_date'])
+            ? Carbon::parse($validated['session_date'])->toDateString()
+            : $currentSessionDate;
+        $nextRoundNumber = $nextSessionDate !== $currentSessionDate
+            ? $this->nextAttendanceRoundNumber($profile->organization_id, $currentSchoolId, $nextSessionDate, $session->id)
+            : $session->round_number;
 
-        DB::transaction(function () use ($session, $validated, $nextStatus, $oldStatus, $profile, $currentSchoolId, $user, $classIds) {
+        DB::transaction(function () use ($session, $validated, $nextStatus, $oldStatus, $profile, $currentSchoolId, $user, $classIds, $nextSessionDate, $nextRoundNumber) {
             $primaryClassId = $classIds[0] ?? $session->class_id;
 
             $session->update([
                 'status' => $nextStatus,
+                'session_date' => $nextSessionDate,
+                'session_label' => array_key_exists('session_label', $validated) ? ($validated['session_label'] ?: null) : $session->session_label,
+                'round_number' => $nextRoundNumber,
                 'remarks' => $validated['remarks'] ?? $session->remarks,
                 'student_type' => $validated['student_type'] ?? $session->student_type,
                 'class_id' => $primaryClassId,
@@ -383,6 +408,9 @@ class AttendanceSessionController extends Controller
                     'old_values' => $oldValues,
                     'new_values' => [
                         'status' => $session->status,
+                        'session_date' => optional($session->session_date)->toDateString(),
+                        'session_label' => $session->session_label,
+                        'round_number' => $session->round_number,
                         'remarks' => $session->remarks,
                         'student_type' => $session->student_type,
                         'class_id' => $session->class_id,
@@ -616,6 +644,10 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
+        if ($session->status === 'closed') {
+            return response()->json(['error' => 'Cannot edit attendance records for a closed session'], 422);
+        }
+
         $records = $request->validated('records');
         $studentIds = collect($records)->pluck('student_id')->unique()->values();
 
@@ -658,7 +690,7 @@ class AttendanceSessionController extends Controller
                         'school_id' => $session->school_id,
                         'student_id' => $record['student_id'],
                         'status' => $record['status'],
-                        'entry_method' => $session->method,
+                        'entry_method' => $record['entry_method'] ?? 'manual',
                         'marked_at' => $timestamp,
                         'marked_by' => $user->id,
                         'note' => $record['note'] ?? null,
@@ -1362,6 +1394,8 @@ class AttendanceSessionController extends Controller
                 ['key' => 'admission_no', 'label' => 'Admission No'],
                 ['key' => 'class_name', 'label' => 'Class'],
                 ['key' => 'session_date', 'label' => 'Date'],
+                ['key' => 'round', 'label' => 'Round'],
+                ['key' => 'session_label', 'label' => 'Session Label'],
                 ['key' => 'status', 'label' => 'Status'],
                 ['key' => 'marked_at', 'label' => 'Marked At'],
                 ['key' => 'entry_method', 'label' => 'Method'],
@@ -1375,6 +1409,8 @@ class AttendanceSessionController extends Controller
                     'session_date' => $record->session?->session_date
                         ? $this->dateService->formatDate($record->session->session_date, $calendarPreference, 'full', $language)
                         : '—',
+                    'round' => 'Round '.($record->session?->round_number ?? 1),
+                    'session_label' => $record->session?->session_label ?? '-',
                     'status' => ucfirst($record->status),
                     'marked_at' => $this->dateService->formatDate($record->marked_at, $calendarPreference, 'full', $language).' '.Carbon::parse($record->marked_at)->format('H:i'),
                     'entry_method' => ucfirst($record->entry_method ?? '—'),
@@ -1620,6 +1656,20 @@ class AttendanceSessionController extends Controller
         }
 
         return array_values(array_unique($classIds));
+    }
+
+    private function nextAttendanceRoundNumber(string $organizationId, string $schoolId, string $sessionDate, ?string $excludeSessionId = null): int
+    {
+        $query = AttendanceSession::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->whereDate('session_date', Carbon::parse($sessionDate)->toDateString())
+            ->whereNull('deleted_at');
+
+        if ($excludeSessionId) {
+            $query->where('id', '!=', $excludeSessionId);
+        }
+
+        return ((int) $query->max('round_number')) + 1;
     }
 
     private function applyAttendanceSessionClassFilter($query, array $classIds): void

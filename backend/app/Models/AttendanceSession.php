@@ -25,6 +25,8 @@ class AttendanceSession extends Model
         'class_id',
         'academic_year_id',
         'session_date',
+        'session_label',
+        'round_number',
         'method',
         'status',
         'remarks',
@@ -35,6 +37,7 @@ class AttendanceSession extends Model
 
     protected $casts = [
         'session_date' => 'date',
+        'round_number' => 'integer',
         'closed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

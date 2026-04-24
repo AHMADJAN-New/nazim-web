@@ -20,6 +20,7 @@ class StoreAttendanceSessionRequest extends FormRequest
             'school_id' => 'nullable|uuid|exists:school_branding,id',
             'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
             'session_date' => 'required|date',
+            'session_label' => 'nullable|string|max:100',
             'method' => 'required|string|in:manual,barcode',
             'status' => 'nullable|string|in:open,closed',
             'remarks' => 'nullable|string',

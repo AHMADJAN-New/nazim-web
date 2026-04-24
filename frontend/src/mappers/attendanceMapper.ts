@@ -8,6 +8,8 @@ export const mapAttendanceSessionApiToDomain = (session: AttendanceApi.Attendanc
   classId: session.class_id ?? null,
   academicYearId: session.academic_year_id,
   sessionDate: new Date(session.session_date),
+  sessionLabel: session.session_label ?? null,
+  roundNumber: session.round_number ?? 1,
   method: session.method,
   status: session.status,
   remarks: session.remarks,
@@ -52,6 +54,7 @@ export const mapAttendanceSessionDomainToInsert = (session: AttendanceSessionIns
   school_id: session.schoolId ?? null,
   academic_year_id: session.academicYearId ?? null,
   session_date: session.sessionDate.toISOString(),
+  session_label: session.sessionLabel ?? null,
   method: session.method,
   status: session.status,
   remarks: session.remarks ?? null,
@@ -62,6 +65,7 @@ export const mapAttendanceSessionDomainToInsert = (session: AttendanceSessionIns
 export const mapAttendanceRecordDomainToInsert = (record: AttendanceRecordInsert): AttendanceApi.AttendanceRecordInsert => ({
   student_id: record.studentId,
   status: record.status,
+  entry_method: record.entryMethod,
   note: record.note ?? null,
 });
 
@@ -71,6 +75,7 @@ export const mapAttendanceSessionDomainToUpdate = (session: AttendanceSessionUpd
   school_id: session.schoolId,
   academic_year_id: session.academicYearId,
   session_date: session.sessionDate ? session.sessionDate.toISOString() : undefined,
+  session_label: session.sessionLabel,
   method: session.method,
   status: session.status,
   remarks: session.remarks,

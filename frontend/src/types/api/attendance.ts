@@ -11,6 +11,8 @@ export interface AttendanceSession {
   class_id: string | null; // Can be null for multi-class sessions
   academic_year_id: string | null;
   session_date: string;
+  session_label: string | null;
+  round_number: number;
   method: AttendanceMethod;
   status: AttendanceSessionStatus;
   remarks: string | null;
@@ -62,6 +64,7 @@ export interface AttendanceRecord {
 export interface AttendanceRecordInsert {
   student_id: string;
   status: AttendanceStatus;
+  entry_method?: AttendanceMethod;
   note?: string | null;
 }
 
@@ -71,6 +74,7 @@ export interface AttendanceSessionInsert {
   school_id?: string | null;
   academic_year_id?: string | null;
   session_date: string;
+  session_label?: string | null;
   method: AttendanceMethod;
   status?: AttendanceSessionStatus;
   remarks?: string | null;

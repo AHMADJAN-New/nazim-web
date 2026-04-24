@@ -213,6 +213,7 @@ export const useMarkAttendance = (sessionId?: string) => {
       const toPayload = (batch: AttendanceRecordInsert[]) => batch.map(r => ({
         student_id: r.studentId,
         status: r.status,
+        entry_method: r.entryMethod ?? 'manual',
         note: r.note ?? null,
       }));
 

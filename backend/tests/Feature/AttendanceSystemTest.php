@@ -44,6 +44,52 @@ class AttendanceSystemTest extends TestCase
         $this->assertDatabaseHas('attendance_sessions', [
             'class_id' => $class->id,
             'method' => 'manual',
+            'round_number' => 1,
+        ]);
+    }
+
+    /** @test */
+    public function attendance_sessions_get_incrementing_round_numbers_per_school_and_date()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $payload = [
+            'class_id' => $class->id,
+            'session_date' => '2026-04-24',
+            'method' => 'manual',
+        ];
+
+        $this->jsonAs($user, 'POST', '/api/attendance-sessions', $payload)->assertStatus(201);
+        $this->jsonAs($user, 'POST', '/api/attendance-sessions', $payload)->assertStatus(201);
+        $this->jsonAs($user, 'POST', '/api/attendance-sessions', array_merge($payload, [
+            'session_label' => 'After lunch',
+        ]))->assertStatus(201);
+
+        $this->assertDatabaseHas('attendance_sessions', [
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'session_date' => '2026-04-24',
+            'round_number' => 1,
+        ]);
+        $this->assertDatabaseHas('attendance_sessions', [
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'session_date' => '2026-04-24',
+            'round_number' => 2,
+        ]);
+        $this->assertDatabaseHas('attendance_sessions', [
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'session_date' => '2026-04-24',
+            'round_number' => 3,
+            'session_label' => 'After lunch',
         ]);
     }
 
@@ -93,7 +139,91 @@ class AttendanceSystemTest extends TestCase
         $this->assertDatabaseHas('attendance_records', [
             'student_id' => $student->id,
             'status' => 'present',
+            'entry_method' => 'manual',
         ]);
+    }
+
+    /** @test */
+    public function manual_records_in_barcode_session_keep_manual_entry_method()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'method' => 'barcode',
+            'status' => 'open',
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'POST', "/api/attendance-sessions/{$session->id}/records", [
+            'records' => [
+                [
+                    'student_id' => $student->id,
+                    'status' => 'present',
+                    'entry_method' => 'manual',
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'student_id' => $student->id,
+            'entry_method' => 'manual',
+        ]);
+    }
+
+    /** @test */
+    public function closed_sessions_reject_session_and_record_edits()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'status' => 'closed',
+            'closed_at' => now(),
+        ]);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $this->jsonAs($user, 'PUT', "/api/attendance-sessions/{$session->id}", [
+            'remarks' => 'Should not change',
+        ])->assertStatus(422);
+
+        $this->jsonAs($user, 'POST', "/api/attendance-sessions/{$session->id}/records", [
+            'records' => [
+                [
+                    'student_id' => $student->id,
+                    'status' => 'present',
+                ],
+            ],
+        ])->assertStatus(422);
     }
 
     /** @test */
@@ -374,9 +504,14 @@ class AttendanceSystemTest extends TestCase
             'organization_id' => $organization->id,
             'school_id' => $school->id,
             'class_id' => $primaryClass->id,
+            'round_number' => 2,
+            'session_label' => 'After lunch',
         ]);
 
-        $session->classes()->attach($attachedClass->id);
+        $session->classes()->attach($attachedClass->id, [
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
 
         $record = AttendanceRecord::create([
             'attendance_session_id' => $session->id,
@@ -398,6 +533,10 @@ class AttendanceSystemTest extends TestCase
             ->assertJsonFragment([
                 'id' => $record->id,
                 'student_id' => $student->id,
+            ])
+            ->assertJsonFragment([
+                'round_number' => 2,
+                'session_label' => 'After lunch',
             ]);
     }
 }

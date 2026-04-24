@@ -17,6 +17,7 @@ class MarkAttendanceRecordsRequest extends FormRequest
             'records' => 'required|array|min:1',
             'records.*.student_id' => 'required|uuid|exists:students,id',
             'records.*.status' => 'required|string|in:present,absent,late,excused,sick,leave',
+            'records.*.entry_method' => 'nullable|string|in:manual,barcode',
             'records.*.note' => 'nullable|string',
         ];
     }

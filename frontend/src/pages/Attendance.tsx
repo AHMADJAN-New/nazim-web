@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,6 +35,7 @@ export default function Attendance() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessionDate, setSessionDate] = useState<string>('');
+  const [sessionLabel, setSessionLabel] = useState<string>('');
   const [sessionMethod, setSessionMethod] = useState<'manual' | 'barcode'>('manual');
   const [sessionRemarks, setSessionRemarks] = useState<string>('');
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
@@ -41,6 +43,8 @@ export default function Attendance() {
   const [studentType, setStudentType] = useState<AttendanceStudentType>('all');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingSessionDate, setEditingSessionDate] = useState<string>('');
+  const [editingSessionLabel, setEditingSessionLabel] = useState<string>('');
   const [editingClassIds, setEditingClassIds] = useState<string[]>([]);
   const [editingRemarks, setEditingRemarks] = useState<string>('');
   const [editingStudentType, setEditingStudentType] = useState<AttendanceStudentType>('all');
@@ -88,6 +92,7 @@ export default function Attendance() {
       classId: classIdsToUse[0],
       schoolId: selectedSchool === 'all' ? null : selectedSchool || null,
       sessionDate: new Date(sessionDate),
+      sessionLabel: sessionLabel.trim() || null,
       method: sessionMethod,
       remarks: sessionRemarks || undefined,
       studentType,
@@ -98,6 +103,7 @@ export default function Attendance() {
       setSelectedSessionId(created.id);
       setSelectedClassIds([]);
       setSessionDate('');
+      setSessionLabel('');
       setSessionRemarks('');
       setStudentType('all');
     } catch (error: unknown) {
@@ -187,6 +193,8 @@ export default function Attendance() {
 
   const openEditDialog = (session: AttendanceSession) => {
     setEditingSessionId(session.id);
+    setEditingSessionDate(dateToLocalYYYYMMDD(session.sessionDate));
+    setEditingSessionLabel(session.sessionLabel || '');
     setEditingClassIds(buildSessionClassIds(session));
     setEditingRemarks(session.remarks || '');
     setEditingStudentType(session.studentType || 'all');
@@ -203,12 +211,19 @@ export default function Attendance() {
       return;
     }
 
+    if (!editingSessionDate) {
+      showToast.error(t('attendancePage.sessionHint') || 'Please select at least one class and date');
+      return;
+    }
+
     try {
       await updateSession.mutateAsync({
         id: editingSessionId,
         data: {
           classId: editingClassIds[0],
           classIds: editingClassIds,
+          sessionDate: new Date(editingSessionDate),
+          sessionLabel: editingSessionLabel.trim() || null,
           remarks: editingRemarks || null,
           studentType: editingStudentType,
         },
@@ -226,6 +241,11 @@ export default function Attendance() {
     { value: 'boarders' as const, label: t('attendancePage.studentTypeBoarders') || 'Boarders', icon: School },
     { value: 'day_scholars' as const, label: t('attendancePage.studentTypeDayScholars') || 'Day Scholars', icon: GraduationCap },
   ];
+
+  const formatSessionRound = (session: Pick<AttendanceSession, 'roundNumber' | 'sessionLabel'>) => {
+    const roundLabel = `Round ${session.roundNumber || 1}`;
+    return session.sessionLabel ? `${roundLabel} - ${session.sessionLabel}` : roundLabel;
+  };
 
   return (
     <div className="container mx-auto py-4 max-w-7xl px-4 overflow-x-hidden">
@@ -382,6 +402,19 @@ export default function Attendance() {
                   date={sessionDate ? parseLocalDate(sessionDate) : undefined}
                   onDateChange={(date) => setSessionDate(date ? dateToLocalYYYYMMDD(date) : '')}
                   placeholder="Select date"
+                />
+              </div>
+
+              <div className="space-y-2.5">
+                <Label className="text-sm font-medium">
+                  {t('attendancePage.sessionLabel') || 'Session label'}
+                </Label>
+                <Input
+                  value={sessionLabel}
+                  onChange={e => setSessionLabel(e.target.value)}
+                  placeholder={t('attendancePage.sessionLabelPlaceholder') || 'Optional, e.g. Morning or After lunch'}
+                  maxLength={100}
+                  className="rounded-xl"
                 />
               </div>
 
@@ -556,6 +589,8 @@ export default function Attendance() {
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">{format(item.sessionDate, 'PPP')}</span>
                         <span className="text-muted-foreground/40 text-xs">·</span>
+                        <span className="text-xs text-muted-foreground">{formatSessionRound(item)}</span>
+                        <span className="text-muted-foreground/40 text-xs">·</span>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           {item.method === 'barcode'
                             ? <><QrCode className="h-3 w-3" /> {t('attendancePage.barcodeTab')}</>
@@ -666,6 +701,32 @@ export default function Attendance() {
           </DialogHeader>
 
           <div className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2.5">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                  {t('attendancePage.dateLabel')}
+                </Label>
+                <CalendarDatePicker
+                  date={editingSessionDate ? parseLocalDate(editingSessionDate) : undefined}
+                  onDateChange={(date) => setEditingSessionDate(date ? dateToLocalYYYYMMDD(date) : '')}
+                  placeholder="Select date"
+                />
+              </div>
+              <div className="space-y-2.5">
+                <Label className="text-sm font-medium">
+                  {t('attendancePage.sessionLabel') || 'Session label'}
+                </Label>
+                <Input
+                  value={editingSessionLabel}
+                  onChange={e => setEditingSessionLabel(e.target.value)}
+                  placeholder={t('attendancePage.sessionLabelPlaceholder') || 'Optional, e.g. Morning or After lunch'}
+                  maxLength={100}
+                  className="rounded-xl"
+                />
+              </div>
+            </div>
+
             {frequentMultiClassGroups.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">

@@ -21,6 +21,8 @@ export interface AttendanceReportRecord {
   cardNumber: string | null;
   status: AttendanceApi.AttendanceStatus;
   sessionDate: Date;
+  roundNumber: number;
+  sessionLabel: string | null;
   studentClassName: string;
   className: string;
   classNames: string[];
@@ -76,6 +78,8 @@ export const mapAttendanceReportRecord = (record: AttendanceReportApiRecord): At
     cardNumber: record.student?.card_number ?? null,
     status: record.status,
     sessionDate: record.session?.session_date ? new Date(record.session.session_date) : new Date(record.marked_at),
+    roundNumber: record.session?.round_number ?? 1,
+    sessionLabel: record.session?.session_label ?? null,
     studentClassName: studentClassName ?? (classNames.length > 0 ? classNames.join(', ') : '—'),
     className: classNames.length > 0 ? classNames.join(', ') : 'Unassigned',
     classNames,

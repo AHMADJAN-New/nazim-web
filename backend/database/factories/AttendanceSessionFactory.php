@@ -36,6 +36,8 @@ class AttendanceSessionFactory extends Factory
             },
             'created_by' => User::factory(),
             'session_date' => now(),
+            'session_label' => null,
+            'round_number' => 1,
             'method' => 'manual',
             'status' => 'open',
         ];

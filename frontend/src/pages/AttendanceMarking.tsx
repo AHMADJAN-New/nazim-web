@@ -115,6 +115,7 @@ export default function AttendanceMarking() {
   const [isSessionSelectOpen, setIsSessionSelectOpen] = useState(false);
   const [filterClassId, setFilterClassId] = useState<string | 'all'>('all');
   const [isSessionPanelOpen, setIsSessionPanelOpen] = useState(true);
+  const [activeEntryMode, setActiveEntryMode] = useState<'manual' | 'barcode'>('manual');
   const [barcodeView, setBarcodeView] = useState<'in-progress' | 'pending-review' | 'live-scans' | 'saved'>('in-progress');
   const scanInputRef = useRef<HTMLInputElement | null>(null);
   const scanFeedbackTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
@@ -197,8 +198,9 @@ export default function AttendanceMarking() {
       const className = item.className || '';
       const classNames = item.classes?.map((sessionClass) => sessionClass.name).join(' ') || '';
       const dateStr = formatDate(item.sessionDate, locale).toLowerCase();
+      const roundStr = formatSessionRound(item.roundNumber, item.sessionLabel).toLowerCase();
       const methodLabel = item.method === 'manual' ? t('attendancePage.manualTab') || 'Manual' : t('attendancePage.barcodeTab') || 'Barcode';
-      return className.toLowerCase().includes(term) || classNames.toLowerCase().includes(term) || dateStr.includes(term) || methodLabel.toLowerCase().includes(term);
+      return className.toLowerCase().includes(term) || classNames.toLowerCase().includes(term) || dateStr.includes(term) || roundStr.includes(term) || methodLabel.toLowerCase().includes(term);
     });
   }, [filteredSessions, sessionSearchTerm, locale, t]);
 
@@ -215,7 +217,7 @@ export default function AttendanceMarking() {
   const {
     data: scanFeed,
     refetch: refetchScanFeed,
-  } = useAttendanceScanFeed(selectedSessionId || undefined, 30, session?.method === 'barcode' && barcodeView === 'live-scans');
+  } = useAttendanceScanFeed(selectedSessionId || undefined, 30, activeEntryMode === 'barcode' && barcodeView === 'live-scans');
   const markAttendance = useMarkAttendance(selectedSessionId || undefined);
   const recordsToSaveRef = useRef<AttendanceRecordInsert[]>([]);
   const markAttendancePendingRef = useRef(false);
@@ -337,10 +339,16 @@ export default function AttendanceMarking() {
   }, [rosterStudents]);
 
   useEffect(() => {
-    if (session?.method === 'barcode') {
-      scanInputRef.current?.focus();
+    if (session?.method) {
+      setActiveEntryMode(session.method);
     }
   }, [selectedSessionId, session?.method]);
+
+  useEffect(() => {
+    if (activeEntryMode === 'barcode') {
+      scanInputRef.current?.focus();
+    }
+  }, [activeEntryMode]);
 
   const rosterLookupByStudentId = useMemo(() => {
     const lookup = new Map<string, RosterLookup>();
@@ -360,6 +368,11 @@ export default function AttendanceMarking() {
   }, [rosterStudents]);
 
   const getDraftStatus = (studentId: string): AttendanceDraftStatus => attendanceState[studentId]?.status ?? UNMARKED_STATUS;
+
+  function formatSessionRound(roundNumber?: number, sessionLabel?: string | null) {
+    const roundLabel = `Round ${roundNumber || 1}`;
+    return sessionLabel ? `${roundLabel} - ${sessionLabel}` : roundLabel;
+  }
 
   const renderStatusSelect = (studentId: string) => {
     const savedRecord = savedAttendanceByStudentId.get(studentId);
@@ -545,6 +558,7 @@ export default function AttendanceMarking() {
           (record): AttendanceRecordInsert => ({
             studentId: record.studentId,
             status: record.status as AttendanceConcreteStatus,
+            entryMethod: record.source === 'scan' ? 'barcode' : 'manual',
             note: record.note,
           })
         ),
@@ -734,7 +748,7 @@ export default function AttendanceMarking() {
   };
 
   const scheduleScanIdleSave = (delayMs: number = SCAN_IDLE_SAVE_MS) => {
-    if (session?.method !== 'barcode') {
+    if (activeEntryMode !== 'barcode') {
       return;
     }
 
@@ -981,7 +995,7 @@ export default function AttendanceMarking() {
                         return (
                           <CommandItem
                             key={item.id}
-                            value={`${item.className || ''} ${item.classes?.map((c) => c.name).join(' ') || ''} ${formatDate(item.sessionDate, locale)}`}
+                            value={`${item.className || ''} ${item.classes?.map((c) => c.name).join(' ') || ''} ${formatDate(item.sessionDate, locale)} ${formatSessionRound(item.roundNumber, item.sessionLabel)}`}
                             onSelect={() => {
                               setSelectedSessionId(item.id);
                               setIsSessionSelectOpen(false);
@@ -1014,6 +1028,8 @@ export default function AttendanceMarking() {
                               </div>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <span>{formatDate(item.sessionDate, locale)}</span>
+                                <span className="opacity-40">·</span>
+                                <span>{formatSessionRound(item.roundNumber, item.sessionLabel)}</span>
                                 <span className="opacity-40">·</span>
                                 <span>
                                   {item.method === 'manual'
@@ -1070,6 +1086,9 @@ export default function AttendanceMarking() {
               </Badge>
             )}
             <span className="text-xs text-muted-foreground">{formatDate(session.sessionDate, locale)}</span>
+            <Badge variant="outline" className="text-xs h-5">
+              {formatSessionRound(session.roundNumber, session.sessionLabel)}
+            </Badge>
             <Badge variant="secondary" className="text-xs h-5">
               {session.method === 'manual'
                 ? t('attendancePage.manualTab') || 'Manual'
@@ -1167,7 +1186,15 @@ export default function AttendanceMarking() {
             )}
 
             <div className="p-4 md:p-5">
-              <Tabs value={session.method}>
+              <Tabs value={activeEntryMode} onValueChange={(value) => setActiveEntryMode(value as 'manual' | 'barcode')} className="space-y-4">
+                <TabsList className="grid w-full grid-cols-2 rounded-xl h-9">
+                  <TabsTrigger value="manual" className="rounded-lg text-xs">
+                    {t('attendancePage.manualTab') || 'Manual'}
+                  </TabsTrigger>
+                  <TabsTrigger value="barcode" className="rounded-lg text-xs">
+                    {t('attendancePage.barcodeTab') || 'Barcode'}
+                  </TabsTrigger>
+                </TabsList>
                 {/* ── MANUAL MODE ── */}
                 <TabsContent value="manual" className="mt-0">
                   <Tabs key={`${session.id}-manual`} defaultValue="in-progress" className="space-y-4">
@@ -1197,6 +1224,7 @@ export default function AttendanceMarking() {
                             variant="secondary"
                             size="sm"
                             onClick={() => handleMarkAll('present')}
+                            disabled={session.status === 'closed'}
                             className="rounded-lg h-8 text-xs"
                           >
                             {t('attendancePage.markAllPresent') || 'Mark all present'}
@@ -1205,6 +1233,7 @@ export default function AttendanceMarking() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleMarkAll('absent')}
+                            disabled={session.status === 'closed'}
                             className="rounded-lg h-8 text-xs"
                           >
                             {t('attendancePage.markAllAbsent') || 'Mark all absent'}
