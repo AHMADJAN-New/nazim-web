@@ -120,6 +120,8 @@ export default {
       allClasses: "همه صنف‌ها",
       allAcademicYears: "همه سال‌های تحصیلی",
       searchRoomsTablePlaceholder: "جستجو بر اساس شاگرد، پدر، صنف، شماره شمولیت، اتاق، ساختمان یا سال تحصیلی...",
+      byRoomReportTitle: "شاگردان خوابگاه بر اساس اتاق",
+      exportByRoomHint: "در Excel هر اتاق در یک شیت جداگانه و در PDF در یک صفحه جداگانه قرار می‌گیرد.",
     },
     room: "اتاق",
     roomClickRowHint: "برای دیدن فهرست کامل شاگردان، ردیف اتاق را کلیک کنید.",

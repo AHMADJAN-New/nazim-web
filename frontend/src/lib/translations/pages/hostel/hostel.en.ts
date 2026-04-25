@@ -120,6 +120,8 @@ export default {
       allClasses: "All classes",
       allAcademicYears: "All academic years",
       searchRoomsTablePlaceholder: "Search by student, father, class, admission #, room, building, or academic year...",
+      byRoomReportTitle: "Hostel Students by Room",
+      exportByRoomHint: "Export splits each room onto its own sheet (Excel) or page (PDF).",
     },
     room: "Room",
     roomClickRowHint: "Click a room row to see every student assigned there.",

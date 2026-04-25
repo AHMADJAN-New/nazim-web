@@ -120,6 +120,8 @@ export default {
       allClasses: "جميع الصفوف",
       allAcademicYears: "جميع السنوات الدراسية",
       searchRoomsTablePlaceholder: "ابحث بالطالب أو الأب أو الصف أو رقم القبول أو الغرفة أو المبنى أو السنة الدراسية...",
+      byRoomReportTitle: "طلاب السكن الداخلي حسب الغرفة",
+      exportByRoomHint: "في Excel كل غرفة في ورقة منفصلة وفي PDF في صفحة منفصلة.",
     },
     residencyTypeColumn: undefined,
     room: "الغرفة",

@@ -92,6 +92,8 @@ export default {
     selectSessionPlaceholder: "اختر جلسة...",
     currentSession: "الجلسة الحالية:",
     selectSessionForMarking: "يرجى اختيار جلسة لتسجيل الحضور",
+    offlineTitle: "لا يوجد اتصال بالإنترنت",
+    offlineDescription: "يتم حفظ تغييرات الحضور محلياً وستتم مزامنتها عند إعادة الاتصال. الطلاب المحملون مسبقاً لا يزالون متاحين.",
     searchSessions: "البحث عن الجلسات...",
     openSessions: "جلسات مفتوحة",
     sessions: "جلسات",

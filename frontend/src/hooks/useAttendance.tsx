@@ -109,9 +109,11 @@ export const useAttendanceSessions = (
       return (apiSessions as AttendanceApi.AttendanceSession[]).map(mapAttendanceSessionApiToDomain);
     },
     enabled: !!user && !!profile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
-    staleTime: 5 * 60 * 1000, // 5 minutes - increased from 2 minutes
-    refetchOnWindowFocus: false, // Prevent refetch on tab switch
-    refetchOnReconnect: false, // Prevent refetch on reconnect
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    networkMode: 'offlineFirst',
   });
 
   useEffect(() => {
@@ -157,8 +159,10 @@ export const useAttendanceSession = (id?: string) => {
       };
     },
     enabled: !!user && !!profile && !!id,
-    staleTime: 30 * 1000, // 30s – avoid refetch on every focus; optimistic updates handle scan
+    staleTime: 30 * 1000,
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
+    networkMode: 'offlineFirst',
   });
 
   return { session: data, isLoading, error, refetch };
@@ -275,6 +279,10 @@ export const useAttendanceRoster = (classIds?: string[], academicYearId?: string
       });
     },
     enabled: !!user && !!profile && !!classIds && classIds.length > 0,
+    staleTime: 5 * 60 * 1000,   // 5 min – serve from cache during attendance without constant refetch
+    gcTime: 30 * 60 * 1000,      // keep in memory 30 min so offline fallback survives navigation
+    networkMode: 'offlineFirst', // use cached roster when internet drops mid-session
+    retry: 1,                    // one retry only so UI falls back to cache quickly on failure
   });
 };
 

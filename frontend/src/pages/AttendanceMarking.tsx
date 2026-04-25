@@ -14,6 +14,7 @@ import {
   ScanLine,
   Search,
   Users,
+  WifiOff,
   XCircle,
 } from 'lucide-react';
 import { ChevronsUpDown } from 'lucide-react';
@@ -122,6 +123,19 @@ export default function AttendanceMarking() {
   const scanIdleSaveTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const lastHandledScanRef = useRef<{ at: number; value: string } | null>(null);
 
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const attendanceOptions = useMemo(
     () => [
       { value: 'present' as const, label: t('attendancePage.statusPresent') || 'Present', icon: CheckCircle2, color: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400' },
@@ -213,7 +227,11 @@ export default function AttendanceMarking() {
   const rosterBoarderFilter = session?.studentType === 'boarders' ? true
     : session?.studentType === 'day_scholars' ? false
     : undefined;
-  const { data: roster } = useAttendanceRoster(sessionClassIds.length ? sessionClassIds : undefined, session?.academicYearId || undefined, rosterBoarderFilter);
+  const {
+    data: roster,
+    isLoading: rosterIsLoading,
+    isError: rosterIsError,
+  } = useAttendanceRoster(sessionClassIds.length ? sessionClassIds : undefined, session?.academicYearId || undefined, rosterBoarderFilter);
   const {
     data: scanFeed,
     refetch: refetchScanFeed,
@@ -287,7 +305,12 @@ export default function AttendanceMarking() {
 
   useEffect(() => {
     if (!rosterStudents.length) {
-      setAttendanceState({});
+      // Only clear attendance state when the roster is confirmed empty (loaded successfully).
+      // When the network drops, rosterIsError will be true and we must NOT clear the
+      // in-progress draft so the teacher can keep scanning without losing work.
+      if (!rosterIsLoading && !rosterIsError) {
+        setAttendanceState({});
+      }
       return;
     }
 
@@ -325,7 +348,7 @@ export default function AttendanceMarking() {
 
       return next;
     });
-  }, [rosterStudents, session?.id, session?.records]);
+  }, [rosterStudents, session?.id, session?.records, rosterIsLoading, rosterIsError]);
 
   useEffect(() => {
     if (!rosterStudents.length) return;
@@ -1105,6 +1128,21 @@ export default function AttendanceMarking() {
           </div>
         )}
       </div>
+
+      {/* ── Offline warning ── */}
+      {!isOnline && (
+        <div className="rounded-2xl border border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40 px-4 py-3 flex items-start gap-3">
+          <WifiOff className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              {t('attendancePage.offlineTitle') || 'No internet connection'}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {t('attendancePage.offlineDescription') || 'Attendance changes are saved locally and will sync when you reconnect. Previously loaded students are still available.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {selectedSessionId && session ? (
         <>

@@ -117,6 +117,8 @@ export default {
     reviewInMarking: "Review in marking",
     reviewStateHeader: "Review state",
     selectSessionForMarking: "Please select a session to mark attendance",
+    offlineTitle: "No internet connection",
+    offlineDescription: "Attendance changes are saved locally and will sync when you reconnect. Previously loaded students are still available.",
     searchSessions: "Search sessions...",
     openSessions: "open session(s)",
     sessions: "sessions",

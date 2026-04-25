@@ -120,6 +120,8 @@ export default {
       allClasses: "ټول ټولګي",
       allAcademicYears: "ټول تعلیمي کالونه",
       searchRoomsTablePlaceholder: "د زده کوونکي، پلار، ټولګي، شمولیت شمېرې، اتاق، ودانۍ یا تعلیمي کال له مخې لټون...",
+      byRoomReportTitle: "د خوابګاه زده کوونکي د اتاق له مخې",
+      exportByRoomHint: "Excel کې هر اتاق جلا شيټ او PDF کې جلا پاڼه لري.",
     },
     room: "اتاق",
     roomClickRowHint: "د ټولو زده کوونکو لیدو لپاره د اتاق کرښه کلیک کړئ.",

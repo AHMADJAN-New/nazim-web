@@ -1,4 +1,4 @@
-import { AlertCircle, BarChart3, BedDouble, Building2, ShieldCheck, Users, Search, X, MapPin, UserCheck, ChevronDown } from 'lucide-react';
+import { AlertCircle, BarChart3, BedDouble, Building2, FileDown, FileSpreadsheet, ShieldCheck, Users, Search, X, MapPin, UserCheck, ChevronDown } from 'lucide-react';
 import { Fragment, useMemo, useState, useEffect } from 'react';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
@@ -18,9 +18,15 @@ import { hostelMetricBadgeVariant } from '@/lib/hostelReportBadges';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useHostelOverview } from '@/hooks/useHostel';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
+import { useSchoolContext } from '@/contexts/SchoolContext';
+import { useSchool } from '@/hooks/useSchools';
+import { useServerReport } from '@/hooks/useServerReport';
+import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
+import { showToast } from '@/lib/toast';
 
 interface BuildingReportRow {
   buildingId: string;
@@ -567,6 +573,137 @@ export function HostelReports() {
       residency_type: boarder.residencyTypeName || 'Boarder',
     }));
   };
+
+  // ── Export by room ──────────────────────────────────────────────────────────
+
+  const { selectedSchoolId } = useSchoolContext();
+  const { data: school } = useSchool(selectedSchoolId || profile?.default_school_id || '');
+
+  const {
+    generateReport: generateRoomReport,
+    status: roomReportStatus,
+    progress: roomReportProgress,
+    fileName: roomReportFileName,
+    isGenerating: roomReportIsGenerating,
+    error: roomReportError,
+    downloadReport: downloadRoomReport,
+    reset: resetRoomReport,
+  } = useServerReport();
+
+  const [showRoomReportProgress, setShowRoomReportProgress] = useState(false);
+
+  const roomExportColumns = [
+    { key: 'student_name', label: t('hostel.reports.studentHeader') || 'Student', align: 'left' as const },
+    { key: 'father_name', label: t('hostel.reports.fatherHeader') || 'Father', align: 'left' as const },
+    { key: 'class_name', label: t('hostel.reports.classHeader') || 'Class', align: 'left' as const },
+    { key: 'admission_number', label: t('hostel.reports.admissionNumberHeader') || 'Admission #', align: 'left' as const },
+    { key: 'academic_year', label: t('hostel.reports.academicYearHeader') || 'Academic Year', align: 'left' as const },
+  ];
+
+  const buildRoomSheetName = (roomNumber: string, buildingName: string | null) => {
+    const base = buildingName ? `${buildingName} - ${roomNumber}` : `Room ${roomNumber}`;
+    return base.slice(0, 31); // Excel sheet names capped at 31 chars
+  };
+
+  const buildRoomSectionTitle = (roomNumber: string, buildingName: string | null, warden: string | null) => {
+    const parts = [`${t('hostel.reports.roomNumber') || 'Room'} ${roomNumber}`];
+    if (buildingName) parts.push(buildingName);
+    if (warden) parts.push(`${t('hostel.warden') || 'Warden'}: ${warden}`);
+    return parts.join(' — ');
+  };
+
+  const handleExportByRoom = async (reportType: 'pdf' | 'excel') => {
+    if (!school) {
+      showToast.error(t('events.exportErrorNoSchool') || 'School is required for export');
+      return;
+    }
+    const rooms = hostelOverview?.rooms ?? [];
+    const occupied = rooms.filter((r) => r.occupants.length > 0);
+    if (!occupied.length) {
+      showToast.error(t('events.exportErrorNoData') || 'No data to export');
+      return;
+    }
+
+    const reportTitle = t('hostel.reports.byRoomReportTitle') || 'Hostel Students by Room';
+
+    setShowRoomReportProgress(true);
+    resetRoomReport();
+
+    try {
+      if (reportType === 'excel') {
+        const sheets = occupied.map((room) => ({
+          sheet_name: buildRoomSheetName(room.roomNumber, room.buildingName),
+          title: buildRoomSectionTitle(room.roomNumber, room.buildingName, room.staffName),
+          columns: roomExportColumns,
+          rows: room.occupants.map((o) => ({
+            student_name: o.studentName || '—',
+            father_name: o.fatherName || '—',
+            class_name: o.className || '—',
+            admission_number: o.admissionNumber || '—',
+            academic_year: hostelReportAcademicYearDisplay(o),
+          })),
+        }));
+
+        await generateRoomReport({
+          reportKey: 'hostel_by_room_excel',
+          reportType: 'excel',
+          title: reportTitle,
+          columns: roomExportColumns,
+          rows: [],
+          brandingId: school.id,
+          parameters: { sheets },
+          async: false,
+          onComplete: () => {
+            showToast.success(t('events.exportSuccessExcel') || 'Excel report generated');
+            setTimeout(() => downloadRoomReport(), 300);
+            setShowRoomReportProgress(false);
+          },
+          onError: (err) => {
+            showToast.error(err || t('events.exportErrorExcel') || 'Failed to generate Excel');
+            setShowRoomReportProgress(false);
+          },
+        });
+      } else {
+        const sections = occupied.map((room) => ({
+          title: buildRoomSectionTitle(room.roomNumber, room.buildingName, room.staffName),
+          columns: roomExportColumns,
+          rows: room.occupants.map((o) => ({
+            student_name: o.studentName || '—',
+            father_name: o.fatherName || '—',
+            class_name: o.className || '—',
+            admission_number: o.admissionNumber || '—',
+            academic_year: hostelReportAcademicYearDisplay(o),
+          })),
+        }));
+
+        await generateRoomReport({
+          reportKey: 'hostel_by_room_pdf',
+          reportType: 'pdf',
+          title: reportTitle,
+          templateName: 'table_multi_sections',
+          columns: roomExportColumns,
+          rows: [],
+          brandingId: school.id,
+          parameters: { sections },
+          async: false,
+          onComplete: () => {
+            showToast.success(t('events.exportSuccessPdf') || 'PDF report generated');
+            setTimeout(() => downloadRoomReport(), 300);
+            setShowRoomReportProgress(false);
+          },
+          onError: (err) => {
+            showToast.error(err || t('events.exportErrorPdf') || 'Failed to generate PDF');
+            setShowRoomReportProgress(false);
+          },
+        });
+      }
+    } catch (err) {
+      showToast.error(err instanceof Error ? err.message : 'Export failed');
+      setShowRoomReportProgress(false);
+    }
+  };
+
+  const roomExportDisabled = isLoading || !(hostelOverview?.rooms ?? []).some((r) => r.occupants.length > 0) || !school;
 
   // Build filters summary functions
   const buildBuildingFiltersSummary = () => {
@@ -1294,9 +1431,50 @@ export function HostelReports() {
         {/* Room & Buildings Report Tab */}
         <TabsContent value="room-buildings" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>{t('hostel.reports.roomAndBuildingsTitle') || 'Room & Buildings Report'}</CardTitle>
-              <CardDescription>{t('hostel.reports.roomAndBuildingsDescription') || 'All students assigned to rooms, organized by building and room.'}</CardDescription>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle>{t('hostel.reports.roomAndBuildingsTitle') || 'Room & Buildings Report'}</CardTitle>
+                <CardDescription className="hidden md:block">{t('hostel.reports.roomAndBuildingsDescription') || 'All students assigned to rooms, organized by building and room.'}</CardDescription>
+                <p className="text-xs text-muted-foreground mt-1">{t('hostel.reports.exportByRoomHint') || 'Export exports each room on a separate sheet (Excel) or page (PDF).'}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleExportByRoom('excel')}
+                        disabled={roomExportDisabled || roomReportIsGenerating}
+                        className="flex-shrink-0"
+                      >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        <span className="hidden sm:inline ml-2">{t('events.exportExcel') || 'Export Excel'}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="sm:hidden">
+                      <p>{t('events.exportExcel') || 'Export Excel'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleExportByRoom('pdf')}
+                        disabled={roomExportDisabled || roomReportIsGenerating}
+                        className="flex-shrink-0"
+                      >
+                        <FileDown className="h-4 w-4" />
+                        <span className="hidden sm:inline ml-2">{t('events.exportPdf') || 'Export PDF'}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="sm:hidden">
+                      <p>{t('events.exportPdf') || 'Export PDF'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {buildingsForFilter.length === 0 || !hostelOverview?.rooms?.length ? (
@@ -2003,6 +2181,17 @@ export function HostelReports() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ReportProgressDialog
+        open={showRoomReportProgress}
+        onOpenChange={setShowRoomReportProgress}
+        status={roomReportStatus}
+        progress={roomReportProgress}
+        fileName={roomReportFileName}
+        error={roomReportError}
+        onDownload={downloadRoomReport}
+        onClose={resetRoomReport}
+      />
     </div>
   );
 }

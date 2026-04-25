@@ -95,6 +95,8 @@ export default {
     selectSessionPlaceholder: "یک جلسه انتخاب کنید...",
     currentSession: "جلسه فعلی:",
     selectSessionForMarking: "لطفاً یک جلسه برای ثبت حاضری انتخاب کنید",
+    offlineTitle: "اتصال اینترنت قطع است",
+    offlineDescription: "تغییرات حاضری به صورت محلی ذخیره می‌شوند و پس از اتصال مجدد همگام‌سازی خواهند شد. دانش‌آموزان قبلاً بارگذاری شده هنوز در دسترس هستند.",
     searchSessions: "جستجوی جلسات...",
     openSessions: "جلسه/جلسات باز",
     sessions: "جلسات",

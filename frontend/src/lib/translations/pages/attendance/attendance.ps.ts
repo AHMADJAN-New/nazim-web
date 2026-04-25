@@ -117,6 +117,8 @@ export default {
     reviewInMarking: "په نښه کولو کې بياکتنه",
     reviewStateHeader: "د بياکتنې حالت",
     selectSessionForMarking: "د حاضرۍ نښه کولو لپاره يوه ناسته وټاکئ",
+    offlineTitle: "د انټرنيټ اتصال نشته",
+    offlineDescription: "د حاضرۍ بدلونونه محلي ذخيره کيږي او د اتصال بيا رغولو سره به همغږي شي. وړاندې بارشوي زده کوونکي لا هم شتون لري.",
     searchSessions: "ناستې لټون...",
     openSessions: "پرانيستې ناستې",
     sessions: "ناستې",
