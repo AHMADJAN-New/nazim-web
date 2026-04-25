@@ -137,7 +137,7 @@ export default function AttendanceTotalsReports() {
         dateTo: undefined,
     });
     const [sessionType, setSessionType] = useState<'class' | 'room'>('class');
-    const [dateRangePreset, setDateRangePreset] = useState<'1week' | '1month' | '4months' | 'custom'>('1month');
+    const [dateRangePreset, setDateRangePreset] = useState<'1week' | '1month' | '4months' | 'custom'>('1week');
 
     const hasInvalidRange = useMemo(() => {
         if (!filters.dateFrom || !filters.dateTo) return false;
@@ -190,7 +190,7 @@ export default function AttendanceTotalsReports() {
     // Initialize date range on mount
     useEffect(() => {
         if (!filters.dateFrom || !filters.dateTo) {
-            handleDateRangePreset('1month');
+            handleDateRangePreset('1week');
         }
     }, []);
 

@@ -6,6 +6,7 @@ export interface AttendanceReportFilters {
   classId?: string;
   academicYearId?: string;
   status?: AttendanceApi.AttendanceStatus;
+  studentType?: 'boarders' | 'day_scholars' | 'all';
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -42,6 +43,7 @@ export const buildAttendanceReportParams = (filters: AttendanceReportFilters) =>
     student_id: filters.studentId,
     academic_year_id: filters.academicYearId,
     status: filters.status,
+    student_type: filters.studentType,
     date_from: filters.dateFrom,
     date_to: filters.dateTo,
     page: filters.page,

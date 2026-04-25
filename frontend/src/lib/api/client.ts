@@ -2753,6 +2753,7 @@ export const attendanceSessionsApi = {
     date_from?: string;
     date_to?: string;
     status?: string;
+    student_type?: 'boarders' | 'day_scholars' | 'all';
     page?: number;
     per_page?: number;
   }) => {
@@ -2781,6 +2782,7 @@ export const attendanceSessionsApi = {
     class_ids?: string[];
     school_id?: string;
     status?: 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
+    student_type?: 'boarders' | 'day_scholars' | 'all';
     date_from?: string;
     date_to?: string;
     academic_year_id?: string;

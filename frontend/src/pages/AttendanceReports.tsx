@@ -127,16 +127,19 @@ export default function AttendanceReports() {
   const [reportProgress, setReportProgress] = useState(0);
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [filters, setFilters] = useState({
-    studentId: '',
-    classId: '',
-    academicYearId: '',
-    status: '',
-    studentType: '' as '' | 'all' | 'boarders' | 'day_scholars',
-    dateFrom: '',
-    dateTo: '',
-    page: 1,
-    perPage: 25,
+  const [filters, setFilters] = useState(() => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    return {
+      studentId: '',
+      classId: '',
+      academicYearId: '',
+      status: '',
+      studentType: '' as '' | 'all' | 'boarders' | 'day_scholars',
+      dateFrom: today,
+      dateTo: today,
+      page: 1,
+      perPage: 25,
+    };
   });
 
   const students: Student[] = useMemo(() => {
@@ -174,6 +177,7 @@ export default function AttendanceReports() {
           classId: filters.classId || undefined,
           academicYearId: filters.academicYearId || undefined,
           status: (filters.status || undefined) as AttendanceApi.AttendanceStatus | undefined,
+          studentType: (filters.studentType || undefined) as 'boarders' | 'day_scholars' | 'all' | undefined,
           dateFrom: filters.dateFrom || undefined,
           dateTo: filters.dateTo || undefined,
           page: filters.page,
@@ -263,6 +267,7 @@ export default function AttendanceReports() {
         class_ids: filters.classId ? [filters.classId] : undefined,
         academic_year_id: filters.academicYearId || undefined,
         status: (filters.status || undefined) as AttendanceApi.AttendanceStatus | undefined,
+        student_type: (filters.studentType || undefined) as 'boarders' | 'day_scholars' | 'all' | undefined,
         date_from: filters.dateFrom || undefined,
         date_to: filters.dateTo || undefined,
       });
