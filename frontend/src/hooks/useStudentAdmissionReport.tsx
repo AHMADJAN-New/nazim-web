@@ -32,7 +32,18 @@ export const useStudentAdmissionReport = (
         organization_id: normalizedFilters.organizationId,
         academic_year_id: normalizedFilters.academicYearId,
         class_id: normalizedFilters.classId,
-        enrollment_status: normalizedFilters.enrollmentStatus,
+        enrollment_status:
+          normalizedFilters.enrollmentStatus &&
+          normalizedFilters.enrollmentStatus !== 'with_admission' &&
+          normalizedFilters.enrollmentStatus !== 'without_admission'
+            ? normalizedFilters.enrollmentStatus
+            : undefined,
+        admission_presence:
+          normalizedFilters.enrollmentStatus === 'with_admission'
+            ? 'with_admission'
+            : normalizedFilters.enrollmentStatus === 'without_admission'
+              ? 'without_admission'
+              : undefined,
         residency_type_id: normalizedFilters.residencyTypeId,
         is_boarder: normalizedFilters.isBoarder,
         from_date: normalizedFilters.fromDate,

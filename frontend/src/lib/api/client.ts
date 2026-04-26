@@ -2311,6 +2311,7 @@ export const studentAdmissionsApi = {
     academic_year_id?: string;
     class_id?: string;
     enrollment_status?: string;
+    admission_presence?: 'with_admission' | 'without_admission';
     residency_type_id?: string;
     is_boarder?: boolean;
     from_date?: string;

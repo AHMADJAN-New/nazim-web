@@ -87,6 +87,41 @@ class StudentAdmissionListSearchTest extends TestCase
     }
 
     #[Test]
+    public function admissions_report_admission_presence_filter_supports_with_and_without_values(): void
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $academicYear = $this->createAcademicYearForSchool($organization, $school);
+        $class = $this->createClassForSchool($organization, $school);
+        $classAcademicYear = $this->createClassAcademicYearForSchool($organization, $school, $class, $academicYear);
+
+        $student = $this->createStudentForSchool($organization, $school, [
+            'full_name' => 'Presence Filter Student',
+            'admission_no' => 'ADM-PRES-01',
+        ]);
+
+        $this->createStudentAdmissionForSchool($organization, $school, $student, $academicYear, $class, $classAcademicYear);
+
+        $withAdmission = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'page' => 1,
+            'per_page' => 25,
+            'admission_presence' => 'with_admission',
+        ]);
+        $withAdmission->assertStatus(200);
+        $this->assertSame(1, $withAdmission->json('pagination.total'));
+
+        $withoutAdmission = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'page' => 1,
+            'per_page' => 25,
+            'admission_presence' => 'without_admission',
+        ]);
+        $withoutAdmission->assertStatus(200);
+        $this->assertSame(0, $withoutAdmission->json('pagination.total'));
+    }
+
+    #[Test]
     public function admissions_list_can_be_filtered_by_student_origin_province(): void
     {
         $user = $this->authenticate();

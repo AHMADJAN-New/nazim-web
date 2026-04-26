@@ -707,6 +707,7 @@ class StudentAdmissionController extends Controller
             'academic_year_id' => 'nullable|string',
             'class_id' => 'nullable|string',
             'enrollment_status' => 'nullable|string',
+            'admission_presence' => 'nullable|in:with_admission,without_admission',
             'residency_type_id' => 'nullable|string',
             'is_boarder' => 'nullable|boolean',
             'from_date' => 'nullable|date',
@@ -783,6 +784,13 @@ class StudentAdmissionController extends Controller
 
         if (! empty($filters['search'])) {
             $this->applyAdmissionsStudentSearch($query, $filters['search']);
+        }
+
+        if (! empty($filters['admission_presence'])) {
+            if ($filters['admission_presence'] === 'without_admission') {
+                // Admissions report is admission-row based; "without admission" should intentionally return no rows.
+                $query->whereRaw('1 = 0');
+            }
         }
 
         $totalsQuery = clone $query;
@@ -930,6 +938,7 @@ class StudentAdmissionController extends Controller
             'academic_year_id' => 'nullable|string',
             'class_id' => 'nullable|string',
             'enrollment_status' => 'nullable|string',
+            'admission_presence' => 'nullable|in:with_admission,without_admission',
             'residency_type_id' => 'nullable|string',
             'is_boarder' => 'nullable|boolean',
             'from_date' => 'nullable|date',
@@ -996,6 +1005,13 @@ class StudentAdmissionController extends Controller
             $this->applyAdmissionsStudentSearch($query, $filters['search']);
         }
 
+        if (! empty($filters['admission_presence'])) {
+            if ($filters['admission_presence'] === 'without_admission') {
+                // Export uses admission rows; "without admission" yields an empty export by design.
+                $query->whereRaw('1 = 0');
+            }
+        }
+
         // Get all admissions (no pagination for export)
         $admissions = $query
             ->with([
@@ -1026,6 +1042,9 @@ class StudentAdmissionController extends Controller
         }
         if (! empty($filters['enrollment_status'])) {
             $filterSummary[] = 'Status: '.$filters['enrollment_status'];
+        }
+        if (! empty($filters['admission_presence'])) {
+            $filterSummary[] = 'Admission Presence: '.$filters['admission_presence'];
         }
         if (array_key_exists('is_boarder', $filters) && $filters['is_boarder'] !== null) {
             $filterSummary[] = 'Boarder: '.($filters['is_boarder'] ? 'Yes' : 'No');

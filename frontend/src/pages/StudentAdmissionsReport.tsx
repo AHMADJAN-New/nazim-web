@@ -37,6 +37,7 @@ import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 
 const statusOrder: AdmissionStatus[] = ['active', 'admitted', 'pending', 'inactive', 'suspended', 'withdrawn', 'graduated'];
+type AdmissionStatusFilter = AdmissionStatus | 'with_admission' | 'without_admission';
 
 const statusVariant = (status: AdmissionStatus): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
   switch (status) {
@@ -251,7 +252,18 @@ const StudentAdmissionsReport = () => {
       school_id: filters.schoolId,
       academic_year_id: filters.academicYearId,
       class_id: filters.classId,
-      enrollment_status: filters.enrollmentStatus,
+      enrollment_status:
+        filters.enrollmentStatus &&
+        filters.enrollmentStatus !== 'with_admission' &&
+        filters.enrollmentStatus !== 'without_admission'
+          ? filters.enrollmentStatus
+          : undefined,
+      admission_presence:
+        filters.enrollmentStatus === 'with_admission'
+          ? 'with_admission'
+          : filters.enrollmentStatus === 'without_admission'
+            ? 'without_admission'
+            : undefined,
       residency_type_id: filters.residencyTypeId,
       is_boarder: filters.isBoarder,
       from_date: filters.fromDate,
@@ -346,7 +358,19 @@ const StudentAdmissionsReport = () => {
               parameters={{
                 academic_year_id: filters.academicYearId || undefined,
                 class_id: filters.classId || undefined,
-                enrollment_status: filters.enrollmentStatus !== 'all' ? filters.enrollmentStatus : undefined,
+                enrollment_status:
+                  filters.enrollmentStatus &&
+                  filters.enrollmentStatus !== 'all' &&
+                  filters.enrollmentStatus !== 'with_admission' &&
+                  filters.enrollmentStatus !== 'without_admission'
+                    ? filters.enrollmentStatus
+                    : undefined,
+                admission_presence:
+                  filters.enrollmentStatus === 'with_admission'
+                    ? 'with_admission'
+                    : filters.enrollmentStatus === 'without_admission'
+                      ? 'without_admission'
+                      : undefined,
                 residency_type_id: filters.residencyTypeId || undefined,
                 is_boarder: filters.isBoarder || undefined,
                 from_date: filters.fromDate || undefined,
@@ -457,13 +481,15 @@ const StudentAdmissionsReport = () => {
             <Label>{t('events.status') || 'Status'}</Label>
             <Select
               value={filters.enrollmentStatus || 'all'}
-              onValueChange={(value) => handleFilterChange('enrollmentStatus', value as AdmissionStatus | 'all')}
+              onValueChange={(value) => handleFilterChange('enrollmentStatus', value as AdmissionStatusFilter | 'all')}
             >
               <SelectTrigger>
                 <SelectValue placeholder={t('userManagement.allStatus') || 'All status'} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
+                  <SelectItem value="with_admission">{t('studentReport.withAnyAdmission') || 'With admission'}</SelectItem>
+                  <SelectItem value="without_admission">{t('studentReport.withoutAdmission') || 'Without admission'}</SelectItem>
                 {statusOrder.map((status) => (
                   <SelectItem key={status} value={status}>
                     {statusLabels[status]}
