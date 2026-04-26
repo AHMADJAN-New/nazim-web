@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { ContextualHelpButton } from "@/components/help/ContextualHelpButton";
 import { NotificationDrawer } from "@/components/notifications/NotificationDrawer";
+import { OfflineStatusIndicator } from "@/components/layout/OfflineStatusIndicator";
 import { GlobalSearchCommand } from "@/components/search/GlobalSearchCommand";
 import { InlineSearchDropdown } from "@/components/search/InlineSearchDropdown";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -458,6 +459,9 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 size="sm"
               />
             </div>
+
+            {/* Offline / sync status - Electron desktop build only; renders nothing in browser */}
+            <OfflineStatusIndicator />
 
             {/* Notifications - Always visible */}
             <Button

@@ -2,6 +2,8 @@ const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
+const offlineIpc = require('./src/offline/ipc');
+
 // Load .env from desktop directory if present (no extra dependency)
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {
@@ -97,8 +99,16 @@ ipcMain.handle('retry-load', () => {
 });
 
 app.whenReady().then(() => {
+  // Register offline IPC handlers before any window can call them. Handlers
+  // are no-ops until the renderer calls offline:login post-authentication.
+  offlineIpc.register();
+
   createSplashWindow();
   createMainWindow();
+});
+
+app.on('will-quit', () => {
+  offlineIpc.unregister();
 });
 
 app.on('window-all-closed', () => {

@@ -8,6 +8,12 @@
  */
 
 import type { PaginationParams, PaginatedResponse } from '@/types/pagination';
+import {
+  getOfflineBridge,
+  isOptimisticId,
+  newClientUuid,
+  tryNetworkThenQueue,
+} from '@/lib/electron-offline';
 
 // Use relative path in dev (via Vite proxy) or full URL in production
 // In development, Vite proxy handles /api -> http://localhost:8000/api
@@ -618,6 +624,40 @@ export const maintenanceApi = {
   },
 };
 
+// Hand the active session to the Electron offline bridge so the queue
+// drain worker can replay queued mutations against the right user/token.
+// Returns silently when not running in Electron.
+async function pushOfflineAuthContext(loginResponse: { user?: any; token: string; profile?: any }): Promise<void> {
+  const bridge = getOfflineBridge();
+  if (!bridge) return;
+
+  const profile = loginResponse.profile || loginResponse.user?.profile;
+  const userId = profile?.id || loginResponse.user?.id;
+  const organizationId = profile?.organization_id || loginResponse.user?.organization_id;
+  const schoolId = profile?.default_school_id ?? null;
+
+  if (!userId || !organizationId) {
+    // Not enough context to scope the offline DB safely. Skip rather
+    // than open a DB without an organization boundary.
+    return;
+  }
+
+  // Prefer the absolute base URL for the queue worker (it runs in the
+  // main process where Vite proxy doesn't apply). Fall back to the
+  // configured API_URL when it's already absolute.
+  const apiBaseUrl = API_URL.startsWith('http')
+    ? API_URL
+    : `${window.location.origin}${API_URL}`;
+
+  await bridge.login({
+    userId,
+    organizationId,
+    schoolId,
+    apiToken: loginResponse.token,
+    apiBaseUrl,
+  });
+}
+
 // Auth API
 export const authApi = {
   login: async (
@@ -635,13 +675,25 @@ export const authApi = {
       { headers }
     );
     apiClient.setToken(response.token);
+    await pushOfflineAuthContext(response).catch(() => {
+      // Failing to wake the offline bridge must not break login. The
+      // user can still work online; queued ops are unavailable until the
+      // app is restarted with a working bridge.
+    });
     return response;
   },
 
 
   logout: async () => {
-    await apiClient.post('/auth/logout');
-    apiClient.setToken(null);
+    try {
+      await apiClient.post('/auth/logout');
+    } finally {
+      apiClient.setToken(null);
+      const bridge = getOfflineBridge();
+      if (bridge) {
+        await bridge.logout().catch(() => {});
+      }
+    }
   },
 
   getUser: async () => {
@@ -2719,7 +2771,34 @@ export const attendanceSessionsApi = {
   },
 
   create: async (data: any) => {
-    return apiClient.post('/attendance-sessions', data);
+    // Stamp a client_uuid so the same logical create is idempotent across
+    // retries — the backend collapses duplicates by (organization_id,
+    // client_uuid). If the network is down, queue the op and return an
+    // optimistic session payload built from the input so the UI can keep
+    // moving; the queue will replay on reconnect.
+    const clientUuid: string = data?.client_uuid ?? newClientUuid();
+    const payload = { ...data, client_uuid: clientUuid };
+
+    return tryNetworkThenQueue<any>({
+      op: {
+        client_uuid: clientUuid,
+        kind: 'attendance.session.create',
+        method: 'POST',
+        endpoint: '/attendance-sessions',
+        payload,
+      },
+      trackOptimisticId: clientUuid,
+      networkAttempt: () => apiClient.post('/attendance-sessions', payload),
+      optimisticResponse: () => ({
+        // Use the client_uuid as the temporary id so the renderer can
+        // navigate to the session page; the real id arrives on sync.
+        id: clientUuid,
+        client_uuid: clientUuid,
+        _offline: true,
+        ...payload,
+        records: [],
+      }),
+    });
   },
 
   update: async (id: string, data: any) => {
@@ -2727,11 +2806,86 @@ export const attendanceSessionsApi = {
   },
 
   markRecords: async (id: string, data: any) => {
-    return apiClient.post(`/attendance-sessions/${id}/records`, data);
+    // Each record gets its own client_uuid; the session id we POST to may
+    // itself still be a client_uuid (offline-created session) — the queue
+    // resolves the real session id at replay time via depends_on.
+    const records = Array.isArray(data?.records) ? data.records : [];
+    const stampedRecords = records.map((r: any) => ({
+      ...r,
+      client_uuid: r?.client_uuid ?? newClientUuid(),
+    }));
+    const payload = { ...data, records: stampedRecords };
+
+    const opUuid = newClientUuid();
+    // Heuristic: treat ids that aren't a valid v4 with a backend prefix as
+    // optimistic ids and thread depends_on. We can't reliably distinguish
+    // server uuids from client uuids by shape alone, so we let the bridge
+    // try with `:session_id` substitution only when depends_on is present.
+    const bridge = getOfflineBridge();
+    const dependsOn = bridge && isOptimisticId(id) ? id : undefined;
+    const endpoint = dependsOn
+      ? '/attendance-sessions/:session_id/records'
+      : `/attendance-sessions/${id}/records`;
+
+    return tryNetworkThenQueue<any>({
+      op: {
+        client_uuid: opUuid,
+        kind: 'attendance.records.mark',
+        method: 'POST',
+        endpoint,
+        payload,
+        depends_on: dependsOn,
+      },
+      networkAttempt: () => apiClient.post(`/attendance-sessions/${id}/records`, payload),
+      optimisticResponse: () => ({
+        id,
+        client_uuid: id,
+        _offline: true,
+        records: stampedRecords.map((r: any) => ({
+          id: r.client_uuid,
+          client_uuid: r.client_uuid,
+          attendance_session_id: id,
+          student_id: r.student_id,
+          status: r.status,
+          entry_method: r.entry_method ?? 'manual',
+          note: r.note ?? null,
+          marked_at: new Date().toISOString(),
+          _offline: true,
+        })),
+      }),
+    });
   },
 
   scan: async (id: string, data: any) => {
-    return apiClient.post(`/attendance-sessions/${id}/scan`, data);
+    const clientUuid: string = data?.client_uuid ?? newClientUuid();
+    const payload = { ...data, client_uuid: clientUuid };
+    const bridge = getOfflineBridge();
+    const dependsOn = bridge && isOptimisticId(id) ? id : undefined;
+    const endpoint = dependsOn
+      ? '/attendance-sessions/:session_id/scan'
+      : `/attendance-sessions/${id}/scan`;
+
+    return tryNetworkThenQueue<any>({
+      op: {
+        client_uuid: clientUuid,
+        kind: 'attendance.scan',
+        method: 'POST',
+        endpoint,
+        payload,
+        depends_on: dependsOn,
+      },
+      networkAttempt: () => apiClient.post(`/attendance-sessions/${id}/scan`, payload),
+      optimisticResponse: () => ({
+        id: clientUuid,
+        client_uuid: clientUuid,
+        attendance_session_id: id,
+        status: payload.status ?? 'present',
+        entry_method: 'barcode',
+        note: payload.note ?? null,
+        marked_at: new Date().toISOString(),
+        _offline: true,
+      }),
+    });
   },
 
   scanFeed: async (id: string, params?: { limit?: number }) => {

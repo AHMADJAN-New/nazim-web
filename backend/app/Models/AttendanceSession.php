@@ -20,6 +20,7 @@ class AttendanceSession extends Model
 
     protected $fillable = [
         'id',
+        'client_uuid',
         'organization_id',
         'school_id',
         'class_id',

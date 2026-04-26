@@ -14,6 +14,7 @@ class StoreAttendanceSessionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'client_uuid' => 'nullable|uuid', // Idempotency key from offline clients
             'class_id' => 'nullable|uuid|exists:classes,id', // Keep for backward compatibility
             'class_ids' => 'nullable|array|min:1', // New: multiple classes
             'class_ids.*' => 'required|uuid|exists:classes,id',
@@ -26,6 +27,7 @@ class StoreAttendanceSessionRequest extends FormRequest
             'remarks' => 'nullable|string',
             'student_type' => 'nullable|string|in:all,boarders,day_scholars',
             'records' => 'nullable|array',
+            'records.*.client_uuid' => 'nullable|uuid',
             'records.*.student_id' => 'required_with:records|uuid|exists:students,id',
             'records.*.status' => 'required_with:records|string|in:present,absent,late,excused,sick,leave',
             'records.*.note' => 'nullable|string',

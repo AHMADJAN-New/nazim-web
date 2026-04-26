@@ -20,6 +20,7 @@ class AttendanceRecord extends Model
 
     protected $fillable = [
         'id',
+        'client_uuid',
         'attendance_session_id',
         'organization_id',
         'school_id',

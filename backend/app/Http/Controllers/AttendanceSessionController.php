@@ -112,6 +112,26 @@ class AttendanceSessionController extends Controller
         $validated = $request->validated();
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
+        // Idempotent replay: a client (typically the offline desktop app) may
+        // generate a UUID when queuing the create, then retry the same POST
+        // any number of times. If we have already stored a session with this
+        // (organization_id, client_uuid) pair, return it instead of creating
+        // a duplicate.
+        $clientUuid = $validated['client_uuid'] ?? null;
+        if ($clientUuid) {
+            $existing = AttendanceSession::where('organization_id', $profile->organization_id)
+                ->where('client_uuid', $clientUuid)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($existing) {
+                return response()->json(
+                    $existing->load(['classModel', 'classes', 'school', 'records']),
+                    200
+                );
+            }
+        }
+
         // Determine class IDs: use class_ids array if provided, otherwise use class_id (backward compatibility)
         $classIds = ! empty($validated['class_ids']) ? $validated['class_ids'] :
                     (! empty($validated['class_id']) ? [$validated['class_id']] : []);
@@ -134,8 +154,9 @@ class AttendanceSessionController extends Controller
         // Use first class_id for backward compatibility (can be null if using only class_ids)
         $primaryClassId = $classIds[0] ?? null;
 
-        $session = DB::transaction(function () use ($validated, $profile, $user, $primaryClassId, $classIds, $currentSchoolId) {
+        $session = DB::transaction(function () use ($validated, $profile, $user, $primaryClassId, $classIds, $currentSchoolId, $clientUuid) {
             $session = AttendanceSession::create([
+                'client_uuid' => $clientUuid,
                 'organization_id' => $profile->organization_id,
                 'school_id' => $currentSchoolId,
                 'class_id' => $primaryClassId, // Keep for backward compatibility
@@ -168,6 +189,7 @@ class AttendanceSessionController extends Controller
             if (! empty($validated['records'])) {
                 foreach ($validated['records'] as $record) {
                     AttendanceRecord::create([
+                        'client_uuid' => $record['client_uuid'] ?? null,
                         'attendance_session_id' => $session->id,
                         'organization_id' => $profile->organization_id,
                         'school_id' => $currentSchoolId,
@@ -685,6 +707,11 @@ class AttendanceSessionController extends Controller
                 $payload = $chunk->map(function ($record) use ($session, $profile, $user, $timestamp) {
                     return [
                         'id' => (string) Str::uuid(),
+                        // Optional idempotency key from offline clients. Note: the
+                        // (session_id, student_id) upsert key already collapses
+                        // duplicates when the same student is marked twice, so
+                        // client_uuid here is informational/for audit traceability.
+                        'client_uuid' => $record['client_uuid'] ?? null,
                         'attendance_session_id' => $session->id,
                         'organization_id' => $profile->organization_id,
                         'school_id' => $session->school_id,
@@ -780,12 +807,29 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Student is not enrolled in this class'], 422);
         }
 
+        // Idempotent replay for scans: if the same client_uuid arrives twice
+        // (e.g. queue retried after a flaky network), return the existing
+        // record without creating or updating anything.
+        $clientUuid = $validated['client_uuid'] ?? null;
+        if ($clientUuid) {
+            $existingByClient = AttendanceRecord::where('organization_id', $profile->organization_id)
+                ->where('client_uuid', $clientUuid)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($existingByClient) {
+                $existingByClient->load('student:id,full_name,admission_no,card_number,student_code');
+                return response()->json($existingByClient);
+            }
+        }
+
         $record = AttendanceRecord::updateOrCreate(
             [
                 'attendance_session_id' => $session->id,
                 'student_id' => $student->id,
             ],
             [
+                'client_uuid' => $clientUuid,
                 'organization_id' => $profile->organization_id,
                 'school_id' => $session->school_id,
                 'status' => $validated['status'] ?? 'present',

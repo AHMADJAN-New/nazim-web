@@ -14,6 +14,7 @@ class AttendanceScanRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'client_uuid' => 'nullable|uuid', // Idempotency key for offline scans
             'card_number' => 'required|string|max:100', // Can be card_number, admission_no, or student_code
             'status' => 'nullable|string|in:present,absent,late,excused,sick,leave',
             'note' => 'nullable|string',
