@@ -91,6 +91,22 @@ function hostelReportAcademicYearDisplay(o: Pick<HostelOccupant, 'academicYearNa
   return fallback || '—';
 }
 
+function formatRoomLabel(t: (key: string) => string, roomNumber: string): string {
+  const template = t('hostel.reports.roomNumber') || 'Room {number}';
+  if (template.includes('{number}')) {
+    return template.replace('{number}', roomNumber);
+  }
+  return `${template} ${roomNumber}`;
+}
+
+function formatEnrollmentStatusLabel(status: string | null | undefined): string {
+  const normalized = (status || '').trim();
+  if (!normalized) {
+    return '—';
+  }
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
 export function HostelReports() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
@@ -110,11 +126,14 @@ export function HostelReports() {
 
   const [assignedClassFilter, setAssignedClassFilter] = useState('all');
   const [assignedAcademicYearFilter, setAssignedAcademicYearFilter] = useState('all');
+  const [assignedStatusFilter, setAssignedStatusFilter] = useState('all');
   const [unassignedClassFilter, setUnassignedClassFilter] = useState('all');
   const [unassignedAcademicYearFilter, setUnassignedAcademicYearFilter] = useState('all');
+  const [unassignedStatusFilter, setUnassignedStatusFilter] = useState('all');
   const [roomsTabClassFilter, setRoomsTabClassFilter] = useState('all');
   const [roomsTabAcademicYearFilter, setRoomsTabAcademicYearFilter] = useState('all');
   const [roomsTabRoomFilter, setRoomsTabRoomFilter] = useState('all');
+  const [roomsTabStatusFilter, setRoomsTabStatusFilter] = useState('all');
   const [roomsTabSearch, setRoomsTabSearch] = useState('');
   const [roomsTablePage, setRoomsTablePage] = useState(1);
   const [roomsTablePageSize, setRoomsTablePageSize] = useState(25);
@@ -269,6 +288,17 @@ export function HostelReports() {
     return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [allAssignedBoarders]);
 
+  const assignedStatusFilterOptions = useMemo(() => {
+    const statuses = new Set<string>();
+    allAssignedBoarders.forEach((boarder) => {
+      const status = (boarder.enrollmentStatus || '').trim();
+      if (status) {
+        statuses.add(status);
+      }
+    });
+    return Array.from(statuses.values()).sort((a, b) => a.localeCompare(b));
+  }, [allAssignedBoarders]);
+
   const unassignedClassFilterOptions = useMemo(() => {
     const m = new Map<string, string>();
     unassignedBoarders.forEach((b) => {
@@ -286,6 +316,17 @@ export function HostelReports() {
       m.set(b.academicYearId, b.academicYearName?.trim() || b.academicYearId);
     });
     return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [unassignedBoarders]);
+
+  const unassignedStatusFilterOptions = useMemo(() => {
+    const statuses = new Set<string>();
+    unassignedBoarders.forEach((boarder) => {
+      const status = (boarder.enrollmentStatus || '').trim();
+      if (status) {
+        statuses.add(status);
+      }
+    });
+    return Array.from(statuses.values()).sort((a, b) => a.localeCompare(b));
   }, [unassignedBoarders]);
 
   const collapsibleRoomFilterOptions = useMemo(() => {
@@ -333,6 +374,17 @@ export function HostelReports() {
     return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [roomTabBaseRows]);
 
+  const roomsTabStatusFilterOptions = useMemo(() => {
+    const statuses = new Set<string>();
+    roomTabBaseRows.forEach((row) => {
+      const status = (row.occupant.enrollmentStatus || '').trim();
+      if (status) {
+        statuses.add(status);
+      }
+    });
+    return Array.from(statuses.values()).sort((a, b) => a.localeCompare(b));
+  }, [roomTabBaseRows]);
+
   const filteredRoomTabRows = useMemo(() => {
     let rows = roomTabBaseRows;
     if (roomsTabClassFilter !== 'all') {
@@ -343,6 +395,9 @@ export function HostelReports() {
     }
     if (roomsTabRoomFilter !== 'all') {
       rows = rows.filter((r) => r.roomId === roomsTabRoomFilter);
+    }
+    if (roomsTabStatusFilter !== 'all') {
+      rows = rows.filter((r) => (r.occupant.enrollmentStatus || '') === roomsTabStatusFilter);
     }
     if (roomsTabSearch.trim()) {
       const q = roomsTabSearch.trim().toLowerCase();
@@ -365,6 +420,7 @@ export function HostelReports() {
     roomsTabClassFilter,
     roomsTabAcademicYearFilter,
     roomsTabRoomFilter,
+    roomsTabStatusFilter,
     roomsTabSearch,
   ]);
 
@@ -426,6 +482,9 @@ export function HostelReports() {
         occupantMatchesAcademicYearFilter(boarder, assignedAcademicYearFilter)
       );
     }
+    if (assignedStatusFilter !== 'all') {
+      filtered = filtered.filter((boarder) => (boarder.enrollmentStatus || '') === assignedStatusFilter);
+    }
 
     return filtered;
   }, [
@@ -435,6 +494,7 @@ export function HostelReports() {
     selectedRoom,
     assignedClassFilter,
     assignedAcademicYearFilter,
+    assignedStatusFilter,
   ]);
 
   // Paginated assigned boarders
@@ -449,7 +509,7 @@ export function HostelReports() {
   // Reset pagination when filters change
   useEffect(() => {
     setAssignedPage(1);
-  }, [assignedSearchQuery, selectedBuilding, selectedRoom, assignedClassFilter, assignedAcademicYearFilter]);
+  }, [assignedSearchQuery, selectedBuilding, selectedRoom, assignedClassFilter, assignedAcademicYearFilter, assignedStatusFilter]);
 
   // Pagination state for unassigned boarders
   const [unassignedPage, setUnassignedPage] = useState(1);
@@ -475,12 +535,16 @@ export function HostelReports() {
     if (unassignedAcademicYearFilter !== 'all') {
       list = list.filter((b) => occupantMatchesAcademicYearFilter(b, unassignedAcademicYearFilter));
     }
+    if (unassignedStatusFilter !== 'all') {
+      list = list.filter((b) => (b.enrollmentStatus || '') === unassignedStatusFilter);
+    }
     return list;
   }, [
     unassignedBoarders,
     unassignedSearchQuery,
     unassignedClassFilter,
     unassignedAcademicYearFilter,
+    unassignedStatusFilter,
   ]);
 
   // Paginated unassigned boarders
@@ -495,7 +559,7 @@ export function HostelReports() {
   // Reset pagination when filters change
   useEffect(() => {
     setUnassignedPage(1);
-  }, [unassignedSearchQuery, unassignedClassFilter, unassignedAcademicYearFilter]);
+  }, [unassignedSearchQuery, unassignedClassFilter, unassignedAcademicYearFilter, unassignedStatusFilter]);
 
   useEffect(() => {
     setRoomsTablePage(1);
@@ -504,6 +568,7 @@ export function HostelReports() {
     roomsTabClassFilter,
     roomsTabAcademicYearFilter,
     roomsTabRoomFilter,
+    roomsTabStatusFilter,
     roomsTabSearch,
     roomsTablePageSize,
   ]);
@@ -557,8 +622,11 @@ export function HostelReports() {
       father_name: boarder.fatherName || '—',
       class_name: boarder.className || '—',
       admission_number: boarder.admissionNumber || '—',
+      card_number: boarder.cardNumber || '—',
       building_name: boarder.buildingName || '—',
-      room_number: boarder.roomNumber || '—',
+      room_number: formatRoomLabel(t, boarder.roomNumber),
+      residency_type: boarder.residencyTypeName || t('hostel.boarders') || 'Boarder',
+      enrollment_status: formatEnrollmentStatusLabel(boarder.enrollmentStatus),
       admission_year: hostelReportAcademicYearDisplay(boarder),
     }));
   };
@@ -568,7 +636,9 @@ export function HostelReports() {
       student_name: boarder.studentName || '—',
       father_name: boarder.fatherName || '—',
       admission_number: boarder.admissionNumber || '—',
+      card_number: boarder.cardNumber || '—',
       class_name: boarder.className || '—',
+      enrollment_status: formatEnrollmentStatusLabel(boarder.enrollmentStatus),
       academic_year: hostelReportAcademicYearDisplay(boarder),
       residency_type: boarder.residencyTypeName || 'Boarder',
     }));
@@ -597,6 +667,10 @@ export function HostelReports() {
     { key: 'father_name', label: t('hostel.reports.fatherHeader') || 'Father', align: 'left' as const },
     { key: 'class_name', label: t('hostel.reports.classHeader') || 'Class', align: 'left' as const },
     { key: 'admission_number', label: t('hostel.reports.admissionNumberHeader') || 'Admission #', align: 'left' as const },
+    { key: 'card_number', label: t('hostel.reports.cardNumberHeader') || 'Card #', align: 'left' as const },
+    { key: 'room_number', label: t('hostel.reports.roomHeader') || 'Room', align: 'left' as const },
+    { key: 'residency_type', label: t('hostel.reports.residencyTypeHeader') || 'Residency Type', align: 'left' as const },
+    { key: 'enrollment_status', label: t('hostel.reports.enrollmentStatusHeader') || 'Status', align: 'left' as const },
     { key: 'academic_year', label: t('hostel.reports.academicYearHeader') || 'Academic Year', align: 'left' as const },
   ];
 
@@ -606,7 +680,7 @@ export function HostelReports() {
   };
 
   const buildRoomSectionTitle = (roomNumber: string, buildingName: string | null, warden: string | null) => {
-    const parts = [`${t('hostel.reports.roomNumber') || 'Room'} ${roomNumber}`];
+    const parts = [formatRoomLabel(t, roomNumber)];
     if (buildingName) parts.push(buildingName);
     if (warden) parts.push(`${t('hostel.warden') || 'Warden'}: ${warden}`);
     return parts.join(' — ');
@@ -617,9 +691,54 @@ export function HostelReports() {
       showToast.error(t('events.exportErrorNoSchool') || 'School is required for export');
       return;
     }
-    const rooms = hostelOverview?.rooms ?? [];
-    const occupied = rooms.filter((r) => r.occupants.length > 0);
-    if (!occupied.length) {
+    const filteredGroups = new Map<
+      string,
+      {
+        roomNumber: string;
+        buildingName: string | null;
+        staffName: string | null;
+        rows: Array<{
+          student_name: string;
+          father_name: string;
+          class_name: string;
+          admission_number: string;
+          card_number: string;
+          room_number: string;
+          residency_type: string;
+          enrollment_status: string;
+          academic_year: string;
+        }>;
+      }
+    >();
+
+    filteredRoomTabRows.forEach((row) => {
+      const key = row.roomId;
+      const existing = filteredGroups.get(key) ?? {
+        roomNumber: row.roomNumber,
+        buildingName: row.buildingName,
+        staffName: row.wardenName,
+        rows: [],
+      };
+
+      const o = row.occupant;
+      existing.rows.push({
+        student_name: o.studentName || '—',
+        father_name: o.fatherName || '—',
+        class_name: o.className || '—',
+        admission_number: o.admissionNumber || '—',
+        card_number: o.cardNumber || '—',
+        room_number: formatRoomLabel(t, row.roomNumber),
+        residency_type: o.residencyTypeName || t('hostel.boarders') || 'Boarder',
+        enrollment_status: formatEnrollmentStatusLabel(o.enrollmentStatus),
+        academic_year: hostelReportAcademicYearDisplay(o),
+      });
+
+      filteredGroups.set(key, existing);
+    });
+
+    const groupedRooms = Array.from(filteredGroups.values()).filter((group) => group.rows.length > 0);
+
+    if (!groupedRooms.length) {
       showToast.error(t('events.exportErrorNoData') || 'No data to export');
       return;
     }
@@ -631,17 +750,11 @@ export function HostelReports() {
 
     try {
       if (reportType === 'excel') {
-        const sheets = occupied.map((room) => ({
+        const sheets = groupedRooms.map((room) => ({
           sheet_name: buildRoomSheetName(room.roomNumber, room.buildingName),
           title: buildRoomSectionTitle(room.roomNumber, room.buildingName, room.staffName),
           columns: roomExportColumns,
-          rows: room.occupants.map((o) => ({
-            student_name: o.studentName || '—',
-            father_name: o.fatherName || '—',
-            class_name: o.className || '—',
-            admission_number: o.admissionNumber || '—',
-            academic_year: hostelReportAcademicYearDisplay(o),
-          })),
+          rows: room.rows,
         }));
 
         await generateRoomReport({
@@ -664,16 +777,10 @@ export function HostelReports() {
           },
         });
       } else {
-        const sections = occupied.map((room) => ({
+        const sections = groupedRooms.map((room) => ({
           title: buildRoomSectionTitle(room.roomNumber, room.buildingName, room.staffName),
           columns: roomExportColumns,
-          rows: room.occupants.map((o) => ({
-            student_name: o.studentName || '—',
-            father_name: o.fatherName || '—',
-            class_name: o.className || '—',
-            admission_number: o.admissionNumber || '—',
-            academic_year: hostelReportAcademicYearDisplay(o),
-          })),
+          rows: room.rows,
         }));
 
         await generateRoomReport({
@@ -733,6 +840,9 @@ export function HostelReports() {
       const label = assignedAcademicYearFilterOptions.find(([k]) => k === assignedAcademicYearFilter)?.[1];
       if (label) parts.push(`${t('hostel.reports.filterAcademicYear')}: ${label}`);
     }
+    if (assignedStatusFilter !== 'all') {
+      parts.push(`${t('hostel.reports.filterStatus') || 'Status'}: ${formatEnrollmentStatusLabel(assignedStatusFilter)}`);
+    }
     return parts.length > 0 ? parts.join(' • ') : `Total assigned boarders: ${filteredAssignedBoarders.length}`;
   };
 
@@ -746,6 +856,9 @@ export function HostelReports() {
     if (unassignedAcademicYearFilter !== 'all') {
       const label = unassignedAcademicYearFilterOptions.find(([k]) => k === unassignedAcademicYearFilter)?.[1];
       if (label) parts.push(`${t('hostel.reports.filterAcademicYear')}: ${label}`);
+    }
+    if (unassignedStatusFilter !== 'all') {
+      parts.push(`${t('hostel.reports.filterStatus') || 'Status'}: ${formatEnrollmentStatusLabel(unassignedStatusFilter)}`);
     }
     if (parts.length > 0) {
       return `${parts.join(' • ')} • Total: ${filteredUnassignedBoarders.length}`;
@@ -953,7 +1066,7 @@ export function HostelReports() {
                         <SelectItem value="all">{t('hostel.reports.allRooms')}</SelectItem>
                         {collapsibleRoomFilterOptions.map(([roomId, meta]) => (
                           <SelectItem key={roomId} value={roomId}>
-                            {t('hostel.reports.roomNumber').replace('{number}', meta.roomNumber)} — {meta.buildingLabel}
+                            {formatRoomLabel(t, meta.roomNumber)} — {meta.buildingLabel}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1081,7 +1194,7 @@ export function HostelReports() {
                                                     <TableCell>{b.className || '—'}</TableCell>
                                                     <TableCell>
                                                       <Badge variant="muted" className="shrink-0 text-xs">
-                                                        {t('hostel.reports.roomNumber').replace('{number}', b.roomNumber)}
+                                                        {formatRoomLabel(t, b.roomNumber)}
                                                       </Badge>
                                                     </TableCell>
                                                   </TableRow>
@@ -1235,7 +1348,7 @@ export function HostelReports() {
                         <SelectItem value="all">{t('hostel.reports.allRooms')}</SelectItem>
                         {collapsibleRoomFilterOptions.map(([roomId, meta]) => (
                           <SelectItem key={roomId} value={roomId}>
-                            {t('hostel.reports.roomNumber').replace('{number}', meta.roomNumber)} — {meta.buildingLabel}
+                            {formatRoomLabel(t, meta.roomNumber)} — {meta.buildingLabel}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1354,7 +1467,7 @@ export function HostelReports() {
                                                     <TableCell>{b.buildingName || '—'}</TableCell>
                                                     <TableCell>
                                                       <Badge variant="muted" className="shrink-0 text-xs">
-                                                        {t('hostel.reports.roomNumber').replace('{number}', b.roomNumber)}
+                                                        {formatRoomLabel(t, b.roomNumber)}
                                                       </Badge>
                                                     </TableCell>
                                                   </TableRow>
@@ -1514,7 +1627,7 @@ export function HostelReports() {
                       defaultOpenMobile={false}
                     >
                       <div className="flex flex-col gap-4">
-                        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+                        <div className="grid gap-4 grid-cols-1 md:grid-cols-4">
                           <div className="min-w-0">
                             <Label htmlFor="rooms-tab-class">{t('hostel.reports.filterClass')}</Label>
                             <Select value={roomsTabClassFilter} onValueChange={setRoomsTabClassFilter}>
@@ -1557,7 +1670,23 @@ export function HostelReports() {
                                 <SelectItem value="all">{t('hostel.reports.allRooms')}</SelectItem>
                                 {roomsTabRoomFilterOptions.map(([roomId, roomNumber]) => (
                                   <SelectItem key={roomId} value={roomId}>
-                                    {t('hostel.reports.roomNumber').replace('{number}', roomNumber)}
+                                    {formatRoomLabel(t, roomNumber)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="min-w-0">
+                            <Label htmlFor="rooms-tab-status">{t('hostel.reports.filterStatus') || 'Status'}</Label>
+                            <Select value={roomsTabStatusFilter} onValueChange={setRoomsTabStatusFilter}>
+                              <SelectTrigger id="rooms-tab-status">
+                                <SelectValue placeholder={t('hostel.reports.allStatuses') || 'All statuses'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">{t('hostel.reports.allStatuses') || 'All statuses'}</SelectItem>
+                                {roomsTabStatusFilterOptions.map((status) => (
+                                  <SelectItem key={status} value={status}>
+                                    {formatEnrollmentStatusLabel(status)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1601,13 +1730,16 @@ export function HostelReports() {
                             <TableHead>{t('hostel.reports.fatherHeader')}</TableHead>
                             <TableHead>{t('hostel.reports.classHeader')}</TableHead>
                             <TableHead>{t('hostel.reports.admissionNumberHeader')}</TableHead>
+                            <TableHead>{t('hostel.reports.cardNumberHeader') || 'Card #'}</TableHead>
+                            <TableHead>{t('hostel.reports.residencyTypeHeader')}</TableHead>
+                            <TableHead>{t('hostel.reports.enrollmentStatusHeader') || 'Status'}</TableHead>
                             <TableHead>{t('hostel.reports.academicYearHeader')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {filteredRoomTabRows.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={8} className="text-center text-muted-foreground">
+                              <TableCell colSpan={11} className="text-center text-muted-foreground">
                                 {roomTabBaseRows.length === 0
                                   ? t('hostel.reports.noBoardersAssignedYet')
                                   : t('hostel.reports.noBoardersFoundMatching')}
@@ -1622,7 +1754,7 @@ export function HostelReports() {
                                   <TableCell className="font-medium whitespace-nowrap">{row.buildingName || '—'}</TableCell>
                                   <TableCell>
                                     <Badge variant="muted" className="shrink-0 text-xs">
-                                      {t('hostel.reports.roomNumber').replace('{number}', row.roomNumber)}
+                                      {formatRoomLabel(t, row.roomNumber)}
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-sm">{wardenLabel}</TableCell>
@@ -1634,6 +1766,9 @@ export function HostelReports() {
                                       {o.admissionNumber || '—'}
                                     </Badge>
                                   </TableCell>
+                                  <TableCell>{o.cardNumber || '—'}</TableCell>
+                                  <TableCell>{o.residencyTypeName || t('hostel.boarders') || 'Boarder'}</TableCell>
+                                  <TableCell>{formatEnrollmentStatusLabel(o.enrollmentStatus)}</TableCell>
                                   <TableCell>{hostelReportAcademicYearDisplay(o)}</TableCell>
                                 </TableRow>
                               );
@@ -1741,8 +1876,11 @@ export function HostelReports() {
                     { key: 'father_name', label: t('hostel.reports.fatherHeader') || 'Father', align: 'left' },
                     { key: 'class_name', label: t('hostel.reports.classColumn') || 'Class', align: 'left' },
                     { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
+                    { key: 'card_number', label: t('hostel.reports.cardNumberHeader') || 'Card #', align: 'left' },
                     { key: 'building_name', label: t('hostel.reports.buildingColumn') || t('settings.buildings.buildingName') || 'Building', align: 'left' },
                     { key: 'room_number', label: t('hostel.reports.roomLabel') || t('settings.rooms.roomNumber') || 'Room', align: 'left' },
+                    { key: 'residency_type', label: t('hostel.reports.residencyTypeHeader') || 'Residency Type', align: 'left' },
+                    { key: 'enrollment_status', label: t('hostel.reports.enrollmentStatusHeader') || 'Status', align: 'left' },
                     { key: 'admission_year', label: t('hostel.reports.academicYearColumn') || 'Academic year', align: 'left' },
                   ]}
                   reportKey="hostel_assigned_boarders"
@@ -1815,7 +1953,7 @@ export function HostelReports() {
                         <SelectItem value="all">{t('hostel.reports.allRooms')}</SelectItem>
                         {roomsForFilter.map((room) => (
                           <SelectItem key={room.id} value={room.id}>
-                            {t('hostel.reports.roomNumber').replace('{number}', room.roomNumber)}
+                            {formatRoomLabel(t, room.roomNumber)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1853,6 +1991,22 @@ export function HostelReports() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="w-full md:w-[200px]">
+                    <Label htmlFor="assigned-status-filter">{t('hostel.reports.filterStatus') || 'Status'}</Label>
+                    <Select value={assignedStatusFilter} onValueChange={setAssignedStatusFilter}>
+                      <SelectTrigger id="assigned-status-filter">
+                        <SelectValue placeholder={t('hostel.reports.allStatuses') || 'All statuses'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allStatuses') || 'All statuses'}</SelectItem>
+                        {assignedStatusFilterOptions.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {formatEnrollmentStatusLabel(status)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </FilterPanel>
 
@@ -1866,15 +2020,18 @@ export function HostelReports() {
                       <TableHead>{t('hostel.reports.fatherHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.classHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.admissionNumberHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.cardNumberHeader') || 'Card #'}</TableHead>
                       <TableHead>{t('hostel.reports.buildingHeaderAssigned')}</TableHead>
                       <TableHead>{t('hostel.reports.roomHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.residencyTypeHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.enrollmentStatusHeader') || 'Status'}</TableHead>
                       <TableHead>{t('hostel.reports.academicYearHeader')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAssignedBoarders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                        <TableCell colSpan={10} className="text-center text-muted-foreground">
                           {allAssignedBoarders.length === 0
                             ? t('hostel.reports.noBoardersAssignedYet')
                             : t('hostel.reports.noBoardersFoundMatching')}
@@ -1891,12 +2048,15 @@ export function HostelReports() {
                               {boarder.admissionNumber || '—'}
                             </Badge>
                           </TableCell>
+                          <TableCell>{boarder.cardNumber || '—'}</TableCell>
                           <TableCell>{boarder.buildingName || '—'}</TableCell>
                           <TableCell>
                             <Badge variant="info" className="shrink-0 text-xs">
-                              {t('hostel.reports.roomNumber').replace('{number}', boarder.roomNumber)}
+                              {formatRoomLabel(t, boarder.roomNumber)}
                             </Badge>
                           </TableCell>
+                          <TableCell>{boarder.residencyTypeName || t('hostel.boarders') || 'Boarder'}</TableCell>
+                          <TableCell>{formatEnrollmentStatusLabel(boarder.enrollmentStatus)}</TableCell>
                           <TableCell>{hostelReportAcademicYearDisplay(boarder)}</TableCell>
                         </TableRow>
                       ))
@@ -1987,9 +2147,11 @@ export function HostelReports() {
                     { key: 'student_name', label: t('hostel.reports.student') || 'Student', align: 'left' },
                     { key: 'father_name', label: t('hostel.reports.fatherHeader') || 'Father', align: 'left' },
                     { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
+                    { key: 'card_number', label: t('hostel.reports.cardNumberHeader') || 'Card #', align: 'left' },
                     { key: 'class_name', label: t('hostel.reports.classColumn') || 'Class', align: 'left' },
                     { key: 'academic_year', label: t('hostel.reports.academicYearColumn') || 'Academic year', align: 'left' },
                     { key: 'residency_type', label: t('hostel.reports.residencyTypeColumn') || 'Residency Type', align: 'left' },
+                    { key: 'enrollment_status', label: t('hostel.reports.enrollmentStatusHeader') || 'Status', align: 'left' },
                   ]}
                   reportKey="hostel_unassigned_boarders"
                   title={t('hostel.reports.unassignedBoardersTitle') || t('hostel.reports.unassignedBoarders') || 'Unassigned Boarders Report'}
@@ -2064,6 +2226,22 @@ export function HostelReports() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="w-full md:w-[200px]">
+                    <Label htmlFor="unassigned-status-filter">{t('hostel.reports.filterStatus') || 'Status'}</Label>
+                    <Select value={unassignedStatusFilter} onValueChange={setUnassignedStatusFilter}>
+                      <SelectTrigger id="unassigned-status-filter">
+                        <SelectValue placeholder={t('hostel.reports.allStatuses') || 'All statuses'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('hostel.reports.allStatuses') || 'All statuses'}</SelectItem>
+                        {unassignedStatusFilterOptions.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {formatEnrollmentStatusLabel(status)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </FilterPanel>
 
@@ -2076,15 +2254,17 @@ export function HostelReports() {
                       <TableHead>{t('hostel.reports.studentHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.fatherHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.admissionNumberHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.cardNumberHeader') || 'Card #'}</TableHead>
                       <TableHead>{t('hostel.reports.classHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.academicYearHeader')}</TableHead>
                       <TableHead>{t('hostel.reports.residencyTypeHeader')}</TableHead>
+                      <TableHead>{t('hostel.reports.enrollmentStatusHeader') || 'Status'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredUnassignedBoarders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground">
                           {unassignedBoarders.length === 0
                             ? t('hostel.reports.allBoardersPlaced')
                             : t('hostel.reports.noBoardersFoundMatchingUnassigned')}
@@ -2100,6 +2280,7 @@ export function HostelReports() {
                               {admission.admissionNumber || '—'}
                             </Badge>
                           </TableCell>
+                          <TableCell>{admission.cardNumber || '—'}</TableCell>
                           <TableCell>{admission.className || '—'}</TableCell>
                           <TableCell>{hostelReportAcademicYearDisplay(admission)}</TableCell>
                           <TableCell>
@@ -2107,6 +2288,7 @@ export function HostelReports() {
                               {admission.residencyTypeName || t('hostel.boarders')}
                             </Badge>
                           </TableCell>
+                          <TableCell>{formatEnrollmentStatusLabel(admission.enrollmentStatus)}</TableCell>
                         </TableRow>
                       ))
                     )}

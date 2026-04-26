@@ -39,7 +39,7 @@ export default {
     roleTeacher: "معلم",
     roleAccountant: "حسابدار",
     roleLibrarian: "کتابدار",
-    roleHostelManager: "مدیر خوابگاه",
+    roleHostelManager: "مدیر لیلیه ",
     roleAssetManager: "مدیر دارایی‌ها",
     searchPermissions: "جستجو با اجازه یا منبع..."
   }

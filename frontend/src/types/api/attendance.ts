@@ -51,6 +51,7 @@ export interface AttendanceRecord {
   created_at: string;
   updated_at: string;
   student_class_name?: string | null;
+  student_room_name?: string | null;
   student?: {
     id: string;
     full_name: string;

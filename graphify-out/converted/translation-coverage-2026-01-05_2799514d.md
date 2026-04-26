@@ -378,7 +378,7 @@
 | admissions.residencyInfo | admissions | Yes | low | Yes | No | Residency | Yes | No | د استوګنې معلومات | Yes | No | معلومات سکونت | Yes | No | Residency | None | None |
 | admissions.residencyType | admissions | Yes | low | Yes | No | Residency Type | Yes | No | د اوسېدو ډول | Yes | No | نوع سکونت | Yes | No | نوع الإقامة | None | None |
 | admissions.room | admissions | Yes | low | Yes | No | Room | Yes | No | خونه | Yes | No | اتاق | Yes | No | الغرفة | None | None |
-| admissions.roomDorm | admissions | Yes | low | Yes | No | Room / Dorm | Yes | No | خونه / لیلیه | Yes | No | اتاق / خوابگاه | Yes | No | الغرفة / النزل | None | None |
+| admissions.roomDorm | admissions | Yes | low | Yes | No | Room / Dorm | Yes | No | خونه / لیلیه | Yes | No | اتاق / لیلیه  | Yes | No | الغرفة / النزل | None | None |
 | admissions.school | admissions | Yes | low | Yes | No | School | Yes | No | ښوونځی | Yes | No | مکتب | Yes | No | المدرسة | None | None |
 | admissions.schoolBreakdown | admissions | Yes | low | Yes | No | By school | Yes | No | د ښوونځي په اساس | Yes | No | بر اساس مکتب | Yes | No | حسب المدرسة | None | None |
 | admissions.schoolClass | admissions | Yes | low | Yes | No | School / Class | Yes | No | ښوونځی / ټولګی | Yes | No | مکتب / صنف | Yes | No | المدرسة / الفصل | None | None |

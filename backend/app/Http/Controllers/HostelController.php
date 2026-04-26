@@ -100,8 +100,10 @@ class HostelController extends Controller
                 'sa.class_id',
                 'sa.class_academic_year_id',
                 'sa.residency_type_id',
+                'sa.enrollment_status',
                 's.full_name',
                 's.admission_no',
+                's.card_number',
                 's.father_name',
             )
             ->get();
@@ -265,6 +267,16 @@ class HostelController extends Controller
             $occupancyByRoom[$admission->room_id][] = $admission;
         }
 
+        $residencyNames = [];
+        $allResidencyTypeIds = $admissions->pluck('residency_type_id')->filter()->unique()->values();
+        if ($allResidencyTypeIds->isNotEmpty()) {
+            $residencyNames = DB::table('residency_types')
+                ->whereIn('id', $allResidencyTypeIds)
+                ->whereNull('deleted_at')
+                ->pluck('name', 'id')
+                ->toArray();
+        }
+
         $roomPayload = [];
         $buildingRoomCounts = [];
         $buildingOccupancyCounts = [];
@@ -283,13 +295,14 @@ class HostelController extends Controller
                 'building_name' => $room->building_name,
                 'staff_id' => $room->staff_id,
                 'staff_name' => $room->staff_name,
-                'occupants' => array_map(function ($admission) use ($resolveAdmissionClassName, $academicYearNamesById) {
+                'occupants' => array_map(function ($admission) use ($resolveAdmissionClassName, $academicYearNamesById, $residencyNames) {
                     return [
                         'id' => $admission->id,
                         'student_id' => $admission->student_id,
                         'student_name' => $admission->full_name,
                         'father_name' => $admission->father_name,
                         'admission_number' => $admission->admission_no,
+                        'card_number' => $admission->card_number,
                         'admission_year' => $admission->admission_year,
                         'academic_year_id' => $admission->academic_year_id,
                         'academic_year_name' => $admission->academic_year_id && isset($academicYearNamesById[$admission->academic_year_id])
@@ -298,6 +311,11 @@ class HostelController extends Controller
                         'class_id' => $admission->class_id,
                         'class_academic_year_id' => $admission->class_academic_year_id,
                         'class_name' => $resolveAdmissionClassName($admission),
+                        'residency_type_id' => $admission->residency_type_id,
+                        'residency_type_name' => $admission->residency_type_id && isset($residencyNames[$admission->residency_type_id])
+                            ? $residencyNames[$admission->residency_type_id]
+                            : null,
+                        'enrollment_status' => $admission->enrollment_status,
                     ];
                 }, $occupants),
             ];
@@ -366,19 +384,6 @@ class HostelController extends Controller
         $unassignedBoarderAdmissions = $admissions
             ->filter(fn ($admission) => $admission->is_boarder && empty($admission->room_id));
 
-        $residencyNames = [];
-
-        if ($unassignedBoarderAdmissions->isNotEmpty()) {
-            $residencyTypeIds = $unassignedBoarderAdmissions->pluck('residency_type_id')->filter()->unique()->values();
-            if ($residencyTypeIds->isNotEmpty()) {
-                $residencyNames = DB::table('residency_types')
-                    ->whereIn('id', $residencyTypeIds)
-                    ->whereNull('deleted_at')
-                    ->pluck('name', 'id')
-                    ->toArray();
-            }
-        }
-
         $unassignedBoarderPayload = $unassignedBoarderAdmissions->map(function ($admission) use ($resolveAdmissionClassName, $residencyNames, $academicYearNamesById) {
             return [
                 'id' => $admission->id,
@@ -386,6 +391,7 @@ class HostelController extends Controller
                 'student_name' => $admission->full_name,
                 'father_name' => $admission->father_name,
                 'admission_number' => $admission->admission_no,
+                'card_number' => $admission->card_number,
                 'admission_year' => $admission->admission_year,
                 'academic_year_id' => $admission->academic_year_id,
                 'academic_year_name' => $admission->academic_year_id && isset($academicYearNamesById[$admission->academic_year_id])
@@ -398,6 +404,7 @@ class HostelController extends Controller
                 'residency_type_name' => $admission->residency_type_id && isset($residencyNames[$admission->residency_type_id])
                     ? $residencyNames[$admission->residency_type_id]
                     : null,
+                'enrollment_status' => $admission->enrollment_status,
             ];
         });
 

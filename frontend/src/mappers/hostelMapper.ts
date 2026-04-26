@@ -42,12 +42,16 @@ export const mapHostelRoomApiToDomain = (room: HostelApi.HostelRoom): HostelRoom
     studentName: occupant.student_name,
     fatherName: occupant.father_name ?? null,
     admissionNumber: occupant.admission_number,
+    cardNumber: occupant.card_number ?? null,
     admissionYear: occupant.admission_year,
     academicYearId: occupant.academic_year_id ?? null,
     academicYearName: occupant.academic_year_name ?? null,
     classId: occupant.class_id ?? null,
     classAcademicYearId: occupant.class_academic_year_id ?? null,
     className: occupant.class_name ?? null,
+    residencyTypeId: occupant.residency_type_id ?? null,
+    residencyTypeName: occupant.residency_type_name ?? null,
+    enrollmentStatus: occupant.enrollment_status ?? null,
   })),
 });
 
@@ -68,6 +72,7 @@ export const mapUnassignedBoarderApiToDomain = (
   studentName: admission.student_name,
   fatherName: admission.father_name ?? null,
   admissionNumber: admission.admission_number,
+  cardNumber: admission.card_number ?? null,
   admissionYear: admission.admission_year ?? null,
   academicYearId: admission.academic_year_id ?? null,
   academicYearName: admission.academic_year_name ?? null,
@@ -76,6 +81,7 @@ export const mapUnassignedBoarderApiToDomain = (
   className: admission.class_name,
   residencyTypeId: admission.residency_type_id,
   residencyTypeName: admission.residency_type_name,
+  enrollmentStatus: admission.enrollment_status ?? null,
 });
 
 export const mapHostelOverviewApiToDomain = (payload: HostelApi.HostelOverviewResponse): HostelOverview => ({

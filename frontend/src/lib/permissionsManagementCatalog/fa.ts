@@ -33,7 +33,7 @@ export const permissionsManagementCatalogFa: PermissionsManagementCatalog = {
       "description": "دسترسی کامل به مالی، فیس و چند ارزی."
     },
     "hostel_manager": {
-      "title": "مدیر خوابگاه",
+      "title": "مدیر لیلیه ",
       "description": "تعیین اتاق و گزارش‌های مرتبط."
     },
     "librarian": {
@@ -84,7 +84,7 @@ export const permissionsManagementCatalogFa: PermissionsManagementCatalog = {
     "dms": "مدیریت اسناد",
     "events": "رویدادها",
     "library": "کتابخانه",
-    "hostel": "خوابگاه",
+    "hostel": "لیلیه ",
     "graduation": "فراغت",
     "id_cards": "کارت‌های شناسایی",
     "assets": "دارایی‌ها",
@@ -1030,19 +1030,19 @@ export const permissionsManagementCatalogFa: PermissionsManagementCatalog = {
     },
     "hostel.create": {
       "actionLabel": "ایجاد",
-      "description": "ایجاد — خوابگاه"
+      "description": "ایجاد — لیلیه "
     },
     "hostel.delete": {
       "actionLabel": "حذف",
-      "description": "حذف — خوابگاه"
+      "description": "حذف — لیلیه "
     },
     "hostel.read": {
       "actionLabel": "خواندن",
-      "description": "خواندن — خوابگاه"
+      "description": "خواندن — لیلیه "
     },
     "hostel.update": {
       "actionLabel": "ویرایش",
-      "description": "ویرایش — خوابگاه"
+      "description": "ویرایش — لیلیه "
     },
     "hr_assignments.approve": {
       "actionLabel": "تأیید",

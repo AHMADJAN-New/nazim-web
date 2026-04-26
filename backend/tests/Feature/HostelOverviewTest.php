@@ -118,6 +118,7 @@ class HostelOverviewTest extends TestCase
         $student = Student::factory()->create([
             'organization_id' => $organization->id,
             'school_id' => $schoolB->id,
+            'card_number' => 'CARD-HOSTEL-001',
         ]);
 
         StudentAdmission::create([
@@ -153,8 +154,12 @@ class HostelOverviewTest extends TestCase
         $occupant = $roomPayload['occupants'][0];
         $this->assertArrayHasKey('father_name', $occupant);
         $this->assertArrayHasKey('class_name', $occupant);
+        $this->assertArrayHasKey('card_number', $occupant);
+        $this->assertArrayHasKey('enrollment_status', $occupant);
         $this->assertSame($class->name, $occupant['class_name']);
         $this->assertSame($student->father_name, $occupant['father_name']);
+        $this->assertSame('CARD-HOSTEL-001', $occupant['card_number']);
+        $this->assertSame('admitted', $occupant['enrollment_status']);
     }
 
     #[Test]

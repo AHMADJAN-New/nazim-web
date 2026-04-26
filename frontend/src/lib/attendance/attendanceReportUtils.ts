@@ -25,6 +25,7 @@ export interface AttendanceReportRecord {
   roundNumber: number;
   sessionLabel: string | null;
   studentClassName: string;
+  studentRoomName: string | null;
   className: string;
   classNames: string[];
   schoolName: string | null;
@@ -70,6 +71,7 @@ export const mapAttendanceReportRecord = (record: AttendanceReportApiRecord): At
   );
 
   const studentClassName = (record as AttendanceReportApiRecord & { student_class_name?: string | null }).student_class_name ?? null;
+  const studentRoomName = (record as AttendanceReportApiRecord & { student_room_name?: string | null }).student_room_name ?? null;
 
   return {
     id: record.id,
@@ -83,6 +85,7 @@ export const mapAttendanceReportRecord = (record: AttendanceReportApiRecord): At
     roundNumber: record.session?.round_number ?? 1,
     sessionLabel: record.session?.session_label ?? null,
     studentClassName: studentClassName ?? (classNames.length > 0 ? classNames.join(', ') : '—'),
+    studentRoomName: studentRoomName,
     className: classNames.length > 0 ? classNames.join(', ') : 'Unassigned',
     classNames,
     schoolName: record.session?.school?.school_name ?? null,

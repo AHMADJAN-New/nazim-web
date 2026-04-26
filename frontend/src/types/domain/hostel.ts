@@ -4,12 +4,16 @@ export interface HostelOccupant {
   studentName: string | null;
   fatherName: string | null;
   admissionNumber: string | null;
+  cardNumber: string | null;
   admissionYear: string | null;
   academicYearId: string | null;
   academicYearName: string | null;
   classId: string | null;
   classAcademicYearId: string | null;
   className: string | null;
+  residencyTypeId: string | null;
+  residencyTypeName: string | null;
+  enrollmentStatus: string | null;
 }
 
 export interface HostelRoom {
@@ -55,6 +59,7 @@ export interface HostelUnassignedBoarder {
   studentName: string | null;
   fatherName: string | null;
   admissionNumber: string | null;
+  cardNumber: string | null;
   admissionYear: string | null;
   academicYearId: string | null;
   academicYearName: string | null;
@@ -63,4 +68,5 @@ export interface HostelUnassignedBoarder {
   className: string | null;
   residencyTypeId: string | null;
   residencyTypeName: string | null;
+  enrollmentStatus: string | null;
 }

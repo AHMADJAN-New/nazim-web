@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\AcademicYear;
+use App\Models\Building;
 use App\Models\Organization;
+use App\Models\Room;
 use App\Models\SchoolBranding;
 use App\Models\Student;
 use App\Models\StudentAdmission;
@@ -537,6 +539,74 @@ class AttendanceSystemTest extends TestCase
             ->assertJsonFragment([
                 'round_number' => 2,
                 'session_label' => 'After lunch',
+            ]);
+    }
+
+    /** @test */
+    public function attendance_report_includes_active_student_room_name()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $building = Building::create([
+            'building_name' => 'Hostel Block A',
+            'school_id' => $school->id,
+        ]);
+
+        $room = Room::create([
+            'room_number' => 'A-12',
+            'building_id' => $building->id,
+            'school_id' => $school->id,
+        ]);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'room_id' => $room->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => true,
+        ]);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+        ]);
+
+        $record = AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'status' => 'present',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/attendance-sessions/report', [
+            'student_id' => $student->id,
+            'per_page' => 25,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonFragment([
+                'id' => $record->id,
+                'student_room_name' => 'A-12',
             ]);
     }
 }

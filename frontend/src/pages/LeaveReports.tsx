@@ -36,6 +36,19 @@ import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
 
+const getReportEndpoint = (downloadUrl: string): string => {
+  const url = new URL(downloadUrl);
+  let endpoint = url.pathname;
+
+  if (endpoint.startsWith('/api/')) {
+    endpoint = endpoint.slice(4);
+  } else if (endpoint.startsWith('/api')) {
+    endpoint = endpoint.slice(4);
+  }
+
+  return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+};
+
 export default function LeaveReports() {
   const { t, isRTL, language } = useLanguage();
   const { data: profile } = useProfile();
@@ -138,6 +151,20 @@ export default function LeaveReports() {
     }
 
     try {
+      const downloadReportWithAuth = async (downloadUrl: string, fallbackName: string) => {
+        const endpoint = getReportEndpoint(downloadUrl);
+        const { blob, filename } = await apiClient.requestFile(endpoint);
+
+        const objectUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = filename || fallbackName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(objectUrl);
+      };
+
       setIsGenerating(true);
       setShowProgressDialog(true);
       setReportProgress(0);
@@ -164,7 +191,7 @@ export default function LeaveReports() {
 
       if (response.success && response.download_url) {
         // Report completed synchronously
-        window.open(response.download_url, '_blank');
+        await downloadReportWithAuth(response.download_url, `leave-report-${variant}.${reportType}`);
         setShowProgressDialog(false);
         setIsGenerating(false);
         showToast.success(t('leave.reportExported') || 'Report generated successfully');
@@ -180,7 +207,7 @@ export default function LeaveReports() {
                         }
                         
                         if (statusData.status === 'completed' && statusData.download_url) {
-                          window.open(statusData.download_url, '_blank');
+                          await downloadReportWithAuth(statusData.download_url, `leave-report-${variant}.${reportType}`);
                           setShowProgressDialog(false);
                           setIsGenerating(false);
                           showToast.success(t('leave.reportExported') || 'Report generated successfully');

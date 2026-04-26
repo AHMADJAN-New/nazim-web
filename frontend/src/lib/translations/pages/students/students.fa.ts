@@ -131,7 +131,7 @@ export default {
     hasParents: "والدین دارد",
     health: "اطلاعات صحی",
     homeAddress: "آدرس خانه",
-    hostel: "خوابگاه",
+    hostel: "لیلیه ",
     idNumber: "شماره شناسایی",
     imageLoadError: "بارگذاری تصویر ناموفق بود",
     idCardDownload: "بارگیری کارت شناسایی",

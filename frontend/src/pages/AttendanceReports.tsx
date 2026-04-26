@@ -21,6 +21,7 @@ import {
 import { useMemo, useState } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
@@ -111,6 +112,19 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 const formatAttendanceRound = (roundNumber: number, sessionLabel: string | null) => {
   const roundLabel = `Round ${roundNumber || 1}`;
   return sessionLabel ? `${roundLabel} - ${sessionLabel}` : roundLabel;
+};
+
+const getReportEndpoint = (downloadUrl: string): string => {
+  const url = new URL(downloadUrl);
+  let endpoint = url.pathname;
+
+  if (endpoint.startsWith('/api/')) {
+    endpoint = endpoint.slice(4);
+  } else if (endpoint.startsWith('/api')) {
+    endpoint = endpoint.slice(4);
+  }
+
+  return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 };
 
 export default function AttendanceReports() {
@@ -248,6 +262,20 @@ export default function AttendanceReports() {
     }
 
     try {
+      const downloadReportWithAuth = async (downloadUrl: string, fallbackName: string) => {
+        const endpoint = getReportEndpoint(downloadUrl);
+        const { blob, filename } = await apiClient.requestFile(endpoint);
+
+        const objectUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = filename || fallbackName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(objectUrl);
+      };
+
       setIsGenerating(true);
       setShowProgressDialog(true);
       setReportProgress(0);
@@ -273,7 +301,7 @@ export default function AttendanceReports() {
       });
 
       if (response.success && response.download_url) {
-        window.open(response.download_url, '_blank');
+        await downloadReportWithAuth(response.download_url, `attendance-report.${reportType}`);
         setReportProgress(100);
         setReportStatus('completed');
         setShowProgressDialog(false);
@@ -303,7 +331,7 @@ export default function AttendanceReports() {
           setReportStatus(statusResponse.status || 'processing');
 
           if (statusResponse.status === 'completed' && statusResponse.download_url) {
-            window.open(statusResponse.download_url, '_blank');
+            await downloadReportWithAuth(statusResponse.download_url, `attendance-report.${reportType}`);
             setShowProgressDialog(false);
             setIsGenerating(false);
             showToast.success(t('attendanceReports.reportExported') || 'Report generated successfully');
@@ -359,6 +387,15 @@ export default function AttendanceReports() {
         cell: ({ row }) => (
           <div className="text-sm">
             {row.original.studentClassName || '—'}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'studentRoomName',
+        header: t('attendanceTotalsReport.room') || 'Room',
+        cell: ({ row }) => (
+          <div className="text-sm">
+            {row.original.studentRoomName || '—'}
           </div>
         ),
       },
@@ -634,12 +671,13 @@ export default function AttendanceReports() {
       </div>
 
       {/* ── Filters ── */}
-      <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b bg-muted/20 flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">
-            {t('attendanceTotalsReport.filtersTitle') || 'Filters'}
-          </h2>
-          {hasActiveFilters && (
+      <FilterPanel
+        title={t('attendanceTotalsReport.filtersTitle') || 'Filters'}
+        defaultOpenDesktop={true}
+        defaultOpenMobile={false}
+        className="rounded-2xl shadow-sm overflow-hidden"
+        footer={hasActiveFilters ? (
+          <div className="flex justify-end">
             <Button
               variant="ghost"
               size="sm"
@@ -648,9 +686,10 @@ export default function AttendanceReports() {
             >
               {t('events.reset') || 'Clear all'}
             </Button>
-          )}
-        </div>
-        <div className="p-4 md:p-5 space-y-5">
+          </div>
+        ) : null}
+      >
+        <div className="space-y-5">
 
           {/* Row 1: Student / Class / Academic Year */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -787,7 +826,7 @@ export default function AttendanceReports() {
             </div>
           </div>
         </div>
-      </div>
+      </FilterPanel>
 
       {/* ── Results table ── */}
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">

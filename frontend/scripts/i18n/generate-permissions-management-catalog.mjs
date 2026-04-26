@@ -173,7 +173,7 @@ const ROLES = {
       description: 'دسترسی کامل به مالی، فیس و چند ارزی.',
     },
     hostel_manager: {
-      title: 'مدیر خوابگاه',
+      title: 'مدیر لیلیه ',
       description: 'تعیین اتاق و گزارش‌های مرتبط.',
     },
     librarian: {
@@ -342,7 +342,7 @@ const FEATURE_SECTIONS = {
     dms: 'مدیریت اسناد',
     events: 'رویدادها',
     library: 'کتابخانه',
-    hostel: 'خوابگاه',
+    hostel: 'لیلیه ',
     graduation: 'فراغت',
     id_cards: 'کارت‌های شناسایی',
     assets: 'دارایی‌ها',
@@ -549,7 +549,7 @@ const RESOURCE_PART = {
     grades: 'درجات',
     graduation_batches: 'دسته‌های فراغت',
     help_center: 'مرکز کمک',
-    hostel: 'خوابگاه',
+    hostel: 'لیلیه ',
     hr_assignments: 'تخصیص‌های منابع بشری',
     hr_payroll: 'معاش',
     hr_reports: 'گزارش‌های منابع بشری',

@@ -92,7 +92,7 @@ export default {
     bulkStatusAction: "وضعیت گروهی ({count})",
     bulkAssignFromStudentsTitle: "تعیین گروهی صنف",
     bulkAssignFromStudentsDescription:
-      "برای {count} شاگرد انتخاب‌شده، بخش صنف، اقامت و اتاق خوابگاه (اختیاری) یکسان اعمال می‌شود. هر شاگرد باید برای سال تحصیلی همان بخش قبلاً پذیرش داشته باشد.",
+      "برای {count} شاگرد انتخاب‌شده، بخش صنف، اقامت و اتاق لیلیه  (اختیاری) یکسان اعمال می‌شود. هر شاگرد باید برای سال تحصیلی همان بخش قبلاً پذیرش داشته باشد.",
     bulkAssignPreviewHeading: "شاگردان انتخاب‌شده",
     bulkAssignPreviewMore: "…و {count} مورد دیگر",
     bulkAssignOnlyWithoutClass: "فقط بدون بخش صنف",
@@ -127,7 +127,7 @@ export default {
     residencyType: "نوع سکونت",
     room: "اتاق",
     roomDisabledWhenNotBoarder: "اتاق فقط برای لیلیه الزامی است.",
-    roomDorm: "اتاق / خوابگاه",
+    roomDorm: "اتاق / لیلیه ",
     school: "مکتب",
     schoolBreakdown: "بر اساس مکتب",
     schoolClass: "مکتب / صنف",

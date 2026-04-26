@@ -971,6 +971,7 @@ class AttendanceSessionController extends Controller
             ->addSelect([
                 'attendance_records.*',
                 DB::raw("(SELECT c.name FROM student_admissions sa JOIN classes c ON sa.class_id = c.id WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' ORDER BY sa.created_at DESC LIMIT 1) as student_class_name"),
+                DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
             ])
             ->where('attendance_records.organization_id', $profile->organization_id)
             ->where('attendance_records.school_id', $currentSchoolId)
@@ -1324,10 +1325,15 @@ class AttendanceSessionController extends Controller
         $currentSchoolId = $this->getCurrentSchoolId($request);
         $calendarPreference = $validated['calendar_preference'] ?? 'jalali';
         $language = $validated['language'] ?? 'ps';
+        $reportTexts = $this->getAttendanceReportTexts($language);
         $classIds = $this->normalizeRequestedClassIds($request);
 
         // Build query based on filters
         $query = AttendanceRecord::with(['student', 'session.classModel', 'session.classes', 'session.school'])
+            ->addSelect([
+                'attendance_records.*',
+                DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
+            ])
             ->where('attendance_records.organization_id', $profile->organization_id)
             ->where('attendance_records.school_id', $currentSchoolId)
             ->whereNull('attendance_records.deleted_at')
@@ -1378,27 +1384,28 @@ class AttendanceSessionController extends Controller
             $dateRangeText = "{$dateFrom} - {$dateTo}";
         } elseif (! empty($validated['date_from'])) {
             $dateFrom = $this->dateService->formatDate($validated['date_from'], $calendarPreference, 'full', $language);
-            $dateRangeText = "From: {$dateFrom}";
+            $dateRangeText = "{$reportTexts['from']}: {$dateFrom}";
         } elseif (! empty($validated['date_to'])) {
             $dateTo = $this->dateService->formatDate($validated['date_to'], $calendarPreference, 'full', $language);
-            $dateRangeText = "Until: {$dateTo}";
+            $dateRangeText = "{$reportTexts['until']}: {$dateTo}";
         }
 
         $reportVariant = $validated['report_variant'];
 
         if ($reportVariant === 'daily') {
             // Daily attendance report
-            $title = 'Daily Attendance Report';
+            $title = $reportTexts['titles']['daily'];
             $columns = [
-                ['key' => 'student_name', 'label' => 'Student'],
-                ['key' => 'admission_no', 'label' => 'Admission No'],
-                ['key' => 'class_name', 'label' => 'Class'],
-                ['key' => 'session_date', 'label' => 'Date'],
-                ['key' => 'round', 'label' => 'Round'],
-                ['key' => 'session_label', 'label' => 'Session Label'],
-                ['key' => 'status', 'label' => 'Status'],
-                ['key' => 'marked_at', 'label' => 'Marked At'],
-                ['key' => 'entry_method', 'label' => 'Method'],
+                ['key' => 'student_name', 'label' => $reportTexts['columns']['student']],
+                ['key' => 'admission_no', 'label' => $reportTexts['columns']['admission_no']],
+                ['key' => 'class_name', 'label' => $reportTexts['columns']['class']],
+                ['key' => 'room_name', 'label' => $reportTexts['columns']['room']],
+                ['key' => 'session_date', 'label' => $reportTexts['columns']['date']],
+                ['key' => 'round', 'label' => $reportTexts['columns']['round']],
+                ['key' => 'session_label', 'label' => $reportTexts['columns']['session_label']],
+                ['key' => 'status', 'label' => $reportTexts['columns']['status']],
+                ['key' => 'marked_at', 'label' => $reportTexts['columns']['marked_at']],
+                ['key' => 'entry_method', 'label' => $reportTexts['columns']['method']],
             ];
 
             foreach ($records as $record) {
@@ -1406,30 +1413,31 @@ class AttendanceSessionController extends Controller
                     'student_name' => $record->student?->full_name ?? '—',
                     'admission_no' => $record->student?->admission_no ?? '—',
                     'class_name' => $record->session?->classModel?->name ?? ($record->session?->classes?->first()?->name ?? '—'),
+                    'room_name' => $record->student_room_name ?? '—',
                     'session_date' => $record->session?->session_date
                         ? $this->dateService->formatDate($record->session->session_date, $calendarPreference, 'full', $language)
                         : '—',
-                    'round' => 'Round '.($record->session?->round_number ?? 1),
+                    'round' => $reportTexts['round_prefix'].' '.($record->session?->round_number ?? 1),
                     'session_label' => $record->session?->session_label ?? '-',
-                    'status' => ucfirst($record->status),
+                    'status' => $this->translateAttendanceStatus($record->status, $reportTexts),
                     'marked_at' => $this->dateService->formatDate($record->marked_at, $calendarPreference, 'full', $language).' '.Carbon::parse($record->marked_at)->format('H:i'),
-                    'entry_method' => ucfirst($record->entry_method ?? '—'),
+                    'entry_method' => $this->translateAttendanceMethod($record->entry_method, $reportTexts),
                 ];
             }
         } elseif ($reportVariant === 'totals') {
             // Attendance totals report
-            $title = 'Attendance Totals Report';
+            $title = $reportTexts['titles']['totals'];
             $columns = [
-                ['key' => 'class_name', 'label' => 'Class', 'type' => 'text'],
-                ['key' => 'school_name', 'label' => 'School', 'type' => 'text'],
-                ['key' => 'present', 'label' => 'Present', 'type' => 'numeric'],
-                ['key' => 'absent', 'label' => 'Absent', 'type' => 'numeric'],
-                ['key' => 'late', 'label' => 'Late', 'type' => 'numeric'],
-                ['key' => 'excused', 'label' => 'Excused', 'type' => 'numeric'],
-                ['key' => 'sick', 'label' => 'Sick', 'type' => 'numeric'],
-                ['key' => 'leave', 'label' => 'Leave', 'type' => 'numeric'],
-                ['key' => 'total', 'label' => 'Total', 'type' => 'numeric'],
-                ['key' => 'attendance_rate', 'label' => 'Attendance Rate %', 'type' => 'numeric'],
+                ['key' => 'class_name', 'label' => $reportTexts['columns']['class'], 'type' => 'text'],
+                ['key' => 'school_name', 'label' => $reportTexts['columns']['school'], 'type' => 'text'],
+                ['key' => 'present', 'label' => $reportTexts['statuses']['present'], 'type' => 'numeric'],
+                ['key' => 'absent', 'label' => $reportTexts['statuses']['absent'], 'type' => 'numeric'],
+                ['key' => 'late', 'label' => $reportTexts['statuses']['late'], 'type' => 'numeric'],
+                ['key' => 'excused', 'label' => $reportTexts['statuses']['excused'], 'type' => 'numeric'],
+                ['key' => 'sick', 'label' => $reportTexts['statuses']['sick'], 'type' => 'numeric'],
+                ['key' => 'leave', 'label' => $reportTexts['statuses']['leave'], 'type' => 'numeric'],
+                ['key' => 'total', 'label' => $reportTexts['total_label'], 'type' => 'numeric'],
+                ['key' => 'attendance_rate', 'label' => $reportTexts['columns']['attendance_rate'], 'type' => 'numeric'],
             ];
 
             // Group by class
@@ -1465,7 +1473,7 @@ class AttendanceSessionController extends Controller
             // Add totals row for Excel
             if (count($rows) > 0) {
                 $totals = [
-                    'class_name' => 'TOTAL',
+                    'class_name' => $reportTexts['total_label'],
                     'school_name' => '',
                     'present' => array_sum(array_column($rows, 'present')),
                     'absent' => array_sum(array_column($rows, 'absent')),
@@ -1479,7 +1487,7 @@ class AttendanceSessionController extends Controller
             }
         } elseif ($reportVariant === 'class_wise') {
             // Class-wise summary
-            $title = 'Attendance Class-wise Summary';
+            $title = $reportTexts['titles']['class_wise'];
             $columns = [
                 ['key' => 'class_name', 'label' => 'Class', 'type' => 'text'],
                 ['key' => 'school_name', 'label' => 'School', 'type' => 'text'],
@@ -1516,7 +1524,7 @@ class AttendanceSessionController extends Controller
             // Add totals row
             if (count($rows) > 0) {
                 $totals = [
-                    'class_name' => 'TOTAL',
+                    'class_name' => $reportTexts['total_label'],
                     'school_name' => '',
                     'total_sessions' => array_sum(array_column($rows, 'total_sessions')),
                     'total_records' => array_sum(array_column($rows, 'total_records')),
@@ -1527,7 +1535,7 @@ class AttendanceSessionController extends Controller
             }
         } elseif ($reportVariant === 'room_wise') {
             // Room-wise summary (sessions without class assignment)
-            $title = 'Attendance Room-wise Summary';
+            $title = $reportTexts['titles']['room_wise'];
             $columns = [
                 ['key' => 'room_name', 'label' => 'Room', 'type' => 'text'],
                 ['key' => 'school_name', 'label' => 'School', 'type' => 'text'],
@@ -1556,7 +1564,7 @@ class AttendanceSessionController extends Controller
                 $attendanceRate = $total > 0 ? round(($present / $total) * 100, 1) : 0;
 
                 $rows[] = [
-                    'room_name' => 'General Room',
+                    'room_name' => $reportTexts['general_room_label'],
                     'school_name' => $firstRecord->session?->school?->school_name ?? '—',
                     'total_sessions' => $sessions,
                     'total_records' => $total,
@@ -1569,7 +1577,7 @@ class AttendanceSessionController extends Controller
             // Add totals row
             if (count($rows) > 0) {
                 $totals = [
-                    'room_name' => 'TOTAL',
+                    'room_name' => $reportTexts['total_label'],
                     'school_name' => '',
                     'total_sessions' => array_sum(array_column($rows, 'total_sessions')),
                     'total_records' => array_sum(array_column($rows, 'total_records')),
@@ -1656,6 +1664,189 @@ class AttendanceSessionController extends Controller
         }
 
         return array_values(array_unique($classIds));
+    }
+
+    private function getAttendanceReportTexts(string $language): array
+    {
+        $base = [
+            'titles' => [
+                'daily' => 'Daily Attendance Report',
+                'totals' => 'Attendance Totals Report',
+                'class_wise' => 'Attendance Class-wise Summary',
+                'room_wise' => 'Attendance Room-wise Summary',
+            ],
+            'columns' => [
+                'student' => 'Student',
+                'admission_no' => 'Admission No',
+                'class' => 'Class',
+                'room' => 'Room',
+                'school' => 'School',
+                'date' => 'Date',
+                'round' => 'Round',
+                'session_label' => 'Session Label',
+                'status' => 'Status',
+                'marked_at' => 'Marked At',
+                'method' => 'Method',
+                'attendance_rate' => 'Attendance Rate %',
+            ],
+            'statuses' => [
+                'present' => 'Present',
+                'absent' => 'Absent',
+                'late' => 'Late',
+                'excused' => 'Excused',
+                'sick' => 'Sick',
+                'leave' => 'Leave',
+            ],
+            'methods' => [
+                'manual' => 'Manual',
+                'barcode' => 'Barcode',
+            ],
+            'from' => 'From',
+            'until' => 'Until',
+            'round_prefix' => 'Round',
+            'total_label' => 'TOTAL',
+            'general_room_label' => 'General Room',
+        ];
+
+        $translations = [
+            'ps' => [
+                'titles' => [
+                    'daily' => 'د ورځنۍ حاضرۍ راپور',
+                    'totals' => 'د حاضرۍ ټولیز راپور',
+                    'class_wise' => 'د صنف له مخې د حاضرۍ لنډیز',
+                    'room_wise' => 'د خونې له مخې د حاضرۍ لنډیز',
+                ],
+                'columns' => [
+                    'student' => 'زده کوونکی',
+                    'admission_no' => 'د شمولیت شمېره',
+                    'class' => 'صنف',
+                    'room' => 'خونه',
+                    'school' => 'ښوونځی',
+                    'date' => 'نېټه',
+                    'round' => 'پړاو',
+                    'session_label' => 'د ناستې نوم',
+                    'status' => 'حالت',
+                    'marked_at' => 'ثبت شوی په',
+                    'method' => 'طریقه',
+                    'attendance_rate' => 'د حاضرۍ کچه %',
+                ],
+                'statuses' => [
+                    'present' => 'حاضر',
+                    'absent' => 'غایب',
+                    'late' => 'ناوخته',
+                    'excused' => 'معذور',
+                    'sick' => 'ناروغ',
+                    'leave' => 'رخصت',
+                ],
+                'methods' => [
+                    'manual' => 'لاسې',
+                    'barcode' => 'بارکوډ',
+                ],
+                'from' => 'له',
+                'until' => 'تر',
+                'round_prefix' => 'پړاو',
+                'total_label' => 'ټول',
+                'general_room_label' => 'عمومي خونه',
+            ],
+            'fa' => [
+                'titles' => [
+                    'daily' => 'گزارش حاضری روزانه',
+                    'totals' => 'گزارش مجموعی حاضری',
+                    'class_wise' => 'خلاصه حاضری به تفکیک صنف',
+                    'room_wise' => 'خلاصه حاضری به تفکیک اتاق',
+                ],
+                'columns' => [
+                    'student' => 'شاگرد',
+                    'admission_no' => 'شماره ثبت‌نام',
+                    'class' => 'صنف',
+                    'room' => 'اتاق',
+                    'school' => 'مکتب',
+                    'date' => 'تاریخ',
+                    'round' => 'دور',
+                    'session_label' => 'عنوان جلسه',
+                    'status' => 'وضعیت',
+                    'marked_at' => 'ثبت شده در',
+                    'method' => 'روش',
+                    'attendance_rate' => 'نرخ حاضری %',
+                ],
+                'statuses' => [
+                    'present' => 'حاضر',
+                    'absent' => 'غایب',
+                    'late' => 'ناوقت',
+                    'excused' => 'معذور',
+                    'sick' => 'مریض',
+                    'leave' => 'رخصتی',
+                ],
+                'methods' => [
+                    'manual' => 'دستی',
+                    'barcode' => 'بارکد',
+                ],
+                'from' => 'از',
+                'until' => 'تا',
+                'round_prefix' => 'دور',
+                'total_label' => 'مجموع',
+                'general_room_label' => 'اتاق عمومی',
+            ],
+            'ar' => [
+                'titles' => [
+                    'daily' => 'تقرير الحضور اليومي',
+                    'totals' => 'تقرير إجمالي الحضور',
+                    'class_wise' => 'ملخص الحضور حسب الصف',
+                    'room_wise' => 'ملخص الحضور حسب الغرفة',
+                ],
+                'columns' => [
+                    'student' => 'الطالب',
+                    'admission_no' => 'رقم القبول',
+                    'class' => 'الصف',
+                    'room' => 'الغرفة',
+                    'school' => 'المدرسة',
+                    'date' => 'التاريخ',
+                    'round' => 'الجولة',
+                    'session_label' => 'عنوان الجلسة',
+                    'status' => 'الحالة',
+                    'marked_at' => 'سُجل في',
+                    'method' => 'الطريقة',
+                    'attendance_rate' => 'نسبة الحضور %',
+                ],
+                'statuses' => [
+                    'present' => 'حاضر',
+                    'absent' => 'غائب',
+                    'late' => 'متأخر',
+                    'excused' => 'معذور',
+                    'sick' => 'مريض',
+                    'leave' => 'إجازة',
+                ],
+                'methods' => [
+                    'manual' => 'يدوي',
+                    'barcode' => 'باركود',
+                ],
+                'from' => 'من',
+                'until' => 'إلى',
+                'round_prefix' => 'الجولة',
+                'total_label' => 'المجموع',
+                'general_room_label' => 'غرفة عامة',
+            ],
+        ];
+
+        return array_replace_recursive($base, $translations[$language] ?? []);
+    }
+
+    private function translateAttendanceStatus(?string $status, array $reportTexts): string
+    {
+        if (! is_string($status) || $status === '') {
+            return '—';
+        }
+
+        return $reportTexts['statuses'][$status] ?? ucfirst($status);
+    }
+
+    private function translateAttendanceMethod(?string $method, array $reportTexts): string
+    {
+        if (! is_string($method) || $method === '') {
+            return '—';
+        }
+
+        return $reportTexts['methods'][$method] ?? ucfirst($method);
     }
 
     private function nextAttendanceRoundNumber(string $organizationId, string $schoolId, string $sessionDate, ?string $excludeSessionId = null): int

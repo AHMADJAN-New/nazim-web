@@ -114,6 +114,19 @@ const SummaryCard = ({
 
 const formatPercent = (value?: number) => `${(value ?? 0).toFixed(1)}%`;
 
+const getReportEndpoint = (downloadUrl: string): string => {
+    const url = new URL(downloadUrl);
+    let endpoint = url.pathname;
+
+    if (endpoint.startsWith('/api/')) {
+        endpoint = endpoint.slice(4);
+    } else if (endpoint.startsWith('/api')) {
+        endpoint = endpoint.slice(4);
+    }
+
+    return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+};
+
 export default function AttendanceTotalsReports() {
     const { t, language } = useLanguage();
     const { calendar } = useDatePreference();
@@ -218,6 +231,20 @@ export default function AttendanceTotalsReports() {
         }
 
         try {
+            const downloadReportWithAuth = async (downloadUrl: string, fallbackName: string) => {
+                const endpoint = getReportEndpoint(downloadUrl);
+                const { blob, filename } = await apiClient.requestFile(endpoint);
+
+                const objectUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = filename || fallbackName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(objectUrl);
+            };
+
             setIsGenerating(true);
             setShowProgressDialog(true);
             setReportProgress(0);
@@ -244,7 +271,7 @@ export default function AttendanceTotalsReports() {
 
             if (response.success && response.download_url) {
                 // Report completed synchronously
-                window.open(response.download_url, '_blank');
+                await downloadReportWithAuth(response.download_url, `attendance-totals-${variant}.${reportType}`);
                 setShowProgressDialog(false);
                 setIsGenerating(false);
                 showToast.success(t('attendanceTotalsReport.reportExported') || 'Report generated successfully');
@@ -263,7 +290,7 @@ export default function AttendanceTotalsReports() {
                         setReportStatus(statusData.status);
                         
                         if (statusData.status === 'completed' && statusData.download_url) {
-                            window.open(statusData.download_url, '_blank');
+                            await downloadReportWithAuth(statusData.download_url, `attendance-totals-${variant}.${reportType}`);
                             setShowProgressDialog(false);
                             setIsGenerating(false);
                             showToast.success(t('attendanceTotalsReport.reportExported') || 'Report generated successfully');
