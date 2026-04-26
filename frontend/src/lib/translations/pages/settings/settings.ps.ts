@@ -31,7 +31,7 @@ export default {
       reportRoomsCount: "خونې",
       reportSchoolName: "د ښوونځي نوم",
       reportTitle: "د ودانیو راپور",
-      room: "خونه",
+      room: "اتاق ",
       rooms: "خونې",
       school: "ښوونځی",
       schoolRequired: "مهرباني وکړئ یو ښوونځی غوره کړئ",

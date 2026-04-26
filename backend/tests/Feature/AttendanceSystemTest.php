@@ -2,16 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicYear;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
-use App\Models\AcademicYear;
 use App\Models\Building;
+use App\Models\ClassModel;
 use App\Models\Organization;
 use App\Models\Room;
 use App\Models\SchoolBranding;
 use App\Models\Student;
 use App\Models\StudentAdmission;
-use App\Models\ClassModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -606,7 +606,7 @@ class AttendanceSystemTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonFragment([
                 'id' => $record->id,
-                'student_room_name' => 'A-12',
+                'student_room_name' => 'Hostel Block A - A-12',
             ]);
     }
 }

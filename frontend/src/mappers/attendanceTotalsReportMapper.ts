@@ -61,6 +61,18 @@ export const mapAttendanceTotalsReportApiToDomain = (
       leave: item.leave_count,
       attendanceRate: computeRate(item.present_count, item.total_records),
     })),
+    roomBreakdown: (apiReport.room_breakdown ?? []).map((item) => ({
+      roomName: item.room_name,
+      schoolName: item.school_name,
+      totalRecords: item.total_records,
+      present: item.present_count,
+      absent: item.absent_count,
+      late: item.late_count,
+      excused: item.excused_count,
+      sick: item.sick_count,
+      leave: item.leave_count,
+      attendanceRate: computeRate(item.present_count, item.total_records),
+    })),
     recentSessions: apiReport.recent_sessions.map((session) => ({
       id: session.id,
       sessionDate: session.session_date ? new Date(session.session_date) : null,

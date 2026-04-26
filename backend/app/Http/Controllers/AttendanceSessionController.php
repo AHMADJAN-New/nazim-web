@@ -1218,6 +1218,24 @@ class AttendanceSessionController extends Controller
             ->orderByDesc('total_records')
             ->get();
 
+        $roomLabelExpression = "COALESCE((SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' ORDER BY sa.created_at DESC LIMIT 1), 'General Room')";
+        $schoolNameExpression = "COALESCE(sb.school_name, 'No school')";
+
+        $roomBreakdown = (clone $recordQuery)
+            ->leftJoin('school_branding as sb', 'sb.id', '=', 's.school_id')
+            ->selectRaw("{$roomLabelExpression} as room_name")
+            ->selectRaw("{$schoolNameExpression} as school_name")
+            ->selectRaw('COUNT(*) as total_records')
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'present' THEN 1 ELSE 0 END) as present_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'absent' THEN 1 ELSE 0 END) as absent_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'late' THEN 1 ELSE 0 END) as late_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'excused' THEN 1 ELSE 0 END) as excused_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'sick' THEN 1 ELSE 0 END) as sick_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'leave' THEN 1 ELSE 0 END) as leave_count")
+            ->groupBy(DB::raw($roomLabelExpression), DB::raw($schoolNameExpression))
+            ->orderByDesc('total_records')
+            ->get();
+
         $sessionStats = (clone $recordQuery)
             ->select('attendance_records.attendance_session_id')
             ->selectRaw('COUNT(*) as total_records')
@@ -1275,6 +1293,7 @@ class AttendanceSessionController extends Controller
             'status_breakdown' => $statusBreakdown,
             'class_breakdown' => $classBreakdown,
             'school_breakdown' => $schoolBreakdown,
+            'room_breakdown' => $roomBreakdown,
             'recent_sessions' => $recentSessions,
         ];
 
@@ -1397,6 +1416,7 @@ class AttendanceSessionController extends Controller
             $title = $reportTexts['titles']['daily'];
             $columns = [
                 ['key' => 'student_name', 'label' => $reportTexts['columns']['student']],
+                ['key' => 'father_name', 'label' => $reportTexts['columns']['father_name']],
                 ['key' => 'admission_no', 'label' => $reportTexts['columns']['admission_no']],
                 ['key' => 'class_name', 'label' => $reportTexts['columns']['class']],
                 ['key' => 'room_name', 'label' => $reportTexts['columns']['room']],
@@ -1411,6 +1431,7 @@ class AttendanceSessionController extends Controller
             foreach ($records as $record) {
                 $rows[] = [
                     'student_name' => $record->student?->full_name ?? '—',
+                    'father_name' => $record->student?->father_name ?? '—',
                     'admission_no' => $record->student?->admission_no ?? '—',
                     'class_name' => $record->session?->classModel?->name ?? ($record->session?->classes?->first()?->name ?? '—'),
                     'room_name' => $record->student_room_name ?? '—',
@@ -1677,6 +1698,7 @@ class AttendanceSessionController extends Controller
             ],
             'columns' => [
                 'student' => 'Student',
+                'father_name' => "Father's Name",
                 'admission_no' => 'Admission No',
                 'class' => 'Class',
                 'room' => 'Room',
@@ -1718,9 +1740,10 @@ class AttendanceSessionController extends Controller
                 ],
                 'columns' => [
                     'student' => 'زده کوونکی',
+                    'father_name' => 'د پلار نوم',
                     'admission_no' => 'د شمولیت شمېره',
                     'class' => 'صنف',
-                    'room' => 'خونه',
+                    'room' => 'اتاق ',
                     'school' => 'ښوونځی',
                     'date' => 'نېټه',
                     'round' => 'پړاو',
@@ -1746,7 +1769,7 @@ class AttendanceSessionController extends Controller
                 'until' => 'تر',
                 'round_prefix' => 'پړاو',
                 'total_label' => 'ټول',
-                'general_room_label' => 'عمومي خونه',
+                'general_room_label' => 'عمومي اتاق ',
             ],
             'fa' => [
                 'titles' => [
@@ -1757,6 +1780,7 @@ class AttendanceSessionController extends Controller
                 ],
                 'columns' => [
                     'student' => 'شاگرد',
+                    'father_name' => 'نام پدر',
                     'admission_no' => 'شماره ثبت‌نام',
                     'class' => 'صنف',
                     'room' => 'اتاق',
@@ -1796,6 +1820,7 @@ class AttendanceSessionController extends Controller
                 ],
                 'columns' => [
                     'student' => 'الطالب',
+                    'father_name' => 'اسم الأب',
                     'admission_no' => 'رقم القبول',
                     'class' => 'الصف',
                     'room' => 'الغرفة',

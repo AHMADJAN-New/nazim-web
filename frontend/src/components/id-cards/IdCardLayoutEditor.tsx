@@ -97,7 +97,7 @@ const DEFAULT_LABEL_TEXTS: Record<string, string> = {
   studentNameLabel: 'نوم:',
   fatherNameLabel: 'د پلار نوم:',
   classLabel: 'درجه:',
-  roomLabel: 'خونه:',
+  roomLabel: 'اتاق :',
   admissionNumberLabel: 'داخله نمبر:',
   studentCodeLabel: 'ID:',
   cardNumberLabel: 'کارت نمبر:',
@@ -168,7 +168,7 @@ const FRONT_FIELDS: FieldConfig[] = [
   { id: 'fatherNameLabel', label: 'Label: Father Name (د پلار نوم)', key: 'fatherNameLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.fatherNameLabel, defaultFontSize: 10 },
   { id: 'fatherName', label: 'Father Name', key: 'fatherNamePosition', sampleText: 'Mohammad', defaultFontSize: 12 },
   { id: 'classLabel', label: 'Label: Class (درجه)', key: 'classLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.classLabel, defaultFontSize: 10 },
-  { id: 'roomLabel', label: 'Label: Room (خونه)', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
+  { id: 'roomLabel', label: 'Label: Room (اتاق )', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
   { id: 'admissionNumberLabel', label: 'Label: Admission Number (داخله نمبر)', key: 'admissionNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.admissionNumberLabel, defaultFontSize: 10 },
   { id: 'studentCodeLabel', label: 'Label: ID (ID)', key: 'studentCodeLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.studentCodeLabel, defaultFontSize: 10 },
   { id: 'studentCode', label: 'Student Code', key: 'studentCodePosition', sampleText: 'STU-2024-001', defaultFontSize: 10 },
@@ -189,7 +189,7 @@ const FRONT_FIELDS: FieldConfig[] = [
 const BACK_FIELDS: FieldConfig[] = [
   { id: 'createdDate', label: 'Created Date', key: 'createdDatePosition', sampleText: 'Apr 13, 2026', defaultFontSize: 10 },
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
-  { id: 'roomLabel', label: 'Label: Room (خونه)', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
+  { id: 'roomLabel', label: 'Label: Room (اتاق )', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
   { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
   { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
   { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
@@ -357,7 +357,7 @@ export function IdCardLayoutEditor({
       case 'classLabel':
         return 'e.g., درجه';
       case 'roomLabel':
-        return 'e.g., خونه';
+        return 'e.g., اتاق ';
       case 'admissionNumberLabel':
         return 'e.g., داخله نمبر';
       case 'studentCodeLabel':

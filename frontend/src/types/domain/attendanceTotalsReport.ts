@@ -32,6 +32,19 @@ export interface AttendanceSchoolSummary {
   attendanceRate: number;
 }
 
+export interface AttendanceRoomSummary {
+  roomName: string;
+  schoolName: string;
+  totalRecords: number;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+  sick: number;
+  leave: number;
+  attendanceRate: number;
+}
+
 export interface AttendanceSessionOverview {
   id: string;
   sessionDate: Date | null;
@@ -67,6 +80,7 @@ export interface AttendanceTotalsReport {
   statusBreakdown: AttendanceStatusSummary[];
   classBreakdown: AttendanceClassSummary[];
   schoolBreakdown: AttendanceSchoolSummary[];
+  roomBreakdown: AttendanceRoomSummary[];
   recentSessions: AttendanceSessionOverview[];
 }
 

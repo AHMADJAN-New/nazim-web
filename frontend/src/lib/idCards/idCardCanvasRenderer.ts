@@ -46,7 +46,7 @@ const DEFAULT_FIELD_LABELS: Record<string, string> = {
   studentNameLabel: 'نوم:',
   fatherNameLabel: 'د پلار نوم:',
   classLabel: 'درجه:',
-  roomLabel: 'خونه:',
+  roomLabel: 'اتاق :',
   admissionNumberLabel: 'داخله نمبر:',
   studentCodeLabel: 'ID:',
   cardNumberLabel: 'کارت نمبر:',

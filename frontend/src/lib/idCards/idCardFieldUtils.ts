@@ -6,7 +6,7 @@ export const DEFAULT_ID_CARD_LABEL_TEXTS: Record<string, string> = {
   studentNameLabel: 'نوم:',
   fatherNameLabel: 'د پلار نوم:',
   classLabel: 'درجه:',
-  roomLabel: 'خونه:',
+  roomLabel: 'اتاق :',
   admissionNumberLabel: 'داخله نمبر:',
   studentCodeLabel: 'ID:',
   cardNumberLabel: 'کارت نمبر:',

@@ -67,7 +67,7 @@ export default {
     financeCategories: 'کټګورۍ',
     financeCategoriesDesc: 'د عوایدو او لګښتونو کټګورۍ',
     financeSettings: 'تنظیمات',
-    financeSettingsDesc: 'اسعار، کټګورۍ او د تبادلې نرخونه',
+    financeSettingsDesc: 'اسعار، کټګورۍ او د تبادلې نراتاق ',
     financeTotalBalance: 'ټول بیلانس',
     financeMonthIncome: 'د دې میاشتې عواید',
     financeMonthExpense: 'د دې میاشتې لګښتونه',

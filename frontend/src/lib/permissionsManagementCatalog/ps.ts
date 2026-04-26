@@ -46,7 +46,7 @@ export const permissionsManagementCatalogPs: PermissionsManagementCatalog = {
     },
     "website_editor": {
       "title": "د ویب پاڼې سمونګر",
-      "description": "مخونه، پوسټونه، پیښې او مینو سمول."
+      "description": "ماتاق ، پوسټونه، پیښې او مینو سمول."
     },
     "website_media": {
       "title": "د ویب رسنیو مدیر",
@@ -798,19 +798,19 @@ export const permissionsManagementCatalogPs: PermissionsManagementCatalog = {
     },
     "exchange_rates.create": {
       "actionLabel": "جوړول",
-      "description": "جوړول — د اسعارو نرخونه"
+      "description": "جوړول — د اسعارو نراتاق "
     },
     "exchange_rates.delete": {
       "actionLabel": "ړنګول",
-      "description": "ړنګول — د اسعارو نرخونه"
+      "description": "ړنګول — د اسعارو نراتاق "
     },
     "exchange_rates.read": {
       "actionLabel": "لوستل",
-      "description": "لوستل — د اسعارو نرخونه"
+      "description": "لوستل — د اسعارو نراتاق "
     },
     "exchange_rates.update": {
       "actionLabel": "سمول",
-      "description": "سمول — د اسعارو نرخونه"
+      "description": "سمول — د اسعارو نراتاق "
     },
     "expense_categories.create": {
       "actionLabel": "جوړول",
@@ -1766,19 +1766,19 @@ export const permissionsManagementCatalogPs: PermissionsManagementCatalog = {
     },
     "website_pages.create": {
       "actionLabel": "جوړول",
-      "description": "جوړول — ویب مخونه"
+      "description": "جوړول — ویب ماتاق "
     },
     "website_pages.delete": {
       "actionLabel": "ړنګول",
-      "description": "ړنګول — ویب مخونه"
+      "description": "ړنګول — ویب ماتاق "
     },
     "website_pages.read": {
       "actionLabel": "لوستل",
-      "description": "لوستل — ویب مخونه"
+      "description": "لوستل — ویب ماتاق "
     },
     "website_pages.update": {
       "actionLabel": "سمول",
-      "description": "سمول — ویب مخونه"
+      "description": "سمول — ویب ماتاق "
     },
     "website_posts.create": {
       "actionLabel": "جوړول",

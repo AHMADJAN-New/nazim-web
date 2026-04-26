@@ -166,6 +166,28 @@ export default function AttendanceTotalsReports() {
         enabled: !hasInvalidRange,
     });
 
+    const classSessions = useMemo(
+        () =>
+            (report?.recentSessions ?? []).filter(
+                (session) =>
+                    !!session.className &&
+                    session.className !== '—' &&
+                    session.className !== 'Unassigned'
+            ),
+        [report?.recentSessions]
+    );
+
+    const roomSessions = useMemo(
+        () =>
+            (report?.recentSessions ?? []).filter(
+                (session) =>
+                    !session.className ||
+                    session.className === '—' ||
+                    session.className === 'Unassigned'
+            ),
+        [report?.recentSessions]
+    );
+
     const handleFilterChange = (key: keyof AttendanceTotalsReportFilters, value: string | undefined) => {
         setFilters((prev) => ({
             ...prev,
@@ -738,16 +760,14 @@ export default function AttendanceTotalsReports() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {report.recentSessions.filter((s) => s.className).length === 0 && (
+                                            {classSessions.length === 0 && (
                                                 <TableRow>
                                                     <TableCell colSpan={7} className="text-center text-muted-foreground">
                                                         {t('attendanceTotalsReport.noRecentSessions') || 'No class sessions found for this range.'}
                                                     </TableCell>
                                                 </TableRow>
                                             )}
-                                            {report.recentSessions
-                                                .filter((s) => s.className)
-                                                .map((session) => (
+                                            {classSessions.map((session) => (
                                                     <TableRow key={session.id}>
                                                         <TableCell className="font-medium">
                                                             {session.sessionDate ? format(session.sessionDate, 'MMM dd, yyyy') : '—'}
@@ -775,10 +795,38 @@ export default function AttendanceTotalsReports() {
                                         {t('attendanceTotalsReport.roomBreakdownHint') || 'Attendance quality grouped by rooms (sessions without specific class assignment).'}
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground text-center py-8">
-                                        {t('attendanceTotalsReport.roomSessionsInfo') || 'Room-based attendance sessions will be displayed here. These are sessions not tied to a specific class.'}
-                                    </p>
+                                <CardContent className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>{t('attendanceTotalsReport.room') || 'Room'}</TableHead>
+                                                <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
+                                                <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
+                                                <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
+                                                <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
+                                                <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {(report.roomBreakdown?.length ?? 0) === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                                                        {t('attendanceTotalsReport.noRoomData') || 'No room data available for this range.'}
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                            {(report.roomBreakdown ?? []).map((row) => (
+                                                <TableRow key={`${row.roomName}-${row.schoolName}`}>
+                                                    <TableCell className="font-medium">{row.roomName}</TableCell>
+                                                    <TableCell>{row.schoolName}</TableCell>
+                                                    <TableCell className="text-right">{formatPercent(row.attendanceRate)}</TableCell>
+                                                    <TableCell className="text-right">{row.present.toLocaleString()}</TableCell>
+                                                    <TableCell className="text-right">{row.absent.toLocaleString()}</TableCell>
+                                                    <TableCell className="text-right">{row.totalRecords.toLocaleString()}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
                                 </CardContent>
                             </Card>
 
@@ -803,21 +851,23 @@ export default function AttendanceTotalsReports() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {report.recentSessions.filter((s) => !s.className).length === 0 && (
+                                            {roomSessions.length === 0 && (
                                                 <TableRow>
                                                     <TableCell colSpan={7} className="text-center text-muted-foreground">
                                                         {t('attendanceTotalsReport.noRecentRoomSessions') || 'No room sessions found for this range.'}
                                                     </TableCell>
                                                 </TableRow>
                                             )}
-                                            {report.recentSessions
-                                                .filter((s) => !s.className)
-                                                .map((session) => (
+                                            {roomSessions.map((session) => (
                                                     <TableRow key={session.id}>
                                                         <TableCell className="font-medium">
                                                             {session.sessionDate ? format(session.sessionDate, 'MMM dd, yyyy') : '—'}
                                                         </TableCell>
-                                                        <TableCell>{session.className || t('attendanceTotalsReport.generalRoom') || 'General Room'}</TableCell>
+                                                        <TableCell>
+                                                            {session.className && session.className !== '—'
+                                                                ? session.className
+                                                                : t('attendanceTotalsReport.generalRoom') || 'General Room'}
+                                                        </TableCell>
                                                         <TableCell>{session.schoolName || t('attendanceTotalsReport.noSchool') || 'No school'}</TableCell>
                                                         <TableCell className="text-right">{formatPercent(session.attendanceRate)}</TableCell>
                                                         <TableCell className="text-right">{session.totals.present.toLocaleString()}</TableCell>

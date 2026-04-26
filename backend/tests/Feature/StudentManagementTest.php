@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\AcademicYear;
+use App\Models\ClassModel;
 use App\Models\Organization;
 use App\Models\SchoolBranding;
 use App\Models\Student;
+use App\Models\StudentAdmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -239,6 +241,71 @@ class StudentManagementTest extends TestCase
         foreach ($students as $student) {
             $this->assertEquals('active', $student['student_status']);
         }
+    }
+
+    /** @test */
+    public function class_filter_includes_students_with_non_current_admission_statuses()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $activeStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_status' => 'active',
+        ]);
+
+        $inactiveStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_status' => 'admitted',
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $activeStudent->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $inactiveStudent->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'admission_date' => now()->subDay()->toDateString(),
+            'enrollment_status' => 'inactive',
+            'is_boarder' => false,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students', [
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+        ]);
+
+        $response->assertStatus(200);
+        $students = $response->json();
+
+        $this->assertCount(2, $students);
+        $returnedIds = collect($students)->pluck('id')->all();
+        $this->assertContains($activeStudent->id, $returnedIds);
+        $this->assertContains($inactiveStudent->id, $returnedIds);
     }
 
     /** @test */

@@ -123,7 +123,7 @@ const ROLES = {
     },
     website_editor: {
       title: 'د ویب پاڼې سمونګر',
-      description: 'مخونه، پوسټونه، پیښې او مینو سمول.',
+      description: 'ماتاق ، پوسټونه، پیښې او مینو سمول.',
     },
     website_media: {
       title: 'د ویب رسنیو مدیر',
@@ -424,7 +424,7 @@ const RESOURCE_PART = {
     exams: 'ازموینې',
     papers: 'کاغذونه/تستونه',
     questions: 'پوښتنې',
-    exchange_rates: 'د اسعارو نرخونه',
+    exchange_rates: 'د اسعارو نراتاق ',
     expense_categories: 'د لګښت کټګورۍ',
     expense_entries: 'د لګښت ثبتونه',
     fees: 'فیس',
@@ -488,7 +488,7 @@ const RESOURCE_PART = {
     website_events: 'د ویب پیښې',
     website_media: 'ویب رسنۍ',
     website_menus: 'ویب مینو',
-    website_pages: 'ویب مخونه',
+    website_pages: 'ویب ماتاق ',
     website_posts: 'ویب پوسټونه',
     website_settings: 'د ویب تنظیمات',
     dms: 'DMS',

@@ -265,7 +265,7 @@ export default {
       manual: "دستی",
       barcode: "بارکد",
       markAllPresent: "همه را حاضر علامت بزن",
-      markAllAbsent: "همه را غایب علامت بزن",
+      markAllAbsent: "همه را غیر حاضرعلامت بزن",
       student: "دانش‌آموز",
       cardNumber: "شماره کارت",
       status: "وضعیت",

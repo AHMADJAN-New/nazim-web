@@ -1051,7 +1051,7 @@ class StudentAdmissionController extends Controller
             ['key' => 'academic_year', 'label' => $language === 'ps' ? 'د زده کړو کال' : ($language === 'fa' ? 'سال تحصیلی' : ($language === 'ar' ? 'السنة الدراسية' : 'Academic Year'))],
             ['key' => 'residency_type', 'label' => $language === 'ps' ? 'د اوسیدو ډول' : ($language === 'fa' ? 'نوع اقامت' : ($language === 'ar' ? 'نوع الإقامة' : 'Residency Type'))],
             ['key' => 'is_boarder', 'label' => $language === 'ps' ? 'د اوسیدو ډول' : ($language === 'fa' ? 'نوع اقامت' : ($language === 'ar' ? 'نوع الإقامة' : 'Boarder'))],
-            ['key' => 'room', 'label' => $language === 'ps' ? 'خونه' : ($language === 'fa' ? 'اتاق' : ($language === 'ar' ? 'الغرفة' : 'Room'))],
+            ['key' => 'room', 'label' => $language === 'ps' ? 'اتاق ' : ($language === 'fa' ? 'اتاق' : ($language === 'ar' ? 'الغرفة' : 'Room'))],
             ['key' => 'guardian_name', 'label' => $language === 'ps' ? 'د سرپرست نوم' : ($language === 'fa' ? 'نام ولی' : ($language === 'ar' ? 'اسم الولي' : 'Guardian Name'))],
             ['key' => 'guardian_phone', 'label' => $language === 'ps' ? 'د سرپرست تلیفون' : ($language === 'fa' ? 'تلفن ولی' : ($language === 'ar' ? 'هاتف الولي' : 'Guardian Phone'))],
             ['key' => 'enrollment_status', 'label' => $language === 'ps' ? 'د نوم لیکنې حالت' : ($language === 'fa' ? 'وضعیت ثبت نام' : ($language === 'ar' ? 'حالة التسجيل' : 'Enrollment Status'))],

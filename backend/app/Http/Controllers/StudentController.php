@@ -164,8 +164,7 @@ class StudentController extends Controller
                     ->whereColumn('sa.student_id', 'students.id')
                     ->whereNull('sa.deleted_at')
                     ->where('sa.organization_id', $organizationId)
-                    ->where('sa.school_id', $currentSchoolId)
-                    ->whereIn('sa.enrollment_status', ['active', 'admitted', 'pending']);
+                    ->where('sa.school_id', $currentSchoolId);
 
                 if (! empty($academicYearId)) {
                     $subQuery->where('sa.academic_year_id', $academicYearId);

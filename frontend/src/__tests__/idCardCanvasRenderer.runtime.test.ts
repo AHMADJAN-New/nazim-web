@@ -260,7 +260,7 @@ describe('idCardCanvasRenderer runtime alignment', () => {
       paddingPx: 20,
     });
 
-    const roomLabelCall = fillTextCalls.find((call) => call.text.startsWith('خونه'));
+    const roomLabelCall = fillTextCalls.find((call) => call.text.startsWith('اتاق '));
     const roomValueCall = fillTextCalls.find((call) => call.text === 'B-12');
     expect(roomLabelCall).toBeDefined();
     expect(roomValueCall).toBeDefined();

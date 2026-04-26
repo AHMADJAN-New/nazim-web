@@ -30,6 +30,18 @@ export interface AttendanceSchoolBreakdown {
   leave_count: number;
 }
 
+export interface AttendanceRoomBreakdown {
+  room_name: string;
+  school_name: string;
+  total_records: number;
+  present_count: number;
+  absent_count: number;
+  late_count: number;
+  excused_count: number;
+  sick_count: number;
+  leave_count: number;
+}
+
 export interface AttendanceSessionSummary {
   id: string;
   session_date: string | null;
@@ -64,5 +76,6 @@ export interface AttendanceTotalsReport {
   status_breakdown: AttendanceStatusBreakdown[];
   class_breakdown: AttendanceClassBreakdown[];
   school_breakdown: AttendanceSchoolBreakdown[];
+  room_breakdown: AttendanceRoomBreakdown[];
   recent_sessions: AttendanceSessionSummary[];
 }

@@ -37,7 +37,7 @@ export default {
     chooseStudent: "زده کوونکی وټاکئ",
     classPlacement: "د ټولګي ځای",
     homeroomTeacher: "د ټولګي ښوونکی",
-    homeroomRoom: "ټولګی خونه",
+    homeroomRoom: "ټولګی اتاق ",
     sectionNotes: "د څانګې یادښتونه",
     allAdmissionsForStudent: "د دې زده کوونکي ټولې داخلې",
     selectAdmissionHint: "بله داخله وټاکئ ترڅو دلته یې وګورئ.",
