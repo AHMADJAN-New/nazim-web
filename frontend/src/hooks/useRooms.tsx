@@ -28,7 +28,7 @@ export const useRooms = (schoolId?: string, organizationId?: string, usePaginate
 
   const roomsQueryKey = ['rooms', schoolId, organizationId || profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined];
 
-  const { data, isLoading, error } = useOfflineCachedQuery<Room[] | PaginatedResponse<RoomApi.Room>>({
+  const { data, isLoading, error, isFromCache, cachedAt } = useOfflineCachedQuery<Room[] | PaginatedResponse<RoomApi.Room>>({
     cacheKey: `hostel.rooms:${JSON.stringify(roomsQueryKey)}`,
     cacheKind: 'hostel.rooms',
     queryKey: roomsQueryKey,
@@ -103,6 +103,8 @@ export const useRooms = (schoolId?: string, organizationId?: string, usePaginate
       pageSize,
       setPage,
       setPageSize,
+      isFromCache,
+      cachedAt,
     };
   }
 
@@ -110,6 +112,8 @@ export const useRooms = (schoolId?: string, organizationId?: string, usePaginate
     data: data as Room[] | undefined,
     isLoading,
     error,
+    isFromCache,
+    cachedAt,
   };
 };
 

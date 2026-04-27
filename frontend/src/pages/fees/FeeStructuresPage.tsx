@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FeeStructureForm } from '@/components/fees/FeeStructureForm';
+import { CachedDataBanner } from '@/components/layout/CachedDataBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,8 @@ export default function FeeStructuresPage() {
     pageSize,
     setPage,
     setPageSize,
+    isFromCache,
+    cachedAt,
   } = useFeeStructures(undefined, true);
   const { data: classes = [] } = useClasses();
   const { data: academicYears = [] } = useAcademicYears();
@@ -298,6 +301,8 @@ export default function FeeStructuresPage() {
           />
         }
       />
+
+      <CachedDataBanner isFromCache={!!isFromCache} cachedAt={cachedAt ?? null} />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl">

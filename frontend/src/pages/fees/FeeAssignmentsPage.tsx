@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import type { ZodIssue } from 'zod';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { CachedDataBanner } from '@/components/layout/CachedDataBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -139,6 +140,8 @@ export default function FeeAssignmentsPage() {
     setPage,
     setPageSize,
     refetch: refetchAssignments,
+    isFromCache,
+    cachedAt,
   } = useFeeAssignments(
     {
       academicYearId: filterAcademicYear || undefined,
@@ -527,6 +530,8 @@ export default function FeeAssignmentsPage() {
           />
         }
       />
+
+      <CachedDataBanner isFromCache={!!isFromCache} cachedAt={cachedAt ?? null} />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl">

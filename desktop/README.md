@@ -1,6 +1,8 @@
 # Nazim Desktop
 
-Electron wrapper that loads the Nazim web app from a URL. The desktop app does not bundle the frontend; it opens a window to your deployed site so users always get the latest version.
+Electron desktop build. Loads the bundled React app from `dist-renderer/` when packaged, or a remote URL in dev. Includes a full **offline-first** subsystem (SQLCipher queue + sync worker + Tier B read cache).
+
+> See **[`docs/OFFLINE_FIRST.md`](../docs/OFFLINE_FIRST.md)** for the architecture, setup, dev usage, and how to add new offline-capable features.
 
 ## Requirements
 
@@ -42,6 +44,10 @@ Opens a window that loads the configured URL. A splash screen is shown until the
 npm run dist:win
 ```
 
+This first runs `build:renderer` (which executes `vite build --base=./` in
+`../frontend` and copies `dist/` into `desktop/dist-renderer/`), then
+packages the app via electron-builder.
+
 Outputs to `desktop/dist/`:
 
 - **Nazim Setup x.x.x.exe** – installer (NSIS)
@@ -51,6 +57,12 @@ To build for all platforms:
 
 ```bash
 npm run dist
+```
+
+To build only the bundled UI (no installer):
+
+```bash
+npm run build:renderer
 ```
 
 ## Behaviour
@@ -67,7 +79,9 @@ npm run dist
 
 ## Project structure
 
-- `main.js` – Electron main process (window creation, splash, error handling, IPC).
-- `preload.js` – Exposes `window.electron.retryLoad()` for the error page.
+- `main.js` – Electron main process. Loads the bundled UI (`dist-renderer/`) when packaged, falls back to `NAZIM_APP_URL` otherwise. Registers offline IPC handlers.
+- `preload.js` – Exposes `window.electron.retryLoad()` and the full `window.electron.offline.*` bridge for the offline subsystem.
 - `splash.html` – Splash screen shown while the main window loads.
-- `error.html` – Shown when the app URL fails to load; includes Retry.
+- `error.html` – Shown when load fails; includes Retry.
+- `src/offline/` – Offline-first subsystem (SQLCipher DB, sync worker, IPC handlers, encryption keystore). See **[`docs/OFFLINE_FIRST.md`](../docs/OFFLINE_FIRST.md)**.
+- `dist-renderer/` – Bundled React build (gitignored; produced by `build:renderer`).

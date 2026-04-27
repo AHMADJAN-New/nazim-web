@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FeePaymentForm } from '@/components/fees/FeePaymentForm';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { CachedDataBanner } from '@/components/layout/CachedDataBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { feePaymentsApi } from '@/lib/api/client';
@@ -71,6 +72,8 @@ export default function FeePaymentsPage() {
     pageSize,
     setPage,
     setPageSize,
+    isFromCache,
+    cachedAt,
   } = useFeePayments(undefined, true);
   const { data: accounts = [] } = useFinanceAccounts();
   const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
@@ -334,6 +337,8 @@ export default function FeePaymentsPage() {
           />
         }
       />
+
+      <CachedDataBanner isFromCache={!!isFromCache} cachedAt={cachedAt ?? null} />
 
       <Dialog 
         open={open} 

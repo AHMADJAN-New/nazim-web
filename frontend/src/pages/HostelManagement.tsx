@@ -10,6 +10,7 @@ import {
 import { startTransition, useDeferredValue, useMemo, useState, type ReactNode } from 'react';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { CachedDataBanner } from '@/components/layout/CachedDataBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -178,7 +179,7 @@ export function HostelManagement() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
   const orgId = profile?.organization_id;
-  const { data: hostelOverview, isLoading, isError, error, refetch } = useHostelOverview(orgId);
+  const { data: hostelOverview, isLoading, isError, error, refetch, isFromCache, cachedAt } = useHostelOverview(orgId);
 
   const [activeTab, setActiveTab] = useState<HostelTab>('rooms');
   const [buildingFilter, setBuildingFilter] = useState<string>('all');
@@ -517,6 +518,8 @@ export function HostelManagement() {
           disabled: filteredRooms.length === 0,
         }}
       />
+
+      <CachedDataBanner isFromCache={!!isFromCache} cachedAt={cachedAt ?? null} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryMetricCard

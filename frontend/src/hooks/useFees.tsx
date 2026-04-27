@@ -61,7 +61,7 @@ export const useFeeStructures = (
     usePaginated ? pageSize : undefined,
   ];
 
-  const { data, isLoading, error } = useOfflineCachedQuery<FeeStructure[] | PaginatedResponse<FeeApi.FeeStructure>>({
+  const { data, isLoading, error, isFromCache, cachedAt } = useOfflineCachedQuery<FeeStructure[] | PaginatedResponse<FeeApi.FeeStructure>>({
     cacheKey: `fees.structures:${JSON.stringify(structuresQueryKey)}`,
     cacheKind: 'fees.structures',
     queryKey: structuresQueryKey,
@@ -162,6 +162,8 @@ export const useFeeStructures = (
       pageSize,
       setPage,
       setPageSize,
+      isFromCache,
+      cachedAt,
     };
   }
 
@@ -169,6 +171,8 @@ export const useFeeStructures = (
     data: data as FeeStructure[] | undefined,
     isLoading,
     error,
+    isFromCache,
+    cachedAt,
   };
 };
 
@@ -268,7 +272,7 @@ export const useFeeAssignments = (
     usePaginated ? pageSize : undefined,
   ];
 
-  const { data, isLoading, error } = useOfflineCachedQuery<FeeAssignment[] | PaginatedResponse<FeeApi.FeeAssignment>>({
+  const { data, isLoading, error, isFromCache, cachedAt } = useOfflineCachedQuery<FeeAssignment[] | PaginatedResponse<FeeApi.FeeAssignment>>({
     cacheKey: `fees.assignments:${JSON.stringify(assignmentsQueryKey)}`,
     cacheKind: 'fees.assignments',
     queryKey: assignmentsQueryKey,
@@ -383,6 +387,8 @@ export const useFeeAssignments = (
       pageSize,
       setPage,
       setPageSize,
+      isFromCache,
+      cachedAt,
     };
   }
 
@@ -390,6 +396,8 @@ export const useFeeAssignments = (
     data: data as FeeAssignment[] | undefined,
     isLoading,
     error,
+    isFromCache,
+    cachedAt,
   };
 };
 
@@ -601,7 +609,7 @@ export const useFeePayments = (
     usePaginated ? pageSize : undefined,
   ];
 
-  const { data, isLoading, error } = useOfflineCachedQuery<FeePayment[] | PaginatedResponse<FeeApi.FeePayment>>({
+  const { data, isLoading, error, isFromCache, cachedAt } = useOfflineCachedQuery<FeePayment[] | PaginatedResponse<FeeApi.FeePayment>>({
     cacheKey: `fees.payments:${JSON.stringify(paymentsQueryKey)}`,
     cacheKind: 'fees.payments',
     queryKey: paymentsQueryKey,
@@ -695,6 +703,8 @@ export const useFeePayments = (
       pageSize,
       setPage,
       setPageSize,
+      isFromCache,
+      cachedAt,
     };
   }
 
@@ -702,6 +712,8 @@ export const useFeePayments = (
     data: data as FeePayment[] | undefined,
     isLoading,
     error,
+    isFromCache,
+    cachedAt,
   };
 };
 
