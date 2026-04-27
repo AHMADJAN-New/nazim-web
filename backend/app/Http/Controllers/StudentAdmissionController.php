@@ -1388,7 +1388,8 @@ class StudentAdmissionController extends Controller
 
     /**
      * Bulk assign class section (class academic year), boarder/day, residency type, and optional hostel room.
-     * Pass either admission_ids or student_ids (students must have an admission row for the same academic year as the section).
+     * Pass either admission_ids or student_ids.
+     * When resolving by student_ids, a missing admission row for the target academic year is auto-created.
      */
     public function bulkAssignPlacement(Request $request)
     {
@@ -1516,13 +1517,14 @@ class StudentAdmissionController extends Controller
                     continue;
                 }
 
-                $query = StudentAdmission::query()
+                $baseQuery = StudentAdmission::query()
                     ->where('student_id', $studentId)
                     ->where('organization_id', $organizationId)
                     ->where('school_id', $currentSchoolId)
                     ->where('academic_year_id', $targetYearId)
                     ->whereNull('deleted_at');
 
+                $query = clone $baseQuery;
                 if ($onlyWithoutClass) {
                     $query->whereNull('class_academic_year_id');
                 }
@@ -1530,10 +1532,27 @@ class StudentAdmissionController extends Controller
                 $admission = $query->orderByDesc('admission_date')->orderByDesc('created_at')->first();
 
                 if (! $admission) {
-                    $reason = $onlyWithoutClass ? 'no_unassigned_admission_for_year' : 'no_admission_for_year';
-                    $resolutionErrors[] = ['student_id' => $studentId, 'reason' => $reason];
+                    if ($onlyWithoutClass) {
+                        $existingAdmissionInYear = (clone $baseQuery)->exists();
+                        if ($existingAdmissionInYear) {
+                            $resolutionErrors[] = ['student_id' => $studentId, 'reason' => 'no_unassigned_admission_for_year'];
 
-                    continue;
+                            continue;
+                        }
+                    }
+
+                    // Auto-create the year admission so bulk placement can assign class/residency in one step.
+                    $admission = StudentAdmission::create([
+                        'organization_id' => $organizationId,
+                        'school_id' => $currentSchoolId,
+                        'student_id' => $studentId,
+                        'academic_year_id' => $targetYearId,
+                        'class_id' => null,
+                        'class_academic_year_id' => null,
+                        'is_boarder' => false,
+                        'admission_date' => now()->toDateString(),
+                        'enrollment_status' => 'admitted',
+                    ]);
                 }
 
                 $admissions->push($admission);

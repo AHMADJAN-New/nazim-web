@@ -194,6 +194,43 @@ class StudentAdmissionStatusSyncTest extends TestCase
     }
 
     #[Test]
+    public function bulk_assign_placement_by_student_ids_creates_missing_year_admission_and_assigns_it(): void
+    {
+        $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUserWithPermissions($organization, $school, ['student_admissions.update']);
+
+        $academicYear = $this->createAcademicYearForSchool($organization, $school);
+        $class = $this->createClassForSchool($organization, $school);
+        $targetCay = $this->createClassAcademicYearForSchool($organization, $school, $class, $academicYear, ['section_name' => 'A']);
+
+        $student = $this->createStudentForSchool($organization, $school);
+
+        $response = $this->jsonAs($user, 'POST', '/api/student-admissions/bulk-assign-placement', [
+            'student_ids' => [$student->id],
+            'class_academic_year_id' => $targetCay->id,
+            'is_boarder' => true,
+            'only_without_class' => true,
+            'enrollment_status' => 'active',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('updated_count', 1)
+            ->assertJsonPath('errors', []);
+
+        $this->assertDatabaseHas('student_admissions', [
+            'student_id' => $student->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'class_academic_year_id' => $targetCay->id,
+            'is_boarder' => true,
+            'enrollment_status' => 'active',
+        ]);
+    }
+
+    #[Test]
     public function student_list_uses_the_latest_admission_summary_to_show_current_class_state(): void
     {
         $organization = Organization::factory()->create();
