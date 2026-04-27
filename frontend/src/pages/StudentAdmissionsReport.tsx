@@ -1,10 +1,11 @@
 import { BarChart3, RefreshCw, UserCheck, Building2, AlertTriangle, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ReportColumnSelector } from '@/components/reports/ReportColumnSelector';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,9 +36,24 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
+import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
+import {
+  filterSelectedReportColumns,
+  getDefaultReportColumnKeys,
+  normalizeSelectedReportColumnKeys,
+} from '@/lib/reporting/reportColumnSelection';
 
 const statusOrder: AdmissionStatus[] = ['active', 'admitted', 'pending', 'inactive', 'suspended', 'withdrawn', 'graduated'];
 type AdmissionStatusFilter = AdmissionStatus | 'with_admission' | 'without_admission';
+const admissionCoreExportColumnKeys = [
+  'student_name',
+  'admission_no',
+  'card_number',
+  'enrollment_status',
+  'admission_date',
+  'school',
+  'class',
+] as const;
 
 const statusVariant = (status: AdmissionStatus): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
   switch (status) {
@@ -187,6 +203,7 @@ const StudentAdmissionsReport = () => {
       student_name: admission.student?.fullName || '—',
       admission_no: admission.student?.admissionNumber || '—',
       card_number: admission.student?.cardNumber || '—',
+      student_code: admission.student?.studentCode || '—',
       school: admission.school?.schoolName || '—',
       class: admission.class?.name || '—',
       section: admission.classAcademicYear?.sectionName || '—',
@@ -196,6 +213,14 @@ const StudentAdmissionsReport = () => {
       room: admission.room?.roomNumber || '—',
       guardian_name: admission.student?.guardianName || '—',
       guardian_phone: admission.student?.guardianPhone || '—',
+      father_name: admission.student?.fatherName || '—',
+      gender: admission.student?.gender || '—',
+      nationality: admission.student?.nationality || '—',
+      student_phone: admission.student?.phone || '—',
+      tazkira_number: admission.student?.tazkiraNumber || '—',
+      applying_grade: admission.student?.applyingGrade || '—',
+      origin_location: [admission.student?.origProvince, admission.student?.origDistrict, admission.student?.origVillage].filter(Boolean).join(', ') || '—',
+      current_location: [admission.student?.currProvince, admission.student?.currDistrict, admission.student?.currVillage].filter(Boolean).join(', ') || '—',
       enrollment_status: admission.enrollmentStatus || '—',
       admission_date: admission.admissionDate ? new Date(admission.admissionDate).toISOString().split('T')[0] : '—',
     }));
@@ -245,8 +270,57 @@ const StudentAdmissionsReport = () => {
 
   // Get current school for export
   const currentSchoolId = selectedSchoolId || profile?.default_school_id;
+  const allExportColumns = useMemo<ReportColumn[]>(() => [
+    { key: 'student_name', label: t('events.name') || 'Student Name' },
+    { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission #' },
+    { key: 'card_number', label: t('attendanceReports.cardNumber') || 'Card #' },
+    { key: 'student_code', label: t('studentReport.studentId') || 'Student ID' },
+    { key: 'school', label: t('admissions.school') || 'School' },
+    { key: 'class', label: t('search.class') || 'Class' },
+    { key: 'section', label: t('events.section') || 'Section' },
+    { key: 'academic_year', label: t('admissions.academicYear') || 'Academic Year' },
+    { key: 'residency_type', label: t('admissions.residency') || 'Residency Type' },
+    { key: 'is_boarder', label: t('admissions.boarder') || 'Boarder' },
+    { key: 'room', label: t('admissions.room') || 'Room' },
+    { key: 'guardian_name', label: t('admissions.guardian') || 'Guardian Name' },
+    { key: 'guardian_phone', label: t('admissions.guardianPhone') || 'Guardian Phone' },
+    { key: 'father_name', label: t('examReports.fatherName') || 'Father Name' },
+    { key: 'gender', label: t('students.gender') || 'Gender' },
+    { key: 'nationality', label: t('students.nationality') || 'Nationality' },
+    { key: 'student_phone', label: t('students.phone') || 'Phone' },
+    { key: 'tazkira_number', label: t('students.tazkiraNumber') || 'Tazkira Number' },
+    { key: 'applying_grade', label: t('students.applyingGrade') || 'Applying Grade' },
+    { key: 'origin_location', label: t('studentReport.originLocation') || 'Origin Location' },
+    { key: 'current_location', label: t('studentReport.currentLocation') || 'Current Location' },
+    { key: 'enrollment_status', label: t('events.status') || 'Enrollment Status' },
+    { key: 'admission_date', label: t('studentReportCard.admissionDate') || 'Admission Date' },
+  ], [t]);
+  const [selectedExportColumnKeys, setSelectedExportColumnKeys] = useState<string[]>(() =>
+    getDefaultReportColumnKeys(allExportColumns, [...admissionCoreExportColumnKeys])
+  );
+  const selectedExportColumns = useMemo(
+    () => filterSelectedReportColumns(allExportColumns, selectedExportColumnKeys),
+    [allExportColumns, selectedExportColumnKeys]
+  );
+
+  useEffect(() => {
+    setSelectedExportColumnKeys((previousKeys) => {
+      const normalizedKeys = normalizeSelectedReportColumnKeys(allExportColumns, previousKeys);
+      return normalizedKeys.length === previousKeys.length &&
+        normalizedKeys.every((key, index) => key === previousKeys[index])
+        ? previousKeys
+        : normalizedKeys;
+    });
+  }, [allExportColumns]);
 
   const fetchAllAdmissionsForExport = async (): Promise<StudentAdmission[]> => {
+    const admissionPresence: 'with_admission' | 'without_admission' | undefined =
+      filters.enrollmentStatus === 'with_admission'
+        ? 'with_admission'
+        : filters.enrollmentStatus === 'without_admission'
+          ? 'without_admission'
+          : undefined;
+
     const baseParams = {
       organization_id: filters.organizationId,
       school_id: filters.schoolId,
@@ -259,11 +333,7 @@ const StudentAdmissionsReport = () => {
           ? filters.enrollmentStatus
           : undefined,
       admission_presence:
-        filters.enrollmentStatus === 'with_admission'
-          ? 'with_admission'
-          : filters.enrollmentStatus === 'without_admission'
-            ? 'without_admission'
-            : undefined,
+        admissionPresence,
       residency_type_id: filters.residencyTypeId,
       is_boarder: filters.isBoarder,
       from_date: filters.fromDate,
@@ -323,61 +393,60 @@ const StudentAdmissionsReport = () => {
         ]}
         rightSlot={
           report && report.recentAdmissions.length > 0 ? (
-            <ReportExportButtons
-              data={report.recentAdmissions}
-              columns={[
-                { key: 'student_name', label: t('events.name') || 'Student Name' },
-                { key: 'admission_no', label: t('examReports.admissionNo') || 'Admission #' },
-                { key: 'card_number', label: t('attendanceReports.cardNumber') || 'Card #' },
-                { key: 'school', label: t('admissions.school') || 'School' },
-                { key: 'class', label: t('search.class') || 'Class' },
-                { key: 'section', label: t('events.section') || 'Section' },
-                { key: 'academic_year', label: t('admissions.academicYear') || 'Academic Year' },
-                { key: 'residency_type', label: t('admissions.residency') || 'Residency Type' },
-                { key: 'is_boarder', label: t('admissions.boarder') || 'Boarder' },
-                { key: 'room', label: t('admissions.room') || 'Room' },
-                { key: 'guardian_name', label: t('admissions.guardian') || 'Guardian Name' },
-                { key: 'guardian_phone', label: t('admissions.guardianPhone') || 'Guardian Phone' },
-                { key: 'enrollment_status', label: t('events.status') || 'Enrollment Status' },
-                { key: 'admission_date', label: t('studentReportCard.admissionDate') || 'Admission Date' },
-              ]}
-              reportKey="student_admissions"
-              title={t('admissions.reportTitle') || 'Student Admissions Report'}
-              transformData={transformAdmissionData}
-              getExportData={fetchAllAdmissionsForExport}
-              buildFiltersSummary={buildFiltersSummary}
-              schoolId={currentSchoolId}
-              templateType="student_admissions"
-              disabled={!report || report.recentAdmissions.length === 0 || isLoading}
-              errorNoSchool={t('admissions.schoolRequiredForExport') || 'A school is required to export the report.'}
-              errorNoData={t('events.noDataToExport') || 'No data to export'}
-              successPdf={t('admissions.reportExported') || 'PDF report generated successfully'}
-              successExcel={t('admissions.reportExported') || 'Excel report generated successfully'}
-              errorPdf={t('admissions.exportFailed') || 'Failed to generate PDF report'}
-              errorExcel={t('admissions.exportFailed') || 'Failed to generate Excel report'}
-              parameters={{
-                academic_year_id: filters.academicYearId || undefined,
-                class_id: filters.classId || undefined,
-                enrollment_status:
-                  filters.enrollmentStatus &&
-                  filters.enrollmentStatus !== 'all' &&
-                  filters.enrollmentStatus !== 'with_admission' &&
-                  filters.enrollmentStatus !== 'without_admission'
-                    ? filters.enrollmentStatus
-                    : undefined,
-                admission_presence:
-                  filters.enrollmentStatus === 'with_admission'
-                    ? 'with_admission'
-                    : filters.enrollmentStatus === 'without_admission'
-                      ? 'without_admission'
+            <div className="flex flex-wrap items-center gap-2">
+              <ReportColumnSelector
+                columns={allExportColumns}
+                selectedKeys={selectedExportColumnKeys}
+                coreKeys={[...admissionCoreExportColumnKeys]}
+                onChange={setSelectedExportColumnKeys}
+                labels={{
+                  trigger: t('studentReport.selectColumns') || 'Columns',
+                  core: t('studentReport.coreColumns') || 'Core columns',
+                  selectAll: t('studentReport.selectAllColumns') || 'Select all',
+                  clearAll: t('studentReport.clearAllColumns') || 'Clear all',
+                  empty: t('studentReport.noColumnsSelected') || 'Select at least one column to export.',
+                }}
+              />
+              <ReportExportButtons
+                data={report.recentAdmissions}
+                columns={selectedExportColumns}
+                reportKey="student_admissions"
+                title={t('admissions.reportTitle') || 'Student Admissions Report'}
+                transformData={transformAdmissionData}
+                getExportData={fetchAllAdmissionsForExport}
+                buildFiltersSummary={buildFiltersSummary}
+                schoolId={currentSchoolId}
+                templateType="student_admissions"
+                disabled={!report || report.recentAdmissions.length === 0 || isLoading || selectedExportColumns.length === 0}
+                errorNoSchool={t('admissions.schoolRequiredForExport') || 'A school is required to export the report.'}
+                errorNoData={t('events.noDataToExport') || 'No data to export'}
+                successPdf={t('admissions.reportExported') || 'PDF report generated successfully'}
+                successExcel={t('admissions.reportExported') || 'Excel report generated successfully'}
+                errorPdf={t('admissions.exportFailed') || 'Failed to generate PDF report'}
+                errorExcel={t('admissions.exportFailed') || 'Failed to generate Excel report'}
+                parameters={{
+                  academic_year_id: filters.academicYearId || undefined,
+                  class_id: filters.classId || undefined,
+                  enrollment_status:
+                    filters.enrollmentStatus &&
+                    filters.enrollmentStatus !== 'with_admission' &&
+                    filters.enrollmentStatus !== 'without_admission'
+                      ? filters.enrollmentStatus
                       : undefined,
-                residency_type_id: filters.residencyTypeId || undefined,
-                is_boarder: filters.isBoarder || undefined,
-                from_date: filters.fromDate || undefined,
-                to_date: filters.toDate || undefined,
-                search: filters.search?.trim() || undefined,
-              }}
-            />
+                  admission_presence:
+                    filters.enrollmentStatus === 'with_admission'
+                      ? 'with_admission'
+                      : filters.enrollmentStatus === 'without_admission'
+                        ? 'without_admission'
+                        : undefined,
+                  residency_type_id: filters.residencyTypeId || undefined,
+                  is_boarder: filters.isBoarder || undefined,
+                  from_date: filters.fromDate || undefined,
+                  to_date: filters.toDate || undefined,
+                  search: filters.search?.trim() || undefined,
+                }}
+              />
+            </div>
           ) : null
         }
       />

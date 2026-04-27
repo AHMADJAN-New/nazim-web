@@ -851,7 +851,7 @@ class StudentAdmissionController extends Controller
 
         $admissionsQuery = (clone $query)
             ->with([
-                'student:id,full_name,admission_no,gender,admission_year,guardian_phone,guardian_name,card_number,father_name',
+                'student:id,full_name,admission_no,student_code,gender,admission_year,guardian_phone,guardian_name,card_number,father_name,phone,tazkira_number,applying_grade,nationality,orig_province,orig_district,orig_village,curr_province,curr_district,curr_village',
                 'organization:id,name',
                 'school:id,school_name',
                 'academicYear:id,name,start_date,end_date',
@@ -1015,7 +1015,7 @@ class StudentAdmissionController extends Controller
         // Get all admissions (no pagination for export)
         $admissions = $query
             ->with([
-                'student:id,full_name,admission_no,gender,admission_year,guardian_phone,guardian_name,card_number,father_name',
+                'student:id,full_name,admission_no,student_code,gender,admission_year,guardian_phone,guardian_name,card_number,father_name,phone,tazkira_number,applying_grade,nationality,orig_province,orig_district,orig_village,curr_province,curr_district,curr_village',
                 'organization:id,name',
                 'school:id,school_name',
                 'academicYear:id,name,start_date,end_date',

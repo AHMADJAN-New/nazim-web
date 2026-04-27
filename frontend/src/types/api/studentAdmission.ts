@@ -36,6 +36,16 @@ export interface StudentAdmission {
     admission_year: string | null;
     guardian_name: string | null;
     guardian_phone: string | null;
+    phone?: string | null;
+    tazkira_number?: string | null;
+    applying_grade?: string | null;
+    nationality?: string | null;
+    orig_province?: string | null;
+    orig_district?: string | null;
+    orig_village?: string | null;
+    curr_province?: string | null;
+    curr_district?: string | null;
+    curr_village?: string | null;
     picture_path: string | null;
   };
   organization?: {
