@@ -19,6 +19,14 @@ if (fs.existsSync(envPath)) {
 const APP_URL = process.env.NAZIM_APP_URL || 'https://app.nazim.cloud';
 const IS_DEV = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
+// Bundled renderer (built React app) lives under dist-renderer/. When
+// present and no explicit NAZIM_APP_URL override is set, we load from
+// file:// so the app boots even with no internet — first run included.
+// Falls back to APP_URL in dev or when the bundle hasn't been built.
+const BUNDLED_INDEX = path.join(__dirname, 'dist-renderer', 'index.html');
+const HAS_BUNDLE = fs.existsSync(BUNDLED_INDEX);
+const USE_BUNDLE = HAS_BUNDLE && !IS_DEV && !process.env.NAZIM_APP_URL;
+
 let mainWindow = null;
 let splashWindow = null;
 
@@ -72,6 +80,14 @@ function createMainWindow() {
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
     if (errorCode === -3 || errorCode === -2) return;
+    // When loading the bundled UI, did-fail-load shouldn't normally fire
+    // (file:// is local). When it does, fall back to error.html.
+    if (USE_BUNDLE) {
+      mainWindow.loadFile(path.join(__dirname, 'error.html'), {
+        query: { url: 'bundled', message: errorDescription || 'Failed to load bundled UI' },
+      });
+      return;
+    }
     mainWindow.loadFile(path.join(__dirname, 'error.html'), {
       query: { url: APP_URL, message: errorDescription || 'Connection failed' },
     });
@@ -81,6 +97,20 @@ function createMainWindow() {
     mainWindow = null;
   });
 
+  loadShell();
+}
+
+function loadShell() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (USE_BUNDLE) {
+    // file:// load — virtually always succeeds when packaged.
+    mainWindow.loadFile(BUNDLED_INDEX).catch(() => {
+      mainWindow.loadFile(path.join(__dirname, 'error.html'), {
+        query: { url: 'bundled', message: 'Failed to load bundled UI' },
+      });
+    });
+    return;
+  }
   mainWindow.loadURL(APP_URL).catch(() => {
     mainWindow.loadFile(path.join(__dirname, 'error.html'), {
       query: { url: APP_URL, message: 'Failed to load application' },
@@ -89,13 +119,7 @@ function createMainWindow() {
 }
 
 ipcMain.handle('retry-load', () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.loadURL(APP_URL).catch(() => {
-      mainWindow.loadFile(path.join(__dirname, 'error.html'), {
-        query: { url: APP_URL, message: 'Connection failed' },
-      });
-    });
-  }
+  loadShell();
 });
 
 app.whenReady().then(() => {

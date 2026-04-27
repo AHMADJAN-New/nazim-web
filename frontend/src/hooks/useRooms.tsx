@@ -6,6 +6,7 @@ import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
 import { roomsApi } from '@/lib/api/client';
+import { evictOfflineCache } from '@/lib/electron-offline';
 import { showToast } from '@/lib/toast';
 import { mapRoomApiToDomain, mapRoomDomainToInsert, mapRoomDomainToUpdate } from '@/mappers/roomMapper';
 import type * as RoomApi from '@/types/api/room';
@@ -155,6 +156,7 @@ export const useCreateRoom = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      evictOfflineCache('hostel.rooms', 'hostel.overview');
       showToast.success('toast.roomCreated');
     },
     onError: (error: Error) => {
@@ -216,6 +218,7 @@ export const useUpdateRoom = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      evictOfflineCache('hostel.rooms', 'hostel.overview');
       showToast.success('toast.roomUpdated');
     },
     onError: (error: Error) => {
@@ -234,6 +237,7 @@ export const useDeleteRoom = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      evictOfflineCache('hostel.rooms', 'hostel.overview');
       showToast.success('toast.roomDeleted');
     },
     onError: (error: Error) => {

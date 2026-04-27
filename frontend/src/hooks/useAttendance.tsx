@@ -6,7 +6,7 @@ import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
 import { attendanceSessionsApi } from '@/lib/api/client';
-import { getOfflineBridge, subscribeResolved } from '@/lib/electron-offline';
+import { evictOfflineCache, getOfflineBridge, subscribeResolved } from '@/lib/electron-offline';
 import { showToast } from '@/lib/toast';
 import {
   mapAttendanceRecordApiToDomain,
@@ -264,6 +264,7 @@ export const useUpdateAttendanceSession = () => {
       showToast.success('attendancePage.saveSuccess');
       void queryClient.invalidateQueries({ queryKey: ['attendance-session', variables.id] });
       void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
+      evictOfflineCache('attendance.sessions', 'attendance.session');
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'common.error');
@@ -386,6 +387,7 @@ export const useCloseAttendanceSession = () => {
       showToast.success('attendancePage.sessionClosed');
       void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
       void queryClient.invalidateQueries({ queryKey: ['attendance-session'] });
+      evictOfflineCache('attendance.sessions', 'attendance.session');
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'common.error');

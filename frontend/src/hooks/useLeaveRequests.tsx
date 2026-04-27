@@ -7,6 +7,7 @@ import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
 import { leaveRequestsApi } from '@/lib/api/client';
+import { evictOfflineCache } from '@/lib/electron-offline';
 import { showToast } from '@/lib/toast';
 import { mapLeaveRequestApiToDomain, mapLeaveRequestDomainToInsert, mapLeaveRequestDomainToUpdate } from '@/mappers/leaveMapper';
 import type * as LeaveApi from '@/types/api/leaveRequest';
@@ -127,6 +128,7 @@ export const useCreateLeaveRequest = () => {
     onSuccess: () => {
       showToast.success('toast.leaveRequests.created');
       void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      evictOfflineCache('leave.list');
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.leaveRequests.createFailed');
@@ -146,6 +148,7 @@ export const useUpdateLeaveRequest = () => {
     onSuccess: () => {
       showToast.success('toast.leaveRequests.updated');
       void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      evictOfflineCache('leave.list');
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.leaveRequests.updateFailed');
@@ -164,6 +167,7 @@ export const useApproveLeaveRequest = () => {
     onSuccess: () => {
       showToast.success('toast.leaveRequests.approved');
       void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      evictOfflineCache('leave.list');
     },
     onError: (error: Error) => showToast.error(error.message || 'toast.leaveRequests.approveFailed'),
   });
@@ -180,6 +184,7 @@ export const useRejectLeaveRequest = () => {
     onSuccess: () => {
       showToast.success('toast.leaveRequests.rejected');
       void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      evictOfflineCache('leave.list');
     },
     onError: (error: Error) => showToast.error(error.message || 'toast.leaveRequests.rejectFailed'),
   });

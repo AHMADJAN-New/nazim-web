@@ -7,8 +7,9 @@
   "scripts": {
     "start": "electron .",
     "postinstall": "electron-rebuild -f -w better-sqlite3-multiple-ciphers || true",
-    "dist": "electron-builder",
-    "dist:win": "electron-builder --win"
+    "build:renderer": "cd ../frontend && npm run build -- --base=./ && rm -rf ../desktop/dist-renderer && cp -r dist ../desktop/dist-renderer",
+    "dist": "npm run build:renderer && electron-builder",
+    "dist:win": "npm run build:renderer && electron-builder --win"
   },
   "dependencies": {
     "better-sqlite3-multiple-ciphers": "^11.5.0"
@@ -30,6 +31,7 @@
       "splash.html",
       "error.html",
       "src/**/*",
+      "dist-renderer/**/*",
       "node_modules/**/*"
     ],
     "asarUnpack": [

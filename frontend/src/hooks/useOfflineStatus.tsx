@@ -41,3 +41,13 @@ export async function triggerSyncNow(): Promise<OfflineStatus | null> {
   if (!bridge) return null;
   return bridge.syncNow();
 }
+
+// Boolean view of useOfflineStatus for callers that only care whether
+// the network is reachable. Returns true when there's no Electron
+// bridge — the regular web app assumes online and lets the network
+// surface its own errors.
+export function useIsOnline(): boolean {
+  const status = useOfflineStatus();
+  if (!status) return true;
+  return status.online;
+}

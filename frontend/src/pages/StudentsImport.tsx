@@ -2,6 +2,7 @@ import { Download, Upload, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { OfflineDisabled } from '@/components/layout/OfflineDisabled';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -665,25 +666,29 @@ export default function StudentsImport() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Button 
-                  variant="secondary" 
-                  onClick={onValidate} 
-                  disabled={!canUploadFile || !uploadFile || isValidating}
-                  className="flex-1 sm:flex-initial"
-                >
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">{t('students.validateFile')}</span>
-                  <span className="sm:hidden">{t('students.validate') || 'Validate'}</span>
-                </Button>
-                <Button 
-                  onClick={onImport} 
-                  disabled={!canUploadFile || !uploadFile || !validation?.is_valid || isImporting}
-                  className="flex-1 sm:flex-initial"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">{t('students.importNow')}</span>
-                  <span className="sm:hidden">{t('events.import') || 'Import'}</span>
-                </Button>
+                <OfflineDisabled reason="Bulk import runs on the server and needs an internet connection.">
+                  <Button
+                    variant="secondary"
+                    onClick={onValidate}
+                    disabled={!canUploadFile || !uploadFile || isValidating}
+                    className="flex-1 sm:flex-initial"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">{t('students.validateFile')}</span>
+                    <span className="sm:hidden">{t('students.validate') || 'Validate'}</span>
+                  </Button>
+                </OfflineDisabled>
+                <OfflineDisabled reason="Bulk import runs on the server and needs an internet connection.">
+                  <Button
+                    onClick={onImport}
+                    disabled={!canUploadFile || !uploadFile || !validation?.is_valid || isImporting}
+                    className="flex-1 sm:flex-initial"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">{t('students.importNow')}</span>
+                    <span className="sm:hidden">{t('events.import') || 'Import'}</span>
+                  </Button>
+                </OfflineDisabled>
               </div>
               
               {validation && !studentUsage.isUnlimited && studentUsage.remaining !== -1 && validation.valid_rows > studentUsage.remaining && (

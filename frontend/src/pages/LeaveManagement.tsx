@@ -4,6 +4,7 @@ import { Calendar, CheckCircle2, Download, Eye, FileText, Loader2, Printer, Shie
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 
 import { CachedDataBanner } from '@/components/layout/CachedDataBanner';
+import { OfflineDisabled } from '@/components/layout/OfflineDisabled';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1235,42 +1236,46 @@ export default function LeaveManagement() {
                         />
                       </div>
                       <div className="flex flex-col gap-2">
-                        <Button 
-                          onClick={() => handleApprove(selectedRequest)} 
-                          disabled={approveLeave.isPending}
-                          className="w-full"
-                          variant="default"
-                        >
-                          {approveLeave.isPending ? (
-                            <>
-                              <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                              {t('events.processing')}
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                              {t('status.approved')}
-                            </>
-                          )}
-                        </Button>
-                        <Button 
-                          onClick={() => handleReject(selectedRequest)} 
-                          disabled={rejectLeave.isPending}
-                          className="w-full"
-                          variant="destructive"
-                        >
-                          {rejectLeave.isPending ? (
-                            <>
-                              <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                              {t('events.processing')}
-                            </>
-                          ) : (
-                            <>
-                              <X className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                              {t('leave.rejected')}
-                            </>
-                          )}
-                        </Button>
+                        <OfflineDisabled reason="Approving a leave request needs the latest server state — reconnect to continue.">
+                          <Button
+                            onClick={() => handleApprove(selectedRequest)}
+                            disabled={approveLeave.isPending}
+                            className="w-full"
+                            variant="default"
+                          >
+                            {approveLeave.isPending ? (
+                              <>
+                                <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('events.processing')}
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('status.approved')}
+                              </>
+                            )}
+                          </Button>
+                        </OfflineDisabled>
+                        <OfflineDisabled reason="Rejecting a leave request needs the latest server state — reconnect to continue.">
+                          <Button
+                            onClick={() => handleReject(selectedRequest)}
+                            disabled={rejectLeave.isPending}
+                            className="w-full"
+                            variant="destructive"
+                          >
+                            {rejectLeave.isPending ? (
+                              <>
+                                <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('events.processing')}
+                              </>
+                            ) : (
+                              <>
+                                <X className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('leave.rejected')}
+                              </>
+                            )}
+                          </Button>
+                        </OfflineDisabled>
                       </div>
                     </CardContent>
                   </Card>

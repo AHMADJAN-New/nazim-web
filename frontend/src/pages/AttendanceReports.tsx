@@ -22,6 +22,7 @@ import { useMemo, useState } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { OfflineDisabled } from '@/components/layout/OfflineDisabled';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
@@ -530,18 +531,20 @@ export default function AttendanceReports() {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  disabled={exportDisabled}
-                  className="rounded-xl h-8 gap-1.5 text-xs"
-                >
-                  {isGenerating ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Download className="h-3.5 w-3.5" />
-                  )}
-                  {t('events.export') || 'Export'}
-                </Button>
+                <OfflineDisabled reason="Report exports are generated server-side. Reconnect to download.">
+                  <Button
+                    size="sm"
+                    disabled={exportDisabled}
+                    className="rounded-xl h-8 gap-1.5 text-xs"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    {t('events.export') || 'Export'}
+                  </Button>
+                </OfflineDisabled>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuLabel className="text-xs">

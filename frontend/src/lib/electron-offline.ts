@@ -93,6 +93,18 @@ export function isElectron(): boolean {
   return getOfflineBridge() !== null;
 }
 
+// Convenience for write hooks: after a successful online mutation,
+// evict the relevant Tier B read-cache entries so any unrelated filter
+// combos for the same module pull fresh data on next read instead of
+// serving stale rows. Fire-and-forget — never blocks the UI thread.
+export function evictOfflineCache(...kinds: string[]): void {
+  const bridge = getOfflineBridge();
+  if (!bridge) return;
+  for (const kind of kinds) {
+    if (kind) bridge.cacheEvict(kind).catch(() => {});
+  }
+}
+
 // RFC 4122 v4 generator. We can't depend on `crypto.randomUUID()` everywhere
 // (older Electron renderers, some embedded webviews), so we fall back to
 // `crypto.getRandomValues` if available.

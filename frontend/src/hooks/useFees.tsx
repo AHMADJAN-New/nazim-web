@@ -14,6 +14,7 @@ import {
   feeStructuresApi,
   studentAdmissionsApi,
 } from '@/lib/api/client';
+import { evictOfflineCache } from '@/lib/electron-offline';
 import { showToast } from '@/lib/toast';
 import {
   mapFeeAssignmentApiToDomain,
@@ -192,6 +193,7 @@ export const useCreateFeeStructure = () => {
     onSuccess: () => {
       showToast.success(t('toast.feeStructureCreated'));
       void queryClient.invalidateQueries({ queryKey: ['fee-structures'] });
+      evictOfflineCache('fees.structures');
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeStructureCreateFailed'));
@@ -212,6 +214,7 @@ export const useUpdateFeeStructure = () => {
     onSuccess: () => {
       showToast.success(t('toast.feeStructureUpdated'));
       void queryClient.invalidateQueries({ queryKey: ['fee-structures'] });
+      evictOfflineCache('fees.structures');
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeStructureUpdateFailed'));
@@ -231,6 +234,7 @@ export const useDeleteFeeStructure = () => {
     onSuccess: () => {
       showToast.success(t('toast.feeStructureDeleted'));
       void queryClient.invalidateQueries({ queryKey: ['fee-structures'] });
+      evictOfflineCache('fees.structures');
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeStructureDeleteFailed'));
@@ -410,6 +414,7 @@ export const useCreateFeeAssignment = () => {
       showToast.success(t('toast.feeAssignmentCreated'));
       await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
       await queryClient.refetchQueries({ queryKey: ['fee-assignments'] });
+      evictOfflineCache('fees.assignments');
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeAssignmentCreateFailed'));
@@ -436,6 +441,7 @@ export const useUpdateFeeAssignment = () => {
       showToast.success(t('toast.feeAssignmentUpdated'));
       await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
       await queryClient.refetchQueries({ queryKey: ['fee-assignments'] });
+      evictOfflineCache('fees.assignments');
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeAssignmentUpdateFailed'));
@@ -455,6 +461,7 @@ export const useDeleteFeeAssignment = () => {
       showToast.success(t('toast.feeAssignmentDeleted'));
       await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
       await queryClient.refetchQueries({ queryKey: ['fee-assignments'] });
+      evictOfflineCache('fees.assignments');
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeAssignmentDeleteFailed'));
@@ -557,6 +564,7 @@ export const useBulkAssignFeeAssignments = () => {
       showToast.success(t('toast.feeAssignmentCreated'));
       await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
       await queryClient.refetchQueries({ queryKey: ['fee-assignments'] });
+      evictOfflineCache('fees.assignments');
     },
     onError: (error: any) => {
       const message = getErrorMessage(error);
@@ -719,6 +727,7 @@ export const useCreateFeePayment = () => {
       showToast.success(t('toast.feePaymentRecorded'));
       void queryClient.invalidateQueries({ queryKey: ['fee-payments'] });
       void queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+      evictOfflineCache('fees.payments', 'fees.assignments');
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feePaymentFailed'));
@@ -799,6 +808,7 @@ export const useCreateFeeException = () => {
       showToast.success(t('toast.feeExceptionCreated'));
       await queryClient.invalidateQueries({ queryKey: ['fee-exceptions'] });
       await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+      evictOfflineCache('fees.assignments');
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeExceptionFailed'));
@@ -825,6 +835,7 @@ export const useUpdateFeeException = () => {
       showToast.success(t('toast.feeExceptionUpdated'));
       await queryClient.invalidateQueries({ queryKey: ['fee-exceptions'] });
       await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+      evictOfflineCache('fees.assignments');
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeExceptionUpdateFailed'));

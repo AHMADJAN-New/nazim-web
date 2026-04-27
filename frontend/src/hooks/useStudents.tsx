@@ -5,12 +5,13 @@ import { useAuth } from './useAuth';
 import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
-import { 
-  studentsApi, 
-  studentDocumentsApi, 
-  studentEducationalHistoryApi, 
-  studentDisciplineRecordsApi 
+import {
+  studentsApi,
+  studentDocumentsApi,
+  studentEducationalHistoryApi,
+  studentDisciplineRecordsApi
 } from '@/lib/api/client';
+import { evictOfflineCache } from '@/lib/electron-offline';
 import { queryOptionsNoRefetchOnFocus } from '@/lib/queryClient';
 import { showToast } from '@/lib/toast';
 import { mapStudentApiToDomain, mapStudentDomainToInsert, mapStudentDomainToUpdate } from '@/mappers/studentMapper';
@@ -215,6 +216,7 @@ export const useCreateStudent = () => {
       void queryClient.invalidateQueries({ queryKey: ['students'] });
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
       void queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
+      evictOfflineCache('students.list');
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentRegisterFailed');
@@ -241,6 +243,7 @@ export const useUpdateStudent = () => {
       showToast.success('toast.studentInformationUpdated');
       void queryClient.invalidateQueries({ queryKey: ['students'] });
       void queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
+      evictOfflineCache('students.list');
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentUpdateFailed');
@@ -267,6 +270,7 @@ export const useDeleteStudent = () => {
       await queryClient.refetchQueries({ queryKey: ['students'] });
       await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
       await queryClient.refetchQueries({ queryKey: ['subscription-usage'] });
+      evictOfflineCache('students.list');
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.studentRemoveFailed');
