@@ -44,7 +44,11 @@ interface UserProfile {
   email: string;
   role: string;
   avatar_url: string | null;
+  staff_id?: string | null;
 }
+
+const DEFAULT_AVATAR_DATA_URL =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23E5E7EB'/%3E%3Ccircle cx='32' cy='24' r='12' fill='%239CA3AF'/%3E%3Cpath d='M10 56c2-10 10-16 22-16s20 6 22 16' fill='%239CA3AF'/%3E%3C/svg%3E";
 
 interface AppHeaderProps {
   title?: string;
@@ -63,6 +67,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState<string>(DEFAULT_AVATAR_DATA_URL);
+  const [staffAvatarBlobUrl, setStaffAvatarBlobUrl] = useState<string | null>(null);
   const isAttendanceMarkingPage = location.pathname.startsWith('/attendance/marking');
   const { data: unreadCount } = useNotificationCount({ enabled: !isAttendanceMarkingPage });
 
@@ -200,7 +206,59 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
     email: authProfile.email,
     role: authProfile.role,
     avatar_url: authProfile.avatar_url,
+    staff_id: (authProfile as any).staff_id ?? null,
   } : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    let localBlobUrl: string | null = null;
+
+    const fetchStaffAvatar = async () => {
+      if (!profile?.staff_id) {
+        setStaffAvatarBlobUrl(null);
+        return;
+      }
+
+      try {
+        const token = apiClient.getToken();
+        const response = await fetch(`/api/staff/${profile.staff_id}/picture`, {
+          method: 'GET',
+          headers: {
+            Accept: 'image/*',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            if (!cancelled) setStaffAvatarBlobUrl(null);
+            return;
+          }
+          throw new Error(`Failed to fetch staff picture: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        localBlobUrl = URL.createObjectURL(blob);
+        if (!cancelled) {
+          setStaffAvatarBlobUrl(localBlobUrl);
+        }
+      } catch {
+        if (!cancelled) setStaffAvatarBlobUrl(null);
+      }
+    };
+
+    fetchStaffAvatar();
+
+    return () => {
+      cancelled = true;
+      if (localBlobUrl) URL.revokeObjectURL(localBlobUrl);
+    };
+  }, [profile?.staff_id]);
+
+  useEffect(() => {
+    setAvatarSrc(staffAvatarBlobUrl || profile?.avatar_url || DEFAULT_AVATAR_DATA_URL);
+  }, [staffAvatarBlobUrl, profile?.avatar_url]);
 
   const unreadNotifications = unreadCount?.count ?? 0;
 
@@ -525,22 +583,16 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0" data-tour="user-menu">
                 <Avatar className="h-8 w-8">
                   <AvatarImage
-                    src={profile?.avatar_url || undefined}
+                    src={avatarSrc}
                     alt={profile?.full_name || 'User'}
+                    onError={() => {
+                      if (avatarSrc !== DEFAULT_AVATAR_DATA_URL) {
+                        setAvatarSrc(DEFAULT_AVATAR_DATA_URL);
+                      }
+                    }}
                   />
                   <AvatarFallback className="bg-muted">
-                    {profile?.full_name ? (
-                      <span className="text-xs font-medium">
-                        {profile.full_name
-                          .split(' ')
-                          .map(n => n[0])
-                          .join('')
-                          .toUpperCase()
-                          .slice(0, 2)}
-                      </span>
-                    ) : (
-                      <User className="h-4 w-4" />
-                    )}
+                    <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
               </Button>

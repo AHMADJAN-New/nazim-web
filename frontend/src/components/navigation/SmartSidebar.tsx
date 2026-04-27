@@ -128,6 +128,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
@@ -170,6 +171,9 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { canAccessOrgAdminArea } from '@/organization-admin/lib/access';
 import type { UserRole } from "@/types/auth";
 import { SecondarySidebar } from "./SecondarySidebar";
+
+const DEFAULT_AVATAR_DATA_URL =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23E5E7EB'/%3E%3Ccircle cx='32' cy='24' r='12' fill='%239CA3AF'/%3E%3Cpath d='M10 56c2-10 10-16 22-16s20 6 22 16' fill='%239CA3AF'/%3E%3C/svg%3E";
 
 /**
  * Helper function to determine if subscription access is blocked
@@ -274,6 +278,61 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const flyoutCloseTimerRef = useRef<number | null>(null);
   const websiteSidebarAutoOpenRef = useRef(false);
   const [openFlyoutKey, setOpenFlyoutKey] = useState<string | null>(null);
+  const [sidebarAvatarSrc, setSidebarAvatarSrc] = useState<string>(DEFAULT_AVATAR_DATA_URL);
+  const [staffAvatarBlobUrl, setStaffAvatarBlobUrl] = useState<string | null>(null);
+  const profileStaffId = (currentProfile as any)?.staff_id as string | null | undefined;
+
+  useEffect(() => {
+    let cancelled = false;
+    let localBlobUrl: string | null = null;
+
+    const fetchStaffAvatar = async () => {
+      if (!profileStaffId) {
+        setStaffAvatarBlobUrl(null);
+        return;
+      }
+
+      try {
+        const { apiClient } = await import('@/lib/api/client');
+        const token = apiClient.getToken();
+        const response = await fetch(`/api/staff/${profileStaffId}/picture`, {
+          method: 'GET',
+          headers: {
+            Accept: 'image/*',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            if (!cancelled) setStaffAvatarBlobUrl(null);
+            return;
+          }
+          throw new Error(`Failed to fetch staff picture: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        localBlobUrl = URL.createObjectURL(blob);
+        if (!cancelled) {
+          setStaffAvatarBlobUrl(localBlobUrl);
+        }
+      } catch {
+        if (!cancelled) setStaffAvatarBlobUrl(null);
+      }
+    };
+
+    fetchStaffAvatar();
+
+    return () => {
+      cancelled = true;
+      if (localBlobUrl) URL.revokeObjectURL(localBlobUrl);
+    };
+  }, [profileStaffId]);
+
+  useEffect(() => {
+    setSidebarAvatarSrc(staffAvatarBlobUrl || currentProfile?.avatar_url || DEFAULT_AVATAR_DATA_URL);
+  }, [staffAvatarBlobUrl, currentProfile?.avatar_url]);
 
   // CRITICAL: Check if subscription is blocked (expired, suspended, trial ended, etc.)
   // When blocked, sidebar should show NO navigation items
@@ -2784,9 +2843,20 @@ export const SmartSidebar = memo(function SmartSidebar() {
           <div className="p-4 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-sidebar-primary rounded-full flex items-center justify-center">
-                <span className="text-sm font-semibold text-sidebar-primary-foreground">
-                  {user.email?.charAt(0).toUpperCase()}
-                </span>
+                <Avatar className="w-10 h-10">
+                  <AvatarImage
+                    src={sidebarAvatarSrc}
+                    alt={currentProfile?.full_name || user.email || "User"}
+                    onError={() => {
+                      if (sidebarAvatarSrc !== DEFAULT_AVATAR_DATA_URL) {
+                        setSidebarAvatarSrc(DEFAULT_AVATAR_DATA_URL);
+                      }
+                    }}
+                  />
+                  <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-medium text-sidebar-foreground truncate">

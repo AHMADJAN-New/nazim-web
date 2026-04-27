@@ -445,6 +445,7 @@ class UserController extends Controller
             'is_active' => 'sometimes|boolean',
             'schools_access_all' => 'nullable|boolean',
             'default_school_id' => 'nullable|uuid',
+            'staff_id' => 'nullable|uuid|exists:staff,id',
         ]);
 
         $user = $request->user();
@@ -497,16 +498,28 @@ class UserController extends Controller
             return response()->json(['error' => 'School admins cannot manage organization administrators'], 403);
         }
 
-        // Validate staff_id belongs to the same organization if provided
-        if ($request->has('staff_id') && $request->staff_id !== null) {
+        // Validate staff_id belongs to the same organization if changed.
+        // This prevents false failures when editing unrelated fields on
+        // users that already have an assigned staff record.
+        if ($request->has('staff_id')) {
+            $requestedStaffId = $request->input('staff_id');
+
+            if ($requestedStaffId === '') {
+                $requestedStaffId = null;
+            }
+
+            $staffChanged = (string) ($targetProfile->staff_id ?? '') !== (string) ($requestedStaffId ?? '');
+
+            if ($staffChanged && $requestedStaffId !== null) {
             $staff = DB::table('staff')
-                ->where('id', $request->staff_id)
+                ->where('id', $requestedStaffId)
                 ->where('organization_id', $targetProfile->organization_id)
                 ->whereNull('deleted_at')
                 ->first();
 
             if (! $staff) {
                 return response()->json(['error' => 'Staff member not found or does not belong to your organization'], 422);
+            }
             }
         }
 
@@ -578,7 +591,7 @@ class UserController extends Controller
             $updateData['is_active'] = $request->is_active;
         }
         if ($request->has('staff_id')) {
-            $updateData['staff_id'] = $request->staff_id;
+            $updateData['staff_id'] = $request->staff_id ?: null;
         }
         $schoolsAccessAllExplicitlyProvided = $request->has('schools_access_all');
         if ($schoolsAccessAllExplicitlyProvided) {

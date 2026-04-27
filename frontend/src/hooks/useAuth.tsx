@@ -6,6 +6,7 @@ import { authApi, apiClient } from '@/lib/api/client';
 export type Profile = {
   id: string;
   organization_id: string | null;
+  staff_id?: string | null;
   role: string | null;
   full_name: string | null;
   email: string | null;
