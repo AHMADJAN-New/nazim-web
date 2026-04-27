@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
 import {
@@ -50,15 +51,19 @@ export const useFeeStructures = (
     initialPageSize: 25,
   });
 
-  const { data, isLoading, error } = useQuery<FeeStructure[] | PaginatedResponse<FeeApi.FeeStructure>>({
-    queryKey: [
-      'fee-structures',
-      profile?.organization_id,
-      profile?.default_school_id ?? null,
-      filters,
-      usePaginated ? page : undefined,
-      usePaginated ? pageSize : undefined,
-    ],
+  const structuresQueryKey = [
+    'fee-structures',
+    profile?.organization_id,
+    profile?.default_school_id ?? null,
+    filters,
+    usePaginated ? page : undefined,
+    usePaginated ? pageSize : undefined,
+  ];
+
+  const { data, isLoading, error } = useOfflineCachedQuery<FeeStructure[] | PaginatedResponse<FeeApi.FeeStructure>>({
+    cacheKey: `fees.structures:${JSON.stringify(structuresQueryKey)}`,
+    cacheKind: 'fees.structures',
+    queryKey: structuresQueryKey,
     queryFn: async () => {
       if (!user || !profile) {
         return [];
@@ -250,15 +255,19 @@ export const useFeeAssignments = (
     initialPageSize: 25,
   });
 
-  const { data, isLoading, error } = useQuery<FeeAssignment[] | PaginatedResponse<FeeApi.FeeAssignment>>({
-    queryKey: [
-      'fee-assignments',
-      profile?.organization_id,
-      profile?.default_school_id ?? null,
-      filters,
-      usePaginated ? page : undefined,
-      usePaginated ? pageSize : undefined,
-    ],
+  const assignmentsQueryKey = [
+    'fee-assignments',
+    profile?.organization_id,
+    profile?.default_school_id ?? null,
+    filters,
+    usePaginated ? page : undefined,
+    usePaginated ? pageSize : undefined,
+  ];
+
+  const { data, isLoading, error } = useOfflineCachedQuery<FeeAssignment[] | PaginatedResponse<FeeApi.FeeAssignment>>({
+    cacheKey: `fees.assignments:${JSON.stringify(assignmentsQueryKey)}`,
+    cacheKind: 'fees.assignments',
+    queryKey: assignmentsQueryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -575,15 +584,19 @@ export const useFeePayments = (
     initialPageSize: 25,
   });
 
-  const { data, isLoading, error } = useQuery<FeePayment[] | PaginatedResponse<FeeApi.FeePayment>>({
-    queryKey: [
-      'fee-payments',
-      profile?.organization_id,
-      profile?.default_school_id ?? null,
-      filters,
-      usePaginated ? page : undefined,
-      usePaginated ? pageSize : undefined,
-    ],
+  const paymentsQueryKey = [
+    'fee-payments',
+    profile?.organization_id,
+    profile?.default_school_id ?? null,
+    filters,
+    usePaginated ? page : undefined,
+    usePaginated ? pageSize : undefined,
+  ];
+
+  const { data, isLoading, error } = useOfflineCachedQuery<FeePayment[] | PaginatedResponse<FeeApi.FeePayment>>({
+    cacheKey: `fees.payments:${JSON.stringify(paymentsQueryKey)}`,
+    cacheKind: 'fees.payments',
+    queryKey: paymentsQueryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
 

@@ -3,6 +3,7 @@ const fs = require('fs');
 const { app } = require('electron');
 
 const { applySchema } = require('./schema');
+const keystore = require('./keystore');
 
 // Lazy-loaded singleton. Opened on first call after the user logs in
 // (when we know which user_id to scope the file to).
@@ -44,17 +45,25 @@ function open(userId) {
   }
 
   // Require lazily so unit tests / non-Electron contexts don't pull in
-  // the native binding unless needed.
-  // TODO(security): wrap this with a SQLCipher-capable build (e.g.
-  // better-sqlite3-multiple-ciphers) and key it with Electron safeStorage
-  // before shipping to schools. For PR1 the file is per-user under
-  // userData with 0700 permissions — sufficient for the data flow but
-  // not for at-rest encryption.
+  // the native binding unless needed. better-sqlite3-multiple-ciphers is
+  // an API-compatible drop-in for better-sqlite3 with SQLCipher built in.
   // eslint-disable-next-line global-require
-  const Database = require('better-sqlite3');
+  const Database = require('better-sqlite3-multiple-ciphers');
+
+  // Per-user encryption key, sealed by the OS keychain via safeStorage.
+  // If safeStorage isn't available we refuse to open rather than silently
+  // store data in plaintext — surfacing the error is the safer default.
+  const key = keystore.getOrCreateKey(userId);
 
   dbPath = dbFileFor(userId);
   db = new Database(dbPath);
+
+  // PRAGMA key MUST be the very first statement on a fresh handle, before
+  // anything triggers a page read. Quoting as a string literal makes the
+  // 32-byte hex key compatible across all SQLCipher versions.
+  db.pragma(`cipher='sqlcipher'`);
+  db.pragma(`key='${key}'`);
+
   applySchema(db);
   return db;
 }

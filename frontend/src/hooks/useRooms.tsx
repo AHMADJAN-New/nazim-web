@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
 import { roomsApi } from '@/lib/api/client';
@@ -24,8 +25,12 @@ export const useRooms = (schoolId?: string, organizationId?: string, usePaginate
     initialPageSize: 25,
   });
 
-  const { data, isLoading, error } = useQuery<Room[] | PaginatedResponse<RoomApi.Room>>({
-    queryKey: ['rooms', schoolId, organizationId || profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+  const roomsQueryKey = ['rooms', schoolId, organizationId || profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined];
+
+  const { data, isLoading, error } = useOfflineCachedQuery<Room[] | PaginatedResponse<RoomApi.Room>>({
+    cacheKey: `hostel.rooms:${JSON.stringify(roomsQueryKey)}`,
+    cacheKind: 'hostel.rooms',
+    queryKey: roomsQueryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
 

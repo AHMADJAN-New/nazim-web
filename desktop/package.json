@@ -6,12 +6,12 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "postinstall": "electron-rebuild -f -w better-sqlite3 || true",
+    "postinstall": "electron-rebuild -f -w better-sqlite3-multiple-ciphers || true",
     "dist": "electron-builder",
     "dist:win": "electron-builder --win"
   },
   "dependencies": {
-    "better-sqlite3": "^11.5.0"
+    "better-sqlite3-multiple-ciphers": "^11.5.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.6.0",
@@ -33,7 +33,7 @@
       "node_modules/**/*"
     ],
     "asarUnpack": [
-      "node_modules/better-sqlite3/**/*"
+      "node_modules/better-sqlite3-multiple-ciphers/**/*"
     ],
     "win": {
       "signAndEditExecutable": false,

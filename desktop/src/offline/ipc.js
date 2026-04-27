@@ -1,8 +1,10 @@
 const { ipcMain, BrowserWindow } = require('electron');
+const fs = require('fs');
 
 const db = require('./db');
 const queue = require('./queue');
 const sync = require('./sync');
+const keystore = require('./keystore');
 
 // IPC channel naming convention: "offline:<verb>". The renderer talks
 // to these via the bridge exposed in preload.js — never directly.
@@ -88,6 +90,41 @@ function register() {
     return { ok: true };
   });
 
+  // Tier B read-only response cache. Renderer calls cache-put on every
+  // successful list/show response and cache-get when network fails.
+  ipcMain.handle('offline:cache-put', (_event, payload) => {
+    const { cacheKey, kind, body } = payload || {};
+    queue.cachePut(cacheKey, kind, body);
+    return { ok: true };
+  });
+
+  ipcMain.handle('offline:cache-get', (_event, cacheKey) => {
+    return queue.cacheGet(cacheKey);
+  });
+
+  ipcMain.handle('offline:cache-evict', (_event, kind) => {
+    queue.cacheEvict(kind || null);
+    return { ok: true };
+  });
+
+  // Full account-removal: drop the database file and purge its sealed key
+  // from the keystore. Used when the user explicitly signs out of all
+  // devices or clears their data. Distinct from offline:logout, which
+  // only stops the worker and leaves the queued data on disk.
+  ipcMain.handle('offline:purge', (_event, userId) => {
+    if (!userId) throw new Error('offline:purge requires userId');
+    sync.stop();
+    if (db.isOpen()) {
+      db.close();
+    }
+    const file = db.dbFileFor(userId);
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+    }
+    keystore.destroyKey(userId);
+    return { ok: true };
+  });
+
   unsubscribeStatus = sync.onChange(broadcastStatus);
 }
 
@@ -109,6 +146,10 @@ function unregister() {
     'offline:snapshot-roster',
     'offline:list-issues',
     'offline:resolve-issue',
+    'offline:cache-put',
+    'offline:cache-get',
+    'offline:cache-evict',
+    'offline:purge',
   ]) {
     ipcMain.removeHandler(channel);
   }

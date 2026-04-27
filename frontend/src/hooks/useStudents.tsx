@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, useCallback, useRef } from 'react';
 
 import { useAuth } from './useAuth';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
 import { 
@@ -54,15 +55,19 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
   });
   const filterKey = filters ? JSON.stringify(filters) : undefined;
 
-  const { data, isLoading, error } = useQuery<Student[] | PaginatedResponse<StudentApi.Student>>({
-    queryKey: [
-      'students',
-      organizationId ?? profile?.organization_id ?? null,
-      profile?.default_school_id ?? null,
-      usePaginated ? page : undefined,
-      usePaginated ? pageSize : undefined,
-      filterKey,
-    ],
+  const queryKey = [
+    'students',
+    organizationId ?? profile?.organization_id ?? null,
+    profile?.default_school_id ?? null,
+    usePaginated ? page : undefined,
+    usePaginated ? pageSize : undefined,
+    filterKey,
+  ];
+
+  const { data, isLoading, error } = useOfflineCachedQuery<Student[] | PaginatedResponse<StudentApi.Student>>({
+    cacheKey: `students.list:${JSON.stringify(queryKey)}`,
+    cacheKind: 'students.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) {
         return [];

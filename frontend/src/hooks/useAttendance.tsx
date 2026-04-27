@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
 import { attendanceSessionsApi } from '@/lib/api/client';
@@ -59,15 +60,19 @@ export const useAttendanceSessions = (
     initialPageSize,
   });
 
-  const { data, isLoading, error } = useQuery<AttendanceSession[] | PaginatedResponse<AttendanceApi.AttendanceSession>>({
-    queryKey: [
-      'attendance-sessions',
-      profile?.organization_id ?? null,
-      profile?.default_school_id ?? null,
-      filters,
-      usePaginated ? page : undefined,
-      usePaginated ? pageSize : undefined,
-    ],
+  const sessionsQueryKey = [
+    'attendance-sessions',
+    profile?.organization_id ?? null,
+    profile?.default_school_id ?? null,
+    filters,
+    usePaginated ? page : undefined,
+    usePaginated ? pageSize : undefined,
+  ];
+
+  const { data, isLoading, error } = useOfflineCachedQuery<AttendanceSession[] | PaginatedResponse<AttendanceApi.AttendanceSession>>({
+    cacheKey: `attendance.sessions:${JSON.stringify(sessionsQueryKey)}`,
+    cacheKind: 'attendance.sessions',
+    queryKey: sessionsQueryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -268,8 +273,18 @@ export const useScanAttendance = (sessionId?: string) => {
 
 export const useAttendanceRoster = (classIds?: string[], academicYearId?: string, isBoarder?: boolean) => {
   const { user, profile } = useAuth();
-  return useQuery({
-    queryKey: ['attendance-roster', classIds?.join(','), academicYearId, isBoarder, profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const rosterQueryKey = [
+    'attendance-roster',
+    classIds?.join(','),
+    academicYearId,
+    isBoarder,
+    profile?.organization_id ?? null,
+    profile?.default_school_id ?? null,
+  ];
+  return useOfflineCachedQuery({
+    cacheKey: `attendance.roster:${JSON.stringify(rosterQueryKey)}`,
+    cacheKind: 'attendance.roster',
+    queryKey: rosterQueryKey,
     queryFn: async () => {
       if (!user || !profile || !classIds || classIds.length === 0) return [];
       return attendanceSessionsApi.roster({
@@ -279,10 +294,10 @@ export const useAttendanceRoster = (classIds?: string[], academicYearId?: string
       });
     },
     enabled: !!user && !!profile && !!classIds && classIds.length > 0,
-    staleTime: 5 * 60 * 1000,   // 5 min – serve from cache during attendance without constant refetch
-    gcTime: 30 * 60 * 1000,      // keep in memory 30 min so offline fallback survives navigation
-    networkMode: 'offlineFirst', // use cached roster when internet drops mid-session
-    retry: 1,                    // one retry only so UI falls back to cache quickly on failure
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    networkMode: 'offlineFirst',
+    retry: 1,
   });
 };
 

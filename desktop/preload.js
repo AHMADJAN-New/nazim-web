@@ -33,6 +33,19 @@ contextBridge.exposeInMainWorld('electron', {
     listIssues: () => ipcRenderer.invoke('offline:list-issues'),
     resolveIssue: (id) => ipcRenderer.invoke('offline:resolve-issue', id),
 
+    // Tier B read-cache: persist a successful API response keyed by
+    // cacheKey + kind, then read it back when offline. Body is stored
+    // verbatim and returned exactly as supplied.
+    cachePut: (cacheKey, kind, body) =>
+      ipcRenderer.invoke('offline:cache-put', { cacheKey, kind, body }),
+    cacheGet: (cacheKey) => ipcRenderer.invoke('offline:cache-get', cacheKey),
+    cacheEvict: (kind) => ipcRenderer.invoke('offline:cache-evict', kind),
+
+    // Full data removal for the given user — closes the DB, deletes the
+    // file and purges the sealed key. Use this when the user signs out
+    // permanently or clears their offline data.
+    purge: (userId) => ipcRenderer.invoke('offline:purge', userId),
+
     // Subscribe to push-style status updates (broadcast on heartbeat
     // transitions and after every drain). Returns an unsubscribe fn.
     onStatus: (handler) => {

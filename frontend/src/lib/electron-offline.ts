@@ -53,6 +53,17 @@ type OfflineBridge = {
     resolved_at: string | null;
   }>>;
   resolveIssue(id: number): Promise<{ ok: true }>;
+  purge(userId: string): Promise<{ ok: true }>;
+
+  // Tier B read-cache. Body is stored as-is — the caller is responsible
+  // for choosing a stable cacheKey (typically derived from the TanStack
+  // Query key plus filters) and a coarse `kind` label.
+  cachePut(cacheKey: string, kind: string, body: unknown): Promise<{ ok: true }>;
+  cacheGet(
+    cacheKey: string,
+  ): Promise<{ body: unknown; cached_at: string } | null>;
+  cacheEvict(kind?: string): Promise<{ ok: true }>;
+
   onStatus(handler: (snapshot: OfflineStatus) => void): () => void;
 };
 

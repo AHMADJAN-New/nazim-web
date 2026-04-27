@@ -1,13 +1,15 @@
-const CACHE_NAME = 'gvs-portal-v1.0.0';
-const API_CACHE_NAME = 'gvs-api-v1.0.0';
-const IMAGE_CACHE_NAME = 'gvs-images-v1.0.0';
+const CACHE_NAME = 'nazim-shell-v1.1.0';
+const API_CACHE_NAME = 'nazim-api-v1.1.0';
+const IMAGE_CACHE_NAME = 'nazim-images-v1.1.0';
 
-// Define what to cache
+// Define what to cache. The Vite bundle's hashed JS/CSS files live under
+// /assets/* and are filled in at runtime via the fetch handler — listing
+// them here would be brittle (hashes change every build). What we DO
+// precache is the SPA shell entry point so the page can boot offline.
 const STATIC_ASSETS = [
   '/',
-  '/manifest.json',
   '/index.html',
-  // Add critical CSS and JS files here
+  '/manifest.json',
 ];
 
 const API_ENDPOINTS = [
@@ -214,33 +216,44 @@ async function networkFirstStrategy(request, cacheName, timeout = 10000) {
 
 // Network First with Offline Page for HTML requests
 async function networkFirstWithOfflinePage(request) {
+  const cache = await caches.open(CACHE_NAME);
+
   try {
-    // Use longer timeout for HTML requests on mobile (20 seconds)
     const networkResponse = await Promise.race([
       fetch(request),
-      new Promise((_, reject) => 
+      new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Network timeout')), 20000)
       )
     ]);
-    
-    // Cache successful responses
+
     if (networkResponse.status === 200) {
-      const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
+      // Mirror to '/' so deep-link navigations on the next offline boot
+      // can fall through to the cached SPA shell even if their exact URL
+      // isn't in the cache yet.
+      cache.put('/', networkResponse.clone());
     }
-    
+
     return networkResponse;
-    
   } catch (error) {
     console.log('[ServiceWorker] HTML fetch failed, trying cache:', request.url);
-    const cache = await caches.open(CACHE_NAME);
+
+    // Exact-URL hit first (e.g. user navigated back to a page we already
+    // cached during this session).
     const cachedResponse = await cache.match(request);
-    
-    if (cachedResponse) {
-      return cachedResponse;
+    if (cachedResponse) return cachedResponse;
+
+    // SPA navigation fallback: the React Router renders client-side, so
+    // any deep link can be served by the same /index.html as long as the
+    // bundle is also cached. This is what lets `/attendance` work offline
+    // even though we never visited it online.
+    if (request.destination === 'document' || request.mode === 'navigate') {
+      const shell = (await cache.match('/index.html')) || (await cache.match('/'));
+      if (shell) return shell;
     }
-    
-    // For mobile, try one more time without timeout before showing offline page
+
+    // Last-resort retry without the timeout — handles slow connections
+    // that would have succeeded if we'd waited.
     try {
       const retryResponse = await fetch(request);
       if (retryResponse.status === 200) {
@@ -250,8 +263,7 @@ async function networkFirstWithOfflinePage(request) {
     } catch (retryError) {
       console.log('[ServiceWorker] Retry also failed:', request.url);
     }
-    
-    // Return offline page
+
     return getOfflineResponse(request);
   }
 }

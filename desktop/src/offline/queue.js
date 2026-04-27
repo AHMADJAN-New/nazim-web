@@ -149,6 +149,44 @@ function status() {
   return result;
 }
 
+// Tier B read-cache helpers. The renderer derives `cache_key` from its
+// TanStack Query key; `kind` is a coarse module label ("students.list",
+// "fees.payments") so we can evict a whole module at once on logout.
+function cachePut(cacheKey, kind, body) {
+  if (!cacheKey || !kind) {
+    throw new Error('cachePut requires cacheKey and kind');
+  }
+  db.get().prepare(`
+    INSERT INTO cached_responses (cache_key, kind, body_json, cached_at)
+    VALUES (?, ?, ?, datetime('now'))
+    ON CONFLICT(cache_key) DO UPDATE SET
+      kind = excluded.kind,
+      body_json = excluded.body_json,
+      cached_at = excluded.cached_at
+  `).run(cacheKey, kind, JSON.stringify(body ?? null));
+}
+
+function cacheGet(cacheKey) {
+  if (!cacheKey) return null;
+  const row = db.get().prepare(`
+    SELECT body_json, cached_at FROM cached_responses WHERE cache_key = ?
+  `).get(cacheKey);
+  if (!row) return null;
+  try {
+    return { body: JSON.parse(row.body_json), cached_at: row.cached_at };
+  } catch (_) {
+    return null;
+  }
+}
+
+function cacheEvict(kind) {
+  if (kind) {
+    db.get().prepare('DELETE FROM cached_responses WHERE kind = ?').run(kind);
+  } else {
+    db.get().exec('DELETE FROM cached_responses');
+  }
+}
+
 function snapshotRoster(sessionClientUuid, students) {
   if (!Array.isArray(students)) return;
   const insert = db.get().prepare(`
@@ -177,4 +215,7 @@ module.exports = {
   recordSyncIssue,
   status,
   snapshotRoster,
+  cachePut,
+  cacheGet,
+  cacheEvict,
 };

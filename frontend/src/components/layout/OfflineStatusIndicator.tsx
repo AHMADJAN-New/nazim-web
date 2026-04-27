@@ -1,16 +1,19 @@
-import { CloudOff, RefreshCw, Cloud } from 'lucide-react';
+import { CloudOff, RefreshCw, Cloud, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SyncIssuesSheet } from '@/components/layout/SyncIssuesSheet';
 import { triggerSyncNow, useOfflineStatus } from '@/hooks/useOfflineStatus';
 
 // Renders nothing in the regular web app. In the Electron desktop build,
 // shows a compact pill: cloud icon (online/offline) + pending-op count.
-// Clicking forces an immediate heartbeat + drain.
+// Clicking forces sync; if there are unresolved issues, opens the review
+// sheet instead so they're not buried.
 export function OfflineStatusIndicator() {
   const status = useOfflineStatus();
   const [busy, setBusy] = useState(false);
+  const [issuesOpen, setIssuesOpen] = useState(false);
 
   if (!status) return null;
 
@@ -18,6 +21,10 @@ export function OfflineStatusIndicator() {
   const hasIssues = status.open_issues > 0;
 
   const handleClick = async () => {
+    if (hasIssues) {
+      setIssuesOpen(true);
+      return;
+    }
     if (busy) return;
     setBusy(true);
     try {
@@ -28,36 +35,48 @@ export function OfflineStatusIndicator() {
   };
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="relative h-8 sm:h-9 px-2 sm:px-3"
-      onClick={handleClick}
-      disabled={busy}
-      title={
-        status.online
-          ? `Online${pending ? ` · ${pending} pending` : ''}${
-              status.last_synced_at ? ` · last synced ${formatRelative(status.last_synced_at)}` : ''
-            }`
-          : `Offline${pending ? ` · ${pending} queued` : ''}`
-      }
-    >
-      {busy ? (
-        <RefreshCw className="h-4 w-4 animate-spin" />
-      ) : status.online ? (
-        <Cloud className="h-4 w-4" />
-      ) : (
-        <CloudOff className="h-4 w-4 text-amber-500" />
-      )}
-      {pending > 0 && (
-        <Badge
-          variant={hasIssues ? 'destructive' : 'secondary'}
-          className="absolute -top-1 -right-1 h-5 min-w-5 text-xs px-1 flex items-center justify-center"
-        >
-          {pending > 99 ? '99+' : pending}
-        </Badge>
-      )}
-    </Button>
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="relative h-8 sm:h-9 px-2 sm:px-3"
+        onClick={handleClick}
+        disabled={busy}
+        title={
+          hasIssues
+            ? `${status.open_issues} sync issue${status.open_issues === 1 ? '' : 's'} — click to review`
+            : status.online
+              ? `Online${pending ? ` · ${pending} pending` : ''}${
+                  status.last_synced_at ? ` · last synced ${formatRelative(status.last_synced_at)}` : ''
+                }`
+              : `Offline${pending ? ` · ${pending} queued` : ''}`
+        }
+      >
+        {hasIssues ? (
+          <AlertCircle className="h-4 w-4 text-destructive" />
+        ) : busy ? (
+          <RefreshCw className="h-4 w-4 animate-spin" />
+        ) : status.online ? (
+          <Cloud className="h-4 w-4" />
+        ) : (
+          <CloudOff className="h-4 w-4 text-amber-500" />
+        )}
+        {(pending > 0 || hasIssues) && (
+          <Badge
+            variant={hasIssues ? 'destructive' : 'secondary'}
+            className="absolute -top-1 -right-1 h-5 min-w-5 text-xs px-1 flex items-center justify-center"
+          >
+            {(hasIssues ? status.open_issues : pending) > 99
+              ? '99+'
+              : hasIssues
+                ? status.open_issues
+                : pending}
+          </Badge>
+        )}
+      </Button>
+
+      <SyncIssuesSheet open={issuesOpen} onOpenChange={setIssuesOpen} />
+    </>
   );
 }
 

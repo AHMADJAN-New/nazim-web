@@ -72,6 +72,19 @@ const SCHEMA_STATEMENTS = [
     resolved_at TEXT
   )`,
 
+  // Tier B read-only response cache. Keyed by a stable cache_key the
+  // renderer derives from its TanStack Query key + relevant filters, so
+  // an offline user gets the same data they last saw online. Body is the
+  // exact JSON the API returned; the frontend mapper handles the rest.
+  `CREATE TABLE IF NOT EXISTS cached_responses (
+    cache_key TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    body_json TEXT NOT NULL,
+    cached_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE INDEX IF NOT EXISTS cached_responses_kind_idx
+     ON cached_responses(kind)`,
+
   `CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY,
     applied_at TEXT NOT NULL DEFAULT (datetime('now'))

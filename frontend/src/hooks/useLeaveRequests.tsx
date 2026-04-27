@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
 import { leaveRequestsApi } from '@/lib/api/client';
@@ -29,8 +30,12 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
   const isEventUser = profile?.is_event_user === true;
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({ initialPage: 1, initialPageSize: 10 });
 
-  const { data, isLoading, error } = useQuery<PaginatedResponse<LeaveRequest> | LeaveRequest[]>({
-    queryKey: ['leave-requests', profile?.organization_id ?? null, profile?.default_school_id ?? null, filters, page, pageSize],
+  const leaveQueryKey = ['leave-requests', profile?.organization_id ?? null, profile?.default_school_id ?? null, filters, page, pageSize];
+
+  const { data, isLoading, error } = useOfflineCachedQuery<PaginatedResponse<LeaveRequest> | LeaveRequest[]>({
+    cacheKey: `leave.list:${JSON.stringify(leaveQueryKey)}`,
+    cacheKind: 'leave.list',
+    queryKey: leaveQueryKey,
     queryFn: async () => {
       if (!user || !profile) return [] as LeaveRequest[];
       const params: Record<string, any> = {

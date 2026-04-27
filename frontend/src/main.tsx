@@ -12,22 +12,43 @@ import { RootBootstrap } from './RootBootstrap';
 import { DatePreferenceProvider } from '@/hooks/useDatePreference';
 import { LanguageProvider } from '@/hooks/useLanguage';
 
-// Unregister any existing service workers (PWA removed for performance)
-// Guard against sandboxed/invalid documents (e.g., PDF/object viewers) that throw InvalidStateError
+// Service worker policy:
+// - Regular browser tabs: keep the SW unregistered. The PWA was removed
+//   from the web app for performance and we don't want it back there.
+// - Electron desktop: register /sw.js so the SPA shell + JS/CSS bundle
+//   get cached on first online boot, letting the app load on subsequent
+//   offline launches.
+//
+// Guard against sandboxed/invalid documents (PDF viewers etc.) that
+// throw InvalidStateError on serviceWorker.* access.
+const isElectronRenderer =
+  typeof window !== 'undefined' &&
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Boolean((window as any).electron?.offline);
+
 if ('serviceWorker' in navigator) {
   try {
-    navigator.serviceWorker
-      .getRegistrations()
-      .then((registrations) => {
-        registrations.forEach((registration) => {
-          registration.unregister().catch(() => {
-            // ignore unregister issues in sandboxed contexts
-          });
+    if (isElectronRenderer) {
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/' })
+        .catch(() => {
+          // SW registration is best-effort — failure means offline boots
+          // won't have the shell cached, but everything else still works.
         });
-      })
-      .catch(() => {
-        // ignore InvalidStateError or other errors when document is not eligible
-      });
+    } else {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister().catch(() => {
+              // ignore unregister issues in sandboxed contexts
+            });
+          });
+        })
+        .catch(() => {
+          // ignore InvalidStateError or other errors when document is not eligible
+        });
+    }
   } catch {
     // ignore InvalidStateError when the document is in an invalid state (e.g., embedded PDF)
   }

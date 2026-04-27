@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { useAuth } from './useAuth';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useProfile } from './useProfiles';
 
 import { hostelApi } from '@/lib/api/client';
@@ -14,8 +15,12 @@ export const useHostelOverview = (organizationId?: string) => {
   const isEventUser = currentProfile?.is_event_user === true;
   const orgId = organizationId || currentProfile?.organization_id;
 
-  return useQuery<HostelOverview>({
-    queryKey: ['hostel-overview', orgId, currentProfile?.default_school_id ?? null],
+  const overviewQueryKey = ['hostel-overview', orgId, currentProfile?.default_school_id ?? null];
+
+  return useOfflineCachedQuery<HostelOverview>({
+    cacheKey: `hostel.overview:${JSON.stringify(overviewQueryKey)}`,
+    cacheKind: 'hostel.overview',
+    queryKey: overviewQueryKey,
     queryFn: async () => {
       if (!orgId) {
         throw new Error('Organization ID is required');
