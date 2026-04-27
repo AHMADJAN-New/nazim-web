@@ -12,6 +12,7 @@ let online = false;
 let heartbeatTimer = null;
 let draining = false;
 let listeners = new Set();
+let resolvedListeners = new Set();
 
 function isOnline() {
   return online;
@@ -22,10 +23,24 @@ function onChange(fn) {
   return () => listeners.delete(fn);
 }
 
+// Notified whenever a queued create finishes syncing — gives the renderer
+// the (client_uuid, server_response) pair it needs to swap the optimistic
+// id for the real one and invalidate the relevant query caches.
+function onResolved(fn) {
+  resolvedListeners.add(fn);
+  return () => resolvedListeners.delete(fn);
+}
+
 function emit() {
   const snapshot = { online, ...queue.status() };
   for (const fn of listeners) {
     try { fn(snapshot); } catch (_) { /* ignore listener errors */ }
+  }
+}
+
+function emitResolved(payload) {
+  for (const fn of resolvedListeners) {
+    try { fn(payload); } catch (_) { /* ignore listener errors */ }
   }
 }
 
@@ -65,6 +80,10 @@ async function heartbeat() {
 
 function start() {
   if (heartbeatTimer) return;
+  // Drop expired Tier B cache entries on each session start so users
+  // returning after a long idle don't see frozen data on the first
+  // offline render.
+  try { queue.cacheVacuum(); } catch (_) { /* non-fatal */ }
   heartbeat();
   heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS);
 }
@@ -139,6 +158,12 @@ async function drain() {
         try {
           const resp = await replayOne(op);
           queue.markSynced(op.client_uuid, resp);
+          emitResolved({
+            client_uuid: op.client_uuid,
+            kind: op.kind,
+            server_id: resp && typeof resp === 'object' ? resp.id ?? null : null,
+            body: resp,
+          });
         } catch (err) {
           // 4xx (except 408/429) are terminal — replaying won't help.
           // Surface as a sync issue so the user can resolve it.
@@ -168,4 +193,4 @@ async function drain() {
   }
 }
 
-module.exports = { start, stop, drain, isOnline, onChange, heartbeat };
+module.exports = { start, stop, drain, isOnline, onChange, onResolved, heartbeat };

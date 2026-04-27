@@ -166,17 +166,42 @@ function cachePut(cacheKey, kind, body) {
   `).run(cacheKey, kind, JSON.stringify(body ?? null));
 }
 
+// Cached responses older than this are considered too stale to surface,
+// even when offline. 7 days matches a typical school holiday gap — long
+// enough that a teacher who's been disconnected over a weekend still
+// sees their data, short enough that data stops being a hazard for
+// users who left the app idle for weeks.
+const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 function cacheGet(cacheKey) {
   if (!cacheKey) return null;
   const row = db.get().prepare(`
     SELECT body_json, cached_at FROM cached_responses WHERE cache_key = ?
   `).get(cacheKey);
   if (!row) return null;
+
+  // Reject expired rows. We don't delete here — let cacheVacuum handle
+  // bulk pruning on a schedule.
+  const cachedAtMs = Date.parse(`${row.cached_at}Z`);
+  if (Number.isFinite(cachedAtMs) && Date.now() - cachedAtMs > CACHE_MAX_AGE_MS) {
+    return null;
+  }
+
   try {
     return { body: JSON.parse(row.body_json), cached_at: row.cached_at };
   } catch (_) {
     return null;
   }
+}
+
+function cacheVacuum(maxAgeMs = CACHE_MAX_AGE_MS) {
+  // SQLite's datetime('now') returns UTC; cached_at is stored that way
+  // too, so we can compute the cutoff as ISO and compare strings safely.
+  const cutoff = new Date(Date.now() - maxAgeMs).toISOString().replace('T', ' ').slice(0, 19);
+  const result = db.get().prepare(`
+    DELETE FROM cached_responses WHERE cached_at < ?
+  `).run(cutoff);
+  return { removed: result.changes };
 }
 
 function cacheEvict(kind) {
@@ -218,4 +243,6 @@ module.exports = {
   cachePut,
   cacheGet,
   cacheEvict,
+  cacheVacuum,
+  CACHE_MAX_AGE_MS,
 };

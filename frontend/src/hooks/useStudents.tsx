@@ -64,7 +64,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
     filterKey,
   ];
 
-  const { data, isLoading, error } = useOfflineCachedQuery<Student[] | PaginatedResponse<StudentApi.Student>>({
+  const { data, isLoading, error, isFromCache, cachedAt } = useOfflineCachedQuery<Student[] | PaginatedResponse<StudentApi.Student>>({
     cacheKey: `students.list:${JSON.stringify(queryKey)}`,
     cacheKind: 'students.list',
     queryKey,
@@ -175,6 +175,8 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
       pageSize,
       setPage,
       setPageSize,
+      isFromCache,
+      cachedAt,
     };
   }
 
@@ -182,6 +184,8 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
     data: data as Student[] | undefined,
     isLoading,
     error,
+    isFromCache,
+    cachedAt,
   };
 };
 

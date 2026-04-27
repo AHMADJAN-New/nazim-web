@@ -32,7 +32,7 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
 
   const leaveQueryKey = ['leave-requests', profile?.organization_id ?? null, profile?.default_school_id ?? null, filters, page, pageSize];
 
-  const { data, isLoading, error } = useOfflineCachedQuery<PaginatedResponse<LeaveRequest> | LeaveRequest[]>({
+  const { data, isLoading, error, isFromCache, cachedAt } = useOfflineCachedQuery<PaginatedResponse<LeaveRequest> | LeaveRequest[]>({
     cacheKey: `leave.list:${JSON.stringify(leaveQueryKey)}`,
     cacheKind: 'leave.list',
     queryKey: leaveQueryKey,
@@ -95,6 +95,8 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
     setPageSize,
     isLoading,
     error,
+    isFromCache,
+    cachedAt,
   };
 };
 

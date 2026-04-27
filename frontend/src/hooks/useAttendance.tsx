@@ -6,6 +6,7 @@ import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { usePagination } from './usePagination';
 
 import { attendanceSessionsApi } from '@/lib/api/client';
+import { getOfflineBridge, subscribeResolved } from '@/lib/electron-offline';
 import { showToast } from '@/lib/toast';
 import {
   mapAttendanceRecordApiToDomain,
@@ -69,7 +70,7 @@ export const useAttendanceSessions = (
     usePaginated ? pageSize : undefined,
   ];
 
-  const { data, isLoading, error } = useOfflineCachedQuery<AttendanceSession[] | PaginatedResponse<AttendanceApi.AttendanceSession>>({
+  const { data, isLoading, error, isFromCache, cachedAt } = useOfflineCachedQuery<AttendanceSession[] | PaginatedResponse<AttendanceApi.AttendanceSession>>({
     cacheKey: `attendance.sessions:${JSON.stringify(sessionsQueryKey)}`,
     cacheKind: 'attendance.sessions',
     queryKey: sessionsQueryKey,
@@ -139,6 +140,8 @@ export const useAttendanceSessions = (
       setPageSize,
       isLoading,
       error,
+      isFromCache,
+      cachedAt,
     };
   }
 
@@ -146,13 +149,22 @@ export const useAttendanceSessions = (
     sessions: data as AttendanceSession[] | undefined,
     isLoading,
     error,
+    isFromCache,
+    cachedAt,
   };
 };
 
 export const useAttendanceSession = (id?: string) => {
   const { user, profile } = useAuth();
-  const { data, isLoading, error, refetch } = useQuery<AttendanceSession | undefined>({
-    queryKey: ['attendance-session', id, profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const detailQueryKey = ['attendance-session', id, profile?.organization_id ?? null, profile?.default_school_id ?? null];
+
+  const { data, isLoading, error, refetch } = useOfflineCachedQuery<AttendanceSession | undefined>({
+    // Cache key intentionally keyed on the session id alone (not the
+    // whole queryKey) so the entry written by useCreateAttendanceSession
+    // for an optimistic session is the same one this hook reads.
+    cacheKey: id ? `attendance.session:${id}` : 'attendance.session:none',
+    cacheKind: 'attendance.session',
+    queryKey: detailQueryKey,
     queryFn: async () => {
       if (!user || !profile || !id) return undefined;
       const apiSession = await attendanceSessionsApi.get(id);
@@ -177,12 +189,58 @@ export const useCreateAttendanceSession = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
 
+  // When an offline-created session finally syncs, the server returns
+  // the canonical session record. Invalidate the list + the optimistic
+  // detail query so the renderer picks up the real id and any
+  // server-computed fields (round_number, server timestamps, etc).
+  useEffect(() => {
+    return subscribeResolved((payload) => {
+      if (payload.kind !== 'attendance.session.create') return;
+      void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['attendance-session', payload.client_uuid],
+      });
+      // Evict the SQLite read-cache so the next list pull fetches fresh.
+      getOfflineBridge()?.cacheEvict('attendance.sessions').catch(() => {});
+    });
+  }, [queryClient]);
+
   return useMutation({
-    mutationFn: async (payload: AttendanceSessionInsert) => {
+    mutationFn: async (payload: AttendanceSessionInsert & { rosterStudents?: Array<{ id: string; full_name?: string | null; admission_no?: string | null }> }) => {
       if (!profile?.organization_id) throw new Error('Organization required to create attendance session');
-      const apiPayload = mapAttendanceSessionDomainToInsert(payload);
+      const { rosterStudents, ...rest } = payload;
+      const apiPayload = mapAttendanceSessionDomainToInsert(rest);
       const apiSession = await attendanceSessionsApi.create(apiPayload);
-      return mapAttendanceSessionApiToDomain(apiSession as AttendanceApi.AttendanceSession);
+      const mapped = mapAttendanceSessionApiToDomain(apiSession as AttendanceApi.AttendanceSession);
+
+      // Persist the roster the teacher saw at create time as evidence.
+      // Important for the offline path: if a student transfers between
+      // now and sync, the snapshot proves they were on screen when the
+      // teacher marked attendance.
+      const bridge = getOfflineBridge();
+      if (bridge && rosterStudents && rosterStudents.length > 0) {
+        const sessionUuid = (apiSession as { client_uuid?: string; id?: string }).client_uuid
+          ?? mapped.id;
+        bridge.snapshotRoster(sessionUuid, rosterStudents).catch(() => {});
+      }
+
+      // Mirror the *mapped* response into the per-id read-cache so the
+      // detail hook (useAttendanceSession) reads the same shape it
+      // returns from its own queryFn — keeps offline reads symmetric
+      // with online reads.
+      if (bridge) {
+        const sessionUuid = mapped.id;
+        const records = (apiSession as AttendanceApi.AttendanceSession & { records?: AttendanceApi.AttendanceRecord[] }).records;
+        const cachedDetail = {
+          ...mapped,
+          records: records?.map(mapAttendanceRecordApiToDomain),
+        };
+        bridge
+          .cachePut(`attendance.session:${sessionUuid}`, 'attendance.session', cachedDetail)
+          .catch(() => {});
+      }
+
+      return mapped;
     },
     onSuccess: () => {
       showToast.success('attendancePage.createSuccess');

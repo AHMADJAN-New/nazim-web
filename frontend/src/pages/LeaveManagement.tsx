@@ -3,6 +3,7 @@ import { format, addDays, addWeeks } from 'date-fns';
 import { Calendar, CheckCircle2, Download, Eye, FileText, Loader2, Printer, Shield, UserRound, Zap, Search, Scan, X, Clock, MapPin, Building2 } from 'lucide-react';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 
+import { CachedDataBanner } from '@/components/layout/CachedDataBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -109,7 +110,7 @@ export default function LeaveManagement() {
   const filterMonth = useMemo(() => filterDate.getMonth() + 1, [filterDate]);
   const filterYear = useMemo(() => filterDate.getFullYear(), [filterDate]);
 
-  const { requests, pagination, page, pageSize, setPage, setPageSize, isLoading } = useLeaveRequests({
+  const { requests, pagination, page, pageSize, setPage, setPageSize, isLoading, isFromCache, cachedAt } = useLeaveRequests({
     studentId: selectedStudent || undefined,
     classId: selectedClass || undefined,
     month: filterMonth,
@@ -698,6 +699,8 @@ export default function LeaveManagement() {
         description={t('leave.subtitle')}
         icon={<FileText className="h-5 w-5" />}
       />
+
+      <CachedDataBanner isFromCache={!!isFromCache} cachedAt={cachedAt ?? null} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 text-white">

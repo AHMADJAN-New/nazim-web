@@ -11,11 +11,20 @@ const keystore = require('./keystore');
 
 let registered = false;
 let unsubscribeStatus = null;
+let unsubscribeResolved = null;
 
 function broadcastStatus(snapshot) {
   for (const w of BrowserWindow.getAllWindows()) {
     if (!w.isDestroyed()) {
       w.webContents.send('offline:status', snapshot);
+    }
+  }
+}
+
+function broadcastResolved(payload) {
+  for (const w of BrowserWindow.getAllWindows()) {
+    if (!w.isDestroyed()) {
+      w.webContents.send('offline:resolved', payload);
     }
   }
 }
@@ -126,6 +135,7 @@ function register() {
   });
 
   unsubscribeStatus = sync.onChange(broadcastStatus);
+  unsubscribeResolved = sync.onResolved(broadcastResolved);
 }
 
 function unregister() {
@@ -135,6 +145,10 @@ function unregister() {
   if (unsubscribeStatus) {
     unsubscribeStatus();
     unsubscribeStatus = null;
+  }
+  if (unsubscribeResolved) {
+    unsubscribeResolved();
+    unsubscribeResolved = null;
   }
 
   for (const channel of [

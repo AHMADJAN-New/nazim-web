@@ -53,5 +53,14 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.on('offline:status', listener);
       return () => ipcRenderer.removeListener('offline:status', listener);
     },
+
+    // Fires once per queued create/scan/etc. that finishes syncing.
+    // Payload: { client_uuid, kind, server_id, body }. Renderer uses
+    // this to swap optimistic ids and invalidate caches.
+    onResolved: (handler) => {
+      const listener = (_event, payload) => handler(payload);
+      ipcRenderer.on('offline:resolved', listener);
+      return () => ipcRenderer.removeListener('offline:resolved', listener);
+    },
   },
 });

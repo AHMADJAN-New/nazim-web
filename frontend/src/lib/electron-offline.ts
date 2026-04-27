@@ -65,6 +65,14 @@ type OfflineBridge = {
   cacheEvict(kind?: string): Promise<{ ok: true }>;
 
   onStatus(handler: (snapshot: OfflineStatus) => void): () => void;
+  onResolved(handler: (payload: OfflineResolvedPayload) => void): () => void;
+};
+
+export type OfflineResolvedPayload = {
+  client_uuid: string;
+  kind: string;
+  server_id: string | null;
+  body: unknown;
 };
 
 declare global {
@@ -139,6 +147,34 @@ export function isOptimisticId(id: string): boolean {
 
 export function forgetOptimisticId(id: string): void {
   if (optimisticIds.delete(id)) persistOptimisticIds();
+}
+
+// Single shared subscription to the bridge's onResolved channel. Hooks
+// subscribe via subscribeResolved() which fans the event out to all
+// listeners; the bridge handle is set up exactly once. We also drop the
+// id from the optimistic set automatically so any subsequent child ops
+// stop threading depends_on once the parent has a real server id.
+type ResolvedListener = (p: OfflineResolvedPayload) => void;
+const resolvedListeners = new Set<ResolvedListener>();
+let bridgeUnsubscribe: (() => void) | null = null;
+
+function ensureResolvedSubscription(): void {
+  const bridge = getOfflineBridge();
+  if (!bridge || bridgeUnsubscribe) return;
+  bridgeUnsubscribe = bridge.onResolved((payload) => {
+    forgetOptimisticId(payload.client_uuid);
+    for (const listener of resolvedListeners) {
+      try { listener(payload); } catch { /* ignore */ }
+    }
+  });
+}
+
+export function subscribeResolved(handler: ResolvedListener): () => void {
+  ensureResolvedSubscription();
+  resolvedListeners.add(handler);
+  return () => {
+    resolvedListeners.delete(handler);
+  };
 }
 
 // Try the network first; if it fails for a reason that looks like

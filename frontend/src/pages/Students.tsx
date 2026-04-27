@@ -68,6 +68,7 @@ import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview
 import { StudentDocumentsDialog } from '@/components/students/StudentDocumentsDialog';
 import { StudentEducationalHistoryDialog } from '@/components/students/StudentEducationalHistoryDialog';
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
+import { CachedDataBanner } from '@/components/layout/CachedDataBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
@@ -323,15 +324,17 @@ export function Students() {
   }), [searchQuery, statusFilter, originalProvinceFilter, selectedAcademicYearId, classFilter]);
 
   // Use paginated version of the hook
-  const { 
-    data: students, 
-    isLoading, 
+  const {
+    data: students,
+    isLoading,
     error,
     pagination,
     page,
     pageSize,
     setPage,
     setPageSize,
+    isFromCache,
+    cachedAt,
   } = useStudents(orgIdForQuery, true, studentFilters);
   const { data: stats } = useStudentStats(orgIdForQuery);
   const { data: schools } = useSchools(orgIdForQuery);
@@ -1196,6 +1199,7 @@ export function Students() {
             },
           ]}
         />
+        <CachedDataBanner isFromCache={!!isFromCache} cachedAt={cachedAt ?? null} />
         <StudentFormDialog
           open={isCreateOpen}
           onOpenChange={setIsCreateOpen}

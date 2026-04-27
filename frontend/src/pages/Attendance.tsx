@@ -3,6 +3,7 @@ import { BookOpen, CalendarDays, ChevronRight, ClipboardList, GraduationCap, Pen
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { CachedDataBanner } from '@/components/layout/CachedDataBanner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
@@ -50,7 +51,7 @@ export default function Attendance() {
   const [editingStudentType, setEditingStudentType] = useState<AttendanceStudentType>('all');
 
 
-  const { sessions, pagination, page, pageSize, setPage, setPageSize, isLoading: sessionsLoading } = useAttendanceSessions({}, true);
+  const { sessions, pagination, page, pageSize, setPage, setPageSize, isLoading: sessionsLoading, isFromCache, cachedAt } = useAttendanceSessions({}, true);
   const createSession = useCreateAttendanceSession();
   const updateSession = useUpdateAttendanceSession();
 
@@ -249,6 +250,7 @@ export default function Attendance() {
 
   return (
     <div className="container mx-auto py-4 max-w-7xl px-4 overflow-x-hidden">
+      <CachedDataBanner isFromCache={!!isFromCache} cachedAt={cachedAt ?? null} className="mb-4" />
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
         {/* ── Creation Form ── */}
