@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { apiClient } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfiles';
@@ -37,8 +38,11 @@ export const useStudentHistory = (studentId: string | undefined, filters?: Stude
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
-  return useQuery<StudentHistory | null>({
-    queryKey: ['student-history', studentId, profile?.organization_id, profile?.default_school_id ?? null, filters],
+  const queryKey = ['student-history', studentId, profile?.organization_id, profile?.default_school_id ?? null, filters];
+  return useOfflineCachedQuery<StudentHistory | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'students.history',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !studentId) {
         if (import.meta.env.DEV) {
@@ -80,8 +84,11 @@ export const useStudentHistorySection = (
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
-  return useQuery({
-    queryKey: ['student-history-section', studentId, section, profile?.organization_id, profile?.default_school_id ?? null, filters],
+  const queryKey = ['student-history-section', studentId, section, profile?.organization_id, profile?.default_school_id ?? null, filters];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'students.history',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !studentId || !section) {
         return null;

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 export interface UpcomingEvent {
   id: string;
@@ -10,8 +10,12 @@ export interface UpcomingEvent {
 }
 
 export const useUpcomingEvents = () => {
-  return useQuery({
-    queryKey: ['upcoming-events'],
+  const queryKey = ['upcoming-events'];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'calendar.upcoming-events',
+    queryKey,
+
     queryFn: async (): Promise<UpcomingEvent[]> => {
       // Return empty array - communications and exams tables don't exist
       return [];

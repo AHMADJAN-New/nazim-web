@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useMemo } from 'react';
 
 import { useAuth } from './useAuth';
@@ -47,12 +47,13 @@ export function usePhoneBook(params: UsePhoneBookParams = {}): UsePhoneBookRetur
     perPage = 25,
   } = params;
 
+  const queryKey = ['phonebook', profile?.organization_id, profile?.default_school_id ?? null, category, search, page, perPage];
   const {
     data,
     isLoading,
     error,
     refetch,
-  } = useQuery<{
+  } = useOfflineCachedQuery<{
     data: PhoneBookEntry[];
     current_page: number;
     per_page: number;
@@ -61,7 +62,9 @@ export function usePhoneBook(params: UsePhoneBookParams = {}): UsePhoneBookRetur
     from: number | null;
     to: number | null;
   }>({
-    queryKey: ['phonebook', profile?.organization_id, profile?.default_school_id ?? null, category, search, page, perPage],
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'phonebook.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id || !profile.default_school_id) {
         if (import.meta.env.DEV) {

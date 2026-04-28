@@ -2,7 +2,8 @@
  * Currency Hooks - Data fetching and mutations for currency module
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -42,8 +43,12 @@ export type {
 export const useCurrencies = (params?: { isActive?: boolean; isBase?: boolean }) => {
     const { user, profile } = useAuth();
 
-    return useQuery<Currency[]>({
-        queryKey: ['currencies', profile?.organization_id, profile?.default_school_id ?? null, params],
+    const queryKey = ['currencies', profile?.organization_id, profile?.default_school_id ?? null, params];
+    return useOfflineCachedQuery<Currency[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'finance.currencies',
+        queryKey,
+
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await currenciesApi.list({
@@ -120,8 +125,12 @@ export const useDeleteCurrency = () => {
 export const useCurrency = (id: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<Currency | null>({
-        queryKey: ['currency', id, profile?.organization_id, profile?.default_school_id ?? null],
+    const queryKey = ['currency', id, profile?.organization_id, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<Currency | null>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'currency.list',
+        queryKey,
+
         queryFn: async () => {
             if (!user || !profile?.organization_id || !id) return null;
             const data = await currenciesApi.get(id);
@@ -145,8 +154,12 @@ export const useExchangeRates = (params?: {
 }) => {
     const { user, profile } = useAuth();
 
-    return useQuery<ExchangeRate[]>({
-        queryKey: ['exchange-rates', profile?.organization_id, profile?.default_school_id ?? null, params],
+    const queryKey = ['exchange-rates', profile?.organization_id, profile?.default_school_id ?? null, params];
+    return useOfflineCachedQuery<ExchangeRate[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'exchange-rates.list',
+        queryKey,
+
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await exchangeRatesApi.list({
@@ -225,8 +238,12 @@ export const useDeleteExchangeRate = () => {
 export const useExchangeRate = (id: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<ExchangeRate | null>({
-        queryKey: ['exchange-rate', id, profile?.organization_id, profile?.default_school_id ?? null],
+    const queryKey = ['exchange-rate', id, profile?.organization_id, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<ExchangeRate | null>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'exchange-rate.list',
+        queryKey,
+
         queryFn: async () => {
             if (!user || !profile?.organization_id || !id) return null;
             const data = await exchangeRatesApi.get(id);

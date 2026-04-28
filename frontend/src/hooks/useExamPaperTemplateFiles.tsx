@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -27,8 +28,11 @@ export const useExamPaperTemplateFiles = (params?: UseExamPaperTemplateFilesPara
   const { user, profile } = useAuth();
   const { t } = useLanguage();
 
-  return useQuery<ExamPaperTemplateFile[]>({
-    queryKey: ['exam-paper-template-files', profile?.organization_id, profile?.default_school_id ?? null, params?.language, params?.isActive, params?.isDefault],
+  const queryKey = ['exam-paper-template-files', profile?.organization_id, profile?.default_school_id ?? null, params?.language, params?.isActive, params?.isDefault];
+  return useOfflineCachedQuery<ExamPaperTemplateFile[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.paper-template-files',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) {
         if (import.meta.env.DEV) {
@@ -64,8 +68,11 @@ export const useExamPaperTemplateFiles = (params?: UseExamPaperTemplateFilesPara
 export const useExamPaperTemplateFile = (id: string | null) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamPaperTemplateFile | null>({
-    queryKey: ['exam-paper-template-file', id, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-paper-template-file', id, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamPaperTemplateFile | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.paper-template-files',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id || !id) {
         return null;

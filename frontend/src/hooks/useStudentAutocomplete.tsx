@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfiles';
@@ -23,8 +23,11 @@ export function useStudentAutocomplete() {
     const { user } = useAuth();
     const { data: profile } = useProfile();
 
-    return useQuery({
-        queryKey: ['student-autocomplete', profile?.organization_id, profile?.default_school_id ?? null, profile?.role],
+    const queryKey = ['student-autocomplete', profile?.organization_id, profile?.default_school_id ?? null, profile?.role];
+    return useOfflineCachedQuery({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'students.autocomplete',
+        queryKey,
         queryFn: async (): Promise<StudentAutocompleteData> => {
             if (!user || !profile) {
                 return {

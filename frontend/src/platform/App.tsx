@@ -1,7 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createQueryClient } from '@/lib/queryClient';
 import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 
 
 import { PlatformAdminLayout } from './components/PlatformAdminLayout';
@@ -148,11 +148,17 @@ function ProtectedPlatformLayout() {
   );
 }
 
+function PlatformRouter({ children }: { children: React.ReactNode }) {
+  const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+  if (isFileProtocol) return <HashRouter>{children}</HashRouter>;
+  return <BrowserRouter>{children}</BrowserRouter>;
+}
+
 export function PlatformAdminApp() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <BrowserRouter>
+        <PlatformRouter>
           <Routes>
             {/* Login */}
             <Route path="/platform/login" element={<PlatformAdminLogin />} />
@@ -229,7 +235,7 @@ export function PlatformAdminApp() {
           </Routes>
 
           <Toaster />
-        </BrowserRouter>
+        </PlatformRouter>
       </LanguageProvider>
     </QueryClientProvider>
   );

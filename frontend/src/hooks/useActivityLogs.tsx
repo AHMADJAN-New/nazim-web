@@ -4,7 +4,7 @@
  * Provides hooks for fetching and managing activity logs data.
  * Uses organization and school context for multi-tenancy.
  */
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useAuth } from './useAuth';
 import { activityLogsApi } from '@/lib/api/client';
 import type * as ActivityLogApi from '@/types/api/activityLog';
@@ -35,21 +35,25 @@ export interface UseActivityLogsResult {
 export const useActivityLogs = (params: UseActivityLogsParams = {}) => {
   const { user, profile } = useAuth();
 
-  return useQuery<UseActivityLogsResult>({
-    queryKey: [
-      'activity-logs',
-      profile?.organization_id ?? null,
-      profile?.default_school_id ?? null,
-      params.page ?? 1,
-      params.perPage ?? 25,
-      params.logName,
-      params.event,
-      params.subjectId,
-      params.causerId,
-      params.startDate,
-      params.endDate,
-      params.search,
-    ],
+  const queryKey = [
+    'activity-logs',
+    profile?.organization_id ?? null,
+    profile?.default_school_id ?? null,
+    params.page ?? 1,
+    params.perPage ?? 25,
+    params.logName,
+    params.event,
+    params.subjectId,
+    params.causerId,
+    params.startDate,
+    params.endDate,
+    params.search,
+  ];
+
+  return useOfflineCachedQuery<UseActivityLogsResult>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'activity-logs.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile?.organization_id || !profile?.default_school_id) {
         return {
@@ -95,8 +99,12 @@ export const useActivityLogs = (params: UseActivityLogsParams = {}) => {
 export const useActivityLogNames = () => {
   const { user, profile } = useAuth();
 
-  return useQuery<string[]>({
-    queryKey: ['activity-log-names', profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const queryKey = ['activity-log-names', profile?.organization_id ?? null, profile?.default_school_id ?? null];
+
+  return useOfflineCachedQuery<string[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'activity-logs.names',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile?.organization_id || !profile?.default_school_id) {
         return [];
@@ -117,8 +125,12 @@ export const useActivityLogNames = () => {
 export const useActivityEventTypes = () => {
   const { user, profile } = useAuth();
 
-  return useQuery<string[]>({
-    queryKey: ['activity-event-types', profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const queryKey = ['activity-event-types', profile?.organization_id ?? null, profile?.default_school_id ?? null];
+
+  return useOfflineCachedQuery<string[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'activity-event-types.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile?.organization_id || !profile?.default_school_id) {
         return [];
@@ -139,8 +151,12 @@ export const useActivityEventTypes = () => {
 export const useActivityLogStats = () => {
   const { user, profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['activity-log-stats', profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const queryKey = ['activity-log-stats', profile?.organization_id ?? null, profile?.default_school_id ?? null];
+
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'activity-log-stats.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile?.organization_id || !profile?.default_school_id) {
         return {

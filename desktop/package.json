@@ -7,9 +7,10 @@
   "scripts": {
     "start": "electron .",
     "postinstall": "electron-rebuild -f -w better-sqlite3-multiple-ciphers || true",
-    "build:renderer": "cd ../frontend && npm run build -- --base=./ && rm -rf ../desktop/dist-renderer && cp -r dist ../desktop/dist-renderer",
-    "dist": "npm run build:renderer && electron-builder",
-    "dist:win": "npm run build:renderer && electron-builder --win"
+    "build:renderer": "cd ../frontend && npm run build -- --base=./ && node ../desktop/scripts/copy-renderer-dist.js",
+    "dist": "npm run build:renderer && node scripts/run-electron-builder.js",
+    "dist:win": "npm run build:renderer && node scripts/run-electron-builder.js --win",
+    "dist:win:dir": "npm run build:renderer && node scripts/run-electron-builder.js --win --dir"
   },
   "dependencies": {
     "better-sqlite3-multiple-ciphers": "^11.5.0"

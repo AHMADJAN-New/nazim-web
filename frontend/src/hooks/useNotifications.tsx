@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 
@@ -43,8 +44,12 @@ export const useNotifications = (options: NotificationQueryOptions = {}) => {
   const { user } = useAuth();
   const limit = options.limit ?? 30;
 
-  return useQuery<NotificationQueryResult>({
-    queryKey: [NOTIFICATION_QUERY_KEY, user?.id, limit, options.page, options.unreadOnly],
+  const queryKey = [NOTIFICATION_QUERY_KEY, user?.id, limit, options.page, options.unreadOnly];
+  return useOfflineCachedQuery<NotificationQueryResult>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'notifications.list',
+    queryKey,
+
     enabled: !!user && (options.enabled ?? true),
     queryFn: async () => {
       const response = await notificationsApi.list({
@@ -67,8 +72,12 @@ export const useNotifications = (options: NotificationQueryOptions = {}) => {
 export const useNotificationCount = (options: { enabled?: boolean } = {}) => {
   const { user } = useAuth();
 
-  return useQuery({
-    queryKey: [NOTIFICATION_QUERY_KEY, 'count', user?.id],
+  const queryKey = [NOTIFICATION_QUERY_KEY, 'count', user?.id];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'notifications.list',
+    queryKey,
+
     queryFn: notificationsApi.unreadCount,
     enabled: !!user && (options.enabled ?? true),
     refetchInterval: 30000,

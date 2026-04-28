@@ -25,6 +25,7 @@ import { apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useIndexTranslations } from './index/translations/useIndexTranslations';
+import { NazimLogo } from '@/components/brand/NazimLogo';
 import { HeroSection } from './index/HeroSection';
 import { StatsSection } from './index/StatsSection';
 import { ContactSection } from './index/ContactSection';
@@ -141,11 +142,10 @@ const Index = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo/Brand */}
             <div className="flex items-center gap-3">
-              <img
-                src="/nazim_logo.webp"
+              <NazimLogo
                 alt="Nazim Logo"
-                className="w-10 h-10 rounded-lg object-contain ring-2 ring-white/20 bg-white/20 p-1"
                 loading="eager"
+                className="w-10 h-10 rounded-lg object-contain ring-2 ring-white/20 bg-white/20 p-1"
               />
               <span
                 className="text-xl font-bold text-[#0b0b56] hidden sm:inline"

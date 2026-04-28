@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -33,8 +34,11 @@ export const useExamStudentsWithNumbers = (
 ) => {
   const { user, profile } = useAuth();
 
-  return useQuery<StudentsWithNumbersResponse | null>({
-    queryKey: ['exam-students-with-numbers', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-students-with-numbers', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<StudentsWithNumbersResponse | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.student-numbers',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const params: { exam_class_id?: string } = {};
@@ -56,8 +60,11 @@ export const useExamStudentsWithNumbers = (
 export const useRollNumberStartFrom = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<string>({
-    queryKey: ['roll-number-start-from', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['roll-number-start-from', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<string>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.roll-number-start',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return '1001';
       const response = await examsApi.rollNumberStartFrom(examId);
@@ -174,8 +181,11 @@ export const useUpdateRollNumber = () => {
 export const useSecretNumberStartFrom = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<string>({
-    queryKey: ['secret-number-start-from', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['secret-number-start-from', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<string>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.secret-number-start',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return '1';
       const response = await examsApi.secretNumberStartFrom(examId);
@@ -309,8 +319,11 @@ export const useLookupBySecretNumber = () => {
 export const useRollNumberReport = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<RollNumberReportResponse | null>({
-    queryKey: ['roll-number-report', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['roll-number-report', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<RollNumberReportResponse | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.roll-number-report',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const params: { exam_class_id?: string } = {};
@@ -329,8 +342,11 @@ export const useRollNumberReport = (examId?: string, examClassId?: string) => {
 export const useRollSlipsHtml = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<RollSlipsHtmlResponse | null>({
-    queryKey: ['roll-slips-html', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['roll-slips-html', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<RollSlipsHtmlResponse | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.roll-slips',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const params: { exam_class_id?: string } = {};
@@ -362,8 +378,11 @@ export const useSecretLabelsHtml = (
 ) => {
   const { user, profile } = useAuth();
 
-  return useQuery<SecretLabelsHtmlResponse | null>({
-    queryKey: ['secret-labels-html', examId, examClassId, subjectId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['secret-labels-html', examId, examClassId, subjectId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<SecretLabelsHtmlResponse | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.secret-labels',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const params: { exam_class_id?: string; subject_id?: string } = {};

@@ -26,9 +26,13 @@ const isElectronRenderer =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Boolean((window as any).electron?.offline);
 
+const canUseServiceWorker =
+  typeof window !== 'undefined' &&
+  (window.location.protocol === 'https:' || window.location.protocol === 'http:');
+
 if ('serviceWorker' in navigator) {
   try {
-    if (isElectronRenderer) {
+    if (isElectronRenderer && canUseServiceWorker) {
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .catch(() => {

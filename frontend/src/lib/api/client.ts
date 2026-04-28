@@ -14,11 +14,22 @@ import {
   newClientUuid,
   tryNetworkThenQueue,
 } from '@/lib/electron-offline';
+import { getBackendOrigin } from '@/lib/api/url';
 
 // Use relative path in dev (via Vite proxy) or full URL in production
 // In development, Vite proxy handles /api -> http://localhost:8000/api
 // This eliminates CORS preflight overhead
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
+const DEFAULT_API_PATH = '/api';
+const DEFAULT_BACKEND_ORIGIN = 'http://127.0.0.1:8000';
+const API_URL = (() => {
+  // If the app is loaded from file:// (Electron packaged bundle), `/api/...`
+  // would resolve to `file:///api/...`. Force an HTTP base in that case.
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    const origin = import.meta.env.VITE_DESKTOP_BACKEND_ORIGIN || DEFAULT_BACKEND_ORIGIN;
+    return `${origin}${DEFAULT_API_PATH}`;
+  }
+  return import.meta.env.VITE_API_URL || (import.meta.env.DEV ? DEFAULT_API_PATH : `${getBackendOrigin()}${DEFAULT_API_PATH}`);
+})();
 
 export interface Profile {
   id: string;
@@ -627,7 +638,7 @@ export const maintenanceApi = {
 // Hand the active session to the Electron offline bridge so the queue
 // drain worker can replay queued mutations against the right user/token.
 // Returns silently when not running in Electron.
-async function pushOfflineAuthContext(loginResponse: { user?: any; token: string; profile?: any }): Promise<void> {
+export async function pushOfflineAuthContext(loginResponse: { user?: any; token: string; profile?: any }): Promise<void> {
   const bridge = getOfflineBridge();
   if (!bridge) return;
 

@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useAuth } from './useAuth';
@@ -17,8 +18,11 @@ export const useAcademicYears = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery<AcademicYear[]>({
-    queryKey: ['academic-years', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
+  const queryKey = ['academic-years', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AcademicYear[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'academic-years.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -41,8 +45,11 @@ export const useCurrentAcademicYear = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery<AcademicYear | null>({
-    queryKey: ['current-academic-year', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
+  const queryKey = ['current-academic-year', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AcademicYear | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'academic-years.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return null;
 

@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from './useAuth';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { queryOptionsNoRefetchOnFocus } from '@/lib/queryClient';
 import { assetCategoriesApi } from '@/lib/api/client';
@@ -22,8 +23,11 @@ export interface AssetCategory {
 export const useAssetCategories = () => {
   const { user, profile } = useAuth();
 
-  return useQuery<AssetCategory[]>({
-    queryKey: ['asset-categories', profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['asset-categories', profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AssetCategory[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'assets.categories',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) {
         return [];

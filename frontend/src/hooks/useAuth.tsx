@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { authApi, apiClient } from '@/lib/api/client';
+import { authApi, apiClient, pushOfflineAuthContext } from '@/lib/api/client';
+import { getOfflineBridge } from '@/lib/electron-offline';
+
+const OFFLINE_BOOTSTRAP_KEY = 'nazim:offline-bootstrap:v1';
+const OFFLINE_PROFILE_CACHE_KEY = 'auth:profile';
+const OFFLINE_PROFILE_CACHE_KIND = 'auth.profile';
+
+function getApiBaseUrl(): string {
+  const apiUrl: string = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
+  return apiUrl.startsWith('http') ? apiUrl : `${window.location.origin}${apiUrl}`;
+}
 
 // Profile type matching database structure
 export type Profile = {
@@ -59,20 +69,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (response) {
         const profileData = response as Profile;
         setProfile(profileData);
-
-        // If profile doesn't have organization_id, backend should have assigned it on login
+        // Cache for offline use (fire-and-forget)
+        getOfflineBridge()?.cachePut(OFFLINE_PROFILE_CACHE_KEY, OFFLINE_PROFILE_CACHE_KIND, profileData).catch(() => {});
         if (!profileData.organization_id) {
           console.warn('Profile missing organization_id - backend should have assigned it. User may need to log out and log back in.');
         }
       }
     } catch (error: any) {
       console.error('Failed to load profile:', error);
-      setProfile(null);
-      // If unauthorized, clear auth
-      if (error.message?.includes('Unauthenticated') || error.message?.includes('401')) {
-        apiClient.setToken(null);
-        setUser(null);
-        setSession(null);
+      // Restore from offline cache before clearing profile
+      const cachedProfile = await getOfflineBridge()?.cacheGet(OFFLINE_PROFILE_CACHE_KEY).catch(() => null);
+      if (cachedProfile?.body) {
+        setProfile(cachedProfile.body as Profile);
+      } else {
+        setProfile(null);
+        if (error.message?.includes('Unauthenticated') || error.message?.includes('401')) {
+          apiClient.setToken(null);
+          setUser(null);
+          setSession(null);
+        }
       }
     } finally {
       setProfileLoading(false);
@@ -107,6 +122,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(response.user);
         setSession({ token });
 
+        // Initialize offline bridge so the DB is open for caching (fire-and-forget)
+        pushOfflineAuthContext({ user: response.user, token, profile: response.profile }).catch(() => {});
+
+        // Save bootstrap for offline startup (non-sensitive ids only)
+        try {
+          localStorage.setItem(OFFLINE_BOOTSTRAP_KEY, JSON.stringify({
+            userId: response.user.id,
+            organizationId: (response.profile as Profile).organization_id ?? null,
+            schoolId: (response.profile as Profile).default_school_id ?? null,
+          }));
+        } catch { /* storage full — non-fatal */ }
+
         // If profile doesn't have organization_id, backend should have assigned it during login, so refresh profile
         if (!response.profile.organization_id) {
           if (import.meta.env.DEV) {
@@ -116,6 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           await loadUserProfile();
         } else {
           setProfile(response.profile as Profile);
+          // Cache freshly fetched profile for offline use
+          getOfflineBridge()?.cachePut(OFFLINE_PROFILE_CACHE_KEY, OFFLINE_PROFILE_CACHE_KIND, response.profile).catch(() => {});
         }
       } else {
         // Invalid token, clear it
@@ -146,12 +175,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // Check if we're in an iframe context (template preview, etc.)
         // If so, silently ignore - iframe errors shouldn't affect parent auth
         const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
-        
+
         if (isInIframe) {
           // We're in an iframe - silently ignore network errors
           // The parent window handles auth, not the iframe
           setLoading(false);
           return;
+        }
+
+        // Offline-first: attempt to restore the session from the local encrypted cache.
+        // Flow: read bootstrap ids from localStorage → open the user's offline DB via
+        // bridge.login() → read the cached profile → hydrate React state so the app
+        // remains usable without a network round-trip.
+        const offlineToken = apiClient.getToken();
+        if (offlineToken) {
+          try {
+            const rawBootstrap = localStorage.getItem(OFFLINE_BOOTSTRAP_KEY);
+            if (rawBootstrap) {
+              const bootstrap = JSON.parse(rawBootstrap) as {
+                userId: string;
+                organizationId: string | null;
+                schoolId: string | null;
+              };
+              if (bootstrap.userId) {
+                const bridge = getOfflineBridge();
+                if (bridge) {
+                  await bridge.login({
+                    userId: bootstrap.userId,
+                    organizationId: bootstrap.organizationId ?? '',
+                    schoolId: bootstrap.schoolId ?? null,
+                    apiToken: offlineToken,
+                    apiBaseUrl: getApiBaseUrl(),
+                  });
+                  const cached = await bridge.cacheGet(OFFLINE_PROFILE_CACHE_KEY).catch(() => null);
+                  if (cached?.body) {
+                    setUser({ id: bootstrap.userId, email: (cached.body as Profile).email ?? '' });
+                    setSession({ token: offlineToken });
+                    setProfile(cached.body as Profile);
+                  }
+                }
+              }
+            }
+          } catch { /* offline restore failure is non-fatal */ }
         }
 
         // Backend is likely not running - show helpful message but don't clear token

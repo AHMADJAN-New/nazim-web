@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useMemo } from 'react';
 
 import { useCurrentAcademicYear } from './useAcademicYears';
@@ -47,8 +48,11 @@ export const useExams = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery<Exam[]>({
-    queryKey: ['exams', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
+  const queryKey = ['exams', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<Exam[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
       try {
@@ -104,8 +108,11 @@ export const useLatestExamFromCurrentYear = (organizationId?: string) => {
 export const useExam = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<Exam | null>({
-    queryKey: ['exam', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<Exam | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       try {
@@ -205,8 +212,11 @@ export const useDeleteExam = () => {
 export const useExamClasses = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamClass[]>({
-    queryKey: ['exam-classes', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-classes', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamClass[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.classes',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const apiExamClasses = await examClassesApi.list({ exam_id: examId });
@@ -257,8 +267,11 @@ export const useRemoveClassFromExam = () => {
 export const useExamSubjects = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamSubject[]>({
-    queryKey: ['exam-subjects', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-subjects', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamSubject[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.subjects',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const params: { exam_id: string; exam_class_id?: string } = { exam_id: examId };
@@ -339,8 +352,11 @@ export const useUpdateExamSubject = () => {
 export const useExamTimes = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamTime[]>({
-    queryKey: ['exam-times', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-times', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamTime[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.times',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const params: { exam_class_id?: string } = {};
@@ -428,8 +444,11 @@ export const useToggleExamTimeLock = () => {
 export const useExamReport = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamReport>({
-    queryKey: ['exam-report', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-report', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamReport>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.report',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const report = await examsApi.report(examId);
@@ -445,8 +464,11 @@ export const useExamReport = (examId?: string) => {
 export const useExamSummaryReport = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamSummaryReport>({
-    queryKey: ['exam-summary-report', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-summary-report', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamSummaryReport>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.summary-report',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const report = await examsApi.summaryReport(examId);
@@ -462,8 +484,11 @@ export const useExamSummaryReport = (examId?: string) => {
 export const useExamClassReport = (examId?: string, classId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ClassMarkSheetReport>({
-    queryKey: ['exam-class-report', examId, classId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-class-report', examId, classId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ClassMarkSheetReport>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.class-report',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId || !classId) throw new Error('Missing exam or class');
       const report = await examsApi.classReport(examId, classId);
@@ -479,8 +504,11 @@ export const useExamClassReport = (examId?: string, classId?: string) => {
 export const useExamStudentReport = (examId?: string, studentId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<StudentResultReport>({
-    queryKey: ['exam-student-report', examId, studentId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-student-report', examId, studentId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<StudentResultReport>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.student-report',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId || !studentId) throw new Error('Missing exam or student');
       const report = await examsApi.studentReport(examId, studentId);
@@ -496,8 +524,11 @@ export const useExamStudentReport = (examId?: string, studentId?: string) => {
 export const useEnrollmentStats = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<EnrollmentStats>({
-    queryKey: ['enrollment-stats', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['enrollment-stats', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<EnrollmentStats>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.enrollment-stats',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const stats = await examsApi.enrollmentStats(examId);
@@ -513,8 +544,11 @@ export const useEnrollmentStats = (examId?: string) => {
 export const useMarksProgress = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<MarksProgress>({
-    queryKey: ['marks-progress', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['marks-progress', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<MarksProgress>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.marks-progress',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const progress = await examsApi.marksProgress(examId);
@@ -532,8 +566,11 @@ export const useMarksProgress = (examId?: string) => {
 export const useExamStudents = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['exam-students', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-students', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.students',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: { exam_id?: string; exam_class_id?: string } = {};
@@ -640,8 +677,11 @@ export const useRemoveStudentFromExam = () => {
 export const useExamResults = (examId?: string, examSubjectId?: string, examStudentId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['exam-results', examId, examSubjectId, examStudentId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-results', examId, examSubjectId, examStudentId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.results',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: { exam_id?: string; exam_subject_id?: string; exam_student_id?: string } = {};
@@ -771,8 +811,11 @@ export const useExamAttendance = (
 ) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamAttendance[]>({
-    queryKey: ['exam-attendance', examId, filters, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-attendance', examId, filters, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamAttendance[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.attendance',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const params: Record<string, string | undefined> = {};
@@ -794,8 +837,11 @@ export const useExamAttendance = (
 export const useExamAttendanceSummary = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamAttendanceSummary | null>({
-    queryKey: ['exam-attendance-summary', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-attendance-summary', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamAttendanceSummary | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.attendance-summary',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const apiSummary = await examAttendanceApi.summary(examId);
@@ -810,8 +856,11 @@ export const useExamAttendanceSummary = (examId?: string) => {
 export const useTimeslotStudents = (examId?: string, examTimeId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<TimeslotStudentsResponse | null>({
-    queryKey: ['timeslot-students', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['timeslot-students', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<TimeslotStudentsResponse | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.timeslot-students',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId || !examTimeId) return null;
       const apiResponse = await examAttendanceApi.getTimeslotStudents(examId, examTimeId);
@@ -826,8 +875,11 @@ export const useTimeslotStudents = (examId?: string, examTimeId?: string) => {
 export const useTimeslotAttendanceSummary = (examId?: string, examTimeId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<TimeslotAttendanceSummary | null>({
-    queryKey: ['timeslot-attendance-summary', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['timeslot-attendance-summary', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<TimeslotAttendanceSummary | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.timeslot-attendance-summary',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId || !examTimeId) return null;
       const apiSummary = await examAttendanceApi.timeslotSummary(examId, examTimeId);
@@ -842,8 +894,11 @@ export const useTimeslotAttendanceSummary = (examId?: string, examTimeId?: strin
 export const useStudentAttendanceReport = (examId?: string, studentId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<StudentAttendanceReport | null>({
-    queryKey: ['student-attendance-report', examId, studentId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['student-attendance-report', examId, studentId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<StudentAttendanceReport | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.student-attendance-report',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId || !studentId) return null;
       const apiReport = await examAttendanceApi.studentReport(examId, studentId);
@@ -946,8 +1001,11 @@ export const useScanExamAttendance = () => {
 export const useExamAttendanceScanFeed = (examId?: string, examTimeId?: string, limit: number = 30) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamAttendance[]>({
-    queryKey: ['exam-attendance-scan-feed', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-attendance-scan-feed', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamAttendance[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.attendance-scan-feed',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId || !examTimeId) return [];
       const scans = await examAttendanceApi.scanFeed(examId, examTimeId, { limit });

@@ -36,6 +36,8 @@ import { useNotificationCount } from "@/hooks/useNotifications";
 import { useSchools } from "@/hooks/useSchools";
 import { useFeatures } from "@/hooks/useSubscription";
 import { authApi, apiClient } from "@/lib/api/client";
+import { apiUrl } from "@/lib/api/url";
+import { NazimLogo } from "@/components/brand/NazimLogo";
 import { showToast } from "@/lib/toast";
 import { useTour } from "@/onboarding";
 
@@ -221,7 +223,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
       try {
         const token = apiClient.getToken();
-        const response = await fetch(`/api/staff/${profile.staff_id}/picture`, {
+        const response = await fetch(apiUrl(`/api/staff/${profile.staff_id}/picture`), {
           method: 'GET',
           headers: {
             Accept: 'image/*',
@@ -463,11 +465,10 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 disabled={!hasSchoolsAccessAll || updateMySchool.isPending}
               >
                 <SelectTrigger className="hidden sm:flex w-[100px] sm:w-[200px] text-xs sm:text-sm h-8 sm:h-9">
-                  <img
-                    src="/nazim_logo.webp"
+                  <NazimLogo
                     alt="Nazim"
-                    className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 object-contain flex-shrink-0"
                     loading="lazy"
+                    className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 object-contain flex-shrink-0"
                   />
                   <SelectValue placeholder={t("common.selectSchool") || "Select School"} className="truncate" />
                 </SelectTrigger>
@@ -630,11 +631,10 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                           disabled={!hasSchoolsAccessAll || updateMySchool.isPending}
                           className={isSelected ? "bg-accent" : ""}
                         >
-                          <img
-                            src="/nazim_logo.webp"
+                          <NazimLogo
                             alt="Nazim"
-                            className="h-4 w-4 mr-2 object-contain flex-shrink-0"
                             loading="lazy"
+                            className="h-4 w-4 mr-2 object-contain flex-shrink-0"
                           />
                           <span className="flex-1">{s.schoolName}</span>
                           {isSelected && (

@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
@@ -19,8 +20,11 @@ export const useShortTermCourses = (organizationId?: string, usePaginated?: bool
     initialPageSize: 10,
   });
 
-  const { data, isLoading, error, refetch } = useQuery<ShortTermCourse[] | PaginatedResponse<Api.ShortTermCourse>>({
-    queryKey: ['short-term-courses', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+  const queryKey = ['short-term-courses', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined];
+  const { data, isLoading, error, refetch } = useOfflineCachedQuery<ShortTermCourse[] | PaginatedResponse<Api.ShortTermCourse>>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'courses.short-term',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
       const effectiveOrgId = organizationId || profile.organization_id;
@@ -209,8 +213,11 @@ export const useReopenCourse = () => {
 
 export const useCourseStats = (courseId: string) => {
   const { user, profile } = useAuth();
-  return useQuery({
-    queryKey: ['course-stats', courseId],
+  const queryKey = ['course-stats', courseId];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'course-stats.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return null;
       const stats = await shortTermCoursesApi.stats(courseId);

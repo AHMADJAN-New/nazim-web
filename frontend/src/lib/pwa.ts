@@ -37,6 +37,16 @@ class PWAManager {
       return null;
     }
 
+    // Service workers are not allowed on `file://` (Electron packaged bundles).
+    // Also avoid SW on unsupported schemes.
+    if (typeof window !== 'undefined' && (window.location.protocol !== 'https:' && window.location.protocol !== 'http:')) {
+      logger.info('Skipping Service Worker on non-http(s) origin', {
+        component: 'PWA',
+        metadata: { protocol: window.location.protocol },
+      });
+      return null;
+    }
+
     try {
       this.swRegistration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',

@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -45,8 +46,11 @@ export const useStudentIdCards = (filters?: StudentIdCardFilters) => {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
 
-  return useQuery<StudentIdCard[]>({
-    queryKey: ['student-id-cards', profile?.organization_id, profile?.default_school_id ?? null, filters],
+  const queryKey = ['student-id-cards', profile?.organization_id, profile?.default_school_id ?? null, filters];
+  return useOfflineCachedQuery<StudentIdCard[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'students.id-cards',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) {
         if (import.meta.env.DEV) {
@@ -86,8 +90,11 @@ export const useStudentIdCard = (id: string | null) => {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
 
-  return useQuery<StudentIdCard | null>({
-    queryKey: ['student-id-card', id],
+  const queryKey = ['student-id-card', id];
+  return useOfflineCachedQuery<StudentIdCard | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'students.id-cards',
+    queryKey,
     queryFn: async () => {
       if (!id || !user || !profile) {
         return null;

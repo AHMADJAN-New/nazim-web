@@ -1,8 +1,8 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createQueryClient } from "@/lib/queryClient";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Suspense, type ReactNode } from "react";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useCalendarPreferenceSync } from "@/hooks/useDatePreference";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -472,6 +472,21 @@ function CalendarPreferenceSyncFromProfile() {
   return null;
 }
 
+function AppRouter({ children }: { children: ReactNode }) {
+  const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+  if (isFileProtocol) return <HashRouter>{children}</HashRouter>;
+  return (
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
+      {children}
+    </BrowserRouter>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -480,12 +495,7 @@ const App = () => (
       <AuthProvider>
         <CalendarPreferenceSyncFromProfile />
         <SchoolProvider>
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
+          <AppRouter>
 
             <ErrorBoundary>
               <MaintenanceModeHandler>
@@ -2117,7 +2127,7 @@ const App = () => (
               </MaintenanceModeHandler>
             </ErrorBoundary>
 
-          </BrowserRouter>
+          </AppRouter>
         </SchoolProvider>
       </AuthProvider>
     </TooltipProvider>

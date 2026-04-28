@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -19,8 +20,11 @@ export const useGraduationBatches = (filters?: {
 }) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['graduation-batches', filters],
+  const queryKey = ['graduation-batches', filters];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'graduation.batches',
+    queryKey,
     // Only enable if user/profile exist AND we have a school_id or default_school_id
     // This prevents 403 errors when school_id is not available
     enabled: !!user && !!profile && (!!filters?.school_id || !!profile?.default_school_id),
@@ -34,8 +38,11 @@ export const useGraduationBatches = (filters?: {
 export const useGraduationBatch = (id?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['graduation-batch', id, profile?.default_school_id],
+  const queryKey = ['graduation-batch', id, profile?.default_school_id];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'graduation.batches',
+    queryKey,
     enabled: !!user && !!profile && !!id && (!!profile?.default_school_id || true), // Allow even without school_id
     queryFn: async () => {
       if (!id) throw new Error('Missing batch id');
@@ -235,8 +242,11 @@ export const useIssueGraduationCertificates = () => {
 export const useCertificateTemplatesV2 = (filters?: { school_id?: string; type?: string }) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['certificate-templates-v2', filters],
+  const queryKey = ['certificate-templates-v2', filters];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'certificate-templates-v2.list',
+    queryKey,
     enabled: !!user && !!profile,
     queryFn: async () => {
       if (!user || !profile) return [];
@@ -345,8 +355,11 @@ export const useIssuedCertificates = (filters?: {
     school_id: filters?.school_id || profile?.default_school_id || undefined,
   };
 
-  return useQuery({
-    queryKey: ['issued-certificates', effectiveFilters],
+  const queryKey = ['issued-certificates', effectiveFilters];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'issued-certificates.list',
+    queryKey,
     enabled: !!user && !!profile && hasPermission !== false && !!effectiveFilters.school_id, // Require school_id
     queryFn: async () => {
       if (!user || !profile) return [];

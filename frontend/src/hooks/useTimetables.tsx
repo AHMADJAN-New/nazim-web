@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useAuth } from './useAuth';
@@ -27,8 +28,11 @@ export const useTimetables = (organizationId?: string, academicYearId?: string) 
 	const { data: profile } = useProfile();
 	const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-	return useQuery<Timetable[]>({
-		queryKey: ['timetables', organizationId || profile?.organization_id, academicYearId, orgIds.join(','), profile?.default_school_id ?? null],
+	const queryKey = ['timetables', organizationId || profile?.organization_id, academicYearId, orgIds.join(','), profile?.default_school_id ?? null];
+	return useOfflineCachedQuery<Timetable[]>({
+		cacheKey: JSON.stringify(queryKey),
+		cacheKind: 'timetables.list',
+		queryKey,
 		queryFn: async () => {
 			if (!user || !profile || orgsLoading) return [];
 
@@ -57,8 +61,11 @@ export const useTimetable = (timetableId?: string) => {
 	const { user } = useAuth();
 	const { data: profile } = useProfile();
 
-	return useQuery<{ timetable: Timetable | null; entries: TimetableEntry[] }>({
-		queryKey: ['timetable', timetableId, profile?.default_school_id ?? null],
+	const queryKey = ['timetable', timetableId, profile?.default_school_id ?? null];
+	return useOfflineCachedQuery<{ timetable: Timetable | null; entries: TimetableEntry[] }>({
+		cacheKey: JSON.stringify(queryKey),
+		cacheKind: 'timetables.entries',
+		queryKey,
 		queryFn: async () => {
 			if (!user || !profile || !timetableId) return { timetable: null, entries: [] };
 
@@ -218,8 +225,11 @@ export const useTeacherPreferences = (organizationId?: string, teacherId?: strin
 	const { data: profile } = useProfile();
 	const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-	return useQuery<TeacherPreference[]>({
-		queryKey: ['teacher-prefs', organizationId || profile?.organization_id, teacherId, academicYearId, orgIds.join(','), profile?.default_school_id ?? null],
+	const queryKey = ['teacher-prefs', organizationId || profile?.organization_id, teacherId, academicYearId, orgIds.join(','), profile?.default_school_id ?? null];
+	return useOfflineCachedQuery<TeacherPreference[]>({
+		cacheKey: JSON.stringify(queryKey),
+		cacheKind: 'timetables.teacher-preferences',
+		queryKey,
 		queryFn: async () => {
 			if (!user || !profile || orgsLoading) return [];
 

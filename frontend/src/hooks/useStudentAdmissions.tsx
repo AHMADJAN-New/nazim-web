@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
@@ -93,8 +94,11 @@ export const useStudentAdmissions = (
   // Create filter key for queryKey (for proper cache invalidation)
   const filterKey = filters ? JSON.stringify(filters) : undefined;
 
-  const { data, isLoading, error, refetch } = useQuery<StudentAdmission[] | PaginatedResponse<StudentAdmissionApi.StudentAdmission>>({
-    queryKey: ['student-admissions', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined, filterKey],
+  const queryKey = ['student-admissions', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined, filterKey];
+  const { data, isLoading, error, refetch } = useOfflineCachedQuery<StudentAdmission[] | PaginatedResponse<StudentAdmissionApi.StudentAdmission>>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'students.admissions',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -347,8 +351,11 @@ export const useDeleteStudentAdmission = () => {
 export const useAdmissionStats = (organizationId?: string) => {
   const { user, profile } = useAuth();
 
-  const { data: stats, isLoading } = useQuery<AdmissionStats>({
-    queryKey: ['student-admissions-stats', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const queryKey = ['student-admissions-stats', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null];
+  const { data: stats, isLoading } = useOfflineCachedQuery<AdmissionStats>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'students.admissions',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) {
         return { total: 0, active: 0, pending: 0, boarders: 0 };

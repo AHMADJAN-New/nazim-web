@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -49,8 +50,12 @@ export const useHelpCenterCategories = (params?: { is_active?: boolean; parent_i
   const { user, profile } = useAuth();
   const { language } = useLanguage();
 
-  return useQuery<HelpCenterCategoryWithRecursive[]>({
-    queryKey: ['help-center-categories', profile?.organization_id, language, params?.is_active, params?.parent_id],
+  const queryKey = ['help-center-categories', profile?.organization_id, language, params?.is_active, params?.parent_id];
+  return useOfflineCachedQuery<HelpCenterCategoryWithRecursive[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'help.categories',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 
@@ -69,8 +74,12 @@ export const useHelpCenterCategory = (id: string | null) => {
   const { user, profile } = useAuth();
   const { language } = useLanguage();
 
-  return useQuery<HelpCenterApi.HelpCenterCategory | null>({
-    queryKey: ['help-center-category', id, profile?.organization_id, language],
+  const queryKey = ['help-center-category', id, profile?.organization_id, language];
+  return useOfflineCachedQuery<HelpCenterApi.HelpCenterCategory | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'help-center-category.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id || !id) return null;
 
@@ -98,8 +107,7 @@ export const useHelpCenterArticles = (params?: {
   const { user, profile } = useAuth();
   const { language } = useLanguage();
 
-  return useQuery<HelpCenterApi.HelpCenterArticle[]>({
-    queryKey: [
+  const queryKey = [
       'help-center-articles',
       profile?.organization_id,
       language,
@@ -113,7 +121,12 @@ export const useHelpCenterArticles = (params?: {
       params?.page,
       params?.per_page,
       params?.limit,
-    ],
+    ];
+  return useOfflineCachedQuery<HelpCenterApi.HelpCenterArticle[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'help.articles',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 
@@ -131,8 +144,12 @@ export const useHelpCenterArticle = (id: string | null) => {
   const { user, profile } = useAuth();
   const { language } = useLanguage();
 
-  return useQuery<HelpCenterApi.HelpCenterArticle | null>({
-    queryKey: ['help-center-article', id, profile?.organization_id, language],
+  const queryKey = ['help-center-article', id, profile?.organization_id, language];
+  return useOfflineCachedQuery<HelpCenterApi.HelpCenterArticle | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'help-center-article.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id || !id) return null;
 
@@ -148,8 +165,12 @@ export const useHelpCenterArticle = (id: string | null) => {
 export const useHelpCenterArticleBySlug = (categorySlug: string | null, articleSlug: string | null) => {
   const { language } = useLanguage();
 
-  return useQuery<HelpCenterApi.HelpCenterArticle | null>({
-    queryKey: ['help-center-article-by-slug', categorySlug, articleSlug, language],
+  const queryKey = ['help-center-article-by-slug', categorySlug, articleSlug, language];
+  return useOfflineCachedQuery<HelpCenterApi.HelpCenterArticle | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'help-center-article-by-slug.list',
+    queryKey,
+
     queryFn: async () => {
       if (!categorySlug || !articleSlug) return null;
 
@@ -166,8 +187,12 @@ export const useFeaturedArticles = (limit?: number) => {
   const { user, profile } = useAuth();
   const { language } = useLanguage();
 
-  return useQuery<HelpCenterApi.HelpCenterArticle[]>({
-    queryKey: ['help-center-featured-articles', profile?.organization_id, language, limit],
+  const queryKey = ['help-center-featured-articles', profile?.organization_id, language, limit];
+  return useOfflineCachedQuery<HelpCenterApi.HelpCenterArticle[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'help-center-featured-articles.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 
@@ -185,8 +210,12 @@ export const usePopularArticles = (limit?: number) => {
   const { user, profile } = useAuth();
   const { language } = useLanguage();
 
-  return useQuery<HelpCenterApi.HelpCenterArticle[]>({
-    queryKey: ['help-center-popular-articles', profile?.organization_id, language, limit],
+  const queryKey = ['help-center-popular-articles', profile?.organization_id, language, limit];
+  return useOfflineCachedQuery<HelpCenterApi.HelpCenterArticle[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'help-center-popular-articles.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 

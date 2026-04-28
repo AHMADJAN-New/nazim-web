@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useIndexTranslations } from './translations/useIndexTranslations';
+import { NazimLogo } from '@/components/brand/NazimLogo';
 
 export function HeroSection() {
   const { isRTL } = useLanguage();
@@ -27,11 +28,10 @@ export function HeroSection() {
       <div className="relative z-10 max-w-4xl mx-auto">
         <div className="flex flex-col items-center justify-center gap-4 text-center">
           <div className="flex items-center gap-4 mb-2">
-            <img
-              src="/nazim_logo.webp"
+            <NazimLogo
               alt="Nazim Logo"
-              className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg ring-2 ring-white/20 bg-white/20 object-contain p-1"
               loading="eager"
+              className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg ring-2 ring-white/20 bg-white/20 object-contain p-1"
             />
           </div>
           <div className="w-full">

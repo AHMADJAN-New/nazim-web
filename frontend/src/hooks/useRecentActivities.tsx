@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 export interface RecentActivity {
   id: string;
@@ -10,8 +10,12 @@ export interface RecentActivity {
 }
 
 export const useRecentActivities = () => {
-  return useQuery({
-    queryKey: ['recent-activities'],
+  const queryKey = ['recent-activities'];
+
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'activity-logs.recent',
+    queryKey,
     queryFn: async (): Promise<RecentActivity[]> => {
       // Return empty array - students, fees, and exams tables don't exist
       return [];

@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useAuth } from './useAuth';
@@ -21,8 +22,11 @@ export const useOrganizations = (options?: { enabled?: boolean }) => {
     enabled: options?.enabled !== undefined ? options.enabled : undefined,
   });
 
-  return useQuery<Organization[]>({
-    queryKey: ['organizations', orgIds.join(',')],
+  const queryKey = ['organizations', orgIds.join(',')];
+  return useOfflineCachedQuery<Organization[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'organizations.list',
+    queryKey,
     queryFn: async () => {
       if (!user || authLoading) return [];
       if (orgsLoading) return [];
@@ -48,8 +52,11 @@ export const useOrganizations = (options?: { enabled?: boolean }) => {
 };
 
 export const useOrganization = (id: string) => {
-  return useQuery<Organization>({
-    queryKey: ['organizations', id],
+  const queryKey = ['organizations', id];
+  return useOfflineCachedQuery<Organization>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'organizations.list',
+    queryKey,
     queryFn: async () => {
       const apiOrganization = await organizationsApi.get(id);
       return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
@@ -157,8 +164,11 @@ export const useCurrentOrganization = () => {
     subscriptionStatus.accessLevel === 'none'
   );
 
-  return useQuery<Organization | null>({
-    queryKey: ['current-organization', profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['current-organization', profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<Organization | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'current-organization.list',
+    queryKey,
     queryFn: async () => {
       if (!profile || !profile.organization_id) {
         return null; // Super admin or no organization
@@ -183,8 +193,11 @@ export const useCurrentOrganization = () => {
 };
 
 export const useOrganizationPreview = (formData?: { name?: string; slug?: string; admin_email?: string; admin_full_name?: string }) => {
-  return useQuery({
-    queryKey: ['organization-preview', formData],
+  const queryKey = ['organization-preview', formData];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'organization-preview.list',
+    queryKey,
     queryFn: async () => {
       return organizationsApi.preview(formData);
     },
@@ -194,8 +207,11 @@ export const useOrganizationPreview = (formData?: { name?: string; slug?: string
 };
 
 export const useOrganizationPermissions = (organizationId: string) => {
-  return useQuery({
-    queryKey: ['organization-permissions', organizationId],
+  const queryKey = ['organization-permissions', organizationId];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'organization-permissions.list',
+    queryKey,
     queryFn: async () => {
       return organizationsApi.permissions(organizationId);
     },
@@ -205,8 +221,11 @@ export const useOrganizationPermissions = (organizationId: string) => {
 };
 
 export const useOrganizationAdmins = () => {
-  return useQuery({
-    queryKey: ['organization-admins'],
+  const queryKey = ['organization-admins'];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'organization-admins.list',
+    queryKey,
     queryFn: async () => {
       return organizationsApi.admins();
     },
@@ -215,8 +234,11 @@ export const useOrganizationAdmins = () => {
 };
 
 export const useOrganizationStatistics = (organizationId: string) => {
-  return useQuery({
-    queryKey: ['organization-statistics', organizationId],
+  const queryKey = ['organization-statistics', organizationId];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'organization-statistics.list',
+    queryKey,
     queryFn: async () => {
       if (!organizationId) {
         return {

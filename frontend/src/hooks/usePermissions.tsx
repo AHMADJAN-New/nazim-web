@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useAuth } from './useAuth';
@@ -16,8 +17,11 @@ export type { Permission, RolePermission } from '@/types/domain/permission';
 export const usePermissions = () => {
   const { profile } = useAuth();
 
-  return useQuery<Permission[]>({
-    queryKey: ['permissions', profile?.id ?? null, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['permissions', profile?.id ?? null, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<Permission[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'permissions.list',
+    queryKey,
     queryFn: async () => {
       // Laravel API automatically filters permissions by user's organization
       // Returns: global permissions (organization_id = NULL) + user's org permissions
@@ -41,8 +45,11 @@ export const usePermissions = () => {
 export const useRolePermissions = (role: string) => {
   const { profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['role-permissions', role, profile?.id ?? null, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['role-permissions', role, profile?.id ?? null, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'role-permissions.list',
+    queryKey,
     queryFn: async () => {
       if (!role || !profile?.organization_id) return { role, permissions: [] };
 
@@ -68,8 +75,11 @@ export interface Role {
 export const useRoles = () => {
   const { profile } = useAuth();
 
-  return useQuery<Role[]>({
-    queryKey: ['roles', profile?.id ?? null, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['roles', profile?.id ?? null, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<Role[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'permissions.roles',
+    queryKey,
     queryFn: async () => {
       const roles = await rolesApi.list();
       return (roles as Role[]);
@@ -199,8 +209,11 @@ export const useUserPermissions = () => {
   const { profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery({
-    queryKey: ['user-permissions', profile?.organization_id, profile?.default_school_id ?? null, profile?.id, orgIds.join(',')],
+  const queryKey = ['user-permissions', profile?.organization_id, profile?.default_school_id ?? null, profile?.id, orgIds.join(',')];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'user-permissions.list',
+    queryKey,
     queryFn: async () => {
       // Require organization_id - backend enforces this
       if (!profile?.organization_id) return [];
@@ -1151,8 +1164,11 @@ export const useUserPermissionsForUser = (userId: string) => {
   const { profile } = useAuth();
   const { data: allPermissions } = usePermissions();
 
-  return useQuery({
-    queryKey: ['user-permissions-for-user', userId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['user-permissions-for-user', userId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'user-permissions-for-user.list',
+    queryKey,
     queryFn: async () => {
       if (!userId) {
         return { userPermissions: [], rolePermissions: [], allPermissions: [] };
@@ -1360,8 +1376,11 @@ export const useRemoveRoleFromUser = () => {
 export const useUserRoles = (userId: string) => {
   const { profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['user-roles', userId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['user-roles', userId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'user-roles.list',
+    queryKey,
     queryFn: async () => {
       if (!userId || !profile?.organization_id) {
         return { user_id: userId, roles: [] };

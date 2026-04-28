@@ -13,6 +13,7 @@ import { useUserPermissions } from '@/hooks/usePermissions';
 import { useFeatures } from '@/hooks/useSubscription';
 import { authApi } from '@/lib/api/client';
 import { getPostLoginRedirectPath } from '@/lib/redirectUtils';
+import { NazimLogo } from '@/components/brand/NazimLogo';
 
 interface Organization {
   id: string;
@@ -188,36 +189,17 @@ export default function AuthPage() {
       <div className="w-full max-w-[800px] min-h-[600px] md:h-[600px] flex rounded-[20px] overflow-hidden shadow-2xl">
         {/* Left Frame - Image Panel - Hidden on mobile */}
         <div className="hidden md:block w-[360px] relative overflow-hidden rounded-l-[20px] flex-shrink-0">
-          <img
-            src="/Login.jpg"
-            alt="ناظم - د دیني مدارسو د تنظیم سیستم"
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={(e) => {
-              // Fallback if image doesn't load
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              if (target.parentElement) {
-                target.parentElement.className = 'hidden md:block w-[360px] bg-[#2c2f33] rounded-l-[20px] flex-shrink-0';
-              }
-            }}
-          />
+          <div className="w-full h-full bg-gradient-to-br from-[#0b0b56] via-[#1a1a6a] to-[#0b0b56]" />
         </div>
 
         {/* Right Frame - Login Form */}
         <div className="flex-1 bg-white rounded-[20px] md:rounded-l-none md:rounded-r-[20px] p-6 md:p-8 flex flex-col overflow-y-auto min-h-0">
           {/* Logo */}
           <div className="flex justify-center mb-2">
-            <img
-              src="/nazim_logo.webp"
+            <NazimLogo
               alt="Nazim Logo"
-              className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-contain ring-2 ring-white/20 bg-white/20 p-1"
               loading="eager"
-              onError={(e) => {
-                // Fallback if logo doesn't load
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-              }}
+              className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-contain ring-2 ring-white/20 bg-white/20 p-1"
             />
           </div>
           

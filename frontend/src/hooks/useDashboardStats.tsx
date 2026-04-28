@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
@@ -38,17 +38,21 @@ export interface DashboardStats {
 export const useDashboardStats = () => {
   const { user, profile: authProfile, profileLoading } = useAuth();
   const { data: profile } = useProfile();
-  
+
   // Use profile from auth context if available, otherwise from query
   const currentProfile = authProfile || profile;
-  
+
   // CRITICAL: Event users should not fetch dashboard stats
   const isEventUser = currentProfile?.is_event_user === true;
   // CRITICAL: Users with no school (org-level only) should not fetch school-scoped stats (e.g. hostel) to avoid 403
   const hasSchoolContext = !!currentProfile?.default_school_id;
 
-  const query = useQuery({
-    queryKey: ['dashboard-stats', currentProfile?.organization_id, currentProfile?.default_school_id ?? null],
+  const queryKey = ['dashboard-stats', currentProfile?.organization_id, currentProfile?.default_school_id ?? null];
+  const query = useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'dashboard.stats',
+    queryKey,
+
     queryFn: async (): Promise<DashboardStats> => {
       if (!user || !profile) {
         return {
@@ -152,8 +156,12 @@ export const useDashboardStats = () => {
 };
 
 export const useStudentsByClass = () => {
-  return useQuery({
-    queryKey: ['students-by-class'],
+  const queryKey = ['students-by-class'];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'students-by-class.list',
+    queryKey,
+
     queryFn: async () => {
       // Return empty array - students table doesn't exist
       return [];
@@ -164,8 +172,12 @@ export const useStudentsByClass = () => {
 };
 
 export const useWeeklyAttendance = () => {
-  return useQuery({
-    queryKey: ['weekly-attendance'],
+  const queryKey = ['weekly-attendance'];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'weekly-attendance.list',
+    queryKey,
+
     queryFn: async () => {
       // Return empty array - attendance table doesn't exist
       return [];
@@ -176,8 +188,12 @@ export const useWeeklyAttendance = () => {
 };
 
 export const useMonthlyFeeCollection = () => {
-  return useQuery({
-    queryKey: ['monthly-fee-collection'],
+  const queryKey = ['monthly-fee-collection'];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'monthly-fee-collection.list',
+    queryKey,
+
     queryFn: async () => {
       // Return empty array - fees table doesn't exist
       return [];
@@ -188,8 +204,12 @@ export const useMonthlyFeeCollection = () => {
 };
 
 export const useUpcomingExams = () => {
-  return useQuery({
-    queryKey: ['upcoming-exams'],
+  const queryKey = ['upcoming-exams'];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'upcoming-exams.list',
+    queryKey,
+
     queryFn: async () => {
       // Return empty array - exams table doesn't exist
       return [];

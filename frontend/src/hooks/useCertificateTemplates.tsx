@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 
@@ -106,8 +107,12 @@ export interface CertificateData {
 export const useCertificateTemplates = (activeOnly?: boolean, filters?: { type?: string; school_id?: string }) => {
   const { user, profile } = useAuth();
 
-  return useQuery<CertificateTemplate[]>({
-    queryKey: ['certificate-templates', activeOnly, filters],
+  const queryKey = ['certificate-templates', activeOnly, filters];
+  return useOfflineCachedQuery<CertificateTemplate[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'certificates.templates',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: any = {};
@@ -126,8 +131,12 @@ export const useCertificateTemplates = (activeOnly?: boolean, filters?: { type?:
 export const useCertificateTemplate = (templateId: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<CertificateTemplate>({
-    queryKey: ['certificate-template', templateId],
+  const queryKey = ['certificate-template', templateId];
+  return useOfflineCachedQuery<CertificateTemplate>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'certificate-template.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile) throw new Error('Not authenticated');
       const template = await certificateTemplatesApi.get(templateId);
@@ -282,8 +291,12 @@ export const useGenerateCertificate = () => {
 export const useCertificateData = (courseStudentId: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<CertificateData>({
-    queryKey: ['certificate-data', courseStudentId],
+  const queryKey = ['certificate-data', courseStudentId];
+  return useOfflineCachedQuery<CertificateData>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'certificate-data.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile) throw new Error('Not authenticated');
       const data = await certificateTemplatesApi.getCertificateData(courseStudentId);

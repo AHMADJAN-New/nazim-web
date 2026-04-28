@@ -16,6 +16,7 @@ import type { FinanceDocument } from '@/hooks/useFinanceDocuments';
 import { useDownloadFinanceDocument } from '@/hooks/useFinanceDocuments';
 import { useLanguage } from '@/hooks/useLanguage';
 import { apiClient } from '@/lib/api/client';
+import { apiUrl } from '@/lib/api/url';
 import { showToast } from '@/lib/toast';
 import { formatDate } from '@/lib/utils';
 
@@ -76,7 +77,7 @@ export function FinanceDocumentPreviewDialog({
       const loadPreview = async () => {
         try {
           const token = apiClient.getToken();
-          const response = await fetch(`/api/finance-documents/${document.id}/download`, {
+          const response = await fetch(apiUrl(`/api/finance-documents/${document.id}/download`), {
             headers: {
               'Authorization': token ? `Bearer ${token}` : '',
               'Accept': '*/*',

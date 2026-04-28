@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
@@ -31,14 +32,17 @@ export const useClasses = (organizationId?: string, usePaginated?: boolean) => {
         initialPageSize: 25,
     });
 
-    const { data, isLoading, error } = useQuery<Class[] | PaginatedResponse<ClassApi.Class>>({
-        queryKey: [
-            'classes',
-            organizationId || profile?.organization_id,
-            profile?.default_school_id ?? null,
-            usePaginated ? page : undefined,
-            usePaginated ? pageSize : undefined,
-        ],
+    const queryKey = [
+        'classes',
+        organizationId || profile?.organization_id,
+        profile?.default_school_id ?? null,
+        usePaginated ? page : undefined,
+        usePaginated ? pageSize : undefined,
+    ];
+    const { data, isLoading, error } = useOfflineCachedQuery<Class[] | PaginatedResponse<ClassApi.Class>>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'classes.list',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile) return [];
 
@@ -119,8 +123,11 @@ export const useClasses = (organizationId?: string, usePaginated?: boolean) => {
 export const useClassAcademicYears = (academicYearId?: string, organizationId?: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<ClassAcademicYear[]>({
-        queryKey: ['class-academic-years', academicYearId, organizationId || profile?.organization_id, profile?.default_school_id ?? null],
+    const queryKey = ['class-academic-years', academicYearId, organizationId || profile?.organization_id, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<ClassAcademicYear[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'classes.academic-years',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile || !academicYearId) return [];
 
@@ -159,8 +166,11 @@ export const useClassAcademicYears = (academicYearId?: string, organizationId?: 
 export const useClassHistory = (classId: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<ClassAcademicYear[]>({
-        queryKey: ['class-history', classId, profile?.default_school_id ?? null],
+    const queryKey = ['class-history', classId, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<ClassAcademicYear[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'classes.history',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile || !classId) return [];
 

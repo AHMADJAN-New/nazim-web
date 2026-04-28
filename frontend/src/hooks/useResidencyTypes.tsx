@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useAuth } from './useAuth';
@@ -40,8 +41,11 @@ export const useResidencyTypes = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery({
-    queryKey: ['residency-types', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
+  const queryKey = ['residency-types', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'residency-types.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
 

@@ -4,7 +4,8 @@
  */
 
 import { useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
 import { orgFinanceApi } from '@/lib/api/client';
@@ -68,8 +69,12 @@ const ORG_FINANCE_KEY = 'org-finance';
 
 export const useOrgFinanceAccounts = (params?: { type?: string; isActive?: boolean }) => {
   const { user, profile } = useAuth();
-  return useQuery<FinanceAccount[]>({
-    queryKey: [ORG_FINANCE_KEY, 'accounts', profile?.organization_id, profile?.default_school_id ?? null, params],
+  const queryKey = [ORG_FINANCE_KEY, 'accounts', profile?.organization_id, profile?.default_school_id ?? null, params];
+  return useOfflineCachedQuery<FinanceAccount[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.accounts.list({ type: params?.type, is_active: params?.isActive });
@@ -84,8 +89,12 @@ export const useOrgFinanceAccounts = (params?: { type?: string; isActive?: boole
 
 export const useOrgFinanceIncomeCategories = (params?: { isActive?: boolean }) => {
   const { user, profile } = useAuth();
-  return useQuery<IncomeCategory[]>({
-    queryKey: [ORG_FINANCE_KEY, 'income-categories', profile?.organization_id, profile?.default_school_id ?? null, params],
+  const queryKey = [ORG_FINANCE_KEY, 'income-categories', profile?.organization_id, profile?.default_school_id ?? null, params];
+  return useOfflineCachedQuery<IncomeCategory[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.incomeCategories.list({ is_active: params?.isActive });
@@ -100,8 +109,12 @@ export const useOrgFinanceIncomeCategories = (params?: { isActive?: boolean }) =
 
 export const useOrgFinanceExpenseCategories = (params?: { isActive?: boolean }) => {
   const { user, profile } = useAuth();
-  return useQuery<ExpenseCategory[]>({
-    queryKey: [ORG_FINANCE_KEY, 'expense-categories', profile?.organization_id, profile?.default_school_id ?? null, params],
+  const queryKey = [ORG_FINANCE_KEY, 'expense-categories', profile?.organization_id, profile?.default_school_id ?? null, params];
+  return useOfflineCachedQuery<ExpenseCategory[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.expenseCategories.list({ is_active: params?.isActive });
@@ -116,8 +129,12 @@ export const useOrgFinanceExpenseCategories = (params?: { isActive?: boolean }) 
 
 export const useOrgFinanceProjects = (params?: { status?: string; isActive?: boolean }) => {
   const { user, profile } = useAuth();
-  return useQuery<FinanceProject[]>({
-    queryKey: [ORG_FINANCE_KEY, 'projects', profile?.organization_id, profile?.default_school_id ?? null, params],
+  const queryKey = [ORG_FINANCE_KEY, 'projects', profile?.organization_id, profile?.default_school_id ?? null, params];
+  return useOfflineCachedQuery<FinanceProject[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.projects.list({ status: params?.status, is_active: params?.isActive });
@@ -132,8 +149,12 @@ export const useOrgFinanceProjects = (params?: { status?: string; isActive?: boo
 
 export const useOrgFinanceDonors = (params?: { type?: string; isActive?: boolean; search?: string }) => {
   const { user, profile } = useAuth();
-  return useQuery<Donor[]>({
-    queryKey: [ORG_FINANCE_KEY, 'donors', profile?.organization_id, profile?.default_school_id ?? null, params],
+  const queryKey = [ORG_FINANCE_KEY, 'donors', profile?.organization_id, profile?.default_school_id ?? null, params];
+  return useOfflineCachedQuery<Donor[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.donors.list(params);
@@ -146,8 +167,12 @@ export const useOrgFinanceDonors = (params?: { type?: string; isActive?: boolean
 
 export const useOrgFinanceCurrencies = (params?: { isActive?: boolean; isBase?: boolean }) => {
   const { user, profile } = useAuth();
-  return useQuery({
-    queryKey: [ORG_FINANCE_KEY, 'currencies', profile?.organization_id, profile?.default_school_id ?? null, params],
+  const queryKey = [ORG_FINANCE_KEY, 'currencies', profile?.organization_id, profile?.default_school_id ?? null, params];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.currencies.list({
@@ -218,8 +243,12 @@ export const useOrgFinanceExchangeRates = (params?: {
   isActive?: boolean;
 }) => {
   const { user, profile } = useAuth();
-  return useQuery({
-    queryKey: [ORG_FINANCE_KEY, 'exchange-rates', profile?.organization_id, params],
+  const queryKey = [ORG_FINANCE_KEY, 'exchange-rates', profile?.organization_id, params];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.exchangeRates.list({
@@ -298,8 +327,12 @@ export const useOrgFinanceIncomeEntries = (params?: {
   perPage?: number;
 }) => {
   const { user, profile } = useAuth();
-  return useQuery<IncomeEntry[]>({
-    queryKey: [ORG_FINANCE_KEY, 'income-entries', profile?.organization_id, profile?.default_school_id ?? null, params],
+  const queryKey = [ORG_FINANCE_KEY, 'income-entries', profile?.organization_id, profile?.default_school_id ?? null, params];
+  return useOfflineCachedQuery<IncomeEntry[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.incomeEntries.list({
@@ -335,8 +368,12 @@ export const useOrgFinanceExpenseEntries = (params?: {
   perPage?: number;
 }) => {
   const { user, profile } = useAuth();
-  return useQuery<ExpenseEntry[]>({
-    queryKey: [ORG_FINANCE_KEY, 'expense-entries', profile?.organization_id, profile?.default_school_id ?? null, params],
+  const queryKey = [ORG_FINANCE_KEY, 'expense-entries', profile?.organization_id, profile?.default_school_id ?? null, params];
+  return useOfflineCachedQuery<ExpenseEntry[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.expenseEntries.list({
@@ -361,8 +398,12 @@ export const useOrgFinanceExpenseEntries = (params?: {
 
 export const useOrgFinanceDashboard = (params?: { targetCurrencyId?: string }) => {
   const { user, profile } = useAuth();
-  return useQuery<FinanceDashboard | null>({
-    queryKey: [ORG_FINANCE_KEY, 'dashboard', profile?.organization_id, profile?.default_school_id ?? null, params],
+  const queryKey = [ORG_FINANCE_KEY, 'dashboard', profile?.organization_id, profile?.default_school_id ?? null, params];
+  return useOfflineCachedQuery<FinanceDashboard | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return null;
       const data = await orgFinanceApi.dashboard(params);
@@ -455,8 +496,12 @@ export const useOrgAccountTransactions = (accountId?: string): OrgAccountTransac
 
 export const useOrgFinanceDailyCashbook = (date: string, accountId?: string) => {
   const { user, profile } = useAuth();
-  return useQuery<DailyCashbook | null>({
-    queryKey: [ORG_FINANCE_KEY, 'daily-cashbook', profile?.organization_id, profile?.default_school_id ?? null, date, accountId],
+  const queryKey = [ORG_FINANCE_KEY, 'daily-cashbook', profile?.organization_id, profile?.default_school_id ?? null, date, accountId];
+  return useOfflineCachedQuery<DailyCashbook | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id || !date) return null;
       const data = await orgFinanceApi.reports.dailyCashbook({ date, account_id: accountId });
@@ -469,8 +514,12 @@ export const useOrgFinanceDailyCashbook = (date: string, accountId?: string) => 
 
 export const useOrgFinanceIncomeVsExpenseReport = (dateFrom?: string, dateTo?: string) => {
   const { user, profile } = useAuth();
-  return useQuery<IncomeVsExpenseReport | null>({
-    queryKey: [ORG_FINANCE_KEY, 'income-vs-expense', profile?.organization_id, profile?.default_school_id ?? null, dateFrom, dateTo],
+  const queryKey = [ORG_FINANCE_KEY, 'income-vs-expense', profile?.organization_id, profile?.default_school_id ?? null, dateFrom, dateTo];
+  return useOfflineCachedQuery<IncomeVsExpenseReport | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return null;
       const data = await orgFinanceApi.reports.incomeVsExpense({ date_from: dateFrom, date_to: dateTo });
@@ -483,8 +532,12 @@ export const useOrgFinanceIncomeVsExpenseReport = (dateFrom?: string, dateTo?: s
 
 export const useOrgFinanceProjectSummaryReport = (status?: string) => {
   const { user, profile } = useAuth();
-  return useQuery<ProjectSummaryReport | null>({
-    queryKey: [ORG_FINANCE_KEY, 'project-summary', profile?.organization_id, profile?.default_school_id ?? null, status],
+  const queryKey = [ORG_FINANCE_KEY, 'project-summary', profile?.organization_id, profile?.default_school_id ?? null, status];
+  return useOfflineCachedQuery<ProjectSummaryReport | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return null;
       const data = await orgFinanceApi.reports.projectSummary({ status });
@@ -497,8 +550,12 @@ export const useOrgFinanceProjectSummaryReport = (status?: string) => {
 
 export const useOrgFinanceDonorSummaryReport = (startDate?: string, endDate?: string) => {
   const { user, profile } = useAuth();
-  return useQuery<DonorSummaryReport | null>({
-    queryKey: [ORG_FINANCE_KEY, 'donor-summary', profile?.organization_id, profile?.default_school_id ?? null, startDate, endDate],
+  const queryKey = [ORG_FINANCE_KEY, 'donor-summary', profile?.organization_id, profile?.default_school_id ?? null, startDate, endDate];
+  return useOfflineCachedQuery<DonorSummaryReport | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return null;
       const data = await orgFinanceApi.reports.donorSummary({ start_date: startDate, end_date: endDate });
@@ -511,8 +568,12 @@ export const useOrgFinanceDonorSummaryReport = (startDate?: string, endDate?: st
 
 export const useOrgFinanceAccountBalancesReport = () => {
   const { user, profile } = useAuth();
-  return useQuery<AccountBalancesReport | null>({
-    queryKey: [ORG_FINANCE_KEY, 'account-balances', profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = [ORG_FINANCE_KEY, 'account-balances', profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AccountBalancesReport | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return null;
       const data = await orgFinanceApi.reports.accountBalances();
@@ -912,8 +973,12 @@ export const useOrgFinanceTransfers = (params?: {
   perPage?: number;
 }) => {
   const { user, profile } = useAuth();
-  return useQuery<OrgSchoolTransferRow[]>({
-    queryKey: [ORG_FINANCE_KEY, 'transfers', profile?.organization_id, params],
+  const queryKey = [ORG_FINANCE_KEY, 'transfers', profile?.organization_id, params];
+  return useOfflineCachedQuery<OrgSchoolTransferRow[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const data = await orgFinanceApi.transfers.list({
@@ -959,8 +1024,12 @@ export const useCreateOrgFinanceTransfer = () => {
 
 export const useSchoolFinanceAccounts = (schoolId: string | null) => {
   const { user, profile } = useAuth();
-  return useQuery({
-    queryKey: [ORG_FINANCE_KEY, 'school-accounts', profile?.organization_id, schoolId],
+  const queryKey = [ORG_FINANCE_KEY, 'school-accounts', profile?.organization_id, schoolId];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id || !schoolId) return [];
       return orgFinanceApi.schoolFinanceAccounts(schoolId);
@@ -972,8 +1041,12 @@ export const useSchoolFinanceAccounts = (schoolId: string | null) => {
 
 export const useSchoolIncomeCategories = (schoolId: string | null) => {
   const { user, profile } = useAuth();
-  return useQuery({
-    queryKey: [ORG_FINANCE_KEY, 'school-income-categories', profile?.organization_id, schoolId],
+  const queryKey = [ORG_FINANCE_KEY, 'school-income-categories', profile?.organization_id, schoolId];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id || !schoolId) return [];
       return orgFinanceApi.schoolIncomeCategories(schoolId);
@@ -1009,8 +1082,12 @@ export const useOrgFinanceDocuments = (filters?: {
   search?: string;
 }) => {
   const { user, profile } = useAuth();
-  return useQuery<OrgFinanceDocument[]>({
-    queryKey: [ORG_FINANCE_KEY, 'finance-documents', profile?.organization_id, filters],
+  const queryKey = [ORG_FINANCE_KEY, 'finance-documents', profile?.organization_id, filters];
+  return useOfflineCachedQuery<OrgFinanceDocument[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'org-finance.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
       const params: Record<string, string> = {};

@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { schoolsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
@@ -44,8 +45,12 @@ function mapSchoolAdmissionRulesDomainToUpdate(
 export const useSchoolAdmissionRules = (schoolId: string | null | undefined) => {
   const { t } = useLanguage();
 
-  return useQuery<SchoolAdmissionRules | null>({
-    queryKey: ['school-admission-rules', schoolId],
+  const queryKey = ['school-admission-rules', schoolId];
+
+  return useOfflineCachedQuery<SchoolAdmissionRules | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'schools.admission-rules',
+    queryKey,
     queryFn: async () => {
       if (!schoolId) return null;
 

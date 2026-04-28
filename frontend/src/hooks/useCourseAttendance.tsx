@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 
@@ -65,8 +66,11 @@ export interface CourseRosterStudent {
 export const useCourseAttendanceSessions = (courseId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<CourseAttendanceSession[]>({
-    queryKey: ['course-attendance-sessions', courseId ?? 'all', profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const queryKey = ['course-attendance-sessions', courseId ?? 'all', profile?.organization_id ?? null, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<CourseAttendanceSession[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'course-attendance.sessions',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: any = {};
@@ -82,8 +86,11 @@ export const useCourseAttendanceSessions = (courseId?: string) => {
 export const useCourseAttendanceSession = (sessionId: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<CourseAttendanceSession>({
-    queryKey: ['course-attendance-session', sessionId],
+  const queryKey = ['course-attendance-session', sessionId];
+  return useOfflineCachedQuery<CourseAttendanceSession>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'course-attendance.sessions',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) throw new Error('Not authenticated');
       const session = await courseAttendanceSessionsApi.get(sessionId);
@@ -151,8 +158,11 @@ export const useDeleteCourseAttendanceSession = () => {
 export const useCourseRoster = (courseId: string | undefined) => {
   const { user, profile } = useAuth();
 
-  return useQuery<CourseRosterStudent[]>({
-    queryKey: ['course-roster', courseId, profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const queryKey = ['course-roster', courseId, profile?.organization_id ?? null, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<CourseRosterStudent[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'course-roster.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !courseId) return [];
       const roster = await courseAttendanceSessionsApi.roster({ course_id: courseId });
@@ -210,8 +220,11 @@ export const useScanCourseAttendance = () => {
 export const useCourseAttendanceScans = (sessionId: string, limit: number = 10) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['course-attendance-scans', sessionId, limit],
+  const queryKey = ['course-attendance-scans', sessionId, limit];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'course-attendance-scans.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !sessionId) return [];
       const scans = await courseAttendanceSessionsApi.scans(sessionId, { limit });
@@ -270,8 +283,11 @@ export interface CourseReportItem {
 export const useCourseAttendanceSessionReport = (sessionId: string | null) => {
   const { user, profile } = useAuth();
 
-  return useQuery<SessionReportItem[]>({
-    queryKey: ['course-attendance-session-report', sessionId],
+  const queryKey = ['course-attendance-session-report', sessionId];
+  return useOfflineCachedQuery<SessionReportItem[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'course-attendance-session-report.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !sessionId) return [];
       const report = await courseAttendanceSessionsApi.sessionReport(sessionId);
@@ -291,8 +307,11 @@ export const useCourseAttendanceCourseReport = (params?: {
 }) => {
   const { user, profile } = useAuth();
 
-  return useQuery<CourseReportItem[]>({
-    queryKey: ['course-attendance-course-report', params, profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const queryKey = ['course-attendance-course-report', params, profile?.organization_id ?? null, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<CourseReportItem[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'course-attendance-course-report.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
       const apiParams: any = {};
@@ -317,8 +336,11 @@ export const useCourseAttendanceReport = (params?: {
 }) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
-    queryKey: ['course-attendance-report', params],
+  const queryKey = ['course-attendance-report', params];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'course-attendance-report.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
       const apiParams: any = {};

@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useAuth } from './useAuth';
@@ -25,15 +26,18 @@ export const useUsers = (
   const { profile: currentProfile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery<UserProfile[]>({
-    queryKey: [
-      'users',
-      currentProfile?.id ?? null,
-      currentProfile?.organization_id ?? null,
-      currentProfile?.default_school_id ?? null,
-      filters,
-      orgIds.join(','),
-    ],
+  const queryKey = [
+    'users',
+    currentProfile?.id ?? null,
+    currentProfile?.organization_id ?? null,
+    currentProfile?.default_school_id ?? null,
+    filters,
+    orgIds.join(','),
+  ];
+  return useOfflineCachedQuery<UserProfile[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'users.list',
+    queryKey,
     queryFn: async () => {
       if (!currentProfile || orgsLoading) {
         throw new Error('User not authenticated');

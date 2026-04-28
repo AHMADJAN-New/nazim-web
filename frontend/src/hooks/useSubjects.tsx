@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useEffect } from 'react';
 
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
@@ -35,15 +36,18 @@ export const useSubjects = (organizationId?: string, usePaginated?: boolean) => 
         initialPageSize: 25,
     });
 
-    const { data, isLoading, error } = useQuery<Subject[] | PaginatedResponse<SubjectApi.Subject>>({
-        queryKey: [
-            'subjects',
-            organizationId || profile?.organization_id,
-            orgIds.join(','),
-            profile?.default_school_id ?? null,
-            usePaginated ? page : undefined,
-            usePaginated ? pageSize : undefined,
-        ],
+    const queryKey = [
+        'subjects',
+        organizationId || profile?.organization_id,
+        orgIds.join(','),
+        profile?.default_school_id ?? null,
+        usePaginated ? page : undefined,
+        usePaginated ? pageSize : undefined,
+    ];
+    const { data, isLoading, error } = useOfflineCachedQuery<Subject[] | PaginatedResponse<SubjectApi.Subject>>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'subjects.list',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile || orgsLoading) return [];
 
@@ -127,8 +131,11 @@ export const useClassSubjects = (classAcademicYearId?: string, organizationId?: 
     const { user, profile } = useAuth();
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-    return useQuery<ClassSubject[]>({
-        queryKey: ['class-subjects', classAcademicYearId, organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
+    const queryKey = ['class-subjects', classAcademicYearId, organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<ClassSubject[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'subjects.class-subjects',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile || !classAcademicYearId || orgsLoading) return [];
 
@@ -171,8 +178,11 @@ export const useClassSubjects = (classAcademicYearId?: string, organizationId?: 
 export const useClassSubjectsForMultipleClasses = (classAcademicYearIds: string[], organizationId?: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<ClassSubject[]>({
-        queryKey: ['class-subjects-multiple', classAcademicYearIds.sort().join(','), organizationId || profile?.organization_id, profile?.default_school_id ?? null],
+    const queryKey = ['class-subjects-multiple', classAcademicYearIds.sort().join(','), organizationId || profile?.organization_id, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<ClassSubject[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'subjects.class-subjects',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile || classAcademicYearIds.length === 0) return [];
 
@@ -222,8 +232,11 @@ export const useClassSubjectsForMultipleClasses = (classAcademicYearIds: string[
 export const useSubjectHistory = (subjectId: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<ClassSubject[]>({
-        queryKey: ['subject-history', subjectId, profile?.default_school_id ?? null],
+    const queryKey = ['subject-history', subjectId, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<ClassSubject[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'subjects.history',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile || !subjectId) return [];
 
@@ -743,8 +756,11 @@ export const useClassSubjectTemplates = (classId?: string, organizationId?: stri
     const { user, profile } = useAuth();
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-    return useQuery({
-        queryKey: ['class-subject-templates', classId, organizationId, orgIds.join(','), profile?.default_school_id ?? null],
+    const queryKey = ['class-subject-templates', classId, organizationId, orgIds.join(','), profile?.default_school_id ?? null];
+    return useOfflineCachedQuery({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'subjects.class-subject-templates',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile) {
                 throw new Error('User not authenticated');

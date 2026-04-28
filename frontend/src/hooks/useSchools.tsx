@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useAuth } from './useAuth';
@@ -30,15 +31,18 @@ export const useSchools = (organizationId?: string) => {
     subscriptionStatus.accessLevel === 'none'
   );
 
-  return useQuery<School[]>({
-    queryKey: [
-      'schools',
-      user?.id ?? null,
-      organizationId || profile?.organization_id,
-      profile?.default_school_id ?? null,
-      profile?.schools_access_all ?? false,
-      orgIds.join(','),
-    ],
+  const queryKey = [
+    'schools',
+    user?.id ?? null,
+    organizationId || profile?.organization_id,
+    profile?.default_school_id ?? null,
+    profile?.schools_access_all ?? false,
+    orgIds.join(','),
+  ];
+  return useOfflineCachedQuery<School[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'schools.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || orgsLoading || isEventUser) return [];
 
@@ -71,8 +75,11 @@ export const useSchools = (organizationId?: string) => {
 };
 
 export const useSchool = (schoolId: string) => {
-  return useQuery<School>({
-    queryKey: ['school', schoolId],
+  const queryKey = ['school', schoolId];
+  return useOfflineCachedQuery<School>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'school.list',
+    queryKey,
     queryFn: async () => {
       // Fetch school from Laravel API
       const apiSchool = await schoolsApi.get(schoolId);

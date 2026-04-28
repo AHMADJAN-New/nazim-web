@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
@@ -104,8 +105,11 @@ export const useTeacherSubjectAssignments = (organizationId?: string, teacherId?
         initialPageSize: 25,
     });
 
-    const { data, isLoading, error } = useQuery<TeacherSubjectAssignment[] | PaginatedResponse<any>>({
-        queryKey: ['teacher-subject-assignments', organizationId || profile?.organization_id, profile?.default_school_id ?? null, teacherId, academicYearId, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    const queryKey = ['teacher-subject-assignments', organizationId || profile?.organization_id, profile?.default_school_id ?? null, teacherId, academicYearId, usePaginated ? page : undefined, usePaginated ? pageSize : undefined];
+    const { data, isLoading, error } = useOfflineCachedQuery<TeacherSubjectAssignment[] | PaginatedResponse<any>>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'staff.teacher-subject-assignments',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile) return [];
 

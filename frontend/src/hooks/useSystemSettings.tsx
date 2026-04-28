@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { showToast } from '@/lib/toast';
 
@@ -30,8 +31,12 @@ export interface SystemSettings {
 }
 
 export const useSystemSettings = () => {
-  return useQuery({
-    queryKey: ['system-settings'],
+  const queryKey = ['system-settings'];
+
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'system-settings.list',
+    queryKey,
     queryFn: async () => {
       // TODO: Migrate to Laravel API endpoint for fetching system settings
       throw new Error('System settings endpoint not yet implemented in Laravel API');

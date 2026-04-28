@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 
@@ -44,8 +45,11 @@ export const useExamDocuments = (params?: {
 }) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamDocument[]>({
-    queryKey: ['exam-documents', params],
+  const queryKey = ['exam-documents', params];
+  return useOfflineCachedQuery<ExamDocument[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.documents',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
       const apiParams: any = {};

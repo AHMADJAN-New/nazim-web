@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -16,8 +17,12 @@ export type { IdCardTemplate, IdCardLayoutConfig } from '@/types/domain/idCardTe
 export const useIdCardTemplates = (activeOnly?: boolean, filters?: { school_id?: string }) => {
   const { user, profile } = useAuth();
 
-  return useQuery<IdCardTemplate[]>({
-    queryKey: ['id-card-templates', activeOnly, filters],
+  const queryKey = ['id-card-templates', activeOnly, filters];
+  return useOfflineCachedQuery<IdCardTemplate[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'id-cards.templates',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -37,8 +42,12 @@ export const useIdCardTemplates = (activeOnly?: boolean, filters?: { school_id?:
 export const useIdCardTemplate = (templateId: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<IdCardTemplate | null>({
-    queryKey: ['id-card-templates', templateId],
+  const queryKey = ['id-card-templates', templateId];
+  return useOfflineCachedQuery<IdCardTemplate | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'id-cards.templates',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile || !templateId) return null;
 

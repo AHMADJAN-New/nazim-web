@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -17,8 +18,12 @@ export const useWatermarks = (brandingId: string | null | undefined) => {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
 
-  return useQuery<Watermark[]>({
-    queryKey: ['watermarks', brandingId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['watermarks', brandingId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<Watermark[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'documents.watermarks',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile || !brandingId) return [];
 
@@ -40,8 +45,12 @@ export const useWatermarks = (brandingId: string | null | undefined) => {
 export const useWatermark = (watermarkId: string | null | undefined) => {
   const { user, profile } = useAuth();
 
-  return useQuery<Watermark>({
-    queryKey: ['watermark', watermarkId, profile?.default_school_id ?? null],
+  const queryKey = ['watermark', watermarkId, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<Watermark>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'watermark.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile || !watermarkId) {
         throw new Error('Watermark ID is required');

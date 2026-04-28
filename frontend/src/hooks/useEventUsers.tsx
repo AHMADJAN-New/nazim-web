@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useLanguage } from './useLanguage';
 
@@ -10,8 +11,11 @@ import type { EventUser, CreateEventUserRequest, UpdateEventUserRequest } from '
 export type { EventUser, CreateEventUserRequest, UpdateEventUserRequest } from '@/types/events';
 
 export const useEventUsers = (eventId: string) => {
-  return useQuery<EventUser[]>({
-    queryKey: ['event-users', eventId],
+  const queryKey = ['event-users', eventId];
+  return useOfflineCachedQuery<EventUser[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'event-users.list',
+    queryKey,
     queryFn: async () => {
       return await eventUsersApi.list(eventId);
     },

@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
@@ -16,8 +17,11 @@ export const useScheduleSlots = (organizationId?: string, academicYearId?: strin
     const { user } = useAuth();
     const { data: profile } = useProfile();
 
-    return useQuery<ScheduleSlot[]>({
-        queryKey: ['schedule-slots', organizationId || profile?.organization_id, academicYearId, profile?.default_school_id ?? null],
+    const queryKey = ['schedule-slots', organizationId || profile?.organization_id, academicYearId, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<ScheduleSlot[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'schedule-slots.list',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile) return [];
 
@@ -41,8 +45,11 @@ export const useScheduleSlot = (id: string) => {
     const { user } = useAuth();
     const { data: profile } = useProfile();
 
-    return useQuery<ScheduleSlot | null>({
-        queryKey: ['schedule-slot', id, profile?.default_school_id ?? null],
+    const queryKey = ['schedule-slot', id, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<ScheduleSlot | null>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'schedule-slots.list',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile || !id) return null;
 

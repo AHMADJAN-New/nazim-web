@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { reportTemplatesApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
@@ -64,9 +65,13 @@ export interface CreateReportTemplateData {
 // Hook to fetch report templates by school
 export const useReportTemplates = (schoolId?: string) => {
   const hasReportTemplatesFeature = useHasFeature('report_templates');
-  
-  return useQuery({
-    queryKey: ['report-templates', schoolId],
+
+  const queryKey = ['report-templates', schoolId];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'reports.templates',
+    queryKey,
+
     queryFn: async (): Promise<ReportTemplate[]> => {
       // If feature is disabled, return empty array without making API call
       if (!hasReportTemplatesFeature) {

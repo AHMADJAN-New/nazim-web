@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -19,8 +20,11 @@ export type { ExamType, ExamTypeInsert, ExamTypeUpdate } from '@/types/domain/ex
 export const useExamTypes = (filters?: { is_active?: boolean }) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamType[]>({
-    queryKey: ['exam-types', profile?.organization_id, profile?.default_school_id ?? null, filters],
+  const queryKey = ['exam-types', profile?.organization_id, profile?.default_school_id ?? null, filters];
+  return useOfflineCachedQuery<ExamType[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.types',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) {
         if (import.meta.env.DEV) {
@@ -45,8 +49,11 @@ export const useExamTypes = (filters?: { is_active?: boolean }) => {
 export const useExamType = (id?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamType>({
-    queryKey: ['exam-type', id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-type', id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamType>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.types',
+    queryKey,
     queryFn: async () => {
       if (!id) throw new Error('Missing exam type id');
       const apiType = await examTypesApi.get(id);

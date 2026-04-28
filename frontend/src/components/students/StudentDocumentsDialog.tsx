@@ -45,6 +45,7 @@ import {
   Student,
 } from '@/hooks/useStudents';
 import { apiClient } from '@/lib/api/client';
+import { apiUrl } from '@/lib/api/url';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { documentUploadSchema, type DocumentUploadFormData } from '@/lib/validations';
 
@@ -123,7 +124,7 @@ export function StudentDocumentsDialog({
     try {
       // Fetch the file with authentication headers using apiClient's token
       const token = apiClient.getToken();
-      const response = await fetch(`/api/student-documents/${doc.id}/download`, {
+      const response = await fetch(apiUrl(`/api/student-documents/${doc.id}/download`), {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
           'Accept': '*/*',
@@ -189,7 +190,7 @@ export function StudentDocumentsDialog({
     try {
       // Fetch the file with authentication headers and create a blob URL for viewing
       const token = apiClient.getToken();
-      const response = await fetch(`/api/student-documents/${doc.id}/download`, {
+      const response = await fetch(apiUrl(`/api/student-documents/${doc.id}/download`), {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
           'Accept': '*/*',

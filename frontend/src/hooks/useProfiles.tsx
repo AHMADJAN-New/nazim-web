@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useAuth } from './useAuth';
@@ -31,15 +32,18 @@ export const useProfiles = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
   const hasPermission = useHasPermission('profiles.read');
 
-  return useQuery<Profile[]>({
-    queryKey: [
-      'profiles',
-      currentProfile?.id ?? null,
-      currentProfile?.organization_id ?? null,
-      currentProfile?.default_school_id ?? null,
-      organizationId,
-      orgIds.join(','),
-    ],
+  const queryKey = [
+    'profiles',
+    currentProfile?.id ?? null,
+    currentProfile?.organization_id ?? null,
+    currentProfile?.default_school_id ?? null,
+    organizationId,
+    orgIds.join(','),
+  ];
+  return useOfflineCachedQuery<Profile[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'profiles.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !currentProfile || orgsLoading) return [];
 

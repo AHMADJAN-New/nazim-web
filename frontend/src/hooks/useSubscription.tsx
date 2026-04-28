@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useEffect, useRef } from 'react';
 
 import { useAuth } from './useAuth';
@@ -145,8 +146,12 @@ function mapPriceApiToDomain(api: SubscriptionApi.PriceCalculation): PriceBreakd
  * Get available subscription plans
  */
 export const useSubscriptionPlans = () => {
-  return useQuery<SubscriptionPlan[]>({
-    queryKey: ['subscription-plans'],
+  const queryKey = ['subscription-plans'];
+  return useOfflineCachedQuery<SubscriptionPlan[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'subscription-plans.list',
+    queryKey,
+
     queryFn: async () => {
       const response = await apiClient.request<{ data: SubscriptionApi.SubscriptionPlan[] }>(
         '/subscription/plans',
@@ -201,7 +206,7 @@ function mapGateStatusApiToDomain(api: SubscriptionGateStatusApiResponse): Subsc
 
 /**
  * Get subscription gate status (lite version - NO permission required)
- * 
+ *
  * CRITICAL: This hook is used for frontend access gating and is accessible to ALL authenticated users.
  * It returns only the minimal information needed for access control decisions:
  * - status: current subscription status (trial, active, grace_period, readonly, expired, suspended, cancelled)
@@ -210,15 +215,19 @@ function mapGateStatusApiToDomain(api: SubscriptionGateStatusApiResponse): Subsc
  * - canWrite: whether user can write data
  * - trialEndsAt, gracePeriodEndsAt, readonlyPeriodEndsAt: relevant dates
  * - message: human-readable status message
- * 
+ *
  * Use this hook in ProtectedRoute, SmartSidebar, and other gating components.
  * For full subscription details (plan, pricing, usage), use useSubscriptionStatus instead.
  */
 export const useSubscriptionGateStatus = () => {
   const { user, profile } = useAuth();
 
-  return useQuery<SubscriptionGateStatus | null>({
-    queryKey: ['subscription-gate-status', profile?.organization_id],
+  const queryKey = ['subscription-gate-status', profile?.organization_id];
+  return useOfflineCachedQuery<SubscriptionGateStatus | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'subscription-gate-status.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return null;
 
@@ -256,10 +265,10 @@ export const useSubscriptionGateStatus = () => {
 
 /**
  * Convenience hook for subscription access control
- * 
+ *
  * CRITICAL: Use this hook to check if user can read/write based on subscription status.
  * This is the recommended hook for UI components that need to enable/disable actions.
- * 
+ *
  * Returns:
  * - canRead: whether user can read data
  * - canWrite: whether user can write data (create, update, delete)
@@ -272,20 +281,20 @@ export const useSubscriptionGateStatus = () => {
  */
 export const useSubscriptionAccess = () => {
   const { data: gateStatus, isLoading } = useSubscriptionGateStatus();
-  
+
   // Derive access states from gate status
   const canRead = gateStatus?.canRead ?? false;
   const canWrite = gateStatus?.canWrite ?? false;
   const status = gateStatus?.status ?? 'none';
   const accessLevel = gateStatus?.accessLevel ?? 'none';
   const message = gateStatus?.message ?? '';
-  
+
   // Check if subscription is blocked (no access at all)
   const isBlocked = !canRead && !canWrite;
-  
+
   // Check if subscription is in readonly mode (can read but not write)
   const isReadonly = canRead && !canWrite;
-  
+
   return {
     canRead,
     canWrite,
@@ -307,8 +316,12 @@ export const useSubscriptionStatus = () => {
   const { user, profile } = useAuth();
   const hasSubscriptionRead = useHasPermission('subscription.read');
 
-  return useQuery<SubscriptionInfo | null>({
-    queryKey: ['subscription-status', profile?.organization_id],
+  const queryKey = ['subscription-status', profile?.organization_id];
+  return useOfflineCachedQuery<SubscriptionInfo | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'subscription.status',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return null;
 
@@ -351,8 +364,12 @@ export const useUsage = (options: { enabled?: boolean } = {}) => {
   const { user, profile } = useAuth();
   const hasSubscriptionRead = useHasPermission('subscription.read');
 
-  return useQuery<{ usage: UsageInfo[]; warnings: UsageWarning[] }>({
-    queryKey: ['subscription-usage', profile?.organization_id],
+  const queryKey = ['subscription-usage', profile?.organization_id];
+  return useOfflineCachedQuery<{ usage: UsageInfo[]; warnings: UsageWarning[] }>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'subscription-usage.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) {
         return { usage: [], warnings: [] };
@@ -363,7 +380,7 @@ export const useUsage = (options: { enabled?: boolean } = {}) => {
           '/subscription/usage',
           { method: 'GET' }
         );
-        
+
         return {
           usage: mapUsageApiToDomain(response.data.usage),
           warnings: mapWarningsApiToDomain(response.data.warnings),
@@ -406,7 +423,7 @@ export const useFeatures = (options: { enabled?: boolean } = {}) => {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const hasSubscriptionRead = useHasPermission('subscription.read');
-  
+
   // Use stable organization ID to prevent dependency array size changes
   const organizationId = profile?.organization_id ?? null;
 
@@ -421,28 +438,28 @@ export const useFeatures = (options: { enabled?: boolean } = {}) => {
         // Silently skip - no need to log every skip
         return;
       }
-      
+
       // Mark as recently invalidated
       recentlyInvalidatedFeatures.add(featureKey);
-      
+
       // Clear feature from "recently invalidated" set after 5 seconds
       const timeout = setTimeout(() => {
         recentlyInvalidatedFeatures.delete(featureKey);
         invalidationTimeouts.delete(featureKey);
       }, 5000);
-      
+
       // Clear any existing timeout for this feature
       const existingTimeout = invalidationTimeouts.get(featureKey);
       if (existingTimeout) {
         clearTimeout(existingTimeout);
       }
       invalidationTimeouts.set(featureKey, timeout);
-      
+
       // Only log when actually invalidating (not when skipping)
       if (import.meta.env.DEV) {
         console.log('[useFeatures] Invalidating features cache due to 402 error for feature:', featureKey);
       }
-      
+
       // Invalidate for all organizations (in case user switches orgs)
       // Use a small delay to prevent immediate refetch loops
       setTimeout(() => {
@@ -457,7 +474,7 @@ export const useFeatures = (options: { enabled?: boolean } = {}) => {
   useEffect(() => {
     const handleSubscriptionError = (event: CustomEvent) => {
       const detail = event.detail as { featureKey?: string; code?: string };
-      
+
       // If it's a feature-related error, invalidate features cache to refetch
       if (detail.code === 'FEATURE_NOT_AVAILABLE' && detail.featureKey) {
         invalidateFeaturesDebouncedRef.current?.(detail.featureKey);
@@ -471,11 +488,15 @@ export const useFeatures = (options: { enabled?: boolean } = {}) => {
       };
     }
     // CRITICAL: Only depend on queryClient to keep dependency array size constant
-     
+
   }, [queryClient]);
 
-  return useQuery<FeatureInfo[]>({
-    queryKey: ['subscription-features', organizationId],
+  const queryKey = ['subscription-features', organizationId];
+  return useOfflineCachedQuery<FeatureInfo[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'subscription-features.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !organizationId) return [];
 
@@ -530,8 +551,12 @@ export const useFeatures = (options: { enabled?: boolean } = {}) => {
  * Get all available features (public endpoint for landing page)
  */
 export const useAllFeatures = () => {
-  return useQuery({
-    queryKey: ['all-features'],
+  const queryKey = ['all-features'];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'all-features.list',
+    queryKey,
+
     queryFn: async () => {
       const response = await apiClient.request<{ data: Array<{
         feature_key: string;
@@ -555,9 +580,9 @@ export const useAllFeatures = () => {
  */
 export const useHasFeature = (featureKey: string): boolean => {
   const { data: features } = useFeatures();
-  
+
   if (!features) return false;
-  
+
   const feature = features.find((f) => f.featureKey === featureKey);
   return feature?.isAccessible ?? feature?.isEnabled ?? false;
 };
@@ -567,7 +592,7 @@ export const useHasFeature = (featureKey: string): boolean => {
  */
 export const useResourceUsage = (resourceKey: string) => {
   const { data } = useUsage();
-  
+
   if (!data?.usage) {
     return {
       current: 0,
@@ -579,9 +604,9 @@ export const useResourceUsage = (resourceKey: string) => {
       canCreate: true,
     };
   }
-  
+
   const usage = data.usage.find((u) => u.resourceKey === resourceKey);
-  
+
   if (!usage) {
     return {
       current: 0,
@@ -593,7 +618,7 @@ export const useResourceUsage = (resourceKey: string) => {
       canCreate: true,
     };
   }
-  
+
   return {
     ...usage,
     canCreate: usage.isUnlimited || (usage.limit !== -1 && usage.current < usage.limit),
@@ -654,7 +679,7 @@ export const useCreateRenewalRequest = () => {
           body: JSON.stringify(data),
         }
       );
-      
+
       return {
         id: response.data.id,
         organizationId: response.data.organization_id,
@@ -698,7 +723,7 @@ export const useSubmitPayment = () => {
           body: JSON.stringify(data),
         }
       );
-      
+
       return {
         id: response.data.id,
         organizationId: response.data.organization_id,
@@ -735,8 +760,12 @@ export const useSubmitPayment = () => {
 export const useRenewalHistory = () => {
   const { user, profile } = useAuth();
 
-  return useQuery<RenewalRequest[]>({
-    queryKey: ['renewal-history', profile?.organization_id],
+  const queryKey = ['renewal-history', profile?.organization_id];
+  return useOfflineCachedQuery<RenewalRequest[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'renewal-history.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
 
@@ -744,7 +773,7 @@ export const useRenewalHistory = () => {
         '/subscription/renewal-history',
         { method: 'GET' }
       );
-      
+
       return response.data.map((r) => ({
         id: r.id,
         organizationId: r.organization_id,
@@ -774,8 +803,12 @@ export const useRenewalHistory = () => {
 export const usePaymentHistory = () => {
   const { user, profile } = useAuth();
 
-  return useQuery<PaymentRecord[]>({
-    queryKey: ['payment-history', profile?.organization_id],
+  const queryKey = ['payment-history', profile?.organization_id];
+  return useOfflineCachedQuery<PaymentRecord[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'payment-history.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
 
@@ -783,7 +816,7 @@ export const usePaymentHistory = () => {
         '/subscription/payment-history',
         { method: 'GET' }
       );
-      
+
       return response.data.map((p) => ({
         id: p.id,
         organizationId: p.organization_id,
@@ -814,8 +847,12 @@ export const usePaymentHistory = () => {
 export const useSubscriptionHistory = () => {
   const { user, profile } = useAuth();
 
-  return useQuery<SubscriptionHistoryEntry[]>({
-    queryKey: ['subscription-history', profile?.organization_id],
+  const queryKey = ['subscription-history', profile?.organization_id];
+  return useOfflineCachedQuery<SubscriptionHistoryEntry[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'subscription-history.list',
+    queryKey,
+
     queryFn: async () => {
       if (!user || !profile?.organization_id) return [];
 
@@ -823,7 +860,7 @@ export const useSubscriptionHistory = () => {
         '/subscription/history',
         { method: 'GET' }
       );
-      
+
       return response.data.map((h) => ({
         id: h.id,
         organizationId: h.organization_id,

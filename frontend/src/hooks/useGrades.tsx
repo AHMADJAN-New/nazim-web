@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -15,8 +16,11 @@ export type { Grade, GradeFormData } from '@/types/domain/grade';
 export const useGrades = (organizationId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<Grade[]>({
-    queryKey: ['grades', organizationId || profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['grades', organizationId || profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<Grade[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'grades.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -40,8 +44,11 @@ export const useGrades = (organizationId?: string) => {
 export const useGrade = (id: string | undefined) => {
   const { user, profile } = useAuth();
 
-  return useQuery<Grade | null>({
-    queryKey: ['grade', id],
+  const queryKey = ['grade', id];
+  return useOfflineCachedQuery<Grade | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'grades.list',
+    queryKey,
     queryFn: async () => {
       if (!id) return null;
 

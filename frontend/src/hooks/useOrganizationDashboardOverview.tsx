@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 
@@ -99,12 +99,15 @@ export interface OrganizationDashboardOverviewResponse {
 export const useOrganizationDashboardOverview = (enabled = true) => {
   const { user, profile } = useAuth();
 
-  return useQuery<OrganizationDashboardOverviewResponse>({
-    queryKey: [
-      'organization-dashboard-overview',
-      profile?.organization_id,
-      profile?.default_school_id ?? null,
-    ],
+  const queryKey = [
+    'organization-dashboard-overview',
+    profile?.organization_id,
+    profile?.default_school_id ?? null,
+  ];
+  return useOfflineCachedQuery<OrganizationDashboardOverviewResponse>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'organization-dashboard-overview.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile?.organization_id) {
         throw new Error('User must be assigned to an organization');

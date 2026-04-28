@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
 import { usePagination } from './usePagination';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { assetsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
@@ -37,18 +38,21 @@ export const useAssets = (filters?: AssetFilters, usePaginated?: boolean) => {
     initialPageSize: 25,
   });
 
-  const { data, isLoading, error } = useQuery<Asset[] | PaginatedResponse<AssetApi.Asset>>({
-    queryKey: [
-      'assets',
-      profile?.organization_id ?? null,
-      profile?.default_school_id ?? null,
-      filters?.status,
-      filters?.buildingId,
-      filters?.roomId,
-      filters?.search,
-      usePaginated ? page : undefined,
-      usePaginated ? pageSize : undefined,
-    ],
+  const queryKey = [
+    'assets',
+    profile?.organization_id ?? null,
+    profile?.default_school_id ?? null,
+    filters?.status,
+    filters?.buildingId,
+    filters?.roomId,
+    filters?.search,
+    usePaginated ? page : undefined,
+    usePaginated ? pageSize : undefined,
+  ];
+  const { data, isLoading, error } = useOfflineCachedQuery<Asset[] | PaginatedResponse<AssetApi.Asset>>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'assets.list',
+    queryKey,
     queryFn: async () => {
       if (!user) return [];
 
@@ -122,8 +126,11 @@ export const useAssets = (filters?: AssetFilters, usePaginated?: boolean) => {
 
 export const useAssetDetails = (assetId?: string) => {
   const { user, profile } = useAuth();
-  return useQuery<Asset | null>({
-    queryKey: ['assets', assetId, profile?.default_school_id ?? null],
+  const queryKey = ['assets', assetId, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<Asset | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'assets.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !assetId) return null;
       const apiAsset = await assetsApi.get(assetId);
@@ -136,9 +143,12 @@ export const useAssetDetails = (assetId?: string) => {
 export const useAssetStats = () => {
   const { user, profile, profileLoading } = useAuth();
   const isEventUser = profile?.is_event_user === true;
-  
-  return useQuery<AssetApi.AssetStats>({
-    queryKey: ['asset-stats', profile?.default_school_id ?? null],
+
+  const queryKey = ['asset-stats', profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AssetApi.AssetStats>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'asset-stats.list',
+    queryKey,
     queryFn: async () => {
       if (!user) return { asset_count: 0, maintenance_cost_total: 0, status_counts: {}, total_purchase_value: 0 };
       return assetsApi.stats();
@@ -247,8 +257,11 @@ export const useAssignAsset = () => {
 
 export const useAssetAssignments = (assetId?: string) => {
   const { user, profile } = useAuth();
-  return useQuery<AssetApi.AssetAssignment[]>({
-    queryKey: ['asset-assignments', assetId, profile?.default_school_id ?? null],
+  const queryKey = ['asset-assignments', assetId, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AssetApi.AssetAssignment[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'assets.assignments',
+    queryKey,
     queryFn: async () => {
       if (!user || !assetId) return [];
       return assetsApi.listAssignments(assetId);
@@ -267,24 +280,24 @@ export const useUpdateAssignment = () => {
     onSuccess: async (response, variables) => {
       // Extract asset_id from response if available
       const assetId = (response as any)?.asset_id || (response as any)?.assetId;
-      
+
       // Invalidate all asset-related queries
       await queryClient.invalidateQueries({ queryKey: ['assets'], exact: false });
       // Refetch all asset queries to get updated copy counts
       await queryClient.refetchQueries({ queryKey: ['assets'], exact: false });
-      
+
       // Invalidate specific asset if we have the ID
       if (assetId) {
         await queryClient.invalidateQueries({ queryKey: ['assets', assetId], exact: false });
         await queryClient.invalidateQueries({ queryKey: ['asset-assignments', assetId], exact: false });
       }
-      
+
       // Invalidate assignment queries
       await queryClient.invalidateQueries({ queryKey: ['asset-assignments'], exact: false });
       if (variables.assignmentId) {
         await queryClient.invalidateQueries({ queryKey: ['asset-assignments', variables.assignmentId], exact: false });
       }
-      
+
       // Invalidate stats as well
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
       await queryClient.invalidateQueries({ queryKey: ['assets-dashboard'], exact: false });
@@ -303,18 +316,18 @@ export const useRemoveAssignment = () => {
     },
     onSuccess: async (result) => {
       const assetId = result?.assetId;
-      
+
       // Invalidate all asset-related queries
       await queryClient.invalidateQueries({ queryKey: ['assets'], exact: false });
       // Refetch all asset queries to get updated copy counts
       await queryClient.refetchQueries({ queryKey: ['assets'], exact: false });
-      
+
       // Invalidate specific asset if we have the ID
       if (assetId) {
         await queryClient.invalidateQueries({ queryKey: ['assets', assetId], exact: false });
         await queryClient.invalidateQueries({ queryKey: ['asset-assignments', assetId], exact: false });
       }
-      
+
       // Invalidate assignment queries
       await queryClient.invalidateQueries({ queryKey: ['asset-assignments'], exact: false });
       // Invalidate stats as well
@@ -328,8 +341,11 @@ export const useRemoveAssignment = () => {
 
 export const useAssetMaintenance = (assetId?: string) => {
   const { user, profile } = useAuth();
-  return useQuery<AssetApi.AssetMaintenanceRecord[]>({
-    queryKey: ['asset-maintenance', assetId, profile?.default_school_id ?? null],
+  const queryKey = ['asset-maintenance', assetId, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AssetApi.AssetMaintenanceRecord[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'asset-maintenance.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !assetId) return [];
       return assetsApi.listMaintenance(assetId);
@@ -394,8 +410,11 @@ export const useRemoveMaintenance = () => {
 
 export const useAssetHistory = (assetId?: string) => {
   const { user, profile } = useAuth();
-  return useQuery<AssetApi.AssetHistory[]>({
-    queryKey: ['asset-history', assetId, profile?.default_school_id ?? null],
+  const queryKey = ['asset-history', assetId, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AssetApi.AssetHistory[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'assets.history',
+    queryKey,
     queryFn: async () => {
       if (!user || !assetId) return [];
       return assetsApi.history(assetId);
@@ -442,8 +461,11 @@ export const useAssetsDashboard = () => {
   const { data: stats } = useAssetStats();
   const { assets = [] } = useAssets(undefined, false);
 
-  return useQuery<AssetsDashboard | null>({
-    queryKey: ['assets-dashboard', profile?.organization_id ?? null, profile?.default_school_id ?? null],
+  const queryKey = ['assets-dashboard', profile?.organization_id ?? null, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AssetsDashboard | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'assets.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile?.organization_id || !stats) return null;
 
@@ -489,7 +511,7 @@ export const useAssetsDashboard = () => {
 
       // Group assets by category (calculate value as price × total_copies)
       const categoryMap = new Map<string | null, { categoryId: string | null; categoryName: string | null; total: number; count: number }>();
-      
+
       assets.forEach((asset) => {
         const categoryId = asset.categoryId;
         const categoryName = asset.categoryName || asset.category || 'Uncategorized';

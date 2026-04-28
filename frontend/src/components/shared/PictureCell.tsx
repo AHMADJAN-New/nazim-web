@@ -6,6 +6,7 @@
 import { UserRound } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
 import { imageCache } from '@/lib/imageCache';
+import { apiUrl } from '@/lib/api/url';
 
 type ImageType = 'student' | 'staff' | 'course-student';
 
@@ -76,7 +77,7 @@ export const PictureCell = memo(({
           entityId,
           picturePath,
           async () => {
-            const response = await fetch(url, {
+            const response = await fetch(apiUrl(url), {
               method: 'GET',
               headers: {
                 'Accept': 'image/*',

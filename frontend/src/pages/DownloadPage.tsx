@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useIndexTranslations } from './index/translations/useIndexTranslations';
 import { apiClient } from '@/lib/api/client';
+import { NazimLogo } from '@/components/brand/NazimLogo';
 
 interface ReleaseData {
   release: {
@@ -74,11 +75,10 @@ export default function DownloadPage() {
               {t('download.backToHome')}
             </Link>
             <div className="flex items-center gap-2">
-              <img
-                src="/nazim_logo.webp"
+              <NazimLogo
                 alt="Nazim Logo"
-                className="w-8 h-8 rounded-lg object-contain ring-1 ring-slate-200 bg-white p-0.5"
                 loading="eager"
+                className="w-8 h-8 rounded-lg object-contain ring-1 ring-slate-200 bg-white p-0.5"
               />
               <span className="text-lg font-bold text-[#0b0b56]">Nazim</span>
             </div>

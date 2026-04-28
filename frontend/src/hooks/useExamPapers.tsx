@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -57,8 +58,11 @@ interface ExamPaperTemplateFilters {
 export const useExamPaperTemplates = (filters?: ExamPaperTemplateFilters) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamPaperTemplate[]>({
-    queryKey: ['exam-paper-templates', profile?.organization_id, profile?.default_school_id ?? null, filters],
+  const queryKey = ['exam-paper-templates', profile?.organization_id, profile?.default_school_id ?? null, filters];
+  return useOfflineCachedQuery<ExamPaperTemplate[]>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.paper-templates',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -94,8 +98,11 @@ export const useExamPaperTemplates = (filters?: ExamPaperTemplateFilters) => {
 export const useExamPaperTemplate = (templateId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamPaperTemplate | null>({
-    queryKey: ['exam-paper-template', templateId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-paper-template', templateId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamPaperTemplate | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.paper-templates',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !templateId) return null;
 
@@ -302,8 +309,11 @@ export const useReorderExamPaperItems = () => {
 export const useExamPaperStats = (examId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamPaperStats | null>({
-    queryKey: ['exam-paper-stats', examId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-paper-stats', examId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamPaperStats | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.paper-stats',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
 
@@ -332,8 +342,11 @@ export const useExamPaperStats = (examId?: string) => {
 export const useExamPaperPreviewStudent = (templateId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamPaperPreview | null>({
-    queryKey: ['exam-paper-preview-student', templateId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-paper-preview-student', templateId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamPaperPreview | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.paper-preview',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !templateId) return null;
 
@@ -360,8 +373,11 @@ export const useExamPaperPreviewStudent = (templateId?: string) => {
 export const useExamPaperPreviewTeacher = (templateId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<ExamPaperPreview | null>({
-    queryKey: ['exam-paper-preview-teacher', templateId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['exam-paper-preview-teacher', templateId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<ExamPaperPreview | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.paper-preview',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !templateId) return null;
 
@@ -388,8 +404,11 @@ export const useExamPaperPreviewTeacher = (templateId?: string) => {
 export const useAvailableTemplates = (examSubjectId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<AvailableTemplatesResponse | null>({
-    queryKey: ['available-templates', examSubjectId, profile?.organization_id, profile?.default_school_id ?? null],
+  const queryKey = ['available-templates', examSubjectId, profile?.organization_id, profile?.default_school_id ?? null];
+  return useOfflineCachedQuery<AvailableTemplatesResponse | null>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'exams.available-templates',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile || !examSubjectId) return null;
 

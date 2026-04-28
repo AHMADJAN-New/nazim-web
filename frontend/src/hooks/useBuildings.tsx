@@ -1,8 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { useAuth } from './useAuth';
 import { usePagination } from './usePagination';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { buildingsApi, schoolsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
@@ -24,8 +25,11 @@ export const useBuildings = (schoolId?: string, organizationId?: string, usePagi
     initialPageSize: 25,
   });
 
-  const { data, isLoading, error } = useQuery<Building[] | PaginatedResponse<BuildingApi.Building>>({
-    queryKey: ['buildings', schoolId, organizationId || profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+  const queryKey = ['buildings', schoolId, organizationId || profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined];
+  const { data, isLoading, error } = useOfflineCachedQuery<Building[] | PaginatedResponse<BuildingApi.Building>>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'buildings.list',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -44,7 +48,7 @@ export const useBuildings = (schoolId?: string, organizationId?: string, usePagi
       }
 
       const apiBuildings = await buildingsApi.list(params);
-      
+
       // Check if response is paginated (Laravel returns meta fields directly, not nested)
       if (usePaginated && apiBuildings && typeof apiBuildings === 'object' && 'data' in apiBuildings && 'current_page' in apiBuildings) {
         // Laravel's paginated response has data and meta fields at the same level
@@ -67,7 +71,7 @@ export const useBuildings = (schoolId?: string, organizationId?: string, usePagi
         };
         return { data: buildings, meta } as PaginatedResponse<BuildingApi.Building>;
       }
-      
+
       // Map API models to domain models (non-paginated)
       return (apiBuildings as BuildingApi.Building[]).map(mapBuildingApiToDomain);
     },
@@ -159,7 +163,7 @@ export const useCreateBuilding = () => {
 
       // Create building via Laravel API (validation handled server-side)
       const apiBuilding = await buildingsApi.create(insertData);
-      
+
       // Map API response back to domain model
       return mapBuildingApiToDomain(apiBuilding as BuildingApi.Building);
     },
@@ -202,7 +206,7 @@ export const useUpdateBuilding = () => {
 
       // Update building via Laravel API (validation handled server-side)
       const apiBuilding = await buildingsApi.update(id, apiUpdateData);
-      
+
       // Map API response back to domain model
       return mapBuildingApiToDomain(apiBuilding as BuildingApi.Building);
     },

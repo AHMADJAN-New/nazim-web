@@ -160,6 +160,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { apiUrl } from "@/lib/api/url";
+import { NazimLogo } from "@/components/brand/NazimLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
@@ -295,7 +297,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
       try {
         const { apiClient } = await import('@/lib/api/client');
         const token = apiClient.getToken();
-        const response = await fetch(`/api/staff/${profileStaffId}/picture`, {
+        const response = await fetch(apiUrl(`/api/staff/${profileStaffId}/picture`), {
           method: 'GET',
           headers: {
             Accept: 'image/*',
@@ -2816,14 +2818,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
         {/* Logo Section */}
         <div className={cn("border-b border-sidebar-border", collapsed ? "p-2" : "p-4")}>
           <div className="flex items-center justify-center">
-            <img
-              src="/nazim_logo.webp"
+            <NazimLogo
               alt="Nazim Logo"
+              loading="lazy"
               className={cn(
                 "rounded-lg object-contain ring-2 ring-sidebar-border bg-sidebar-primary/10 p-1.5 flex-shrink-0",
                 collapsed ? "w-10 h-10" : "w-12 h-12"
               )}
-              loading="lazy"
             />
             {!collapsed && (
               <div className="flex-1 min-w-0 ml-3">

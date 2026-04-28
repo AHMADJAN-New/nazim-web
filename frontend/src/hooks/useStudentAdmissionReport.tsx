@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useMemo } from 'react';
 
 import { useAuth } from './useAuth';
@@ -21,8 +21,11 @@ export const useStudentAdmissionReport = (
     };
   }, [filters, profile?.organization_id]);
 
-  const query = useQuery<StudentAdmissionReport>({
-    queryKey: ['student-admissions-report', normalizedFilters, normalizedFilters.page, normalizedFilters.perPage],
+  const queryKey = ['student-admissions-report', normalizedFilters, normalizedFilters.page, normalizedFilters.perPage];
+  const query = useOfflineCachedQuery<StudentAdmissionReport>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'students.admission-report',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) {
         throw new Error('User not authenticated');

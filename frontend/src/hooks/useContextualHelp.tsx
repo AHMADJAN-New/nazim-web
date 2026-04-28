@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 import { useLocation } from 'react-router-dom';
 
 import { helpCenterArticlesApi } from '@/lib/api/client';
@@ -19,8 +19,12 @@ export const useContextualHelp = (contextKey?: string) => {
   const route = location.pathname;
   const { language } = useLanguage();
 
-  return useQuery<ContextualHelpResult>({
-    queryKey: ['contextual-help', route, contextKey, language],
+  const queryKey = ['contextual-help', route, contextKey, language];
+  return useOfflineCachedQuery<ContextualHelpResult>({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'help.contextual',
+    queryKey,
+
     queryFn: async () => {
       try {
         const result = await helpCenterArticlesApi.getByContext({

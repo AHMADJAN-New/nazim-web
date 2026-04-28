@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import { useAuth } from './useAuth';
 
@@ -61,8 +62,11 @@ const mapApiToDomain = (api: ApiDisciplineRecord): DisciplineRecord => ({
 
 export const useCourseStudentDisciplineRecords = (courseStudentId: string) => {
   const { user, profile } = useAuth();
-  return useQuery({
-    queryKey: ['course-student-discipline-records', courseStudentId],
+  const queryKey = ['course-student-discipline-records', courseStudentId];
+  return useOfflineCachedQuery({
+    cacheKey: JSON.stringify(queryKey),
+    cacheKind: 'course-students.discipline',
+    queryKey,
     queryFn: async () => {
       if (!user || !profile) return [];
       const records = await courseStudentDisciplineRecordsApi.list(courseStudentId);

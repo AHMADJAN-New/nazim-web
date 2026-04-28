@@ -2,12 +2,13 @@
  * Finance Hooks - Data fetching and mutations for finance module
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
 import { useCurrencies } from './useCurrencies';
+import { useOfflineCachedQuery } from './useOfflineCachedQuery';
 
 import {
     financeAccountsApi,
@@ -118,8 +119,11 @@ export const useFinanceAccounts = (params?: {
         isActive: params?.isActive,
     };
 
-    return useQuery<FinanceAccount[]>({
-        queryKey: ['finance-accounts', profile?.organization_id, profile?.default_school_id ?? null, cacheParams],
+    const queryKey = ['finance-accounts', profile?.organization_id, profile?.default_school_id ?? null, cacheParams];
+    return useOfflineCachedQuery<FinanceAccount[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'finance.accounts',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await financeAccountsApi.list({
@@ -224,8 +228,11 @@ export const useIncomeCategories = (params?: {
         isActive: params?.isActive,
     };
 
-    return useQuery<IncomeCategory[]>({
-        queryKey: ['income-categories', profile?.organization_id, profile?.default_school_id ?? null, cacheParams],
+    const queryKey = ['income-categories', profile?.organization_id, profile?.default_school_id ?? null, cacheParams];
+    return useOfflineCachedQuery<IncomeCategory[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'finance.income-categories',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await incomeCategoriesApi.list({
@@ -316,8 +323,11 @@ export const useDeleteIncomeCategory = () => {
 export const useExpenseCategories = (params?: { schoolId?: string; isActive?: boolean }) => {
     const { user, profile } = useAuth();
 
-    return useQuery<ExpenseCategory[]>({
-        queryKey: ['expense-categories', profile?.organization_id, profile?.default_school_id ?? null, params],
+    const queryKey = ['expense-categories', profile?.organization_id, profile?.default_school_id ?? null, params];
+    return useOfflineCachedQuery<ExpenseCategory[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'finance.expense-categories',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await expenseCategoriesApi.list({
@@ -408,8 +418,11 @@ export const useDeleteExpenseCategory = () => {
 export const useFinanceProjects = (params?: { schoolId?: string; status?: string; isActive?: boolean }) => {
     const { user, profile } = useAuth();
 
-    return useQuery<FinanceProject[]>({
-        queryKey: ['finance-projects', profile?.organization_id, profile?.default_school_id ?? null, params],
+    const queryKey = ['finance-projects', profile?.organization_id, profile?.default_school_id ?? null, params];
+    return useOfflineCachedQuery<FinanceProject[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'finance.projects',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await financeProjectsApi.list({
@@ -504,8 +517,11 @@ export const useDeleteFinanceProject = () => {
 export const useDonors = (params?: { type?: string; isActive?: boolean; search?: string }) => {
     const { user, profile } = useAuth();
 
-    return useQuery<Donor[]>({
-        queryKey: ['donors', profile?.organization_id, profile?.default_school_id ?? null, params],
+    const queryKey = ['donors', profile?.organization_id, profile?.default_school_id ?? null, params];
+    return useOfflineCachedQuery<Donor[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'finance.donors',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await donorsApi.list({
@@ -609,8 +625,11 @@ export const useIncomeEntries = (params?: {
 }) => {
     const { user, profile } = useAuth();
 
-    return useQuery<IncomeEntry[]>({
-        queryKey: ['income-entries', profile?.organization_id, profile?.default_school_id ?? null, params],
+    const queryKey = ['income-entries', profile?.organization_id, profile?.default_school_id ?? null, params];
+    return useOfflineCachedQuery<IncomeEntry[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'income-entries.list',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await incomeEntriesApi.list({
@@ -734,8 +753,11 @@ export const useExpenseEntries = (params?: {
 }) => {
     const { user, profile } = useAuth();
 
-    return useQuery<ExpenseEntry[]>({
-        queryKey: ['expense-entries', profile?.organization_id, profile?.default_school_id ?? null, params],
+    const queryKey = ['expense-entries', profile?.organization_id, profile?.default_school_id ?? null, params];
+    return useOfflineCachedQuery<ExpenseEntry[]>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'expense-entries.list',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await expenseEntriesApi.list({
@@ -945,8 +967,11 @@ export const useAccountTransactions = (accountId?: string): AccountTransactionsD
 export const useFinanceDashboard = () => {
     const { user, profile } = useAuth();
 
-    return useQuery<FinanceDashboard | null>({
-        queryKey: ['finance-dashboard', profile?.organization_id, profile?.default_school_id ?? null],
+    const queryKey = ['finance-dashboard', profile?.organization_id, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<FinanceDashboard | null>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'finance.dashboard',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id) return null;
             const data = await financeReportsApi.dashboard();
@@ -960,8 +985,11 @@ export const useFinanceDashboard = () => {
 export const useDailyCashbook = (date: string, accountId?: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<DailyCashbook | null>({
-        queryKey: ['daily-cashbook', profile?.organization_id, profile?.default_school_id ?? null, date, accountId],
+    const queryKey = ['daily-cashbook', profile?.organization_id, profile?.default_school_id ?? null, date, accountId];
+    return useOfflineCachedQuery<DailyCashbook | null>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'daily-cashbook.list',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id || !date) return null;
             const data = await financeReportsApi.dailyCashbook({ date, account_id: accountId });
@@ -975,8 +1003,11 @@ export const useDailyCashbook = (date: string, accountId?: string) => {
 export const useIncomeVsExpenseReport = (startDate: string, endDate: string, schoolId?: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<IncomeVsExpenseReport | null>({
-        queryKey: ['income-vs-expense-report', profile?.organization_id, profile?.default_school_id ?? null, startDate, endDate, schoolId],
+    const queryKey = ['income-vs-expense-report', profile?.organization_id, profile?.default_school_id ?? null, startDate, endDate, schoolId];
+    return useOfflineCachedQuery<IncomeVsExpenseReport | null>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'income-vs-expense-report.list',
+        queryKey,
         queryFn: async () => {
             if (!user || !profile?.organization_id || !startDate || !endDate) return null;
             const data = await financeReportsApi.incomeVsExpense({
@@ -993,8 +1024,12 @@ export const useIncomeVsExpenseReport = (startDate: string, endDate: string, sch
 export const useProjectSummaryReport = (status?: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<ProjectSummaryReport | null>({
-        queryKey: ['project-summary-report', profile?.organization_id, profile?.default_school_id ?? null, status],
+    const queryKey = ['project-summary-report', profile?.organization_id, profile?.default_school_id ?? null, status];
+    return useOfflineCachedQuery<ProjectSummaryReport | null>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'project-summary-report.list',
+        queryKey,
+
         queryFn: async () => {
             if (!user || !profile?.organization_id) return null;
             const data = await financeReportsApi.projectSummary({ status });
@@ -1008,8 +1043,12 @@ export const useProjectSummaryReport = (status?: string) => {
 export const useDonorSummaryReport = (startDate?: string, endDate?: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery<DonorSummaryReport | null>({
-        queryKey: ['donor-summary-report', profile?.organization_id, profile?.default_school_id ?? null, startDate, endDate],
+    const queryKey = ['donor-summary-report', profile?.organization_id, profile?.default_school_id ?? null, startDate, endDate];
+    return useOfflineCachedQuery<DonorSummaryReport | null>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'donor-summary-report.list',
+        queryKey,
+
         queryFn: async () => {
             if (!user || !profile?.organization_id) return null;
             const data = await financeReportsApi.donorSummary({
@@ -1026,8 +1065,12 @@ export const useDonorSummaryReport = (startDate?: string, endDate?: string) => {
 export const useAccountBalancesReport = () => {
     const { user, profile } = useAuth();
 
-    return useQuery<AccountBalancesReport | null>({
-        queryKey: ['account-balances-report', profile?.organization_id, profile?.default_school_id ?? null],
+    const queryKey = ['account-balances-report', profile?.organization_id, profile?.default_school_id ?? null];
+    return useOfflineCachedQuery<AccountBalancesReport | null>({
+        cacheKey: JSON.stringify(queryKey),
+        cacheKind: 'account-balances-report.list',
+        queryKey,
+
         queryFn: async () => {
             if (!user || !profile?.organization_id) return null;
             const data = await financeReportsApi.accountBalances();
