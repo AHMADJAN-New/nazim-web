@@ -42,3 +42,6 @@ graphify-out/manifest.json
 graphify-out/cost.json
 graphify-out/.graphify_*
 graphify-out/nazim_graph/
+
+# Desktop renderer build artifacts
+desktop/dist-renderer/
