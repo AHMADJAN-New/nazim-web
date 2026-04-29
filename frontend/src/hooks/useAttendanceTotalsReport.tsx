@@ -29,13 +29,16 @@ export const useAttendanceTotalsReport = (
         throw new Error('User not authenticated');
       }
 
-      const params: Record<string, string | string[] | undefined> = {
+      const params: Record<string, string | number | string[] | undefined> = {
         organization_id: normalizedFilters.organizationId,
         academic_year_id: normalizedFilters.academicYearId,
         class_id: normalizedFilters.classId,
         status: normalizedFilters.status,
         date_from: normalizedFilters.dateFrom,
         date_to: normalizedFilters.dateTo,
+        student_id: normalizedFilters.studentId,
+        student_type: normalizedFilters.studentType,
+        sessions_limit: normalizedFilters.sessionsLimit,
       };
       // Strict school scoping: do not allow client-selected school_id.
 
@@ -43,7 +46,11 @@ export const useAttendanceTotalsReport = (
         params.class_ids = normalizedFilters.classIds;
       }
 
-      const apiReport = await attendanceSessionsApi.totalsReport(params);
+      const apiReport = await attendanceSessionsApi.totalsReport(
+        Object.fromEntries(
+          Object.entries(params).filter(([, value]) => value !== undefined && value !== '')
+        ) as Record<string, string | number | string[] | undefined>
+      );
       return mapAttendanceTotalsReportApiToDomain(
         apiReport as AttendanceTotalsReportApi.AttendanceTotalsReport
       );

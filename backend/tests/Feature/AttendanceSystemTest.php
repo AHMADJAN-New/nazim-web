@@ -609,4 +609,117 @@ class AttendanceSystemTest extends TestCase
                 'student_room_name' => 'Hostel Block A - A-12',
             ]);
     }
+
+    /** @test */
+    public function attendance_totals_report_filters_by_student_id_and_student_type()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $boarder = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $dayScholar = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $boarder->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => true,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $dayScholar->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+        ]);
+
+        AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $boarder->id,
+            'status' => 'present',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $dayScholar->id,
+            'status' => 'present',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $dateFrom = $session->session_date->toDateString();
+        $dateTo = $dateFrom;
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/totals-report', [
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+        ])
+            ->assertStatus(200)
+            ->assertJsonPath('totals.present', 2);
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/totals-report', [
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'student_id' => $boarder->id,
+        ])
+            ->assertStatus(200)
+            ->assertJsonPath('totals.present', 1);
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/totals-report', [
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'student_type' => 'boarders',
+        ])
+            ->assertStatus(200)
+            ->assertJsonPath('totals.present', 1);
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/totals-report', [
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'student_type' => 'day_scholars',
+        ])
+            ->assertStatus(200)
+            ->assertJsonPath('totals.present', 1);
+    }
 }

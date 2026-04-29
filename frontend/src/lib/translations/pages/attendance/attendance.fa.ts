@@ -156,7 +156,23 @@ export default {
     schoolRequired: "انتخاب مکتب برای ایجاد گزارش الزامی است",
     student: "شاگرد",
     ofCurrentPage: "از صفحه جاری",
-    presentVsTotal: "حاضر در مقابل کل (صفحه جاری)"
+    presentVsTotal: "حاضر در مقابل کل (صفحه جاری)",
+    allStudentsOption: "همه شاگردان",
+    fullFilterTotalsHelper: "همه ریکاردهای مطابق",
+    datePresetToday: "امروز",
+    datePresetYesterday: "دیروز",
+    datePresetLast3Days: "۳ روز اخیر",
+    datePresetLast7Days: "۷ روز اخیر",
+    datePresetLast30Days: "۳۰ روز اخیر",
+    viewSessionsInRange: "جلسات در محدوده",
+    sessionsInRangeTitle: "جلسات در محدوده انتخاب‌شده",
+    sessionsInRangeDescription:
+      "جلساتی که با فیلترهای شما مطابقت دارند، تازه‌ترین اول (حداکثر ۸۰).",
+    sessionsTapToSetDay:
+      "برای تنظیم محدوده تاریخ به همان روز و نمایش جلسه زیر انتخابگرها، جلسه را لمس کنید.",
+    focusedSessionBannerTitle: "روز جلسه انتخاب شد",
+    focusedSessionDateRange: "محدوده تاریخ",
+    clearSessionFocus: "پاک کردن برجسته‌سازی"
   },
   attendanceTotalsReport: {
     absenceHelper: "در فیلترهای انتخاب شده",

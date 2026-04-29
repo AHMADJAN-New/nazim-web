@@ -154,7 +154,23 @@ export default {
     schoolRequired: "د راپور جوړولو لپاره ښوونځی اړين دی",
     student: "زده کوونکی",
     ofCurrentPage: "د اوسنۍ مخ",
-    presentVsTotal: "حاضر مقابل ټول (اوسنی مخ)"
+    presentVsTotal: "حاضر مقابل ټول (اوسنی مخ)",
+    allStudentsOption: "ټول زده کوونکي",
+    fullFilterTotalsHelper: "ټول سمون لرونکي ريکارډونه",
+    datePresetToday: "نن",
+    datePresetYesterday: "پرون",
+    datePresetLast3Days: "وروستۍ ۳ ورځې",
+    datePresetLast7Days: "وروستۍ ۷ ورځې",
+    datePresetLast30Days: "وروستۍ ۳۰ ورځې",
+    viewSessionsInRange: "په محدوده کې ناستې",
+    sessionsInRangeTitle: "په ټاکل شوې محدوده کې ناستې",
+    sessionsInRangeDescription:
+      "هغه ناستې چې ستاسو فلټرونو سره سمون لري، لومړی وروستۍ (تر ۸۰ پورې).",
+    sessionsTapToSetDay:
+      "د هغې ورځې لپاره د نېټې محدوده ټاکلو او ناسته د ټاکونو لاندې ښودلو لپاره ناسته وټاکئ.",
+    focusedSessionBannerTitle: "د ناستې ورځ ټاکل شوه",
+    focusedSessionDateRange: "د نېټې محدوده",
+    clearSessionFocus: "ښودنه پاک کړئ"
   },
   attendanceTotalsReport: {
     subtitle: "په صنفونو، اتاقونو او ښوونځيو کې د حاضرۍ فعاليت تحليل کړئ",

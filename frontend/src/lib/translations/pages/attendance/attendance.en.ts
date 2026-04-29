@@ -154,7 +154,23 @@ export default {
     schoolRequired: "School is required for report generation",
     student: "Student",
     ofCurrentPage: "of current page",
-    presentVsTotal: "Present vs total (current page)"
+    presentVsTotal: "Present vs total (current page)",
+    allStudentsOption: "All students",
+    fullFilterTotalsHelper: "All matching records",
+    datePresetToday: "Today",
+    datePresetYesterday: "Yesterday",
+    datePresetLast3Days: "Last 3 days",
+    datePresetLast7Days: "Last 7 days",
+    datePresetLast30Days: "Last 30 days",
+    viewSessionsInRange: "Sessions in range",
+    sessionsInRangeTitle: "Sessions in selected range",
+    sessionsInRangeDescription:
+      "Sessions that match your filters, most recent first (up to 80).",
+    sessionsTapToSetDay:
+      "Tap a session to set the date range to that day and show the session below the pickers.",
+    focusedSessionBannerTitle: "Session day selected",
+    focusedSessionDateRange: "Date range",
+    clearSessionFocus: "Clear highlight"
   },
   attendanceTotalsReport: {
     subtitle: "Analyze attendance performance across classes, rooms, and schools",

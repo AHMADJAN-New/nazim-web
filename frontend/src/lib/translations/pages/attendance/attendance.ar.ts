@@ -153,7 +153,23 @@ export default {
     schoolRequired: "المدرسة مطلوبة لإنشاء التقرير",
     student: "الطالب",
     ofCurrentPage: "من الصفحة الحالية",
-    presentVsTotal: "الحاضرون مقابل الإجمالي (الصفحة الحالية)"
+    presentVsTotal: "الحاضرون مقابل الإجمالي (الصفحة الحالية)",
+    allStudentsOption: "جميع الطلاب",
+    fullFilterTotalsHelper: "جميع السجلات المطابقة",
+    datePresetToday: "اليوم",
+    datePresetYesterday: "أمس",
+    datePresetLast3Days: "آخر 3 أيام",
+    datePresetLast7Days: "آخر 7 أيام",
+    datePresetLast30Days: "آخر 30 يومًا",
+    viewSessionsInRange: "الجلسات في النطاق",
+    sessionsInRangeTitle: "الجلسات في النطاق المحدد",
+    sessionsInRangeDescription:
+      "الجلسات المطابقة لعوامل التصفية، الأحدث أولاً (حتى 80).",
+    sessionsTapToSetDay:
+      "اضغط جلسة لتعيين نطاق التاريخ لذلك اليوم وعرضها أسفل منتقي التاريخ.",
+    focusedSessionBannerTitle: "تم اختيار يوم الجلسة",
+    focusedSessionDateRange: "نطاق التاريخ",
+    clearSessionFocus: "إزالة التمييز"
   },
   attendanceTotalsReport: {
     absenceHelper: "عبر المرشحات المحددة",

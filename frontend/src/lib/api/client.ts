@@ -2769,6 +2769,9 @@ export const attendanceSessionsApi = {
     date_from?: string;
     date_to?: string;
     status?: string;
+    student_id?: string;
+    student_type?: 'boarders' | 'day_scholars' | 'all';
+    sessions_limit?: number;
   }) => {
     return apiClient.get('/attendance-sessions/totals-report', params);
   },

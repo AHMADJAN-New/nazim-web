@@ -77,6 +77,8 @@ export const mapAttendanceTotalsReportApiToDomain = (
       id: session.id,
       sessionDate: session.session_date ? new Date(session.session_date) : null,
       status: session.status,
+      roundNumber: session.round_number ?? 1,
+      sessionLabel: session.session_label ?? null,
       className: session.class_name,
       schoolName: session.school_name,
       totals: session.totals,

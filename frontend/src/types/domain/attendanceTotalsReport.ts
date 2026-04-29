@@ -49,6 +49,8 @@ export interface AttendanceSessionOverview {
   id: string;
   sessionDate: Date | null;
   status: AttendanceSessionStatus;
+  roundNumber: number;
+  sessionLabel: string | null;
   className: string;
   schoolName: string | null;
   totals: {
@@ -93,4 +95,7 @@ export interface AttendanceTotalsReportFilters {
   status?: AttendanceStatus;
   dateFrom?: string;
   dateTo?: string;
+  studentId?: string;
+  studentType?: 'boarders' | 'day_scholars' | 'all';
+  sessionsLimit?: number;
 }

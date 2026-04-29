@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { ColumnDef, flexRender } from '@tanstack/react-table';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import {
   AlertTriangle,
+  CalendarDays,
   CheckCircle2,
   Clock,
   Download,
   FileSpreadsheet,
   FileText,
   GraduationCap,
-  Heart,
   Loader2,
   RefreshCw,
   School,
@@ -44,6 +44,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -54,6 +55,7 @@ import {
 } from '@/components/ui/table';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useAttendanceTotalsReport } from '@/hooks/useAttendanceTotalsReport';
 import { useClasses } from '@/hooks/useClasses';
 import { useDatePreference } from '@/hooks/useDatePreference';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -63,7 +65,6 @@ import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { attendanceSessionsApi, apiClient } from '@/lib/api/client';
 import {
   buildAttendanceReportParams,
-  getAttendanceReportSummary,
   mapAttendanceReportRecord,
   type AttendanceReportRecord,
 } from '@/lib/attendance/attendanceReportUtils';
@@ -71,7 +72,15 @@ import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import type * as AttendanceApi from '@/types/api/attendance';
+import type { AttendanceSessionOverview } from '@/types/domain/attendanceTotalsReport';
 import type { Student } from '@/types/domain/student';
+
+type SessionDateFocus = {
+  sessionId: string;
+  day: string;
+  className: string;
+  roundCaption: string;
+};
 
 interface AttendanceReportResponse {
   data: AttendanceReportRecord[];
@@ -141,6 +150,8 @@ export default function AttendanceReports() {
   const [reportProgress, setReportProgress] = useState(0);
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [sessionsDialogOpen, setSessionsDialogOpen] = useState(false);
+  const [sessionDateFocus, setSessionDateFocus] = useState<SessionDateFocus | null>(null);
   const [filters, setFilters] = useState(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
     return {
@@ -163,6 +174,17 @@ export default function AttendanceReports() {
       .filter((student): student is Student => Boolean(student));
   }, [studentAdmissions]);
 
+  const studentComboboxOptions = useMemo(
+    () => [
+      { value: '', label: t('attendanceReports.allStudentsOption') || 'All students' },
+      ...students.map((student) => ({
+        value: student.id,
+        label: `${student.fullName} (${student.admissionNumber || '-'})`,
+      })),
+    ],
+    [students, t]
+  );
+
   const currentSchool = useMemo(
     () => schools?.find((school) => school.id === profile?.default_school_id) ?? null,
     [profile?.default_school_id, schools]
@@ -172,6 +194,38 @@ export default function AttendanceReports() {
     if (!filters.dateFrom || !filters.dateTo) return false;
     return new Date(filters.dateFrom).getTime() > new Date(filters.dateTo).getTime();
   }, [filters.dateFrom, filters.dateTo]);
+
+  const totalsReportFilters = useMemo(
+    () => ({
+      academicYearId: filters.academicYearId || undefined,
+      classId: filters.classId || undefined,
+      dateFrom: filters.dateFrom || undefined,
+      dateTo: filters.dateTo || undefined,
+      status: (filters.status || undefined) as AttendanceApi.AttendanceStatus | undefined,
+      studentId: filters.studentId || undefined,
+      studentType:
+        filters.studentType === 'boarders' || filters.studentType === 'day_scholars'
+          ? filters.studentType
+          : undefined,
+      sessionsLimit: 80,
+    }),
+    [
+      filters.academicYearId,
+      filters.classId,
+      filters.dateFrom,
+      filters.dateTo,
+      filters.status,
+      filters.studentId,
+      filters.studentType,
+    ]
+  );
+
+  const { data: totalsReportData, isLoading: isTotalsLoading } = useAttendanceTotalsReport(
+    totalsReportFilters,
+    {
+      enabled: !!profile?.organization_id && !!profile?.default_school_id && !hasInvalidRange,
+    }
+  );
 
   const {
     data: reportData,
@@ -226,9 +280,58 @@ export default function AttendanceReports() {
 
   const visibleData = useMemo(() => (hasInvalidRange ? [] : reportData?.data ?? []), [hasInvalidRange, reportData?.data]);
   const totalMatchingRecords = hasInvalidRange ? 0 : reportData?.total ?? 0;
-  const visibleSummary = useMemo(() => getAttendanceReportSummary(visibleData), [visibleData]);
+
+  const totalMarkedAggregates = useMemo(() => {
+    if (!totalsReportData?.totals) return 0;
+    const row = totalsReportData.totals;
+    return row.present + row.absent + row.late + row.excused + row.sick + row.leave;
+  }, [totalsReportData]);
+
+  const displayPresent = totalsReportData?.totals.present ?? 0;
+  const displayAbsent = totalsReportData?.totals.absent ?? 0;
+  const displayAttendanceRatePercent =
+    totalMarkedAggregates > 0
+      ? Math.round((displayPresent / totalMarkedAggregates) * 100)
+      : null;
+
+  const dateRangeSummary = useMemo(() => {
+    if (!filters.dateFrom || !filters.dateTo) return null;
+    const from = parseLocalDate(filters.dateFrom);
+    const to = parseLocalDate(filters.dateTo);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return null;
+    const same = filters.dateFrom === filters.dateTo;
+    return same
+      ? format(from, 'MMM d, yyyy')
+      : `${format(from, 'MMM d, yyyy')} — ${format(to, 'MMM d, yyyy')}`;
+  }, [filters.dateFrom, filters.dateTo]);
+
+  const sessionFocusStillAligned =
+    sessionDateFocus !== null &&
+    filters.dateFrom === sessionDateFocus.day &&
+    filters.dateTo === sessionDateFocus.day;
+
+  const applySessionDayAsFilter = (session: AttendanceSessionOverview) => {
+    if (!session.sessionDate) return;
+    const day = dateToLocalYYYYMMDD(session.sessionDate);
+    setFilters((previous) => ({
+      ...previous,
+      dateFrom: day,
+      dateTo: day,
+      page: 1,
+    }));
+    setSessionDateFocus({
+      sessionId: session.id,
+      day,
+      className: session.className,
+      roundCaption: formatAttendanceRound(session.roundNumber, session.sessionLabel),
+    });
+    setSessionsDialogOpen(false);
+  };
 
   const handleFilterChange = (key: keyof typeof filters, value: string | number) => {
+    if (key === 'dateFrom' || key === 'dateTo') {
+      setSessionDateFocus(null);
+    }
     setFilters((previous) => ({
       ...previous,
       [key]: value,
@@ -236,7 +339,31 @@ export default function AttendanceReports() {
     }));
   };
 
+  const handleDatePreset = (preset: 'today' | 'yesterday' | 'last3' | 'last7' | 'last30') => {
+    setSessionDateFocus(null);
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    let from = todayStr;
+    let to = todayStr;
+    if (preset === 'yesterday') {
+      const y = format(subDays(today, 1), 'yyyy-MM-dd');
+      from = y;
+      to = y;
+    } else if (preset === 'last3') {
+      from = format(subDays(today, 2), 'yyyy-MM-dd');
+      to = todayStr;
+    } else if (preset === 'last7') {
+      from = format(subDays(today, 6), 'yyyy-MM-dd');
+      to = todayStr;
+    } else if (preset === 'last30') {
+      from = format(subDays(today, 29), 'yyyy-MM-dd');
+      to = todayStr;
+    }
+    setFilters((previous) => ({ ...previous, dateFrom: from, dateTo: to, page: 1 }));
+  };
+
   const handleResetFilters = () => {
+    setSessionDateFocus(null);
     setFilters({
       studentId: '',
       classId: '',
@@ -478,10 +605,14 @@ export default function AttendanceReports() {
   const hasActiveFilters =
     filters.studentId || filters.classId || filters.academicYearId || filters.status ||
     filters.studentType || filters.dateFrom || filters.dateTo;
-
-  const attendanceRate = visibleSummary.total > 0
-    ? Math.round((visibleSummary.present / visibleSummary.total) * 100)
-    : null;
+  const activeFilterCount = [
+    filters.studentId,
+    filters.classId,
+    filters.academicYearId,
+    filters.status,
+    filters.studentType,
+    filters.dateFrom || filters.dateTo ? 'date-range' : '',
+  ].filter(Boolean).length;
 
   const exportDisabled = isGenerating || isLoading || hasInvalidRange || totalMatchingRecords === 0;
 
@@ -494,7 +625,7 @@ export default function AttendanceReports() {
   ];
 
   return (
-    <div className="container mx-auto p-3 md:p-5 max-w-7xl space-y-4">
+    <div className="container mx-auto p-3 md:p-5 max-w-7xl space-y-4 overflow-x-hidden">
 
       {/* ── Header ── */}
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
@@ -610,12 +741,16 @@ export default function AttendanceReports() {
             <p className="text-xs font-medium text-muted-foreground truncate">
               {t('attendancePage.statusPresent') || 'Present'}
             </p>
-            <p className="text-3xl font-bold mt-1 tabular-nums leading-none">
-              {visibleSummary.present.toLocaleString()}
+            <p className="text-3xl font-bold mt-1 tabular-nums leading-none flex items-center gap-2">
+              {isTotalsLoading ? (
+                <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" aria-hidden />
+              ) : (
+                displayPresent.toLocaleString()
+              )}
             </p>
             <p className="text-xs text-muted-foreground mt-1.5 hidden sm:block">
-              {visibleSummary.total > 0
-                ? `${Math.round((visibleSummary.present / visibleSummary.total) * 100)}% ${t('attendanceReports.ofCurrentPage') || 'of page'}`
+              {totalMarkedAggregates > 0 && !isTotalsLoading
+                ? `${Math.round((displayPresent / totalMarkedAggregates) * 100)}% · ${t('attendanceReports.fullFilterTotalsHelper') || 'All matching records'}`
                 : '—'}
             </p>
           </div>
@@ -630,12 +765,16 @@ export default function AttendanceReports() {
             <p className="text-xs font-medium text-muted-foreground truncate">
               {t('attendancePage.statusAbsent') || 'Absent'}
             </p>
-            <p className="text-3xl font-bold mt-1 tabular-nums leading-none">
-              {visibleSummary.absent.toLocaleString()}
+            <p className="text-3xl font-bold mt-1 tabular-nums leading-none flex items-center gap-2">
+              {isTotalsLoading ? (
+                <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" aria-hidden />
+              ) : (
+                displayAbsent.toLocaleString()
+              )}
             </p>
             <p className="text-xs text-muted-foreground mt-1.5 hidden sm:block">
-              {visibleSummary.total > 0
-                ? `${Math.round((visibleSummary.absent / visibleSummary.total) * 100)}% ${t('attendanceReports.ofCurrentPage') || 'of page'}`
+              {totalMarkedAggregates > 0 && !isTotalsLoading
+                ? `${Math.round((displayAbsent / totalMarkedAggregates) * 100)}% · ${t('attendanceReports.fullFilterTotalsHelper') || 'All matching records'}`
                 : '—'}
             </p>
           </div>
@@ -651,18 +790,24 @@ export default function AttendanceReports() {
               <p className="text-xs font-medium text-muted-foreground truncate">
                 {t('attendanceTotalsReport.attendanceRate') || 'Attendance Rate'}
               </p>
-              <p className="text-3xl font-bold mt-1 tabular-nums leading-none">
-                {attendanceRate !== null ? `${attendanceRate}%` : '—'}
+              <p className="text-3xl font-bold mt-1 tabular-nums leading-none flex items-center gap-2">
+                {isTotalsLoading ? (
+                  <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" aria-hidden />
+                ) : displayAttendanceRatePercent !== null ? (
+                  `${displayAttendanceRatePercent}%`
+                ) : (
+                  '—'
+                )}
               </p>
             </div>
             <div className="p-2.5 rounded-xl shrink-0 bg-blue-500/10 text-blue-600 dark:text-blue-400">
               <TrendingUp className="h-4 w-4" />
             </div>
           </div>
-          {attendanceRate !== null && (
+          {!isTotalsLoading && displayAttendanceRatePercent !== null && (
             <div className="mt-3">
               <Progress
-                value={attendanceRate}
+                value={displayAttendanceRatePercent}
                 className="h-1.5"
               />
             </div>
@@ -675,7 +820,7 @@ export default function AttendanceReports() {
         title={t('attendanceTotalsReport.filtersTitle') || 'Filters'}
         defaultOpenDesktop={true}
         defaultOpenMobile={false}
-        className="rounded-2xl shadow-sm overflow-hidden"
+        className="rounded-2xl shadow-sm overflow-hidden border-muted/40"
         footer={hasActiveFilters ? (
           <div className="flex justify-end">
             <Button
@@ -689,23 +834,30 @@ export default function AttendanceReports() {
           </div>
         ) : null}
       >
-        <div className="space-y-5">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {t('attendanceReports.quickFilterHint') || 'Pick year, class, then student for fastest filtering.'}
+            </p>
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="text-[10px]">
+                {activeFilterCount} {t('attendanceReports.activeFilters') || 'active filters'}
+              </Badge>
+            )}
+          </div>
 
-          {/* Row 1: Student / Class / Academic Year */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Row 1: Academic year / Class / Student */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 rounded-xl border bg-muted/20 p-3">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">
-                {t('attendanceReports.student') || 'Student'}
+                {t('attendanceTotalsReport.academicYear') || 'Academic year'}
               </Label>
               <Combobox
-                options={students.map((student) => ({
-                  value: student.id,
-                  label: `${student.fullName} (${student.admissionNumber || '-'})`,
-                }))}
-                value={filters.studentId}
-                onValueChange={(value) => handleFilterChange('studentId', value)}
-                placeholder={t('leave.allStudents') || 'All students'}
-                searchPlaceholder={t('attendancePage.searchRosterPlaceholder') || 'Search students...'}
+                options={(academicYears || []).map((ay) => ({ value: ay.id, label: ay.name }))}
+                value={filters.academicYearId}
+                onValueChange={(value) => handleFilterChange('academicYearId', value)}
+                placeholder={t('attendanceTotalsReport.allYears') || 'All years'}
+                searchPlaceholder={t('attendanceTotalsReport.academicYear') || 'Academic year'}
                 emptyText={t('attendanceReports.noRecords') || 'No records found'}
               />
             </div>
@@ -726,104 +878,182 @@ export default function AttendanceReports() {
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">
-                {t('attendanceTotalsReport.academicYear') || 'Academic year'}
+                {t('attendanceReports.student') || 'Student'}
               </Label>
               <Combobox
-                options={(academicYears || []).map((ay) => ({ value: ay.id, label: ay.name }))}
-                value={filters.academicYearId}
-                onValueChange={(value) => handleFilterChange('academicYearId', value)}
-                placeholder={t('attendanceTotalsReport.allYears') || 'All years'}
-                searchPlaceholder={t('attendanceTotalsReport.academicYear') || 'Academic year'}
+                options={studentComboboxOptions}
+                value={filters.studentId}
+                onValueChange={(value) => handleFilterChange('studentId', value)}
+                placeholder={t('attendanceReports.allStudentsOption') || 'All students'}
+                searchPlaceholder={t('attendancePage.searchRosterPlaceholder') || 'Search students...'}
                 emptyText={t('attendanceReports.noRecords') || 'No records found'}
               />
             </div>
           </div>
 
-          {/* Row 2: Status chips */}
-          <div className="space-y-2">
-            <Label className="text-xs font-medium">
-              {t('attendancePage.statusHeader') || 'Status'}
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => handleFilterChange('status', '')}
-                className={cn(
-                  'text-xs px-3 py-1.5 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary font-medium',
-                  !filters.status
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background border-border hover:border-primary/50 hover:bg-muted'
-                )}
-              >
-                {t('userManagement.allStatus') || 'All'}
-              </button>
-              {statusOptions.map((opt) => (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Row 2: Status chips */}
+            <div className="space-y-2 rounded-xl border bg-muted/20 p-3">
+              <Label className="text-xs font-medium">
+                {t('attendancePage.statusHeader') || 'Status'}
+              </Label>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  key={opt.value}
                   type="button"
-                  onClick={() => handleFilterChange('status', filters.status === opt.value ? '' : opt.value)}
+                  onClick={() => handleFilterChange('status', '')}
                   className={cn(
                     'text-xs px-3 py-1.5 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary font-medium',
-                    filters.status === opt.value
-                      ? opt.className
+                    !filters.status
+                      ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-background border-border hover:border-primary/50 hover:bg-muted'
                   )}
                 >
-                  {opt.label}
+                  {t('userManagement.allStatus') || 'All'}
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Row 3: Student type */}
-          <div className="space-y-2">
-            <Label className="text-xs font-medium">
-              {t('attendancePage.studentTypeLabel') || 'Student Type'}
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              {studentTypeOptions.map((opt) => {
-                const Icon = opt.icon;
-                const active = (filters.studentType || '') === opt.value;
-                return (
+                {statusOptions.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => handleFilterChange('studentType', opt.value)}
+                    onClick={() => handleFilterChange('status', filters.status === opt.value ? '' : opt.value)}
                     className={cn(
-                      'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary font-medium',
-                      active
-                        ? 'bg-primary text-primary-foreground border-primary'
+                      'text-xs px-3 py-1.5 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary font-medium',
+                      filters.status === opt.value
+                        ? opt.className
                         : 'bg-background border-border hover:border-primary/50 hover:bg-muted'
                     )}
                   >
-                    <Icon className="h-3.5 w-3.5" />
                     {opt.label}
                   </button>
-                );
-              })}
+                ))}
+              </div>
+            </div>
+
+            {/* Row 3: Student type */}
+            <div className="space-y-2 rounded-xl border bg-muted/20 p-3">
+              <Label className="text-xs font-medium">
+                {t('attendancePage.studentTypeLabel') || 'Student Type'}
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {studentTypeOptions.map((opt) => {
+                  const Icon = opt.icon;
+                  const active = (filters.studentType || '') === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleFilterChange('studentType', opt.value)}
+                      className={cn(
+                        'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary font-medium',
+                        active
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:border-primary/50 hover:bg-muted'
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Row 4: Date range */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">
-                {t('library.fromDate') || 'From date'}
-              </Label>
-              <CalendarDatePicker
-                date={filters.dateFrom ? parseLocalDate(filters.dateFrom) : undefined}
-                onDateChange={(date) => handleFilterChange('dateFrom', date ? dateToLocalYYYYMMDD(date) : '')}
-              />
+          {/* Row 4: Date range & presets */}
+          <div className="space-y-3 rounded-xl border bg-muted/20 p-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-0.5 min-w-0">
+                <Label className="text-xs font-medium">
+                  {t('attendanceTotalsReport.dateRange') || 'Date range'}
+                </Label>
+                {dateRangeSummary && (
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    {dateRangeSummary}
+                  </p>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5 text-xs rounded-lg self-start sm:self-auto"
+                disabled={hasInvalidRange}
+                onClick={() => setSessionsDialogOpen(true)}
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                {t('attendanceReports.viewSessionsInRange') || 'Sessions in range'}
+              </Button>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">
-                {t('library.toDate') || 'To date'}
-              </Label>
-              <CalendarDatePicker
-                date={filters.dateTo ? parseLocalDate(filters.dateTo) : undefined}
-                onDateChange={(date) => handleFilterChange('dateTo', date ? dateToLocalYYYYMMDD(date) : '')}
-              />
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { preset: 'today' as const, label: t('attendanceReports.datePresetToday') || 'Today' },
+                  { preset: 'yesterday' as const, label: t('attendanceReports.datePresetYesterday') || 'Yesterday' },
+                  { preset: 'last3' as const, label: t('attendanceReports.datePresetLast3Days') || 'Last 3 days' },
+                  { preset: 'last7' as const, label: t('attendanceReports.datePresetLast7Days') || 'Last 7 days' },
+                  { preset: 'last30' as const, label: t('attendanceReports.datePresetLast30Days') || 'Last 30 days' },
+                ] as const
+              ).map(({ preset, label }) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => handleDatePreset(preset)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary font-medium"
+                >
+                  {label}
+                </button>
+              ))}
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">
+                  {t('library.fromDate') || 'From date'}
+                </Label>
+                <CalendarDatePicker
+                  date={filters.dateFrom ? parseLocalDate(filters.dateFrom) : undefined}
+                  onDateChange={(date) => handleFilterChange('dateFrom', date ? dateToLocalYYYYMMDD(date) : '')}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">
+                  {t('library.toDate') || 'To date'}
+                </Label>
+                <CalendarDatePicker
+                  date={filters.dateTo ? parseLocalDate(filters.dateTo) : undefined}
+                  onDateChange={(date) => handleFilterChange('dateTo', date ? dateToLocalYYYYMMDD(date) : '')}
+                />
+              </div>
+            </div>
+
+            {sessionFocusStillAligned && sessionDateFocus && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-xs flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <p className="font-semibold text-foreground">
+                    {t('attendanceReports.focusedSessionBannerTitle') || 'Session day selected'}
+                  </p>
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">{sessionDateFocus.className}</span>
+                    {' · '}
+                    <span>{sessionDateFocus.roundCaption}</span>
+                  </p>
+                  <p className="tabular-nums text-muted-foreground">
+                    {t('attendanceReports.focusedSessionDateRange') || 'Date range'}
+                    {': '}
+                    <span className="font-medium text-foreground">
+                      {dateRangeSummary ?? sessionDateFocus.day}
+                    </span>
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 shrink-0 self-end sm:self-center text-xs"
+                  onClick={() => setSessionDateFocus(null)}
+                >
+                  {t('attendanceReports.clearSessionFocus') || 'Clear highlight'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </FilterPanel>
@@ -908,6 +1138,87 @@ export default function AttendanceReports() {
           </>
         )}
       </div>
+
+      <Dialog open={sessionsDialogOpen} onOpenChange={setSessionsDialogOpen}>
+        <DialogContent
+          className="max-w-lg"
+          aria-describedby="attendance-report-sessions-description"
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {t('attendanceReports.sessionsInRangeTitle') || 'Sessions in selected range'}
+            </DialogTitle>
+            <DialogDescription id="attendance-report-sessions-description">
+              {t('attendanceReports.sessionsInRangeDescription') ||
+                'Sessions matching your filters (up to 80, most recent first).'}
+              {' '}
+              {t('attendanceReports.sessionsTapToSetDay') ||
+                'Tap a session to set the report date range to that day and show it below the date pickers.'}
+            </DialogDescription>
+          </DialogHeader>
+          {isTotalsLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+            </div>
+          ) : (totalsReportData?.recentSessions?.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              {t('attendanceTotalsReport.noRecentSessions') || 'No sessions found for this range.'}
+            </p>
+          ) : (
+            <ScrollArea className="max-h-[min(60vh,420px)] pr-3">
+              <ul className="space-y-2 pb-1">
+                {(totalsReportData?.recentSessions ?? []).map((session) => {
+                  const isFocused = sessionDateFocus?.sessionId === session.id;
+                  return (
+                    <li key={session.id}>
+                      <button
+                        type="button"
+                        onClick={() => applySessionDayAsFilter(session)}
+                        disabled={!session.sessionDate}
+                        className={cn(
+                          'w-full rounded-xl border px-3 py-2.5 text-sm text-left space-y-1 transition-colors',
+                          'hover:bg-muted/60 hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
+                          isFocused
+                            ? 'border-primary bg-primary/10 ring-1 ring-primary/25'
+                            : 'border-border bg-muted/20',
+                          !session.sessionDate && 'opacity-50 cursor-not-allowed hover:bg-muted/20'
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground">
+                              {session.sessionDate
+                                ? format(session.sessionDate, 'MMM d, yyyy')
+                                : '—'}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {session.className}
+                              {session.schoolName ? ` · ${session.schoolName}` : ''}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="shrink-0 text-[10px] capitalize">
+                            {session.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatAttendanceRound(session.roundNumber, session.sessionLabel)}
+                        </p>
+                        <p className="text-xs tabular-nums text-muted-foreground">
+                          {t('attendanceTotalsReport.records') || 'Records'}: {session.totals.records.toLocaleString()}
+                          {' · '}
+                          {t('attendancePage.statusPresent') || 'Present'}: {session.totals.present.toLocaleString()}
+                          {' · '}
+                          {t('attendancePage.statusAbsent') || 'Absent'}: {session.totals.absent.toLocaleString()}
+                        </p>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ── Export progress dialog ── */}
       <Dialog

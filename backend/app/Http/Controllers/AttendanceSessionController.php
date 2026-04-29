@@ -780,6 +780,22 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Student is not enrolled in this class'], 422);
         }
 
+        // Idempotent replay for scans: if the same client_uuid arrives twice
+        // (e.g. queue retried after a flaky network), return the existing
+        // record without creating or updating anything.
+        $clientUuid = $validated['client_uuid'] ?? null;
+        if ($clientUuid) {
+            $existingByClient = AttendanceRecord::where('organization_id', $profile->organization_id)
+                ->where('client_uuid', $clientUuid)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($existingByClient) {
+                $existingByClient->load('student:id,full_name,admission_no,card_number,student_code');
+
+                return response()->json($existingByClient);
+            }
+        }
         $record = AttendanceRecord::updateOrCreate(
             [
                 'attendance_session_id' => $session->id,
@@ -954,6 +970,7 @@ class AttendanceSessionController extends Controller
 
         $request->validate([
             'student_id' => 'nullable|uuid|exists:students,id',
+            'student_type' => 'nullable|string|in:all,boarders,day_scholars',
             'class_id' => 'nullable|uuid|exists:classes,id',
             'class_ids' => 'nullable|array|min:1',
             'class_ids.*' => 'required|uuid|exists:classes,id',
@@ -1014,6 +1031,13 @@ class AttendanceSessionController extends Controller
             $query->where('attendance_records.status', $request->input('status'));
         }
 
+        $this->applyAttendanceReportStudentTypeToAttendanceRecordQuery(
+            $query,
+            $request,
+            $profile->organization_id,
+            $currentSchoolId
+        );
+
         $perPage = $request->integer('per_page', 25);
         $allowedPerPage = [10, 25, 50, 100];
         if (! in_array($perPage, $allowedPerPage, true)) {
@@ -1024,6 +1048,138 @@ class AttendanceSessionController extends Controller
             ->paginate($perPage, ['*'], 'page', $request->input('page', 1));
 
         return response()->json($records);
+    }
+
+    /**
+     * Filter attendance records by active admission boarder / day-scholar (student_type query param).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\AttendanceRecord>  $query
+     */
+    private function applyAttendanceReportStudentTypeToAttendanceRecordQuery(
+        $query,
+        Request $request,
+        string $organizationId,
+        string $schoolId
+    ): void {
+        $type = $request->input('student_type');
+        if (! is_string($type) || $type === '' || $type === 'all') {
+            return;
+        }
+
+        if ($type === 'boarders') {
+            $query->whereExists(function ($sub) use ($organizationId, $schoolId) {
+                $sub->from('student_admissions as sa')
+                    ->whereColumn('sa.student_id', 'attendance_records.student_id')
+                    ->where('sa.organization_id', $organizationId)
+                    ->where('sa.school_id', $schoolId)
+                    ->where('sa.enrollment_status', 'active')
+                    ->where('sa.is_boarder', true)
+                    ->whereNull('sa.deleted_at');
+            });
+        } elseif ($type === 'day_scholars') {
+            $query->whereExists(function ($sub) use ($organizationId, $schoolId) {
+                $sub->from('student_admissions as sa')
+                    ->whereColumn('sa.student_id', 'attendance_records.student_id')
+                    ->where('sa.organization_id', $organizationId)
+                    ->where('sa.school_id', $schoolId)
+                    ->where('sa.enrollment_status', 'active')
+                    ->where('sa.is_boarder', false)
+                    ->whereNull('sa.deleted_at');
+            });
+        }
+    }
+
+    /**
+     * Same as {@see applyAttendanceReportStudentTypeToAttendanceRecordQuery} for join-based record queries (alias attendance_records).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\AttendanceRecord>  $recordQuery
+     */
+    private function applyAttendanceReportStudentTypeToJoinedRecordQuery(
+        $recordQuery,
+        Request $request,
+        string $organizationId,
+        string $schoolId
+    ): void {
+        $type = $request->input('student_type');
+        if (! is_string($type) || $type === '' || $type === 'all') {
+            return;
+        }
+
+        if ($type === 'boarders') {
+            $recordQuery->whereExists(function ($sub) use ($organizationId, $schoolId) {
+                $sub->from('student_admissions as sa')
+                    ->whereColumn('sa.student_id', 'attendance_records.student_id')
+                    ->where('sa.organization_id', $organizationId)
+                    ->where('sa.school_id', $schoolId)
+                    ->where('sa.enrollment_status', 'active')
+                    ->where('sa.is_boarder', true)
+                    ->whereNull('sa.deleted_at');
+            });
+        } elseif ($type === 'day_scholars') {
+            $recordQuery->whereExists(function ($sub) use ($organizationId, $schoolId) {
+                $sub->from('student_admissions as sa')
+                    ->whereColumn('sa.student_id', 'attendance_records.student_id')
+                    ->where('sa.organization_id', $organizationId)
+                    ->where('sa.school_id', $schoolId)
+                    ->where('sa.enrollment_status', 'active')
+                    ->where('sa.is_boarder', false)
+                    ->whereNull('sa.deleted_at');
+            });
+        }
+    }
+
+    /**
+     * Restrict sessions to those having at least one attendance record matching student_id / student_type filters.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\AttendanceSession>  $sessionQuery
+     */
+    private function applyAttendanceReportStudentScopeToSessionQuery(
+        $sessionQuery,
+        Request $request,
+        string $organizationId,
+        string $schoolId
+    ): void {
+        $hasStudent = $request->filled('student_id');
+        $type = $request->input('student_type');
+        $hasType = is_string($type) && in_array($type, ['boarders', 'day_scholars'], true);
+
+        if (! $hasStudent && ! $hasType) {
+            return;
+        }
+
+        $sessionQuery->whereExists(function ($sub) use ($request, $organizationId, $schoolId, $hasStudent, $hasType, $type) {
+            $sub->from('attendance_records as ar')
+                ->whereColumn('ar.attendance_session_id', 'attendance_sessions.id')
+                ->where('ar.organization_id', $organizationId)
+                ->where('ar.school_id', $schoolId)
+                ->whereNull('ar.deleted_at');
+
+            if ($hasStudent) {
+                $sub->where('ar.student_id', $request->input('student_id'));
+            }
+
+            if ($hasType && $type === 'boarders') {
+                $sub->whereExists(function ($sa) use ($organizationId, $schoolId) {
+                    $sa->from('student_admissions as sa')
+                        ->whereColumn('sa.student_id', 'ar.student_id')
+                        ->where('sa.organization_id', $organizationId)
+                        ->where('sa.school_id', $schoolId)
+                        ->where('sa.enrollment_status', 'active')
+                        ->where('sa.is_boarder', true)
+                        ->whereNull('sa.deleted_at');
+                });
+            } elseif ($hasType && $type === 'day_scholars') {
+                $sub->whereExists(function ($sa) use ($organizationId, $schoolId) {
+                    $sa->from('student_admissions as sa')
+                        ->whereColumn('sa.student_id', 'ar.student_id')
+                        ->where('sa.organization_id', $organizationId)
+                        ->where('sa.school_id', $schoolId)
+                        ->where('sa.enrollment_status', 'active')
+                        ->where('sa.is_boarder', false)
+                        ->whereNull('sa.deleted_at');
+                });
+            }
+        });
     }
 
     private function buildEmptyTotalsReport(): array
@@ -1067,6 +1223,9 @@ class AttendanceSessionController extends Controller
         }
 
         $validated = $request->validate([
+            'student_id' => 'nullable|uuid|exists:students,id',
+            'student_type' => 'nullable|string|in:all,boarders,day_scholars',
+            'sessions_limit' => 'nullable|integer|min:1|max:100',
             'class_id' => 'nullable|uuid|exists:classes,id',
             'class_ids' => 'nullable|array|min:1',
             'class_ids.*' => 'required|uuid|exists:classes,id',
@@ -1157,6 +1316,26 @@ class AttendanceSessionController extends Controller
             $recordQuery->where('attendance_records.status', $request->input('status'));
         }
 
+        if ($request->filled('student_id')) {
+            $recordQuery->where('attendance_records.student_id', $request->input('student_id'));
+        }
+
+        $this->applyAttendanceReportStudentTypeToJoinedRecordQuery(
+            $recordQuery,
+            $request,
+            $profile->organization_id,
+            $currentSchoolId
+        );
+
+        $this->applyAttendanceReportStudentScopeToSessionQuery(
+            $sessionQuery,
+            $request,
+            $profile->organization_id,
+            $currentSchoolId
+        );
+
+        $sessionsLimit = min(100, max(1, $request->integer('sessions_limit', 10)));
+
         $recordTotals = (clone $recordQuery)
             ->selectRaw('COUNT(*) as total_records')
             ->selectRaw("SUM(CASE WHEN attendance_records.status = 'present' THEN 1 ELSE 0 END) as present_count")
@@ -1175,7 +1354,7 @@ class AttendanceSessionController extends Controller
         $sickCount = (int) ($recordTotals->sick_count ?? 0);
         $leaveCount = (int) ($recordTotals->leave_count ?? 0);
 
-        $sessionsCount = (clone $sessionQuery)->count();
+        $sessionsCount = (int) ((clone $recordQuery)->selectRaw('COUNT(DISTINCT s.id) as c')->value('c'));
         $uniqueStudents = (clone $recordQuery)->distinct('attendance_records.student_id')->count('attendance_records.student_id');
 
         $statusBreakdown = (clone $recordQuery)
@@ -1250,10 +1429,10 @@ class AttendanceSessionController extends Controller
             ->keyBy('attendance_session_id');
 
         $recentSessions = (clone $sessionQuery)
-            ->with(['classes:id,name', 'school:id,school_name'])
+            ->with(['classes:id,name', 'classModel:id,name', 'school:id,school_name'])
             ->orderBy('attendance_sessions.session_date', 'desc')
             ->orderBy('attendance_sessions.created_at', 'desc')
-            ->limit(10)
+            ->limit($sessionsLimit)
             ->get()
             ->map(function ($session) use ($sessionStats) {
                 $stats = $sessionStats->get($session->id);
@@ -1262,6 +1441,8 @@ class AttendanceSessionController extends Controller
                     'id' => $session->id,
                     'session_date' => optional($session->session_date)->toDateString(),
                     'status' => $session->status,
+                    'round_number' => (int) ($session->round_number ?? 1),
+                    'session_label' => $session->session_label,
                     'class_name' => $session->classModel?->name ?? ($session->classes->first()?->name ?? '—'),
                     'school_name' => $session->school?->school_name ?? null,
                     'totals' => [

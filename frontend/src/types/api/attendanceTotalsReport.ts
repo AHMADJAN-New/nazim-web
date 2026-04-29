@@ -46,6 +46,8 @@ export interface AttendanceSessionSummary {
   id: string;
   session_date: string | null;
   status: AttendanceSessionStatus;
+  round_number?: number;
+  session_label?: string | null;
   class_name: string;
   school_name: string | null;
   totals: {
