@@ -139,6 +139,8 @@ export default {
     exportDaily: "تصدير يومي",
     scopeHint: "تتضمن الصادرات فقط السجلات المطابقة للمرشحات الحالية.",
     matchingFilters: "مطابق للمرشحات الحالية",
+    activeFilters: "عوامل تصفية نشطة",
+    quickFilterHint: "اختر السنة ثم الصف ثم الطالب لتصفية أسرع.",
     dailyRecords: "السجلات اليومية",
     dailyRecordsHint: "إدخالات الحضور مجمعة حسب اليوم",
     noRecords: "لم يتم العثور على سجلات حضور",

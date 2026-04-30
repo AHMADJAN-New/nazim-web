@@ -1,7 +1,7 @@
 # Graph Report - nazim-web-1  (2026-04-26)
 
 ## Corpus Check
-- 2307 files · ~4,116,921 words
+- 2307 files · ~3,512,047 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -1282,7 +1282,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `useAuth()` connect `Community 2` to `Community 0`, `Community 66`, `Community 84`?**
   _High betweenness centrality (0.062) - this node is a cross-community bridge._
 - **Why does `ProtectedPlatformLayout()` connect `Community 0` to `Community 1`, `Community 2`, `Community 3`?**
-  _High betweenness centrality (0.056) - this node is a cross-community bridge._
+  _High betweenness centrality (0.057) - this node is a cross-community bridge._
 - **Why does `useLanguage()` connect `Community 2` to `Community 16`, `Community 8`, `Community 18`, `Community 63`?**
   _High betweenness centrality (0.055) - this node is a cross-community bridge._
 - **Are the 402 inferred relationships involving `useAuth()` (e.g. with `CalendarPreferenceSyncFromProfile()` and `MaintenanceModeHandler()`) actually correct?**

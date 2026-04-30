@@ -6,6 +6,7 @@ use App\Models\AcademicYear;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\Building;
+use App\Models\ClassAcademicYear;
 use App\Models\ClassModel;
 use App\Models\Organization;
 use App\Models\Room;
@@ -718,6 +719,78 @@ class AttendanceSystemTest extends TestCase
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
             'student_type' => 'day_scholars',
+        ])
+            ->assertStatus(200)
+            ->assertJsonPath('totals.present', 1);
+    }
+
+    /** @test */
+    public function attendance_report_matches_academic_year_via_class_academic_year_when_session_academic_year_is_null(): void
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        ClassAcademicYear::create([
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'section_name' => 'A',
+            'is_active' => true,
+        ]);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'academic_year_id' => null,
+        ]);
+
+        $record = AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'status' => 'present',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $day = $session->session_date->toDateString();
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/report', [
+            'academic_year_id' => $academicYear->id,
+            'date_from' => $day,
+            'date_to' => $day,
+            'per_page' => 25,
+        ])
+            ->assertStatus(200)
+            ->assertJsonFragment([
+                'id' => $record->id,
+                'student_id' => $student->id,
+            ]);
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/totals-report', [
+            'academic_year_id' => $academicYear->id,
+            'date_from' => $day,
+            'date_to' => $day,
         ])
             ->assertStatus(200)
             ->assertJsonPath('totals.present', 1);

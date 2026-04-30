@@ -18,7 +18,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
@@ -54,7 +54,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useDataTable } from '@/hooks/use-data-table';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useAttendanceTotalsReport } from '@/hooks/useAttendanceTotalsReport';
 import { useClasses } from '@/hooks/useClasses';
 import { useDatePreference } from '@/hooks/useDatePreference';
@@ -143,9 +143,8 @@ export default function AttendanceReports() {
   const { data: schools } = useSchools(profile?.organization_id);
   const { data: classes } = useClasses(profile?.organization_id);
   const { data: academicYears } = useAcademicYears(profile?.organization_id);
-  const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
-    enrollment_status: 'active',
-  });
+  const { data: currentAcademicYear } = useCurrentAcademicYear(profile?.organization_id);
+  const defaultAcademicYearAppliedRef = useRef(false);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [reportProgress, setReportProgress] = useState(0);
   const [reportStatus, setReportStatus] = useState<string | null>(null);
@@ -166,6 +165,30 @@ export default function AttendanceReports() {
       perPage: 25,
     };
   });
+
+  const studentAdmissionFilters = useMemo(
+    () => ({
+      enrollment_status: 'active' as const,
+      school_id: profile?.default_school_id ?? undefined,
+      ...(filters.academicYearId ? { academic_year_id: filters.academicYearId } : {}),
+      ...(filters.classId ? { class_id: filters.classId } : {}),
+    }),
+    [filters.academicYearId, filters.classId, profile?.default_school_id]
+  );
+
+  const { data: studentAdmissions } = useStudentAdmissions(
+    profile?.organization_id,
+    false,
+    studentAdmissionFilters
+  );
+
+  useEffect(() => {
+    if (defaultAcademicYearAppliedRef.current || !currentAcademicYear?.id) {
+      return;
+    }
+    defaultAcademicYearAppliedRef.current = true;
+    setFilters((prev) => ({ ...prev, academicYearId: currentAcademicYear.id }));
+  }, [currentAcademicYear?.id]);
 
   const students: Student[] = useMemo(() => {
     if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
@@ -364,14 +387,15 @@ export default function AttendanceReports() {
 
   const handleResetFilters = () => {
     setSessionDateFocus(null);
+    const today = format(new Date(), 'yyyy-MM-dd');
     setFilters({
       studentId: '',
       classId: '',
-      academicYearId: '',
+      academicYearId: currentAcademicYear?.id ?? '',
       status: '',
       studentType: '',
-      dateFrom: '',
-      dateTo: '',
+      dateFrom: today,
+      dateTo: today,
       page: 1,
       perPage: 25,
     });

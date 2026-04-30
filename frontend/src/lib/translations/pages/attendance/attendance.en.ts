@@ -140,6 +140,8 @@ export default {
     exportDaily: "Export daily",
     scopeHint: "Exports include only records matching the current filters.",
     matchingFilters: "Matching current filters",
+    activeFilters: "active filters",
+    quickFilterHint: "Pick year, class, then student for fastest filtering.",
     dailyRecords: "Daily records",
     dailyRecordsHint: "Attendance entries grouped by day",
     noRecords: "No attendance records found",

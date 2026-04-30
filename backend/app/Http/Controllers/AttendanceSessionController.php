@@ -1010,8 +1010,10 @@ class AttendanceSessionController extends Controller
         }
 
         if ($request->filled('academic_year_id')) {
-            $query->whereHas('session', function ($q) use ($request) {
-                $q->where('academic_year_id', $request->input('academic_year_id'));
+            $academicYearId = (string) $request->input('academic_year_id');
+            $query->whereHas('session', function ($q) use ($academicYearId) {
+                $q->whereNull('deleted_at');
+                $this->applyAttendanceSessionAcademicYearFilter($q, $academicYearId);
             });
         }
 
@@ -1274,8 +1276,9 @@ class AttendanceSessionController extends Controller
             ->where('attendance_sessions.school_id', $currentSchoolId);
 
         if ($request->filled('academic_year_id')) {
-            $recordQuery->where('s.academic_year_id', $request->input('academic_year_id'));
-            $sessionQuery->where('attendance_sessions.academic_year_id', $request->input('academic_year_id'));
+            $academicYearId = (string) $request->input('academic_year_id');
+            $this->applyAttendanceSessionAcademicYearFilter($recordQuery, $academicYearId, 's');
+            $this->applyAttendanceSessionAcademicYearFilter($sessionQuery, $academicYearId, 'attendance_sessions');
         }
 
         if (! empty($classIds)) {
@@ -1564,8 +1567,10 @@ class AttendanceSessionController extends Controller
             });
         }
         if (! empty($validated['academic_year_id'])) {
-            $query->whereHas('session', function ($q) use ($validated) {
-                $q->where('academic_year_id', $validated['academic_year_id']);
+            $academicYearId = (string) $validated['academic_year_id'];
+            $query->whereHas('session', function ($q) use ($academicYearId) {
+                $q->whereNull('deleted_at');
+                $this->applyAttendanceSessionAcademicYearFilter($q, $academicYearId);
             });
         }
 
@@ -2079,6 +2084,32 @@ class AttendanceSessionController extends Controller
             $sessionQuery->whereIn('class_id', $classIds)
                 ->orWhereHas('classes', function ($classQuery) use ($classIds) {
                     $classQuery->whereIn('classes.id', $classIds);
+                });
+        });
+    }
+
+    /**
+     * Restrict to an academic year using session.academic_year_id when set, otherwise class membership via class_academic_years.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder  $query
+     */
+    private function applyAttendanceSessionAcademicYearFilter($query, string $academicYearId, string $sessionTable = 'attendance_sessions'): void
+    {
+        $query->where(function ($outer) use ($academicYearId, $sessionTable) {
+            $outer->where("{$sessionTable}.academic_year_id", $academicYearId)
+                ->orWhereExists(function ($sub) use ($academicYearId, $sessionTable) {
+                    $sub->from('class_academic_years as cay')
+                        ->whereColumn('cay.class_id', "{$sessionTable}.class_id")
+                        ->where('cay.academic_year_id', $academicYearId)
+                        ->whereNull('cay.deleted_at');
+                })
+                ->orWhereExists(function ($sub) use ($academicYearId, $sessionTable) {
+                    $sub->from('attendance_session_classes as asc')
+                        ->join('class_academic_years as cay', 'cay.class_id', '=', 'asc.class_id')
+                        ->whereColumn('asc.attendance_session_id', "{$sessionTable}.id")
+                        ->where('cay.academic_year_id', $academicYearId)
+                        ->whereNull('asc.deleted_at')
+                        ->whereNull('cay.deleted_at');
                 });
         });
     }
