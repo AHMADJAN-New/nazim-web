@@ -12,6 +12,8 @@ export default {
     attendance: "حاضري",
     attendanceReports: "گزارشات حاضري",
     attendanceTotalsReport: "گزارش مجموع حاضري",
+    attendanceTotalsInsights: "لیدهای حاضری",
+    attendanceRoundNames: "نام‌های دور حاضری",
     authentication: "احراز هویت",
     certificateTemplates: "قالب‌های تصدیق‌نامه",
     classes: "صنف‌ها",

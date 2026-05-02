@@ -12,6 +12,8 @@ export default {
     attendance: "حاضري",
     attendanceReports: "د حاضري راپورونه",
     attendanceTotalsReport: "د حاضري مجموعي راپور",
+    attendanceTotalsInsights: "د حاضرۍ احصائیه",
+    attendanceRoundNames: "د حاضرۍ د پړاو نومونه",
     authentication: "د تصدیق مدیریت",
     certificateTemplates: "د سند قالبونه",
     classes: "ټولګي",

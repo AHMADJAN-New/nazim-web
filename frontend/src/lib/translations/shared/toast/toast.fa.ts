@@ -74,6 +74,7 @@ export default {
     attendanceDeleteFailed: "حذف حاضري ناموفق بود",
     attendanceMarked: "حاضري ثبت شد",
     attendanceMarkFailed: "ثبت حاضري ناموفق بود",
+    attendanceSessionNotFound: "این جلسه حاضری برای مکتب شما موجود نیست یا حذف شده است.",
     attendanceUpdated: "حاضري با موفقیت به‌روزرسانی شد",
     attendanceUpdateFailed: "به‌روزرسانی حاضري ناموفق بود",
     categoryCreateFailed: "ایجاد کتگوری ناموفق بود",

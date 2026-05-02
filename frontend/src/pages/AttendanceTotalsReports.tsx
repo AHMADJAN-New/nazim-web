@@ -1,25 +1,30 @@
+import { ColumnDef, flexRender } from '@tanstack/react-table';
 import { format, subDays, subMonths } from 'date-fns';
 import {
-    Activity,
-    AlertTriangle,
-    BarChart3,
-    Calendar,
-    CheckCircle2,
-    FileText,
-    Heart,
-    RefreshCw,
-    XCircle,
-    Clock,
-    GraduationCap,
-    Building2,
-    Download,
-    Loader2,
-    FileDown,
-    FileSpreadsheet,
-    ChevronRight,
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Calendar,
+  CheckCircle2,
+  FileText,
+  RefreshCw,
+  XCircle,
+  Clock,
+  Heart,
+  GraduationCap,
+  Building2,
+  Download,
+  Loader2,
+  FileDown,
+  FileSpreadsheet,
+  School,
+  Users,
+  UserRound,
 } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
@@ -38,881 +43,1169 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useDatePreference } from '@/hooks/useDatePreference';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useClasses } from '@/hooks/useClasses';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import { useDataTable } from '@/hooks/use-data-table';
 import { useAttendanceTotalsReport } from '@/hooks/useAttendanceTotalsReport';
 import { attendanceSessionsApi, apiClient } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
-import type { AttendanceTotalsReportFilters } from '@/types/domain/attendanceTotalsReport';
+import { cn } from '@/lib/utils';
+import type {
+  AttendanceStudentSummary,
+  AttendanceTotalsReportFilters,
+} from '@/types/domain/attendanceTotalsReport';
+import type { PaginationMeta } from '@/types/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Progress } from '@/components/ui/progress';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const attendanceStatusMeta = {
-    present: { label: 'Present', icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950' },
-    absent: { label: 'Absent', icon: XCircle, tone: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950' },
-    late: { label: 'Late', icon: Clock, tone: 'text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-950' },
-    excused: { label: 'Excused', icon: AlertTriangle, tone: 'text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-950' },
-    sick: { label: 'Sick', icon: Heart, tone: 'text-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-950' },
-    leave: { label: 'Leave', icon: Calendar, tone: 'text-orange-600 bg-orange-50 dark:text-orange-300 dark:bg-orange-950' },
-} as const;
+const formatPercent = (value?: number | null) =>
+  value === null || value === undefined ? '—' : `${value.toFixed(1)}%`;
 
-const SummaryCard = ({
-    label,
-    value,
-    helper,
-    icon: Icon,
-    tone = 'primary',
-}: {
-    label: string;
-    value: string | number;
-    helper?: string;
-    icon: typeof BarChart3;
-    tone?: 'primary' | 'success' | 'warning' | 'muted';
-}) => {
-    const toneClass =
-        tone === 'primary'
-            ? 'bg-primary/10 text-primary'
-            : tone === 'success'
-                ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400'
-                : tone === 'warning'
-                    ? 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400'
-                    : 'bg-muted text-muted-foreground';
-
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{label}</CardTitle>
-                <div className={`rounded-md p-2 ${toneClass}`}>
-                    <Icon className="h-4 w-4" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{value}</div>
-                {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
-            </CardContent>
-        </Card>
-    );
+const buildTotalsInsightsSearchParams = (filters: AttendanceTotalsReportFilters): URLSearchParams => {
+  const params = new URLSearchParams();
+  if (filters.academicYearId) params.set('academic_year_id', filters.academicYearId);
+  if (filters.classId) params.set('class_id', filters.classId);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.dateFrom) params.set('date_from', filters.dateFrom);
+  if (filters.dateTo) params.set('date_to', filters.dateTo);
+  if (filters.studentId) params.set('student_id', filters.studentId);
+  if (filters.studentType) params.set('student_type', filters.studentType);
+  return params;
 };
 
-const formatPercent = (value?: number) => `${(value ?? 0).toFixed(1)}%`;
+const metricBadgeClass: Record<
+  'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave' | 'total',
+  string
+> = {
+  present: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+  absent: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
+  late: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+  excused: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+  sick: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
+  leave: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
+  total: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700',
+};
 
 const getReportEndpoint = (downloadUrl: string): string => {
-    const url = new URL(downloadUrl);
-    let endpoint = url.pathname;
+  const url = new URL(downloadUrl);
+  let endpoint = url.pathname;
 
-    if (endpoint.startsWith('/api/')) {
-        endpoint = endpoint.slice(4);
-    } else if (endpoint.startsWith('/api')) {
-        endpoint = endpoint.slice(4);
-    }
+  if (endpoint.startsWith('/api/')) {
+    endpoint = endpoint.slice(4);
+  } else if (endpoint.startsWith('/api')) {
+    endpoint = endpoint.slice(4);
+  }
 
-    return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 };
 
+const STATUS_KEYS = ['present', 'absent', 'late', 'excused', 'sick', 'leave'] as const;
+
 export default function AttendanceTotalsReports() {
-    const { t, language } = useLanguage();
-    const { calendar } = useDatePreference();
-    const { data: profile } = useProfile();
-    const [reportType, setReportType] = useState<'pdf' | 'excel'>('pdf');
-    const [showProgressDialog, setShowProgressDialog] = useState(false);
-    const [reportProgress, setReportProgress] = useState(0);
-    const [reportStatus, setReportStatus] = useState<string | null>(null);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const { data: schools } = useSchools(profile?.organization_id);
-    const { data: classes } = useClasses(profile?.organization_id);
-    const { data: academicYears } = useAcademicYears(profile?.organization_id);
+  const { t, language } = useLanguage();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { calendar } = useDatePreference();
+  const { data: profile } = useProfile();
+  const [reportType, setReportType] = useState<'pdf' | 'excel'>('pdf');
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [reportProgress, setReportProgress] = useState(0);
+  const [reportStatus, setReportStatus] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { data: schools } = useSchools(profile?.organization_id);
+  const { data: classes } = useClasses(profile?.organization_id);
+  const { data: academicYears } = useAcademicYears(profile?.organization_id);
+  const { data: currentAcademicYear } = useCurrentAcademicYear(profile?.organization_id);
+  const defaultAcademicYearAppliedRef = useRef(false);
 
-    const [filters, setFilters] = useState<AttendanceTotalsReportFilters>({
-        organizationId: profile?.organization_id,
-        schoolId: undefined,
-        classId: undefined,
-        academicYearId: undefined,
-        status: undefined,
-        dateFrom: undefined,
-        dateTo: undefined,
+  const [filters, setFilters] = useState<AttendanceTotalsReportFilters>({
+    classId: undefined,
+    academicYearId: undefined,
+    status: undefined,
+    dateFrom: undefined,
+    dateTo: undefined,
+    studentId: undefined,
+    studentType: undefined,
+  });
+
+  const [studentBreakdownPage, setStudentBreakdownPage] = useState(1);
+  const [studentBreakdownPerPage, setStudentBreakdownPerPage] = useState(25);
+
+  const [dateRangePreset, setDateRangePreset] = useState<'1week' | '1month' | '4months' | 'custom'>('1week');
+
+  const studentAdmissionFilters = useMemo(
+    () => ({
+      enrollment_status: 'active' as const,
+      school_id: profile?.default_school_id ?? undefined,
+      ...(filters.academicYearId ? { academic_year_id: filters.academicYearId } : {}),
+      ...(filters.classId ? { class_id: filters.classId } : {}),
+    }),
+    [filters.academicYearId, filters.classId, profile?.default_school_id]
+  );
+
+  const { data: studentAdmissions } = useStudentAdmissions(
+    profile?.organization_id,
+    false,
+    studentAdmissionFilters
+  );
+
+  useEffect(() => {
+    if (defaultAcademicYearAppliedRef.current || !currentAcademicYear?.id) {
+      return;
+    }
+    defaultAcademicYearAppliedRef.current = true;
+    setFilters((prev) => ({ ...prev, academicYearId: currentAcademicYear.id }));
+  }, [currentAcademicYear?.id]);
+
+  useEffect(() => {
+    const paramsFilters: Partial<AttendanceTotalsReportFilters> = {
+      academicYearId: searchParams.get('academic_year_id') || undefined,
+      classId: searchParams.get('class_id') || undefined,
+      status: (searchParams.get('status') as AttendanceTotalsReportFilters['status']) || undefined,
+      dateFrom: searchParams.get('date_from') || undefined,
+      dateTo: searchParams.get('date_to') || undefined,
+      studentId: searchParams.get('student_id') || undefined,
+      studentType:
+        (searchParams.get('student_type') as AttendanceTotalsReportFilters['studentType']) || undefined,
+    };
+    if (Object.values(paramsFilters).some(Boolean)) {
+      setFilters((prev) => ({ ...prev, ...paramsFilters }));
+      if (paramsFilters.dateFrom || paramsFilters.dateTo) {
+        setDateRangePreset('custom');
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    setStudentBreakdownPage(1);
+  }, [
+    filters.academicYearId,
+    filters.classId,
+    filters.status,
+    filters.dateFrom,
+    filters.dateTo,
+    filters.studentId,
+    filters.studentType,
+  ]);
+
+  const students = useMemo(() => {
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+    return studentAdmissions.map((admission) => admission.student).filter(Boolean);
+  }, [studentAdmissions]);
+
+  const studentComboboxOptions = useMemo(
+    () => [
+      { value: '', label: t('attendanceReports.allStudentsOption') },
+      ...students.map((student) => ({
+        value: student!.id,
+        label: `${student!.fullName} (${student!.admissionNumber || '-'})`,
+      })),
+    ],
+    [students, t]
+  );
+
+  const currentSchool = useMemo(
+    () => schools?.find((school) => school.id === profile?.default_school_id) ?? null,
+    [profile?.default_school_id, schools]
+  );
+
+  const attendanceStatusMeta = useMemo(
+    () =>
+      ({
+        present: {
+          label: t('attendancePage.statusPresent'),
+          icon: CheckCircle2,
+          tone: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950',
+        },
+        absent: {
+          label: t('attendancePage.statusAbsent'),
+          icon: XCircle,
+          tone: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950',
+        },
+        late: {
+          label: t('attendancePage.statusLate'),
+          icon: Clock,
+          tone: 'text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-950',
+        },
+        excused: {
+          label: t('attendancePage.statusExcused'),
+          icon: AlertTriangle,
+          tone: 'text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-950',
+        },
+        sick: {
+          label: t('attendancePage.statusSick'),
+          icon: Heart,
+          tone: 'text-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-950',
+        },
+        leave: {
+          label: t('attendancePage.statusLeave'),
+          icon: Calendar,
+          tone: 'text-orange-600 bg-orange-50 dark:text-orange-300 dark:bg-orange-950',
+        },
+      }) as const,
+    [t]
+  );
+
+  const hasInvalidRange = useMemo(() => {
+    if (!filters.dateFrom || !filters.dateTo) return false;
+    return new Date(filters.dateFrom).getTime() > new Date(filters.dateTo).getTime();
+  }, [filters.dateFrom, filters.dateTo]);
+
+  const hookFilters = useMemo(
+    (): AttendanceTotalsReportFilters => ({
+      organizationId: profile?.organization_id,
+      academicYearId: filters.academicYearId || undefined,
+      classId: filters.classId || undefined,
+      status: filters.status,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      studentId: filters.studentId || undefined,
+      studentType:
+        filters.studentType === 'boarders' || filters.studentType === 'day_scholars'
+          ? filters.studentType
+          : undefined,
+      sessionsLimit: 80,
+      studentBreakdownPage,
+      studentBreakdownPerPage,
+    }),
+    [
+      profile?.organization_id,
+      filters.academicYearId,
+      filters.classId,
+      filters.status,
+      filters.dateFrom,
+      filters.dateTo,
+      filters.studentId,
+      filters.studentType,
+      studentBreakdownPage,
+      studentBreakdownPerPage,
+    ]
+  );
+
+  const { data: report, isLoading, refetch } = useAttendanceTotalsReport(hookFilters, {
+    enabled: !!profile?.organization_id && !!profile?.default_school_id && !hasInvalidRange,
+  });
+
+  const studentBreakdownPaginationApi = useMemo((): PaginationMeta | null => {
+    const m = report?.studentBreakdownMeta;
+    if (!m || m.total <= 0) return null;
+    return {
+      current_page: m.currentPage,
+      per_page: m.perPage,
+      total: m.total,
+      last_page: m.lastPage,
+      from: m.from,
+      to: m.to,
+    };
+  }, [report?.studentBreakdownMeta]);
+
+  const studentBreakdownColumns = useMemo<ColumnDef<AttendanceStudentSummary>[]>(
+    () => [
+      {
+        id: 'studentInfo',
+        header: t('attendanceReports.student'),
+        cell: ({ row }) => (
+          <div className="min-w-[240px] space-y-1.5 rounded-md border bg-muted/20 p-2.5">
+            <p className="font-semibold leading-none">{row.original.studentName}</p>
+            <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.columnFatherName')}: {row.original.fatherName ?? '—'}</p>
+            <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.columnCardNumber')}: {row.original.cardNumber ?? '—'}</p>
+            <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.columnAdmission')}: {row.original.admissionNo ?? '—'}</p>
+          </div>
+        ),
+      },
+      {
+        id: 'residencyAndRoom',
+        header: `${t('attendanceTotalsReport.columnResidency')} / ${t('attendanceTotalsReport.columnBuildingRoom')}`,
+        cell: ({ row }) => (
+          <div className="min-w-[190px] space-y-1.5 rounded-md border bg-muted/10 p-2.5">
+            <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.columnResidency')}: {' '}
+              <Badge variant="outline" className="h-5 px-2 align-middle">
+                {row.original.residency === 'boarder'
+                ? t('attendanceTotalsReport.residencyBoarder')
+                : row.original.residency === 'day_scholar'
+                  ? t('attendanceTotalsReport.residencyDayScholar')
+                  : '—'}
+              </Badge>
+            </p>
+            <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.columnBuildingRoom')}: {row.original.buildingRoom ?? '—'}</p>
+          </div>
+        ),
+      },
+      {
+        id: 'attendanceRate',
+        header: t('attendanceTotalsReport.attendanceRate'),
+        cell: ({ row }) => (
+          <Badge variant="outline" className="tabular-nums">
+            {formatPercent(row.original.attendanceRate)}
+          </Badge>
+        ),
+      },
+      {
+        id: 'present',
+        header: t('examReports.present'),
+        cell: ({ row }) => (
+          <Badge variant="outline" className={cn('tabular-nums', metricBadgeClass.present)}>
+            {row.original.present.toLocaleString()}
+          </Badge>
+        ),
+      },
+      {
+        id: 'absent',
+        header: t('attendanceTotalsReport.absent'),
+        cell: ({ row }) => (
+          <Badge variant="outline" className={cn('tabular-nums', metricBadgeClass.absent)}>
+            {row.original.absent.toLocaleString()}
+          </Badge>
+        ),
+      },
+      {
+        id: 'late',
+        header: t('attendancePage.statusLate'),
+        cell: ({ row }) => (
+          <Badge variant="outline" className={cn('tabular-nums', metricBadgeClass.late)}>
+            {row.original.late.toLocaleString()}
+          </Badge>
+        ),
+      },
+      {
+        id: 'excused',
+        header: t('attendancePage.statusExcused'),
+        cell: ({ row }) => (
+          <Badge variant="outline" className={cn('tabular-nums', metricBadgeClass.excused)}>
+            {row.original.excused.toLocaleString()}
+          </Badge>
+        ),
+      },
+      {
+        id: 'sick',
+        header: t('attendancePage.statusSick'),
+        cell: ({ row }) => (
+          <Badge variant="outline" className={cn('tabular-nums', metricBadgeClass.sick)}>
+            {row.original.sick.toLocaleString()}
+          </Badge>
+        ),
+      },
+      {
+        id: 'leave',
+        header: t('attendancePage.statusLeave'),
+        cell: ({ row }) => (
+          <Badge variant="outline" className={cn('tabular-nums', metricBadgeClass.leave)}>
+            {row.original.leave.toLocaleString()}
+          </Badge>
+        ),
+      },
+      {
+        id: 'totalRecords',
+        header: t('attendanceTotalsReport.totalRecords'),
+        cell: ({ row }) => (
+          <Badge variant="outline" className={cn('tabular-nums', metricBadgeClass.total)}>
+            {row.original.totalRecords.toLocaleString()}
+          </Badge>
+        ),
+      },
+    ],
+    [t]
+  );
+
+  const { table: studentBreakdownTable } = useDataTable<AttendanceStudentSummary>({
+    data: report?.studentBreakdown ?? [],
+    columns: studentBreakdownColumns,
+    pageCount: report?.studentBreakdownMeta?.lastPage ?? 1,
+    paginationMeta: studentBreakdownPaginationApi,
+    initialState: {
+      pagination: { pageIndex: studentBreakdownPage - 1, pageSize: studentBreakdownPerPage },
+    },
+    onPaginationChange: (newPagination) => {
+      setStudentBreakdownPage(newPagination.pageIndex + 1);
+      setStudentBreakdownPerPage(newPagination.pageSize);
+    },
+  });
+
+  const totalMarkedAggregates = useMemo(() => {
+    if (!report?.totals) return 0;
+    const row = report.totals;
+    return row.present + row.absent + row.late + row.excused + row.sick + row.leave;
+  }, [report?.totals]);
+
+  const dateRangeSummary = useMemo(() => {
+    if (!filters.dateFrom || !filters.dateTo) return null;
+    const from = parseLocalDate(filters.dateFrom);
+    const to = parseLocalDate(filters.dateTo);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return null;
+    const same = filters.dateFrom === filters.dateTo;
+    return same
+      ? format(from, 'MMM d, yyyy')
+      : `${format(from, 'MMM d, yyyy')} — ${format(to, 'MMM d, yyyy')}`;
+  }, [filters.dateFrom, filters.dateTo]);
+
+  const selectedStudentLabel = useMemo(() => {
+    if (!filters.studentId) return null;
+    const opt = studentComboboxOptions.find((o) => o.value === filters.studentId);
+    return opt?.label ?? null;
+  }, [filters.studentId, studentComboboxOptions]);
+
+  const studentTypeOptions = [
+    { value: undefined as undefined, label: t('attendancePage.studentTypeAll'), icon: Users },
+    { value: 'boarders' as const, label: t('attendancePage.studentTypeBoarders'), icon: School },
+    { value: 'day_scholars' as const, label: t('attendancePage.studentTypeDayScholars'), icon: GraduationCap },
+  ];
+
+  const handleFilterChange = (key: keyof AttendanceTotalsReportFilters, value: string | undefined) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value === 'all' || value === '' ? undefined : value,
+    }));
+  };
+
+  const setStudentTypeFilter = (value: 'boarders' | 'day_scholars' | undefined) => {
+    setFilters((prev) => ({ ...prev, studentType: value }));
+  };
+
+  const handleDateRangePreset = (preset: '1week' | '1month' | '4months' | 'custom') => {
+    setDateRangePreset(preset);
+    if (preset === 'custom') {
+      return;
+    }
+
+    const today = new Date();
+    let dateFrom: string;
+    const dateTo: string = format(today, 'yyyy-MM-dd');
+
+    switch (preset) {
+      case '1week':
+        dateFrom = format(subDays(today, 7), 'yyyy-MM-dd');
+        break;
+      case '1month':
+        dateFrom = format(subMonths(today, 1), 'yyyy-MM-dd');
+        break;
+      case '4months':
+        dateFrom = format(subMonths(today, 4), 'yyyy-MM-dd');
+        break;
+      default:
+        return;
+    }
+
+    setFilters((prev) => ({ ...prev, dateFrom, dateTo }));
+  };
+
+  useEffect(() => {
+    if (!filters.dateFrom || !filters.dateTo) {
+      handleDateRangePreset('1week');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time default range on mount
+  }, []);
+
+  const handleResetFilters = () => {
+    setDateRangePreset('1week');
+    const today = new Date();
+    const dateTo = format(today, 'yyyy-MM-dd');
+    const dateFrom = format(subDays(today, 7), 'yyyy-MM-dd');
+    setFilters({
+      classId: undefined,
+      academicYearId: currentAcademicYear?.id ?? undefined,
+      status: undefined,
+      dateFrom,
+      dateTo,
+      studentId: undefined,
+      studentType: undefined,
     });
-    const [sessionType, setSessionType] = useState<'class' | 'room'>('class');
-    const [dateRangePreset, setDateRangePreset] = useState<'1week' | '1month' | '4months' | 'custom'>('1week');
+  };
 
-    const hasInvalidRange = useMemo(() => {
-        if (!filters.dateFrom || !filters.dateTo) return false;
-        return new Date(filters.dateFrom).getTime() > new Date(filters.dateTo).getTime();
-    }, [filters.dateFrom, filters.dateTo]);
+  const handleGenerateReport = async (variant: 'totals' | 'class_wise' | 'room_wise') => {
+    if (!report) {
+      showToast.error(t('events.noDataToExport'));
+      return;
+    }
 
-    const normalizedFilters = useMemo(
-        () => ({ ...filters, organizationId: filters.organizationId || profile?.organization_id }),
-        [filters, profile?.organization_id]
-    );
+    if (!profile?.default_school_id) {
+      showToast.error(t('attendanceTotalsReport.schoolRequired'));
+      return;
+    }
 
-    const { data: report, isLoading, refetch } = useAttendanceTotalsReport(normalizedFilters, {
-        enabled: !hasInvalidRange,
-    });
+    try {
+      const downloadReportWithAuth = async (downloadUrl: string, fallbackName: string) => {
+        const endpoint = getReportEndpoint(downloadUrl);
+        const { blob, filename } = await apiClient.requestFile(endpoint);
 
-    const classSessions = useMemo(
-        () =>
-            (report?.recentSessions ?? []).filter(
-                (session) =>
-                    !!session.className &&
-                    session.className !== '—' &&
-                    session.className !== 'Unassigned'
-            ),
-        [report?.recentSessions]
-    );
+        const objectUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = filename || fallbackName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(objectUrl);
+      };
 
-    const roomSessions = useMemo(
-        () =>
-            (report?.recentSessions ?? []).filter(
-                (session) =>
-                    !session.className ||
-                    session.className === '—' ||
-                    session.className === 'Unassigned'
-            ),
-        [report?.recentSessions]
-    );
+      setIsGenerating(true);
+      setShowProgressDialog(true);
+      setReportProgress(0);
+      setReportStatus('pending');
 
-    const handleFilterChange = (key: keyof AttendanceTotalsReportFilters, value: string | undefined) => {
-        setFilters((prev) => ({
-            ...prev,
-            [key]: value === 'all' ? undefined : value,
-        }));
-    };
+      const calendarPreference =
+        calendar === 'gregorian' ? 'gregorian' : calendar === 'hijri_shamsi' ? 'jalali' : 'qamari';
+      const langCode = language === 'en' ? 'en' : language === 'ps' ? 'ps' : language === 'fa' ? 'fa' : 'ar';
 
-    const handleDateRangePreset = (preset: '1week' | '1month' | '4months' | 'custom') => {
-        setDateRangePreset(preset);
-        if (preset === 'custom') {
-            return; // Keep existing dates
-        }
+      const studentTypeParam =
+        filters.studentType === 'boarders' || filters.studentType === 'day_scholars' || filters.studentType === 'all'
+          ? filters.studentType
+          : undefined;
 
-        const today = new Date();
-        let dateFrom: string;
-        const dateTo: string = format(today, 'yyyy-MM-dd');
+      const response = (await attendanceSessionsApi.generateReport({
+        report_type: reportType,
+        report_variant: variant,
+        branding_id: profile.default_school_id,
+        calendar_preference: calendarPreference,
+        language: langCode,
+        class_id: filters.classId || undefined,
+        status: filters.status || undefined,
+        date_from: filters.dateFrom || undefined,
+        date_to: filters.dateTo || undefined,
+        academic_year_id: filters.academicYearId || undefined,
+        student_id: filters.studentId || undefined,
+        student_type: studentTypeParam,
+      })) as {
+        success?: boolean;
+        download_url?: string;
+        report_id?: string;
+        error?: string;
+      };
 
-        switch (preset) {
-            case '1week':
-                dateFrom = format(subDays(today, 7), 'yyyy-MM-dd');
-                break;
-            case '1month':
-                dateFrom = format(subMonths(today, 1), 'yyyy-MM-dd');
-                break;
-            case '4months':
-                dateFrom = format(subMonths(today, 4), 'yyyy-MM-dd');
-                break;
-            default:
-                return;
-        }
-
-        setFilters((prev) => ({ ...prev, dateFrom, dateTo }));
-    };
-
-    // Initialize date range on mount
-    useEffect(() => {
-        if (!filters.dateFrom || !filters.dateTo) {
-            handleDateRangePreset('1week');
-        }
-    }, []);
-
-    const handleResetFilters = () => {
-        setFilters({
-            organizationId: profile?.organization_id,
-            schoolId: undefined,
-            classId: undefined,
-            academicYearId: undefined,
-            status: undefined,
-            dateFrom: undefined,
-            dateTo: undefined,
-        });
-    };
-
-    const handleGenerateReport = async (variant: 'totals' | 'class_wise' | 'room_wise') => {
-        if (!report) {
-            showToast.error(t('events.noDataToExport') || 'No data to export');
-            return;
-        }
-
-        if (!profile?.default_school_id) {
-            showToast.error(t('attendanceTotalsReport.schoolRequired') || 'School is required for report generation');
-            return;
-        }
-
-        try {
-            const downloadReportWithAuth = async (downloadUrl: string, fallbackName: string) => {
-                const endpoint = getReportEndpoint(downloadUrl);
-                const { blob, filename } = await apiClient.requestFile(endpoint);
-
-                const objectUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = objectUrl;
-                link.download = filename || fallbackName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(objectUrl);
+      if (response.success && response.download_url) {
+        await downloadReportWithAuth(response.download_url, `attendance-totals-${variant}.${reportType}`);
+        setShowProgressDialog(false);
+        setIsGenerating(false);
+        showToast.success(t('attendanceTotalsReport.reportExported'));
+      } else if (response.success && response.report_id) {
+        const pollStatus = async () => {
+          try {
+            const statusResponse = (await apiClient.get(`/reports/${response.report_id}/status`)) as {
+              success?: boolean;
+              error?: string;
+              progress?: number;
+              status?: string;
+              download_url?: string | null;
+              error_message?: string | null;
             };
 
-            setIsGenerating(true);
-            setShowProgressDialog(true);
-            setReportProgress(0);
-            setReportStatus('pending');
-
-            // Map calendar type to backend format
-            const calendarPreference = calendar === 'gregorian' ? 'gregorian' : calendar === 'hijri_shamsi' ? 'jalali' : 'qamari';
-            // Map language code
-            const langCode = language === 'en' ? 'en' : language === 'ps' ? 'ps' : language === 'fa' ? 'fa' : 'ar';
-
-            const response = await attendanceSessionsApi.generateReport({
-                report_type: reportType,
-                report_variant: variant,
-                branding_id: profile.default_school_id,
-                calendar_preference: calendarPreference,
-                language: langCode,
-                class_id: filters.classId || undefined,
-                school_id: filters.schoolId || undefined,
-                status: filters.status || undefined,
-                date_from: filters.dateFrom || undefined,
-                date_to: filters.dateTo || undefined,
-                academic_year_id: filters.academicYearId || undefined,
-            });
-
-            if (response.success && response.download_url) {
-                // Report completed synchronously
-                await downloadReportWithAuth(response.download_url, `attendance-totals-${variant}.${reportType}`);
-                setShowProgressDialog(false);
-                setIsGenerating(false);
-                showToast.success(t('attendanceTotalsReport.reportExported') || 'Report generated successfully');
-            } else if (response.success && response.report_id) {
-                // Report is being generated asynchronously - poll for status
-                const pollStatus = async () => {
-                    try {
-                        const statusResponse = await apiClient.get(`/reports/${response.report_id}/status`) as any;
-                        const statusData = statusResponse;
-                        
-                        if (!statusData.success) {
-                          throw new Error(statusData.error || 'Failed to get report status');
-                        }
-                        
-                        setReportProgress(statusData.progress || 0);
-                        setReportStatus(statusData.status);
-                        
-                        if (statusData.status === 'completed' && statusData.download_url) {
-                            await downloadReportWithAuth(statusData.download_url, `attendance-totals-${variant}.${reportType}`);
-                            setShowProgressDialog(false);
-                            setIsGenerating(false);
-                            showToast.success(t('attendanceTotalsReport.reportExported') || 'Report generated successfully');
-                        } else if (statusData.status === 'failed') {
-                            setShowProgressDialog(false);
-                            setIsGenerating(false);
-                            showToast.error(statusData.error_message || t('attendanceTotalsReport.reportGenerationFailed') || 'Failed to generate report');
-                        } else {
-                            // Continue polling
-                            setTimeout(pollStatus, 1000);
-                        }
-                    } catch (error: any) {
-                        setShowProgressDialog(false);
-                        setIsGenerating(false);
-                        showToast.error(error.message || t('attendanceTotalsReport.reportGenerationFailed') || 'Failed to check report status');
-                    }
-                };
-                pollStatus();
-            } else {
-                throw new Error(response.error || 'Failed to generate report');
+            if (!statusResponse.success) {
+              throw new Error(statusResponse.error || 'Failed to get report status');
             }
-        } catch (error: any) {
+
+            setReportProgress(statusResponse.progress || 0);
+            setReportStatus(statusResponse.status);
+
+            if (statusResponse.status === 'completed' && statusResponse.download_url) {
+              await downloadReportWithAuth(
+                statusResponse.download_url,
+                `attendance-totals-${variant}.${reportType}`
+              );
+              setShowProgressDialog(false);
+              setIsGenerating(false);
+              showToast.success(t('attendanceTotalsReport.reportExported'));
+            } else if (statusResponse.status === 'failed') {
+              setShowProgressDialog(false);
+              setIsGenerating(false);
+              showToast.error(
+                statusResponse.error_message || t('attendanceTotalsReport.reportGenerationFailed')
+              );
+            } else {
+              setTimeout(pollStatus, 1000);
+            }
+          } catch (error: unknown) {
             setShowProgressDialog(false);
             setIsGenerating(false);
-            showToast.error(error.message || t('attendanceTotalsReport.reportGenerationFailed') || 'Failed to generate report');
+            showToast.error(
+              error instanceof Error ? error.message : t('attendanceTotalsReport.reportGenerationFailed')
+            );
+          }
+        };
+        pollStatus();
+      } else {
+        throw new Error(response.error || 'Failed to generate report');
+      }
+    } catch (error: unknown) {
+      setShowProgressDialog(false);
+      setIsGenerating(false);
+      showToast.error(
+        error instanceof Error ? error.message : t('attendanceTotalsReport.reportGenerationFailed')
+      );
+    }
+  };
+
+  const breakdownTableHeadClass = 'text-right whitespace-nowrap';
+  const insightParams = buildTotalsInsightsSearchParams(filters);
+
+  return (
+    <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6 overflow-x-hidden">
+      <PageHeader
+        title={t('nav.attendanceTotalsReport')}
+        description={t('attendanceTotalsReport.subtitle')}
+        icon={<Activity className="h-5 w-5" />}
+        secondaryActions={[
+          {
+            label: t('attendanceTotalsReport.openInsights'),
+            onClick: () => navigate(`/attendance/reports/totals/insights?${insightParams.toString()}`),
+            icon: <BarChart3 className="h-4 w-4" />,
+            variant: 'outline',
+          },
+          {
+            label: t('events.refresh'),
+            onClick: () => void refetch(),
+            icon: <RefreshCw className="h-4 w-4" />,
+            variant: 'outline',
+          },
+        ]}
+        rightSlot={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isLoading || !report || isGenerating}
+                className="flex items-center gap-2"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="hidden sm:inline">{t('attendanceTotalsReport.generating')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t('events.export')}</span>
+                  </>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>{t('attendanceTotalsReport.exportOptions')}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  <span>{t('attendanceTotalsReport.totals')}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setReportType('pdf');
+                      void handleGenerateReport('totals');
+                    }}
+                    disabled={isGenerating}
+                  >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    <span>PDF</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setReportType('excel');
+                      void handleGenerateReport('totals');
+                    }}
+                    disabled={isGenerating}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    <span>Excel</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <GraduationCap className="mr-2 h-4 w-4" />
+                  <span>{t('attendanceTotalsReport.classWise')}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setReportType('pdf');
+                      void handleGenerateReport('class_wise');
+                    }}
+                    disabled={isGenerating}
+                  >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    <span>PDF</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setReportType('excel');
+                      void handleGenerateReport('class_wise');
+                    }}
+                    disabled={isGenerating}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    <span>Excel</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Building2 className="mr-2 h-4 w-4" />
+                  <span>{t('attendanceTotalsReport.roomWise')}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setReportType('pdf');
+                      void handleGenerateReport('room_wise');
+                    }}
+                    disabled={isGenerating}
+                  >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    <span>PDF</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setReportType('excel');
+                      void handleGenerateReport('room_wise');
+                    }}
+                    disabled={isGenerating}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    <span>Excel</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            </DropdownMenuContent>
+          </DropdownMenu>
         }
-    };
+      />
 
-    return (
-        <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6">
-            <PageHeader
-                title={t('nav.attendanceTotalsReport') || 'Attendance Totals Report'}
-                description={t('attendanceTotalsReport.subtitle') || 'Analyze attendance performance across classes, rooms, and schools.'}
-                icon={<Activity className="h-5 w-5" />}
-                secondaryActions={[
-                    {
-                        label: t('events.refresh') || 'Refresh',
-                        onClick: () => refetch(),
-                        icon: <RefreshCw className="h-4 w-4" />,
-                        variant: 'outline',
-                    },
-                ]}
-                rightSlot={
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                disabled={isLoading || !report || isGenerating}
-                                className="flex items-center gap-2"
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span className="hidden sm:inline">{t('attendanceTotalsReport.generating') || 'Generating...'}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Download className="h-4 w-4" />
-                                        <span className="hidden sm:inline">{t('events.export') || 'Export'}</span>
-                                    </>
-                                )}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel>{t('attendanceTotalsReport.exportOptions') || 'Export Options'}</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            
-                            {/* Totals Reports */}
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                    <BarChart3 className="mr-2 h-4 w-4" />
-                                    <span>{t('attendanceTotalsReport.totals') || 'Totals'}</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setReportType('pdf');
-                                            handleGenerateReport('totals');
-                                        }}
-                                        disabled={isGenerating}
-                                    >
-                                        <FileDown className="mr-2 h-4 w-4" />
-                                        <span>PDF</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setReportType('excel');
-                                            handleGenerateReport('totals');
-                                        }}
-                                        disabled={isGenerating}
-                                    >
-                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
-                                        <span>Excel</span>
-                                    </DropdownMenuItem>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuSub>
+      {currentSchool && (
+        <Alert>
+          <School className="h-4 w-4" />
+          <AlertTitle>{currentSchool.schoolName}</AlertTitle>
+          <AlertDescription>{t('attendanceReports.scopeHint')}</AlertDescription>
+        </Alert>
+      )}
 
-                            {/* Class-wise Reports */}
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                    <GraduationCap className="mr-2 h-4 w-4" />
-                                    <span>{t('attendanceTotalsReport.classWise') || 'Class-wise'}</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setReportType('pdf');
-                                            handleGenerateReport('class_wise');
-                                        }}
-                                        disabled={isGenerating}
-                                    >
-                                        <FileDown className="mr-2 h-4 w-4" />
-                                        <span>PDF</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setReportType('excel');
-                                            handleGenerateReport('class_wise');
-                                        }}
-                                        disabled={isGenerating}
-                                    >
-                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
-                                        <span>Excel</span>
-                                    </DropdownMenuItem>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuSub>
+      {hasInvalidRange && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>{t('attendanceTotalsReport.invalidRange')}</AlertTitle>
+          <AlertDescription>{t('attendanceTotalsReport.invalidRangeDetail')}</AlertDescription>
+        </Alert>
+      )}
 
-                            {/* Room-wise Reports */}
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                    <Building2 className="mr-2 h-4 w-4" />
-                                    <span>{t('attendanceTotalsReport.roomWise') || 'Room-wise'}</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setReportType('pdf');
-                                            handleGenerateReport('room_wise');
-                                        }}
-                                        disabled={isGenerating}
-                                    >
-                                        <FileDown className="mr-2 h-4 w-4" />
-                                        <span>PDF</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setReportType('excel');
-                                            handleGenerateReport('room_wise');
-                                        }}
-                                        disabled={isGenerating}
-                                    >
-                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
-                                        <span>Excel</span>
-                                    </DropdownMenuItem>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+      <FilterPanel
+        title={t('attendanceTotalsReport.filtersTitle')}
+        defaultOpenDesktop
+        defaultOpenMobile={false}
+        footer={
+          <div className="flex justify-end">
+            <Button variant="ghost" size="sm" onClick={handleResetFilters}>
+              {t('events.reset')}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t('attendanceTotalsReport.filtersDescription')}</p>
+
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2">
+              <Label>{t('attendanceTotalsReport.academicYear')}</Label>
+              <Combobox
+                options={(academicYears || []).map((year) => ({ value: year.id, label: year.name }))}
+                value={filters.academicYearId ?? ''}
+                onValueChange={(value) =>
+                  setFilters((prev) => ({ ...prev, academicYearId: value || undefined }))
                 }
-            />
+                placeholder={t('attendanceTotalsReport.allYears')}
+                searchPlaceholder={t('attendanceTotalsReport.academicYear')}
+                emptyText={t('attendanceReports.noRecords')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('search.class')}</Label>
+              <Combobox
+                options={(classes || []).map((classItem) => ({ label: classItem.name, value: classItem.id }))}
+                value={filters.classId ?? ''}
+                onValueChange={(value) => handleFilterChange('classId', value)}
+                placeholder={t('students.allClasses')}
+                searchPlaceholder={t('attendancePage.searchSessions')}
+                emptyText={t('attendanceReports.noRecords')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('attendanceReports.student')}</Label>
+              <Combobox
+                options={studentComboboxOptions}
+                value={filters.studentId ?? ''}
+                onValueChange={(value) => handleFilterChange('studentId', value)}
+                placeholder={t('attendanceReports.allStudentsOption')}
+                searchPlaceholder={t('attendancePage.searchRosterPlaceholder')}
+                emptyText={t('attendanceReports.noRecords')}
+              />
+            </div>
+          </div>
 
-            {hasInvalidRange && (
-                <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>{t('attendanceTotalsReport.invalidRange') || 'Invalid date range'}</AlertTitle>
-                    <AlertDescription>
-                        {t('attendanceTotalsReport.invalidRangeDetail') || 'Start date must be before the end date.'}
-                    </AlertDescription>
-                </Alert>
-            )}
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+            <div className="space-y-2 rounded-lg border p-3">
+              <Label>{t('events.status')}</Label>
+              <Select
+                value={filters.status ?? 'all'}
+                onValueChange={(value) => handleFilterChange('status', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('subjects.all')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('subjects.all')}</SelectItem>
+                  {STATUS_KEYS.map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {attendanceStatusMeta[key].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 rounded-lg border p-3">
+              <Label>{t('attendancePage.studentTypeLabel')}</Label>
+              <div className="flex flex-wrap gap-2">
+                {studentTypeOptions.map((opt) => {
+                  const Icon = opt.icon;
+                  const active =
+                    (opt.value === undefined && !filters.studentType) || filters.studentType === opt.value;
+                  return (
+                    <button
+                      key={opt.value ?? 'all'}
+                      type="button"
+                      aria-label={opt.label}
+                      aria-pressed={active}
+                      onClick={() => setStudentTypeFilter(opt.value)}
+                      className={cn(
+                        'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        active
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background border-border hover:bg-muted'
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
-            <FilterPanel
-                title={t('attendanceTotalsReport.filtersTitle') || 'Report filters'}
-                footer={
-                    <div className="flex justify-end">
-                        <Button variant="ghost" size="sm" onClick={handleResetFilters}>
-                            {t('events.reset') || 'Reset'}
-                        </Button>
-                    </div>
-                }
+          <div className="space-y-2">
+            <Label>{t('attendanceTotalsReport.dateRange')}</Label>
+            <Tabs
+              value={dateRangePreset}
+              onValueChange={(value) => handleDateRangePreset(value as typeof dateRangePreset)}
             >
-                <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                        {t('attendanceTotalsReport.filtersDescription') || 'Choose a date range and optional class or school constraints.'}
-                    </p>
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <div className="space-y-2">
-                            <Label>{t('attendanceTotalsReport.school') || 'School'}</Label>
-                            <Combobox
-                                options={(schools || []).map((school) => ({ label: school.schoolName, value: school.id }))}
-                                value={filters.schoolId || ''}
-                                onValueChange={(value) => handleFilterChange('schoolId', value || undefined)}
-                                placeholder={t('leave.allSchools') || 'All schools'}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>{t('search.class') || 'Class / Room'}</Label>
-                            <Combobox
-                                options={(classes || []).map((classItem) => ({ label: classItem.name, value: classItem.id }))}
-                                value={filters.classId || ''}
-                                onValueChange={(value) => handleFilterChange('classId', value || undefined)}
-                                placeholder={t('students.allClasses') || 'All classes'}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>{t('attendanceTotalsReport.academicYear') || 'Academic year'}</Label>
-                            <Select
-                                value={filters.academicYearId || 'all'}
-                                onValueChange={(value) => handleFilterChange('academicYearId', value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder={t('attendanceTotalsReport.allYears') || 'All years'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">{t('attendanceTotalsReport.allYears') || 'All years'}</SelectItem>
-                                    {(academicYears || []).map((year) => (
-                                        <SelectItem key={year.id} value={year.id}>
-                                            {year.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>{t('events.status') || 'Status'}</Label>
-                            <Select value={filters.status || 'all'} onValueChange={(value) => handleFilterChange('status', value)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder={t('subjects.all') || 'All'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">{t('subjects.all') || 'All'}</SelectItem>
-                                    {Object.entries(attendanceStatusMeta).map(([key, meta]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {meta.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>{t('attendanceTotalsReport.dateRange') || 'Date Range'}</Label>
-                            <Tabs value={dateRangePreset} onValueChange={(value) => handleDateRangePreset(value as typeof dateRangePreset)}>
-                                <TabsList className="grid w-full grid-cols-4">
-                                    <TabsTrigger value="1week">{t('attendanceTotalsReport.dateRange.1week')}</TabsTrigger>
-                                    <TabsTrigger value="1month">{t('attendanceTotalsReport.dateRange.1month')}</TabsTrigger>
-                                    <TabsTrigger value="4months">{t('attendanceTotalsReport.dateRange.4months')}</TabsTrigger>
-                                    <TabsTrigger value="custom">{t('attendanceTotalsReport.dateRange.custom')}</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
-                        {dateRangePreset === 'custom' && (
-                            <>
-                                <div className="space-y-2">
-                                    <Label>{t('library.fromDate') || 'From date'}</Label>
-                                    <CalendarDatePicker date={filters.dateFrom || '' ? parseLocalDate(filters.dateFrom || '') : undefined} onDateChange={(date) => handleFilterChange("dateFrom", date ? dateToLocalYYYYMMDD(date) : "")} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>{t('library.toDate') || 'To date'}</Label>
-                                    <CalendarDatePicker date={filters.dateTo || '' ? parseLocalDate(filters.dateTo || '') : undefined} onDateChange={(date) => handleFilterChange("dateTo", date ? dateToLocalYYYYMMDD(date) : "")} />
-                                </div>
-                            </>
-                        )}
-                    </div>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="1week" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('attendanceTotalsReport.dateRange.1week')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="1month" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('attendanceTotalsReport.dateRange.1month')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="4months" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('attendanceTotalsReport.dateRange.4months')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="custom" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('attendanceTotalsReport.dateRange.custom')}</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {dateRangePreset === 'custom' && (
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 pt-2">
+                <div className="space-y-2">
+                  <Label>{t('library.fromDate')}</Label>
+                  <CalendarDatePicker
+                    date={filters.dateFrom ? parseLocalDate(filters.dateFrom) : undefined}
+                    onDateChange={(date) =>
+                      handleFilterChange('dateFrom', date ? dateToLocalYYYYMMDD(date) : undefined)
+                    }
+                  />
                 </div>
-            </FilterPanel>
-
-            {isLoading && (
-                <div className="flex items-center justify-center py-16">
-                    <LoadingSpinner text={t('common.loading') || 'Loading attendance report...'} />
+                <div className="space-y-2">
+                  <Label>{t('library.toDate')}</Label>
+                  <CalendarDatePicker
+                    date={filters.dateTo ? parseLocalDate(filters.dateTo) : undefined}
+                    onDateChange={(date) =>
+                      handleFilterChange('dateTo', date ? dateToLocalYYYYMMDD(date) : undefined)
+                    }
+                  />
                 </div>
+              </div>
             )}
-
-            {!isLoading && report && (
-                <div className="space-y-6">
-                    <div className="grid gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <StatsCard
-                            title={t('attendanceTotalsReport.totalSessions') || 'Sessions analyzed'}
-                            value={report.totals.sessions.toLocaleString()}
-                            icon={FileText}
-                            color="blue"
-                        />
-                        <StatsCard
-                            title={t('attendanceTotalsReport.studentsMarked') || 'Students marked'}
-                            value={report.totals.studentsMarked.toLocaleString()}
-                            icon={Activity}
-                            color="purple"
-                        />
-                        <StatsCard
-                            title={t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}
-                            value={formatPercent(report.totals.attendanceRate)}
-                            description={t('attendanceTotalsReport.attendanceRateHelper') || 'Present vs total records'}
-                            icon={BarChart3}
-                            color="green"
-                        />
-                        <StatsCard
-                            title={t('attendanceTotalsReport.absences') || 'Absences'}
-                            value={report.totals.absent.toLocaleString()}
-                            description={t('attendanceTotalsReport.absenceHelper') || 'Across selected filters'}
-                            icon={AlertTriangle}
-                            color="amber"
-                        />
-                    </div>
-
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle>{t('attendanceTotalsReport.statusBreakdown') || 'Status breakdown'}</CardTitle>
-                            <CardDescription>{t('attendanceTotalsReport.statusBreakdownHint') || 'Quick view of attendance statuses.'}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
-                            {Object.entries(attendanceStatusMeta).map(([key, meta]) => {
-                                const total = report.statusBreakdown.find((item) => item.status === key)?.total || 0;
-                                const Icon = meta.icon;
-                                return (
-                                    <div key={key} className="rounded-lg border p-3 space-y-1">
-                                        <div className={`inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-medium ${meta.tone}`}>
-                                            <Icon className="h-3.5 w-3.5" />
-                                            {meta.label}
-                                        </div>
-                                        <div className="text-2xl font-semibold">{total}</div>
-                                        <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.records') || 'records'}</p>
-                                    </div>
-                                );
-                            })}
-                        </CardContent>
-                    </Card>
-
-                    {/* Session Type Tabs */}
-                    <Tabs value={sessionType} onValueChange={(value) => setSessionType(value as 'class' | 'room')} className="space-y-4">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="class" className="flex items-center gap-2">
-                                <GraduationCap className="h-4 w-4" />
-                                {t('attendanceTotalsReport.classSessions')}
-                            </TabsTrigger>
-                            <TabsTrigger value="room" className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4" />
-                                {t('attendanceTotalsReport.roomSessions')}
-                            </TabsTrigger>
-                        </TabsList>
-
-                        {/* Class Sessions Tab */}
-                        <TabsContent value="class" className="space-y-4">
-                            <div className="grid gap-4 lg:grid-cols-2">
-                                <Card className="h-full">
-                                    <CardHeader>
-                                        <CardTitle>{t('attendanceTotalsReport.classBreakdown') || 'Class performance'}</CardTitle>
-                                        <CardDescription>
-                                            {t('attendanceTotalsReport.classBreakdownHint') || 'Attendance quality grouped by assigned classes.'}
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3 overflow-x-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>{t('search.class') || 'Class'}</TableHead>
-                                                    <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                    <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {report.classBreakdown.length === 0 && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                                            {t('attendanceTotalsReport.noClassData') || 'No class data available for this range.'}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                                {report.classBreakdown.map((row) => (
-                                                    <TableRow key={`${row.classId}-${row.className}`}>
-                                                        <TableCell className="font-medium">{row.className}</TableCell>
-                                                        <TableCell>{row.schoolName}</TableCell>
-                                                        <TableCell className="text-right">{formatPercent(row.attendanceRate)}</TableCell>
-                                                        <TableCell className="text-right">{row.present.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{row.absent.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{row.totalRecords.toLocaleString()}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="h-full">
-                                    <CardHeader>
-                                        <CardTitle>{t('attendanceTotalsReport.schoolBreakdown') || 'School breakdown'}</CardTitle>
-                                        <CardDescription>
-                                            {t('attendanceTotalsReport.schoolBreakdownHint') || 'Compare attendance patterns across schools and campuses.'}
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3 overflow-x-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                    <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
-                                                    <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {report.schoolBreakdown.length === 0 && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                                                            {t('attendanceTotalsReport.noSchoolData') || 'No school data available.'}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                                {report.schoolBreakdown.map((row) => (
-                                                    <TableRow key={`${row.schoolId}-${row.schoolName}`}>
-                                                        <TableCell className="font-medium">{row.schoolName}</TableCell>
-                                                        <TableCell className="text-right">{formatPercent(row.attendanceRate)}</TableCell>
-                                                        <TableCell className="text-right">{row.present.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{row.absent.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{row.totalRecords.toLocaleString()}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                            </div>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>{t('attendanceTotalsReport.recentSessions') || 'Recent class attendance sessions'}</CardTitle>
-                                    <CardDescription>
-                                        {t('attendanceTotalsReport.recentSessionsHint') || 'Latest class sessions within the selected date range.'}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>{t('events.date') || 'Date'}</TableHead>
-                                                <TableHead>{t('search.class') || 'Class'}</TableHead>
-                                                <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {classSessions.length === 0 && (
-                                                <TableRow>
-                                                    <TableCell colSpan={7} className="text-center text-muted-foreground">
-                                                        {t('attendanceTotalsReport.noRecentSessions') || 'No class sessions found for this range.'}
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                            {classSessions.map((session) => (
-                                                    <TableRow key={session.id}>
-                                                        <TableCell className="font-medium">
-                                                            {session.sessionDate ? format(session.sessionDate, 'MMM dd, yyyy') : '—'}
-                                                        </TableCell>
-                                                        <TableCell>{session.className}</TableCell>
-                                                        <TableCell>{session.schoolName || t('attendanceTotalsReport.noSchool') || 'No school'}</TableCell>
-                                                        <TableCell className="text-right">{formatPercent(session.attendanceRate)}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.present.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.absent.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.records.toLocaleString()}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* Room Sessions Tab */}
-                        <TabsContent value="room" className="space-y-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>{t('attendanceTotalsReport.roomBreakdown') || 'Room performance'}</CardTitle>
-                                    <CardDescription>
-                                        {t('attendanceTotalsReport.roomBreakdownHint') || 'Attendance quality grouped by rooms (sessions without specific class assignment).'}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>{t('attendanceTotalsReport.room') || 'Room'}</TableHead>
-                                                <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {(report.roomBreakdown?.length ?? 0) === 0 && (
-                                                <TableRow>
-                                                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                                        {t('attendanceTotalsReport.noRoomData') || 'No room data available for this range.'}
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                            {(report.roomBreakdown ?? []).map((row) => (
-                                                <TableRow key={`${row.roomName}-${row.schoolName}`}>
-                                                    <TableCell className="font-medium">{row.roomName}</TableCell>
-                                                    <TableCell>{row.schoolName}</TableCell>
-                                                    <TableCell className="text-right">{formatPercent(row.attendanceRate)}</TableCell>
-                                                    <TableCell className="text-right">{row.present.toLocaleString()}</TableCell>
-                                                    <TableCell className="text-right">{row.absent.toLocaleString()}</TableCell>
-                                                    <TableCell className="text-right">{row.totalRecords.toLocaleString()}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>{t('attendanceTotalsReport.recentRoomSessions') || 'Recent room attendance sessions'}</CardTitle>
-                                    <CardDescription>
-                                        {t('attendanceTotalsReport.recentRoomSessionsHint') || 'Latest room sessions within the selected date range.'}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>{t('events.date') || 'Date'}</TableHead>
-                                                <TableHead>{t('attendanceTotalsReport.room') || 'Room'}</TableHead>
-                                                <TableHead>{t('attendanceTotalsReport.school') || 'School'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.attendanceRate') || 'Attendance rate'}</TableHead>
-                                                <TableHead className="text-right">{t('examReports.present') || 'Present'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.absent') || 'Absent'}</TableHead>
-                                                <TableHead className="text-right">{t('attendanceTotalsReport.totalRecords') || 'Records'}</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {roomSessions.length === 0 && (
-                                                <TableRow>
-                                                    <TableCell colSpan={7} className="text-center text-muted-foreground">
-                                                        {t('attendanceTotalsReport.noRecentRoomSessions') || 'No room sessions found for this range.'}
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                            {roomSessions.map((session) => (
-                                                    <TableRow key={session.id}>
-                                                        <TableCell className="font-medium">
-                                                            {session.sessionDate ? format(session.sessionDate, 'MMM dd, yyyy') : '—'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {session.className && session.className !== '—'
-                                                                ? session.className
-                                                                : t('attendanceTotalsReport.generalRoom') || 'General Room'}
-                                                        </TableCell>
-                                                        <TableCell>{session.schoolName || t('attendanceTotalsReport.noSchool') || 'No school'}</TableCell>
-                                                        <TableCell className="text-right">{formatPercent(session.attendanceRate)}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.present.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.absent.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.records.toLocaleString()}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            )}
-
-            {/* Report Progress Dialog */}
-            <Dialog open={showProgressDialog} onOpenChange={(open) => {
-                if (!open && !isGenerating) {
-                    setShowProgressDialog(false);
-                }
-            }}>
-                <DialogContent aria-describedby="attendance-totals-report-progress-description">
-                    <DialogHeader>
-                        <DialogTitle>{t('attendanceTotalsReport.generatingReport') || 'Generating Report'}</DialogTitle>
-                        <DialogDescription id="attendance-totals-report-progress-description">
-                            {reportStatus === 'processing' || reportStatus === 'pending' 
-                                ? t('attendanceTotalsReport.reportInProgress') || 'Please wait while the report is being generated...'
-                                : reportStatus === 'completed'
-                                ? t('attendanceTotalsReport.reportReady') || 'Report is ready!'
-                                : reportStatus === 'failed'
-                                ? t('attendanceTotalsReport.reportFailed') || 'Report generation failed.'
-                                : t('attendanceTotalsReport.reportStatus') || 'Report status'}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <Progress value={reportProgress} className="w-full" />
-                        <div className="text-sm text-muted-foreground text-center">
-                            {reportProgress}% {reportStatus && `(${reportStatus})`}
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+          </div>
         </div>
-    );
+      </FilterPanel>
+
+      {isLoading && (
+        <div className="flex items-center justify-center py-16">
+          <LoadingSpinner text={t('common.loading')} />
+        </div>
+      )}
+
+      {!isLoading && report && (
+        <div className="space-y-6">
+          <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <StatsCard
+              title={t('attendanceTotalsReport.totalMarkedRecords')}
+              value={totalMarkedAggregates.toLocaleString()}
+              icon={FileText}
+              color="blue"
+            />
+            <StatsCard
+              title={t('attendanceTotalsReport.totalSessions')}
+              value={report.totals.sessions.toLocaleString()}
+              icon={BarChart3}
+              color="secondary"
+            />
+            <StatsCard
+              title={t('attendanceTotalsReport.studentsMarked')}
+              value={report.totals.studentsMarked.toLocaleString()}
+              icon={Activity}
+              color="purple"
+            />
+            <StatsCard
+              title={t('attendancePage.statusPresent')}
+              value={report.totals.present.toLocaleString()}
+              icon={CheckCircle2}
+              color="green"
+            />
+            <StatsCard
+              title={t('attendancePage.statusAbsent')}
+              value={report.totals.absent.toLocaleString()}
+              icon={XCircle}
+              color="red"
+            />
+            <StatsCard
+              title={t('attendancePage.statusLate')}
+              value={report.totals.late.toLocaleString()}
+              icon={Clock}
+              color="amber"
+            />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <StatsCard
+              title={t('attendanceTotalsReport.attendanceRate')}
+              value={formatPercent(report.totals.attendanceRate)}
+              description={t('attendanceTotalsReport.attendanceRateHelper')}
+              icon={BarChart3}
+              color="green"
+            />
+            <StatsCard
+              title={t('attendancePage.statusExcused')}
+              value={report.totals.excused.toLocaleString()}
+              icon={AlertTriangle}
+              color="blue"
+            />
+            <StatsCard
+              title={t('attendancePage.statusSick')}
+              value={report.totals.sick.toLocaleString()}
+              icon={Heart}
+              color="purple"
+            />
+            <StatsCard
+              title={t('attendancePage.statusLeave')}
+              value={report.totals.leave.toLocaleString()}
+              icon={Calendar}
+              color="orange"
+            />
+          </div>
+
+          {filters.studentId && selectedStudentLabel && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <UserRound className="h-4 w-4" />
+                  {t('attendanceTotalsReport.selectedStudentRollup')}
+                </CardTitle>
+                <CardDescription>{t('attendanceTotalsReport.selectedStudentSummary')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p className="font-medium">{selectedStudentLabel}</p>
+                {dateRangeSummary && (
+                  <p className="text-muted-foreground">
+                    {t('attendanceTotalsReport.dateRange')}: {dateRangeSummary}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-3 pt-1">
+                  <span>
+                    {t('attendanceTotalsReport.totalMarkedRecords')}:{' '}
+                    <strong>{totalMarkedAggregates.toLocaleString()}</strong>
+                  </span>
+                  <span>
+                    {t('attendancePage.statusPresent')}: <strong>{report.totals.present.toLocaleString()}</strong>
+                  </span>
+                  <span>
+                    {t('attendancePage.statusAbsent')}: <strong>{report.totals.absent.toLocaleString()}</strong>
+                  </span>
+                  <span>
+                    {t('attendanceTotalsReport.attendanceRate')}:{' '}
+                    <strong>{formatPercent(report.totals.attendanceRate)}</strong>
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {(report.studentBreakdownMeta?.total ?? 0) > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('attendanceTotalsReport.studentBreakdownTitle')}</CardTitle>
+                <CardDescription>{t('attendanceTotalsReport.studentBreakdownHint')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    {studentBreakdownTable.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => {
+                          const columnId = header.column.id;
+                          let thClass = '';
+                          if (
+                            columnId === 'attendanceRate' ||
+                            columnId === 'present' ||
+                            columnId === 'absent' ||
+                            columnId === 'late' ||
+                            columnId === 'excused' ||
+                            columnId === 'sick' ||
+                            columnId === 'leave' ||
+                            columnId === 'totalRecords'
+                          ) {
+                            thClass = breakdownTableHeadClass;
+                          }
+                          return (
+                            <TableHead key={header.id} className={cn(thClass, 'text-xs font-semibold')}>
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(header.column.columnDef.header, header.getContext())}
+                            </TableHead>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {studentBreakdownTable.getRowModel().rows.length > 0 ? (
+                      studentBreakdownTable.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                          {row.getVisibleCells().map((cell) => {
+                            const columnId = cell.column.id;
+                            let tdClass = '';
+                            if (
+                              columnId === 'attendanceRate' ||
+                              columnId === 'present' ||
+                              columnId === 'absent' ||
+                              columnId === 'late' ||
+                              columnId === 'excused' ||
+                              columnId === 'sick' ||
+                              columnId === 'leave' ||
+                              columnId === 'totalRecords'
+                            ) {
+                              tdClass = 'text-right tabular-nums';
+                            }
+                            return (
+                              <TableCell key={cell.id} className={tdClass}>
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={studentBreakdownColumns.length} className="text-center text-muted-foreground">
+                          {t('attendanceReports.noRecords')}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                {studentBreakdownPaginationApi && (
+                  <DataTablePagination
+                    table={studentBreakdownTable}
+                    paginationMeta={studentBreakdownPaginationApi}
+                    showPageSizeSelector
+                    showTotalCount
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="border-dashed">
+            <CardHeader>
+              <CardTitle>{t('attendanceTotalsReport.insightsTitle')}</CardTitle>
+              <CardDescription>{t('attendanceTotalsReport.insightsSubtitle')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                type="button"
+                onClick={() => navigate(`/attendance/reports/totals/insights?${insightParams.toString()}`)}
+                className="gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                {t('attendanceTotalsReport.openInsights')}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <Dialog
+        open={showProgressDialog}
+        onOpenChange={(open) => {
+          if (!open && !isGenerating) {
+            setShowProgressDialog(false);
+          }
+        }}
+      >
+        <DialogContent aria-describedby="attendance-totals-report-progress-description">
+          <DialogHeader>
+            <DialogTitle>{t('attendanceTotalsReport.generatingReport')}</DialogTitle>
+            <DialogDescription id="attendance-totals-report-progress-description">
+              {reportStatus === 'processing' || reportStatus === 'pending'
+                ? t('attendanceTotalsReport.reportInProgress')
+                : reportStatus === 'completed'
+                  ? t('attendanceTotalsReport.reportReady')
+                  : reportStatus === 'failed'
+                    ? t('attendanceTotalsReport.reportFailed')
+                    : t('attendanceTotalsReport.reportStatus')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Progress value={reportProgress} className="w-full" />
+            <div className="text-sm text-muted-foreground text-center">
+              {reportProgress}% {reportStatus && `(${reportStatus})`}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
-
-

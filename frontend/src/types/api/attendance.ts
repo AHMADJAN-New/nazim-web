@@ -13,6 +13,7 @@ export interface AttendanceSession {
   session_date: string;
   session_label: string | null;
   round_number: number;
+  attendance_round_name_id: string | null;
   method: AttendanceMethod;
   status: AttendanceSessionStatus;
   remarks: string | null;
@@ -34,6 +35,12 @@ export interface AttendanceSession {
   school?: {
     id: string;
     school_name: string;
+  };
+  attendance_round_name?: {
+    id: string;
+    name: string;
+    order_index: number;
+    is_active: boolean;
   };
 }
 
@@ -76,6 +83,7 @@ export interface AttendanceSessionInsert {
   academic_year_id?: string | null;
   session_date: string;
   session_label?: string | null;
+  attendance_round_name_id: string;
   method: AttendanceMethod;
   status?: AttendanceSessionStatus;
   remarks?: string | null;

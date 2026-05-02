@@ -27,6 +27,7 @@ class AttendanceSession extends Model
         'session_date',
         'session_label',
         'round_number',
+        'attendance_round_name_id',
         'method',
         'status',
         'remarks',
@@ -90,6 +91,11 @@ class AttendanceSession extends Model
         return $this->belongsToMany(ClassModel::class, 'attendance_session_classes', 'attendance_session_id', 'class_id')
             ->whereNull('attendance_session_classes.deleted_at')
             ->withTimestamps();
+    }
+
+    public function attendanceRoundName()
+    {
+        return $this->belongsTo(AttendanceRoundName::class, 'attendance_round_name_id');
     }
 
     public function scopeForOrganization($query, $organizationId)

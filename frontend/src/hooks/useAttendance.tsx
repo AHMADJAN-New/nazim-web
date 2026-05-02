@@ -208,6 +208,31 @@ export const useUpdateAttendanceSession = () => {
   });
 };
 
+export const useDeleteAttendanceSession = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      await attendanceSessionsApi.delete(sessionId);
+      return sessionId;
+    },
+    onSuccess: async () => {
+      showToast.success('attendancePage.deleteSuccess');
+      await queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
+      await queryClient.invalidateQueries({ queryKey: ['attendance-session'] });
+      await queryClient.invalidateQueries({ queryKey: ['attendance-report'] });
+      await queryClient.invalidateQueries({ queryKey: ['attendance-report-session-options'] });
+      await queryClient.invalidateQueries({ queryKey: ['attendance-totals-report'] });
+      await queryClient.refetchQueries({ queryKey: ['attendance-sessions'] });
+      await queryClient.refetchQueries({ queryKey: ['attendance-report'] });
+      await queryClient.refetchQueries({ queryKey: ['attendance-totals-report'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'attendancePage.deleteFailed');
+    },
+  });
+};
+
 export const useMarkAttendance = (sessionId?: string) => {
   const queryClient = useQueryClient();
   return useMutation({

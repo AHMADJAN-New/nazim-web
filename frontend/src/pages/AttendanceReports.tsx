@@ -19,6 +19,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
@@ -70,7 +71,7 @@ import {
 } from '@/lib/attendance/attendanceReportUtils';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
-import { cn } from '@/lib/utils';
+import { cn, formatDate as formatCalendarDate } from '@/lib/utils';
 import type * as AttendanceApi from '@/types/api/attendance';
 import type { AttendanceSessionOverview } from '@/types/domain/attendanceTotalsReport';
 import type { Student } from '@/types/domain/student';
@@ -138,6 +139,10 @@ const getReportEndpoint = (downloadUrl: string): string => {
 
 export default function AttendanceReports() {
   const { t, language } = useLanguage();
+  const calendarLocale =
+    language === 'fa' ? 'fa-AF' : language === 'ps' ? 'ps-AF' : language === 'ar' ? 'ar-SA' : 'en-US';
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { calendar } = useDatePreference();
   const { data: profile } = useProfile();
   const { data: schools } = useSchools(profile?.organization_id);
@@ -163,6 +168,7 @@ export default function AttendanceReports() {
       dateTo: today,
       page: 1,
       perPage: 25,
+      attendanceSessionId: '',
     };
   });
 
@@ -190,6 +196,23 @@ export default function AttendanceReports() {
     setFilters((prev) => ({ ...prev, academicYearId: currentAcademicYear.id }));
   }, [currentAcademicYear?.id]);
 
+  useEffect(() => {
+    const sessionId = searchParams.get('attendance_session_id')?.trim();
+    if (!sessionId) {
+      return;
+    }
+    const dateFromParam = searchParams.get('date_from')?.trim();
+    const dateToParam = searchParams.get('date_to')?.trim();
+    setFilters((prev) => ({
+      ...prev,
+      attendanceSessionId: sessionId,
+      ...(dateFromParam ? { dateFrom: dateFromParam } : {}),
+      ...(dateToParam ? { dateTo: dateToParam } : {}),
+      page: 1,
+    }));
+    navigate('/attendance/reports', { replace: true });
+  }, [searchParams, navigate]);
+
   const students: Student[] = useMemo(() => {
     if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
     return studentAdmissions
@@ -207,6 +230,100 @@ export default function AttendanceReports() {
     ],
     [students, t]
   );
+
+  const isSessionScoped = Boolean(filters.attendanceSessionId);
+
+  const { data: sessionScopedOptions } = useQuery<{
+    classes: Array<{ value: string; label: string }>;
+    students: Array<{ value: string; label: string }>;
+  }>({
+    queryKey: [
+      'attendance-report-session-options',
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+      filters.attendanceSessionId || null,
+    ],
+    queryFn: async () => {
+      if (!profile?.organization_id || !filters.attendanceSessionId) {
+        return { classes: [], students: [] };
+      }
+
+      const params = buildAttendanceReportParams({
+        organizationId: profile.organization_id,
+        attendanceSessionId: filters.attendanceSessionId,
+        page: 1,
+        perPage: 1000,
+      });
+
+      const response = (await attendanceSessionsApi.report(params)) as {
+        data?: Array<AttendanceApi.AttendanceRecord & { session?: AttendanceApi.AttendanceSession }>;
+      };
+
+      const classMap = new Map<string, string>();
+      const studentMap = new Map<string, string>();
+
+      for (const record of response.data ?? []) {
+        const row = mapAttendanceReportRecord(record);
+        const primaryClassId = record.session?.class_model?.id;
+        const primaryClassName = record.session?.class_model?.name;
+        if (primaryClassId && primaryClassName) {
+          classMap.set(primaryClassId, primaryClassName);
+        }
+        studentMap.set(row.studentId, `${row.studentName} (${row.admissionNo || '-'})`);
+      }
+
+      return {
+        classes: Array.from(classMap.entries()).map(([value, label]) => ({ value, label })),
+        students: Array.from(studentMap.entries()).map(([value, label]) => ({ value, label })),
+      };
+    },
+    enabled: !!profile?.organization_id && !!profile?.default_school_id && !!filters.attendanceSessionId,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const classComboboxOptions = useMemo(() => {
+    if (isSessionScoped) {
+      return [
+        { value: '', label: t('students.allClasses') || 'All classes' },
+        ...(sessionScopedOptions?.classes ?? []),
+      ];
+    }
+    return [
+      { value: '', label: t('students.allClasses') || 'All classes' },
+      ...(classes || []).map((c) => ({ value: c.id, label: c.name })),
+    ];
+  }, [classes, isSessionScoped, sessionScopedOptions?.classes, t]);
+
+  const scopedStudentComboboxOptions = useMemo(() => {
+    if (!isSessionScoped) {
+      return studentComboboxOptions;
+    }
+    return [
+      { value: '', label: t('attendanceReports.allStudentsOption') || 'All students' },
+      ...(sessionScopedOptions?.students ?? []),
+    ];
+  }, [isSessionScoped, sessionScopedOptions?.students, studentComboboxOptions, t]);
+
+  useEffect(() => {
+    if (!isSessionScoped || !sessionScopedOptions) {
+      return;
+    }
+
+    const selectedClassInvalid =
+      !!filters.classId && !sessionScopedOptions.classes.some((option) => option.value === filters.classId);
+    const selectedStudentInvalid =
+      !!filters.studentId && !sessionScopedOptions.students.some((option) => option.value === filters.studentId);
+
+    if (selectedClassInvalid || selectedStudentInvalid) {
+      setFilters((previous) => ({
+        ...previous,
+        ...(selectedClassInvalid ? { classId: '' } : {}),
+        ...(selectedStudentInvalid ? { studentId: '' } : {}),
+        page: 1,
+      }));
+    }
+  }, [filters.classId, filters.studentId, isSessionScoped, sessionScopedOptions]);
 
   const currentSchool = useMemo(
     () => schools?.find((school) => school.id === profile?.default_school_id) ?? null,
@@ -255,26 +372,45 @@ export default function AttendanceReports() {
     isLoading,
     refetch,
   } = useQuery<AttendanceReportResponse>({
-    queryKey: ['attendance-report', profile?.organization_id, profile?.default_school_id ?? null, filters],
+    queryKey: [
+      'attendance-report',
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+      filters,
+    ],
     queryFn: async () => {
       if (!profile?.organization_id) {
         return { data: [], total: 0, current_page: 1, per_page: filters.perPage, last_page: 1, from: 0, to: 0 };
       }
 
-      const response = await attendanceSessionsApi.report(
-        buildAttendanceReportParams({
-          organizationId: profile.organization_id,
-          studentId: filters.studentId || undefined,
-          classId: filters.classId || undefined,
-          academicYearId: filters.academicYearId || undefined,
-          status: (filters.status || undefined) as AttendanceApi.AttendanceStatus | undefined,
-          studentType: (filters.studentType || undefined) as 'boarders' | 'day_scholars' | 'all' | undefined,
-          dateFrom: filters.dateFrom || undefined,
-          dateTo: filters.dateTo || undefined,
-          page: filters.page,
-          perPage: filters.perPage,
-        })
-      );
+      const reportParams = buildAttendanceReportParams({
+        organizationId: profile.organization_id,
+        studentId: filters.studentId || undefined,
+        classId: filters.classId || undefined,
+        academicYearId: filters.academicYearId || undefined,
+        status: (filters.status || undefined) as AttendanceApi.AttendanceStatus | undefined,
+        studentType: (filters.studentType || undefined) as 'boarders' | 'day_scholars' | 'all' | undefined,
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
+        page: filters.page,
+        perPage: filters.perPage,
+        attendanceSessionId: filters.attendanceSessionId || undefined,
+      });
+
+      let response: unknown;
+      try {
+        response = await attendanceSessionsApi.report(reportParams);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        if (
+          reportParams.attendance_session_id &&
+          message.includes('Attendance session not found for this school')
+        ) {
+          showToast.error(t('toast.attendanceSessionNotFound'));
+          setFilters((prev) => ({ ...prev, attendanceSessionId: '', page: 1 }));
+        }
+        throw error;
+      }
 
       const apiData = response as {
         data?: Array<AttendanceApi.AttendanceRecord & { session?: AttendanceApi.AttendanceSession }>;
@@ -324,9 +460,9 @@ export default function AttendanceReports() {
     if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return null;
     const same = filters.dateFrom === filters.dateTo;
     return same
-      ? format(from, 'MMM d, yyyy')
-      : `${format(from, 'MMM d, yyyy')} — ${format(to, 'MMM d, yyyy')}`;
-  }, [filters.dateFrom, filters.dateTo]);
+      ? formatCalendarDate(from, calendarLocale)
+      : `${formatCalendarDate(from, calendarLocale)} — ${formatCalendarDate(to, calendarLocale)}`;
+  }, [calendarLocale, filters.dateFrom, filters.dateTo]);
 
   const sessionFocusStillAligned =
     sessionDateFocus !== null &&
@@ -398,6 +534,7 @@ export default function AttendanceReports() {
       dateTo: today,
       page: 1,
       perPage: 25,
+      attendanceSessionId: '',
     });
   };
 
@@ -560,7 +697,7 @@ export default function AttendanceReports() {
         header: t('events.date') || 'Date',
         cell: ({ row }) => (
           <div className="min-w-[120px]">
-            <div className="text-sm font-medium">{format(row.original.sessionDate, 'MMM dd, yyyy')}</div>
+            <div className="text-sm font-medium">{formatCalendarDate(row.original.sessionDate, calendarLocale)}</div>
             <div className="text-xs text-muted-foreground">{format(row.original.markedAt, 'HH:mm')}</div>
           </div>
         ),
@@ -593,7 +730,7 @@ export default function AttendanceReports() {
         ),
       },
     ],
-    [t]
+    [calendarLocale, t]
   );
 
   const paginationMeta = useMemo(() => {
@@ -891,7 +1028,7 @@ export default function AttendanceReports() {
                 {t('search.class') || 'Class'}
               </Label>
               <Combobox
-                options={(classes || []).map((c) => ({ value: c.id, label: c.name }))}
+                options={classComboboxOptions}
                 value={filters.classId}
                 onValueChange={(value) => handleFilterChange('classId', value)}
                 placeholder={t('students.allClasses') || 'All classes'}
@@ -905,7 +1042,7 @@ export default function AttendanceReports() {
                 {t('attendanceReports.student') || 'Student'}
               </Label>
               <Combobox
-                options={studentComboboxOptions}
+                options={scopedStudentComboboxOptions}
                 value={filters.studentId}
                 onValueChange={(value) => handleFilterChange('studentId', value)}
                 placeholder={t('attendanceReports.allStudentsOption') || 'All students'}
@@ -1212,7 +1349,7 @@ export default function AttendanceReports() {
                           <div className="min-w-0">
                             <p className="font-medium text-foreground">
                               {session.sessionDate
-                                ? format(session.sessionDate, 'MMM d, yyyy')
+                                ? formatCalendarDate(session.sessionDate, calendarLocale)
                                 : '—'}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">

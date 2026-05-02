@@ -1,17 +1,18 @@
 import { format } from 'date-fns';
-import { BookOpen, CalendarDays, ChevronRight, ClipboardList, GraduationCap, Pencil, QrCode, School, ScanLine, Sparkles, Users } from 'lucide-react';
+import { BookOpen, CalendarDays, ChevronRight, ClipboardList, GraduationCap, Pencil, QrCode, School, ScanLine, Sparkles, Trash2, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useAttendanceSessions, useCreateAttendanceSession, useUpdateAttendanceSession } from '@/hooks/useAttendance';
+import { useAttendanceSessions, useCreateAttendanceSession, useDeleteAttendanceSession, useUpdateAttendanceSession } from '@/hooks/useAttendance';
+import { useAttendanceRoundNames } from '@/hooks/useAttendanceRoundNames';
 import { useClasses } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useSchools } from '@/hooks/useSchools';
@@ -35,7 +36,7 @@ export default function Attendance() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessionDate, setSessionDate] = useState<string>('');
-  const [sessionLabel, setSessionLabel] = useState<string>('');
+  const [selectedRoundNameId, setSelectedRoundNameId] = useState<string>('');
   const [sessionMethod, setSessionMethod] = useState<'manual' | 'barcode'>('manual');
   const [sessionRemarks, setSessionRemarks] = useState<string>('');
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
@@ -44,15 +45,17 @@ export default function Attendance() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingSessionDate, setEditingSessionDate] = useState<string>('');
-  const [editingSessionLabel, setEditingSessionLabel] = useState<string>('');
+  const [editingRoundNameId, setEditingRoundNameId] = useState<string>('');
   const [editingClassIds, setEditingClassIds] = useState<string[]>([]);
   const [editingRemarks, setEditingRemarks] = useState<string>('');
   const [editingStudentType, setEditingStudentType] = useState<AttendanceStudentType>('all');
+  const [sessionToDelete, setSessionToDelete] = useState<AttendanceSession | null>(null);
 
 
   const { sessions, pagination, page, pageSize, setPage, setPageSize, isLoading: sessionsLoading } = useAttendanceSessions({}, true);
   const createSession = useCreateAttendanceSession();
   const updateSession = useUpdateAttendanceSession();
+  const deleteSession = useDeleteAttendanceSession();
 
   useEffect(() => {
     const sessionId = searchParams.get('session');
@@ -67,6 +70,7 @@ export default function Attendance() {
 
   const { data: classes } = useClasses();
   const { data: schools } = useSchools();
+  const { data: roundNames = [] } = useAttendanceRoundNames(true);
 
   const classMap = useMemo(
     () => new Map((classes || []).map(cls => [cls.id, cls])),
@@ -86,13 +90,17 @@ export default function Attendance() {
       showToast.error(t('attendancePage.sessionHint') || 'Please select at least one class and date');
       return;
     }
+    if (!selectedRoundNameId) {
+      showToast.error(t('attendanceRoundNames.selectRequired'));
+      return;
+    }
 
     const payload: AttendanceSessionInsert = {
       classIds: classIdsToUse,
       classId: classIdsToUse[0],
       schoolId: selectedSchool === 'all' ? null : selectedSchool || null,
       sessionDate: new Date(sessionDate),
-      sessionLabel: sessionLabel.trim() || null,
+      attendanceRoundNameId: selectedRoundNameId,
       method: sessionMethod,
       remarks: sessionRemarks || undefined,
       studentType,
@@ -103,7 +111,7 @@ export default function Attendance() {
       setSelectedSessionId(created.id);
       setSelectedClassIds([]);
       setSessionDate('');
-      setSessionLabel('');
+      setSelectedRoundNameId('');
       setSessionRemarks('');
       setStudentType('all');
     } catch (error: unknown) {
@@ -194,11 +202,25 @@ export default function Attendance() {
   const openEditDialog = (session: AttendanceSession) => {
     setEditingSessionId(session.id);
     setEditingSessionDate(dateToLocalYYYYMMDD(session.sessionDate));
-    setEditingSessionLabel(session.sessionLabel || '');
+    setEditingRoundNameId(session.attendanceRoundNameId || '');
     setEditingClassIds(buildSessionClassIds(session));
     setEditingRemarks(session.remarks || '');
     setEditingStudentType(session.studentType || 'all');
     setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return;
+
+    try {
+      await deleteSession.mutateAsync(sessionToDelete.id);
+      if (selectedSessionId === sessionToDelete.id) {
+        setSelectedSessionId(null);
+      }
+      setSessionToDelete(null);
+    } catch {
+      // Toast handled in mutation onError.
+    }
   };
 
   const handleSaveSessionEdits = async () => {
@@ -215,6 +237,10 @@ export default function Attendance() {
       showToast.error(t('attendancePage.sessionHint') || 'Please select at least one class and date');
       return;
     }
+    if (!editingRoundNameId) {
+      showToast.error(t('attendanceRoundNames.selectRequired'));
+      return;
+    }
 
     try {
       await updateSession.mutateAsync({
@@ -223,7 +249,7 @@ export default function Attendance() {
           classId: editingClassIds[0],
           classIds: editingClassIds,
           sessionDate: new Date(editingSessionDate),
-          sessionLabel: editingSessionLabel.trim() || null,
+          attendanceRoundNameId: editingRoundNameId,
           remarks: editingRemarks || null,
           studentType: editingStudentType,
         },
@@ -407,15 +433,20 @@ export default function Attendance() {
 
               <div className="space-y-2.5">
                 <Label className="text-sm font-medium">
-                  {t('attendancePage.sessionLabel') || 'Session label'}
+                  {t('attendanceRoundNames.selectLabel')}
                 </Label>
-                <Input
-                  value={sessionLabel}
-                  onChange={e => setSessionLabel(e.target.value)}
-                  placeholder={t('attendancePage.sessionLabelPlaceholder') || 'Optional, e.g. Morning or After lunch'}
-                  maxLength={100}
-                  className="rounded-xl"
-                />
+                <Select value={selectedRoundNameId} onValueChange={setSelectedRoundNameId}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder={t('attendanceRoundNames.selectPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roundNames.map((round) => (
+                      <SelectItem key={round.id} value={round.id}>
+                        {round.order_index}. {round.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Method Toggle */}
@@ -635,6 +666,18 @@ export default function Attendance() {
                           <ChevronRight className="h-3.5 w-3.5" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSessionToDelete(item);
+                        }}
+                        className="h-7 w-7 p-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10"
+                        title={t('attendancePage.deleteSession') || 'Delete session'}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
                     </div>
                   </div>
                 );
@@ -715,15 +758,20 @@ export default function Attendance() {
               </div>
               <div className="space-y-2.5">
                 <Label className="text-sm font-medium">
-                  {t('attendancePage.sessionLabel') || 'Session label'}
+                  {t('attendanceRoundNames.selectLabel')}
                 </Label>
-                <Input
-                  value={editingSessionLabel}
-                  onChange={e => setEditingSessionLabel(e.target.value)}
-                  placeholder={t('attendancePage.sessionLabelPlaceholder') || 'Optional, e.g. Morning or After lunch'}
-                  maxLength={100}
-                  className="rounded-xl"
-                />
+                <Select value={editingRoundNameId} onValueChange={setEditingRoundNameId}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder={t('attendanceRoundNames.selectPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roundNames.map((round) => (
+                      <SelectItem key={round.id} value={round.id}>
+                        {round.order_index}. {round.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -838,6 +886,27 @@ export default function Attendance() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!sessionToDelete} onOpenChange={(open) => { if (!open) setSessionToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('attendancePage.deleteConfirmTitle') || 'Delete attendance session?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('attendancePage.deleteConfirmDescription') || 'This will remove the session and all related attendance records from active reports.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteSession.isPending}>
+              {t('events.cancel') || 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSession} disabled={deleteSession.isPending}>
+              {deleteSession.isPending
+                ? (t('attendancePage.deletingSession') || 'Deleting...')
+                : (t('attendancePage.deleteSession') || 'Delete session')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

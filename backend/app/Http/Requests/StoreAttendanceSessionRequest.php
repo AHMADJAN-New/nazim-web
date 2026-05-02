@@ -21,6 +21,7 @@ class StoreAttendanceSessionRequest extends FormRequest
             'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
             'session_date' => 'required|date',
             'session_label' => 'nullable|string|max:100',
+            'attendance_round_name_id' => 'required|uuid|exists:attendance_round_names,id',
             'method' => 'required|string|in:manual,barcode',
             'status' => 'nullable|string|in:open,closed',
             'remarks' => 'nullable|string',

@@ -74,6 +74,7 @@ export default {
     attendanceDeleteFailed: "د حاضرۍ ړنګول ناکام شول",
     attendanceMarked: "حاضري په نښه شوه",
     attendanceMarkFailed: "د حاضرۍ نښه کول ناکام شول",
+    attendanceSessionNotFound: "دا حاضري ناسته ستاسې ښوونځي لپاره شته نه ده یا لرې شوې ده.",
     attendanceUpdated: "حاضري په بریالیتوب سره تازه شوه",
     attendanceUpdateFailed: "د حاضرۍ تازه کول ناکام شول",
     categoryCreateFailed: "د کټګورۍ جوړول ناکام شول",

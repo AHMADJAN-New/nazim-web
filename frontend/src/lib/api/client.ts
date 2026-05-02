@@ -1722,6 +1722,35 @@ export const residencyTypesApi = {
   },
 };
 
+// Attendance Round Names API
+export const attendanceRoundNamesApi = {
+  list: async (params?: {
+    active_only?: string;
+  }) => {
+    return apiClient.get('/attendance-round-names', params);
+  },
+
+  create: async (data: {
+    name: string;
+    order_index: number;
+    is_active?: boolean;
+  }) => {
+    return apiClient.post('/attendance-round-names', data);
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    order_index?: number;
+    is_active?: boolean;
+  }) => {
+    return apiClient.put(`/attendance-round-names/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/attendance-round-names/${id}`);
+  },
+};
+
 export const assetsApi = {
   list: async (params?: {
     status?: string | string[];
@@ -2726,6 +2755,10 @@ export const attendanceSessionsApi = {
     return apiClient.put(`/attendance-sessions/${id}`, data);
   },
 
+  delete: async (id: string) => {
+    return apiClient.delete(`/attendance-sessions/${id}`);
+  },
+
   markRecords: async (id: string, data: any) => {
     return apiClient.post(`/attendance-sessions/${id}/records`, data);
   },
@@ -2757,6 +2790,7 @@ export const attendanceSessionsApi = {
     student_type?: 'boarders' | 'day_scholars' | 'all';
     page?: number;
     per_page?: number;
+    attendance_session_id?: string;
   }) => {
     return apiClient.get('/attendance-sessions/report', params);
   },
@@ -2772,6 +2806,8 @@ export const attendanceSessionsApi = {
     student_id?: string;
     student_type?: 'boarders' | 'day_scholars' | 'all';
     sessions_limit?: number;
+    student_breakdown_page?: number;
+    student_breakdown_per_page?: number;
   }) => {
     return apiClient.get('/attendance-sessions/totals-report', params);
   },

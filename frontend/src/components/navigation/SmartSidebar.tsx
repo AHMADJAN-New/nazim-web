@@ -869,6 +869,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/attendance/reports/totals",
             icon: ChartNoAxesCombined,
           }] : []),
+          ...(hasAttendanceReportsPermission ? [{
+            title: "Attendance Insights",
+            titleKey: "attendanceTotalsInsights",
+            url: "/attendance/reports/totals/insights",
+            icon: ChartNoAxesCombined,
+          }] : []),
         ],
       })] : []),
       ...(hasLeaveRequestsPermission ? [asNavItem({
@@ -1677,6 +1683,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "academic.residencyTypes.title",
             url: "/settings/residency-types",
             icon: BookType,
+          }] : []),
+          ...(hasAttendanceSessionsPermission ? [{
+            title: "Attendance Round Names",
+            titleKey: "attendanceRoundNames",
+            url: "/settings/attendance-round-names",
+            icon: ListChecks,
           }] : []),
           ...(hasAcademicYearsPermission ? [{
             title: "Academic Years",

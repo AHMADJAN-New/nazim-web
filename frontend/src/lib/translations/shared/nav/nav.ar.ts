@@ -12,6 +12,8 @@ export default {
     attendance: "الحضور",
     attendanceReports: "تقارير الحضور",
     attendanceTotalsReport: "تقرير إجمالي الحضور",
+    attendanceTotalsInsights: "رؤى الحضور",
+    attendanceRoundNames: "أسماء جولات الحضور",
     authentication: "إدارة المصادقة",
     certificateTemplates: "قوالب الشهادات",
     classes: "الفصول",

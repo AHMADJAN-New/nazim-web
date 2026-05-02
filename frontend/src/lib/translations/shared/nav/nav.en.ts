@@ -12,6 +12,8 @@ export default {
     attendance: "Attendance",
     attendanceReports: "Attendance Reports",
     attendanceTotalsReport: "Attendance Totals Report",
+    attendanceTotalsInsights: "Attendance Insights",
+    attendanceRoundNames: "Attendance Round Names",
     authentication: "Authentication",
     certificateTemplates: "Certificate Templates",
     classes: "Classes",

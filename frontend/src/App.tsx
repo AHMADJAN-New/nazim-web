@@ -69,6 +69,7 @@ import {
   SchoolsManagement,
   ReportTemplatesManagement,
   ResidencyTypesManagement,
+  AttendanceRoundNamesManagement,
   AcademicYearsManagement,
   ExamTypesPage,
   ClassesManagement,
@@ -132,6 +133,7 @@ import {
   AttendanceMarking,
   AttendanceReports,
   AttendanceTotalsReports,
+  AttendanceTotalsInsights,
   UserManagement,
   UserProfile,
   UserSettings,
@@ -1197,6 +1199,13 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/settings/attendance-round-names" element={
+                      <PermissionRoute permission="attendance_sessions.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AttendanceRoundNamesManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/settings/academic-years" element={
                       <PermissionRoute permission="academic_years.read">
                         <Suspense fallback={<PageSkeleton />}>
@@ -1624,6 +1633,13 @@ const App = () => (
                       <PermissionRoute permission="attendance_sessions.report">
                         <Suspense fallback={<PageSkeleton />}>
                           <AttendanceTotalsReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/attendance/reports/totals/insights" element={
+                      <PermissionRoute permission="attendance_sessions.report">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AttendanceTotalsInsights />
                         </Suspense>
                       </PermissionRoute>
                     } />

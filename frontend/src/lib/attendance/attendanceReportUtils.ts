@@ -11,6 +11,7 @@ export interface AttendanceReportFilters {
   dateTo?: string;
   page?: number;
   perPage?: number;
+  attendanceSessionId?: string;
 }
 
 export interface AttendanceReportRecord {
@@ -49,6 +50,7 @@ export const buildAttendanceReportParams = (filters: AttendanceReportFilters) =>
     date_to: filters.dateTo,
     page: filters.page,
     per_page: filters.perPage,
+    attendance_session_id: filters.attendanceSessionId,
   };
 
   if (filters.classId) {

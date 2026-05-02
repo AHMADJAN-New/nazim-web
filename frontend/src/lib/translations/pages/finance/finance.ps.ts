@@ -286,7 +286,7 @@ export default {
     noCashbookData: "د نغدو پیسو په کتاب کې معلومات نشته",
     incomeVsExpenseTrend: "د عوایدو او لګښتونو بهیر",
     showingTrendsForPeriod: "د ټاکل شوې مودې لپاره د بهیر ښودل",
-    selectTimeRange: "د وخت محدوده غوره کړئ",
+    selectTimeRange: " وخت  غوره کړئ",
     last7Days: "وروستۍ ۷ ورځې",
     last30Days: "وروستۍ ۳۰ ورځې",
     last90Days: "وروستۍ ۹۰ ورځې",

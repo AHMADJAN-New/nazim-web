@@ -7,6 +7,7 @@ use App\Http\Controllers\AssetCategoryController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AttendanceSessionController;
+use App\Http\Controllers\AttendanceRoundNameController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\CertificateTemplateController;
@@ -665,6 +666,14 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/residency-types', [ResidencyTypeController::class, 'store']);
             Route::put('/residency-types/{residency_type}', [ResidencyTypeController::class, 'update']);
             Route::delete('/residency-types/{residency_type}', [ResidencyTypeController::class, 'destroy']);
+        });
+
+        // Attendance Round Names (core feature, school scoped)
+        Route::get('/attendance-round-names', [AttendanceRoundNameController::class, 'index']);
+        Route::middleware(['subscription:write'])->group(function () {
+            Route::post('/attendance-round-names', [AttendanceRoundNameController::class, 'store']);
+            Route::put('/attendance-round-names/{id}', [AttendanceRoundNameController::class, 'update']);
+            Route::delete('/attendance-round-names/{id}', [AttendanceRoundNameController::class, 'destroy']);
         });
 
         // Report Templates (requires report_templates feature)

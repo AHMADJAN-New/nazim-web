@@ -74,6 +74,7 @@ export default {
     attendanceDeleteFailed: "Failed to delete attendance",
     attendanceMarked: "Attendance marked",
     attendanceMarkFailed: "Failed to mark attendance",
+    attendanceSessionNotFound: "That attendance session is not available for your school or was removed.",
     attendanceUpdated: "Attendance updated successfully",
     attendanceUpdateFailed: "Failed to update attendance",
     categoryCreateFailed: "Failed to create category",

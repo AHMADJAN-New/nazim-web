@@ -39,6 +39,8 @@ export const useAttendanceTotalsReport = (
         student_id: normalizedFilters.studentId,
         student_type: normalizedFilters.studentType,
         sessions_limit: normalizedFilters.sessionsLimit,
+        student_breakdown_page: normalizedFilters.studentBreakdownPage,
+        student_breakdown_per_page: normalizedFilters.studentBreakdownPerPage,
       };
       // Strict school scoping: do not allow client-selected school_id.
 
@@ -55,7 +57,7 @@ export const useAttendanceTotalsReport = (
         apiReport as AttendanceTotalsReportApi.AttendanceTotalsReport
       );
     },
-    enabled: !!user && !!profile && options?.enabled !== false,
+    enabled: !!user && !!profile && !!profile.default_school_id && options?.enabled !== false,
     staleTime: 5 * 60 * 1000,
     refetchOnReconnect: false,
   });

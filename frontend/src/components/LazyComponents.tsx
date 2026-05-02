@@ -21,6 +21,7 @@ export const UserPermissionsManagement = lazy(() => import('@/components/setting
 export const SchoolsManagement = lazy(() => import('@/components/settings/SchoolsManagement').then(module => ({ default: module.SchoolsManagement })));
 export const ReportTemplatesManagement = lazy(() => import('@/components/settings/ReportTemplatesManagement').then(module => ({ default: module.ReportTemplatesManagement })));
 export const ResidencyTypesManagement = lazy(() => import('@/components/settings/ResidencyTypesManagement').then(module => ({ default: module.ResidencyTypesManagement })));
+export const AttendanceRoundNamesManagement = lazy(() => import('@/components/settings/AttendanceRoundNamesManagement').then(module => ({ default: module.AttendanceRoundNamesManagement })));
 export const AcademicYearsManagement = lazy(() => import('@/components/settings/AcademicYearsManagement').then(module => ({ default: module.AcademicYearsManagement })));
 export const ActivityLogsPage = lazy(() => import('@/pages/settings/ActivityLogsPage').then(module => ({ default: module.default })));
 export const ExamTypesPage = lazy(() => import('@/pages/settings/ExamTypesPage').then(module => ({ default: module.ExamTypesPage })));
@@ -84,6 +85,7 @@ export const AttendancePage = lazy(() => import('@/pages/Attendance').then(modul
 export const AttendanceMarking = lazy(() => import('@/pages/AttendanceMarking').then(module => ({ default: module.default })));
 export const AttendanceReports = lazy(() => import('@/pages/AttendanceReports'));
 export const AttendanceTotalsReports = lazy(() => import('@/pages/AttendanceTotalsReports'));
+export const AttendanceTotalsInsights = lazy(() => import('@/pages/AttendanceTotalsInsights'));
 export const UserManagement = lazy(() => import('@/components/admin/UserManagement').then(module => ({ default: module.UserManagement })));
 export const Library = lazy(() => import('@/pages/Library'));
 export const LibraryCategories = lazy(() => import('@/pages/LibraryCategories'));

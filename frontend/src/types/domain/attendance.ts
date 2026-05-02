@@ -36,6 +36,7 @@ export interface AttendanceSession {
   sessionDate: Date;
   sessionLabel: string | null;
   roundNumber: number;
+  attendanceRoundNameId: string | null;
   method: AttendanceMethod;
   status: AttendanceSessionStatus;
   remarks: string | null;
@@ -60,6 +61,7 @@ export interface AttendanceSessionInsert {
   academicYearId?: string | null;
   sessionDate: Date;
   sessionLabel?: string | null;
+  attendanceRoundNameId: string;
   method: AttendanceMethod;
   status?: AttendanceSessionStatus;
   remarks?: string | null;

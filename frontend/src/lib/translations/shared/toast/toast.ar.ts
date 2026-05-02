@@ -74,6 +74,7 @@ export default {
     attendanceDeleteFailed: "Failed to delete attendance",
     attendanceMarked: "Attendance marked",
     attendanceMarkFailed: "Failed to mark attendance",
+    attendanceSessionNotFound: "جلسة الحضور هذه غير متاحة لمدرستك أو تمت إزالتها.",
     attendanceUpdated: "Attendance updated successfully",
     attendanceUpdateFailed: "Failed to update attendance",
     categoryCreateFailed: "Failed to create category",

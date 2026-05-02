@@ -6,6 +6,7 @@ use App\Http\Requests\AttendanceScanRequest;
 use App\Http\Requests\MarkAttendanceRecordsRequest;
 use App\Http\Requests\StoreAttendanceSessionRequest;
 use App\Models\AttendanceRecord;
+use App\Models\AttendanceRoundName;
 use App\Models\AttendanceSession;
 use App\Models\ClassModel;
 use App\Services\ActivityLogService;
@@ -50,7 +51,7 @@ class AttendanceSessionController extends Controller
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
-        $query = AttendanceSession::with(['classModel', 'classes', 'school'])
+        $query = AttendanceSession::with(['classModel', 'classes', 'school', 'attendanceRoundName'])
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
@@ -131,22 +132,34 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'One or more classes not found for this school'], 404);
         }
 
+        $selectedRound = AttendanceRoundName::whereNull('deleted_at')
+            ->where('id', $validated['attendance_round_name_id'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $selectedRound) {
+            return response()->json(['error' => 'Attendance round name not found for this school'], 422);
+        }
+
         // Use first class_id for backward compatibility (can be null if using only class_ids)
         $primaryClassId = $classIds[0] ?? null;
 
-        $session = DB::transaction(function () use ($validated, $profile, $user, $primaryClassId, $classIds, $currentSchoolId) {
+        $session = DB::transaction(function () use ($validated, $profile, $user, $primaryClassId, $classIds, $currentSchoolId, $selectedRound) {
             $session = AttendanceSession::create([
                 'organization_id' => $profile->organization_id,
                 'school_id' => $currentSchoolId,
                 'class_id' => $primaryClassId, // Keep for backward compatibility
                 'academic_year_id' => $validated['academic_year_id'] ?? null,
                 'session_date' => Carbon::parse($validated['session_date'])->toDateString(),
-                'session_label' => $validated['session_label'] ?? null,
+                'session_label' => $selectedRound->name,
                 'round_number' => $this->nextAttendanceRoundNumber(
                     $profile->organization_id,
                     $currentSchoolId,
                     Carbon::parse($validated['session_date'])->toDateString()
                 ),
+                'attendance_round_name_id' => $selectedRound->id,
                 'method' => $validated['method'],
                 'status' => $validated['status'] ?? 'open',
                 'remarks' => $validated['remarks'] ?? null,
@@ -181,11 +194,11 @@ class AttendanceSessionController extends Controller
                 }
             }
 
-            return $session->load(['classModel', 'classes', 'school', 'records']);
+            return $session->load(['classModel', 'classes', 'school', 'records', 'attendanceRoundName']);
         });
 
         // Load relationships for notification
-        $session->load(['classModel', 'classes', 'school', 'academicYear']);
+        $session->load(['classModel', 'classes', 'school', 'academicYear', 'attendanceRoundName']);
 
         // Log attendance session creation
         try {
@@ -257,6 +270,7 @@ class AttendanceSessionController extends Controller
             'classModel',
             'classes', // Load all classes for multi-class sessions
             'school',
+            'attendanceRoundName',
             'records.student',
         ])->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
@@ -293,6 +307,7 @@ class AttendanceSessionController extends Controller
             'status' => 'nullable|string|in:open,closed',
             'session_date' => 'nullable|date',
             'session_label' => 'nullable|string|max:100',
+            'attendance_round_name_id' => 'required|uuid|exists:attendance_round_names,id',
             'remarks' => 'nullable|string',
             'student_type' => 'nullable|string|in:all,boarders,day_scholars',
             'class_id' => 'nullable|uuid|exists:classes,id',
@@ -312,6 +327,17 @@ class AttendanceSessionController extends Controller
 
         if ($session->status === 'closed') {
             return response()->json(['error' => 'Closed attendance sessions cannot be edited'], 422);
+        }
+
+        $selectedRound = AttendanceRoundName::whereNull('deleted_at')
+            ->where('id', $validated['attendance_round_name_id'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $selectedRound) {
+            return response()->json(['error' => 'Attendance round name not found for this school'], 422);
         }
 
         $classIds = null;
@@ -340,6 +366,7 @@ class AttendanceSessionController extends Controller
             'session_date' => optional($session->session_date)->toDateString(),
             'session_label' => $session->session_label,
             'round_number' => $session->round_number,
+            'attendance_round_name_id' => $session->attendance_round_name_id,
             'remarks' => $session->remarks,
             'student_type' => $session->student_type,
             'class_id' => $session->class_id,
@@ -357,14 +384,15 @@ class AttendanceSessionController extends Controller
             ? $this->nextAttendanceRoundNumber($profile->organization_id, $currentSchoolId, $nextSessionDate, $session->id)
             : $session->round_number;
 
-        DB::transaction(function () use ($session, $validated, $nextStatus, $oldStatus, $profile, $currentSchoolId, $user, $classIds, $nextSessionDate, $nextRoundNumber) {
+        DB::transaction(function () use ($session, $validated, $nextStatus, $oldStatus, $profile, $currentSchoolId, $user, $classIds, $nextSessionDate, $nextRoundNumber, $selectedRound) {
             $primaryClassId = $classIds[0] ?? $session->class_id;
 
             $session->update([
                 'status' => $nextStatus,
                 'session_date' => $nextSessionDate,
-                'session_label' => array_key_exists('session_label', $validated) ? ($validated['session_label'] ?: null) : $session->session_label,
+                'session_label' => $selectedRound->name,
                 'round_number' => $nextRoundNumber,
+                'attendance_round_name_id' => $selectedRound->id,
                 'remarks' => $validated['remarks'] ?? $session->remarks,
                 'student_type' => $validated['student_type'] ?? $session->student_type,
                 'class_id' => $primaryClassId,
@@ -394,7 +422,7 @@ class AttendanceSessionController extends Controller
             }
         });
 
-        $session->fresh(['classModel', 'classes', 'school', 'academicYear', 'records']);
+        $session->fresh(['classModel', 'classes', 'school', 'academicYear', 'records', 'attendanceRoundName']);
 
         // Log attendance session update
         try {
@@ -411,6 +439,7 @@ class AttendanceSessionController extends Controller
                         'session_date' => optional($session->session_date)->toDateString(),
                         'session_label' => $session->session_label,
                         'round_number' => $session->round_number,
+                        'attendance_round_name_id' => $session->attendance_round_name_id,
                         'remarks' => $session->remarks,
                         'student_type' => $session->student_type,
                         'class_id' => $session->class_id,
@@ -526,6 +555,63 @@ class AttendanceSessionController extends Controller
         }
 
         return response()->json($session);
+    }
+
+    public function destroy(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile || ! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (! $user->hasPermissionTo('attendance_sessions.delete')) {
+                return response()->json(['error' => 'Access Denied'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for attendance_sessions.delete: '.$e->getMessage());
+
+            return response()->json(['error' => 'Access Denied'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $session = AttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (! $session) {
+            return response()->json(['error' => 'Attendance session not found'], 404);
+        }
+
+        DB::transaction(function () use ($session, $profile, $currentSchoolId) {
+            $timestamp = now();
+
+            DB::table('attendance_records')
+                ->where('attendance_session_id', $session->id)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->update([
+                    'deleted_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ]);
+
+            DB::table('attendance_session_classes')
+                ->where('attendance_session_id', $session->id)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->update([
+                    'deleted_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ]);
+
+            $session->delete();
+        });
+
+        return response()->noContent();
     }
 
     private function getSessionClassIds(AttendanceSession $session): array
@@ -710,7 +796,7 @@ class AttendanceSessionController extends Controller
 
         $session->refresh();
 
-        return response()->json($session->load(['records.student', 'classModel', 'school']));
+        return response()->json($session->load(['records.student', 'classModel', 'school', 'attendanceRoundName']));
     }
 
     public function scan(AttendanceScanRequest $request, string $id)
@@ -968,7 +1054,7 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $request->validate([
+        $validatedReport = $request->validate([
             'student_id' => 'nullable|uuid|exists:students,id',
             'student_type' => 'nullable|string|in:all,boarders,day_scholars',
             'class_id' => 'nullable|uuid|exists:classes,id',
@@ -980,15 +1066,29 @@ class AttendanceSessionController extends Controller
             'status' => 'nullable|string|in:present,absent,late,excused,sick,leave',
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:1|max:100',
+            'attendance_session_id' => 'nullable|uuid|exists:attendance_sessions,id',
         ]);
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
+        if (! empty($validatedReport['attendance_session_id'])) {
+            $sessionId = (string) $validatedReport['attendance_session_id'];
+            $sessionOk = AttendanceSession::query()
+                ->where('id', $sessionId)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (! $sessionOk) {
+                return response()->json(['error' => 'Attendance session not found for this school'], 404);
+            }
+        }
+
         $query = AttendanceRecord::with(['student:id,full_name,father_name,admission_no,card_number,student_code', 'session.classModel', 'session.classes', 'session.school'])
             ->addSelect([
                 'attendance_records.*',
-                DB::raw("(SELECT c.name FROM student_admissions sa JOIN classes c ON sa.class_id = c.id WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' ORDER BY sa.created_at DESC LIMIT 1) as student_class_name"),
-                DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
+                DB::raw("(SELECT c.name FROM student_admissions sa JOIN classes c ON sa.class_id = c.id AND c.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1) as student_class_name"),
+                DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
             ])
             ->where('attendance_records.organization_id', $profile->organization_id)
             ->where('attendance_records.school_id', $currentSchoolId)
@@ -1031,6 +1131,10 @@ class AttendanceSessionController extends Controller
 
         if ($request->filled('status')) {
             $query->where('attendance_records.status', $request->input('status'));
+        }
+
+        if (! empty($validatedReport['attendance_session_id'])) {
+            $query->where('attendance_records.attendance_session_id', (string) $validatedReport['attendance_session_id']);
         }
 
         $this->applyAttendanceReportStudentTypeToAttendanceRecordQuery(
@@ -1228,6 +1332,8 @@ class AttendanceSessionController extends Controller
             'student_id' => 'nullable|uuid|exists:students,id',
             'student_type' => 'nullable|string|in:all,boarders,day_scholars',
             'sessions_limit' => 'nullable|integer|min:1|max:100',
+            'student_breakdown_page' => 'nullable|integer|min:1',
+            'student_breakdown_per_page' => 'nullable|integer|min:1|max:50',
             'class_id' => 'nullable|uuid|exists:classes,id',
             'class_ids' => 'nullable|array|min:1',
             'class_ids.*' => 'required|uuid|exists:classes,id',
@@ -1367,9 +1473,18 @@ class AttendanceSessionController extends Controller
             ->get();
 
         $classBreakdown = (clone $recordQuery)
-            ->leftJoin('attendance_session_classes as asc', 'asc.attendance_session_id', '=', 'attendance_records.attendance_session_id')
-            ->leftJoin('classes as pivot_class', 'pivot_class.id', '=', 'asc.class_id')
-            ->leftJoin('classes as primary_class', 'primary_class.id', '=', 's.class_id')
+            ->leftJoin('attendance_session_classes as asc', function ($join) {
+                $join->on('asc.attendance_session_id', '=', 'attendance_records.attendance_session_id')
+                    ->whereNull('asc.deleted_at');
+            })
+            ->leftJoin('classes as pivot_class', function ($join) {
+                $join->on('pivot_class.id', '=', 'asc.class_id')
+                    ->whereNull('pivot_class.deleted_at');
+            })
+            ->leftJoin('classes as primary_class', function ($join) {
+                $join->on('primary_class.id', '=', 's.class_id')
+                    ->whereNull('primary_class.deleted_at');
+            })
             ->leftJoin('school_branding as sb', 'sb.id', '=', 's.school_id')
             ->selectRaw('COALESCE(pivot_class.id, primary_class.id) as class_id')
             ->selectRaw("COALESCE(pivot_class.name, primary_class.name, 'Unassigned') as class_name")
@@ -1400,7 +1515,7 @@ class AttendanceSessionController extends Controller
             ->orderByDesc('total_records')
             ->get();
 
-        $roomLabelExpression = "COALESCE((SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' ORDER BY sa.created_at DESC LIMIT 1), 'General Room')";
+        $roomLabelExpression = "COALESCE((SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1), 'General Room')";
         $schoolNameExpression = "COALESCE(sb.school_name, 'No school')";
 
         $roomBreakdown = (clone $recordQuery)
@@ -1417,6 +1532,95 @@ class AttendanceSessionController extends Controller
             ->groupBy(DB::raw($roomLabelExpression), DB::raw($schoolNameExpression))
             ->orderByDesc('total_records')
             ->get();
+
+        $studentBreakdown = collect();
+        $studentBreakdownMeta = [
+            'total' => 0,
+            'current_page' => 1,
+            'per_page' => 25,
+            'last_page' => 0,
+            'from' => null,
+            'to' => null,
+        ];
+
+        if (! $request->filled('student_id') && (! empty($classIds) || $request->filled('academic_year_id'))) {
+            $sbPer = (int) ($validated['student_breakdown_per_page'] ?? 25);
+            $allowedSbPer = [10, 25, 50];
+            if (! in_array($sbPer, $allowedSbPer, true)) {
+                $sbPer = 25;
+            }
+            $sbPage = max(1, (int) ($validated['student_breakdown_page'] ?? 1));
+
+            $sbTotal = (int) ((clone $recordQuery)
+                ->join('students as stu', 'stu.id', '=', 'attendance_records.student_id')
+                ->whereNull('stu.deleted_at')
+                ->selectRaw('COUNT(DISTINCT attendance_records.student_id) as c')
+                ->value('c'));
+
+            $lastPage = $sbTotal > 0 ? (int) ceil($sbTotal / $sbPer) : 0;
+            if ($lastPage > 0 && $sbPage > $lastPage) {
+                $sbPage = $lastPage;
+            }
+            $offset = ($sbPage - 1) * $sbPer;
+
+            $roomSubSql = '(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = \'\' THEN r.room_number ELSE b.building_name || \' - \' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.school_id = ? AND sa.enrollment_status = \'active\' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1)';
+            $residencySubSql = '(SELECT CASE WHEN sa.is_boarder THEN \'boarder\' ELSE \'day_scholar\' END FROM student_admissions sa WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.school_id = ? AND sa.enrollment_status = \'active\' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1)';
+
+            $studentBreakdown = (clone $recordQuery)
+                ->join('students as stu', 'stu.id', '=', 'attendance_records.student_id')
+                ->whereNull('stu.deleted_at')
+                ->select('attendance_records.student_id')
+                ->selectRaw('MAX(stu.full_name) as student_name')
+                ->selectRaw('MAX(stu.father_name) as father_name')
+                ->selectRaw('MAX(stu.admission_no) as admission_no')
+                ->selectRaw('MAX(stu.card_number) as card_number')
+                ->selectRaw('MAX('.$roomSubSql.') as building_room', [$currentSchoolId])
+                ->selectRaw('MAX('.$residencySubSql.') as residency', [$currentSchoolId])
+                ->selectRaw('COUNT(*) as total_records')
+                ->selectRaw("SUM(CASE WHEN attendance_records.status = 'present' THEN 1 ELSE 0 END) as present_count")
+                ->selectRaw("SUM(CASE WHEN attendance_records.status = 'absent' THEN 1 ELSE 0 END) as absent_count")
+                ->selectRaw("SUM(CASE WHEN attendance_records.status = 'late' THEN 1 ELSE 0 END) as late_count")
+                ->selectRaw("SUM(CASE WHEN attendance_records.status = 'excused' THEN 1 ELSE 0 END) as excused_count")
+                ->selectRaw("SUM(CASE WHEN attendance_records.status = 'sick' THEN 1 ELSE 0 END) as sick_count")
+                ->selectRaw("SUM(CASE WHEN attendance_records.status = 'leave' THEN 1 ELSE 0 END) as leave_count")
+                ->groupBy('attendance_records.student_id')
+                ->orderByDesc('total_records')
+                ->offset($offset)
+                ->limit($sbPer)
+                ->get()
+                ->map(function ($row) {
+                    $total = (int) ($row->total_records ?? 0);
+                    $present = (int) ($row->present_count ?? 0);
+
+                    return [
+                        'student_id' => (string) $row->student_id,
+                        'student_name' => (string) ($row->student_name ?? ''),
+                        'father_name' => $row->father_name !== null ? (string) $row->father_name : null,
+                        'admission_no' => $row->admission_no !== null ? (string) $row->admission_no : null,
+                        'card_number' => $row->card_number !== null ? (string) $row->card_number : null,
+                        'building_room' => $row->building_room !== null ? (string) $row->building_room : null,
+                        'residency' => $row->residency !== null ? (string) $row->residency : null,
+                        'total_records' => $total,
+                        'present_count' => $present,
+                        'absent_count' => (int) ($row->absent_count ?? 0),
+                        'late_count' => (int) ($row->late_count ?? 0),
+                        'excused_count' => (int) ($row->excused_count ?? 0),
+                        'sick_count' => (int) ($row->sick_count ?? 0),
+                        'leave_count' => (int) ($row->leave_count ?? 0),
+                        'attendance_rate' => $total > 0 ? round(($present / $total) * 100, 1) : 0,
+                    ];
+                })
+                ->values();
+
+            $studentBreakdownMeta = [
+                'total' => $sbTotal,
+                'current_page' => $sbPage,
+                'per_page' => $sbPer,
+                'last_page' => $lastPage,
+                'from' => $sbTotal > 0 ? $offset + 1 : null,
+                'to' => $sbTotal > 0 ? min($offset + $sbPer, $sbTotal) : null,
+            ];
+        }
 
         $sessionStats = (clone $recordQuery)
             ->select('attendance_records.attendance_session_id')
@@ -1478,6 +1682,8 @@ class AttendanceSessionController extends Controller
             'class_breakdown' => $classBreakdown,
             'school_breakdown' => $schoolBreakdown,
             'room_breakdown' => $roomBreakdown,
+            'student_breakdown' => $studentBreakdown,
+            'student_breakdown_meta' => $studentBreakdownMeta,
             'recent_sessions' => $recentSessions,
         ];
 
@@ -1515,6 +1721,7 @@ class AttendanceSessionController extends Controller
             'calendar_preference' => 'nullable|in:gregorian,jalali,qamari',
             'language' => 'nullable|in:en,ps,fa,ar',
             'student_id' => 'nullable|uuid',
+            'student_type' => 'nullable|string|in:all,boarders,day_scholars',
             'class_id' => 'nullable|uuid',
             'class_ids' => 'nullable|array|min:1',
             'class_ids.*' => 'required|uuid|exists:classes,id',
@@ -1535,7 +1742,7 @@ class AttendanceSessionController extends Controller
         $query = AttendanceRecord::with(['student', 'session.classModel', 'session.classes', 'session.school'])
             ->addSelect([
                 'attendance_records.*',
-                DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
+                DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
             ])
             ->where('attendance_records.organization_id', $profile->organization_id)
             ->where('attendance_records.school_id', $currentSchoolId)
@@ -1573,6 +1780,13 @@ class AttendanceSessionController extends Controller
                 $this->applyAttendanceSessionAcademicYearFilter($q, $academicYearId);
             });
         }
+
+        $this->applyAttendanceReportStudentTypeToAttendanceRecordQuery(
+            $query,
+            $request,
+            $profile->organization_id,
+            $currentSchoolId
+        );
 
         $records = $query->orderBy('marked_at', 'desc')->get();
 
