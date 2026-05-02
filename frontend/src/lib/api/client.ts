@@ -4774,6 +4774,8 @@ export const studentIdCardsApi = {
     class_academic_year_id?: string;
     course_id?: string;
     course_student_id?: string;
+    /** Main-school student UUID; narrows the list to that student’s cards */
+    student_id?: string;
     student_type?: 'regular' | 'course' | 'all';
     enrollment_status?: string;
     id_card_template_id?: string;

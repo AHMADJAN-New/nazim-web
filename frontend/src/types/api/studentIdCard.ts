@@ -148,6 +148,7 @@ export interface StudentIdCardFilters {
   class_academic_year_id?: string;
   course_id?: string;
   course_student_id?: string;
+  student_id?: string;
   student_type?: 'regular' | 'course' | 'all';
   enrollment_status?: string;
   id_card_template_id?: string;

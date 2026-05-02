@@ -33,7 +33,9 @@ export default {
       assignTemplate: "Assign Template",
       regularStudents: "Regular Students",
       courseStudents: "Course Students",
-      description: "Assign ID card templates to students and manage card assignments"
+      description: "Assign ID card templates to students and manage card assignments",
+      showOnlyWithoutCard: "Only students without an assigned card",
+      noStudentsWithoutCard: "Every student in the current filters already has a card assigned."
     },
     auto: "Auto (based on base size)",
     autoBasedOnGlobal: "Auto (based on global)",
@@ -70,7 +72,12 @@ export default {
       options: "Export Options",
       quality: "Quality",
       sides: "Card Sides",
-      studentSelection: "Student Selection"
+      studentSelection: "Student Selection",
+      markAsPrintedAfterSuccessfulExport:
+        "After a successful export, mark unprinted cards in the selection as printed",
+      confirmMarkSelectedPrintedTitle: "Mark selected cards as printed?",
+      confirmMarkSelectedPrintedDescription:
+        "This will mark {count} unprinted ID card(s) in your current selection as printed. Already-printed cards are skipped."
     },
     exportAsImages: "Export as images",
     exportAsPdf: "Export as pdf",
@@ -98,6 +105,23 @@ export default {
     layoutEditorDescription: "Drag fields to position them on the ID card. Click to select a field.",
     leaveEmptyToUseGlobal: "Leave empty to use global font size",
     noCards: "No ID cards found",
+    noAssignedCardDialogTitle: "No ID card assigned",
+    noAssignedCardDialogDescription:
+      "This student does not have an assigned ID card yet. You can assign one from ID card assignment, or add an admission first if none exists.",
+    noAssignedCardDetailHint:
+      "After a card is assigned, details such as template, fee, and print status will appear in the card list and preview.",
+    noAssignedCardFieldPlaceholder: "Not assigned",
+    noAssignedCardRecordHeading: "ID card fields (not created yet)",
+    assignIdCardCta: "Assign ID card",
+    noAdmissionForIdCardBody:
+      "No admission record was found for this student. Create an admission, then assign an ID card from the assignment page.",
+    assignIdCardNoPermissionHint: "You do not have permission to assign ID cards. Contact an administrator.",
+    willOpenWithAdmission: "Opens assignment with: {details}",
+    admissionContextForAssign: "Admission: {details}",
+    quickAssignSectionTitle: "Assign ID card",
+    missingAcademicYearForQuickAssign:
+      "This admission has no academic year, and no year is selected in the students filter. Set an academic year on the admission or choose a year above the table, then try again.",
+    manageAdmissionsToAssignCta: "Manage admissions",
     noPreviewAvailable: "Preview not available",
     noPrintedCards: "No printed cards found",
     notAssigned: "Not Assigned",
@@ -108,8 +132,11 @@ export default {
     previewFailed: "Preview failed",
     previewPlaceholder: "Preview placeholder",
     printed: "Printed",
+    printedSwitchLabel: "Printed",
+    printedSwitchHint: "Turn on after the physical ID card has been produced. Turn off if you need to correct the print status.",
     printedAt: "Printed At",
     printedStatus: "Printed Status",
+    previewPrintedToggleHelp: "Turn on when the physical ID card has been issued to the student. Turn off to undo.",
     qrCodeSize: "QR Code Size (% of card)",
     qrCodeValueSource: "QR Code Value Source",
     qrCodeValueSourceDescription: "Select what data should be encoded into the QR code.",

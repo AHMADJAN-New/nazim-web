@@ -34,7 +34,9 @@ export default {
       assignTemplate: "اختصاص قالب",
       regularStudents: "دانش‌آموزان عادی",
       courseStudents: "دانش‌آموزان دوره",
-      description: "اختصاص قالب‌های کارت شناسایی به دانش‌آموزان و مدیریت اختصاصات کارت"
+      description: "اختصاص قالب‌های کارت شناسایی به دانش‌آموزان و مدیریت اختصاصات کارت",
+      showOnlyWithoutCard: "فقط دانش‌آموزانی که کارت اختصاص داده نشده",
+      noStudentsWithoutCard: "همه دانش‌آموزان این فهرست با فیلترهای فعلی قبلاً کارت دریافت کرده‌اند."
     },
     auto: "خودکار (بر اساس اندازه پایه)",
     autoBasedOnGlobal: "خودکار (بر اساس تنظیمات عمومی)",
@@ -71,7 +73,12 @@ export default {
       options: "گزینه‌های صدور",
       quality: "کیفیت",
       sides: "طرف‌های کارت",
-      studentSelection: "انتخاب شاگرد"
+      studentSelection: "انتخاب شاگرد",
+      markAsPrintedAfterSuccessfulExport:
+        "پس از صدور موفق، کارت‌های چاپ‌نشده در انتخاب را به‌عنوان چاپ‌شده علامت بزن",
+      confirmMarkSelectedPrintedTitle: "کارت‌های انتخاب‌شده به‌عنوان چاپ‌شده علامت شوند؟",
+      confirmMarkSelectedPrintedDescription:
+        "این کار {count} کارت چاپ‌نشده در انتخاب فعلی شما را به‌عنوان چاپ‌شده علامت می‌زند. کارت‌های قبلاً چاپ‌شده رد می‌شوند."
     },
     exportAsImages: "صدور به عنوان تصویر",
     exportAsPdf: "صدور به عنوان PDF",
@@ -99,6 +106,23 @@ export default {
     layoutEditorDescription: "فیلدها را بکشید تا آنها را روی کارت هویت قرار دهید. برای انتخاب فیلد کلیک کنید.",
     leaveEmptyToUseGlobal: "برای استفاده از اندازه فونت عمومی خالی بگذارید",
     noCards: "هیچ کارت هویتی یافت نشد",
+    noAssignedCardDialogTitle: "کارت هویتی اختصاص داده نشده",
+    noAssignedCardDialogDescription:
+      "این شاگرد هنوز کارت هویتی اختصاص‌داده‌شده ندارد. می‌توانید از صفحهٔ اختصاص کارت هویت اقدام کنید، یا در صورت نبود، ابتدا یک پذیرش بسازید.",
+    noAssignedCardDetailHint:
+      "پس از اختصاص کارت، جزئیاتی مانند قالب، وضعیت هزینه و چاپ در فهرست کارت‌ها و پیش‌نمایش نمایش داده می‌شود.",
+    noAssignedCardFieldPlaceholder: "اختصاص داده نشده",
+    noAssignedCardRecordHeading: "فیلدهای کارت هویت (هنوز ایجاد نشده)",
+    assignIdCardCta: "اختصاص کارت هویت",
+    noAdmissionForIdCardBody:
+      "هیچ رکورد پذیرشی برای این شاگرد یافت نشد. ابتدا پذیرش ایجاد کنید، سپس از صفحهٔ اختصاص کارت هویت کارت بدهید.",
+    assignIdCardNoPermissionHint: "شما مجوز اختصاص کارت هویت ندارید. با مدیر سامانه تماس بگیرید.",
+    willOpenWithAdmission: "صفحهٔ اختصاص با این مورد باز می‌شود: {details}",
+    admissionContextForAssign: "پذیرش: {details}",
+    quickAssignSectionTitle: "اختصاص کارت هویت",
+    missingAcademicYearForQuickAssign:
+      "برای این پذیرش سال تحصیلی ثبت نشده و در فیلتر بالای جدول هم سالی انتخاب نشده. سال را روی پذیرش تنظیم کنید یا از فیلتر سال استفاده کنید و دوباره تلاش کنید.",
+    manageAdmissionsToAssignCta: "مدیریت پذیرش‌ها",
     noPreviewAvailable: "پیش‌نمایش در دسترس نیست",
     noPrintedCards: "هیچ کارت چاپ شده‌ای یافت نشد",
     notAssigned: "اختصاص داده نشده",
@@ -109,6 +133,8 @@ export default {
     previewFailed: "پیش‌نمایش ناموفق بود",
     previewPlaceholder: "محل پیش‌نمایش",
     printed: "شامل کارت‌های چاپ نشده",
+    printedSwitchLabel: "چاپ شده",
+    printedSwitchHint: "پس از چاپ فیزیکی کارت هویت روشن کنید. برای اصلاح وضعیت، خاموش کنید.",
     printedAt: "چاپ شده در",
     printedStatus: "وضعیت چاپ",
     qrCodeSize: "اندازه QR کد (% از کارت)",

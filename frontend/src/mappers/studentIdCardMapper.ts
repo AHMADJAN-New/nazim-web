@@ -186,6 +186,7 @@ export function mapStudentIdCardFiltersDomainToApi(domain: IdCardFilters): Stude
   if (domain.classAcademicYearId !== undefined) filters.class_academic_year_id = domain.classAcademicYearId;
   if (domain.courseId !== undefined) filters.course_id = domain.courseId;
   if (domain.courseStudentId !== undefined) filters.course_student_id = domain.courseStudentId;
+  if (domain.studentId !== undefined) filters.student_id = domain.studentId;
   if (domain.studentType !== undefined) filters.student_type = domain.studentType;
   if (domain.enrollmentStatus !== undefined) filters.enrollment_status = domain.enrollmentStatus;
   if (domain.templateId !== undefined) {

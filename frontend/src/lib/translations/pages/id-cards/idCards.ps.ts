@@ -34,7 +34,9 @@ export default {
       assignTemplate: "قالب وټاکئ",
       regularStudents: "عادي زده کوونکي",
       courseStudents: "د کورس زده کوونکي",
-      description: "د پېژندنې کارت قالبونه زده کوونکو ته وټاکئ او د کارت ټاکلو مدیریت وکړئ"
+      description: "د پېژندنې کارت قالبونه زده کوونکو ته وټاکئ او د کارت ټاکلو مدیریت وکړئ",
+      showOnlyWithoutCard: "یوازې هغه زده کوونکي چې کارت نه لري",
+      noStudentsWithoutCard: "په دې لیست کې ټول زده کوونکي د اوسنیو فلټرونو له مخې دمخه کارت لري."
     },
     auto: "اتومات (د اصلي اندازې له مخې)",
     autoBasedOnGlobal: "اتومات (د عمومي تنظیماتو له مخې)",
@@ -71,7 +73,12 @@ export default {
       options: "د صادرولو غوراوي",
       quality: "کیفیت",
       sides: "د کارت خواوې",
-      studentSelection: "د زده کوونکو ټاکنه"
+      studentSelection: "د زده کوونکو ټاکنه",
+      markAsPrintedAfterSuccessfulExport:
+        "د بریالي صادرولو وروسته، په ټاکنه کې نا چاپ کارتونه د چاپ په توګه نښه کړئ",
+      confirmMarkSelectedPrintedTitle: "ټاکل شوي کارتونه د چاپ په توګه نښه کړئ؟",
+      confirmMarkSelectedPrintedDescription:
+        "دا به ستاسو په اوسنۍ ټاکنه کې {count} نا چاپ ID کارت(ونه) د چاپ په توګه نښه کړي. دمخه چاپ شوي کارتونه به پرېښودل شي."
     },
     exportAsImages: "د انځورونو په توګه صادر کړئ",
     exportAsPdf: "د PDF په توګه صادر کړئ",
@@ -99,6 +106,23 @@ export default {
     layoutEditorDescription: "په ID کارت کې د ځای پر ځای کولو لپاره برخې راکش کړئ. د ټاکلو لپاره کلیک وکړئ.",
     leaveEmptyToUseGlobal: "د عمومي فونټ اندازې کارولو لپاره خالي پریږدئ",
     noCards: "ID کارتونه ونه موندل شول",
+    noAssignedCardDialogTitle: "هیڅ ورکړل شوی ID کارت نشته",
+    noAssignedCardDialogDescription:
+      "د دې زده کوونکي لپاره تر اوسه ورکړل شوی ID کارت نشته. تاسو کولی شئ له ID کارت د ورکړلو پاڼې څخه ورکړئ، یا لومړی د شاملېدو (admission) ریکارډ جوړ کړئ که شتون نلري.",
+    noAssignedCardDetailHint:
+      "کله چې کارت ورکړل شي، بیا به دلته د قالب، فیس او چاپ حالت څخه ډېر معلومات په کارت لست او مخکتنه کې ښکاري.",
+    noAssignedCardFieldPlaceholder: "نه دی ورکړل شوی",
+    noAssignedCardRecordHeading: "د ID کارت برخې (لا جوړې نه دي)",
+    assignIdCardCta: "ID کارت ورکړئ",
+    noAdmissionForIdCardBody:
+      "د دې زده کوونکي لپاره د شاملېدو ریکارډ ونه موندل شو. لومړیداخله ورکړئ ، بیا له ID کارت د ورکړلو پاڼې څخه کارت ورکړئ.",
+    assignIdCardNoPermissionHint: "تاسو د ID کارتونو د ورکړلو اجازه نلرئ. له ادمین څخه مرسته وغواړئ.",
+    willOpenWithAdmission: "د ورکړلو پاڼه به پر دې بنسټ پرانیزي: {details}",
+    admissionContextForAssign: "شاملېد: {details}",
+    quickAssignSectionTitle: "ID کارت ورکړئ",
+    missingAcademicYearForQuickAssign:
+      "د دې شاملېد لپاره اکادمیک کال نشته، او د زده کوونکو پاڼې فلتر کې هم کال نه دی ټاکل شوی. مهرباني وکړئ په شاملېد کې کال تنظیم کړئ یا د جدول پورته کال وټاکئ بیا هڅه وکړئ.",
+    manageAdmissionsToAssignCta: "داخلې  مدیریت کړئ",
     noPreviewAvailable: "مخکتنه شتون نلري",
     noPrintedCards: "چاپ شوي کارتونه ونه موندل شول",
     notAssigned: "نه دی ورکړل شوی",
@@ -109,6 +133,8 @@ export default {
     previewFailed: "مخکتنه ناکامه شوه",
     previewPlaceholder: "د مخکتنې ځای",
     printed: "چاپ شوی",
+    printedSwitchLabel: "چاپ شوی",
+    printedSwitchHint: "د فزیکي ID کارت چاپ وروسته یې چارې کړئ. که بیا اصلاح ته اړتیا ولرئ، بند یې کړئ.",
     printedAt: "چاپ شوی په",
     printedStatus: "د چاپ حالت",
     qrCodeSize: "د QR کوډ اندازه (د کارت %)",

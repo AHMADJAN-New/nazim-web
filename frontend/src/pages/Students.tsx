@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef } from '@tanstack/react-table';
-import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign, History, Download, GraduationCap, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign, History, Download, GraduationCap, Users, UserCheck } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { useStudentAdmissions, type StudentAdmission, type AdmissionStatus } from '@/hooks/useStudentAdmissions';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -29,7 +30,14 @@ import {
 } from '@/hooks/useStudents';
 import type { Student } from '@/types/domain/student';
 import { useStudentGuardianPictureUpload } from '@/hooks/useStudentGuardianPictureUpload';
-import { useStudentIdCards, useExportIndividualIdCard } from '@/hooks/useStudentIdCards';
+import {
+  useExportIndividualIdCard,
+  useAssignIdCards,
+  useMarkCardPrinted,
+  useUpdateStudentIdCard,
+} from '@/hooks/useStudentIdCards';
+import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
+import { useFinanceAccounts, useIncomeCategories } from '@/hooks/useFinance';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { useStudentAutocomplete } from '@/hooks/useStudentAutocomplete';
 import { Input } from '@/components/ui/input';
@@ -70,11 +78,16 @@ import { StudentEducationalHistoryDialog } from '@/components/students/StudentEd
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 import { PictureCell } from '@/components/shared/PictureCell';
+import { studentIdCardsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
+import { cn } from '@/lib/utils';
+import { mapStudentIdCardApiToDomain } from '@/mappers/studentIdCardMapper';
+import type * as StudentIdCardApi from '@/types/api/studentIdCard';
 import type { StudentIdCard } from '@/types/domain/studentIdCard';
-import type { StudentAdmission } from '@/hooks/useStudentAdmissions';
 
 
 // Helper function to convert StudentFormData to domain Student format
@@ -282,6 +295,8 @@ export function Students() {
   const canCreateStudentAdmissions = useHasPermission('student_admissions.create');
   const canUpdateStudentAdmissions = useHasPermission('student_admissions.update');
   const canManageStudentAdmissions = Boolean(canReadStudentAdmissions || canCreateStudentAdmissions);
+  const canCreateIdCards = useHasPermission('id_cards.create');
+  const canUpdateIdCards = useHasPermission('id_cards.update');
   const orgIdForQuery = profile?.organization_id;
 
   const { data: academicYears = [] } = useAcademicYears(orgIdForQuery);
@@ -335,13 +350,11 @@ export function Students() {
   } = useStudents(orgIdForQuery, true, studentFilters);
   const { data: stats } = useStudentStats(orgIdForQuery);
   const { data: schools } = useSchools(orgIdForQuery);
-  const {
-    data: studentIdCards = [],
-    refetch: refetchStudentIdCards,
-  } = useStudentIdCards({
-    studentType: 'regular',
-  });
   const exportIndividualIdCard = useExportIndividualIdCard();
+  const assignIdCards = useAssignIdCards();
+  const markIdCardPrinted = useMarkCardPrinted();
+  const updateIdCard = useUpdateStudentIdCard();
+  const { data: idCardTemplatesForQuickAssign = [] } = useIdCardTemplates(true);
 
   const createStudent = useCreateStudent();
   const updateStudent = useUpdateStudent();
@@ -367,8 +380,88 @@ export function Students() {
   const [disciplineDialogStudent, setDisciplineDialogStudent] = useState<Student | null>(null);
   const [assignedCardPreview, setAssignedCardPreview] = useState<StudentIdCard | null>(null);
   const [isAssignedCardPreviewOpen, setIsAssignedCardPreviewOpen] = useState(false);
+  const [noIdCardDialogStudent, setNoIdCardDialogStudent] = useState<Student | null>(null);
+  const [quickAssignTemplateId, setQuickAssignTemplateId] = useState('');
+  const [quickAssignCardFee, setQuickAssignCardFee] = useState('');
+  const [quickAssignCardFeePaid, setQuickAssignCardFeePaid] = useState(false);
+  const [quickAssignAccountId, setQuickAssignAccountId] = useState('');
+  const [quickAssignIncomeCategoryId, setQuickAssignIncomeCategoryId] = useState('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(() => new Set());
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+
+  const { data: admissionsForNoCardStudent = [], isLoading: noCardAdmissionsLoading } = useStudentAdmissions(
+    orgIdForQuery,
+    false,
+    noIdCardDialogStudent ? { student_id: noIdCardDialogStudent.id } : undefined,
+    !!noIdCardDialogStudent,
+  );
+
+  const admissionForIdCardAssign = useMemo(() => {
+    const list = admissionsForNoCardStudent ?? [];
+    if (!list.length) return null;
+    const year = selectedAcademicYearId;
+    const inYear = year ? list.filter((a) => a.academicYearId === year) : [];
+    const pool = inYear.length > 0 ? inYear : list;
+    const rank = (s: AdmissionStatus) =>
+      s === 'active' ? 0 : s === 'admitted' ? 1 : s === 'pending' ? 2 : 50;
+    return [...pool].sort((a, b) => rank(a.enrollmentStatus) - rank(b.enrollmentStatus))[0] ?? null;
+  }, [admissionsForNoCardStudent, selectedAcademicYearId]);
+
+  const admissionForAssignSummary = useMemo(() => {
+    if (!admissionForIdCardAssign) return '';
+    const parts = [
+      admissionForIdCardAssign.academicYear?.name,
+      admissionForIdCardAssign.class?.name,
+      admissionForIdCardAssign.enrollmentStatus,
+    ].filter(Boolean);
+    return parts.join(' · ');
+  }, [admissionForIdCardAssign]);
+
+  const academicYearIdForQuickAssign = useMemo(() => {
+    return admissionForIdCardAssign?.academicYearId ?? selectedAcademicYearId ?? null;
+  }, [admissionForIdCardAssign?.academicYearId, selectedAcademicYearId]);
+
+  const quickAssignFinanceEnabled =
+    !!noIdCardDialogStudent &&
+    !!admissionForIdCardAssign &&
+    canCreateIdCards &&
+    quickAssignCardFeePaid;
+
+  const { data: quickAssignFinanceAccounts = [] } = useFinanceAccounts({
+    isActive: true,
+    queryEnabled: quickAssignFinanceEnabled,
+  });
+  const { data: quickAssignIncomeCategories = [] } = useIncomeCategories({
+    isActive: true,
+    queryEnabled: quickAssignFinanceEnabled,
+  });
+
+  useEffect(() => {
+    if (!noIdCardDialogStudent) {
+      setQuickAssignTemplateId('');
+      setQuickAssignCardFee('');
+      setQuickAssignCardFeePaid(false);
+      setQuickAssignAccountId('');
+      setQuickAssignIncomeCategoryId('');
+    }
+  }, [noIdCardDialogStudent]);
+
+  useEffect(() => {
+    if (!noIdCardDialogStudent || !admissionForIdCardAssign || !canCreateIdCards) return;
+    if (quickAssignTemplateId) return;
+    const def = idCardTemplatesForQuickAssign.find((tmpl) => tmpl.isDefault);
+    if (def) {
+      setQuickAssignTemplateId(def.id);
+    } else if (idCardTemplatesForQuickAssign[0]) {
+      setQuickAssignTemplateId(idCardTemplatesForQuickAssign[0].id);
+    }
+  }, [
+    noIdCardDialogStudent,
+    admissionForIdCardAssign,
+    canCreateIdCards,
+    idCardTemplatesForQuickAssign,
+    quickAssignTemplateId,
+  ]);
 
   // Debug logging removed for performance (was causing excessive re-renders)
 
@@ -751,6 +844,14 @@ export function Students() {
     setIsStudentAdmissionsDialogOpen(true);
   };
 
+  const handleNoCardDialogManageAdmissions = () => {
+    const s = noIdCardDialogStudent;
+    setNoIdCardDialogStudent(null);
+    if (s) {
+      handleManageAdmissions(s);
+    }
+  };
+
   const handleCreateAdmissionForStudent = (student: Student) => {
     setSelectedAdmission(null);
     setPreselectedAdmissionStudent(student);
@@ -786,33 +887,30 @@ export function Students() {
     }
   };
 
-  const studentIdCardByStudentId = useMemo(() => {
-    const cardsMap = new Map<string, StudentIdCard>();
-    studentIdCards.forEach((card) => {
-      const studentId = card.student?.id ?? card.studentId;
-      if (studentId) {
-        cardsMap.set(studentId, card);
-      }
-    });
-    return cardsMap;
-  }, [studentIdCards]);
-
   const findAssignedCardForStudent = useCallback(async (student: Student): Promise<StudentIdCard | null> => {
-    const existingCard = studentIdCardByStudentId.get(student.id) || null;
-    if (existingCard) {
-      return existingCard;
-    }
-
-    const refreshed = await refetchStudentIdCards();
-    const list = refreshed.data ?? [];
-    return list.find((card) => (card.student?.id === student.id || card.studentId === student.id)) ?? null;
-  }, [studentIdCardByStudentId, refetchStudentIdCards]);
+    const response = await studentIdCardsApi.list({
+      student_id: student.id,
+      student_type: 'regular',
+      page: 1,
+      per_page: 1,
+    });
+    const rawList: StudentIdCardApi.StudentIdCard[] = Array.isArray(response)
+      ? (response as StudentIdCardApi.StudentIdCard[])
+      : response &&
+          typeof response === 'object' &&
+          'data' in response &&
+          Array.isArray((response as { data: unknown }).data)
+        ? (response as { data: StudentIdCardApi.StudentIdCard[] }).data
+        : [];
+    const first = rawList[0];
+    return first ? mapStudentIdCardApiToDomain(first) : null;
+  }, []);
 
   const handleViewAssignedCard = async (student: Student) => {
     try {
       const card = await findAssignedCardForStudent(student);
       if (!card) {
-        showToast.info(t('idCards.noCards') || 'No assigned ID card found for this student');
+        setNoIdCardDialogStudent(student);
         return;
       }
       setAssignedCardPreview(card);
@@ -822,11 +920,62 @@ export function Students() {
     }
   };
 
+  const handleQuickAssignIdCard = useCallback(async () => {
+    const student = noIdCardDialogStudent;
+    const admission = admissionForIdCardAssign;
+    const academicYearId = academicYearIdForQuickAssign;
+    if (!student || !admission || !quickAssignTemplateId) {
+      return;
+    }
+    if (!academicYearId) {
+      showToast.error(t('idCards.missingAcademicYearForQuickAssign'));
+      return;
+    }
+    if (quickAssignCardFeePaid && (!quickAssignAccountId || !quickAssignIncomeCategoryId)) {
+      showToast.error(t('idCards.accountAndCategoryRequired'));
+      return;
+    }
+    try {
+      await assignIdCards.mutateAsync({
+        academicYearId,
+        idCardTemplateId: quickAssignTemplateId,
+        studentAdmissionIds: [admission.id],
+        classId: admission.classId ?? null,
+        classAcademicYearId: admission.classAcademicYearId ?? null,
+        cardFee: quickAssignCardFee ? parseFloat(quickAssignCardFee) : undefined,
+        cardFeePaid: quickAssignCardFeePaid,
+        cardFeePaidDate: quickAssignCardFeePaid ? new Date().toISOString() : undefined,
+        accountId: quickAssignCardFeePaid && quickAssignAccountId ? quickAssignAccountId : null,
+        incomeCategoryId: quickAssignCardFeePaid && quickAssignIncomeCategoryId ? quickAssignIncomeCategoryId : null,
+      });
+      setNoIdCardDialogStudent(null);
+      const card = await findAssignedCardForStudent(student);
+      if (card) {
+        setAssignedCardPreview(card);
+        setIsAssignedCardPreviewOpen(true);
+      }
+    } catch {
+      // Errors surfaced by assignIdCards mutation
+    }
+  }, [
+    noIdCardDialogStudent,
+    admissionForIdCardAssign,
+    academicYearIdForQuickAssign,
+    quickAssignTemplateId,
+    quickAssignCardFee,
+    quickAssignCardFeePaid,
+    quickAssignAccountId,
+    quickAssignIncomeCategoryId,
+    assignIdCards,
+    findAssignedCardForStudent,
+    t,
+  ]);
+
   const handleDownloadAssignedCard = async (student: Student) => {
     try {
       const card = await findAssignedCardForStudent(student);
       if (!card) {
-        showToast.info(t('idCards.noCards') || 'No assigned ID card found for this student');
+        setNoIdCardDialogStudent(student);
         return;
       }
 
@@ -839,6 +988,30 @@ export function Students() {
       showToast.error(t('toast.idCardExportFailed') || 'Failed to download assigned ID card');
     }
   };
+
+  const handleAssignedCardPrintedToggle = useCallback(
+    async (checked: boolean) => {
+      const card = assignedCardPreview;
+      if (!card) return;
+      if (card.isPrinted === checked) return;
+      try {
+        if (checked) {
+          const updated = await markIdCardPrinted.mutateAsync(card.id);
+          setAssignedCardPreview(updated);
+        } else {
+          const updated = await updateIdCard.mutateAsync({
+            id: card.id,
+            isPrinted: false,
+            printedAt: null,
+          });
+          setAssignedCardPreview(updated);
+        }
+      } catch {
+        // Toasts handled in mutation hooks
+      }
+    },
+    [assignedCardPreview, markIdCardPrinted, updateIdCard],
+  );
 
   useEffect(() => {
     setClassFilter('all');
@@ -1597,6 +1770,7 @@ export function Students() {
         }}
         student={studentToView}
         onManageAdmissions={handleManageAdmissions}
+        onViewAssignedIdCard={(s) => void handleViewAssignedCard(s)}
       />
 
       <StudentAdmissionsDialog
@@ -1648,11 +1822,247 @@ export function Students() {
           <DialogHeader>
             <DialogTitle>{t('idCards.assignedCards.title') || 'Assigned ID Card'}</DialogTitle>
           </DialogHeader>
+          {assignedCardPreview && canUpdateIdCards ? (
+            <div className="rounded-lg border bg-muted/30 p-3 sm:p-4 space-y-2">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                <Label
+                  htmlFor="students-assigned-id-printed"
+                  className="cursor-pointer text-sm font-medium leading-none sm:text-base"
+                >
+                  {t('idCards.printedSwitchLabel')}
+                </Label>
+                <Switch
+                  id="students-assigned-id-printed"
+                  className="shrink-0"
+                  checked={!!assignedCardPreview.isPrinted}
+                  disabled={markIdCardPrinted.isPending || updateIdCard.isPending}
+                  onCheckedChange={(value) => void handleAssignedCardPrintedToggle(value === true)}
+                />
+              </div>
+              <p className={cn('text-sm text-muted-foreground leading-snug', isRTL ? 'text-right' : 'text-left')}>
+                {t('idCards.printedSwitchHint')}
+              </p>
+            </div>
+          ) : null}
           <StudentIdCardPreview
             card={assignedCardPreview}
             side="front"
             showControls={true}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!noIdCardDialogStudent}
+        onOpenChange={(open) => {
+          if (!open) {
+            setNoIdCardDialogStudent(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('idCards.noAssignedCardDialogTitle')}</DialogTitle>
+            <DialogDescription>{t('idCards.noAssignedCardDialogDescription')}</DialogDescription>
+          </DialogHeader>
+
+          {noIdCardDialogStudent ? (
+            <div className="space-y-4">
+              <div
+                className={cn(
+                  'flex items-center gap-3 rounded-lg border bg-muted/20 p-3',
+                  isRTL && 'flex-row-reverse text-right',
+                )}
+              >
+                <PictureCell
+                  type="student"
+                  entityId={noIdCardDialogStudent.id}
+                  picturePath={noIdCardDialogStudent.picturePath}
+                  alt={noIdCardDialogStudent.fullName}
+                  size="md"
+                  className="shrink-0"
+                />
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="font-medium leading-tight">{noIdCardDialogStudent.fullName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t('idCards.admissionNumber')}: {noIdCardDialogStudent.admissionNumber?.trim() || '—'}
+                  </p>
+                </div>
+              </div>
+
+              {noCardAdmissionsLoading ? (
+                <div className="flex justify-center py-6">
+                  <LoadingSpinner />
+                </div>
+              ) : null}
+
+              {!noCardAdmissionsLoading && admissionForIdCardAssign && canCreateIdCards ? (
+                <div className="rounded-lg border bg-card p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">{t('idCards.quickAssignSectionTitle')}</p>
+                    {admissionForAssignSummary ? (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('idCards.admissionContextForAssign', { details: admissionForAssignSummary })}
+                      </p>
+                    ) : null}
+                  </div>
+                  {!academicYearIdForQuickAssign ? (
+                    <p className="text-sm text-destructive">{t('idCards.missingAcademicYearForQuickAssign')}</p>
+                  ) : null}
+                  {idCardTemplatesForQuickAssign.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t('idCards.createFirstTemplate')}</p>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label>{t('idCards.template')}</Label>
+                        <Select value={quickAssignTemplateId} onValueChange={setQuickAssignTemplateId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('idCards.selectTemplatePlaceholder')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {idCardTemplatesForQuickAssign.map((tmpl) => (
+                              <SelectItem key={tmpl.id} value={tmpl.id}>
+                                {tmpl.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>{t('idCards.cardFee')}</Label>
+                          <Input
+                            type="number"
+                            value={quickAssignCardFee}
+                            onChange={(e) => setQuickAssignCardFee(e.target.value)}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="flex items-end pb-0.5">
+                          <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
+                            <Checkbox
+                              id="students-quick-id-fee-paid"
+                              checked={quickAssignCardFeePaid}
+                              onCheckedChange={(checked) => setQuickAssignCardFeePaid(checked === true)}
+                            />
+                            <Label htmlFor="students-quick-id-fee-paid" className="cursor-pointer font-normal">
+                              {t('courses.feePaid')}
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+                      {quickAssignCardFeePaid ? (
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label>{t('finance.account')} *</Label>
+                            <Select value={quickAssignAccountId} onValueChange={setQuickAssignAccountId}>
+                              <SelectTrigger className={!quickAssignAccountId ? 'border-destructive' : ''}>
+                                <SelectValue placeholder={t('events.select')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {quickAssignFinanceAccounts.map((account) => (
+                                  <SelectItem key={account.id} value={account.id}>
+                                    {account.name}{' '}
+                                    {account.currency?.code ? `(${account.currency.code})` : ''}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{t('finance.category')} *</Label>
+                            <Select value={quickAssignIncomeCategoryId} onValueChange={setQuickAssignIncomeCategoryId}>
+                              <SelectTrigger className={!quickAssignIncomeCategoryId ? 'border-destructive' : ''}>
+                                <SelectValue placeholder={t('events.select')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {quickAssignIncomeCategories.map((category) => (
+                                  <SelectItem key={category.id} value={category.id}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              ) : null}
+
+              {!noCardAdmissionsLoading && admissionForIdCardAssign && !canCreateIdCards ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{t('idCards.noAssignedCardDetailHint')}</p>
+                  <div className="rounded-lg border bg-card p-4 space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t('idCards.noAssignedCardRecordHeading')}
+                    </p>
+                    <Separator />
+                    <dl className={cn('grid gap-2 text-sm', isRTL ? 'text-right' : 'text-left')}>
+                      <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] sm:gap-x-4">
+                        <dt className="text-muted-foreground">{t('idCards.template')}</dt>
+                        <dd className="font-medium text-muted-foreground">{t('idCards.noAssignedCardFieldPlaceholder')}</dd>
+                      </div>
+                      <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] sm:gap-x-4">
+                        <dt className="text-muted-foreground">{t('idCards.cardFee')}</dt>
+                        <dd className="font-medium text-muted-foreground">{t('idCards.noAssignedCardFieldPlaceholder')}</dd>
+                      </div>
+                      <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] sm:gap-x-4">
+                        <dt className="text-muted-foreground">{t('idCards.feeStatus')}</dt>
+                        <dd className="font-medium text-muted-foreground">{t('idCards.noAssignedCardFieldPlaceholder')}</dd>
+                      </div>
+                      <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] sm:gap-x-4">
+                        <dt className="text-muted-foreground">{t('idCards.printedStatus')}</dt>
+                        <dd className="font-medium text-muted-foreground">{t('idCards.noAssignedCardFieldPlaceholder')}</dd>
+                      </div>
+                      <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] sm:gap-x-4">
+                        <dt className="text-muted-foreground">{t('idCards.assignedAt')}</dt>
+                        <dd className="font-medium text-muted-foreground">{t('idCards.noAssignedCardFieldPlaceholder')}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <p className="text-sm text-amber-700 dark:text-amber-500">{t('idCards.assignIdCardNoPermissionHint')}</p>
+                </div>
+              ) : null}
+
+              {!noCardAdmissionsLoading && !admissionForIdCardAssign ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{t('idCards.noAdmissionForIdCardBody')}</p>
+                  <p className="text-sm text-muted-foreground">{t('idCards.noAssignedCardDetailHint')}</p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setNoIdCardDialogStudent(null)}>
+              {t('events.close')}
+            </Button>
+            {!noCardAdmissionsLoading && admissionForIdCardAssign && canCreateIdCards ? (
+              <Button
+                type="button"
+                onClick={() => void handleQuickAssignIdCard()}
+                disabled={
+                  assignIdCards.isPending ||
+                  !quickAssignTemplateId ||
+                  !academicYearIdForQuickAssign ||
+                  idCardTemplatesForQuickAssign.length === 0 ||
+                  (quickAssignCardFeePaid && (!quickAssignAccountId || !quickAssignIncomeCategoryId))
+                }
+                className="gap-2"
+              >
+                <UserCheck className="h-4 w-4 shrink-0" />
+                {assignIdCards.isPending ? t('events.processing') : t('idCards.assignIdCardCta')}
+              </Button>
+            ) : null}
+            {!noCardAdmissionsLoading && !admissionForIdCardAssign && canManageStudentAdmissions ? (
+              <Button type="button" variant="secondary" onClick={handleNoCardDialogManageAdmissions} className="gap-2">
+                <GraduationCap className="h-4 w-4 shrink-0" />
+                {t('idCards.manageAdmissionsToAssignCta')}
+              </Button>
+            ) : null}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

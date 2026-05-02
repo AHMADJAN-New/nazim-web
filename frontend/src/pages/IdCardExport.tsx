@@ -5,6 +5,7 @@ import {
   CheckSquare,
   Square,
   RefreshCw,
+  Printer,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
@@ -30,6 +31,7 @@ import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import {
   useStudentIdCards,
   useExportIdCards,
+  useMarkCardIdsPrintedBulk,
   type StudentIdCard,
   type StudentIdCardFilters,
   type ExportIdCardRequest,
@@ -50,7 +52,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
@@ -179,6 +191,8 @@ export default function IdCardExport() {
 
   // Student selection
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
+  const [markPrintedAfterExport, setMarkPrintedAfterExport] = useState(false);
+  const [markSelectedPrintedDialogOpen, setMarkSelectedPrintedDialogOpen] = useState(false);
 
   // Data hooks
   const { data: academicYears = [], refetch: refetchAcademicYears } = useAcademicYears(organizationId);
@@ -235,6 +249,7 @@ export default function IdCardExport() {
 
   const { data: idCards = [], isLoading: cardsLoading, refetch: refetchIdCards } = useStudentIdCards(cardFilters);
   const exportCards = useExportIdCards();
+  const markManyPrinted = useMarkCardIdsPrintedBulk();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -295,6 +310,13 @@ export default function IdCardExport() {
     return filtered;
   }, [idCards, searchQuery, includeUnprinted, includeUnpaid]);
 
+  /** Selected rows that are still unprinted (only these are sent to mark-printed). */
+  const selectedUnprintedIds = useMemo(() => {
+    return filteredCards
+      .filter((c) => selectedCardIds.has(c.id) && !c.isPrinted)
+      .map((c) => c.id);
+  }, [filteredCards, selectedCardIds]);
+
   // Handle card selection
   const toggleCardSelection = (cardId: string) => {
     setSelectedCardIds(prev => {
@@ -346,8 +368,24 @@ export default function IdCardExport() {
 
     try {
       await exportCards.mutateAsync(request);
+      if (markPrintedAfterExport && selectedUnprintedIds.length > 0) {
+        await markManyPrinted.mutateAsync(selectedUnprintedIds);
+      }
     } catch (error) {
-      // Error handled by hook
+      // Error handled by hooks
+    }
+  };
+
+  const handleConfirmMarkSelectedPrinted = async () => {
+    if (selectedUnprintedIds.length === 0) {
+      setMarkSelectedPrintedDialogOpen(false);
+      return;
+    }
+    try {
+      await markManyPrinted.mutateAsync(selectedUnprintedIds);
+      setMarkSelectedPrintedDialogOpen(false);
+    } catch {
+      // Toast handled by useMarkCardIdsPrintedBulk
     }
   };
 
@@ -724,6 +762,23 @@ export default function IdCardExport() {
                       onCheckedChange={setIncludeUnpaid}
                     />
                   </div>
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <Label
+                      htmlFor="mark-printed-after-export"
+                      className={cn(
+                        'cursor-pointer text-left leading-snug',
+                        selectedUnprintedIds.length === 0 && 'text-muted-foreground cursor-not-allowed',
+                      )}
+                    >
+                      {t('idCards.export.markAsPrintedAfterSuccessfulExport')}
+                    </Label>
+                    <Switch
+                      id="mark-printed-after-export"
+                      checked={markPrintedAfterExport}
+                      disabled={selectedCardIds.size === 0 || selectedUnprintedIds.length === 0}
+                      onCheckedChange={setMarkPrintedAfterExport}
+                    />
+                  </div>
                 </div>
               </CardContent>
         </Card>
@@ -872,29 +927,75 @@ export default function IdCardExport() {
       {/* Export Actions */}
       <Card>
         <CardContent className="pt-4 sm:pt-6">
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+          <div className="flex flex-col-reverse sm:flex-row sm:flex-wrap justify-end gap-2">
             <Button
               variant="outline"
               onClick={handleExportAll}
-              disabled={filteredCards.length === 0 || exportCards.isPending}
+              disabled={filteredCards.length === 0 || exportCards.isPending || markManyPrinted.isPending}
               className="w-full sm:w-auto"
             >
               <Download className="h-4 w-4 mr-2 shrink-0" />
               {t('idCards.export.exportAll') || 'Export All Filtered'}
             </Button>
             <Button
+              variant="outline"
+              onClick={() => setMarkSelectedPrintedDialogOpen(true)}
+              disabled={
+                selectedUnprintedIds.length === 0 || exportCards.isPending || markManyPrinted.isPending
+              }
+              className="w-full sm:w-auto"
+            >
+              <Printer className="h-4 w-4 mr-2 shrink-0" />
+              {t('idCards.markSelectedAsPrinted') || 'Mark selected as printed'}
+              {selectedUnprintedIds.length > 0 ? ` (${selectedUnprintedIds.length})` : ''}
+            </Button>
+            <Button
               onClick={handleExportSelected}
-              disabled={selectedCardIds.size === 0 || exportCards.isPending}
+              disabled={
+                selectedCardIds.size === 0 || exportCards.isPending || markManyPrinted.isPending
+              }
               className="w-full sm:w-auto"
             >
               <Download className="h-4 w-4 mr-2 shrink-0" />
-              {exportCards.isPending
+              {exportCards.isPending || markManyPrinted.isPending
                 ? t('events.processing') || 'Processing...'
                 : t('idCards.export.exportSelected') || `Export Selected (${selectedCardIds.size})`}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={markSelectedPrintedDialogOpen} onOpenChange={setMarkSelectedPrintedDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('idCards.export.confirmMarkSelectedPrintedTitle') || 'Mark selected cards as printed?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('idCards.export.confirmMarkSelectedPrintedDescription', {
+                count: selectedUnprintedIds.length,
+              }) ||
+                `This will mark ${selectedUnprintedIds.length} unprinted card(s) in your selection as printed.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={markManyPrinted.isPending}>
+              {t('events.cancel') || 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleConfirmMarkSelectedPrinted();
+              }}
+              disabled={markManyPrinted.isPending}
+            >
+              {markManyPrinted.isPending
+                ? t('events.processing') || 'Processing...'
+                : t('events.confirm') || 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

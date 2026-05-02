@@ -149,6 +149,8 @@ export interface IdCardFilters {
   classAcademicYearId?: string;
   courseId?: string;
   courseStudentId?: string;
+  /** Main-school student; lists only that student’s ID cards */
+  studentId?: string;
   studentType?: 'regular' | 'course' | 'all';
   enrollmentStatus?: string;
   templateId?: string;

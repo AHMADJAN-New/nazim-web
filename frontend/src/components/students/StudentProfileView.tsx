@@ -16,7 +16,8 @@ import {
   BookOpen,
   AlertTriangle,
   Download,
-  CheckCircle
+  CheckCircle,
+  Eye,
 } from 'lucide-react';
 import React, { useMemo, useState, useEffect, memo } from 'react';
 
@@ -47,6 +48,8 @@ interface StudentProfileViewProps {
   onOpenChange: (open: boolean) => void;
   student: Student | null;
   onManageAdmissions?: (student: Student) => void;
+  /** When set (and user has id_cards.read), shows “assigned ID card” action in the header. */
+  onViewAssignedIdCard?: (student: Student) => void;
 }
 
 interface InfoRowProps {
@@ -83,7 +86,13 @@ function InfoSection({ title, children }: { title: string; children: React.React
 }
 
 // PERFORMANCE: Memoized to prevent unnecessary re-renders
-export const StudentProfileView = memo(function StudentProfileView({ open, onOpenChange, student, onManageAdmissions }: StudentProfileViewProps) {
+export const StudentProfileView = memo(function StudentProfileView({
+  open,
+  onOpenChange,
+  student,
+  onManageAdmissions,
+  onViewAssignedIdCard,
+}: StudentProfileViewProps) {
   const { data: profile } = useProfile();
   const { isRTL, t } = useLanguage();
   const yesText = isRTL ? 'هو' : 'Yes';
@@ -91,6 +100,8 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
   const canReadAdmissions = useHasPermission('student_admissions.read');
   const canCreateAdmissions = useHasPermission('student_admissions.create');
   const canManageAdmissions = Boolean(onManageAdmissions && (canReadAdmissions || canCreateAdmissions));
+  const canReadIdCards = useHasPermission('id_cards.read');
+  const canViewAssignedIdCard = Boolean(onViewAssignedIdCard && canReadIdCards);
   const orgIdForQuery = profile?.organization_id;
   const { data: schools } = useSchools(orgIdForQuery);
   
@@ -404,6 +415,23 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                 >
                   <GraduationCap className="h-4 w-4 mr-2" />
                   {t('nav.admissions') || 'Admissions'}
+                </Button>
+              ) : null}
+              {canViewAssignedIdCard ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!student || !onViewAssignedIdCard) {
+                      return;
+                    }
+                    const s = student;
+                    onOpenChange(false);
+                    onViewAssignedIdCard(s);
+                  }}
+                >
+                  <Eye className="h-4 w-4 mr-2 text-indigo-600 dark:text-indigo-400" />
+                  {t('idCards.assignedCards.title') || 'Assigned ID Card'}
                 </Button>
               ) : null}
               <Button

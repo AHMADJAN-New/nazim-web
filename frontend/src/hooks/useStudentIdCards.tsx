@@ -62,9 +62,17 @@ export const useStudentIdCards = (filters?: StudentIdCardFilters) => {
         });
 
         const apiCards = await studentIdCardsApi.list(apiFilters);
-        
-        // Map API models to domain models
-        return (apiCards as StudentIdCardApi.StudentIdCard[]).map(mapStudentIdCardApiToDomain);
+
+        const rawList: StudentIdCardApi.StudentIdCard[] = Array.isArray(apiCards)
+          ? (apiCards as StudentIdCardApi.StudentIdCard[])
+          : apiCards &&
+              typeof apiCards === 'object' &&
+              'data' in apiCards &&
+              Array.isArray((apiCards as { data: unknown }).data)
+            ? ((apiCards as { data: StudentIdCardApi.StudentIdCard[] }).data)
+            : [];
+
+        return rawList.map(mapStudentIdCardApiToDomain);
       } catch (error) {
         if (import.meta.env.DEV) {
           console.error('[useStudentIdCards] Error fetching ID cards:', error);
@@ -200,6 +208,38 @@ export const useMarkCardPrinted = () => {
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.idCardMarkPrintedFailed'));
+    },
+  });
+};
+
+/**
+ * Mark many ID cards as printed (sequential API calls). Used from assignment and export flows.
+ */
+export const useMarkCardIdsPrintedBulk = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const unique = [...new Set(ids)].filter(Boolean);
+      if (unique.length === 0) {
+        return 0;
+      }
+      for (const id of unique) {
+        await studentIdCardsApi.markPrinted(id);
+      }
+      return unique.length;
+    },
+    onSuccess: async (count) => {
+      if (count > 0) {
+        showToast.success('toast.idCardsMarkedPrintedBulk', { count });
+      }
+      await queryClient.invalidateQueries({ queryKey: ['student-id-cards'] });
+      await queryClient.refetchQueries({ queryKey: ['student-id-cards'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-id-card'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.idCardsMarkPrintedBulkFailed'));
     },
   });
 };

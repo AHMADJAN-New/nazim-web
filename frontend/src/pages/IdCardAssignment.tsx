@@ -49,6 +49,7 @@ import {
   useAssignIdCards,
   useUpdateStudentIdCard,
   useMarkCardPrinted,
+  useMarkCardIdsPrintedBulk,
   useMarkCardFeePaid,
   useDeleteStudentIdCard,
   type StudentIdCard,
@@ -85,7 +86,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { showToast } from '@/lib/toast';
-import { studentIdCardsApi } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
@@ -153,6 +153,8 @@ export default function IdCardAssignment() {
   const [enrollmentStatus, setEnrollmentStatus] = useState<string>('active');
   const [templateId, setTemplateId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  /** When true, the assignment student list only shows students who have no ID card yet. */
+  const [showOnlyWithoutCards, setShowOnlyWithoutCards] = useState(false);
 
   // Helper to convert empty string to 'all' for Select components
   const schoolIdForSelect = schoolId || 'all';
@@ -184,7 +186,6 @@ export default function IdCardAssignment() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [markAllPrintedDialogOpen, setMarkAllPrintedDialogOpen] = useState(false);
-  const [isBulkMarkingPrinted, setIsBulkMarkingPrinted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasAppliedNavigationPreset, setHasAppliedNavigationPreset] = useState(false);
   const presetStudentType = searchParams.get('studentType');
@@ -374,6 +375,7 @@ export default function IdCardAssignment() {
   const assignCards = useAssignIdCards();
   const updateCard = useUpdateStudentIdCard();
   const markPrinted = useMarkCardPrinted();
+  const markManyPrinted = useMarkCardIdsPrintedBulk();
   const markFeePaid = useMarkCardFeePaid();
   const deleteCard = useDeleteStudentIdCard();
 
@@ -434,6 +436,20 @@ export default function IdCardAssignment() {
     }
   }, [filteredStudents, idCards, studentType, studentAdmissions]);
 
+  const studentsForAssignmentTable = useMemo(() => {
+    if (!showOnlyWithoutCards) return studentsWithCardStatus;
+    return studentsWithCardStatus.filter((s) => !s.hasCard);
+  }, [studentsWithCardStatus, showOnlyWithoutCards]);
+
+  const isAllVisibleAssignmentRowsSelected = useMemo(() => {
+    if (studentType === 'course') {
+      const ids = studentsForAssignmentTable.map((s) => s.courseStudent!.id);
+      return ids.length > 0 && ids.every((id) => selectedCourseStudentIds.has(id));
+    }
+    const ids = studentsForAssignmentTable.map((s) => s.admission!.id);
+    return ids.length > 0 && ids.every((id) => selectedAdmissionIds.has(id));
+  }, [studentType, studentsForAssignmentTable, selectedCourseStudentIds, selectedAdmissionIds]);
+
   // Handle student selection (using admission IDs for regular students, course student IDs for course students)
   const toggleStudentSelection = (id: string) => {
     if (studentType === 'course') {
@@ -461,23 +477,29 @@ export default function IdCardAssignment() {
 
   const selectAllStudents = () => {
     if (studentType === 'course') {
-      if (selectedCourseStudentIds.size === studentsWithCardStatus.length) {
+      const visibleIds = studentsForAssignmentTable.map((s) => s.courseStudent!.id);
+      const allVisibleSelected =
+        visibleIds.length > 0 && visibleIds.every((id) => selectedCourseStudentIds.has(id));
+      if (allVisibleSelected) {
         setSelectedCourseStudentIds(new Set());
       } else {
-        setSelectedCourseStudentIds(new Set(studentsWithCardStatus.map(s => s.courseStudent!.id)));
+        setSelectedCourseStudentIds(new Set(visibleIds));
       }
     } else {
-      if (selectedAdmissionIds.size === studentsWithCardStatus.length) {
+      const visibleIds = studentsForAssignmentTable.map((s) => s.admission!.id);
+      const allVisibleSelected =
+        visibleIds.length > 0 && visibleIds.every((id) => selectedAdmissionIds.has(id));
+      if (allVisibleSelected) {
         setSelectedAdmissionIds(new Set());
       } else {
-        setSelectedAdmissionIds(new Set(studentsWithCardStatus.map(s => s.admission!.id)));
+        setSelectedAdmissionIds(new Set(visibleIds));
       }
     }
   };
 
   const selectByClass = (classAcadYearId: string) => {
     if (studentType === 'regular') {
-      const classAdmissions = studentsWithCardStatus
+      const classAdmissions = studentsForAssignmentTable
         .filter(s => s.admission?.classAcademicYearId === classAcadYearId)
         .map(s => s.admission!.id);
       setSelectedAdmissionIds(new Set(classAdmissions));
@@ -776,23 +798,14 @@ export default function IdCardAssignment() {
       if (unique.length === 0) {
         return;
       }
-      setIsBulkMarkingPrinted(true);
       try {
-        for (const id of unique) {
-          await studentIdCardsApi.markPrinted(id);
-        }
-        showToast.success('toast.idCardsMarkedPrintedBulk', { count: unique.length });
-        await queryClient.invalidateQueries({ queryKey: ['student-id-cards'] });
-        await queryClient.refetchQueries({ queryKey: ['student-id-cards'] });
+        await markManyPrinted.mutateAsync(unique);
         setSelectedCardsForBulkAction(new Set());
-      } catch (error) {
-        showToast.error((error as Error).message || 'toast.idCardsMarkPrintedBulkFailed');
-        throw error;
-      } finally {
-        setIsBulkMarkingPrinted(false);
+      } catch {
+        // Errors and toasts are handled by useMarkCardIdsPrintedBulk
       }
     },
-    [queryClient]
+    [markManyPrinted],
   );
 
   // Report export columns (handles both regular and course students)
@@ -910,6 +923,7 @@ export default function IdCardAssignment() {
                   // Clear selections when switching modes
                   setSelectedAdmissionIds(new Set());
                   setSelectedCourseStudentIds(new Set());
+                  setShowOnlyWithoutCards(false);
                   // Reset filters
                   if (value === 'course') {
                     setClassId('');
@@ -1033,8 +1047,8 @@ export default function IdCardAssignment() {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex-1 relative min-w-0">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t('events.search') || 'Search students...'}
@@ -1043,24 +1057,37 @@ export default function IdCardAssignment() {
                 className="pl-8"
               />
             </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Checkbox
+                id="id-card-assignment-only-without"
+                checked={showOnlyWithoutCards}
+                onCheckedChange={(checked) => setShowOnlyWithoutCards(checked === true)}
+              />
+              <Label htmlFor="id-card-assignment-only-without" className="text-sm font-normal cursor-pointer whitespace-normal">
+                {t('idCards.assignment.showOnlyWithoutCard') ||
+                  'Only show students without an assigned card'}
+              </Label>
+            </div>
           </div>
 
           {/* Main Content: Student List + Assignment Panel */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             {/* Student List (40%) */}
             <div className="lg:col-span-2 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <Label className="text-base font-semibold">
-                  {t('table.students') || 'Students'} ({studentsWithCardStatus.length})
+                  {t('table.students') || 'Students'} (
+                  {showOnlyWithoutCards
+                    ? `${studentsForAssignmentTable.length} / ${studentsWithCardStatus.length}`
+                    : studentsWithCardStatus.length}
+                  )
                 </Label>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={selectAllStudents}
                 >
-                  {(studentType === 'course' 
-                    ? selectedCourseStudentIds.size === studentsWithCardStatus.length
-                    : selectedAdmissionIds.size === studentsWithCardStatus.length) ? (
+                  {isAllVisibleAssignmentRowsSelected ? (
                     <>
                       <Square className="h-4 w-4 mr-1" />
                       {t('events.deselectAll') || 'Deselect All'}
@@ -1076,8 +1103,15 @@ export default function IdCardAssignment() {
 
               <ScrollArea className="h-[500px] border rounded-lg p-2">
                 <div className="space-y-2">
-                  {studentType === 'course' 
-                    ? studentsWithCardStatus.map((item) => {
+                  {studentsForAssignmentTable.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8 px-2">
+                      {showOnlyWithoutCards
+                        ? t('idCards.assignment.noStudentsWithoutCard') ||
+                          'No students in this list are missing a card.'
+                        : t('events.noData') || 'No data available'}
+                    </p>
+                  ) : studentType === 'course' 
+                    ? studentsForAssignmentTable.map((item) => {
                         // Type guard for course students
                         if (!('courseStudent' in item)) return null;
                         const courseStudent = item.courseStudent;
@@ -1151,7 +1185,7 @@ export default function IdCardAssignment() {
                           </div>
                         );
                       })
-                    : studentsWithCardStatus.map((item) => {
+                    : studentsForAssignmentTable.map((item) => {
                         // Type guard for regular students
                         if (!('admission' in item)) return null;
                         const admission = item.admission;
@@ -1750,7 +1784,7 @@ export default function IdCardAssignment() {
                               size="sm"
                               className="flex-shrink-0"
                               onClick={selectAllUnprintedInView}
-                              disabled={isBulkMarkingPrinted}
+                              disabled={markManyPrinted.isPending}
                             >
                               {selectedCardsForBulkAction.size === unprintedCards.length ? (
                                 <>
@@ -1769,7 +1803,7 @@ export default function IdCardAssignment() {
                               size="sm"
                               className="flex-shrink-0"
                               aria-label={t('idCards.markSelectedAsPrinted') || 'Mark selected as printed'}
-                              disabled={selectedCardsForBulkAction.size === 0 || isBulkMarkingPrinted}
+                              disabled={selectedCardsForBulkAction.size === 0 || markManyPrinted.isPending}
                               onClick={() => void markCardIdsPrintedBulk(Array.from(selectedCardsForBulkAction))}
                             >
                               <Printer className="h-4 w-4 shrink-0" />
@@ -1781,7 +1815,7 @@ export default function IdCardAssignment() {
                               size="sm"
                               className="flex-shrink-0"
                               aria-label={t('idCards.markAllUnprintedAsPrinted') || 'Mark all as printed (filtered)'}
-                              disabled={unprintedCards.length === 0 || isBulkMarkingPrinted}
+                              disabled={unprintedCards.length === 0 || markManyPrinted.isPending}
                               onClick={() => setMarkAllPrintedDialogOpen(true)}
                             >
                               <Printer className="h-4 w-4 shrink-0" />
@@ -1805,7 +1839,7 @@ export default function IdCardAssignment() {
                                             ? 'indeterminate'
                                             : false
                                     }
-                                    disabled={isBulkMarkingPrinted}
+                                    disabled={markManyPrinted.isPending}
                                     onCheckedChange={(checked) => {
                                       if (checked === true) {
                                         setSelectedCardsForBulkAction(new Set(unprintedCards.map((c) => c.id)));
@@ -1832,7 +1866,7 @@ export default function IdCardAssignment() {
                                   <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
                                     <Checkbox
                                       checked={selectedCardsForBulkAction.has(card.id)}
-                                      disabled={isBulkMarkingPrinted}
+                                      disabled={markManyPrinted.isPending}
                                       onCheckedChange={() => toggleUnprintedCardSelected(card.id)}
                                     />
                                   </TableCell>
@@ -1888,7 +1922,7 @@ export default function IdCardAssignment() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        disabled={isBulkMarkingPrinted}
+                                        disabled={markManyPrinted.isPending}
                                         onClick={() => handleMarkPrinted(card.id)}
                                       >
                                         <Printer className="h-4 w-4" />
@@ -2187,9 +2221,9 @@ export default function IdCardAssignment() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkMarkingPrinted}>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel disabled={markManyPrinted.isPending}>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isBulkMarkingPrinted}
+              disabled={markManyPrinted.isPending}
               onClick={(e) => {
                 e.preventDefault();
                 void (async () => {
@@ -2202,7 +2236,7 @@ export default function IdCardAssignment() {
                 })();
               }}
             >
-              {isBulkMarkingPrinted ? t('events.processing') || 'Processing...' : t('events.confirm') || 'Confirm'}
+              {markManyPrinted.isPending ? t('events.processing') || 'Processing...' : t('events.confirm') || 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

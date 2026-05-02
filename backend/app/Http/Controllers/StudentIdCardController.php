@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\StudentIdCard;
-use App\Models\StudentAdmission;
 use App\Models\CourseStudent;
-use App\Models\IdCardTemplate;
-use App\Models\IncomeEntry;
 use App\Models\Currency;
 use App\Models\FinanceAccount;
+use App\Models\IdCardTemplate;
 use App\Models\IncomeCategory;
+use App\Models\IncomeEntry;
+use App\Models\StudentAdmission;
+use App\Models\StudentIdCard;
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +20,7 @@ class StudentIdCardController extends Controller
     public function __construct(
         private ActivityLogService $activityLogService
     ) {}
+
     /**
      * Display a listing of student ID cards with filters
      */
@@ -28,28 +29,29 @@ class StudentIdCardController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('id_cards.read')) {
+            if (! $user->hasPermissionTo('id_cards.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for id_cards.read: " . $e->getMessage());
+            Log::warning('Permission check failed for id_cards.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         // Strict school scoping
         $currentSchoolId = $this->getCurrentSchoolId($request);
         $schoolIds = [$currentSchoolId];
-        
+
         $query = StudentIdCard::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
             ->forAccessibleSchools($schoolIds);
@@ -67,6 +69,11 @@ class StudentIdCardController extends Controller
         // Filter by class academic year
         if ($request->has('class_academic_year_id') && $request->class_academic_year_id) {
             $query->where('class_academic_year_id', $request->class_academic_year_id);
+        }
+
+        // Filter by main student (one student’s cards; use with pagination for lightweight lookups)
+        if ($request->filled('student_id')) {
+            $query->where('student_id', $request->student_id);
         }
 
         // Client-provided school_id is ignored; current school is enforced.
@@ -122,13 +129,13 @@ class StudentIdCardController extends Controller
                 // Search in regular students
                 $q->whereHas('student', function ($subQ) use ($search) {
                     $subQ->where('full_name', 'ilike', "%{$search}%")
-                         ->orWhere('admission_no', 'ilike', "%{$search}%");
+                        ->orWhere('admission_no', 'ilike', "%{$search}%");
                 })
                 // Or search in course students
-                ->orWhereHas('courseStudent', function ($subQ) use ($search) {
-                    $subQ->where('full_name', 'ilike', "%{$search}%")
-                         ->orWhere('admission_no', 'ilike', "%{$search}%");
-                });
+                    ->orWhereHas('courseStudent', function ($subQ) use ($search) {
+                        $subQ->where('full_name', 'ilike', "%{$search}%")
+                            ->orWhere('admission_no', 'ilike', "%{$search}%");
+                    });
             });
         }
 
@@ -151,16 +158,18 @@ class StudentIdCardController extends Controller
         if ($request->has('page') || $request->has('per_page')) {
             $perPage = $request->input('per_page', 25);
             $allowedPerPage = [10, 25, 50, 100];
-            if (!in_array((int)$perPage, $allowedPerPage)) {
+            if (! in_array((int) $perPage, $allowedPerPage)) {
                 $perPage = 25;
             }
-            
-            $cards = $query->orderBy('created_at', 'desc')->paginate((int)$perPage);
+
+            $cards = $query->orderBy('created_at', 'desc')->paginate((int) $perPage);
+
             return response()->json($cards);
         }
 
         // Return all results if no pagination
         $cards = $query->orderBy('created_at', 'desc')->get();
+
         return response()->json($cards);
     }
 
@@ -172,29 +181,30 @@ class StudentIdCardController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('id_cards.create')) {
+            if (! $user->hasPermissionTo('id_cards.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for id_cards.create: " . $e->getMessage());
+            Log::warning('Permission check failed for id_cards.create: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         // Validate that either student_admission_ids OR course_student_ids is provided, but not both
-        $hasStudentAdmissionIds = $request->has('student_admission_ids') && !empty($request->student_admission_ids);
-        $hasCourseStudentIds = $request->has('course_student_ids') && !empty($request->course_student_ids);
+        $hasStudentAdmissionIds = $request->has('student_admission_ids') && ! empty($request->student_admission_ids);
+        $hasCourseStudentIds = $request->has('course_student_ids') && ! empty($request->course_student_ids);
 
-        if (!$hasStudentAdmissionIds && !$hasCourseStudentIds) {
+        if (! $hasStudentAdmissionIds && ! $hasCourseStudentIds) {
             return response()->json(['error' => 'Either student_admission_ids or course_student_ids must be provided'], 400);
         }
 
@@ -224,7 +234,7 @@ class StudentIdCardController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$template) {
+        if (! $template) {
             return response()->json(['error' => 'Template not found'], 404);
         }
 
@@ -235,7 +245,7 @@ class StudentIdCardController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$academicYear) {
+        if (! $academicYear) {
             return response()->json(['error' => 'Academic year not found'], 404);
         }
 
@@ -254,11 +264,12 @@ class StudentIdCardController extends Controller
                         ->whereNull('deleted_at')
                         ->first();
 
-                    if (!$admission) {
+                    if (! $admission) {
                         $skipped[] = [
                             'student_admission_id' => $admissionId,
-                            'reason' => 'admission_not_found'
+                            'reason' => 'admission_not_found',
                         ];
+
                         continue;
                     }
 
@@ -273,8 +284,9 @@ class StudentIdCardController extends Controller
                         $skipped[] = [
                             'student_admission_id' => $admissionId,
                             'reason' => 'already_assigned',
-                            'card_id' => $existing->id
+                            'card_id' => $existing->id,
                         ];
+
                         continue;
                     }
 
@@ -295,7 +307,7 @@ class StudentIdCardController extends Controller
                         ]);
 
                         // Create income entry if fee is paid
-                        if ($card->card_fee_paid && $card->card_fee > 0 && !empty($validated['account_id']) && !empty($validated['income_category_id'])) {
+                        if ($card->card_fee_paid && $card->card_fee > 0 && ! empty($validated['account_id']) && ! empty($validated['income_category_id'])) {
                             $this->createIncomeEntryForCard($card, $validated['account_id'], $validated['income_category_id'], $user->id);
                             // Refresh card to get income_entry_id
                             $card->refresh();
@@ -305,7 +317,7 @@ class StudentIdCardController extends Controller
                     } catch (\Exception $e) {
                         $errors[] = [
                             'student_admission_id' => $admissionId,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ];
                     }
                 }
@@ -320,11 +332,12 @@ class StudentIdCardController extends Controller
                         ->whereNull('deleted_at')
                         ->first();
 
-                    if (!$courseStudent) {
+                    if (! $courseStudent) {
                         $skipped[] = [
                             'course_student_id' => $courseStudentId,
-                            'reason' => 'course_student_not_found'
+                            'reason' => 'course_student_not_found',
                         ];
+
                         continue;
                     }
 
@@ -338,8 +351,9 @@ class StudentIdCardController extends Controller
                         $skipped[] = [
                             'course_student_id' => $courseStudentId,
                             'reason' => 'already_assigned',
-                            'card_id' => $existing->id
+                            'card_id' => $existing->id,
                         ];
+
                         continue;
                     }
 
@@ -364,7 +378,7 @@ class StudentIdCardController extends Controller
                         ]);
 
                         // Create income entry if fee is paid
-                        if ($card->card_fee_paid && $card->card_fee > 0 && !empty($validated['account_id']) && !empty($validated['income_category_id'])) {
+                        if ($card->card_fee_paid && $card->card_fee > 0 && ! empty($validated['account_id']) && ! empty($validated['income_category_id'])) {
                             $this->createIncomeEntryForCard($card, $validated['account_id'], $validated['income_category_id'], $user->id);
                             // Refresh card to get income_entry_id
                             $card->refresh();
@@ -374,7 +388,7 @@ class StudentIdCardController extends Controller
                     } catch (\Exception $e) {
                         $errors[] = [
                             'course_student_id' => $courseStudentId,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ];
                     }
                 }
@@ -393,7 +407,8 @@ class StudentIdCardController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Bulk ID card assignment failed: " . $e->getMessage());
+            Log::error('Bulk ID card assignment failed: '.$e->getMessage());
+
             return response()->json(['error' => 'Bulk assignment failed', 'message' => $e->getMessage()], 500);
         }
     }
@@ -406,21 +421,22 @@ class StudentIdCardController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('id_cards.read')) {
+            if (! $user->hasPermissionTo('id_cards.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for id_cards.read: " . $e->getMessage());
+            Log::warning('Permission check failed for id_cards.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -436,13 +452,13 @@ class StudentIdCardController extends Controller
             'organization',
             'incomeEntry',
         ])
-        ->whereNull('deleted_at')
-        ->find($id);
-        
-        if (!$card) {
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (! $card) {
             return response()->json(['error' => 'ID card not found'], 404);
         }
-        
+
         // Note: printedBy relationship is not loaded to avoid UUID type mismatch errors
 
         // Check organization access
@@ -461,27 +477,28 @@ class StudentIdCardController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('id_cards.update')) {
+            if (! $user->hasPermissionTo('id_cards.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for id_cards.update: " . $e->getMessage());
+            Log::warning('Permission check failed for id_cards.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $card = StudentIdCard::whereNull('deleted_at')->find($id);
 
-        if (!$card) {
+        if (! $card) {
             return response()->json(['error' => 'ID card not found'], 404);
         }
 
@@ -525,7 +542,7 @@ class StudentIdCardController extends Controller
             if ($accountId && $incomeCategoryId) {
                 // If income entry exists and fee was already paid, we might need to update it
                 // For now, only create if it doesn't exist
-                if (!$card->income_entry_id) {
+                if (! $card->income_entry_id) {
                     $this->createIncomeEntryForCard($card, $accountId, $incomeCategoryId, $user->id);
                 }
             } elseif ($feeChanged && $isFeePaid) {
@@ -536,7 +553,7 @@ class StudentIdCardController extends Controller
 
         // Refresh card to get updated income_entry_id if created
         $card->refresh();
-        
+
         $card->load([
             'student',
             'studentAdmission',
@@ -548,7 +565,7 @@ class StudentIdCardController extends Controller
             'organization',
             'incomeEntry',
         ]);
-        
+
         // Note: printedBy relationship is not loaded to avoid UUID type mismatch errors
 
         // Log ID card update
@@ -564,7 +581,7 @@ class StudentIdCardController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log ID card update: ' . $e->getMessage());
+            Log::warning('Failed to log ID card update: '.$e->getMessage());
         }
 
         return response()->json($card);
@@ -578,27 +595,28 @@ class StudentIdCardController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('id_cards.update')) {
+            if (! $user->hasPermissionTo('id_cards.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for id_cards.update: " . $e->getMessage());
+            Log::warning('Permission check failed for id_cards.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $card = StudentIdCard::whereNull('deleted_at')->find($id);
 
-        if (!$card) {
+        if (! $card) {
             return response()->json(['error' => 'ID card not found'], 404);
         }
 
@@ -626,7 +644,7 @@ class StudentIdCardController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log ID card printed: ' . $e->getMessage());
+            Log::warning('Failed to log ID card printed: '.$e->getMessage());
         }
 
         return response()->json($card);
@@ -640,27 +658,28 @@ class StudentIdCardController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('id_cards.update')) {
+            if (! $user->hasPermissionTo('id_cards.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for id_cards.update: " . $e->getMessage());
+            Log::warning('Permission check failed for id_cards.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $card = StudentIdCard::whereNull('deleted_at')->find($id);
 
-        if (!$card) {
+        if (! $card) {
             return response()->json(['error' => 'ID card not found'], 404);
         }
 
@@ -718,27 +737,28 @@ class StudentIdCardController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('id_cards.delete')) {
+            if (! $user->hasPermissionTo('id_cards.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for id_cards.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for id_cards.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $card = StudentIdCard::whereNull('deleted_at')->find($id);
 
-        if (!$card) {
+        if (! $card) {
             return response()->json(['error' => 'ID card not found'], 404);
         }
 
@@ -763,7 +783,7 @@ class StudentIdCardController extends Controller
                 request: request()
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log ID card deletion: ' . $e->getMessage());
+            Log::warning('Failed to log ID card deletion: '.$e->getMessage());
         }
 
         return response()->noContent();
@@ -771,17 +791,11 @@ class StudentIdCardController extends Controller
 
     /**
      * Create income entry for ID card fee payment
-     * 
-     * @param StudentIdCard $card
-     * @param string $accountId
-     * @param string $incomeCategoryId
-     * @param string|null $userId
-     * @return IncomeEntry|null
      */
     protected function createIncomeEntryForCard(StudentIdCard $card, string $accountId, string $incomeCategoryId, ?string $userId = null): ?IncomeEntry
     {
         // Only create income entry if fee is paid and amount > 0
-        if (!$card->card_fee_paid || $card->card_fee <= 0) {
+        if (! $card->card_fee_paid || $card->card_fee <= 0) {
             return null;
         }
 
@@ -797,8 +811,9 @@ class StudentIdCardController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$baseCurrency) {
+        if (! $baseCurrency) {
             Log::warning("No base currency found for organization {$card->organization_id}");
+
             return null;
         }
 
@@ -808,8 +823,9 @@ class StudentIdCardController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$account) {
+        if (! $account) {
             Log::warning("Account {$accountId} not found or doesn't belong to organization {$card->organization_id}");
+
             return null;
         }
 
@@ -819,8 +835,9 @@ class StudentIdCardController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$incomeCategory) {
+        if (! $incomeCategory) {
             Log::warning("Income category {$incomeCategoryId} not found or doesn't belong to organization {$card->organization_id}");
+
             return null;
         }
 
@@ -855,6 +872,4 @@ class StudentIdCardController extends Controller
 
         return $incomeEntry;
     }
-
 }
-
