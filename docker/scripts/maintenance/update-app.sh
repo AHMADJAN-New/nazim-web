@@ -57,16 +57,22 @@ elif [[ -z "$LAST_COMMIT" ]]; then
   REBUILD_NGINX=true
   echo "[update-app] No previous state; will rebuild both images."
 else
-  if git -C "${ROOT_DIR}" diff --name-only "${LAST_COMMIT}".."${CURRENT_COMMIT}" -- backend/composer.json backend/composer.lock | grep -q .; then
+  if git -C "${ROOT_DIR}" diff --name-only "${LAST_COMMIT}".."${CURRENT_COMMIT}" -- \
+    backend/composer.json \
+    backend/composer.lock \
+    backend/database/ \
+    docker/php/ | grep -q .; then
     REBUILD_PHP=true
-    echo "[update-app] Backend dependency files changed; will rebuild PHP image."
+    echo "[update-app] Backend dependencies, migrations, or PHP image files changed; will rebuild PHP image."
   fi
-  if git -C "${ROOT_DIR}" diff --name-only "${LAST_COMMIT}".."${CURRENT_COMMIT}" -- frontend/ | grep -q .; then
+  if git -C "${ROOT_DIR}" diff --name-only "${LAST_COMMIT}".."${CURRENT_COMMIT}" -- \
+    frontend/ \
+    docker/nginx/ | grep -q .; then
     REBUILD_NGINX=true
-    echo "[update-app] Frontend changed; will rebuild Nginx image."
+    echo "[update-app] Frontend or Nginx image/cert files changed; will rebuild Nginx image."
   fi
-  [[ "$REBUILD_PHP" != "true" ]] && echo "[update-app] No backend dep changes; skipping PHP image build."
-  [[ "$REBUILD_NGINX" != "true" ]] && echo "[update-app] No frontend changes; skipping Nginx image build."
+  [[ "$REBUILD_PHP" != "true" ]] && echo "[update-app] No backend dependency, migration, or PHP image changes; skipping PHP image build."
+  [[ "$REBUILD_NGINX" != "true" ]] && echo "[update-app] No frontend or Nginx image changes; skipping Nginx image build."
 fi
 
 # Frontend: no host npm step — image builds deps and app in Docker (faster, uses layer cache)
@@ -83,6 +89,11 @@ fi
 echo "[update-app] Restarting app services (php, queue, scheduler, nginx)..."
 compose up -d php queue scheduler nginx
 
+echo "[update-app] Refreshing active TLS certificate symlinks and reloading nginx..."
+compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload' || {
+  echo "[update-app] WARNING: Failed to refresh/reload nginx certificates. Check nginx logs if HTTPS is unhealthy."
+}
+
 # Only run composer install in container when backend deps changed (image already has vendor from build; this syncs if needed)
 if [[ "$REBUILD_PHP" == "true" ]]; then
   echo "[update-app] Ensuring Composer dependencies and autoloader..."
@@ -93,7 +104,7 @@ else
 fi
 
 echo "[update-app] Running migrations + optimize..."
-if ! compose exec -T php sh -lc 'php artisan migrate --force && php artisan optimize'; then
+if ! compose exec -T php sh -lc 'php artisan config:clear && php artisan migrate --force --no-interaction && php artisan optimize'; then
   echo "[update-app] ERROR: Migrations or optimize failed. Fix errors and re-run. Login and other features may break until migrations succeed."
   exit 1
 fi

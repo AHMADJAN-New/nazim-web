@@ -8,12 +8,14 @@ if [ -z "$DOMAIN" ]; then
   exit 1
 fi
 
-CERT="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
+CERT="/etc/nginx/certs/${DOMAIN}/fullchain.pem"
 HTTP_TPL="/etc/nginx/conf.d/http.conf.template"
 HTTPS_TPL="/etc/nginx/conf.d/https.conf.template"
 OUT="/etc/nginx/conf.d/default.conf"
 
 echo "[nginx] DOMAIN=$DOMAIN"
+
+/refresh_certs.sh
 
 if [ -f "$CERT" ]; then
   echo "[nginx] Found Let's Encrypt cert. Rendering HTTPS config."

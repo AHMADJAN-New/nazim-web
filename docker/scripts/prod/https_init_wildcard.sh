@@ -29,6 +29,18 @@ compose() {
 echo "[https_init_wildcard] Issuing Let's Encrypt WILDCARD cert for: *.${DOMAIN} and ${DOMAIN}"
 echo "[https_init_wildcard] This uses DNS-01 challenge. You will need to add a TXT record at your DNS provider (e.g. Hostinger)."
 echo ""
+echo "[https_init_wildcard] IMPORTANT — \"secondary validation\" failures:"
+echo "[https_init_wildcard]   Your registrar NS (e.g. ns1.dns-parking.com) can show the NEW TXT while Google/Cloudflare"
+echo "[https_init_wildcard]   resolvers still cache an OLD TXT for up to the old record's TTL."
+echo "[https_init_wildcard]   Do NOT press Enter in Certbot until public resolvers match."
+echo "[https_init_wildcard]   In a second terminal, after you add each TXT value Certbot shows, run:"
+echo ""
+echo "    bash docker/scripts/prod/https_acme_txt_propagation_check.sh --wait ${DOMAIN} <TOKEN_FROM_CERTBOT> [<SECOND_TOKEN_IF_ANY>]"
+echo ""
+echo "[https_init_wildcard] That script checks your authoritative NS + many public resolvers, then waits ~3m"
+echo "[https_init_wildcard] (ACME_TXT_POST_OK_COOLDOWN_SEC) and re-checks — reduces LE \"secondary validation\" failures."
+echo "[https_init_wildcard] When it exits 0, press Enter in Certbot for that step."
+echo ""
 
 # Use interactive mode so user can add TXT record and press Enter when ready
 compose run --rm certbot certonly \

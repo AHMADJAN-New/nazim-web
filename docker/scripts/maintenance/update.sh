@@ -32,6 +32,11 @@ docker image prune -f || echo "[update] Warning: Failed to clean up images (non-
 echo "[update] Restarting services..."
 compose up -d
 
+echo "[update] Refreshing active TLS certificate symlinks and reloading nginx..."
+compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload' || {
+  echo "[update] WARNING: Failed to refresh/reload nginx certificates. Check nginx logs if HTTPS is unhealthy."
+}
+
 echo "[update] Ensuring storage directories and fixing permissions..."
 compose exec -T php sh -c '
   mkdir -p /var/www/backend/storage/app/private/platform/files \
@@ -46,7 +51,10 @@ compose exec -T php sh -c '
 ' || true
 
 echo "[update] Running migrations + optimize..."
-compose exec -T php sh -lc 'php artisan migrate --force && php artisan optimize || true'
+if ! compose exec -T php sh -lc 'php artisan config:clear && php artisan migrate --force --no-interaction && php artisan optimize'; then
+  echo "[update] ERROR: Migrations or optimize failed. Fix errors and re-run before considering deploy complete."
+  exit 1
+fi
 
 echo "[update] Restarting php, queue, and scheduler (reload workers after deploy; fixes stale report paths)..."
 compose restart php queue scheduler 2>/dev/null || compose up -d php queue scheduler
@@ -74,6 +82,8 @@ if compose exec -T nginx test -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
   compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload' || true
 else
   echo "[update] ℹ️  No certificates found, skipping renewal (run docker/scripts/prod/https_init.sh or https_init_wildcard.sh to initialize)"
+  echo "[update] Reloading nginx..."
+  compose exec -T nginx sh -lc '/refresh_certs.sh && nginx -s reload' || true
 fi
 
 echo "[update] Done."

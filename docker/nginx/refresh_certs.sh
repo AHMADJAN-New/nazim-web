@@ -14,12 +14,21 @@ SELF_PRIVKEY="${SELF_DIR}/privkey.pem"
 
 mkdir -p "${CERTS_DIR}" "${SELF_DIR}"
 
-if [ -f "${LE_FULLCHAIN}" ] && [ -f "${LE_PRIVKEY}" ]; then
-  echo "[nginx] Using Let's Encrypt certs for ${DOMAIN}"
-  ln -sf "${LE_FULLCHAIN}" "${CERTS_DIR}/fullchain.pem"
-  ln -sf "${LE_PRIVKEY}" "${CERTS_DIR}/privkey.pem"
-  exit 0
-fi
+# Prefer the exact cert directory, but skip it if it is expired. Certbot can
+# create suffixed names (for example nazim.cloud-0001) when issuing a temporary
+# root-only cert while an old wildcard cert still exists under the exact name.
+for CANDIDATE_DIR in "${LE_DIR}" "${LE_DIR}"-*; do
+  CANDIDATE_FULLCHAIN="${CANDIDATE_DIR}/fullchain.pem"
+  CANDIDATE_PRIVKEY="${CANDIDATE_DIR}/privkey.pem"
+
+  if [ -f "${CANDIDATE_FULLCHAIN}" ] && [ -f "${CANDIDATE_PRIVKEY}" ] \
+    && openssl x509 -checkend 0 -noout -in "${CANDIDATE_FULLCHAIN}" >/dev/null 2>&1; then
+    echo "[nginx] Using Let's Encrypt certs for ${DOMAIN} from ${CANDIDATE_DIR}"
+    ln -sf "${CANDIDATE_FULLCHAIN}" "${CERTS_DIR}/fullchain.pem"
+    ln -sf "${CANDIDATE_PRIVKEY}" "${CERTS_DIR}/privkey.pem"
+    exit 0
+  fi
+done
 
 if [ ! -f "${SELF_FULLCHAIN}" ] || [ ! -f "${SELF_PRIVKEY}" ]; then
   echo "[nginx] No LE cert yet; generating temporary self-signed cert for ${DOMAIN}"
