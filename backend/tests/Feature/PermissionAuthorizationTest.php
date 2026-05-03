@@ -9,6 +9,7 @@ use App\Models\SchoolBranding;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -200,7 +201,7 @@ class PermissionAuthorizationTest extends TestCase
                 ->where('organization_id', $organization->id)
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 DB::table($roleHasPermissionsTable)->insert([
                     'role_id' => $role->id,
                     'permission_id' => $permission->id,
@@ -219,6 +220,83 @@ class PermissionAuthorizationTest extends TestCase
         $this->assertTrue($user->hasPermissionTo('students.read'));
         $this->assertTrue($user->hasPermissionTo('students.create'));
         setPermissionsTeamId(null);
+    }
+
+    #[Test]
+    public function role_permissions_are_still_returned_after_a_fresh_user_permissions_load(): void
+    {
+        $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+
+        $admin = $this->createUser(
+            [],
+            ['organization_id' => $organization->id],
+            $organization,
+            $school
+        );
+
+        $targetUser = $this->createUser(
+            [],
+            ['organization_id' => $organization->id],
+            $organization,
+            $school,
+            null,
+            ['withRole' => false]
+        );
+
+        $adminRole = Role::query()
+            ->where('name', 'admin')
+            ->where('organization_id', $organization->id)
+            ->where('guard_name', 'web')
+            ->firstOrFail();
+
+        $teacherRole = Role::query()
+            ->where('name', 'teacher')
+            ->where('organization_id', $organization->id)
+            ->where('guard_name', 'web')
+            ->firstOrFail();
+
+        $permissionsUpdate = Permission::query()
+            ->where('name', 'permissions.update')
+            ->where('organization_id', $organization->id)
+            ->where('guard_name', 'web')
+            ->firstOrFail();
+
+        $studentsCreate = Permission::query()
+            ->where('name', 'students.create')
+            ->where('organization_id', $organization->id)
+            ->where('guard_name', 'web')
+            ->firstOrFail();
+
+        $roleHasPermissionsTable = config('permission.table_names.role_has_permissions', 'role_has_permissions');
+
+        foreach ([[$adminRole->id, $permissionsUpdate->id], [$teacherRole->id, $studentsCreate->id]] as [$roleId, $permissionId]) {
+            DB::table($roleHasPermissionsTable)->insertOrIgnore([
+                'role_id' => $roleId,
+                'permission_id' => $permissionId,
+                'organization_id' => $organization->id,
+            ]);
+        }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->actingAsUser($admin)
+            ->postJson('/api/permissions/users/assign-role', [
+                'user_id' => $targetUser->id,
+                'role' => 'teacher',
+            ])
+            ->assertOk();
+
+        $firstLoad = $this->actingAsUser($targetUser)->getJson('/api/permissions/user');
+        $firstLoad->assertOk();
+        $this->assertContains('students.create', $firstLoad->json('permissions'));
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        setPermissionsTeamId(null);
+
+        $freshLoad = $this->actingAsUser($targetUser)->getJson('/api/permissions/user');
+        $freshLoad->assertOk();
+        $this->assertContains('students.create', $freshLoad->json('permissions'));
     }
 
     /** @test */
@@ -288,5 +366,74 @@ class PermissionAuthorizationTest extends TestCase
         ]);
 
         $response->assertStatus(403);
+    }
+
+    /** @test */
+    public function user_permissions_api_lists_permissions_granted_via_global_permission_rows()
+    {
+        $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $user = $this->createUser(
+            [],
+            ['organization_id' => $organization->id],
+            $organization,
+            $school,
+            null,
+            ['withRole' => false]
+        );
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $role = Role::firstOrCreate(
+            [
+                'name' => 'teacher',
+                'guard_name' => 'web',
+                'organization_id' => $organization->id,
+            ],
+            ['description' => 'Test role for global permission listing']
+        );
+
+        $globalPermission = Permission::firstOrCreate(
+            [
+                'name' => 'fixture.global_perm_ui_list.read',
+                'guard_name' => 'web',
+                'organization_id' => null,
+            ],
+            [
+                'resource' => 'fixture',
+                'action' => 'read',
+                'description' => 'Fixture global permission for GET /permissions/user',
+            ]
+        );
+
+        $tableNames = config('permission.table_names');
+        $roleHasPermissionsTable = $tableNames['role_has_permissions'] ?? 'role_has_permissions';
+
+        $exists = DB::table($roleHasPermissionsTable)
+            ->where('role_id', $role->id)
+            ->where('permission_id', $globalPermission->id)
+            ->where('organization_id', $organization->id)
+            ->exists();
+
+        if (! $exists) {
+            DB::table($roleHasPermissionsTable)->insert([
+                'role_id' => $role->id,
+                'permission_id' => $globalPermission->id,
+                'organization_id' => $organization->id,
+            ]);
+        }
+
+        setPermissionsTeamId($organization->id);
+        $user->assignRole($role);
+        setPermissionsTeamId(null);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $response = $this->jsonAs($user, 'GET', '/api/permissions/user');
+
+        $response->assertStatus(200);
+        $names = $response->json('permissions');
+        $this->assertIsArray($names);
+        $this->assertContains('fixture.global_perm_ui_list.read', $names);
     }
 }

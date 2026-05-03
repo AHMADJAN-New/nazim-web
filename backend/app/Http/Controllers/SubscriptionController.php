@@ -334,17 +334,6 @@ class SubscriptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (! $user->hasPermissionTo('subscription.read')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning('Permission check failed for subscription.read: '.$e->getMessage());
-
-            return response()->json(['error' => 'This action is unauthorized'], 403);
-        }
-
         $features = $this->featureGateService->getAllFeaturesStatus($profile->organization_id);
 
         return response()->json([

@@ -62,11 +62,10 @@ class PermissionController extends Controller
     }
 
     /**
-     * Get user permissions via roles
-     * Returns permissions scoped to the user's organization:
-     * - Permissions from roles assigned to the user in their organization
+     * Get user permissions via roles (and direct assignments) for the frontend.
+     * Mirrors {@see Controller::userHasPermission()}: includes global permission rows
+     * (permissions.organization_id NULL) when linked through the user's org roles.
      *
-     * This method queries directly via roles instead of using model_has_permissions
      * Flow: user -> model_has_roles -> role_has_permissions -> permissions
      */
     public function userPermissions(Request $request)
@@ -89,6 +88,8 @@ class PermissionController extends Controller
         // Get permissions via roles (bypasses model_has_permissions)
         // CRITICAL: Only use organization-specific permissions (no global permissions)
         // Flow: model_has_roles -> role_has_permissions -> permissions
+        // Must match Controller::userHasPermission() and userPermissionsForUser():
+        // role links may reference global permission rows (organization_id NULL) from PermissionSeeder.
         $rolePermissions = DB::table('permissions')
             ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
             ->join('model_has_roles', function ($join) use ($user) {
@@ -96,17 +97,14 @@ class PermissionController extends Controller
                     ->where('model_has_roles.model_id', '=', $user->id)
                     ->where('model_has_roles.model_type', '=', 'App\\Models\\User');
             })
+            ->where('model_has_roles.organization_id', $organizationId)
             ->where(function ($query) use ($organizationId) {
-                // Match organization context in role assignments
-                $query->where('model_has_roles.organization_id', $organizationId);
+                $query->where('role_has_permissions.organization_id', $organizationId)
+                    ->orWhereNull('role_has_permissions.organization_id');
             })
             ->where(function ($query) use ($organizationId) {
-                // CRITICAL: Only organization permissions in role-permission assignments
-                $query->where('role_has_permissions.organization_id', $organizationId);
-            })
-            ->where(function ($query) use ($organizationId) {
-                // CRITICAL: Only organization-specific permissions (no global)
-                $query->where('permissions.organization_id', $organizationId);
+                $query->whereNull('permissions.organization_id')
+                    ->orWhere('permissions.organization_id', $organizationId);
             })
             ->distinct()
             ->pluck('permissions.name')
@@ -124,7 +122,10 @@ class PermissionController extends Controller
             ->where($modelHasPermissionsTable.'.'.$modelMorphKey, $user->id)
             ->where($modelHasPermissionsTable.'.model_type', 'App\\Models\\User')
             ->where($modelHasPermissionsTable.'.organization_id', $organizationId)
-            ->where('permissions.organization_id', $organizationId) // CRITICAL: Only org permissions
+            ->where(function ($query) use ($organizationId) {
+                $query->whereNull('permissions.organization_id')
+                    ->orWhere('permissions.organization_id', $organizationId);
+            })
             ->distinct()
             ->pluck('permissions.name')
             ->toArray();
@@ -596,6 +597,8 @@ class PermissionController extends Controller
             }
         }
 
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         return response()->json(['message' => 'Permission assigned to role successfully']);
     }
 
@@ -659,6 +662,8 @@ class PermissionController extends Controller
             ->where('permission_id', $permission->id)
             ->where('organization_id', $profile->organization_id)
             ->delete();
+
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Log permission removal
         try {
@@ -846,7 +851,21 @@ class PermissionController extends Controller
         }
 
         setPermissionsTeamId($profile->organization_id);
-        $targetUser->assignRole($role);
+
+        // Write the team-scoped pivot explicitly. Spatie's assignRole() can leave the
+        // organization pivot ambiguous when cached relations are stale, which makes
+        // the next fresh /permissions/user load miss the role.
+        $tableNames = config('permission.table_names');
+        $modelHasRolesTable = $tableNames['model_has_roles'] ?? 'model_has_roles';
+        $columnNames = config('permission.column_names');
+        $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
+
+        DB::table($modelHasRolesTable)->insertOrIgnore([
+            'role_id' => $role->id,
+            $modelMorphKey => $targetUser->id,
+            'model_type' => User::class,
+            'organization_id' => $profile->organization_id,
+        ]);
 
         // Clear permission cache so user's permissions are refreshed immediately
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
@@ -934,7 +953,18 @@ class PermissionController extends Controller
         }
 
         setPermissionsTeamId($profile->organization_id);
-        $targetUser->removeRole($role);
+
+        $tableNames = config('permission.table_names');
+        $modelHasRolesTable = $tableNames['model_has_roles'] ?? 'model_has_roles';
+        $columnNames = config('permission.column_names');
+        $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
+
+        DB::table($modelHasRolesTable)
+            ->where('role_id', $role->id)
+            ->where($modelMorphKey, $targetUser->id)
+            ->where('model_type', User::class)
+            ->where('organization_id', $profile->organization_id)
+            ->delete();
 
         // Clear permission cache so user's permissions are refreshed immediately
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
@@ -1069,6 +1099,8 @@ class PermissionController extends Controller
             }
         }
 
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         return response()->json(['message' => 'Permission assigned to user successfully']);
     }
 
@@ -1169,6 +1201,8 @@ class PermissionController extends Controller
         } catch (\Exception $e) {
             Log::warning('Failed to log direct permission removal: '.$e->getMessage());
         }
+
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         return response()->json(['message' => 'Permission removed from user successfully']);
     }

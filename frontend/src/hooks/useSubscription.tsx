@@ -405,7 +405,6 @@ const invalidationTimeouts = new Map<string, NodeJS.Timeout>();
 export const useFeatures = (options: { enabled?: boolean } = {}) => {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
-  const hasSubscriptionRead = useHasPermission('subscription.read');
   
   // Use stable organization ID to prevent dependency array size changes
   const organizationId = profile?.organization_id ?? null;
@@ -486,10 +485,10 @@ export const useFeatures = (options: { enabled?: boolean } = {}) => {
         );
         return response.data.map(mapFeatureApiToDomain);
       } catch (error: any) {
-        // If it's a 403 error (permission denied), return empty array gracefully
+        // If it's a 403 error (no organization/access), return empty array gracefully
         if (error?.status === 403 || error?.message?.includes('unauthorized') || error?.message?.includes('Forbidden')) {
           if (import.meta.env.DEV) {
-            console.log('[useFeatures] User does not have subscription.read permission, returning empty array');
+            console.log('[useFeatures] User cannot load subscription features, returning empty array');
           }
           return [];
         }
@@ -505,7 +504,7 @@ export const useFeatures = (options: { enabled?: boolean } = {}) => {
         throw error;
       }
     },
-    enabled: !!user && !!organizationId && hasSubscriptionRead === true && (options.enabled ?? true),
+    enabled: !!user && !!organizationId && (options.enabled ?? true),
     staleTime: 5 * 60 * 1000, // 5 minutes
     ...queryOptionsNoRefetchOnFocus,
     retry: (failureCount, error: any) => {

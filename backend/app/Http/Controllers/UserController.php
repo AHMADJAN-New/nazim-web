@@ -346,6 +346,8 @@ class UserController extends Controller
                         'organization_id' => $organizationId, // CRITICAL: Always set organization_id
                     ]);
                 }
+
+                app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
             }
         }
 
