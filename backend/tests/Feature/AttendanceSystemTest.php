@@ -842,6 +842,117 @@ class AttendanceSystemTest extends TestCase
     }
 
     /** @test */
+    public function attendance_totals_report_filters_by_attendance_session_id(): void
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $studentA = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $studentB = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        foreach ([$studentA, $studentB] as $stu) {
+            StudentAdmission::create([
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+                'student_id' => $stu->id,
+                'class_id' => $class->id,
+                'academic_year_id' => $academicYear->id,
+                'admission_date' => now()->toDateString(),
+                'enrollment_status' => 'active',
+                'is_boarder' => false,
+            ]);
+        }
+
+        $sessionDate = now()->toDateString();
+
+        $sessionOne = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'session_date' => $sessionDate,
+            'round_number' => 1,
+        ]);
+
+        $sessionTwo = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'session_date' => $sessionDate,
+            'round_number' => 2,
+        ]);
+
+        AttendanceRecord::create([
+            'attendance_session_id' => $sessionOne->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $studentA->id,
+            'status' => 'present',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        AttendanceRecord::create([
+            'attendance_session_id' => $sessionTwo->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $studentB->id,
+            'status' => 'absent',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/totals-report', [
+            'date_from' => $sessionDate,
+            'date_to' => $sessionDate,
+        ])
+            ->assertStatus(200)
+            ->assertJsonPath('totals.present', 1)
+            ->assertJsonPath('totals.absent', 1);
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/totals-report', [
+            'date_from' => $sessionDate,
+            'date_to' => $sessionDate,
+            'attendance_session_id' => $sessionOne->id,
+        ])
+            ->assertStatus(200)
+            ->assertJsonPath('totals.present', 1)
+            ->assertJsonPath('totals.absent', 0)
+            ->assertJsonCount(1, 'recent_sessions');
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/totals-report', [
+            'date_from' => $sessionDate,
+            'date_to' => $sessionDate,
+            'attendance_session_id' => $sessionTwo->id,
+        ])
+            ->assertStatus(200)
+            ->assertJsonPath('totals.present', 0)
+            ->assertJsonPath('totals.absent', 1)
+            ->assertJsonCount(1, 'recent_sessions');
+    }
+
+    /** @test */
     public function attendance_report_matches_academic_year_via_class_academic_year_when_session_academic_year_is_null(): void
     {
         $user = $this->authenticate();

@@ -156,6 +156,7 @@ export default function AttendanceReports() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [sessionsDialogOpen, setSessionsDialogOpen] = useState(false);
   const [sessionDateFocus, setSessionDateFocus] = useState<SessionDateFocus | null>(null);
+  const reportRangeBeforeSessionRef = useRef<{ dateFrom: string; dateTo: string } | null>(null);
   const [filters, setFilters] = useState(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
     return {
@@ -203,6 +204,7 @@ export default function AttendanceReports() {
     }
     const dateFromParam = searchParams.get('date_from')?.trim();
     const dateToParam = searchParams.get('date_to')?.trim();
+    reportRangeBeforeSessionRef.current = null;
     setFilters((prev) => ({
       ...prev,
       attendanceSessionId: sessionId,
@@ -347,6 +349,7 @@ export default function AttendanceReports() {
         filters.studentType === 'boarders' || filters.studentType === 'day_scholars'
           ? filters.studentType
           : undefined,
+      attendanceSessionId: filters.attendanceSessionId || undefined,
       sessionsLimit: 80,
     }),
     [
@@ -357,6 +360,7 @@ export default function AttendanceReports() {
       filters.status,
       filters.studentId,
       filters.studentType,
+      filters.attendanceSessionId,
     ]
   );
 
@@ -466,16 +470,24 @@ export default function AttendanceReports() {
 
   const sessionFocusStillAligned =
     sessionDateFocus !== null &&
+    filters.attendanceSessionId === sessionDateFocus.sessionId &&
     filters.dateFrom === sessionDateFocus.day &&
     filters.dateTo === sessionDateFocus.day;
 
   const applySessionDayAsFilter = (session: AttendanceSessionOverview) => {
     if (!session.sessionDate) return;
     const day = dateToLocalYYYYMMDD(session.sessionDate);
+    if (reportRangeBeforeSessionRef.current === null) {
+      reportRangeBeforeSessionRef.current = {
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+      };
+    }
     setFilters((previous) => ({
       ...previous,
       dateFrom: day,
       dateTo: day,
+      attendanceSessionId: session.id,
       page: 1,
     }));
     setSessionDateFocus({
@@ -487,19 +499,34 @@ export default function AttendanceReports() {
     setSessionsDialogOpen(false);
   };
 
+  const handleClearSessionFocus = () => {
+    const backup = reportRangeBeforeSessionRef.current;
+    reportRangeBeforeSessionRef.current = null;
+    setSessionDateFocus(null);
+    setFilters((prev) => ({
+      ...prev,
+      attendanceSessionId: '',
+      page: 1,
+      ...(backup ? { dateFrom: backup.dateFrom, dateTo: backup.dateTo } : {}),
+    }));
+  };
+
   const handleFilterChange = (key: keyof typeof filters, value: string | number) => {
     if (key === 'dateFrom' || key === 'dateTo') {
       setSessionDateFocus(null);
+      reportRangeBeforeSessionRef.current = null;
     }
     setFilters((previous) => ({
       ...previous,
       [key]: value,
+      ...(key === 'dateFrom' || key === 'dateTo' ? { attendanceSessionId: '' } : {}),
       page: key === 'page' || key === 'perPage' ? previous.page : 1,
     }));
   };
 
   const handleDatePreset = (preset: 'today' | 'yesterday' | 'last3' | 'last7' | 'last30') => {
     setSessionDateFocus(null);
+    reportRangeBeforeSessionRef.current = null;
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
     let from = todayStr;
@@ -518,11 +545,18 @@ export default function AttendanceReports() {
       from = format(subDays(today, 29), 'yyyy-MM-dd');
       to = todayStr;
     }
-    setFilters((previous) => ({ ...previous, dateFrom: from, dateTo: to, page: 1 }));
+    setFilters((previous) => ({
+      ...previous,
+      dateFrom: from,
+      dateTo: to,
+      attendanceSessionId: '',
+      page: 1,
+    }));
   };
 
   const handleResetFilters = () => {
     setSessionDateFocus(null);
+    reportRangeBeforeSessionRef.current = null;
     const today = format(new Date(), 'yyyy-MM-dd');
     setFilters({
       studentId: '',
@@ -1189,7 +1223,7 @@ export default function AttendanceReports() {
               <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-xs flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 space-y-1">
                   <p className="font-semibold text-foreground">
-                    {t('attendanceReports.focusedSessionBannerTitle') || 'Session day selected'}
+                    {t('attendanceReports.focusedSessionBannerTitle')}
                   </p>
                   <p className="text-muted-foreground">
                     <span className="font-medium text-foreground">{sessionDateFocus.className}</span>
@@ -1209,9 +1243,9 @@ export default function AttendanceReports() {
                   variant="ghost"
                   size="sm"
                   className="h-8 shrink-0 self-end sm:self-center text-xs"
-                  onClick={() => setSessionDateFocus(null)}
+                  onClick={handleClearSessionFocus}
                 >
-                  {t('attendanceReports.clearSessionFocus') || 'Clear highlight'}
+                  {t('attendanceReports.clearSessionFocus')}
                 </Button>
               </div>
             )}
@@ -1313,8 +1347,7 @@ export default function AttendanceReports() {
               {t('attendanceReports.sessionsInRangeDescription') ||
                 'Sessions matching your filters (up to 80, most recent first).'}
               {' '}
-              {t('attendanceReports.sessionsTapToSetDay') ||
-                'Tap a session to set the report date range to that day and show it below the date pickers.'}
+              {t('attendanceReports.sessionsTapToSetDay')}
             </DialogDescription>
           </DialogHeader>
           {isTotalsLoading ? (

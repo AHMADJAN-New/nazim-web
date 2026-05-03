@@ -199,10 +199,10 @@ export default {
     sessionsInRangeDescription:
       "Sessions that match your filters, most recent first (up to 80).",
     sessionsTapToSetDay:
-      "Tap a session to set the date range to that day and show the session below the pickers.",
-    focusedSessionBannerTitle: "Session day selected",
+      "Select a session to filter the summary cards and table to that session only. Clear restores your previous date range.",
+    focusedSessionBannerTitle: "Session selected",
     focusedSessionDateRange: "Date range",
-    clearSessionFocus: "Clear highlight"
+    clearSessionFocus: "Clear session"
   },
   attendanceTotalsReport: {
     subtitle: "Analyze attendance performance across classes, rooms, and schools",

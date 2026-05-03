@@ -1352,9 +1352,25 @@ class AttendanceSessionController extends Controller
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
             'status' => 'nullable|string|in:present,absent,late,excused,sick,leave',
+            'attendance_session_id' => 'nullable|uuid|exists:attendance_sessions,id',
         ]);
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        $scopedSessionId = null;
+        if (! empty($validated['attendance_session_id'])) {
+            $sessionId = (string) $validated['attendance_session_id'];
+            $sessionOk = AttendanceSession::query()
+                ->where('id', $sessionId)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (! $sessionOk) {
+                return response()->json(['error' => 'Attendance session not found for this school'], 404);
+            }
+            $scopedSessionId = $sessionId;
+        }
 
         $classIds = [];
         if (! empty($validated['class_ids'])) {
@@ -1391,6 +1407,11 @@ class AttendanceSessionController extends Controller
             ->where('attendance_sessions.organization_id', $profile->organization_id)
             ->whereNull('attendance_sessions.deleted_at')
             ->where('attendance_sessions.school_id', $currentSchoolId);
+
+        if ($scopedSessionId !== null) {
+            $recordQuery->where('s.id', $scopedSessionId);
+            $sessionQuery->where('attendance_sessions.id', $scopedSessionId);
+        }
 
         if ($request->filled('academic_year_id')) {
             $academicYearId = (string) $request->input('academic_year_id');

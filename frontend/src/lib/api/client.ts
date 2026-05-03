@@ -2805,6 +2805,7 @@ export const attendanceSessionsApi = {
     status?: string;
     student_id?: string;
     student_type?: 'boarders' | 'day_scholars' | 'all';
+    attendance_session_id?: string;
     sessions_limit?: number;
     student_breakdown_page?: number;
     student_breakdown_per_page?: number;

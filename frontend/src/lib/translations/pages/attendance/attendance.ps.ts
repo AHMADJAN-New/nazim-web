@@ -199,10 +199,10 @@ export default {
     sessionsInRangeDescription:
       "هغه حاضري جلسې چې ستاسو فلټرونو سره سمون لري، لومړی وروستۍ (تر ۸۰ پورې).",
     sessionsTapToSetDay:
-      "د هغې ورځې لپاره د ټاکل شوې موده ټاکلو او حاضري جلسې د ټاکونو لاندې ښودلو لپاره حاضري جلسې وټاکئ.",
-    focusedSessionBannerTitle: "د حاضري جلسې ورځ وټاکل شوه",
+      "د یوې حاضري جلسې لپاره خلاصه کارتونه او جدول فلټر کړئ. پاکول به ستاسو پخوانۍ د نیټو موده بیرته راوړي.",
+    focusedSessionBannerTitle: "حاضري جلسه وټاکل شوه",
     focusedSessionDateRange: "د ټاکل شوې موده له مخې",
-    clearSessionFocus: "د ټاکل شوې موده پاک کړئ"
+    clearSessionFocus: "جلسه پاک کړئ"
   },
   attendanceTotalsReport: {
     subtitle: "په صنفونو، اتاقونو او ښوونځيو کې د حاضرۍ فعاليت تحليل کړئ",

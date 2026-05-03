@@ -125,6 +125,7 @@ export interface AttendanceTotalsReportFilters {
   dateTo?: string;
   studentId?: string;
   studentType?: 'boarders' | 'day_scholars' | 'all';
+  attendanceSessionId?: string;
   sessionsLimit?: number;
   studentBreakdownPage?: number;
   studentBreakdownPerPage?: number;

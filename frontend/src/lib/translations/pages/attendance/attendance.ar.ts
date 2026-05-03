@@ -198,10 +198,10 @@ export default {
     sessionsInRangeDescription:
       "الجلسات المطابقة لعوامل التصفية، الأحدث أولاً (حتى 80).",
     sessionsTapToSetDay:
-      "اضغط جلسة لتعيين نطاق التاريخ لذلك اليوم وعرضها أسفل منتقي التاريخ.",
-    focusedSessionBannerTitle: "تم اختيار يوم الجلسة",
+      "اختر جلسة لتصفية بطاقات الملخص والجدول إلى تلك الجلسة فقط. المسح يعيد نطاق التاريخ السابق.",
+    focusedSessionBannerTitle: "تم اختيار الجلسة",
     focusedSessionDateRange: "نطاق التاريخ",
-    clearSessionFocus: "إزالة التمييز"
+    clearSessionFocus: "مسح الجلسة"
   },
   attendanceTotalsReport: {
     absenceHelper: "عبر المرشحات المحددة",

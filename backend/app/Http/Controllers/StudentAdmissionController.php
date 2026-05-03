@@ -10,6 +10,7 @@ use App\Models\Room;
 use App\Models\Student;
 use App\Models\StudentAdmission;
 use App\Services\ActivityLogService;
+use App\Services\IdCards\SyncStudentIdCardClassFromAdmissionService;
 use App\Services\Notifications\NotificationService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ReportConfig;
@@ -26,7 +27,8 @@ class StudentAdmissionController extends Controller
         private ReportService $reportService,
         private DateConversionService $dateService,
         private NotificationService $notificationService,
-        private ActivityLogService $activityLogService
+        private ActivityLogService $activityLogService,
+        private SyncStudentIdCardClassFromAdmissionService $idCardClassSyncService
     ) {}
 
     /**
@@ -454,7 +456,18 @@ class StudentAdmissionController extends Controller
         $oldStatus = $admission->enrollment_status;
         $newStatus = $validated['enrollment_status'] ?? $oldStatus;
 
+        $beforeAcademicYearId = $admission->academic_year_id;
+        $beforeClassId = $admission->class_id;
+        $beforeClassAcademicYearId = $admission->class_academic_year_id;
+
         $admission->update($validated);
+
+        $this->idCardClassSyncService->syncAfterAdmissionClassChange(
+            $admission,
+            $beforeAcademicYearId,
+            $beforeClassId,
+            $beforeClassAcademicYearId
+        );
 
         $this->syncStudentStatusFromAdmissions($admission->student_id, $profile->organization_id, $currentSchoolId);
 
@@ -1625,9 +1638,19 @@ class StudentAdmissionController extends Controller
                 continue;
             }
 
+            $beforeAcademicYearId = $admission->academic_year_id;
+            $beforeClassId = $admission->class_id;
+            $beforeClassAcademicYearId = $admission->class_academic_year_id;
+
             try {
                 $admission->fill($patch);
                 $admission->save();
+                $this->idCardClassSyncService->syncAfterAdmissionClassChange(
+                    $admission,
+                    $beforeAcademicYearId,
+                    $beforeClassId,
+                    $beforeClassAcademicYearId
+                );
                 $touchedStudentIds[] = $admission->student_id;
                 $updated++;
             } catch (\Exception $e) {

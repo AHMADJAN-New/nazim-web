@@ -201,10 +201,10 @@ export default {
     sessionsInRangeDescription:
       "جلساتی که با فیلترهای شما مطابقت دارند، تازه‌ترین اول (حداکثر ۸۰).",
     sessionsTapToSetDay:
-      "برای تنظیم محدوده تاریخ به همان روز و نمایش جلسه زیر انتخابگرها، جلسه را لمس کنید.",
-    focusedSessionBannerTitle: "روز جلسه انتخاب شد",
+      "یک جلسه را انتخاب کنید تا کارت‌های خلاصه و جدول فقط به همان جلسه محدود شوند. پاک کردن محدوده تاریخ قبلی را برمی‌گرداند.",
+    focusedSessionBannerTitle: "جلسه انتخاب شد",
     focusedSessionDateRange: "محدوده تاریخ",
-    clearSessionFocus: "پاک کردن برجسته‌سازی"
+    clearSessionFocus: "پاک کردن جلسه"
   },
   attendanceTotalsReport: {
     absenceHelper: "در فیلترهای انتخاب شده",

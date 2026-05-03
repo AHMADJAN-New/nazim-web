@@ -38,6 +38,7 @@ export const useAttendanceTotalsReport = (
         date_to: normalizedFilters.dateTo,
         student_id: normalizedFilters.studentId,
         student_type: normalizedFilters.studentType,
+        attendance_session_id: normalizedFilters.attendanceSessionId,
         sessions_limit: normalizedFilters.sessionsLimit,
         student_breakdown_page: normalizedFilters.studentBreakdownPage,
         student_breakdown_per_page: normalizedFilters.studentBreakdownPerPage,
