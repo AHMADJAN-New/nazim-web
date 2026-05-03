@@ -52,7 +52,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] }: AppHeaderProps) {
-  const { user, signOut, profile: authProfile, refreshAuth } = useAuth();
+  const { user, signOut, profile: authProfile, refreshAuth, profileLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { language, setLanguage, t } = useLanguage();
@@ -111,13 +111,17 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
   // Sync school context with profile: set when user has default school, clear when user has no school (org-level)
   useEffect(() => {
+    if (profileLoading || !authProfile) {
+      return;
+    }
+
     if (authProfile?.default_school_id) {
       if (!selectedSchoolId) setSelectedSchoolId(authProfile.default_school_id);
-    } else {
+    } else if (!hasSchoolsAccessAll) {
       // User has no school (org-level) — clear selected school so we don't show a school in the header
       setSelectedSchoolId(null);
     }
-  }, [authProfile?.default_school_id, selectedSchoolId, setSelectedSchoolId]);
+  }, [authProfile, authProfile?.default_school_id, hasSchoolsAccessAll, profileLoading, selectedSchoolId, setSelectedSchoolId]);
 
   const visibleSchools = hasSchoolsAccessAll
     ? schools

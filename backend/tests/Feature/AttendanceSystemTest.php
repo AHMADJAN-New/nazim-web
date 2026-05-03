@@ -568,6 +568,85 @@ class AttendanceSystemTest extends TestCase
     }
 
     /** @test */
+    public function attendance_report_uses_student_admission_class_when_session_primary_differs(): void
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $primaryClass = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'name' => 'Primary Session Class',
+        ]);
+
+        $attachedClass = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'name' => 'Student Actual Class',
+        ]);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'class_id' => $attachedClass->id,
+            'academic_year_id' => $academicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $primaryClass->id,
+            'academic_year_id' => $academicYear->id,
+            'round_number' => 1,
+            'session_label' => 'Combined',
+        ]);
+
+        $pivotPayload = [
+            'organization_id' => $organization->id,
+        ];
+        if (Schema::hasColumn('attendance_session_classes', 'school_id')) {
+            $pivotPayload['school_id'] = $school->id;
+        }
+        $session->classes()->attach($attachedClass->id, $pivotPayload);
+
+        $record = AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'status' => 'present',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/report', [
+            'student_id' => $student->id,
+            'per_page' => 25,
+        ])->assertStatus(200)
+            ->assertJsonFragment([
+                'id' => $record->id,
+                'student_class_name' => 'Student Actual Class',
+                'report_student_class_id' => $attachedClass->id,
+            ]);
+    }
+
+    /** @test */
     public function attendance_report_includes_active_student_room_name()
     {
         $user = $this->authenticate();

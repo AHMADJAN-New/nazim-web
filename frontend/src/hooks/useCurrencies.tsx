@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
+import { useSchoolScopedQueryKey } from './useSchoolScopedQueryKey';
 
 import { currenciesApi, exchangeRatesApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
@@ -41,9 +42,10 @@ export type {
 
 export const useCurrencies = (params?: { isActive?: boolean; isBase?: boolean }) => {
     const { user, profile } = useAuth();
+    const schoolQueryKey = useSchoolScopedQueryKey();
 
     return useQuery<Currency[]>({
-        queryKey: ['currencies', profile?.organization_id, profile?.default_school_id ?? null, params],
+        queryKey: ['currencies', profile?.organization_id, schoolQueryKey, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await currenciesApi.list({
@@ -119,9 +121,10 @@ export const useDeleteCurrency = () => {
 
 export const useCurrency = (id: string) => {
     const { user, profile } = useAuth();
+    const schoolQueryKey = useSchoolScopedQueryKey();
 
     return useQuery<Currency | null>({
-        queryKey: ['currency', id, profile?.organization_id, profile?.default_school_id ?? null],
+        queryKey: ['currency', id, profile?.organization_id, schoolQueryKey],
         queryFn: async () => {
             if (!user || !profile?.organization_id || !id) return null;
             const data = await currenciesApi.get(id);
@@ -144,9 +147,10 @@ export const useExchangeRates = (params?: {
     isActive?: boolean;
 }) => {
     const { user, profile } = useAuth();
+    const schoolQueryKey = useSchoolScopedQueryKey();
 
     return useQuery<ExchangeRate[]>({
-        queryKey: ['exchange-rates', profile?.organization_id, profile?.default_school_id ?? null, params],
+        queryKey: ['exchange-rates', profile?.organization_id, schoolQueryKey, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await exchangeRatesApi.list({
@@ -224,9 +228,10 @@ export const useDeleteExchangeRate = () => {
 
 export const useExchangeRate = (id: string) => {
     const { user, profile } = useAuth();
+    const schoolQueryKey = useSchoolScopedQueryKey();
 
     return useQuery<ExchangeRate | null>({
-        queryKey: ['exchange-rate', id, profile?.organization_id, profile?.default_school_id ?? null],
+        queryKey: ['exchange-rate', id, profile?.organization_id, schoolQueryKey],
         queryFn: async () => {
             if (!user || !profile?.organization_id || !id) return null;
             const data = await exchangeRatesApi.get(id);

@@ -18,7 +18,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { ChevronsUpDown } from 'lucide-react';
-import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -108,7 +108,6 @@ export default function AttendanceMarking() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanFeedback, setScanFeedback] = useState<ScanFeedbackState | null>(null);
   const lastScanId: string | null = null;
-  const [studentCache, setStudentCache] = useState<Map<string, RosterStudent>>(new Map());
   const [attendanceState, setAttendanceState] = useState<Record<string, AttendanceDraftRecord>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [scanFeedSearch, setScanFeedSearch] = useState('');
@@ -266,16 +265,41 @@ export default function AttendanceMarking() {
     }
   };
 
-  const getScanRoomLabel = (student: RosterStudent | null) =>
-    student?.room_name || session?.className || t('attendanceTotalsReport.generalRoom') || 'General Room';
+  const getScanRoomLabel = (student: Pick<RosterStudent, 'room_name'> | null | undefined): string => {
+    const raw = student?.room_name;
+    if (raw != null && String(raw).trim() !== '') {
+      return String(raw).trim();
+    }
+    return '';
+  };
 
-  const buildScanFeedbackDetails = (student: RosterStudent | null, scannedValue: string) => [
-    { label: t('attendancePage.studentHeader') || 'Student', value: student?.full_name || scannedValue },
-    { label: t('attendancePage.fatherHeader') || 'Father', value: student?.father_name || '—' },
-    { label: t('attendancePage.classHeader') || 'Class', value: student?.class_name || session?.className || '—' },
-    { label: t('attendancePage.cardHeader') || 'Card', value: student?.card_number || scannedValue },
-    { label: t('attendanceTotalsReport.room') || 'Room', value: getScanRoomLabel(student) },
-  ];
+  /** Prefer roster admission class; avoid showing only the session primary when multiple classes exist. */
+  const getScanClassLabel = (student: Pick<RosterStudent, 'class_id' | 'class_name'> | null | undefined) => {
+    if (student == null) {
+      return session?.classes?.map((c) => c.name).filter(Boolean).join(', ') || session?.className || '—';
+    }
+    if (student.class_name) return student.class_name;
+    const sid = student.class_id;
+    if (sid && session?.classes?.length) {
+      const match = session.classes.find((c) => c.id === sid);
+      if (match?.name) return match.name;
+    }
+    return session?.classes?.map((c) => c.name).filter(Boolean).join(', ') || session?.className || '—';
+  };
+
+  const buildScanFeedbackDetails = (student: RosterStudent | null, scannedValue: string) => {
+    const roomValue = getScanRoomLabel(student);
+    const rows: Array<{ label: string; value: string }> = [
+      { label: t('attendancePage.studentHeader') || 'Student', value: student?.full_name || scannedValue },
+      { label: t('attendancePage.fatherHeader') || 'Father', value: student?.father_name || '—' },
+      { label: t('attendancePage.classHeader') || 'Class', value: getScanClassLabel(student) },
+      { label: t('attendancePage.cardHeader') || 'Card', value: student?.card_number || scannedValue },
+    ];
+    if (roomValue) {
+      rows.push({ label: t('attendanceTotalsReport.room') || 'Room', value: roomValue });
+    }
+    return rows;
+  };
 
   const rosterStudents = useMemo(() => (roster as RosterStudent[] | undefined) ?? [], [roster]);
   const savedAttendanceByStudentId = useMemo(() => {
@@ -350,16 +374,23 @@ export default function AttendanceMarking() {
     });
   }, [rosterStudents, session?.id, session?.records, rosterIsLoading, rosterIsError]);
 
-  useEffect(() => {
-    if (!rosterStudents.length) return;
-    const cache = new Map<string, RosterStudent>();
-    rosterStudents.forEach((student) => {
-      if (student.card_number) cache.set(student.card_number, student);
-      if (student.student_code) cache.set(student.student_code, student);
-      cache.set(student.admission_no, student);
-    });
-    setStudentCache(cache);
-  }, [rosterStudents]);
+  /**
+   * Resolve scan input to a roster row. Must not use one flat Map for card/code/admission — different
+   * students can share the same string on different fields (e.g. one's student_code equals another's admission_no).
+   * Prefer admission match when the token looks like an admission number (typical manual/label scan).
+   */
+  const resolveRosterStudentFromScanToken = useCallback(
+    (token: string): RosterStudent | undefined => {
+      const v = token.trim();
+      if (!v || rosterStudents.length === 0) return undefined;
+      const byAdmission = rosterStudents.find((s) => s.admission_no === v);
+      if (byAdmission) return byAdmission;
+      const byCard = rosterStudents.find((s) => s.card_number != null && s.card_number !== '' && s.card_number === v);
+      if (byCard) return byCard;
+      return rosterStudents.find((s) => s.student_code != null && s.student_code !== '' && s.student_code === v);
+    },
+    [rosterStudents]
+  );
 
   useEffect(() => {
     if (session?.method) {
@@ -590,7 +621,6 @@ export default function AttendanceMarking() {
 
   recordsToSaveRef.current = recordsToSave;
   markAttendancePendingRef.current = markAttendance.isPending;
-  const fallbackRoomLabel = session?.className || t('attendanceTotalsReport.generalRoom') || 'General Room';
 
   const inProgressRows = useMemo(
     () =>
@@ -602,10 +632,10 @@ export default function AttendanceMarking() {
             admissionNo: rosterInfo?.admission_no || '-',
             cardNumber: rosterInfo?.card_number || '-',
             classId: rosterInfo?.class_id || null,
-            className: rosterInfo?.class_name || '-',
+            className: getScanClassLabel(rosterInfo ?? null),
             fatherName: rosterInfo?.father_name || '-',
             fullName: rosterInfo?.full_name || record.studentId,
-            roomName: rosterInfo?.room_name || fallbackRoomLabel,
+            roomName: getScanRoomLabel(rosterInfo ?? null),
             status: record.status,
             studentId: record.studentId,
             updatedAt: record.updatedAt ?? 0,
@@ -613,7 +643,7 @@ export default function AttendanceMarking() {
         })
         .filter((record) => filterClassId === 'all' || record.classId === filterClassId)
         .sort((a, b) => b.updatedAt - a.updatedAt),
-    [attendanceState, fallbackRoomLabel, filterClassId, rosterLookupByStudentId]
+    [attendanceState, filterClassId, rosterLookupByStudentId, session, language]
   );
 
   const bufferedScanCount = inProgressRows.length;
@@ -822,7 +852,7 @@ export default function AttendanceMarking() {
     }
     lastHandledScanRef.current = { at: now, value: scannedValue };
 
-    const foundStudent = studentCache.get(scannedValue);
+    const foundStudent = resolveRosterStudentFromScanToken(scannedValue);
     if (!foundStudent) {
       const message = rosterStudents.length
         ? t('attendancePage.cardNotFound') || 'Card not found - student not in this session'
@@ -839,14 +869,6 @@ export default function AttendanceMarking() {
       );
       setTimeout(() => setScanError(null), 2000);
       clearScanInput();
-      return;
-    }
-    if (!foundStudent && rosterStudents.length > 0) {
-      setScanError(t('attendancePage.cardNotFound') || 'Card not found – student not in this session');
-      showScanFeedback({ tone: 'error', message: t('attendancePage.cardNotFound') || 'Card not found – student not in this session' }, 3500);
-      setTimeout(() => setScanError(null), 2000);
-      setScanCardNumber('');
-      scanInputRef.current?.focus();
       return;
     }
 
@@ -1297,7 +1319,7 @@ export default function AttendanceMarking() {
                             <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
                             <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
                             <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.admissionHeader') || 'Admission'}</TableHead>
-                            <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
+                            <TableHead className="text-xs min-w-[5.5rem]">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
                             <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
                             <TableHead className="hidden lg:table-cell text-xs">{t('attendancePage.reviewStateHeader') || 'Review state'}</TableHead>
                           </TableRow>
@@ -1313,9 +1335,14 @@ export default function AttendanceMarking() {
                                 <span className="hidden sm:inline text-sm">{student.full_name}</span>
                               </TableCell>
                               <TableCell className="hidden sm:table-cell text-sm py-2.5">{student.father_name ?? '—'}</TableCell>
-                              <TableCell className="hidden md:table-cell text-sm py-2.5">{student.class_name ?? '—'}</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm py-2.5">{getScanClassLabel(student)}</TableCell>
                               <TableCell className="hidden sm:table-cell text-sm py-2.5">{student.admission_no}</TableCell>
-                              <TableCell className="hidden md:table-cell text-sm py-2.5">{student.card_number || '—'}</TableCell>
+                              <TableCell
+                                className="text-sm py-2.5 tabular-nums max-w-[10rem] truncate"
+                                title={student.card_number ? student.card_number : undefined}
+                              >
+                                {student.card_number || '—'}
+                              </TableCell>
                               <TableCell className="py-2.5">{renderStatusSelect(student.id)}</TableCell>
                               <TableCell className="hidden lg:table-cell py-2.5">{renderReviewStateBadge(student.id)}</TableCell>
                             </TableRow>
@@ -1358,7 +1385,7 @@ export default function AttendanceMarking() {
                                   {record.student?.fullName || rosterInfo?.full_name || record.studentId}
                                 </TableCell>
                                 <TableCell className="hidden sm:table-cell text-sm py-2.5">{rosterInfo?.father_name ?? '—'}</TableCell>
-                                <TableCell className="hidden md:table-cell text-sm py-2.5">{rosterInfo?.class_name ?? '—'}</TableCell>
+                                <TableCell className="hidden md:table-cell text-sm py-2.5">{getScanClassLabel(rosterInfo ?? null)}</TableCell>
                                 <TableCell className="hidden sm:table-cell text-sm py-2.5">
                                   {record.student?.admissionNo || rosterInfo?.admission_no || '—'}
                                 </TableCell>
@@ -1558,7 +1585,7 @@ export default function AttendanceMarking() {
                             <TableHead className="text-xs">{t('attendancePage.studentHeader') || 'Student'}</TableHead>
                             <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
                             <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
+                            <TableHead className="text-xs min-w-[5.5rem]">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
                             <TableHead className="hidden lg:table-cell text-xs">{t('attendanceTotalsReport.room') || 'Room'}</TableHead>
                             <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
                             <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
@@ -1570,7 +1597,9 @@ export default function AttendanceMarking() {
                               <TableCell className="font-medium text-sm py-2.5">{record.fullName}</TableCell>
                               <TableCell className="hidden sm:table-cell text-sm py-2.5">{record.fatherName}</TableCell>
                               <TableCell className="hidden md:table-cell text-sm py-2.5">{record.className}</TableCell>
-                              <TableCell className="hidden sm:table-cell text-sm py-2.5">{record.cardNumber}</TableCell>
+                              <TableCell className="text-sm py-2.5 tabular-nums max-w-[10rem] truncate" title={record.cardNumber !== '-' ? record.cardNumber : undefined}>
+                                {record.cardNumber}
+                              </TableCell>
                               <TableCell className="hidden lg:table-cell text-sm py-2.5">{record.roomName}</TableCell>
                               <TableCell className="py-2.5">
                                 <StatusBadge status={record.status} />
@@ -1613,7 +1642,7 @@ export default function AttendanceMarking() {
                             <TableRow key={student.id} className="hover:bg-muted/30 transition-colors">
                               <TableCell className="font-medium text-sm py-2.5">{student.full_name}</TableCell>
                               <TableCell className="hidden sm:table-cell text-sm py-2.5">{student.father_name ?? '—'}</TableCell>
-                              <TableCell className="hidden md:table-cell text-sm py-2.5">{student.class_name ?? '—'}</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm py-2.5">{getScanClassLabel(student)}</TableCell>
                               <TableCell className="hidden sm:table-cell text-sm py-2.5">{student.admission_no}</TableCell>
                               <TableCell className="py-2.5">{renderStatusSelect(student.id)}</TableCell>
                               <TableCell className="hidden lg:table-cell py-2.5">{renderReviewStateBadge(student.id)}</TableCell>
@@ -1654,7 +1683,7 @@ export default function AttendanceMarking() {
                             <TableHead className="text-xs">{t('attendancePage.studentHeader') || 'Student'}</TableHead>
                             <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
                             <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
+                            <TableHead className="text-xs min-w-[5.5rem]">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
                             <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
                             <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
                           </TableRow>
@@ -1662,6 +1691,7 @@ export default function AttendanceMarking() {
                         <TableBody>
                           {filteredScanFeedForDisplay.map((record) => {
                             const rosterInfo = rosterLookupByStudentId.get(record.studentId);
+                            const cardDisplay = record.student?.cardNumber || rosterInfo?.card_number || '—';
                             return (
                               <TableRow
                                 key={record.id}
@@ -1670,16 +1700,17 @@ export default function AttendanceMarking() {
                                   lastScanId === record.id ? 'bg-primary/5' : undefined
                                 )}
                               >
-                                <TableCell className="font-medium py-2.5">
-                                  <div className="flex flex-col sm:hidden gap-0.5">
-                                    <span className="text-sm">{record.student?.fullName || rosterInfo?.full_name || record.studentId}</span>
-                                    <span className="text-xs text-muted-foreground">{record.student?.cardNumber || rosterInfo?.card_number || '—'}</span>
-                                  </div>
-                                  <span className="hidden sm:inline text-sm">{record.student?.fullName || rosterInfo?.full_name || record.studentId}</span>
+                                <TableCell className="font-medium text-sm py-2.5">
+                                  {record.student?.fullName || rosterInfo?.full_name || record.studentId}
                                 </TableCell>
                                 <TableCell className="hidden sm:table-cell text-sm py-2.5">{rosterInfo?.father_name ?? '—'}</TableCell>
-                                <TableCell className="hidden md:table-cell text-sm py-2.5">{rosterInfo?.class_name ?? '—'}</TableCell>
-                                <TableCell className="hidden sm:table-cell text-sm py-2.5">{record.student?.cardNumber || rosterInfo?.card_number || '—'}</TableCell>
+                                <TableCell className="hidden md:table-cell text-sm py-2.5">{getScanClassLabel(rosterInfo ?? null)}</TableCell>
+                                <TableCell
+                                  className="text-sm py-2.5 tabular-nums max-w-[10rem] truncate"
+                                  title={cardDisplay !== '—' ? cardDisplay : undefined}
+                                >
+                                  {cardDisplay}
+                                </TableCell>
                                 <TableCell className="py-2.5">
                                   <StatusBadge status={record.status} />
                                 </TableCell>
@@ -1713,7 +1744,7 @@ export default function AttendanceMarking() {
                             <TableHead className="text-xs">{t('attendancePage.studentHeader') || 'Student'}</TableHead>
                             <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.fatherHeader') || 'Father'}</TableHead>
                             <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.classHeader') || 'Class'}</TableHead>
-                            <TableHead className="hidden sm:table-cell text-xs">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
+                            <TableHead className="text-xs min-w-[5.5rem]">{t('attendancePage.cardHeader') || 'Card'}</TableHead>
                             <TableHead className="text-xs">{t('attendancePage.statusHeader') || 'Status'}</TableHead>
                             <TableHead className="hidden md:table-cell text-xs">{t('attendancePage.timeHeader') || 'Time'}</TableHead>
                           </TableRow>
@@ -1721,15 +1752,19 @@ export default function AttendanceMarking() {
                         <TableBody>
                           {savedAttendanceRows.map((record) => {
                             const rosterInfo = rosterLookupByStudentId.get(record.studentId);
+                            const cardDisplay = record.student?.cardNumber || rosterInfo?.card_number || '—';
                             return (
                               <TableRow key={record.id} className="hover:bg-muted/30 transition-colors">
                                 <TableCell className="font-medium text-sm py-2.5">
                                   {record.student?.fullName || rosterInfo?.full_name || record.studentId}
                                 </TableCell>
                                 <TableCell className="hidden sm:table-cell text-sm py-2.5">{rosterInfo?.father_name ?? '—'}</TableCell>
-                                <TableCell className="hidden md:table-cell text-sm py-2.5">{rosterInfo?.class_name ?? '—'}</TableCell>
-                                <TableCell className="hidden sm:table-cell text-sm py-2.5">
-                                  {record.student?.cardNumber || rosterInfo?.card_number || '—'}
+                                <TableCell className="hidden md:table-cell text-sm py-2.5">{getScanClassLabel(rosterInfo ?? null)}</TableCell>
+                                <TableCell
+                                  className="text-sm py-2.5 tabular-nums max-w-[10rem] truncate"
+                                  title={cardDisplay !== '—' ? cardDisplay : undefined}
+                                >
+                                  {cardDisplay}
                                 </TableCell>
                                 <TableCell className="py-2.5">
                                   <StatusBadge status={record.status} />

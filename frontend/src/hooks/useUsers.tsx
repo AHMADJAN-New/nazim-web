@@ -121,7 +121,7 @@ export const useCreateUser = () => {
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
-  const { profile: currentProfile } = useAuth();
+  const { profile: currentProfile, refreshAuth } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
   const hasPermission = useHasPermission('users.update');
 
@@ -151,9 +151,12 @@ export const useUpdateUser = () => {
       // Map API → Domain
       return mapUserProfileApiToDomain(apiResult as UserApi.UserProfile);
     },
-    onSuccess: () => {
+    onSuccess: async (_data, userData) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      if (currentProfile?.id === userData.id) {
+        await refreshAuth();
+      }
       showToast.success('toast.userUpdated');
     },
     onError: (error: Error) => {

@@ -1002,6 +1002,10 @@ class AttendanceSessionController extends Controller
                 $join->on('sa.room_id', '=', 'r.id')
                     ->whereNull('r.deleted_at');
             })
+            ->leftJoin('buildings as b', function ($join) {
+                $join->on('r.building_id', '=', 'b.id')
+                    ->whereNull('b.deleted_at');
+            })
             ->whereIn('sa.class_id', $classIds)
             ->where('sa.organization_id', $profile->organization_id)
             ->where('sa.school_id', $currentSchoolId)
@@ -1011,6 +1015,7 @@ class AttendanceSessionController extends Controller
             ->when($request->has('is_boarder') && $request->input('is_boarder') !== null, function ($q) use ($request) {
                 $q->where('sa.is_boarder', $request->boolean('is_boarder'));
             })
+            ->where('sa.enrollment_status', 'active')
             ->whereNull('sa.deleted_at')
             ->whereNull('s.deleted_at')
             ->select(
@@ -1027,10 +1032,14 @@ class AttendanceSessionController extends Controller
                 'sa.academic_year_id',
                 'sa.is_boarder',
                 'c.name as class_name',
-                'r.room_number as room_name'
+                DB::raw("CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END as room_name")
             )
-            ->orderBy('s.full_name')
-            ->get();
+            ->orderBy('s.id')
+            ->orderByDesc('sa.created_at')
+            ->get()
+            ->unique('id')
+            ->sortBy(fn ($row) => mb_strtolower($row->full_name ?? '', 'UTF-8'))
+            ->values();
 
         return response()->json($students);
     }
@@ -1085,11 +1094,13 @@ class AttendanceSessionController extends Controller
         }
 
         $query = AttendanceRecord::with(['student:id,full_name,father_name,admission_no,card_number,student_code', 'session.classModel', 'session.classes', 'session.school'])
-            ->addSelect([
-                'attendance_records.*',
-                DB::raw("(SELECT c.name FROM student_admissions sa JOIN classes c ON sa.class_id = c.id AND c.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1) as student_class_name"),
-                DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
-            ])
+            ->addSelect(array_merge(
+                ['attendance_records.*'],
+                $this->attendanceRecordReportClassSelects(),
+                [
+                    DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
+                ]
+            ))
             ->where('attendance_records.organization_id', $profile->organization_id)
             ->where('attendance_records.school_id', $currentSchoolId)
             ->whereNull('attendance_records.deleted_at')
@@ -1740,10 +1751,13 @@ class AttendanceSessionController extends Controller
 
         // Build query based on filters
         $query = AttendanceRecord::with(['student', 'session.classModel', 'session.classes', 'session.school'])
-            ->addSelect([
-                'attendance_records.*',
-                DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
-            ])
+            ->addSelect(array_merge(
+                ['attendance_records.*'],
+                $this->attendanceRecordReportClassSelects(),
+                [
+                    DB::raw("(SELECT CASE WHEN r.room_number IS NULL THEN NULL WHEN b.building_name IS NULL OR b.building_name = '' THEN r.room_number ELSE b.building_name || ' - ' || r.room_number END FROM student_admissions sa LEFT JOIN rooms r ON sa.room_id = r.id AND r.deleted_at IS NULL LEFT JOIN buildings b ON r.building_id = b.id AND b.deleted_at IS NULL WHERE sa.student_id = attendance_records.student_id AND sa.organization_id = attendance_records.organization_id AND sa.enrollment_status = 'active' AND sa.deleted_at IS NULL ORDER BY sa.created_at DESC LIMIT 1) as student_room_name"),
+                ]
+            ))
             ->where('attendance_records.organization_id', $profile->organization_id)
             ->where('attendance_records.school_id', $currentSchoolId)
             ->whereNull('attendance_records.deleted_at')
@@ -1833,7 +1847,7 @@ class AttendanceSessionController extends Controller
                     'student_name' => $record->student?->full_name ?? '—',
                     'father_name' => $record->student?->father_name ?? '—',
                     'admission_no' => $record->student?->admission_no ?? '—',
-                    'class_name' => $record->session?->classModel?->name ?? ($record->session?->classes?->first()?->name ?? '—'),
+                    'class_name' => $record->student_class_name ?? '—',
                     'room_name' => $record->student_room_name ?? '—',
                     'session_date' => $record->session?->session_date
                         ? $this->dateService->formatDate($record->session->session_date, $calendarPreference, 'full', $language)
@@ -1861,9 +1875,9 @@ class AttendanceSessionController extends Controller
                 ['key' => 'attendance_rate', 'label' => $reportTexts['columns']['attendance_rate'], 'type' => 'numeric'],
             ];
 
-            // Group by class
+            // Group by resolved student class (matches session-linked active admission when possible)
             $grouped = $records->groupBy(function ($record) {
-                return $record->session?->classModel?->id ?? ($record->session?->classes?->first()?->id ?? 'unassigned');
+                return $record->report_student_class_id ?? 'unassigned';
             });
 
             foreach ($grouped as $classId => $classRecords) {
@@ -1878,7 +1892,7 @@ class AttendanceSessionController extends Controller
                 $attendanceRate = $total > 0 ? round(($present / $total) * 100, 1) : 0;
 
                 $rows[] = [
-                    'class_name' => $firstRecord->session?->classModel?->name ?? ($firstRecord->session?->classes?->first()?->name ?? 'Unassigned'),
+                    'class_name' => $firstRecord->student_class_name ?? 'Unassigned',
                     'school_name' => $firstRecord->session?->school?->school_name ?? '—',
                     'present' => $present,
                     'absent' => $absent,
@@ -1920,7 +1934,7 @@ class AttendanceSessionController extends Controller
             ];
 
             $grouped = $records->groupBy(function ($record) {
-                return $record->session?->classModel?->id ?? ($record->session?->classes?->first()?->id ?? 'unassigned');
+                return $record->report_student_class_id ?? 'unassigned';
             });
 
             foreach ($grouped as $classId => $classRecords) {
@@ -1932,7 +1946,7 @@ class AttendanceSessionController extends Controller
                 $attendanceRate = $total > 0 ? round(($present / $total) * 100, 1) : 0;
 
                 $rows[] = [
-                    'class_name' => $firstRecord->session?->classModel?->name ?? ($firstRecord->session?->classes?->first()?->name ?? 'Unassigned'),
+                    'class_name' => $firstRecord->student_class_name ?? 'Unassigned',
                     'school_name' => $firstRecord->session?->school?->school_name ?? '—',
                     'total_sessions' => $sessions,
                     'total_records' => $total,
@@ -2067,6 +2081,126 @@ class AttendanceSessionController extends Controller
                 'error' => 'Failed to generate report: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * SQL fragments for per-row class: prefer active admission when that class is linked to the session
+     * (attendance_session_classes or attendance_sessions.class_id), else any active admission, else session classes.
+     *
+     * @return array<int, \Illuminate\Database\Query\Expression>
+     */
+    private function attendanceRecordReportClassSelects(): array
+    {
+        $idSql = <<<'SQL'
+COALESCE(
+    (
+        SELECT sa.class_id
+        FROM student_admissions sa
+        WHERE sa.student_id = attendance_records.student_id
+          AND sa.organization_id = attendance_records.organization_id
+          AND sa.school_id = attendance_records.school_id
+          AND sa.enrollment_status = 'active'
+          AND sa.deleted_at IS NULL
+          AND (
+              EXISTS (
+                  SELECT 1 FROM attendance_session_classes asc2
+                  WHERE asc2.attendance_session_id = attendance_records.attendance_session_id
+                    AND asc2.class_id = sa.class_id
+                    AND asc2.deleted_at IS NULL
+              )
+              OR sa.class_id = (
+                  SELECT sess.class_id FROM attendance_sessions sess
+                  WHERE sess.id = attendance_records.attendance_session_id AND sess.deleted_at IS NULL
+              )
+          )
+        ORDER BY sa.created_at DESC
+        LIMIT 1
+    ),
+    (
+        SELECT sa.class_id
+        FROM student_admissions sa
+        WHERE sa.student_id = attendance_records.student_id
+          AND sa.organization_id = attendance_records.organization_id
+          AND sa.school_id = attendance_records.school_id
+          AND sa.enrollment_status = 'active'
+          AND sa.deleted_at IS NULL
+        ORDER BY sa.created_at DESC
+        LIMIT 1
+    ),
+    (
+        SELECT sess.class_id FROM attendance_sessions sess
+        WHERE sess.id = attendance_records.attendance_session_id AND sess.deleted_at IS NULL
+    ),
+    (
+        SELECT asc3.class_id FROM attendance_session_classes asc3
+        WHERE asc3.attendance_session_id = attendance_records.attendance_session_id
+          AND asc3.deleted_at IS NULL
+        ORDER BY asc3.created_at ASC, asc3.class_id ASC
+        LIMIT 1
+    )
+) AS report_student_class_id
+SQL;
+
+        $nameSql = <<<'SQL'
+COALESCE(
+    (
+        SELECT c.name
+        FROM student_admissions sa
+        INNER JOIN classes c ON sa.class_id = c.id AND c.deleted_at IS NULL
+        WHERE sa.student_id = attendance_records.student_id
+          AND sa.organization_id = attendance_records.organization_id
+          AND sa.school_id = attendance_records.school_id
+          AND sa.enrollment_status = 'active'
+          AND sa.deleted_at IS NULL
+          AND (
+              EXISTS (
+                  SELECT 1 FROM attendance_session_classes asc2
+                  WHERE asc2.attendance_session_id = attendance_records.attendance_session_id
+                    AND asc2.class_id = sa.class_id
+                    AND asc2.deleted_at IS NULL
+              )
+              OR sa.class_id = (
+                  SELECT sess.class_id FROM attendance_sessions sess
+                  WHERE sess.id = attendance_records.attendance_session_id AND sess.deleted_at IS NULL
+              )
+          )
+        ORDER BY sa.created_at DESC
+        LIMIT 1
+    ),
+    (
+        SELECT c.name
+        FROM student_admissions sa
+        INNER JOIN classes c ON sa.class_id = c.id AND c.deleted_at IS NULL
+        WHERE sa.student_id = attendance_records.student_id
+          AND sa.organization_id = attendance_records.organization_id
+          AND sa.school_id = attendance_records.school_id
+          AND sa.enrollment_status = 'active'
+          AND sa.deleted_at IS NULL
+        ORDER BY sa.created_at DESC
+        LIMIT 1
+    ),
+    (
+        SELECT c.name
+        FROM attendance_sessions sess
+        INNER JOIN classes c ON c.id = sess.class_id AND c.deleted_at IS NULL
+        WHERE sess.id = attendance_records.attendance_session_id AND sess.deleted_at IS NULL
+    ),
+    (
+        SELECT c.name
+        FROM attendance_session_classes asc3
+        INNER JOIN classes c ON asc3.class_id = c.id AND c.deleted_at IS NULL
+        WHERE asc3.attendance_session_id = attendance_records.attendance_session_id
+          AND asc3.deleted_at IS NULL
+        ORDER BY asc3.created_at ASC, asc3.class_id ASC
+        LIMIT 1
+    )
+) AS student_class_name
+SQL;
+
+        return [
+            DB::raw($idSql),
+            DB::raw($nameSql),
+        ];
     }
 
     private function normalizeRequestedClassIds(Request $request): array

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 
 import { useAuth } from '@/hooks/useAuth';
 
@@ -11,12 +11,16 @@ interface SchoolContextType {
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
 
 export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { profile } = useAuth();
+  const { profile, loading, profileLoading } = useAuth();
   // schools_access_all comes from the profile API response
   const hasSchoolsAccessAll = (profile as any)?.schools_access_all ?? false;
   
   // Store has_schools_access_all in localStorage for API client to check
   useEffect(() => {
+    if (loading || profileLoading || !profile) {
+      return;
+    }
+
     if (typeof window !== 'undefined') {
       if (hasSchoolsAccessAll) {
         localStorage.setItem('has_schools_access_all', 'true');
@@ -24,7 +28,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         localStorage.removeItem('has_schools_access_all');
       }
     }
-  }, [hasSchoolsAccessAll]);
+  }, [hasSchoolsAccessAll, loading, profile, profileLoading]);
   
   // Initialize selected school from localStorage or default_school_id
   const [selectedSchoolId, setSelectedSchoolIdState] = useState<string | null>(() => {
@@ -35,7 +39,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return profile?.default_school_id ?? null;
   });
 
-  const persistSelectedSchoolId = (schoolId: string | null) => {
+  const persistSelectedSchoolId = useCallback((schoolId: string | null) => {
     setSelectedSchoolIdState(schoolId);
     if (typeof window !== 'undefined') {
       if (schoolId) {
@@ -44,10 +48,14 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         localStorage.removeItem('selected_school_id');
       }
     }
-  };
+  }, []);
 
   // Update selected school when profile changes
   useEffect(() => {
+    if (loading || profileLoading || !profile) {
+      return;
+    }
+
     if (profile?.default_school_id) {
       if (!hasSchoolsAccessAll) {
         // Users without schools_access_all must use their default school
@@ -60,20 +68,16 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     } else if (!hasSchoolsAccessAll) {
       persistSelectedSchoolId(null);
     }
-  }, [profile?.default_school_id, hasSchoolsAccessAll, selectedSchoolId]);
+  }, [loading, profileLoading, profile, profile?.default_school_id, hasSchoolsAccessAll, selectedSchoolId, persistSelectedSchoolId]);
 
-  const setSelectedSchoolId = (schoolId: string | null) => {
-    persistSelectedSchoolId(schoolId);
-  };
+  const value = useMemo(() => ({
+    selectedSchoolId,
+    setSelectedSchoolId: persistSelectedSchoolId,
+    hasSchoolsAccessAll,
+  }), [hasSchoolsAccessAll, selectedSchoolId, persistSelectedSchoolId]);
 
   return (
-    <SchoolContext.Provider
-      value={{
-        selectedSchoolId,
-        setSelectedSchoolId,
-        hasSchoolsAccessAll,
-      }}
-    >
+    <SchoolContext.Provider value={value}>
       {children}
     </SchoolContext.Provider>
   );

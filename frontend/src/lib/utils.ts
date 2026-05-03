@@ -7,6 +7,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Intl currency option requires ISO 4217 (three Latin letters). */
+function resolveIntlCurrencyCode(code: string | undefined | null): string {
+  const raw = (code ?? '').trim();
+  if (/^[A-Za-z]{3}$/.test(raw)) {
+    return raw.toUpperCase();
+  }
+  return 'AFN';
+}
+
 /**
  * Format a number as currency
  * @param amount The amount to format
@@ -19,12 +28,21 @@ export function formatCurrency(
   currency: string = 'AFN',
   locale: string = 'en-US'
 ): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  const resolved = resolveIntlCurrencyCode(currency);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: resolved,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    const formatted = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+    return `${formatted} ${resolved}`;
+  }
 }
 
 /**
