@@ -7,20 +7,14 @@ use Illuminate\Support\Facades\DB;
 
 class DefaultRolePermissionSyncService
 {
-    /** @var array<string, array<string, int>> */
-    private static array $requestCache = [];
-
     /**
-     * Sync default role permissions for an organization to the canonical seeder state.
+     * Ensure default role permissions exist for an organization (additive only).
+     * Does not remove admin-assigned extras — see class docblock history in git.
      *
      * @return array<string, int>
      */
     public function syncOrganization(string $organizationId): array
     {
-        if (isset(self::$requestCache[$organizationId])) {
-            return self::$requestCache[$organizationId];
-        }
-
         $tableNames = config('permission.table_names');
         $rolesTable = $tableNames['roles'] ?? 'roles';
         $permissionsTable = $tableNames['permissions'] ?? 'permissions';
@@ -41,7 +35,6 @@ class DefaultRolePermissionSyncService
             ->keyBy('name');
 
         $added = 0;
-        $removed = 0;
         $rolesSynced = 0;
 
         foreach ($rolePermissions as $roleName => $permissionNames) {
@@ -64,11 +57,14 @@ class DefaultRolePermissionSyncService
                 ->map(fn ($permissionId) => (string) $permissionId)
                 ->all();
 
+            // Only add missing default permissions from the seeder — never delete extras.
+            // Deleting "unexpected" rows broke real usage: every GET /permissions/user ran sync and
+            // stripped admin-assigned role permissions not listed in PermissionSeeder::getRolePermissions().
+            // Pruning removed-from-product permissions is handled by migrations / artisan:roles:sync-defaults.
             $permissionsToAdd = array_values(array_unique(
                 array_values(array_diff($expectedPermissionIds, $currentPermissionIds)),
                 SORT_REGULAR
             ));
-            $permissionsToRemove = array_values(array_diff($currentPermissionIds, $expectedPermissionIds));
 
             if (! empty($permissionsToAdd)) {
                 $payload = array_map(
@@ -84,27 +80,17 @@ class DefaultRolePermissionSyncService
                 $added += count($permissionsToAdd);
             }
 
-            if (! empty($permissionsToRemove)) {
-                DB::table($roleHasPermissionsTable)
-                    ->where('role_id', $role->id)
-                    ->where('organization_id', $organizationId)
-                    ->whereIn('permission_id', array_map('intval', $permissionsToRemove))
-                    ->delete();
-
-                $removed += count($permissionsToRemove);
-            }
-
             $rolesSynced++;
         }
 
-        if ($added > 0 || $removed > 0) {
+        if ($added > 0) {
             app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
         }
 
-        return self::$requestCache[$organizationId] = [
+        return [
             'roles_synced' => $rolesSynced,
             'permissions_added' => $added,
-            'permissions_removed' => $removed,
+            'permissions_removed' => 0,
         ];
     }
 }

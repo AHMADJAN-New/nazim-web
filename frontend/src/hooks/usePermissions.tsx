@@ -227,8 +227,6 @@ export const useUserPermissions = () => {
     refetchOnMount: true, // FIXED: Must refetch on mount to get permissions!
     refetchOnReconnect: false, // Don't refetch on reconnect
     refetchInterval: false, // Never auto-refetch
-    // Use placeholderData instead of initialData to allow fetching
-    placeholderData: [],
   });
 };
 

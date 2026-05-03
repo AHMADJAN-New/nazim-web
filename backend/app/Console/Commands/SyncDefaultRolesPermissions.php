@@ -13,7 +13,7 @@ class SyncDefaultRolesPermissions extends Command
     protected $signature = 'permissions:sync-default-roles
                             {--dry-run : Show what would be done without making changes}';
 
-    protected $description = 'Sync all default roles with PermissionSeeder: create missing roles and exactly match the canonical permissions for all existing organizations';
+    protected $description = 'Sync all default roles with PermissionSeeder: create missing roles and add any missing canonical permissions for all organizations (does not strip custom role permissions)';
 
     /** Role names and descriptions (must match OrganizationObserver::getDefaultRoleDefinitions). */
     protected static function getDefaultRoleDescriptions(): array
