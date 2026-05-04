@@ -21,7 +21,7 @@ export function AnyPermissionRoute({ permissions, children, showError = true }: 
   const hasAnyAccess = useHasAnyPermissionAndFeature(permissions);
 
   if (hasAnyAccess === undefined) {
-    return <LoadingSpinner size="lg" text="Loading permissions..." />;
+    return <LoadingSpinner size="lg" />;
   }
 
   if (hasAnyAccess) {

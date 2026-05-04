@@ -48,6 +48,7 @@ const DEFAULT_FIELD_LABELS: Record<string, string> = {
   classLabel: 'درجه:',
   roomLabel: 'اتاق :',
   admissionNumberLabel: 'داخله نمبر:',
+  residencyLabel: 'Residency:',
   studentCodeLabel: 'ID:',
   cardNumberLabel: 'کارت نمبر:',
 };
@@ -412,6 +413,8 @@ export async function renderIdCardToCanvas(
     classPosition: { x: 28, y: 80 },
     roomLabelPosition: { x: 72, y: 88 },
     roomPosition: { x: 28, y: 88 },
+    residencyLabelPosition: { x: 72, y: 92 },
+    residencyPosition: { x: 28, y: 92 },
     schoolNamePosition: { x: 50, y: 30 },
     cardNumberLabelPosition: { x: 72, y: 80 },
     cardNumberPosition: { x: 28, y: 80 },
@@ -497,6 +500,7 @@ export async function renderIdCardToCanvas(
   renderLabelField('admissionNumberLabel', 'admissionNumberLabelPosition');
   renderLabelField('classLabel', 'classLabelPosition');
   renderLabelField('roomLabel', 'roomLabelPosition');
+  renderLabelField('residencyLabel', 'residencyLabelPosition');
   renderLabelField('cardNumberLabel', 'cardNumberLabelPosition');
 
   const renderValueField = (
@@ -552,6 +556,7 @@ export async function renderIdCardToCanvas(
   renderValueField('admissionNumber', 'admissionNumberPosition', 0.9, 'left');
   renderValueField('class', 'classPosition', 0.9, 'left');
   renderValueField('room', 'roomPosition', 0.9, 'left');
+  renderValueField('residency', 'residencyPosition', 0.9, 'left');
   renderValueField('schoolName', 'schoolNamePosition', 0.8, 'center');
   renderValueField('cardNumber', 'cardNumberPosition', 0.9, 'left');
   renderValueField('createdDate', 'createdDatePosition', 0.9, 'center');
@@ -791,6 +796,8 @@ export async function renderIdCardToCanvas(
     drawFieldAnchor('class', 'classPosition', layout.classPosition);
     drawFieldAnchor('roomLabel', 'roomLabelPosition', (layout as any).roomLabelPosition);
     drawFieldAnchor('room', 'roomPosition', (layout as any).roomPosition);
+    drawFieldAnchor('residencyLabel', 'residencyLabelPosition', (layout as any).residencyLabelPosition);
+    drawFieldAnchor('residency', 'residencyPosition', (layout as any).residencyPosition);
     drawFieldAnchor('schoolName', 'schoolNamePosition', layout.schoolNamePosition);
     drawFieldAnchor('cardNumberLabel', 'cardNumberLabelPosition', layout.cardNumberLabelPosition as any);
     drawFieldAnchor('cardNumber', 'cardNumberPosition', layout.cardNumberPosition);

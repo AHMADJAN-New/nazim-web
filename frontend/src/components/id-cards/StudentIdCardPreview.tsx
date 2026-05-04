@@ -77,6 +77,8 @@ export function StudentIdCardPreview({
         cardNumber: card.cardNumber || null,
         rollNumber: null,
         roomNumber: null,
+        isBoarder: null,
+        residencyTypeName: null,
         picturePath: courseStudent.picturePath || null,
         currentClass: courseName
           ? {
@@ -129,6 +131,7 @@ export function StudentIdCardPreview({
     if (!card.student) return null;
     const className = card.class?.name || card.classAcademicYear?.sectionName || null;
     const roomNumber = card.studentAdmission?.room?.roomNumber || null;
+    const residencyTypeName = card.studentAdmission?.residencyType?.name || null;
     
     const student: Student = {
       id: card.student.id,
@@ -139,6 +142,8 @@ export function StudentIdCardPreview({
       cardNumber: card.cardNumber || card.student.cardNumber || null,
       rollNumber: (card.student as any).rollNumber || null,
       roomNumber,
+      isBoarder: card.studentAdmission?.isBoarder ?? null,
+      residencyTypeName,
       picturePath: card.student.picturePath || null,
       currentClass: className ? {
         id: card.class?.id || card.classAcademicYear?.id || `class-${card.id}`,
@@ -181,6 +186,8 @@ export function StudentIdCardPreview({
         studentCode: student.studentCode,
         currentClass: student.currentClass?.name,
         roomNumber: student.roomNumber,
+        isBoarder: student.isBoarder,
+        residencyTypeName: student.residencyTypeName,
         school: student.school?.schoolName,
       });
     }
@@ -265,6 +272,8 @@ export function StudentIdCardPreview({
     studentForRender?.id,
     studentForRender?.studentCode,
     studentForRender?.admissionNumber,
+    studentForRender?.isBoarder,
+    studentForRender?.residencyTypeName,
   ]);
 
   // Check if we have the necessary data (from card or from props for preview-before-assignment)

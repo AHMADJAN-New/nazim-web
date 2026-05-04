@@ -11,10 +11,17 @@
             "id": "f4455a35a1e05b86",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "canvas",
+              "state": {
+                "file": "Untitled.canvas",
+                "viewState": {
+                  "x": 0,
+                  "y": 0,
+                  "zoom": 0
+                }
+              },
+              "icon": "lucide-layout-dashboard",
+              "title": "Untitled"
             }
           }
         ]
@@ -178,6 +185,7 @@
   },
   "active": "f4455a35a1e05b86",
   "lastOpenFiles": [
+    "Untitled.canvas",
     "String().md",
     "DocumentRenderingService.md",
     "Home.md",
@@ -204,7 +212,6 @@
     "_COMMUNITY_Certificates & Templates.md",
     "_COMMUNITY_Facility.md",
     "_COMMUNITY_DMS & Letter.md",
-    "_COMMUNITY_Fee.md",
     "Untitled.base",
     "Untitled"
   ]

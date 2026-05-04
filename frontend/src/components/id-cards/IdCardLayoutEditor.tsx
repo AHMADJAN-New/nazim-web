@@ -99,6 +99,7 @@ const DEFAULT_LABEL_TEXTS: Record<string, string> = {
   classLabel: 'درجه:',
   roomLabel: 'اتاق :',
   admissionNumberLabel: 'داخله نمبر:',
+  residencyLabel: 'Residency:',
   studentCodeLabel: 'ID:',
   cardNumberLabel: 'کارت نمبر:',
 };
@@ -170,11 +171,13 @@ const FRONT_FIELDS: FieldConfig[] = [
   { id: 'classLabel', label: 'Label: Class (درجه)', key: 'classLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.classLabel, defaultFontSize: 10 },
   { id: 'roomLabel', label: 'Label: Room (اتاق )', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
   { id: 'admissionNumberLabel', label: 'Label: Admission Number (داخله نمبر)', key: 'admissionNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.admissionNumberLabel, defaultFontSize: 10 },
+  { id: 'residencyLabel', label: 'Label: Residency', key: 'residencyLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.residencyLabel, defaultFontSize: 10 },
   { id: 'studentCodeLabel', label: 'Label: ID (ID)', key: 'studentCodeLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.studentCodeLabel, defaultFontSize: 10 },
   { id: 'studentCode', label: 'Student Code', key: 'studentCodePosition', sampleText: 'STU-2024-001', defaultFontSize: 10 },
   { id: 'admissionNumber', label: 'Admission Number', key: 'admissionNumberPosition', sampleText: 'ADM-2024-001', defaultFontSize: 10 },
   { id: 'class', label: 'Class', key: 'classPosition', sampleText: 'Grade 10 - Section A', defaultFontSize: 10 },
   { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
+  { id: 'residency', label: 'Residency', key: 'residencyPosition', sampleText: 'Boarding', defaultFontSize: 10 },
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
   { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
   { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
@@ -188,6 +191,8 @@ const FRONT_FIELDS: FieldConfig[] = [
 // Back side fields
 const BACK_FIELDS: FieldConfig[] = [
   { id: 'createdDate', label: 'Created Date', key: 'createdDatePosition', sampleText: 'Apr 13, 2026', defaultFontSize: 10 },
+  { id: 'residencyLabel', label: 'Label: Residency', key: 'residencyLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.residencyLabel, defaultFontSize: 10 },
+  { id: 'residency', label: 'Residency', key: 'residencyPosition', sampleText: 'Boarding', defaultFontSize: 10 },
   { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
   { id: 'roomLabel', label: 'Label: Room (اتاق )', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
   { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
@@ -333,6 +338,8 @@ export function IdCardLayoutEditor({
         return 'Class Label';
       case 'roomLabel':
         return 'Room Label';
+      case 'residencyLabel':
+        return 'Residency Label';
       case 'admissionNumberLabel':
         return 'Admission Number Label';
       case 'studentCodeLabel':
@@ -360,6 +367,8 @@ export function IdCardLayoutEditor({
         return 'e.g., اتاق ';
       case 'admissionNumberLabel':
         return 'e.g., داخله نمبر';
+      case 'residencyLabel':
+        return 'e.g., Residency';
       case 'studentCodeLabel':
         return 'e.g., ID';
       case 'cardNumberLabel':
@@ -379,6 +388,7 @@ export function IdCardLayoutEditor({
       case 'fatherNameLabel':
       case 'classLabel':
       case 'roomLabel':
+      case 'residencyLabel':
       case 'admissionNumberLabel':
       case 'studentCodeLabel':
       case 'cardNumberLabel':
@@ -809,6 +819,8 @@ export function IdCardLayoutEditor({
       classPosition: { x: 28, y: 80 },
       roomLabelPosition: { x: 72, y: 88 },
       roomPosition: { x: 28, y: 88 },
+      residencyLabelPosition: { x: 72, y: 92 },
+      residencyPosition: { x: 28, y: 92 },
       studentPhotoPosition: { x: 20, y: 50, width: DEFAULT_STUDENT_PHOTO_WIDTH, height: DEFAULT_STUDENT_PHOTO_HEIGHT }, // ID-card portrait frame
       qrCodePosition: { x: 80, y: 50, width: DEFAULT_QR_CODE_SIZE, height: DEFAULT_QR_CODE_SIZE }, // Square
       schoolNamePosition: { x: 50, y: 30 },
@@ -842,19 +854,19 @@ export function IdCardLayoutEditor({
 
   const LABEL_POSITION_KEYS: (keyof IdCardLayoutConfig)[] = [
     'studentNameLabelPosition', 'fatherNameLabelPosition', 'studentCodeLabelPosition',
-    'admissionNumberLabelPosition', 'classLabelPosition', 'roomLabelPosition', 'cardNumberLabelPosition',
+    'admissionNumberLabelPosition', 'classLabelPosition', 'roomLabelPosition', 'residencyLabelPosition', 'cardNumberLabelPosition',
   ];
   const VALUE_POSITION_KEYS: (keyof IdCardLayoutConfig)[] = [
     'studentNamePosition', 'fatherNamePosition', 'studentCodePosition', 'admissionNumberPosition',
-    'classPosition', 'roomPosition', 'cardNumberPosition',
+    'classPosition', 'roomPosition', 'residencyPosition', 'cardNumberPosition',
   ];
   const LABEL_DEFAULT_Y: Record<string, number> = {
     studentNameLabelPosition: 40, fatherNameLabelPosition: 50, studentCodeLabelPosition: 60,
-    admissionNumberLabelPosition: 70, classLabelPosition: 80, roomLabelPosition: 88, cardNumberLabelPosition: 80,
+    admissionNumberLabelPosition: 70, classLabelPosition: 80, roomLabelPosition: 88, residencyLabelPosition: 92, cardNumberLabelPosition: 80,
   };
   const VALUE_DEFAULT_Y: Record<string, number> = {
     studentNamePosition: 40, fatherNamePosition: 50, studentCodePosition: 60, admissionNumberPosition: 70,
-    classPosition: 80, roomPosition: 88, cardNumberPosition: 80,
+    classPosition: 80, roomPosition: 88, residencyPosition: 92, cardNumberPosition: 80,
   };
 
   const alignLabelsRight = () => {
@@ -891,6 +903,7 @@ export function IdCardLayoutEditor({
         { labelKey: 'admissionNumberLabelPosition', valueKey: 'admissionNumberPosition', y: 68 },
         { labelKey: 'classLabelPosition', valueKey: 'classPosition', y: 78 },
         { labelKey: 'roomLabelPosition', valueKey: 'roomPosition', y: 88 },
+        { labelKey: 'residencyLabelPosition', valueKey: 'residencyPosition', y: 92 },
       ];
       rowPairs.forEach(({ labelKey, valueKey, y }) => {
         const labelCur = (prev[labelKey] as { x: number; y: number } | undefined) || {};

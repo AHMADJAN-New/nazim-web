@@ -327,6 +327,8 @@ function getStudentForRenderer(card: StudentIdCard): Student | null {
       cardNumber: card.cardNumber || null,
       rollNumber: null,
       roomNumber: null,
+      isBoarder: null,
+      residencyTypeName: null,
       picturePath: courseStudent.picturePath || null,
       currentClass: courseName
         ? {
@@ -346,6 +348,7 @@ function getStudentForRenderer(card: StudentIdCard): Student | null {
   if (!card.student) return null;
   const className = card.class?.name || card.classAcademicYear?.sectionName || null;
   const roomNumber = card.studentAdmission?.room?.roomNumber || null;
+  const residencyTypeName = card.studentAdmission?.residencyType?.name || null;
   
   return {
     id: card.student.id,
@@ -356,6 +359,8 @@ function getStudentForRenderer(card: StudentIdCard): Student | null {
     cardNumber: card.cardNumber || card.student.cardNumber || null,
     rollNumber: (card.student as any).rollNumber || null,
     roomNumber,
+    isBoarder: card.studentAdmission?.isBoarder ?? null,
+    residencyTypeName,
     picturePath: card.student.picturePath || null,
     currentClass: className ? {
       id: card.class?.id || card.classAcademicYear?.id || `class-${card.id}`,

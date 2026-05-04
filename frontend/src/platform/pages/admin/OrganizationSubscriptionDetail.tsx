@@ -140,8 +140,7 @@ export default function OrganizationSubscriptionDetail() {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Loading permissions...</p>
+          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
         </div>
       </div>
     );

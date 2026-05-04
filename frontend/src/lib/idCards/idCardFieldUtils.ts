@@ -8,6 +8,7 @@ export const DEFAULT_ID_CARD_LABEL_TEXTS: Record<string, string> = {
   classLabel: 'درجه:',
   roomLabel: 'اتاق :',
   admissionNumberLabel: 'داخله نمبر:',
+  residencyLabel: 'Residency:',
   studentCodeLabel: 'ID:',
   cardNumberLabel: 'کارت نمبر:',
 };
@@ -168,6 +169,15 @@ export const resolveIdCardFieldValue = (
           fieldValue,
           student?.roomNumber,
           ((student as Record<string, unknown> | undefined)?.room as { roomNumber?: string } | undefined)?.roomNumber,
+          fallbackText
+        )
+      );
+    case 'residency':
+      return normalizeIdCardText(
+        resolveFirstNonEmptyString(
+          fieldValue,
+          student?.residencyTypeName,
+          student?.isBoarder === false ? 'Day Scholar' : null,
           fallbackText
         )
       );

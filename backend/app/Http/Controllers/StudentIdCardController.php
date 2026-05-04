@@ -144,6 +144,7 @@ class StudentIdCardController extends Controller
         $query->with([
             'student',
             'studentAdmission',
+            'studentAdmission.residencyType:id,name',
             'studentAdmission.room:id,room_number',
             'courseStudent.course', // Load course relationship for course students
             'template',
@@ -443,6 +444,7 @@ class StudentIdCardController extends Controller
         $card = StudentIdCard::with([
             'student',
             'studentAdmission',
+            'studentAdmission.residencyType:id,name',
             'studentAdmission.room:id,room_number',
             'courseStudent.course', // Load course relationship for course students
             'template',
@@ -557,6 +559,7 @@ class StudentIdCardController extends Controller
         $card->load([
             'student',
             'studentAdmission',
+            'studentAdmission.residencyType:id,name',
             'studentAdmission.room:id,room_number',
             'template',
             'academicYear',
@@ -717,6 +720,7 @@ class StudentIdCardController extends Controller
         $card->load([
             'student',
             'studentAdmission',
+            'studentAdmission.residencyType:id,name',
             'studentAdmission.room:id,room_number',
             'template',
             'academicYear',

@@ -52,7 +52,7 @@ export function PermissionRoute({
   // CRITICAL: Return early to prevent React from evaluating children
   // This prevents lazy components from loading until permissions are ready
   if (!permissionsReady) {
-    return <LoadingSpinner size="lg" text="Loading permissions..." />;
+    return <LoadingSpinner size="lg" />;
   }
 
   // Once permissions are ready, use PermissionGuard to check the specific permission

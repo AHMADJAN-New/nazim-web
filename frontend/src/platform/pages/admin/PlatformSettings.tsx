@@ -335,7 +335,6 @@ export default function PlatformSettings() {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="ml-2 text-muted-foreground">Loading permissions...</p>
       </div>
     );
   }
@@ -1008,4 +1007,3 @@ export default function PlatformSettings() {
     </div>
   );
 }
-

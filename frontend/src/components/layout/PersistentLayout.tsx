@@ -89,7 +89,7 @@ export function PersistentLayout() {
         <div className={`flex-1 min-h-0 custom-scrollbar min-w-0 relative ${showLoading ? 'overflow-clip' : 'overflow-y-auto overflow-x-hidden'}`} style={{ contain: 'layout style' }}>
           {showLoading ? (
             <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center justify-center bg-background z-10" style={{ contain: 'strict', clipPath: 'inset(0)' }}>
-              <LoadingSpinner size="lg" text="Loading permissions..." />
+              <LoadingSpinner size="lg" />
             </div>
           ) : (
             <Outlet />
