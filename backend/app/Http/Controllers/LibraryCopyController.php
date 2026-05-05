@@ -67,9 +67,10 @@ class LibraryCopyController extends Controller
         // Log library copy creation
         try {
             $bookTitle = $book->title ?? 'Unknown';
+            $copyCode = $copy->copy_code ?: 'N/A';
             $this->activityLogService->logCreate(
                 subject: $copy,
-                description: "Added copy {$copy->copy_code ?? 'N/A'} for library book {$bookTitle}",
+                description: "Added copy {$copyCode} for library book {$bookTitle}",
                 properties: [
                     'library_copy_id' => $copy->id,
                     'book_id' => $copy->book_id,
@@ -128,9 +129,10 @@ class LibraryCopyController extends Controller
         try {
             $copy->load('book');
             $bookTitle = $copy->book?->title ?? 'Unknown';
+            $copyCode = $copy->copy_code ?: 'N/A';
             $this->activityLogService->logUpdate(
                 subject: $copy,
-                description: "Updated copy {$copy->copy_code ?? 'N/A'} for library book {$bookTitle}",
+                description: "Updated copy {$copyCode} for library book {$bookTitle}",
                 properties: [
                     'library_copy_id' => $copy->id,
                     'book_id' => $copy->book_id,
@@ -181,9 +183,10 @@ class LibraryCopyController extends Controller
         // Log library copy deletion
         try {
             $bookTitle = $copy->book?->title ?? 'Unknown';
+            $copyCode = $copy->copy_code ?: 'N/A';
             $this->activityLogService->logDelete(
                 subject: $copy,
-                description: "Removed copy {$copy->copy_code ?? 'N/A'} for library book {$bookTitle}",
+                description: "Removed copy {$copyCode} for library book {$bookTitle}",
                 properties: [
                     'library_copy_id' => $copy->id,
                     'book_id' => $copy->book_id,

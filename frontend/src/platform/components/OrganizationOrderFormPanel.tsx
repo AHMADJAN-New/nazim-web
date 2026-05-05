@@ -1284,6 +1284,18 @@ export function OrganizationOrderFormPanel({
             </div>
 
             <div className="space-y-6">
+              <Card className="border-muted">
+                <CardHeader className="p-3 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg">Payments moved to Invoice</CardTitle>
+                  <CardDescription className="hidden sm:block text-xs sm:text-sm">
+                    Payment tracking for one-time fees is now managed through the Sales Invoice tab.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-6 text-sm text-muted-foreground">
+                  Use the <strong>Invoice</strong> tab to record payments and download the invoice PDF.
+                </CardContent>
+              </Card>
+
               <SectionCard
                 icon={FileText}
                 title="Acceptance and signatures"

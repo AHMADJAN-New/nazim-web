@@ -52,6 +52,7 @@ import { cn, formatDate } from '@/lib/utils';
 import { LicenseFeeStatusCard } from '@/platform/components/LicenseFeeStatusCard';
 import { MaintenanceFeeStatusCard } from '@/platform/components/MaintenanceFeeStatusCard';
 import { OrganizationOrderFormPanel } from '@/platform/components/OrganizationOrderFormPanel';
+import { OrganizationSalesInvoicePanel } from '@/platform/components/OrganizationSalesInvoicePanel';
 import { usePlatformPlans, usePlatformOrganization } from '@/platform/hooks/usePlatformAdmin';
 import {
   usePlatformOrganizationSubscription,
@@ -932,9 +933,12 @@ export default function OrganizationSubscriptionDetail() {
 
       <Tabs value={managementTab} onValueChange={setManagementTab} className="space-y-4">
         <div className="overflow-x-auto pb-1">
-          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-4">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-5">
             <TabsTrigger value="order-form" className="flex-shrink-0">
               Order Form
+            </TabsTrigger>
+            <TabsTrigger value="invoice" className="flex-shrink-0">
+              Invoice
             </TabsTrigger>
             <TabsTrigger value="limits" className="flex-shrink-0">
               Limits
@@ -956,6 +960,10 @@ export default function OrganizationSubscriptionDetail() {
           subscription={subscription ?? null}
           usage={usage}
         />
+        </TabsContent>
+
+        <TabsContent value="invoice">
+          <OrganizationSalesInvoicePanel organizationId={organizationId} />
         </TabsContent>
 
         <TabsContent value="limits">

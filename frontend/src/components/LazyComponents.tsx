@@ -156,6 +156,7 @@ export const PlansPage = lazy(() => import('@/pages/subscription/PlansPage').the
 export const RenewPage = lazy(() => import('@/pages/subscription/RenewPage').then(module => ({ default: module.default })));
 export const MaintenanceFeesPage = lazy(() => import('@/pages/subscription/MaintenanceFeesPage').then(module => ({ default: module.default })));
 export const LicenseFeesPage = lazy(() => import('@/pages/subscription/LicenseFeesPage').then(module => ({ default: module.default })));
+export const SalesInvoicesPage = lazy(() => import('@/pages/subscription/SalesInvoicesPage').then(module => ({ default: module.default })));
 
 // Subscription admin pages
 export const SubscriptionAdminDashboard = lazy(() => import('@/platform/pages/admin/SubscriptionAdminDashboard').then(module => ({ default: module.default })));

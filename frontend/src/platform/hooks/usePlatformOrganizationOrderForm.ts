@@ -181,3 +181,62 @@ export const useDeletePlatformOrganizationOrderFormDocument = () => {
     },
   });
 };
+
+export const useCreatePlatformOrganizationOrderFormPayment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      organizationId,
+      data,
+    }: {
+      organizationId: string;
+      data: {
+        payment_type: 'license' | 'maintenance';
+        amount: number;
+        currency: 'AFN' | 'USD';
+        payment_date: string;
+        payment_method?: string;
+        payment_reference?: string;
+        notes?: string;
+      };
+    }) => {
+      const response = await platformApi.orderForms.createPayment(organizationId, data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: buildOrderFormQueryKey(variables.organizationId),
+      });
+      showToast.success('Payment recorded');
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to record payment');
+    },
+  });
+};
+
+export const useDeletePlatformOrganizationOrderFormPayment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      organizationId,
+      paymentId,
+    }: {
+      organizationId: string;
+      paymentId: string;
+    }) => {
+      await platformApi.orderForms.deletePayment(organizationId, paymentId);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: buildOrderFormQueryKey(variables.organizationId),
+      });
+      showToast.success('Payment removed');
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'Failed to remove payment');
+    },
+  });
+};

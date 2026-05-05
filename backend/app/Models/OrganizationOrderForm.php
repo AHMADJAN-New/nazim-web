@@ -136,6 +136,14 @@ class OrganizationOrderForm extends Model
             ->orderByDesc('created_at');
     }
 
+    public function payments()
+    {
+        return $this->hasMany(OrganizationOrderFormPayment::class, 'organization_order_form_id')
+            ->whereNull('deleted_at')
+            ->orderByDesc('payment_date')
+            ->orderByDesc('created_at');
+    }
+
     public function createdByUser()
     {
         return $this->belongsTo(User::class, 'created_by');

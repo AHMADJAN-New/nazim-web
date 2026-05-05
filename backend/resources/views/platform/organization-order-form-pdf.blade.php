@@ -2,6 +2,8 @@
     $orderForm = $orderForm ?? [];
     $organization = $organization ?? null;
     $documents = $documents ?? [];
+    $payments = $payments ?? [];
+    $paymentSummary = $payment_summary ?? null;
     $nazimLogoDataUri = $nazimLogoDataUri ?? null;
     $subscriptionContext = $subscription_context ?? [];
     $licensePaid = $subscriptionContext['license_paid'] ?? false;
@@ -27,6 +29,10 @@
     $computedDiscount = $discountAmount > 0 ? $discountAmount
         : ($discountPct !== null ? round($subtotalForDiscount * ($discountPct / 100), 2) : 0);
     $computedTotalOneTime = max($subtotalForDiscount - $computedDiscount, 0);
+    $licensePaidAmount = (float) ($paymentSummary['license']['paid'] ?? 0);
+    $licenseDueAmount = (float) ($paymentSummary['license']['due'] ?? max($licenseFee - $licensePaidAmount, 0));
+    $maintenancePaidAmount = (float) ($paymentSummary['maintenance']['paid'] ?? 0);
+    $maintenanceDueAmount = (float) ($paymentSummary['maintenance']['due'] ?? max(((float) ($orderForm['maintenance_fee'] ?? 0)) - $maintenancePaidAmount, 0));
 
     $trainingMode = match ($orderForm['training_mode'] ?? null) {
         'in_person' => 'حضوري',
@@ -345,6 +351,16 @@
                                 <td>{{ $money($orderForm['maintenance_fee'] ?? null) }}</td>
                                 <td>هر کال تادیه کېږي، په ټول مقدار کې شامیل نه دی</td>
                             </tr>
+                            <tr>
+                                <td>د جواز ورکړل شوی / پاتې</td>
+                                <td>{{ $money($licensePaidAmount) }} / {{ $money($licenseDueAmount) }}</td>
+                                <td>ورکړل شوی مبلغ د ثبت شویو تادیاتو له مخې</td>
+                            </tr>
+                            <tr>
+                                <td>د ساتنې ورکړل شوی / پاتې</td>
+                                <td>{{ $money($maintenancePaidAmount) }} / {{ $money($maintenanceDueAmount) }}</td>
+                                <td>کلنی ساتنه: ورکړل شوی او پاتې</td>
+                            </tr>
                             @if($licensePaid && $licensePaidAt)
                             <tr class="license-paid-row">
                                 <td colspan="3" style="background: #e8f5e9; color: #2e7d32; font-weight: 600; padding: 8px 10px;">
@@ -354,6 +370,36 @@
                             @endif
                         </tbody>
                     </table>
+
+                    <div style="margin-top: 14px;">
+                        <h3 style="margin: 0 0 8px; color: #0b2c6b; font-size: 14px;">د تادیاتو ریکارډ</h3>
+                        @if(count($payments) > 0)
+                            <table class="summary">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%">ډول</th>
+                                        <th style="width: 18%">مبلغ</th>
+                                        <th style="width: 18%">نېټه</th>
+                                        <th style="width: 18%">طریقه</th>
+                                        <th>یادښت</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($payments as $payment)
+                                        <tr>
+                                            <td>{{ ($payment['payment_type'] ?? '') === 'license' ? 'جواز' : 'ساتنه' }}</td>
+                                            <td>{{ $money($payment['amount'] ?? 0) }} {{ $payment['currency'] ?? ($orderForm['currency'] ?? 'AFN') }}</td>
+                                            <td class="ltr">{{ !empty($payment['payment_date']) ? $formatDateFn($payment['payment_date']) : '—' }}</td>
+                                            <td>{{ $text($payment['payment_method'] ?? null) }}</td>
+                                            <td>{{ $text($payment['notes'] ?? null) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        @else
+                            <div class="card">تر اوسه هېڅ تادیه نه ده ثبت شوې.</div>
+                        @endif
+                    </div>
                 </div>
             </div>
 

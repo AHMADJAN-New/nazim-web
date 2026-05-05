@@ -189,6 +189,28 @@ export const platformApi = {
         `/platform/organizations/${organizationId}/order-form/documents/${documentId}`
       );
     },
+    createPayment: async (
+      organizationId: string,
+      data: {
+        payment_type: 'license' | 'maintenance';
+        amount: number;
+        currency: 'AFN' | 'USD';
+        payment_date: string;
+        payment_method?: string;
+        payment_reference?: string;
+        notes?: string;
+      }
+    ) => {
+      return apiClient.post<{ data: PlatformOrderFormApi.PlatformOrderFormPayment }>(
+        `/platform/organizations/${organizationId}/order-form/payments`,
+        data
+      );
+    },
+    deletePayment: async (organizationId: string, paymentId: string) => {
+      return apiClient.delete(
+        `/platform/organizations/${organizationId}/order-form/payments/${paymentId}`
+      );
+    },
   },
 
   platformFiles: {
@@ -870,19 +892,26 @@ export const platformApi = {
         };
       }>('/platform/backups', { backup_type: backupType });
     },
+    getDownloadUrl: async (filename: string) => {
+      return apiClient.get<{
+        success: boolean;
+        url: string;
+        expires_at: string;
+      }>(`/platform/backups/${filename}/download-url`);
+    },
     download: async (filename: string) => {
-      const { blob, filename: responseFilename } = await apiClient.requestFile(
-        `/platform/backups/${filename}/download`,
-        { method: 'GET' }
-      );
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = responseFilename || filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const response = await apiClient.get<{
+        success?: boolean;
+        url?: string;
+      }>(`/platform/backups/${filename}/download-url`);
+
+      const signedUrl = response?.url;
+      if (!signedUrl) {
+        throw new Error('Download URL is unavailable');
+      }
+
+      // Let the browser stream download directly (no full blob buffering in app memory).
+      window.location.assign(signedUrl);
     },
     delete: async (filename: string) => {
       return apiClient.delete<{
@@ -903,6 +932,89 @@ export const platformApi = {
       formData.append('backup_file', file);
       formData.append('restore_type', restoreType);
       return apiClient.post('/platform/backups/upload-restore', formData, { headers: {} });
+    },
+  },
+
+  // Sales Invoice (one-time, per organization)
+  salesInvoice: {
+    get: async (organizationId: string) => {
+      return apiClient.get<{
+        data: {
+          invoice: {
+            id: string;
+            organization_id: string;
+            subscription_id: string | null;
+            organization_order_form_id: string | null;
+            invoice_number: string;
+            currency: 'AFN' | 'USD';
+            subtotal: number;
+            tax_amount: number;
+            discount_amount: number;
+            total_amount: number;
+            status: string;
+            issued_at: string | null;
+            due_date: string | null;
+            sent_at?: string | null;
+            paid_at?: string | null;
+            cancelled_at?: string | null;
+            notes?: string | null;
+          } | null;
+          items: Array<{
+            id: string;
+            title: string;
+            description?: string | null;
+            quantity: number;
+            unit_price: number;
+            line_total: number;
+            sort_order: number;
+          }>;
+          payments: Array<{
+            id: string;
+            amount: number;
+            currency: string;
+            payment_method: string;
+            payment_reference?: string | null;
+            payment_date: string | null;
+            status: string;
+            notes?: string | null;
+          }>;
+          payment_summary: { total: number; paid: number; due: number } | null;
+        };
+      }>(`/platform/organizations/${organizationId}/sales-invoice`);
+    },
+    update: async (
+      organizationId: string,
+      payload: {
+        currency?: 'AFN' | 'USD';
+        due_date?: string | null;
+        notes?: string | null;
+        items?: Array<{
+          title: string;
+          description?: string | null;
+          quantity?: number;
+          unit_price?: number;
+          code?: string | null;
+          sort_order?: number;
+        }>;
+      }
+    ) => {
+      return apiClient.put(`/platform/organizations/${organizationId}/sales-invoice`, payload);
+    },
+    downloadPdf: async (organizationId: string, params?: { calendar_preference?: string; language?: string }) => {
+      return apiClient.requestFile(`/platform/organizations/${organizationId}/sales-invoice/pdf`, { method: 'GET', params });
+    },
+    recordPayment: async (
+      organizationId: string,
+      payload: {
+        amount: number;
+        currency: 'AFN' | 'USD';
+        payment_method: string;
+        payment_reference?: string;
+        payment_date: string;
+        notes?: string;
+      }
+    ) => {
+      return apiClient.post(`/platform/organizations/${organizationId}/sales-invoice/payments`, payload);
     },
   },
 

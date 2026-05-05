@@ -94,9 +94,39 @@ export interface OrderFormSubscriptionContext {
   license_payment_currency: string | null;
 }
 
+export interface PlatformOrderFormPayment {
+  id: string;
+  payment_type: 'license' | 'maintenance';
+  amount: number;
+  currency: 'AFN' | 'USD';
+  payment_date: string | null;
+  payment_method: string | null;
+  payment_reference: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_by_name: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface PlatformOrderFormPaymentSummary {
+  license: {
+    total: number;
+    paid: number;
+    due: number;
+  };
+  maintenance: {
+    total: number;
+    paid: number;
+    due: number;
+  };
+}
+
 export interface PlatformOrderFormResponse {
   order_form: PlatformOrderForm;
   documents: PlatformOrderFormDocument[];
+  payments: PlatformOrderFormPayment[];
+  payment_summary?: PlatformOrderFormPaymentSummary;
   subscription_context?: OrderFormSubscriptionContext;
   from_subscription?: PlatformOrderForm | null;
 }

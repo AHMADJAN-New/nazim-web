@@ -134,8 +134,9 @@ export default function PlatformBackupsPage() {
 
   const handleDownloadBackup = async (filename: string) => {
     try {
+      showToast.info('Preparing secure download link...');
       await platformApi.backups.download(filename);
-      showToast.success('Backup download started');
+      showToast.success('Backup download is starting now');
     } catch (error) {
       showToast.error(error instanceof Error ? error.message : 'Download failed');
     }

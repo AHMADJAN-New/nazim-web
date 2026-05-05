@@ -43,6 +43,7 @@ class PaymentRecord extends Model
         'invoice_number',
         'invoice_generated_at',
         'maintenance_invoice_id',
+        'sales_invoice_id',
     ];
 
     protected $casts = [
@@ -225,6 +226,14 @@ class PaymentRecord extends Model
     public function maintenanceInvoice()
     {
         return $this->belongsTo(MaintenanceInvoice::class, 'maintenance_invoice_id');
+    }
+
+    /**
+     * Get the sales invoice this payment is for (one-time sales invoices).
+     */
+    public function salesInvoice()
+    {
+        return $this->belongsTo(SalesInvoice::class, 'sales_invoice_id');
     }
 
     /**

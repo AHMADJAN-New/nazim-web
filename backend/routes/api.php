@@ -146,7 +146,9 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LicenseFeeController;
 use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\MaintenanceFeeController;
+use App\Http\Controllers\PlatformSalesInvoiceController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SalesInvoiceController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StorageController;
 
@@ -1811,6 +1813,13 @@ Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->gro
         Route::post('/pay', [LicenseFeeController::class, 'submitPayment']);
         Route::get('/payment-history', [LicenseFeeController::class, 'paymentHistory']);
     });
+
+    // Sales Invoices (one-time invoice; org read-only)
+    Route::prefix('sales-invoices')->group(function () {
+        Route::get('/', [SalesInvoiceController::class, 'index']);
+        Route::get('/{id}', [SalesInvoiceController::class, 'show']);
+        Route::get('/{id}/pdf', [SalesInvoiceController::class, 'downloadPdf']);
+    });
 });
 
 // Platform Admin routes (requires subscription.admin permission - GLOBAL, not organization-scoped)
@@ -1845,6 +1854,14 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::post('/organizations/{organizationId}/order-form/documents', [PlatformOrganizationOrderFormController::class, 'uploadDocument']);
     Route::get('/organizations/{organizationId}/order-form/documents/{documentId}/download', [PlatformOrganizationOrderFormController::class, 'downloadDocument']);
     Route::delete('/organizations/{organizationId}/order-form/documents/{documentId}', [PlatformOrganizationOrderFormController::class, 'destroyDocument']);
+    Route::post('/organizations/{organizationId}/order-form/payments', [PlatformOrganizationOrderFormController::class, 'storePayment']);
+    Route::delete('/organizations/{organizationId}/order-form/payments/{paymentId}', [PlatformOrganizationOrderFormController::class, 'destroyPayment']);
+
+    // Sales invoice for an organization (platform admin)
+    Route::get('/organizations/{organizationId}/sales-invoice', [PlatformSalesInvoiceController::class, 'show']);
+    Route::put('/organizations/{organizationId}/sales-invoice', [PlatformSalesInvoiceController::class, 'upsert']);
+    Route::get('/organizations/{organizationId}/sales-invoice/pdf', [PlatformSalesInvoiceController::class, 'downloadPdf']);
+    Route::post('/organizations/{organizationId}/sales-invoice/payments', [PlatformSalesInvoiceController::class, 'storePayment']);
 
     // Platform files (templates, business documents)
     Route::get('/files', [PlatformFilesController::class, 'index']);
@@ -1989,6 +2006,7 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     // Backup & Restore
     Route::get('/backups', [App\Http\Controllers\BackupController::class, 'listBackups']);
     Route::post('/backups', [App\Http\Controllers\BackupController::class, 'createBackup']);
+    Route::get('/backups/{filename}/download-url', [App\Http\Controllers\BackupController::class, 'getDownloadUrl']);
     Route::get('/backups/{filename}/download', [App\Http\Controllers\BackupController::class, 'downloadBackup']);
     Route::delete('/backups/{filename}', [App\Http\Controllers\BackupController::class, 'deleteBackup']);
     Route::post('/backups/{filename}/restore', [App\Http\Controllers\BackupController::class, 'restoreBackup']);
@@ -2042,6 +2060,9 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
         Route::delete('/{id}', [App\Http\Controllers\DesktopLicenseController::class, 'deleteLicense']);
     });
 });
+
+Route::get('/platform/backups/{filename}/signed-download', [App\Http\Controllers\BackupController::class, 'signedDownloadBackup'])
+    ->name('platform.backups.signed-download');
 
 // Legacy admin subscription routes (kept for backward compatibility, but will be deprecated)
 // These still require organization middleware but should migrate to platform routes

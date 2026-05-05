@@ -199,6 +199,7 @@ import {
   RenewPage,
   MaintenanceFeesPage,
   LicenseFeesPage,
+  SalesInvoicesPage,
   SubscriptionAdminDashboard,
   PendingActionsPage,
   AllSubscriptionsPage,
@@ -2122,6 +2123,11 @@ const App = () => (
                     <Route path="/subscription/license-fees" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <LicenseFeesPage />
+                      </Suspense>
+                    } />
+                    <Route path="/subscription/sales-invoices" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <SalesInvoicesPage />
                       </Suspense>
                     } />
 

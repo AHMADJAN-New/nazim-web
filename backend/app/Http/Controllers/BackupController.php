@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Symfony\Component\Process\Process;
 use ZipArchive;
 
@@ -162,6 +163,62 @@ class BackupController extends Controller
                 'message' => 'Backup download failed: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Create a short-lived signed URL for immediate browser download.
+     */
+    public function getDownloadUrl(Request $request, string $filename)
+    {
+        try {
+            $backupPath = storage_path('app/backups/'.$filename);
+
+            if (! File::exists($backupPath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Backup file not found',
+                ], 404);
+            }
+
+            $signedUrl = URL::temporarySignedRoute(
+                'platform.backups.signed-download',
+                now()->addMinutes(5),
+                ['filename' => $filename]
+            );
+
+            return response()->json([
+                'success' => true,
+                'url' => $signedUrl,
+                'expires_at' => now()->addMinutes(5)->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Create backup download URL failed: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create download URL: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Signed public endpoint for direct browser download (no blob buffering in frontend).
+     */
+    public function signedDownloadBackup(Request $request, string $filename)
+    {
+        if (! $request->hasValidSignature()) {
+            abort(403, 'Invalid or expired download link');
+        }
+
+        $backupPath = storage_path('app/backups/'.$filename);
+        if (! File::exists($backupPath)) {
+            abort(404, 'Backup file not found');
+        }
+
+        return response()->download($backupPath, $filename, [
+            'Content-Type' => 'application/zip',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
     }
 
     /**

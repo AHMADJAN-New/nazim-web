@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Organization;
 use App\Models\OrganizationOrderForm;
 use App\Models\OrganizationOrderFormDocument;
+use App\Models\OrganizationOrderFormPayment;
 use App\Models\OrganizationSubscription;
 use App\Models\SubscriptionPlan;
 use App\Services\OrganizationOrderFormPdfService;
@@ -33,6 +34,8 @@ class PlatformOrganizationOrderFormController extends Controller
         'other',
     ];
 
+    private const PAYMENT_TYPES = ['license', 'maintenance'];
+
     private const PROVIDER_DEFAULTS = [
         'provider_organization_name' => 'Atif Zada ICT Services',
         'provider_address' => 'ششدرک، کابل، افغانستان',
@@ -54,9 +57,11 @@ class PlatformOrganizationOrderFormController extends Controller
     {
         $organization = Organization::findOrFail($organizationId);
         $subscription = $this->getCurrentSubscription($organizationId);
-        $orderForm = OrganizationOrderForm::with(['plan', 'documents.uploadedByUser'])
+        $orderForm = OrganizationOrderForm::with(['plan', 'documents.uploadedByUser', 'payments.createdByUser'])
             ->where('organization_id', $organizationId)
             ->whereNull('deleted_at')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
             ->first();
 
         $serialized = $this->serializeOrderForm($orderForm, $organization, $subscription);
@@ -66,6 +71,8 @@ class PlatformOrganizationOrderFormController extends Controller
         $payload = [
             'order_form' => $serialized,
             'documents' => $this->serializeDocuments($orderForm?->documents ?? collect()),
+            'payments' => $this->serializePayments($orderForm?->payments ?? collect()),
+            'payment_summary' => $this->buildPaymentSummary($serialized, $orderForm?->payments ?? collect()),
             'subscription_context' => $subscriptionContext,
             'from_subscription' => $fromSubscription,
         ];
@@ -121,15 +128,22 @@ class PlatformOrganizationOrderFormController extends Controller
             $orderForm->save();
         });
 
-        $fresh = OrganizationOrderForm::with(['plan', 'documents.uploadedByUser'])
+        $fresh = OrganizationOrderForm::with(['plan', 'documents.uploadedByUser', 'payments.createdByUser'])
             ->where('organization_id', $organizationId)
             ->whereNull('deleted_at')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
             ->first();
 
         return response()->json([
             'data' => [
                 'order_form' => $this->serializeOrderForm($fresh, $organization, $subscription),
                 'documents' => $this->serializeDocuments($fresh?->documents ?? collect()),
+                'payments' => $this->serializePayments($fresh?->payments ?? collect()),
+                'payment_summary' => $this->buildPaymentSummary(
+                    $this->serializeOrderForm($fresh, $organization, $subscription),
+                    $fresh?->payments ?? collect()
+                ),
             ],
             'message' => 'Order form saved successfully',
         ]);
@@ -139,14 +153,18 @@ class PlatformOrganizationOrderFormController extends Controller
     {
         $organization = Organization::findOrFail($organizationId);
         $subscription = $this->getCurrentSubscription($organizationId);
-        $orderForm = OrganizationOrderForm::with(['plan', 'documents'])
+        $orderForm = OrganizationOrderForm::with(['plan', 'documents', 'payments.createdByUser'])
             ->where('organization_id', $organizationId)
             ->whereNull('deleted_at')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
             ->first();
 
         $documents = $orderForm?->documents ?? collect();
+        $payments = $orderForm?->payments ?? collect();
         $serializedOrderForm = $this->serializeOrderForm($orderForm, $organization, $subscription);
         $serializedDocuments = $this->serializeDocuments($documents);
+        $serializedPayments = $this->serializePayments($payments);
         $nazimLogoDataUri = $this->getNazimLogoDataUri();
         $subscriptionContext = $this->buildSubscriptionContext($subscription);
 
@@ -161,6 +179,8 @@ class PlatformOrganizationOrderFormController extends Controller
             'organization' => $organization,
             'orderForm' => $serializedOrderForm,
             'documents' => $serializedDocuments,
+            'payments' => $serializedPayments,
+            'payment_summary' => $this->buildPaymentSummary($serializedOrderForm, $payments),
             'nazimLogoDataUri' => $nazimLogoDataUri,
             'subscription_context' => $subscriptionContext,
             'formatDate' => $formatDateFn,
@@ -183,12 +203,15 @@ class PlatformOrganizationOrderFormController extends Controller
     {
         $organization = Organization::findOrFail($organizationId);
         $subscription = $this->getCurrentSubscription($organizationId);
-        $orderForm = OrganizationOrderForm::with(['plan', 'documents'])
+        $orderForm = OrganizationOrderForm::with(['plan', 'documents', 'payments.createdByUser'])
             ->where('organization_id', $organizationId)
             ->whereNull('deleted_at')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
             ->first();
 
         $documents = $orderForm?->documents ?? collect();
+        $payments = $orderForm?->payments ?? collect();
         $serializedOrderForm = $this->serializeOrderForm($orderForm, $organization, $subscription);
 
         $body = $request->all();
@@ -216,6 +239,7 @@ class PlatformOrganizationOrderFormController extends Controller
         }
 
         $serializedDocuments = $this->serializeDocuments($documents);
+        $serializedPayments = $this->serializePayments($payments);
         $nazimLogoDataUri = $this->getNazimLogoDataUri();
         $subscriptionContext = $this->buildSubscriptionContext($subscription);
 
@@ -230,6 +254,8 @@ class PlatformOrganizationOrderFormController extends Controller
             'organization' => $organization,
             'orderForm' => $serializedOrderForm,
             'documents' => $serializedDocuments,
+            'payments' => $serializedPayments,
+            'payment_summary' => $this->buildPaymentSummary($serializedOrderForm, $payments),
             'nazimLogoDataUri' => $nazimLogoDataUri,
             'subscription_context' => $subscriptionContext,
             'formatDate' => $formatDateFn,
@@ -294,6 +320,67 @@ class PlatformOrganizationOrderFormController extends Controller
         ], 201);
     }
 
+    public function storePayment(Request $request, string $organizationId)
+    {
+        $organization = Organization::findOrFail($organizationId);
+        $subscription = $this->getCurrentSubscription($organizationId);
+        $validator = Validator::make($request->all(), [
+            'payment_type' => 'required|string|in:'.implode(',', self::PAYMENT_TYPES),
+            'amount' => 'required|numeric|min:0.01',
+            'currency' => 'required|string|in:AFN,USD',
+            'payment_date' => 'required|date',
+            'payment_method' => 'nullable|string|max:80',
+            'payment_reference' => 'nullable|string|max:120',
+            'notes' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+        $orderForm = $this->getOrCreateOrderForm($organization, $subscription, (string) $request->user()->id);
+
+        $payment = OrganizationOrderFormPayment::create([
+            'organization_order_form_id' => $orderForm->id,
+            'organization_id' => $organizationId,
+            'payment_type' => $validated['payment_type'],
+            'amount' => (float) $validated['amount'],
+            'currency' => $validated['currency'],
+            'payment_date' => $validated['payment_date'],
+            'payment_method' => $validated['payment_method'] ?? null,
+            'payment_reference' => $validated['payment_reference'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'created_by' => (string) $request->user()->id,
+            'updated_by' => (string) $request->user()->id,
+        ]);
+
+        $payment->loadMissing('createdByUser');
+
+        return response()->json([
+            'data' => $this->serializePayment($payment),
+            'message' => 'Payment recorded successfully',
+        ], 201);
+    }
+
+    public function destroyPayment(Request $request, string $organizationId, string $paymentId)
+    {
+        Organization::findOrFail($organizationId);
+
+        $payment = OrganizationOrderFormPayment::where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->findOrFail($paymentId);
+
+        $payment->delete();
+
+        return response()->json([
+            'message' => 'Payment deleted successfully',
+        ]);
+    }
+
     public function downloadDocument(Request $request, string $organizationId, string $documentId)
     {
         Organization::findOrFail($organizationId);
@@ -335,6 +422,8 @@ class PlatformOrganizationOrderFormController extends Controller
     {
         $existing = OrganizationOrderForm::where('organization_id', $organization->id)
             ->whereNull('deleted_at')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
             ->first();
 
         if ($existing) {
@@ -514,6 +603,65 @@ class PlatformOrganizationOrderFormController extends Controller
     private function serializeDocuments($documents): array
     {
         return $documents->map(fn (OrganizationOrderFormDocument $document) => $this->serializeDocument($document))->values()->all();
+    }
+
+    private function serializePayments($payments): array
+    {
+        return $payments->map(fn (OrganizationOrderFormPayment $payment) => $this->serializePayment($payment))->values()->all();
+    }
+
+    private function serializePayment(OrganizationOrderFormPayment $payment): array
+    {
+        return [
+            'id' => $payment->id,
+            'payment_type' => $payment->payment_type,
+            'amount' => $payment->amount !== null ? (float) $payment->amount : 0,
+            'currency' => $payment->currency,
+            'payment_date' => $payment->payment_date?->toDateString(),
+            'payment_method' => $payment->payment_method,
+            'payment_reference' => $payment->payment_reference,
+            'notes' => $payment->notes,
+            'created_by' => $payment->created_by,
+            'created_by_name' => $payment->createdByUser?->email,
+            'created_at' => $payment->created_at?->toIso8601String(),
+            'updated_at' => $payment->updated_at?->toIso8601String(),
+        ];
+    }
+
+    private function buildPaymentSummary(array $orderForm, $payments): array
+    {
+        // Payments should be compared against the actual one-time payable total (after discount),
+        // so "paid / remaining" matches the PDF "total (one-time)" row.
+        $licenseTotal = isset($orderForm['total_amount'])
+            ? (float) $orderForm['total_amount']
+            : max(
+                ((float) ($orderForm['license_fee'] ?? 0))
+                    + ((float) ($orderForm['additional_services_fee'] ?? 0))
+                    + ((float) ($orderForm['tax_amount'] ?? 0))
+                    - ((float) ($orderForm['discount_amount'] ?? 0)),
+                0
+            );
+        $maintenanceTotal = (float) ($orderForm['maintenance_fee'] ?? 0);
+
+        $licensePaid = (float) $payments
+            ->where('payment_type', 'license')
+            ->sum(fn (OrganizationOrderFormPayment $payment) => (float) $payment->amount);
+        $maintenancePaid = (float) $payments
+            ->where('payment_type', 'maintenance')
+            ->sum(fn (OrganizationOrderFormPayment $payment) => (float) $payment->amount);
+
+        return [
+            'license' => [
+                'total' => $licenseTotal,
+                'paid' => $licensePaid,
+                'due' => max($licenseTotal - $licensePaid, 0),
+            ],
+            'maintenance' => [
+                'total' => $maintenanceTotal,
+                'paid' => $maintenancePaid,
+                'due' => max($maintenanceTotal - $maintenancePaid, 0),
+            ],
+        ];
     }
 
     private function serializeDocument(OrganizationOrderFormDocument $document): array
