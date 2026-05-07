@@ -67,6 +67,7 @@ use App\Http\Controllers\OrgFinanceIncomeCategoryController;
 use App\Http\Controllers\OrgFinanceIncomeEntryController;
 use App\Http\Controllers\OrgFinanceProjectController;
 use App\Http\Controllers\OrgFinanceReportController;
+use App\Http\Controllers\OfflineSyncController;
 use App\Http\Controllers\OrgFinanceTransferController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PlatformWebsiteConfigController;
@@ -1143,7 +1144,15 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::post('/attendance-sessions', [AttendanceSessionController::class, 'store']);
             Route::put('/attendance-sessions/{attendance_session}', [AttendanceSessionController::class, 'update']);
             Route::delete('/attendance-sessions/{attendance_session}', [AttendanceSessionController::class, 'destroy']);
+
+            // Offline desktop client: bulk upload sessions + records.
+            // Permission gating (attendance.offline_sync) is enforced inside the controller.
+            Route::post('/attendance-sessions/bulk-sync', [AttendanceSessionController::class, 'bulkSync']);
         });
+
+        // Offline desktop client: snapshot pull (initial + delta).
+        // Permission gating (attendance.offline_sync) is enforced inside the controller.
+        Route::get('/schools/{school}/offline-snapshot', [OfflineSyncController::class, 'snapshot']);
 
         // Library Management (requires library feature with limit enforcement)
         Route::middleware(['feature:library'])->group(function () {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AttendanceScanRequest;
+use App\Http\Requests\BulkSyncAttendanceRequest;
 use App\Http\Requests\MarkAttendanceRecordsRequest;
 use App\Http\Requests\StoreAttendanceSessionRequest;
 use App\Models\AttendanceRecord;
@@ -2481,5 +2482,425 @@ SQL;
                         ->whereNull('cay.deleted_at');
                 });
         });
+    }
+
+    /**
+     * Bulk sync endpoint for the offline desktop client.
+     *
+     * Accepts an array of items each describing one of:
+     *   - session.create: create an attendance session (UUID supplied by client) and optional records
+     *   - records.mark:   upsert attendance records for an existing session
+     *   - session.close:  close a session (auto-fill unmarked as absent)
+     *   - session.update: edit an open session's metadata
+     *   - session.delete: soft-delete a session
+     *
+     * Each item is processed in its own transaction so a single bad row
+     * does not block the rest of the batch. Returns per-item results.
+     *
+     * Idempotency:
+     *   - session.create with an existing UUID is a no-op (returns ok).
+     *   - records.mark uses the existing (session_id, student_id, deleted_at) upsert,
+     *     so replays cannot create duplicates.
+     */
+    public function bulkSync(BulkSyncAttendanceRequest $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile || ! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (! $this->userHasPermission($user, 'attendance.offline_sync', $profile->organization_id)) {
+            return response()->json(['error' => 'Access Denied'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $items = $request->validated('items') ?? [];
+        $results = [];
+
+        foreach ($items as $index => $item) {
+            $clientRef = $item['client_ref'] ?? null;
+            try {
+                $result = match ($item['operation']) {
+                    'session.create' => $this->bulkSyncCreateSession($item, $profile, $user, $currentSchoolId),
+                    'records.mark' => $this->bulkSyncMarkRecords($item, $profile, $user, $currentSchoolId),
+                    'session.close' => $this->bulkSyncCloseSession($item, $profile, $user, $currentSchoolId),
+                    'session.update' => $this->bulkSyncUpdateSession($item, $profile, $user, $currentSchoolId),
+                    'session.delete' => $this->bulkSyncDeleteSession($item, $profile, $user, $currentSchoolId),
+                    default => ['status' => 'error', 'error' => 'Unknown operation'],
+                };
+            } catch (\Throwable $e) {
+                Log::warning('bulkSync item failed', [
+                    'index' => $index,
+                    'client_ref' => $clientRef,
+                    'operation' => $item['operation'] ?? null,
+                    'error' => $e->getMessage(),
+                ]);
+                $result = ['status' => 'error', 'error' => $e->getMessage()];
+            }
+
+            $results[] = array_merge(['client_ref' => $clientRef, 'index' => $index], $result);
+        }
+
+        $okCount = collect($results)->where('status', 'ok')->count();
+        $errorCount = count($results) - $okCount;
+
+        return response()->json([
+            'results' => $results,
+            'summary' => [
+                'total' => count($results),
+                'ok' => $okCount,
+                'errors' => $errorCount,
+            ],
+        ]);
+    }
+
+    private function bulkSyncCreateSession(array $item, $profile, $user, string $currentSchoolId): array
+    {
+        $payload = $item['session'] ?? null;
+        if (! is_array($payload) || empty($payload['id'])) {
+            return ['status' => 'error', 'error' => 'session.id is required (UUID)'];
+        }
+
+        $sessionId = $payload['id'];
+
+        // Idempotency: if a session with this UUID already exists for this org+school, treat as no-op.
+        $existing = AttendanceSession::where('id', $sessionId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if ($existing) {
+            // Existing — still upsert any records that came along.
+            if (! empty($item['records'])) {
+                $this->bulkUpsertRecords($existing, $item['records'], $profile, $user);
+            }
+
+            return ['status' => 'ok', 'session_id' => $existing->id, 'idempotent' => true];
+        }
+
+        $classIds = ! empty($payload['class_ids']) ? $payload['class_ids']
+            : (! empty($payload['class_id']) ? [$payload['class_id']] : []);
+        if (empty($classIds)) {
+            return ['status' => 'error', 'error' => 'At least one class is required'];
+        }
+
+        $classCount = ClassModel::whereIn('id', $classIds)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->count();
+        if ($classCount !== count($classIds)) {
+            return ['status' => 'error', 'error' => 'One or more classes not found for this school'];
+        }
+
+        if (empty($payload['attendance_round_name_id'])) {
+            return ['status' => 'error', 'error' => 'attendance_round_name_id is required'];
+        }
+        $round = AttendanceRoundName::where('id', $payload['attendance_round_name_id'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->first();
+        if (! $round) {
+            return ['status' => 'error', 'error' => 'Attendance round name not found for this school'];
+        }
+
+        if (empty($payload['session_date'])) {
+            return ['status' => 'error', 'error' => 'session_date is required'];
+        }
+        $sessionDate = Carbon::parse($payload['session_date'])->toDateString();
+        $method = $payload['method'] ?? 'manual';
+
+        $session = DB::transaction(function () use (
+            $sessionId, $payload, $profile, $user, $currentSchoolId, $classIds, $round, $sessionDate, $method, $item
+        ) {
+            $session = AttendanceSession::create([
+                'id' => $sessionId,
+                'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
+                'class_id' => $classIds[0] ?? null,
+                'academic_year_id' => $payload['academic_year_id'] ?? null,
+                'session_date' => $sessionDate,
+                'session_label' => $round->name,
+                'round_number' => $this->nextAttendanceRoundNumber(
+                    $profile->organization_id,
+                    $currentSchoolId,
+                    $sessionDate
+                ),
+                'attendance_round_name_id' => $round->id,
+                'method' => $method,
+                'status' => $payload['status'] ?? 'open',
+                'remarks' => $payload['remarks'] ?? null,
+                'student_type' => $payload['student_type'] ?? 'all',
+                'created_by' => $user->id,
+            ]);
+
+            $pivot = [
+                'organization_id' => $profile->organization_id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+            if (Schema::hasColumn('attendance_session_classes', 'school_id')) {
+                $pivot['school_id'] = $currentSchoolId;
+            }
+            $session->classes()->attach($classIds, $pivot);
+
+            if (! empty($item['records'])) {
+                $this->bulkUpsertRecords($session, $item['records'], $profile, $user);
+            }
+
+            return $session;
+        });
+
+        return ['status' => 'ok', 'session_id' => $session->id, 'idempotent' => false];
+    }
+
+    private function bulkSyncMarkRecords(array $item, $profile, $user, string $currentSchoolId): array
+    {
+        $sessionId = $item['session_id'] ?? ($item['session']['id'] ?? null);
+        if (! $sessionId) {
+            return ['status' => 'error', 'error' => 'session_id is required'];
+        }
+
+        $session = AttendanceSession::where('id', $sessionId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+        if (! $session) {
+            return ['status' => 'error', 'error' => 'Session not found'];
+        }
+        if ($session->status === 'closed') {
+            return ['status' => 'error', 'error' => 'Cannot mark records on a closed session'];
+        }
+
+        $records = $item['records'] ?? [];
+        if (empty($records)) {
+            return ['status' => 'ok', 'session_id' => $session->id, 'records' => 0];
+        }
+
+        $count = $this->bulkUpsertRecords($session, $records, $profile, $user);
+
+        return ['status' => 'ok', 'session_id' => $session->id, 'records' => $count];
+    }
+
+    private function bulkSyncCloseSession(array $item, $profile, $user, string $currentSchoolId): array
+    {
+        $sessionId = $item['session_id'] ?? ($item['session']['id'] ?? null);
+        if (! $sessionId) {
+            return ['status' => 'error', 'error' => 'session_id is required'];
+        }
+
+        $session = AttendanceSession::where('id', $sessionId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+        if (! $session) {
+            return ['status' => 'error', 'error' => 'Session not found'];
+        }
+        if ($session->status === 'closed') {
+            return ['status' => 'ok', 'session_id' => $session->id, 'idempotent' => true];
+        }
+
+        // Reuse the existing close() flow: call it directly.
+        return DB::transaction(function () use ($session, $user, $profile, $currentSchoolId) {
+            // Auto-fill unmarked enrolled students as absent.
+            $sessionClassIds = $this->getSessionClassIds($session);
+            if (! empty($sessionClassIds)) {
+                $enrolledIds = DB::table('student_admissions')
+                    ->whereIn('class_id', $sessionClassIds)
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->whereNull('deleted_at')
+                    ->pluck('student_id')
+                    ->unique();
+                $alreadyMarked = DB::table('attendance_records')
+                    ->where('attendance_session_id', $session->id)
+                    ->whereNull('deleted_at')
+                    ->pluck('student_id')
+                    ->toArray();
+                $missing = $enrolledIds->diff($alreadyMarked)->values();
+                $now = now();
+                $payload = $missing->map(fn ($sid) => [
+                    'id' => (string) Str::uuid(),
+                    'attendance_session_id' => $session->id,
+                    'organization_id' => $profile->organization_id,
+                    'school_id' => $session->school_id,
+                    'student_id' => $sid,
+                    'status' => 'absent',
+                    'entry_method' => 'manual',
+                    'marked_at' => $now,
+                    'marked_by' => $user->id,
+                    'note' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->all();
+                if (! empty($payload)) {
+                    DB::table('attendance_records')->insert($payload);
+                }
+            }
+
+            $session->status = 'closed';
+            $session->closed_at = now();
+            $session->save();
+
+            return ['status' => 'ok', 'session_id' => $session->id, 'idempotent' => false];
+        });
+    }
+
+    private function bulkSyncUpdateSession(array $item, $profile, $user, string $currentSchoolId): array
+    {
+        $payload = $item['session'] ?? [];
+        $sessionId = $item['session_id'] ?? ($payload['id'] ?? null);
+        if (! $sessionId) {
+            return ['status' => 'error', 'error' => 'session_id is required'];
+        }
+
+        $session = AttendanceSession::where('id', $sessionId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+        if (! $session) {
+            return ['status' => 'error', 'error' => 'Session not found'];
+        }
+        if ($session->status === 'closed') {
+            return ['status' => 'error', 'error' => 'Cannot update a closed session'];
+        }
+
+        $dirty = [];
+        foreach (['session_date', 'session_label', 'remarks', 'student_type'] as $field) {
+            if (array_key_exists($field, $payload)) {
+                $dirty[$field] = $field === 'session_date'
+                    ? Carbon::parse($payload[$field])->toDateString()
+                    : $payload[$field];
+            }
+        }
+
+        if (! empty($payload['attendance_round_name_id'])) {
+            $round = AttendanceRoundName::where('id', $payload['attendance_round_name_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->first();
+            if (! $round) {
+                return ['status' => 'error', 'error' => 'Attendance round name not found for this school'];
+            }
+            $dirty['attendance_round_name_id'] = $round->id;
+            $dirty['session_label'] = $round->name;
+        }
+
+        if (! empty($dirty)) {
+            $session->fill($dirty)->save();
+        }
+
+        return ['status' => 'ok', 'session_id' => $session->id];
+    }
+
+    private function bulkSyncDeleteSession(array $item, $profile, $user, string $currentSchoolId): array
+    {
+        $sessionId = $item['session_id'] ?? ($item['session']['id'] ?? null);
+        if (! $sessionId) {
+            return ['status' => 'error', 'error' => 'session_id is required'];
+        }
+
+        $session = AttendanceSession::where('id', $sessionId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+        if (! $session) {
+            return ['status' => 'ok', 'session_id' => $sessionId, 'idempotent' => true];
+        }
+
+        DB::transaction(function () use ($session) {
+            $session->records()->delete();
+            $session->delete();
+        });
+
+        return ['status' => 'ok', 'session_id' => $session->id];
+    }
+
+    /**
+     * Upsert attendance records using the existing unique constraint
+     * (attendance_session_id, student_id, deleted_at) for idempotency.
+     * Returns number of records processed.
+     */
+    private function bulkUpsertRecords(AttendanceSession $session, array $records, $profile, $user): int
+    {
+        if (empty($records)) {
+            return 0;
+        }
+
+        $now = now();
+        $payload = collect($records)->map(function ($r) use ($session, $profile, $user, $now) {
+            $markedAt = ! empty($r['client_marked_at']) ? Carbon::parse($r['client_marked_at']) : $now;
+
+            return [
+                'attendance_session_id' => $session->id,
+                'organization_id' => $profile->organization_id,
+                'school_id' => $session->school_id,
+                'student_id' => $r['student_id'],
+                'status' => $r['status'],
+                'entry_method' => $r['entry_method'] ?? $session->method ?? 'manual',
+                'marked_at' => $markedAt,
+                'marked_by' => $user->id,
+                'note' => $r['note'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        })->all();
+
+        // Idempotency note:
+        // The current DB unique constraint includes deleted_at which is NULL for active rows.
+        // In PostgreSQL, UNIQUE constraints treat NULLs as distinct, so ON CONFLICT won't
+        // prevent duplicates for active rows. We implement idempotency manually by:
+        // - updating existing active rows for (session_id, student_id)
+        // - inserting only missing rows
+        foreach (array_chunk($payload, 500) as $chunk) {
+            $studentIds = array_values(array_unique(array_map(fn ($r) => $r['student_id'], $chunk)));
+            $existing = DB::table('attendance_records')
+                ->where('attendance_session_id', $session->id)
+                ->whereNull('deleted_at')
+                ->whereIn('student_id', $studentIds)
+                ->select('id', 'student_id')
+                ->get()
+                ->keyBy('student_id');
+
+            $toInsert = [];
+
+            foreach ($chunk as $row) {
+                $existingRow = $existing->get($row['student_id']);
+                if ($existingRow) {
+                    DB::table('attendance_records')
+                        ->where('id', $existingRow->id)
+                        ->update([
+                            'status' => $row['status'],
+                            'entry_method' => $row['entry_method'],
+                            'marked_at' => $row['marked_at'],
+                            'marked_by' => $row['marked_by'],
+                            'note' => $row['note'],
+                            'updated_at' => $row['updated_at'],
+                        ]);
+                    continue;
+                }
+
+                $toInsert[] = array_merge($row, [
+                    'id' => (string) Str::uuid(),
+                    'deleted_at' => null,
+                ]);
+            }
+
+            if (! empty($toInsert)) {
+                DB::table('attendance_records')->insert($toInsert);
+            }
+        }
+
+        return count($payload);
     }
 }

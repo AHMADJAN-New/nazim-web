@@ -45,3 +45,7 @@ graphify-out/nazim_graph/
 
 # Desktop renderer build artifacts
 desktop/dist-renderer/
+desktop/release/
+
+# Claude/Cursor worktrees (never commit)
+.claude/worktrees/

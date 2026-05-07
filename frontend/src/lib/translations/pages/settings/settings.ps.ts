@@ -84,8 +84,22 @@ export default {
       ipAddress: "IP پته",
       noRecentLogins: "وروستي ننوتنې نشته.",
       description: "دلته خپل د حساب غوره توبونه او امنیتي تنظیمات اداره کړئ",
+      offlineMode: {
+        title: "آفلاین حالت",
+        description: "په ډیسکتاپ اپ کې محلي معلومات وکاروئ او بدلونونه د انټرنټ په شتون کې د همغږۍ لپاره قطار کړئ.",
+        toggleLabel: "آفلاین حالت",
+        enabled: "آفلاین حالت فعال شو",
+        disabled: "آفلاین حالت غیرفعال شو"
+      },
       preferences: "غوره توبونه",
       security: "امنیت",
+      syncStatus: {
+        badge: "د همغږۍ حالت",
+        onlineSynced: "آنلاین · همغږی",
+        onlinePending: "آنلاین · {count} پاتې",
+        syncing: "همغږي روانه ده…",
+        offline: "آفلاین"
+      },
       title: "د کارونکي تنظیمات"
     },
     datePreferences: {

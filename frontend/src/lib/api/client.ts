@@ -8,6 +8,7 @@
  */
 
 import type { PaginationParams, PaginatedResponse } from '@/types/pagination';
+import { DESKTOP_IPC_CHANNELS, type DesktopIpcChannel } from '@/lib/desktop/channels';
 
 // Use relative path in dev (via Vite proxy) or full URL in production
 // In development, Vite proxy handles /api -> http://localhost:8000/api
@@ -598,6 +599,24 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient(API_URL);
+
+function shouldUseLocal(): boolean {
+  try {
+    return typeof window !== 'undefined' && window.nazimDesktop?.isOfflineMode?.() === true;
+  } catch {
+    return false;
+  }
+}
+
+async function desktopInvoke<TResult, TPayload = unknown>(
+  channel: DesktopIpcChannel,
+  payload?: TPayload
+): Promise<TResult> {
+  if (typeof window === 'undefined' || !window.nazimDesktop?.invoke) {
+    throw new Error('Desktop bridge is not available');
+  }
+  return await window.nazimDesktop.invoke<TResult, TPayload>(channel, payload);
+}
 
 // Re-export user tours API
 export { userToursApi } from './userTours';
@@ -1465,10 +1484,16 @@ export const classesApi = {
   list: async (params?: {
     organization_id?: string;
   }) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.classesList, { params });
+    }
     return apiClient.get('/classes', params);
   },
 
   get: async (id: string) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.classesGet, { id });
+    }
     return apiClient.get(`/classes/${id}`);
   },
 
@@ -1727,6 +1752,9 @@ export const attendanceRoundNamesApi = {
   list: async (params?: {
     active_only?: string;
   }) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceRoundNamesList, { params });
+    }
     return apiClient.get('/attendance-round-names', params);
   },
 
@@ -1955,6 +1983,9 @@ export const studentsApi = {
     page?: number;
     per_page?: number;
   }) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.studentsList, { params });
+    }
     return apiClient.get('/students', params);
   },
 
@@ -1977,6 +2008,9 @@ export const studentsApi = {
   },
 
   get: async (id: string) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.studentsGet, { id });
+    }
     return apiClient.get(`/students/${id}`);
   },
 
@@ -2740,41 +2774,71 @@ export const attendanceSessionsApi = {
     page?: number;
     per_page?: number;
   }) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsList, { params });
+    }
     return apiClient.get('/attendance-sessions', params);
   },
 
   get: async (id: string) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsGet, { id });
+    }
     return apiClient.get(`/attendance-sessions/${id}`);
   },
 
   create: async (data: any) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsCreate, { data });
+    }
     return apiClient.post('/attendance-sessions', data);
   },
 
   update: async (id: string, data: any) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsUpdate, { id, data });
+    }
     return apiClient.put(`/attendance-sessions/${id}`, data);
   },
 
   delete: async (id: string) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsDelete, { id });
+    }
     return apiClient.delete(`/attendance-sessions/${id}`);
   },
 
   markRecords: async (id: string, data: any) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsMarkRecords, { id, data });
+    }
     return apiClient.post(`/attendance-sessions/${id}/records`, data);
   },
 
   scan: async (id: string, data: any) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsScan, { id, data });
+    }
     return apiClient.post(`/attendance-sessions/${id}/scan`, data);
   },
 
   scanFeed: async (id: string, params?: { limit?: number }) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsScanFeed, { id, params });
+    }
     return apiClient.get(`/attendance-sessions/${id}/scans`, params);
   },
 
   roster: async (params: { class_id?: string; class_ids?: string[]; academic_year_id?: string; is_boarder?: boolean }) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsRoster, { params });
+    }
     return apiClient.get('/attendance-sessions/roster', params);
   },
   close: async (id: string) => {
+    if (shouldUseLocal()) {
+      return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsClose, { id });
+    }
     return apiClient.post(`/attendance-sessions/${id}/close`);
   },
   report: async (params?: {

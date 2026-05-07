@@ -1,12 +1,12 @@
-# Graph Report - nazim-web-1  (2026-05-05)
+# Graph Report - nazim-web-1  (2026-05-07)
 
 ## Corpus Check
-- 2255 files · ~3,469,803 words
+- 2282 files · ~4,084,153 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 11491 nodes · 24611 edges · 199 communities detected
-- Extraction: 48% EXTRACTED · 52% INFERRED · 0% AMBIGUOUS · INFERRED: 12901 edges (avg confidence: 0.8)
+- 11607 nodes · 25074 edges · 203 communities detected
+- Extraction: 47% EXTRACTED · 53% INFERRED · 0% AMBIGUOUS · INFERRED: 13249 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -57,14 +57,15 @@
 - [[_COMMUNITY_Community 44|Community 44]]
 - [[_COMMUNITY_Community 45|Community 45]]
 - [[_COMMUNITY_Community 46|Community 46]]
-- [[_COMMUNITY_Community 47|Community 47]]
 - [[_COMMUNITY_Community 48|Community 48]]
-- [[_COMMUNITY_Community 50|Community 50]]
+- [[_COMMUNITY_Community 49|Community 49]]
+- [[_COMMUNITY_Community 51|Community 51]]
 - [[_COMMUNITY_Community 52|Community 52]]
 - [[_COMMUNITY_Community 53|Community 53]]
 - [[_COMMUNITY_Community 54|Community 54]]
 - [[_COMMUNITY_Community 55|Community 55]]
 - [[_COMMUNITY_Community 56|Community 56]]
+- [[_COMMUNITY_Community 57|Community 57]]
 - [[_COMMUNITY_Community 58|Community 58]]
 - [[_COMMUNITY_Community 59|Community 59]]
 - [[_COMMUNITY_Community 60|Community 60]]
@@ -79,22 +80,22 @@
 - [[_COMMUNITY_Community 69|Community 69]]
 - [[_COMMUNITY_Community 70|Community 70]]
 - [[_COMMUNITY_Community 71|Community 71]]
-- [[_COMMUNITY_Community 72|Community 72]]
-- [[_COMMUNITY_Community 75|Community 75]]
+- [[_COMMUNITY_Community 76|Community 76]]
 - [[_COMMUNITY_Community 78|Community 78]]
+- [[_COMMUNITY_Community 79|Community 79]]
 - [[_COMMUNITY_Community 80|Community 80]]
 - [[_COMMUNITY_Community 81|Community 81]]
 - [[_COMMUNITY_Community 82|Community 82]]
 - [[_COMMUNITY_Community 83|Community 83]]
-- [[_COMMUNITY_Community 84|Community 84]]
 - [[_COMMUNITY_Community 85|Community 85]]
 - [[_COMMUNITY_Community 86|Community 86]]
 - [[_COMMUNITY_Community 87|Community 87]]
-- [[_COMMUNITY_Community 88|Community 88]]
+- [[_COMMUNITY_Community 93|Community 93]]
 - [[_COMMUNITY_Community 94|Community 94]]
 - [[_COMMUNITY_Community 95|Community 95]]
 - [[_COMMUNITY_Community 96|Community 96]]
 - [[_COMMUNITY_Community 97|Community 97]]
+- [[_COMMUNITY_Community 98|Community 98]]
 - [[_COMMUNITY_Community 99|Community 99]]
 - [[_COMMUNITY_Community 100|Community 100]]
 - [[_COMMUNITY_Community 101|Community 101]]
@@ -149,7 +150,7 @@
 - [[_COMMUNITY_Community 155|Community 155]]
 - [[_COMMUNITY_Community 157|Community 157]]
 - [[_COMMUNITY_Community 158|Community 158]]
-- [[_COMMUNITY_Community 164|Community 164]]
+- [[_COMMUNITY_Community 159|Community 159]]
 - [[_COMMUNITY_Community 165|Community 165]]
 - [[_COMMUNITY_Community 166|Community 166]]
 - [[_COMMUNITY_Community 167|Community 167]]
@@ -180,47 +181,50 @@
 - [[_COMMUNITY_Community 192|Community 192]]
 - [[_COMMUNITY_Community 193|Community 193]]
 - [[_COMMUNITY_Community 194|Community 194]]
-- [[_COMMUNITY_Community 203|Community 203]]
-- [[_COMMUNITY_Community 204|Community 204]]
+- [[_COMMUNITY_Community 195|Community 195]]
+- [[_COMMUNITY_Community 196|Community 196]]
 - [[_COMMUNITY_Community 205|Community 205]]
 - [[_COMMUNITY_Community 206|Community 206]]
 - [[_COMMUNITY_Community 207|Community 207]]
+- [[_COMMUNITY_Community 208|Community 208]]
 - [[_COMMUNITY_Community 209|Community 209]]
-- [[_COMMUNITY_Community 221|Community 221]]
-- [[_COMMUNITY_Community 224|Community 224]]
-- [[_COMMUNITY_Community 227|Community 227]]
-- [[_COMMUNITY_Community 228|Community 228]]
+- [[_COMMUNITY_Community 211|Community 211]]
+- [[_COMMUNITY_Community 223|Community 223]]
+- [[_COMMUNITY_Community 226|Community 226]]
 - [[_COMMUNITY_Community 229|Community 229]]
 - [[_COMMUNITY_Community 230|Community 230]]
+- [[_COMMUNITY_Community 231|Community 231]]
+- [[_COMMUNITY_Community 232|Community 232]]
+- [[_COMMUNITY_Community 267|Community 267]]
 - [[_COMMUNITY_Community 269|Community 269]]
-- [[_COMMUNITY_Community 272|Community 272]]
-- [[_COMMUNITY_Community 279|Community 279]]
-- [[_COMMUNITY_Community 290|Community 290]]
-- [[_COMMUNITY_Community 295|Community 295]]
-- [[_COMMUNITY_Community 296|Community 296]]
+- [[_COMMUNITY_Community 275|Community 275]]
+- [[_COMMUNITY_Community 277|Community 277]]
+- [[_COMMUNITY_Community 288|Community 288]]
+- [[_COMMUNITY_Community 293|Community 293]]
+- [[_COMMUNITY_Community 294|Community 294]]
+- [[_COMMUNITY_Community 302|Community 302]]
+- [[_COMMUNITY_Community 303|Community 303]]
 - [[_COMMUNITY_Community 304|Community 304]]
 - [[_COMMUNITY_Community 305|Community 305]]
-- [[_COMMUNITY_Community 306|Community 306]]
-- [[_COMMUNITY_Community 307|Community 307]]
+- [[_COMMUNITY_Community 382|Community 382]]
 - [[_COMMUNITY_Community 383|Community 383]]
 - [[_COMMUNITY_Community 384|Community 384]]
 - [[_COMMUNITY_Community 385|Community 385]]
-- [[_COMMUNITY_Community 386|Community 386]]
-- [[_COMMUNITY_Community 1053|Community 1053]]
-- [[_COMMUNITY_Community 1054|Community 1054]]
-- [[_COMMUNITY_Community 1055|Community 1055]]
+- [[_COMMUNITY_Community 1062|Community 1062]]
+- [[_COMMUNITY_Community 1063|Community 1063]]
+- [[_COMMUNITY_Community 1064|Community 1064]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `useAuth()` - 410 edges
 2. `useLanguage()` - 320 edges
 3. `error()` - 277 edges
 4. `String()` - 201 edges
-5. `info()` - 194 edges
-6. `t()` - 164 edges
-7. `SchoolBranding` - 133 edges
-8. `format()` - 103 edges
-9. `getOrgIdFromProfile()` - 86 edges
-10. `OrganizationSubscription` - 77 edges
+5. `uuid()` - 196 edges
+6. `info()` - 194 edges
+7. `t()` - 164 edges
+8. `SchoolBranding` - 133 edges
+9. `format()` - 103 edges
+10. `getOrgIdFromProfile()` - 86 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `getAssigneeName()` --calls--> `t()`  [INFERRED]
@@ -238,35 +242,35 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (176): down(), up(), down(), up(), up(), up(), AcademicYearController, ActivityLogController (+168 more)
+Nodes (192): up(), down(), up(), down(), up(), up(), up(), AcademicYearController (+184 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.0
-Nodes (484): AcademicYearSeeder, enrollmentLabel(), fetchImage(), getAdmissionSchema(), getEffectiveCapacity(), normalizeDateToISO(), onKeyDown(), onSubmit() (+476 more)
+Nodes (458): AcademicYearSeeder, enrollmentLabel(), fetchImage(), getAdmissionSchema(), getEffectiveCapacity(), normalizeDateToISO(), onKeyDown(), onSubmit() (+450 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.0
-Nodes (724): canAccessOrgAdminArea(), canAccessOrgAdminDashboard(), hasOrgAdminDashboardPermission(), hasOrgAdminEntryPermission(), hasOrgWideScope(), shouldDefaultToOrgAdminArea(), ProtectedPlatformLayout(), CalendarDatePicker() (+716 more)
+Nodes (724): canAccessOrgAdminArea(), canAccessOrgAdminDashboard(), hasOrgAdminDashboardPermission(), hasOrgAdminEntryPermission(), hasOrgWideScope(), shouldDefaultToOrgAdminArea(), CalendarDatePicker(), CalendarDateRangePicker() (+716 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.0
-Nodes (243): up(), up(), up(), up(), up(), up(), up(), up() (+235 more)
+Nodes (265): up(), up(), up(), up(), up(), up(), up(), up() (+257 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.0
-Nodes (68): AcademicYear, Activity, Asset, AssetCategory, AssetHistory, AttendanceRoundName, Building, CertificateTemplate (+60 more)
+Nodes (67): AcademicYear, Activity, Asset, AssetCategory, AssetHistory, AttendanceRoundName, Building, CertificateTemplate (+59 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.01
-Nodes (59): up(), up(), fixArticleSlugCollisions(), fixCategorySlugCollisions(), generateUniqueArticleSlug(), generateUniqueCategorySlug(), up(), up() (+51 more)
+Nodes (58): fixArticleSlugCollisions(), fixCategorySlugCollisions(), generateUniqueArticleSlug(), generateUniqueCategorySlug(), up(), up(), DiscountCode, DiscountCodeUsage (+50 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.02
-Nodes (75): AcademicYearFactory, AppServiceProvider, AttendanceRecord, AttendanceRecordFactory, AttendanceSession, AttendanceSessionFactory, AttendanceSystemTest, canAccessOrganization() (+67 more)
+Nodes (74): AcademicYearFactory, AppServiceProvider, AttendanceRecord, AttendanceRecordFactory, AttendanceSession, AttendanceSessionController, AttendanceSessionFactory, AttendanceSystemTest (+66 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.01
-Nodes (156): getStatusBadgeVariant(), getStatusLabel(), handleCloseDialog(), handleOpenDialog(), handleCreate(), handleUpdate(), openEditDialog(), handleCreate() (+148 more)
+Nodes (157): getStatusBadgeVariant(), getStatusLabel(), handleCloseDialog(), handleOpenDialog(), handleCreate(), handleUpdate(), openEditDialog(), handleCreate() (+149 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.02
@@ -274,15 +278,15 @@ Nodes (32): Donor, ExchangeRate, ExpenseEntry, FacilityDocument, FinanceAccount,
 
 ### Community 9 - "Community 9"
 Cohesion: 0.01
-Nodes (71): getAssigneeName(), openCreate(), openEdit(), openCreate(), openEdit(), AttendanceSessionController, BrandingCacheService, BrandingLayout (+63 more)
+Nodes (44): applySessionDayAsFilter(), format(), formatAttendanceRound(), getErrorMessage(), getStatusOptions(), handleDatePreset(), handleResetFilters(), buildTotalsInsightsSearchParams() (+36 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.01
-Nodes (55): ActionRequiredMail, applySessionDayAsFilter(), format(), formatAttendanceRound(), getStatusOptions(), handleDatePreset(), handleResetFilters(), buildTotalsInsightsSearchParams() (+47 more)
+Nodes (69): getAssigneeName(), openCreate(), openEdit(), openCreate(), openEdit(), BrandingCacheService, BrandingLayout, BrandingNote (+61 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.02
-Nodes (53): ArchiveSearchController, BaseDmsController, Department, DepartmentsController, DocumentFile, DocumentFilePolicy, DocumentFilesController, DocumentNumberingService (+45 more)
+Nodes (50): ActionRequiredMail, ArchiveSearchController, BaseDmsController, DailyDigestMail, Department, DepartmentsController, DocumentFile, DocumentFilePolicy (+42 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.02
@@ -290,51 +294,51 @@ Nodes (21): FileMigrationService, FileStorageService, FileStorageServiceTest, Im
 
 ### Community 13 - "Community 13"
 Cohesion: 0.02
-Nodes (69): buildAttendanceReportParams(), resolveReportBranding(), uint8ToDataUrl(), BypassMaintenanceForRoutes, CalendarState, indexToLine(), isPlainObject(), main() (+61 more)
+Nodes (63): CalendarState, logApiCall(), logComponentError(), logPerformance(), logUserAction(), handleScanSubmit(), updateStudentSeatNumber(), updateStudentStatus() (+55 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.02
-Nodes (32): AuthController, ExamPaperGeneratorService, ExamPaperPdfService, ExamPaperTemplate, LandingContact, LandingController, LandingPlanRequest, LoginAttempt (+24 more)
+Nodes (40): getLang(), getStepContent(), clearDismissedTours(), dismissTour(), getDismissedTours(), isTourDismissed(), undismissTour(), ExamPaperGeneratorService (+32 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.02
-Nodes (82): mapAcademicYearDomainToInsert(), mapAcademicYearDomainToUpdate(), mapAssetApiToDomain(), mapAssetAssignmentApiToDomain(), mapAssetAssignmentDomainToInsert(), mapAssetAssignmentDomainToUpdate(), mapAssetCopyApiToDomain(), mapAssetDomainToInsert() (+74 more)
+Nodes (81): mapAcademicYearDomainToInsert(), mapAcademicYearDomainToUpdate(), mapAssetApiToDomain(), mapAssetAssignmentApiToDomain(), mapAssetAssignmentDomainToInsert(), mapAssetAssignmentDomainToUpdate(), mapAssetCopyApiToDomain(), mapAssetDomainToInsert() (+73 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.02
-Nodes (21): DefaultWebsitePagesSeeder, PublicWebsiteController, WebsiteAnnouncement, WebsiteAnnouncementController, WebsiteCourse, WebsiteCoursesController, WebsiteDonation, WebsiteDonationsController (+13 more)
+Nodes (19): DefaultWebsitePagesSeeder, PublicWebsiteController, WebsiteAnnouncement, WebsiteAnnouncementController, WebsiteCourse, WebsiteCoursesController, WebsiteDonation, WebsiteDonationsController (+11 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.03
-Nodes (10): CertificateNumberService, CodeGenerator, CourseStudentAdmissionService, DateConversionService, DesktopPrerequisite, DesktopRelease, DesktopReleaseController, OrganizationCounter (+2 more)
+Cohesion: 0.02
+Nodes (44): down(), up(), CourseStudent, CourseStudentDisciplineRecord, handleDownloadLicense(), handleFingerprintFileChange(), handleKeysFileChange(), handleLicenseFileChange() (+36 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.03
-Nodes (8): FeeAssignment, FeeAssignmentTest, FeePayment, LibraryLoan, StudentHistoryAuditLog, StudentHistoryService, StudentIdCard, SyncStudentIdCardClassFromAdmissionService
+Nodes (30): AuthController, ExamPaperTemplate, LandingContact, LandingController, LandingPlanRequest, LoginAttempt, LoginAttemptService, LoginAttemptServiceTest (+22 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.03
-Nodes (37): CourseStudent, CourseStudentDisciplineRecord, handleDownloadLicense(), handleFingerprintFileChange(), handleKeysFileChange(), handleLicenseFileChange(), handleLoadFingerprintFromFile(), handleLoadKeysFromFile() (+29 more)
+Nodes (10): CertificateNumberService, CodeGenerator, CourseStudentAdmissionService, DateConversionService, DesktopPrerequisite, DesktopRelease, DesktopReleaseController, OrganizationCounter (+2 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.03
-Nodes (26): getLang(), getStepContent(), ExamPaperItem, ExamPaperPreviewController, ExamPaperTemplateFile, getDirection(), getFontClass(), getTranslationsSync() (+18 more)
+Nodes (8): FeeAssignment, FeeAssignmentTest, FeePayment, LibraryLoan, StudentHistoryAuditLog, StudentHistoryService, StudentIdCard, SyncStudentIdCardClassFromAdmissionService
 
 ### Community 21 - "Community 21"
 Cohesion: 0.03
-Nodes (43): handleGetStarted(), handleRegister(), handleOpenHelpCenter(), clickElement(), elementExists(), findElement(), focusElement(), isElementVisible() (+35 more)
+Nodes (52): buildAttendanceReportParams(), resolveReportBranding(), uint8ToDataUrl(), indexToLine(), isPlainObject(), main(), readBaseline(), scanContent() (+44 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.04
-Nodes (10): OrganizationOrderForm, OrganizationOrderFormDocument, OrganizationOrderFormPayment, handleDownloadOrgDocument(), PlatformOrganizationOrderFormController, PlatformSalesInvoiceController, SalesInvoice, SalesInvoiceController (+2 more)
+Cohesion: 0.03
+Nodes (43): handleGetStarted(), handleRegister(), handleOpenHelpCenter(), clickElement(), elementExists(), findElement(), focusElement(), isElementVisible() (+35 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.04
-Nodes (31): mapExamApiToDomain(), mapExamAttendanceApiToDomain(), mapExamClassApiToDomain(), mapExamReportApiToDomain(), mapExamResultApiToDomain(), mapExamStudentApiToDomain(), mapExamSubjectApiToDomain(), mapExamTimeApiToDomain() (+23 more)
+Nodes (10): OrganizationOrderForm, OrganizationOrderFormDocument, OrganizationOrderFormPayment, handleDownloadOrgDocument(), PlatformOrganizationOrderFormController, PlatformSalesInvoiceController, SalesInvoice, SalesInvoiceController (+2 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.04
-Nodes (21): buildFiltersSummary(), getIncomingExportData(), getOutgoingExportData(), fetchAllArchiveDocumentsForExport(), async(), fetchAllAssignmentsForExport(), handleEdit(), fetchAllFilteredPaymentsForExport() (+13 more)
+Nodes (31): mapExamApiToDomain(), mapExamAttendanceApiToDomain(), mapExamClassApiToDomain(), mapExamReportApiToDomain(), mapExamResultApiToDomain(), mapExamStudentApiToDomain(), mapExamSubjectApiToDomain(), mapExamTimeApiToDomain() (+23 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.07
@@ -345,268 +349,272 @@ Cohesion: 0.06
 Nodes (8): NotificationController, NotificationDelivery, NotificationEvent, NotificationPreference, NotificationSeeder, NotificationService, SendNotificationDigestEmail, SendNotificationEmail
 
 ### Community 27 - "Community 27"
-Cohesion: 0.06
-Nodes (8): logApiCall(), logComponentError(), logPerformance(), logUserAction(), Logger, PerformanceMonitor, CSRFProtection, initializeSecurity()
-
-### Community 28 - "Community 28"
 Cohesion: 0.1
 Nodes (3): OrganizationSubscriptionObserver, SubscriptionEmailLog, SubscriptionNotificationService
 
+### Community 28 - "Community 28"
+Cohesion: 0.05
+Nodes (16): buildFiltersSummary(), getIncomingExportData(), getOutgoingExportData(), fetchAllArchiveDocumentsForExport(), fetchAllAssignmentsForExport(), fetchAllFinanceEntriesForExport(), fetchAllPaginatedRows(), fetchAllPhoneBookEntriesForExport() (+8 more)
+
 ### Community 29 - "Community 29"
-Cohesion: 0.14
-Nodes (1): OrganizationHrController
-
-### Community 30 - "Community 30"
-Cohesion: 0.07
-Nodes (17): deriveExpiryDateFromCreatedDate(), formatIdCardDateValue(), formatIdCardFontFamilyForCanvas(), formatIdCardFontFamilyToken(), normalizeIdCardText(), resolveFirstNonEmptyString(), resolveIdCardDefaultFontFamily(), resolveIdCardFieldValue() (+9 more)
-
-### Community 31 - "Community 31"
 Cohesion: 0.16
 Nodes (32): Academic Year Filter (DMS concept), Department / Routing (DMS concept), Document Numbering (DMS concept), Incoming Document (DMS concept), Letter Template (DMS concept), Letter Type (DMS concept), Letterhead / Watermark (DMS concept), Outgoing Document (DMS concept) (+24 more)
 
-### Community 32 - "Community 32"
-Cohesion: 0.11
-Nodes (3): DesktopLicense, LicenseKey, LicenseSigningService
-
-### Community 33 - "Community 33"
-Cohesion: 0.09
+### Community 30 - "Community 30"
+Cohesion: 0.1
 Nodes (6): PlatformWebsiteDomainController, ResolvePublicWebsiteSchool, WebsiteDomain, WebsiteDomainController, WebsiteSetting, WebsiteSettingsController
 
-### Community 34 - "Community 34"
+### Community 31 - "Community 31"
 Cohesion: 0.22
 Nodes (26): Assets Module (Arabic), Assets Assignments (Arabic), Asset Categories (Arabic), Assets Dashboard (Arabic), Asset Reports (Arabic), Assets Module (English), Asset Assignments (English), Asset Categories (English) (+18 more)
 
-### Community 35 - "Community 35"
+### Community 32 - "Community 32"
 Cohesion: 0.09
 Nodes (1): Exam
 
-### Community 36 - "Community 36"
+### Community 33 - "Community 33"
 Cohesion: 0.08
 Nodes (11): handleSubmit(), handleSubmit(), handleSubmit(), handleError(), handleSubmit(), handleFormSubmit(), handleSubmit(), handleFormSubmit() (+3 more)
 
-### Community 37 - "Community 37"
+### Community 34 - "Community 34"
 Cohesion: 0.1
 Nodes (1): ExamAttendance
 
-### Community 38 - "Community 38"
+### Community 35 - "Community 35"
 Cohesion: 0.09
 Nodes (8): compressImage(), getImagePreview(), handleFileSelect(), handleUpload(), handleUploadAll(), canPreview(), isImageFile(), isPdfFile()
 
-### Community 39 - "Community 39"
+### Community 36 - "Community 36"
 Cohesion: 0.11
 Nodes (23): Attendance (Arabic), Attendance Reports (Arabic), Attendance Reports Totals (Arabic), Barcode Attendance Marking, Attendance (English), Mark Attendance (English), Attendance Reports (English), Attendance Totals Report (English) (+15 more)
 
-### Community 40 - "Community 40"
+### Community 37 - "Community 37"
 Cohesion: 0.16
 Nodes (11): mapAccountBalancesReportApiToDomain(), mapDonorApiToDomain(), mapExpenseCategoryApiToDomain(), mapExpenseEntryApiToDomain(), mapFinanceAccountApiToDomain(), mapFinanceDashboardApiToDomain(), mapFinanceProjectApiToDomain(), mapIncomeCategoryApiToDomain() (+3 more)
 
-### Community 41 - "Community 41"
+### Community 38 - "Community 38"
 Cohesion: 0.17
 Nodes (22): Academic Timetable Generation (English), Academic Timetable Generation (Farsi), Academic Timetable Generation (Pashto), Academic Years (English), Academic Years (Farsi), Academic Years (Pashto), Admin Users (Arabic), Admin Users (English) (+14 more)
 
-### Community 42 - "Community 42"
+### Community 39 - "Community 39"
+Cohesion: 0.11
+Nodes (1): EventGuest
+
+### Community 40 - "Community 40"
 Cohesion: 0.23
 Nodes (1): TranslationController
 
-### Community 43 - "Community 43"
-Cohesion: 0.14
-Nodes (2): OrganizationObserver, PermissionSeeder
-
-### Community 44 - "Community 44"
+### Community 41 - "Community 41"
 Cohesion: 0.16
 Nodes (12): downloadBlob(), OrganizationOrderFormPanel(), buildOrderFormQueryKey(), downloadBlob(), useCreatePlatformOrganizationOrderFormPayment(), useDeletePlatformOrganizationOrderFormDocument(), useDeletePlatformOrganizationOrderFormPayment(), useDownloadPlatformOrganizationOrderFormDocument() (+4 more)
 
-### Community 45 - "Community 45"
+### Community 42 - "Community 42"
 Cohesion: 0.14
 Nodes (2): Grade, GradeCalculator
 
-### Community 46 - "Community 46"
+### Community 43 - "Community 43"
+Cohesion: 0.16
+Nodes (7): shouldUseLocal(), getDefaultDbPath(), getSchemaPath(), migrate(), openDatabase(), resolveAppDataPath(), SyncStatusService
+
+### Community 44 - "Community 44"
 Cohesion: 0.28
 Nodes (14): mapAcademicYearApiToDomain(), mapAdmissionRecordApiToDomain(), mapAttendanceHistoryApiToDomain(), mapCourseHistoryApiToDomain(), mapExamHistoryApiToDomain(), mapFeeHistoryApiToDomain(), mapGraduationHistoryApiToDomain(), mapHistoryEventApiToDomain() (+6 more)
 
-### Community 47 - "Community 47"
+### Community 45 - "Community 45"
 Cohesion: 0.24
 Nodes (2): MaintenanceController, MaintenanceLog
 
-### Community 48 - "Community 48"
+### Community 46 - "Community 46"
 Cohesion: 0.19
 Nodes (5): mapFeeAssignmentApiToDomain(), mapFeeExceptionApiToDomain(), mapFeePaymentApiToDomain(), mapFeeStructureApiToDomain(), parseDate()
 
-### Community 50 - "Community 50"
+### Community 48 - "Community 48"
+Cohesion: 0.18
+Nodes (3): PublicFatwaController, WebsiteFatwaQuestion, WebsiteFatwaQuestionController
+
+### Community 49 - "Community 49"
 Cohesion: 0.21
 Nodes (6): addTextBlock(), addVariableBlock(), duplicateBlock(), generateId(), handleBlockMouseDown(), mmToPx()
 
-### Community 52 - "Community 52"
+### Community 51 - "Community 51"
 Cohesion: 0.17
 Nodes (2): matchesHostelRoomSearch(), normalizeSearchValue()
 
-### Community 53 - "Community 53"
-Cohesion: 0.15
-Nodes (2): handleEnrollFromMain(), StudentRow()
-
-### Community 54 - "Community 54"
+### Community 52 - "Community 52"
 Cohesion: 0.15
 Nodes (2): handleSubmitCreate(), handleSubmitEdit()
 
-### Community 55 - "Community 55"
+### Community 53 - "Community 53"
+Cohesion: 0.27
+Nodes (1): LicenseSigningService
+
+### Community 54 - "Community 54"
 Cohesion: 0.35
 Nodes (1): SubscriptionEndpointsTest
 
-### Community 56 - "Community 56"
+### Community 55 - "Community 55"
 Cohesion: 0.23
 Nodes (6): mapFacilityMaintenanceApiToDomain(), mapFacilityTypeApiToDomain(), mapOrgFacilityApiToDomain(), mapOrgFacilityDomainToInsert(), mapOrgFacilityDomainToUpdate(), parseDecimal()
 
-### Community 58 - "Community 58"
+### Community 56 - "Community 56"
+Cohesion: 0.2
+Nodes (3): formatFieldName(), formatValue(), parseProperties()
+
+### Community 57 - "Community 57"
 Cohesion: 0.26
 Nodes (12): Issued Certificate, Certificate Layout Editor, Certificates Module, Course Certificate Template, Graduation Certificate Template, Certificate Templates (Arabic), Certificates Issued (Arabic), Certificates Templates (Arabic) (+4 more)
 
-### Community 59 - "Community 59"
+### Community 58 - "Community 58"
 Cohesion: 0.3
 Nodes (12): Document Management System (DMS), DMS Archive (Arabic), DMS Dashboard (Arabic), DMS Departments (Arabic), DMS Incoming (Arabic), DMS Issue Letter (Arabic), DMS Letter Types (Arabic), DMS Letterheads (Arabic) (+4 more)
 
-### Community 60 - "Community 60"
+### Community 59 - "Community 59"
 Cohesion: 0.29
 Nodes (1): LogActivity
 
-### Community 61 - "Community 61"
+### Community 60 - "Community 60"
 Cohesion: 0.24
 Nodes (4): handleCloseDialog(), handleOpenDialog(), handleSave(), resetForm()
 
-### Community 62 - "Community 62"
+### Community 61 - "Community 61"
 Cohesion: 0.18
 Nodes (2): formatStaffName(), StaffPictureCell()
 
-### Community 63 - "Community 63"
+### Community 62 - "Community 62"
 Cohesion: 0.2
 Nodes (2): getStatusBadge(), handleReply()
 
-### Community 64 - "Community 64"
+### Community 63 - "Community 63"
 Cohesion: 0.27
 Nodes (6): RouteToursHandler(), useAvailableTours(), useTour(), useTourCompleted(), useTourState(), useRouteTours()
 
-### Community 65 - "Community 65"
+### Community 64 - "Community 64"
 Cohesion: 0.33
 Nodes (2): TimetableSolver, timeToMinutes()
 
-### Community 66 - "Community 66"
+### Community 65 - "Community 65"
 Cohesion: 0.29
 Nodes (8): mapStaffApiToDomain(), mapStaffDocumentDomainToInsert(), mapStaffDocumentDomainToUpdate(), mapStaffDomainToInsert(), mapStaffDomainToUpdate(), mapStaffTypeApiToDomain(), mapStaffTypeDomainToInsert(), mapStaffTypeDomainToUpdate()
 
-### Community 67 - "Community 67"
+### Community 66 - "Community 66"
 Cohesion: 0.27
 Nodes (6): mapTeacherPreferenceDomainToInsert(), mapTeacherPreferenceDomainToUpdate(), mapTimetableDomainToInsert(), mapTimetableDomainToUpdate(), mapTimetableEntryDomainToInsert(), mapTimetableEntryDomainToUpdate()
 
-### Community 68 - "Community 68"
+### Community 67 - "Community 67"
 Cohesion: 0.29
 Nodes (6): handleCreateExpense(), handleCreateIncome(), handleUpdateExpense(), handleUpdateIncome(), resetExpenseForm(), resetIncomeForm()
 
-### Community 69 - "Community 69"
+### Community 68 - "Community 68"
 Cohesion: 0.27
 Nodes (4): handleCloseDialog(), handleOpenDialog(), handleSave(), resetForm()
 
-### Community 70 - "Community 70"
+### Community 69 - "Community 69"
 Cohesion: 0.2
 Nodes (1): getCourseName()
 
-### Community 71 - "Community 71"
+### Community 70 - "Community 70"
 Cohesion: 0.2
 Nodes (1): getExamName()
 
-### Community 72 - "Community 72"
+### Community 71 - "Community 71"
 Cohesion: 0.22
 Nodes (2): handleFastEntry(), handleFastEntryKeyDown()
 
-### Community 75 - "Community 75"
-Cohesion: 0.39
-Nodes (7): canProfileReceivePermission(), canRoleReceivePermission(), canSchoolScopedAdminManageRole(), canSchoolScopedAdminManageUser(), filterRolesForSchoolScopedAdmin(), isSchoolAdminRestrictedPermissionName(), isSchoolScopedAdmin()
-
-### Community 78 - "Community 78"
+### Community 76 - "Community 76"
 Cohesion: 0.28
 Nodes (3): handleCreate(), handleUpdate(), resetForm()
 
-### Community 80 - "Community 80"
+### Community 78 - "Community 78"
 Cohesion: 0.22
 Nodes (1): saveSettings()
 
-### Community 81 - "Community 81"
+### Community 79 - "Community 79"
 Cohesion: 0.22
 Nodes (1): handleSubmit()
 
-### Community 82 - "Community 82"
+### Community 80 - "Community 80"
 Cohesion: 0.31
 Nodes (4): handleCloseDialog(), handleOpenDialog(), handleSave(), resetForm()
 
-### Community 83 - "Community 83"
+### Community 81 - "Community 81"
 Cohesion: 0.46
 Nodes (6): clearPermissionCache(), flattenPermissions(), seedGlobalPermissions(), seedOrganizationWebsitePermissionsAndRoles(), seedPublicWebsiteFeature(), up()
 
-### Community 84 - "Community 84"
+### Community 82 - "Community 82"
 Cohesion: 0.32
 Nodes (4): CalendarPreferenceSyncFromProfile(), useCalendarPreferenceSync(), useDateFormatter(), useDatePreference()
+
+### Community 83 - "Community 83"
+Cohesion: 0.29
+Nodes (2): handleUpload(), resetForm()
 
 ### Community 85 - "Community 85"
 Cohesion: 0.29
 Nodes (2): handleUpload(), resetForm()
 
 ### Community 86 - "Community 86"
-Cohesion: 0.29
-Nodes (2): handleUpload(), resetForm()
-
-### Community 87 - "Community 87"
 Cohesion: 0.43
 Nodes (5): mapOnlineAdmissionApiToDomain(), mapOnlineAdmissionDocumentApiToDomain(), mapOnlineAdmissionFieldApiToDomain(), mapOnlineAdmissionFieldValueApiToDomain(), toDate()
 
-### Community 88 - "Community 88"
+### Community 87 - "Community 87"
 Cohesion: 0.36
 Nodes (6): mapPermissionApiToDomain(), mapPermissionDomainToInsert(), mapPermissionDomainToUpdate(), mapRolePermissionApiToDomain(), mapRolePermissionDomainToInsert(), mapRolePermissionDomainToUpdate()
 
-### Community 94 - "Community 94"
+### Community 93 - "Community 93"
 Cohesion: 0.32
 Nodes (3): handleCreate(), handleUpdate(), resetForm()
 
-### Community 95 - "Community 95"
+### Community 94 - "Community 94"
 Cohesion: 0.43
 Nodes (6): getCodeStatus(), handleCopyCode(), handleDelete(), handleOpenCreate(), handleOpenEdit(), handleSubmit()
 
-### Community 96 - "Community 96"
+### Community 95 - "Community 95"
 Cohesion: 0.25
 Nodes (8): Dari Translation Manifest, Arabic Hardcoded English Values (2369 keys), Arabic Missing Translation Keys (214 total), Arabic Translation Report, English Hardcoded Translation Report (all languages), Farsi Translation Report, Pashto Translation Report, Translation Key Count Summary
+
+### Community 96 - "Community 96"
+Cohesion: 0.48
+Nodes (1): OfflineSyncController
 
 ### Community 97 - "Community 97"
 Cohesion: 0.43
 Nodes (5): HostAwareRoot(), isPublicPath(), getMainAppLoginUrl(), getMainAppUrl(), isPublicWebsiteHost()
 
-### Community 99 - "Community 99"
+### Community 98 - "Community 98"
 Cohesion: 0.38
 Nodes (4): mapClassAcademicYearApiToDomain(), mapClassApiToDomain(), mapClassDomainToInsert(), mapClassDomainToUpdate()
 
-### Community 100 - "Community 100"
+### Community 99 - "Community 99"
 Cohesion: 0.43
 Nodes (4): asJsonArray(), mapHostelOverviewApiToDomain(), mapHostelRoomApiToDomain(), mapHostelSummaryApiToDomain()
 
-### Community 101 - "Community 101"
+### Community 100 - "Community 100"
 Cohesion: 0.38
 Nodes (3): handleCreate(), handleUpdate(), resetForm()
 
-### Community 102 - "Community 102"
+### Community 101 - "Community 101"
 Cohesion: 0.53
 Nodes (1): WebsiteAuditLogController
 
-### Community 103 - "Community 103"
+### Community 102 - "Community 102"
 Cohesion: 0.33
 Nodes (1): AssignIdCardRequest
 
-### Community 104 - "Community 104"
+### Community 103 - "Community 103"
 Cohesion: 0.33
 Nodes (1): StoreTeacherSubjectAssignmentRequest
 
-### Community 105 - "Community 105"
+### Community 104 - "Community 104"
 Cohesion: 0.33
 Nodes (1): UpdateStudentIdCardRequest
 
-### Community 106 - "Community 106"
+### Community 105 - "Community 105"
 Cohesion: 0.33
 Nodes (1): Profile
+
+### Community 106 - "Community 106"
+Cohesion: 0.33
+Nodes (2): isInvokableChannel(), invoke()
 
 ### Community 107 - "Community 107"
 Cohesion: 0.47
@@ -785,309 +793,323 @@ Cohesion: 0.4
 Nodes (1): ExampleTest
 
 ### Community 157 - "Community 157"
+Cohesion: 0.7
+Nodes (4): getPdfMakeInstance(), loadPdfMake(), loadPdfMakeArabic(), preloadPdfMake()
+
+### Community 158 - "Community 158"
 Cohesion: 0.8
 Nodes (4): extractPagination(), extractReport(), fetchAllClassSubjectMarkSheetRows(), isObject()
 
-### Community 158 - "Community 158"
+### Community 159 - "Community 159"
 Cohesion: 0.5
 Nodes (2): mapPaginatedResponseToDomain(), mapPaginationApiToDomain()
 
-### Community 164 - "Community 164"
+### Community 165 - "Community 165"
 Cohesion: 0.6
 Nodes (3): escapeHtml(), renderContent(), renderNode()
 
-### Community 165 - "Community 165"
+### Community 166 - "Community 166"
 Cohesion: 0.5
 Nodes (1): BulkAssignSectionsRequest
 
-### Community 166 - "Community 166"
-Cohesion: 0.5
-Nodes (1): CopyClassesRequest
-
 ### Community 167 - "Community 167"
 Cohesion: 0.5
-Nodes (1): CopyToMainRequest
+Nodes (1): BulkSyncAttendanceRequest
 
 ### Community 168 - "Community 168"
 Cohesion: 0.5
-Nodes (1): EnrollFromMainRequest
+Nodes (1): CopyClassesRequest
 
 ### Community 169 - "Community 169"
 Cohesion: 0.5
-Nodes (1): MarkAttendanceRecordsRequest
+Nodes (1): CopyToMainRequest
 
 ### Community 170 - "Community 170"
 Cohesion: 0.5
-Nodes (1): StoreAssetAssignmentRequest
+Nodes (1): EnrollFromMainRequest
 
 ### Community 171 - "Community 171"
 Cohesion: 0.5
-Nodes (1): StoreAssetMaintenanceRequest
+Nodes (1): MarkAttendanceRecordsRequest
 
 ### Community 172 - "Community 172"
 Cohesion: 0.5
-Nodes (1): StoreLeaveRequest
+Nodes (1): StoreAssetAssignmentRequest
 
 ### Community 173 - "Community 173"
 Cohesion: 0.5
-Nodes (1): StoreResidencyTypeRequest
+Nodes (1): StoreAssetMaintenanceRequest
 
 ### Community 174 - "Community 174"
 Cohesion: 0.5
-Nodes (1): StoreShortTermCourseRequest
+Nodes (1): StoreLeaveRequest
 
 ### Community 175 - "Community 175"
 Cohesion: 0.5
-Nodes (1): StoreTeacherTimetablePreferenceRequest
+Nodes (1): StoreResidencyTypeRequest
 
 ### Community 176 - "Community 176"
 Cohesion: 0.5
-Nodes (1): StoreTimetableEntryRequest
+Nodes (1): StoreShortTermCourseRequest
 
 ### Community 177 - "Community 177"
 Cohesion: 0.5
-Nodes (1): UpdateAssetAssignmentRequest
+Nodes (1): StoreTeacherTimetablePreferenceRequest
 
 ### Community 178 - "Community 178"
 Cohesion: 0.5
-Nodes (1): UpdateAssetMaintenanceRequest
+Nodes (1): StoreTimetableEntryRequest
 
 ### Community 179 - "Community 179"
 Cohesion: 0.5
-Nodes (1): UpdateLeaveRequest
+Nodes (1): UpdateAssetAssignmentRequest
 
 ### Community 180 - "Community 180"
 Cohesion: 0.5
-Nodes (1): UpdateResidencyTypeRequest
+Nodes (1): UpdateAssetMaintenanceRequest
 
 ### Community 181 - "Community 181"
 Cohesion: 0.5
-Nodes (1): UpdateShortTermCourseRequest
+Nodes (1): UpdateLeaveRequest
 
 ### Community 182 - "Community 182"
 Cohesion: 0.5
-Nodes (1): UpdateTeacherTimetablePreferenceRequest
+Nodes (1): UpdateResidencyTypeRequest
 
 ### Community 183 - "Community 183"
 Cohesion: 0.5
-Nodes (1): FeeAssignmentStoreRequest
+Nodes (1): UpdateShortTermCourseRequest
 
 ### Community 184 - "Community 184"
 Cohesion: 0.5
-Nodes (1): FeeAssignmentUpdateRequest
+Nodes (1): UpdateTeacherTimetablePreferenceRequest
 
 ### Community 185 - "Community 185"
 Cohesion: 0.5
-Nodes (1): FeeExceptionStoreRequest
+Nodes (1): FeeAssignmentStoreRequest
 
 ### Community 186 - "Community 186"
 Cohesion: 0.5
-Nodes (1): FeeExceptionUpdateRequest
+Nodes (1): FeeAssignmentUpdateRequest
 
 ### Community 187 - "Community 187"
 Cohesion: 0.5
-Nodes (1): FeePaymentStoreRequest
+Nodes (1): FeeExceptionStoreRequest
 
 ### Community 188 - "Community 188"
 Cohesion: 0.5
-Nodes (1): FeeStructureStoreRequest
+Nodes (1): FeeExceptionUpdateRequest
 
 ### Community 189 - "Community 189"
 Cohesion: 0.5
-Nodes (1): FeeStructureUpdateRequest
+Nodes (1): FeePaymentStoreRequest
 
 ### Community 190 - "Community 190"
 Cohesion: 0.5
-Nodes (1): CommitStudentImportFileRequest
+Nodes (1): FeeStructureStoreRequest
 
 ### Community 191 - "Community 191"
 Cohesion: 0.5
-Nodes (1): ReportServiceProvider
+Nodes (1): FeeStructureUpdateRequest
 
 ### Community 192 - "Community 192"
 Cohesion: 0.5
-Nodes (1): TelescopeServiceProvider
+Nodes (1): CommitStudentImportFileRequest
 
 ### Community 193 - "Community 193"
 Cohesion: 0.5
-Nodes (1): UserFactory
+Nodes (1): ReportServiceProvider
 
 ### Community 194 - "Community 194"
+Cohesion: 0.5
+Nodes (1): TelescopeServiceProvider
+
+### Community 195 - "Community 195"
+Cohesion: 0.5
+Nodes (1): UserFactory
+
+### Community 196 - "Community 196"
 Cohesion: 0.67
 Nodes (2): formatAssetPrice(), getAssetCurrencySymbol()
 
-### Community 203 - "Community 203"
+### Community 205 - "Community 205"
 Cohesion: 0.83
 Nodes (3): calculateGrade(), findGradeByPercentage(), getGradeName()
 
-### Community 204 - "Community 204"
+### Community 206 - "Community 206"
 Cohesion: 0.67
 Nodes (2): mapBuildingDomainToInsert(), mapBuildingDomainToUpdate()
 
-### Community 205 - "Community 205"
+### Community 207 - "Community 207"
 Cohesion: 0.67
 Nodes (2): mapExamPaperTemplateFileDomainToInsert(), mapExamPaperTemplateFileDomainToUpdate()
 
-### Community 206 - "Community 206"
+### Community 208 - "Community 208"
 Cohesion: 0.67
 Nodes (2): mapIdCardTemplateDomainToInsert(), mapIdCardTemplateDomainToUpdate()
 
-### Community 207 - "Community 207"
+### Community 209 - "Community 209"
 Cohesion: 0.67
 Nodes (2): mapOrganizationDomainToInsert(), mapOrganizationDomainToUpdate()
 
-### Community 209 - "Community 209"
+### Community 211 - "Community 211"
 Cohesion: 0.67
 Nodes (2): mapRoomDomainToInsert(), mapRoomDomainToUpdate()
 
-### Community 221 - "Community 221"
+### Community 223 - "Community 223"
 Cohesion: 0.83
 Nodes (3): handleClose(), handleSubmit(), resetForm()
 
-### Community 224 - "Community 224"
+### Community 226 - "Community 226"
 Cohesion: 0.67
 Nodes (2): handleApprove(), handleReject()
 
-### Community 227 - "Community 227"
+### Community 229 - "Community 229"
 Cohesion: 0.67
 Nodes (1): PlatformWebsiteConfigController
 
-### Community 228 - "Community 228"
+### Community 230 - "Community 230"
 Cohesion: 0.67
 Nodes (1): Authenticate
 
-### Community 229 - "Community 229"
+### Community 231 - "Community 231"
 Cohesion: 0.67
 Nodes (1): Permission
 
-### Community 230 - "Community 230"
+### Community 232 - "Community 232"
 Cohesion: 0.67
 Nodes (1): OrganizationFactory
+
+### Community 267 - "Community 267"
+Cohesion: 0.67
+Nodes (1): up()
 
 ### Community 269 - "Community 269"
 Cohesion: 0.67
 Nodes (1): up()
 
-### Community 272 - "Community 272"
-Cohesion: 0.67
-Nodes (1): up()
+### Community 275 - "Community 275"
+Cohesion: 1.0
+Nodes (2): createWindow(), getRendererIndexPath()
 
-### Community 279 - "Community 279"
+### Community 277 - "Community 277"
 Cohesion: 1.0
 Nodes (2): execCommand(), handleInput()
 
-### Community 290 - "Community 290"
+### Community 288 - "Community 288"
 Cohesion: 1.0
 Nodes (2): getProgressColor(), isSingleSchoolLimit()
 
-### Community 295 - "Community 295"
+### Community 293 - "Community 293"
 Cohesion: 1.0
 Nodes (2): createImage(), getCroppedImg()
 
-### Community 296 - "Community 296"
+### Community 294 - "Community 294"
 Cohesion: 1.0
 Nodes (2): computeRate(), mapAttendanceTotalsReportApiToDomain()
 
-### Community 304 - "Community 304"
+### Community 302 - "Community 302"
 Cohesion: 0.67
 Nodes (1): MockImage
 
-### Community 305 - "Community 305"
+### Community 303 - "Community 303"
 Cohesion: 0.67
 Nodes (3): mkcert Tool, OpenSSL Certificate Generation Option, Local HTTPS Certificates for Dev Server
 
-### Community 306 - "Community 306"
+### Community 304 - "Community 304"
 Cohesion: 0.67
 Nodes (3): Translation Management Best Practices, Translation Key Mapping Fixes, Translation Key Usage Guide
 
-### Community 307 - "Community 307"
+### Community 305 - "Community 305"
 Cohesion: 1.0
 Nodes (1): LoginLockout
 
-### Community 383 - "Community 383"
+### Community 382 - "Community 382"
 Cohesion: 1.0
 Nodes (2): Attendance Scan Stress Test (1000 scans), E2E Playwright Stress Tests
 
-### Community 384 - "Community 384"
+### Community 383 - "Community 383"
 Cohesion: 1.0
 Nodes (2): Nazim Brand Identity (Dark Blue + Gold), Nazim Features Landing Page (Pashto RTL)
 
-### Community 385 - "Community 385"
+### Community 384 - "Community 384"
 Cohesion: 1.0
 Nodes (2): Admin Users (Pashto), Admin Users
 
-### Community 386 - "Community 386"
+### Community 385 - "Community 385"
 Cohesion: 1.0
 Nodes (2): Attendance Marking (Arabic), Attendance Marking
 
-### Community 1053 - "Community 1053"
+### Community 1062 - "Community 1062"
 Cohesion: 1.0
 Nodes (1): Translation Duplicate Keys Report
 
-### Community 1054 - "Community 1054"
+### Community 1063 - "Community 1063"
 Cohesion: 1.0
 Nodes (1): Robots.txt (SEO Crawlers Allowed)
 
-### Community 1055 - "Community 1055"
+### Community 1064 - "Community 1064"
 Cohesion: 1.0
 Nodes (1): StatsCard Component Usage Guide
 
 ## Knowledge Gaps
 - **65 isolated node(s):** `LoginLockout`, `Translation Duplicate Keys Report`, `mkcert Tool`, `OpenSSL Certificate Generation Option`, `E2E Playwright Stress Tests` (+60 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 29`** (38 nodes): `OrganizationHrController.php`, `OrganizationHrController`, `.analyticsOverview()`, `.assignmentsIndex()`, `.calculateBaseAmount()`, `.calculateCoverageDaysForPeriod()`, `.calculatePayrollRun()`, `.clampPerPage()`, `.compensationIndex()`, `.createAssignment()`, `.createCompensationProfile()`, `.createPayrollPeriod()`, `.createPayrollRun()`, `.dateRangesOverlap()`, `.deleteAssignment()`, `.deleteCompensationProfile()`, `.ensurePermission()`, `.ensureSchoolBelongsToOrganization()`, `.ensureStaffBelongsToOrganization()`, `.finalizePayrollRun()`, `.getCompensationProfileRecord()`, `.getOrgContext()`, `.getPayrollPeriodRecord()`, `.getPayrollRunRecord()`, `.getPayrollRunSummary()`, `.intervalDaysInclusive()`, `.markPayrollRunPaid()`, `.overlapRange()`, `.payrollPeriods()`, `.payrollRuns()`, `.payrollRunShow()`, `.staffAssignments()`, `.staffIndex()`, `.staffShow()`, `.sumCoveredDays()`, `.updateAssignment()`, `.updateCompensationProfile()`, `.validateCompensationProfileOverlap()`
+- **Thin community `Community 32`** (25 nodes): `Exam.php`, `Exam`, `.academicYear()`, `.boot()`, `.canBeModified()`, `.canEnterMarks()`, `.examAttendances()`, `.examClasses()`, `.examResults()`, `.examStudents()`, `.examSubjects()`, `.examTimes()`, `.examType()`, `.getStatusTransitionRules()`, `.hasAttendance()`, `.hasResults()`, `.hasTimetable()`, `.organization()`, `.school()`, `.scopeArchived()`, `.scopeCompleted()`, `.scopeDraft()`, `.scopeInProgress()`, `.scopeScheduled()`, `.scopeWithStatus()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 35`** (25 nodes): `Exam.php`, `Exam`, `.academicYear()`, `.boot()`, `.canBeModified()`, `.canEnterMarks()`, `.examAttendances()`, `.examClasses()`, `.examResults()`, `.examStudents()`, `.examSubjects()`, `.examTimes()`, `.examType()`, `.getStatusTransitionRules()`, `.hasAttendance()`, `.hasResults()`, `.hasTimetable()`, `.organization()`, `.school()`, `.scopeArchived()`, `.scopeCompleted()`, `.scopeDraft()`, `.scopeInProgress()`, `.scopeScheduled()`, `.scopeWithStatus()`
+- **Thin community `Community 34`** (24 nodes): `ExamAttendance.php`, `ExamAttendance`, `.boot()`, `.canBeModified()`, `.exam()`, `.examClass()`, `.examSubject()`, `.examTime()`, `.isAbsent()`, `.isExcused()`, `.isLate()`, `.isPresent()`, `.organization()`, `.scopeAbsent()`, `.scopeExcused()`, `.scopeForExam()`, `.scopeForExamClass()`, `.scopeForExamTime()`, `.scopeForOrganization()`, `.scopeLate()`, `.scopePresent()`, `.scopeWithStatus()`, `.student()`, `.validateAttendanceData()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 37`** (24 nodes): `ExamAttendance.php`, `ExamAttendance`, `.boot()`, `.canBeModified()`, `.exam()`, `.examClass()`, `.examSubject()`, `.examTime()`, `.isAbsent()`, `.isExcused()`, `.isLate()`, `.isPresent()`, `.organization()`, `.scopeAbsent()`, `.scopeExcused()`, `.scopeForExam()`, `.scopeForExamClass()`, `.scopeForExamTime()`, `.scopeForOrganization()`, `.scopeLate()`, `.scopePresent()`, `.scopeWithStatus()`, `.student()`, `.validateAttendanceData()`
+- **Thin community `Community 39`** (19 nodes): `EventGuest.php`, `EventGuest`, `.boot()`, `.canCheckIn()`, `.checkins()`, `.event()`, `.fieldValues()`, `.generateGuestCode()`, `.generateQrToken()`, `.getPhotoUrlAttribute()`, `.getRemainingInvitesAttribute()`, `.organization()`, `.school()`, `.scopeByStatus()`, `.scopeByType()`, `.scopeForEvent()`, `.scopeForOrganization()`, `.scopeForSchool()`, `.scopeSearch()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 42`** (18 nodes): `TranslationController.php`, `TranslationController`, `.arrayToTypeScript()`, `.extractTsObjectFromFile()`, `.formatKey()`, `.formatObject()`, `.formatValue()`, `.index()`, `.isAssociativeArray()`, `.isIdentifierPart()`, `.isIdentifierStart()`, `.needsQuotedKey()`, `.normalizeFileContent()`, `.setNestedValue()`, `.storeChanges()`, `.trackFileChange()`, `.tsObjectToJson()`, `.updateTranslationFile()`
+- **Thin community `Community 40`** (18 nodes): `TranslationController.php`, `TranslationController`, `.arrayToTypeScript()`, `.extractTsObjectFromFile()`, `.formatKey()`, `.formatObject()`, `.formatValue()`, `.index()`, `.isAssociativeArray()`, `.isIdentifierPart()`, `.isIdentifierStart()`, `.needsQuotedKey()`, `.normalizeFileContent()`, `.setNestedValue()`, `.storeChanges()`, `.trackFileChange()`, `.tsObjectToJson()`, `.updateTranslationFile()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 43`** (18 nodes): `OrganizationObserver.php`, `PermissionSeeder.php`, `OrganizationObserver`, `.assignRolePermissions()`, `.created()`, `.createDefaultRoles()`, `.createOrganizationPermissions()`, `.getDefaultRoleDefinitions()`, `PermissionSeeder`, `.countPermissionsForRole()`, `.getAllPermissionNames()`, `.getExcludedAdminPermissions()`, `.getOrganizationAdminPermissions()`, `.getPermissions()`, `.getRolePermissions()`, `.getSchoolAdminPermissions()`, `.getSchoolAdminRestrictedPermissions()`, `.getSuperAdminOnlyPermissions()`
+- **Thin community `Community 42`** (17 nodes): `GradeCalculator.php`, `Grade.php`, `Grade`, `.boot()`, `.getName()`, `.organization()`, `.scopeFailing()`, `.scopeForOrganization()`, `.scopeOrdered()`, `.scopePassing()`, `GradeCalculator`, `.calculateGrade()`, `.calculatePercentage()`, `.getGradeDetails()`, `.getGradeName()`, `.getGrades()`, `.isPass()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 45`** (17 nodes): `GradeCalculator.php`, `Grade.php`, `Grade`, `.boot()`, `.getName()`, `.organization()`, `.scopeFailing()`, `.scopeForOrganization()`, `.scopeOrdered()`, `.scopePassing()`, `GradeCalculator`, `.calculateGrade()`, `.calculatePercentage()`, `.getGradeDetails()`, `.getGradeName()`, `.getGrades()`, `.isPass()`
+- **Thin community `Community 45`** (14 nodes): `MaintenanceController.php`, `MaintenanceLog.php`, `MaintenanceController`, `.checkSubscriptionAdminPermission()`, `.disable()`, `.enable()`, `.enforceSubscriptionAdmin()`, `.getPublicStatus()`, `.getStatus()`, `.history()`, `MaintenanceLog`, `.boot()`, `.endedBy()`, `.startedBy()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 47`** (14 nodes): `MaintenanceController.php`, `MaintenanceLog.php`, `MaintenanceController`, `.checkSubscriptionAdminPermission()`, `.disable()`, `.enable()`, `.enforceSubscriptionAdmin()`, `.getPublicStatus()`, `.getStatus()`, `.history()`, `MaintenanceLog`, `.boot()`, `.endedBy()`, `.startedBy()`
+- **Thin community `Community 51`** (13 nodes): `hostelManagementView.ts`, `boarderSearchValues()`, `filterAssignedBoarders()`, `filterHostelRooms()`, `filterUnassignedBoarders()`, `flattenAssignedBoarders()`, `getHostelRoomStatus()`, `matchesAcademicYear()`, `matchesClass()`, `matchesHostelRoomSearch()`, `normalizeSearchValue()`, `occupantSearchValues()`, `summarizeHostelRooms()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 52`** (13 nodes): `hostelManagementView.ts`, `boarderSearchValues()`, `filterAssignedBoarders()`, `filterHostelRooms()`, `filterUnassignedBoarders()`, `flattenAssignedBoarders()`, `getHostelRoomStatus()`, `matchesAcademicYear()`, `matchesClass()`, `matchesHostelRoomSearch()`, `normalizeSearchValue()`, `occupantSearchValues()`, `summarizeHostelRooms()`
+- **Thin community `Community 52`** (13 nodes): `PlatformPermissionGroupsManagement.tsx`, `handleConfirmDelete()`, `handleCreate()`, `handleDelete()`, `handleEdit()`, `handleSubmitCreate()`, `handleSubmitEdit()`, `isResourceFullySelected()`, `isResourcePartiallySelected()`, `toggleAllResources()`, `togglePermission()`, `toggleResource()`, `toggleResourcePermissions()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 53`** (13 nodes): `handleCopyClick()`, `handleCopyConfirm()`, `handleCreate()`, `handleDeleteClick()`, `handleDeleteConfirm()`, `handleEdit()`, `handleEnrollFromMain()`, `handleIssueCertificate()`, `handleMarkCompleted()`, `handleMarkDropped()`, `handleViewDetails()`, `StudentRow()`, `CourseStudents.tsx`
+- **Thin community `Community 53`** (12 nodes): `LicenseSigningService.php`, `LicenseSigningService`, `.canonicalJson()`, `.decodePayload()`, `.generateKeyPair()`, `.isSodiumAvailable()`, `.seedToSecretKey()`, `.signLicense()`, `.sortKeysRecursive()`, `.validateFingerprint()`, `.verifyCompleteLicense()`, `.verifyLicense()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 54`** (13 nodes): `PlatformPermissionGroupsManagement.tsx`, `handleConfirmDelete()`, `handleCreate()`, `handleDelete()`, `handleEdit()`, `handleSubmitCreate()`, `handleSubmitEdit()`, `isResourceFullySelected()`, `isResourcePartiallySelected()`, `toggleAllResources()`, `togglePermission()`, `toggleResource()`, `toggleResourcePermissions()`
+- **Thin community `Community 54`** (12 nodes): `SubscriptionEndpointsTest.php`, `SubscriptionEndpointsTest`, `.createActiveSubscription()`, `.createOrg()`, `.createPlan()`, `.createUserWithoutOrganization()`, `.createUserWithProfile()`, `.grantOrgPermission()`, `.test_status_lite_is_accessible_for_authenticated_user_without_subscription_read_permission()`, `.test_status_lite_requires_organization_context()`, `.test_status_lite_returns_none_when_no_active_subscription()`, `.test_status_usage_and_features_require_subscription_read_permission()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 55`** (12 nodes): `SubscriptionEndpointsTest.php`, `SubscriptionEndpointsTest`, `.createActiveSubscription()`, `.createOrg()`, `.createPlan()`, `.createUserWithoutOrganization()`, `.createUserWithProfile()`, `.grantOrgPermission()`, `.test_status_lite_is_accessible_for_authenticated_user_without_subscription_read_permission()`, `.test_status_lite_requires_organization_context()`, `.test_status_lite_returns_none_when_no_active_subscription()`, `.test_status_usage_and_features_require_subscription_read_permission()`
+- **Thin community `Community 59`** (11 nodes): `.updateStatusCode()`, `LogActivity.php`, `LogActivity`, `.__construct()`, `.extractAction()`, `.extractEntityId()`, `.extractEntityType()`, `.getDescription()`, `.getLogName()`, `.getProperties()`, `.handle()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 60`** (11 nodes): `.updateStatusCode()`, `LogActivity.php`, `LogActivity`, `.__construct()`, `.extractAction()`, `.extractEntityId()`, `.extractEntityType()`, `.getDescription()`, `.getLogName()`, `.getProperties()`, `.handle()`
+- **Thin community `Community 61`** (11 nodes): `OrganizationHrPayrollPage.tsx`, `StaffList.tsx`, `formatDate()`, `formatRunName()`, `formatStaffName()`, `handleCompSubmit()`, `handlePeriodSubmit()`, `handleRunSubmit()`, `openCreateCompDialog()`, `runStatusVariant()`, `StaffPictureCell()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 62`** (11 nodes): `OrganizationHrPayrollPage.tsx`, `StaffList.tsx`, `formatDate()`, `formatRunName()`, `formatStaffName()`, `handleCompSubmit()`, `handlePeriodSubmit()`, `handleRunSubmit()`, `openCreateCompDialog()`, `runStatusVariant()`, `StaffPictureCell()`
+- **Thin community `Community 62`** (11 nodes): `getStatusBadge()`, `getUrgencyBadge()`, `handleDelete()`, `handleReply()`, `handleSendReply()`, `handleStatusChange()`, `handleView()`, `handleViewMessage()`, `onSubmitReply()`, `ContactMessagesManagement.tsx`, `ContactMessagesManagement.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 63`** (11 nodes): `getStatusBadge()`, `getUrgencyBadge()`, `handleDelete()`, `handleReply()`, `handleSendReply()`, `handleStatusChange()`, `handleView()`, `handleViewMessage()`, `onSubmitReply()`, `ContactMessagesManagement.tsx`, `ContactMessagesManagement.tsx`
+- **Thin community `Community 64`** (10 nodes): `timetableSolver.ts`, `TimetableSolver`, `.backtrack()`, `.canPlace()`, `.constructor()`, `.generateCandidatePlacements()`, `.place()`, `.solve()`, `.unplace()`, `timeToMinutes()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 65`** (10 nodes): `timetableSolver.ts`, `TimetableSolver`, `.backtrack()`, `.canPlace()`, `.constructor()`, `.generateCandidatePlacements()`, `.place()`, `.solve()`, `.unplace()`, `timeToMinutes()`
+- **Thin community `Community 69`** (10 nodes): `formatFileSize()`, `getCourseName()`, `getFileIcon()`, `handleCloseDialog()`, `handleCourseSelect()`, `handleDelete()`, `handleDownload()`, `handleOpenDialog()`, `handleUploadClick()`, `CourseDocuments.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 70`** (10 nodes): `formatFileSize()`, `getCourseName()`, `getFileIcon()`, `handleCloseDialog()`, `handleCourseSelect()`, `handleDelete()`, `handleDownload()`, `handleOpenDialog()`, `handleUploadClick()`, `CourseDocuments.tsx`
+- **Thin community `Community 70`** (10 nodes): `formatFileSize()`, `getExamName()`, `getFileIcon()`, `handleCloseDialog()`, `handleDelete()`, `handleDownload()`, `handleExamSelect()`, `handleOpenDialog()`, `handleUploadClick()`, `ExamDocuments.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 71`** (10 nodes): `formatFileSize()`, `getExamName()`, `getFileIcon()`, `handleCloseDialog()`, `handleDelete()`, `handleDownload()`, `handleExamSelect()`, `handleOpenDialog()`, `handleUploadClick()`, `ExamDocuments.tsx`
+- **Thin community `Community 71`** (10 nodes): `handleBulkSave()`, `handleFastEntry()`, `handleFastEntryKeyDown()`, `handleKeyDown()`, `handleMarksChange()`, `handlePresentChange()`, `handleRemarksChange()`, `handleSort()`, `SortButton()`, `ExamMarks.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 72`** (10 nodes): `handleBulkSave()`, `handleFastEntry()`, `handleFastEntryKeyDown()`, `handleKeyDown()`, `handleMarksChange()`, `handlePresentChange()`, `handleRemarksChange()`, `handleSort()`, `SortButton()`, `ExamMarks.tsx`
+- **Thin community `Community 78`** (9 nodes): `IdCardExport.tsx`, `ExportIdCardStudentAvatar()`, `handleConfirmMarkSelectedPrinted()`, `handleExportAll()`, `handleExportSelected()`, `saveSettings()`, `selectAllCards()`, `selectByStatus()`, `toggleCardSelection()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 80`** (9 nodes): `IdCardExport.tsx`, `ExportIdCardStudentAvatar()`, `handleConfirmMarkSelectedPrinted()`, `handleExportAll()`, `handleExportSelected()`, `saveSettings()`, `selectAllCards()`, `selectByStatus()`, `toggleCardSelection()`
+- **Thin community `Community 79`** (9 nodes): `getActiveBadge()`, `getExceptionTypeBadge()`, `handleCloseDialog()`, `handleDelete()`, `handleEdit()`, `handleOpenDialog()`, `handleSubmit()`, `handleView()`, `FeeExceptionsPage.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 81`** (9 nodes): `getActiveBadge()`, `getExceptionTypeBadge()`, `handleCloseDialog()`, `handleDelete()`, `handleEdit()`, `handleOpenDialog()`, `handleSubmit()`, `handleView()`, `FeeExceptionsPage.tsx`
+- **Thin community `Community 83`** (8 nodes): `formatFileSize()`, `getFileIcon()`, `handleDelete()`, `handleDownload()`, `handleFileChange()`, `handleUpload()`, `resetForm()`, `ExamDocumentsDialog.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 85`** (8 nodes): `formatFileSize()`, `getFileIcon()`, `handleDelete()`, `handleDownload()`, `handleFileChange()`, `handleUpload()`, `resetForm()`, `ExamDocumentsDialog.tsx`
+- **Thin community `Community 85`** (8 nodes): `formatFileSize()`, `getFileIcon()`, `handleDelete()`, `handleDownload()`, `handleFileChange()`, `handleUpload()`, `resetForm()`, `CourseDocumentsDialog.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 86`** (8 nodes): `formatFileSize()`, `getFileIcon()`, `handleDelete()`, `handleDownload()`, `handleFileChange()`, `handleUpload()`, `resetForm()`, `CourseDocumentsDialog.tsx`
+- **Thin community `Community 96`** (7 nodes): `OfflineSyncController.php`, `OfflineSyncController`, `.encodeCursor()`, `.paginateEntity()`, `.parseCursor()`, `.snapshot()`, `.stripAlias()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 102`** (6 nodes): `WebsiteAuditLogController.php`, `WebsiteAuditLogController`, `.appendRowLogs()`, `.fetchSourceRows()`, `.index()`, `.sources()`
+- **Thin community `Community 101`** (6 nodes): `WebsiteAuditLogController.php`, `WebsiteAuditLogController`, `.appendRowLogs()`, `.fetchSourceRows()`, `.index()`, `.sources()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 103`** (6 nodes): `AssignIdCardRequest`, `.authorize()`, `.messages()`, `.prepareForValidation()`, `.rules()`, `AssignIdCardRequest.php`
+- **Thin community `Community 102`** (6 nodes): `AssignIdCardRequest`, `.authorize()`, `.messages()`, `.prepareForValidation()`, `.rules()`, `AssignIdCardRequest.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 104`** (6 nodes): `StoreTeacherSubjectAssignmentRequest.php`, `StoreTeacherSubjectAssignmentRequest`, `.authorize()`, `.prepareForValidation()`, `.rules()`, `.withValidator()`
+- **Thin community `Community 103`** (6 nodes): `StoreTeacherSubjectAssignmentRequest.php`, `StoreTeacherSubjectAssignmentRequest`, `.authorize()`, `.prepareForValidation()`, `.rules()`, `.withValidator()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 105`** (6 nodes): `UpdateStudentIdCardRequest.php`, `UpdateStudentIdCardRequest`, `.authorize()`, `.messages()`, `.prepareForValidation()`, `.rules()`
+- **Thin community `Community 104`** (6 nodes): `UpdateStudentIdCardRequest.php`, `UpdateStudentIdCardRequest`, `.authorize()`, `.messages()`, `.prepareForValidation()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 106`** (6 nodes): `Profile.php`, `Profile`, `.organization()`, `.scopeEventUsers()`, `.scopeForEvent()`, `.user()`
+- **Thin community `Community 105`** (6 nodes): `Profile.php`, `Profile`, `.organization()`, `.scopeEventUsers()`, `.scopeForEvent()`, `.user()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 106`** (6 nodes): `isInvokableChannel()`, `channels.ts`, `preload.ts`, `invoke()`, `mapSyncStatus()`, `refreshOfflineModeCache()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 120`** (6 nodes): `LandingOffersPage.tsx`, `formatCountdown()`, `getLandingMetadata()`, `handleOpenDialog()`, `handleSave()`, `handleToggleLanding()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -1159,128 +1181,132 @@ Nodes (1): StatsCard Component Usage Guide
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 155`** (5 nodes): `ExampleTest.php`, `ExampleTest.php`, `ExampleTest`, `.test_that_true_is_true()`, `.test_the_application_returns_a_successful_response()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 158`** (5 nodes): `mapActivityLogApiToDomain()`, `mapFiltersToApi()`, `mapPaginatedResponseToDomain()`, `mapPaginationApiToDomain()`, `activityLogMapper.ts`
+- **Thin community `Community 159`** (5 nodes): `mapActivityLogApiToDomain()`, `mapFiltersToApi()`, `mapPaginatedResponseToDomain()`, `mapPaginationApiToDomain()`, `activityLogMapper.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 165`** (4 nodes): `BulkAssignSectionsRequest.php`, `BulkAssignSectionsRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 166`** (4 nodes): `BulkAssignSectionsRequest.php`, `BulkAssignSectionsRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 166`** (4 nodes): `CopyClassesRequest.php`, `CopyClassesRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 167`** (4 nodes): `BulkSyncAttendanceRequest.php`, `BulkSyncAttendanceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 167`** (4 nodes): `CopyToMainRequest.php`, `CopyToMainRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 168`** (4 nodes): `CopyClassesRequest.php`, `CopyClassesRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 168`** (4 nodes): `EnrollFromMainRequest.php`, `EnrollFromMainRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 169`** (4 nodes): `CopyToMainRequest.php`, `CopyToMainRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 169`** (4 nodes): `MarkAttendanceRecordsRequest.php`, `MarkAttendanceRecordsRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 170`** (4 nodes): `EnrollFromMainRequest.php`, `EnrollFromMainRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 170`** (4 nodes): `StoreAssetAssignmentRequest.php`, `StoreAssetAssignmentRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 171`** (4 nodes): `MarkAttendanceRecordsRequest.php`, `MarkAttendanceRecordsRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 171`** (4 nodes): `StoreAssetMaintenanceRequest.php`, `StoreAssetMaintenanceRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 172`** (4 nodes): `StoreAssetAssignmentRequest.php`, `StoreAssetAssignmentRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 172`** (4 nodes): `StoreLeaveRequest.php`, `StoreLeaveRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 173`** (4 nodes): `StoreAssetMaintenanceRequest.php`, `StoreAssetMaintenanceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 173`** (4 nodes): `StoreResidencyTypeRequest.php`, `StoreResidencyTypeRequest`, `.authorize()`, `.prepareForValidation()`
+- **Thin community `Community 174`** (4 nodes): `StoreLeaveRequest.php`, `StoreLeaveRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 174`** (4 nodes): `StoreShortTermCourseRequest.php`, `StoreShortTermCourseRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 175`** (4 nodes): `StoreResidencyTypeRequest.php`, `StoreResidencyTypeRequest`, `.authorize()`, `.prepareForValidation()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 175`** (4 nodes): `StoreTeacherTimetablePreferenceRequest.php`, `StoreTeacherTimetablePreferenceRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 176`** (4 nodes): `StoreShortTermCourseRequest.php`, `StoreShortTermCourseRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 176`** (4 nodes): `StoreTimetableEntryRequest.php`, `StoreTimetableEntryRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 177`** (4 nodes): `StoreTeacherTimetablePreferenceRequest.php`, `StoreTeacherTimetablePreferenceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 177`** (4 nodes): `UpdateAssetAssignmentRequest.php`, `UpdateAssetAssignmentRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 178`** (4 nodes): `StoreTimetableEntryRequest.php`, `StoreTimetableEntryRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 178`** (4 nodes): `UpdateAssetMaintenanceRequest.php`, `UpdateAssetMaintenanceRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 179`** (4 nodes): `UpdateAssetAssignmentRequest.php`, `UpdateAssetAssignmentRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 179`** (4 nodes): `UpdateLeaveRequest.php`, `UpdateLeaveRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 180`** (4 nodes): `UpdateAssetMaintenanceRequest.php`, `UpdateAssetMaintenanceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 180`** (4 nodes): `UpdateResidencyTypeRequest.php`, `UpdateResidencyTypeRequest`, `.authorize()`, `.prepareForValidation()`
+- **Thin community `Community 181`** (4 nodes): `UpdateLeaveRequest.php`, `UpdateLeaveRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 181`** (4 nodes): `UpdateShortTermCourseRequest.php`, `UpdateShortTermCourseRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 182`** (4 nodes): `UpdateResidencyTypeRequest.php`, `UpdateResidencyTypeRequest`, `.authorize()`, `.prepareForValidation()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 182`** (4 nodes): `UpdateTeacherTimetablePreferenceRequest.php`, `UpdateTeacherTimetablePreferenceRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 183`** (4 nodes): `UpdateShortTermCourseRequest.php`, `UpdateShortTermCourseRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 183`** (4 nodes): `FeeAssignmentStoreRequest.php`, `FeeAssignmentStoreRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 184`** (4 nodes): `UpdateTeacherTimetablePreferenceRequest.php`, `UpdateTeacherTimetablePreferenceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 184`** (4 nodes): `FeeAssignmentUpdateRequest.php`, `FeeAssignmentUpdateRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 185`** (4 nodes): `FeeAssignmentStoreRequest.php`, `FeeAssignmentStoreRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 185`** (4 nodes): `FeeExceptionStoreRequest.php`, `FeeExceptionStoreRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 186`** (4 nodes): `FeeAssignmentUpdateRequest.php`, `FeeAssignmentUpdateRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 186`** (4 nodes): `FeeExceptionUpdateRequest.php`, `FeeExceptionUpdateRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 187`** (4 nodes): `FeeExceptionStoreRequest.php`, `FeeExceptionStoreRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 187`** (4 nodes): `FeePaymentStoreRequest.php`, `FeePaymentStoreRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 188`** (4 nodes): `FeeExceptionUpdateRequest.php`, `FeeExceptionUpdateRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 188`** (4 nodes): `FeeStructureStoreRequest.php`, `FeeStructureStoreRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 189`** (4 nodes): `FeePaymentStoreRequest.php`, `FeePaymentStoreRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 189`** (4 nodes): `FeeStructureUpdateRequest.php`, `FeeStructureUpdateRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 190`** (4 nodes): `FeeStructureStoreRequest.php`, `FeeStructureStoreRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 190`** (4 nodes): `CommitStudentImportFileRequest.php`, `CommitStudentImportFileRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 191`** (4 nodes): `FeeStructureUpdateRequest.php`, `FeeStructureUpdateRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 191`** (4 nodes): `ReportServiceProvider.php`, `ReportServiceProvider`, `.boot()`, `.register()`
+- **Thin community `Community 192`** (4 nodes): `CommitStudentImportFileRequest.php`, `CommitStudentImportFileRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 192`** (4 nodes): `TelescopeServiceProvider.php`, `TelescopeServiceProvider`, `.boot()`, `.register()`
+- **Thin community `Community 193`** (4 nodes): `ReportServiceProvider.php`, `ReportServiceProvider`, `.boot()`, `.register()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 193`** (4 nodes): `UserFactory.php`, `UserFactory`, `.definition()`, `.unverified()`
+- **Thin community `Community 194`** (4 nodes): `TelescopeServiceProvider.php`, `TelescopeServiceProvider`, `.boot()`, `.register()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 194`** (4 nodes): `formatAmountWithSymbol()`, `formatAssetPrice()`, `getAssetCurrencySymbol()`, `AssetReportsTab.tsx`
+- **Thin community `Community 195`** (4 nodes): `UserFactory.php`, `UserFactory`, `.definition()`, `.unverified()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 204`** (4 nodes): `mapBuildingApiToDomain()`, `mapBuildingDomainToInsert()`, `mapBuildingDomainToUpdate()`, `buildingMapper.ts`
+- **Thin community `Community 196`** (4 nodes): `formatAmountWithSymbol()`, `formatAssetPrice()`, `getAssetCurrencySymbol()`, `AssetReportsTab.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 205`** (4 nodes): `mapExamPaperTemplateFileApiToDomain()`, `mapExamPaperTemplateFileDomainToInsert()`, `mapExamPaperTemplateFileDomainToUpdate()`, `examPaperTemplateFileMapper.ts`
+- **Thin community `Community 206`** (4 nodes): `mapBuildingApiToDomain()`, `mapBuildingDomainToInsert()`, `mapBuildingDomainToUpdate()`, `buildingMapper.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 206`** (4 nodes): `idCardTemplateMapper.ts`, `mapIdCardTemplateApiToDomain()`, `mapIdCardTemplateDomainToInsert()`, `mapIdCardTemplateDomainToUpdate()`
+- **Thin community `Community 207`** (4 nodes): `mapExamPaperTemplateFileApiToDomain()`, `mapExamPaperTemplateFileDomainToInsert()`, `mapExamPaperTemplateFileDomainToUpdate()`, `examPaperTemplateFileMapper.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 207`** (4 nodes): `organizationMapper.ts`, `mapOrganizationApiToDomain()`, `mapOrganizationDomainToInsert()`, `mapOrganizationDomainToUpdate()`
+- **Thin community `Community 208`** (4 nodes): `idCardTemplateMapper.ts`, `mapIdCardTemplateApiToDomain()`, `mapIdCardTemplateDomainToInsert()`, `mapIdCardTemplateDomainToUpdate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 209`** (4 nodes): `roomMapper.ts`, `mapRoomApiToDomain()`, `mapRoomDomainToInsert()`, `mapRoomDomainToUpdate()`
+- **Thin community `Community 209`** (4 nodes): `organizationMapper.ts`, `mapOrganizationApiToDomain()`, `mapOrganizationDomainToInsert()`, `mapOrganizationDomainToUpdate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 224`** (4 nodes): `RenewalReviewPage.tsx`, `RenewalReviewPage.tsx`, `handleApprove()`, `handleReject()`
+- **Thin community `Community 211`** (4 nodes): `roomMapper.ts`, `mapRoomApiToDomain()`, `mapRoomDomainToInsert()`, `mapRoomDomainToUpdate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 227`** (3 nodes): `PlatformWebsiteConfigController.php`, `PlatformWebsiteConfigController`, `.show()`
+- **Thin community `Community 226`** (4 nodes): `RenewalReviewPage.tsx`, `RenewalReviewPage.tsx`, `handleApprove()`, `handleReject()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 228`** (3 nodes): `Authenticate`, `.redirectTo()`, `Authenticate.php`
+- **Thin community `Community 229`** (3 nodes): `PlatformWebsiteConfigController.php`, `PlatformWebsiteConfigController`, `.show()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 229`** (3 nodes): `Permission.php`, `Permission`, `.scopeForOrganization()`
+- **Thin community `Community 230`** (3 nodes): `Authenticate`, `.redirectTo()`, `Authenticate.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 230`** (3 nodes): `OrganizationFactory.php`, `OrganizationFactory`, `.definition()`
+- **Thin community `Community 231`** (3 nodes): `Permission.php`, `Permission`, `.scopeForOrganization()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 269`** (3 nodes): `down()`, `up()`, `2026_03_12_200000_add_hr_assignments_delete_permission.php`
+- **Thin community `Community 232`** (3 nodes): `OrganizationFactory.php`, `OrganizationFactory`, `.definition()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 272`** (3 nodes): `down()`, `up()`, `2026_03_13_100300_seed_org_finance_permissions_and_assign_roles.php`
+- **Thin community `Community 267`** (3 nodes): `down()`, `up()`, `2026_03_12_200000_add_hr_assignments_delete_permission.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 279`** (3 nodes): `RichTextEditor.tsx`, `execCommand()`, `handleInput()`
+- **Thin community `Community 269`** (3 nodes): `down()`, `up()`, `2026_03_13_100300_seed_org_finance_permissions_and_assign_roles.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 290`** (3 nodes): `UsageSummaryCard.tsx`, `getProgressColor()`, `isSingleSchoolLimit()`
+- **Thin community `Community 275`** (3 nodes): `main.ts`, `createWindow()`, `getRendererIndexPath()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 295`** (3 nodes): `imageCrop.ts`, `createImage()`, `getCroppedImg()`
+- **Thin community `Community 277`** (3 nodes): `RichTextEditor.tsx`, `execCommand()`, `handleInput()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 296`** (3 nodes): `computeRate()`, `mapAttendanceTotalsReportApiToDomain()`, `attendanceTotalsReportMapper.ts`
+- **Thin community `Community 288`** (3 nodes): `UsageSummaryCard.tsx`, `getProgressColor()`, `isSingleSchoolLimit()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 304`** (3 nodes): `idCardCanvasRenderer.runtime.test.ts`, `MockImage`, `.src()`
+- **Thin community `Community 293`** (3 nodes): `imageCrop.ts`, `createImage()`, `getCroppedImg()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 307`** (2 nodes): `LoginLockout.php`, `LoginLockout`
+- **Thin community `Community 294`** (3 nodes): `computeRate()`, `mapAttendanceTotalsReportApiToDomain()`, `attendanceTotalsReportMapper.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 383`** (2 nodes): `Attendance Scan Stress Test (1000 scans)`, `E2E Playwright Stress Tests`
+- **Thin community `Community 302`** (3 nodes): `idCardCanvasRenderer.runtime.test.ts`, `MockImage`, `.src()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 384`** (2 nodes): `Nazim Brand Identity (Dark Blue + Gold)`, `Nazim Features Landing Page (Pashto RTL)`
+- **Thin community `Community 305`** (2 nodes): `LoginLockout.php`, `LoginLockout`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 385`** (2 nodes): `Admin Users (Pashto)`, `Admin Users`
+- **Thin community `Community 382`** (2 nodes): `Attendance Scan Stress Test (1000 scans)`, `E2E Playwright Stress Tests`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 386`** (2 nodes): `Attendance Marking (Arabic)`, `Attendance Marking`
+- **Thin community `Community 383`** (2 nodes): `Nazim Brand Identity (Dark Blue + Gold)`, `Nazim Features Landing Page (Pashto RTL)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1053`** (1 nodes): `Translation Duplicate Keys Report`
+- **Thin community `Community 384`** (2 nodes): `Admin Users (Pashto)`, `Admin Users`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1054`** (1 nodes): `Robots.txt (SEO Crawlers Allowed)`
+- **Thin community `Community 385`** (2 nodes): `Attendance Marking (Arabic)`, `Attendance Marking`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1055`** (1 nodes): `StatsCard Component Usage Guide`
+- **Thin community `Community 1062`** (1 nodes): `Translation Duplicate Keys Report`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 1063`** (1 nodes): `Robots.txt (SEO Crawlers Allowed)`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 1064`** (1 nodes): `StatsCard Component Usage Guide`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `error()` connect `Community 1` to `Community 0`, `Community 36`, `Community 38`, `Community 7`, `Community 9`, `Community 10`, `Community 107`, `Community 12`, `Community 13`, `Community 11`, `Community 15`, `Community 81`, `Community 82`, `Community 19`, `Community 54`, `Community 22`, `Community 24`, `Community 27`?**
-  _High betweenness centrality (0.065) - this node is a cross-community bridge._
-- **Why does `useAuth()` connect `Community 2` to `Community 64`, `Community 84`?**
-  _High betweenness centrality (0.056) - this node is a cross-community bridge._
-- **Why does `useLanguage()` connect `Community 2` to `Community 7`, `Community 20`, `Community 53`, `Community 21`, `Community 62`?**
-  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Why does `format()` connect `Community 9` to `Community 0`, `Community 1`, `Community 2`, `Community 5`, `Community 6`, `Community 8`, `Community 10`, `Community 11`, `Community 14`, `Community 15`, `Community 17`, `Community 18`, `Community 19`, `Community 22`, `Community 23`, `Community 28`?**
+  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+- **Why does `useAuth()` connect `Community 2` to `Community 0`, `Community 82`, `Community 63`?**
+  _High betweenness centrality (0.050) - this node is a cross-community bridge._
+- **Why does `ProtectedPlatformLayout()` connect `Community 0` to `Community 1`, `Community 2`, `Community 3`?**
+  _High betweenness centrality (0.046) - this node is a cross-community bridge._
 - **Are the 409 inferred relationships involving `useAuth()` (e.g. with `CalendarPreferenceSyncFromProfile()` and `MaintenanceModeHandler()`) actually correct?**
   _`useAuth()` has 409 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 319 inferred relationships involving `useLanguage()` (e.g. with `OrganizationAdminRoute()` and `ProtectedRoute()`) actually correct?**

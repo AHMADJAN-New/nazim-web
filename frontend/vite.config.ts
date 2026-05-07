@@ -46,6 +46,9 @@ const suppressCssWarnings = (): PluginOption => {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // IMPORTANT: Electron loads the built app via file://, so we must use a relative base.
+  // We keep the normal web build behavior for existing deployments.
+  base: process.env.NAZIM_DESKTOP_BUILD === '1' ? './' : '/',
   plugins: [
     react(),
     suppressCssWarnings(),

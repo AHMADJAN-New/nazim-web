@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Settings, Eye, EyeOff, Lock, Calendar, Shield, Monitor } from 'lucide-react';
+import { Settings, Eye, EyeOff, Lock, Calendar, Shield, Monitor, Database } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { authApi } from '@/lib/api/client';
@@ -27,6 +28,13 @@ export default function UserSettings({ defaultTab = 'preferences' }: UserSetting
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [desktopOfflineMode, setDesktopOfflineMode] = useState<boolean>(() => {
+    try {
+      return typeof window !== 'undefined' && window.nazimDesktop?.isOfflineMode?.() === true;
+    } catch {
+      return false;
+    }
+  });
 
   const {
     register,
@@ -121,7 +129,52 @@ export default function UserSettings({ defaultTab = 'preferences' }: UserSetting
 
         {/* Preferences Tab */}
         <TabsContent value="preferences" className="mt-6">
-          <DatePreferenceSettings />
+          <div className="space-y-6">
+            <DatePreferenceSettings />
+
+            {/* Desktop-only: Offline mode toggle */}
+            {typeof window !== 'undefined' && window.nazimDesktop && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    <CardTitle>{t('settings.userSettings.offlineMode.title')}</CardTitle>
+                  </div>
+                  <CardDescription>{t('settings.userSettings.offlineMode.description')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{t('settings.userSettings.offlineMode.toggleLabel')}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {desktopOfflineMode
+                          ? t('settings.userSettings.offlineMode.enabled')
+                          : t('settings.userSettings.offlineMode.disabled')}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={desktopOfflineMode}
+                      onCheckedChange={async (checked) => {
+                        try {
+                          setDesktopOfflineMode(checked);
+                          await window.nazimDesktop?.setOfflineMode?.(checked);
+                          showToast.success(
+                            checked
+                              ? t('settings.userSettings.offlineMode.enabled')
+                              : t('settings.userSettings.offlineMode.disabled')
+                          );
+                        } catch (error: any) {
+                          setDesktopOfflineMode((prev) => !prev);
+                          showToast.error(error?.message || t('toast.profileUpdateFailed'));
+                        }
+                      }}
+                      aria-label={t('settings.userSettings.offlineMode.toggleLabel')}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         {/* Security Tab */}

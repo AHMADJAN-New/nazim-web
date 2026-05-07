@@ -79,6 +79,9 @@ class PermissionSeeder extends Seeder
             'roles' => ['read', 'create', 'update', 'delete'],
             'permissions' => ['read', 'create', 'update', 'delete'],
             'attendance_sessions' => ['read', 'create', 'update', 'delete', 'report'],
+            // Offline desktop client (snapshot pull + bulk sync upload). Gated separately
+            // so customers can grant just the offline app without granting other admin powers.
+            'attendance' => ['offline_sync'],
             'leave_requests' => ['read', 'create', 'update', 'delete'],
             'student_reports' => ['read', 'export'],
             'library_categories' => ['read', 'create', 'update', 'delete'],

@@ -85,8 +85,22 @@ export default {
       ipAddress: "نشانی IP",
       noRecentLogins: "تاریخچه ورود اخیر وجود ندارد.",
       description: "تنظیمات حساب و امنیت خود را مدیریت کنید",
+      offlineMode: {
+        title: "حالت آفلاین",
+        description: "در برنامه دسکتاپ از داده‌های محلی استفاده کنید و تغییرات را برای همگام‌سازی هنگام اینترنت صف‌بندی کنید.",
+        toggleLabel: "حالت آفلاین",
+        enabled: "حالت آفلاین فعال شد",
+        disabled: "حالت آفلاین غیرفعال شد"
+      },
       preferences: "ترجیحات",
       security: "امنیت",
+      syncStatus: {
+        badge: "وضعیت همگام‌سازی",
+        onlineSynced: "آنلاین · همگام",
+        onlinePending: "آنلاین · {count} در انتظار",
+        syncing: "در حال همگام‌سازی…",
+        offline: "آفلاین"
+      },
       title: "تنظیمات کاربر"
     },
     datePreferences: {

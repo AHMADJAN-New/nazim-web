@@ -79,8 +79,22 @@ export default {
       changePassword: "Change Password",
       changePasswordDescription: "Update your password to keep your account secure",
       description: "Manage your account preferences and security settings",
+      offlineMode: {
+        title: "Offline mode",
+        description: "Force the desktop app to use local data and queue changes for sync when internet is available.",
+        toggleLabel: "Offline mode",
+        enabled: "Offline mode enabled",
+        disabled: "Offline mode disabled"
+      },
       preferences: "Preferences",
       security: "Security",
+      syncStatus: {
+        badge: "Sync status",
+        onlineSynced: "Online · Synced",
+        onlinePending: "Online · {count} pending",
+        syncing: "Syncing…",
+        offline: "Offline"
+      },
       title: "User Settings",
       recentLogins: "Recent logins",
       recentLoginsDescription: "Devices and locations where your account was used. If you see something unfamiliar, change your password.",

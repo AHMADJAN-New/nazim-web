@@ -7,6 +7,7 @@
     "dev": "vite",
     "clean:vite": "node -e \"try{require('fs').rmSync('node_modules/.vite',{recursive:true});console.log('Vite cache cleared.');}catch(e){console.log('No cache or already cleared.');}\"",
     "build": "vite build",
+    "build:desktop": "vite build --base=./",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

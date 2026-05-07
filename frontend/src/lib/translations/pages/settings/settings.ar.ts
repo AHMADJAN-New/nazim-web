@@ -85,8 +85,22 @@ export default {
       ipAddress: "عنوان IP",
       noRecentLogins: "لا يوجد سجل تسجيل دخول حديث.",
       description: "إدارة تفضيلات الحساب وإعدادات الأمان",
+      offlineMode: {
+        title: "وضع عدم الاتصال",
+        description: "استخدم بيانات محلية في تطبيق سطح المكتب وضع التغييرات في قائمة انتظار للمزامنة عند توفر الإنترنت.",
+        toggleLabel: "وضع عدم الاتصال",
+        enabled: "تم تفعيل وضع عدم الاتصال",
+        disabled: "تم إلغاء تفعيل وضع عدم الاتصال"
+      },
       preferences: "التفضيلات",
       security: "الأمان",
+      syncStatus: {
+        badge: "حالة المزامنة",
+        onlineSynced: "متصل · تمت المزامنة",
+        onlinePending: "متصل · {count} معلّقة",
+        syncing: "جاري المزامنة…",
+        offline: "غير متصل"
+      },
       title: "إعدادات المستخدم"
     },
     datePreferences: {

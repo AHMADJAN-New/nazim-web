@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, Shield, Play, Globe } from "lucide-react";
+import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, Shield, Play, Globe, Cloud, CloudOff, RefreshCw } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -62,6 +62,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [desktopSyncStatus, setDesktopSyncStatus] = useState<DesktopSyncStatus | null>(null);
   const isAttendanceMarkingPage = location.pathname.startsWith('/attendance/marking');
   const { data: unreadCount } = useNotificationCount({ enabled: !isAttendanceMarkingPage });
 
@@ -108,6 +109,31 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   });
 
   const isPlatformAdmin = platformAdminStatus?.is_platform_admin ?? false;
+
+  // Desktop sync status (Electron only)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.nazimDesktop?.getSyncStatus) {
+      return;
+    }
+
+    let mounted = true;
+
+    const readStatus = async () => {
+      try {
+        const status = await window.nazimDesktop?.getSyncStatus?.();
+        if (mounted && status) setDesktopSyncStatus(status);
+      } catch {
+        // Ignore desktop bridge failures; web builds have no bridge.
+      }
+    };
+
+    void readStatus();
+    const interval = window.setInterval(readStatus, 5000);
+    return () => {
+      mounted = false;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   // Sync school context with profile: set when user has default school, clear when user has no school (org-level)
   useEffect(() => {
@@ -484,6 +510,37 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
           </div>
 
           {/* Desktop: Platform Admin Button */}
+          {/* Desktop: Offline/Sync badge (Electron only) */}
+          {typeof window !== 'undefined' && window.nazimDesktop && desktopSyncStatus && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden md:flex items-center gap-2"
+              aria-label={t('settings.userSettings.syncStatus.badge')}
+              type="button"
+              onClick={() => {
+                // No-op for now; desktop app can later open a Sync panel.
+              }}
+            >
+              {desktopSyncStatus.state === 'offline' ? (
+                <CloudOff className="h-4 w-4" />
+              ) : desktopSyncStatus.state === 'syncing' ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Cloud className="h-4 w-4" />
+              )}
+              <span className="text-sm">
+                {desktopSyncStatus.state === 'offline'
+                  ? t('settings.userSettings.syncStatus.offline')
+                  : desktopSyncStatus.state === 'syncing'
+                    ? t('settings.userSettings.syncStatus.syncing')
+                    : desktopSyncStatus.state === 'online_pending'
+                      ? t('settings.userSettings.syncStatus.onlinePending', { count: desktopSyncStatus.pendingCount ?? 0 })
+                      : t('settings.userSettings.syncStatus.onlineSynced')}
+              </span>
+            </Button>
+          )}
+
           {isPlatformAdmin && (
             <Button
               variant="outline"

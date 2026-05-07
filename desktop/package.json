@@ -1,35 +1,65 @@
 {
   "name": "nazim-desktop",
-  "version": "1.0.0",
-  "description": "Electron wrapper that loads the Nazim web app from a URL",
+  "version": "0.1.0",
+  "description": "Electron shell and offline SQLite bridge for Nazim",
   "author": "Nazim",
-  "main": "main.js",
+  "private": true,
+  "main": "dist/src/main.js",
   "scripts": {
-    "start": "electron .",
-    "dist": "electron-builder",
-    "dist:win": "electron-builder --win"
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "test:db": "tsx scripts/db-smoke.ts",
+    "dist": "npm --prefix ../frontend run build:desktop && npm run build && electron-builder",
+    "dist:win": "npm --prefix ../frontend run build:desktop && npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "keytar": "^7.9.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.0.0"
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.13.14",
+    "electron": "^35.1.5",
+    "electron-builder": "^25.1.8",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
   },
   "build": {
     "appId": "com.nazim.desktop",
     "productName": "Nazim",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "files": [
-      "main.js",
-      "preload.js",
-      "splash.html",
-      "error.html"
+      "dist/**/*",
+      "src/db/schema.sql",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist",
+        "to": "frontend-dist",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "win": {
       "signAndEditExecutable": false,
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
