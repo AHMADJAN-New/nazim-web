@@ -5951,6 +5951,7 @@ export const TRANSLATION_KEYS = [
   "students.allClasses",
   "students.allGenders",
   "students.allSchools",
+  "students.allSections",
   "students.applied",
   "students.applyingGrade",
   "students.approvalAdmission",

@@ -37,6 +37,7 @@ export default {
     allClasses: "ټول ټولګي",
     allGenders: "ټول جنسیتونه",
     allSchools: "ټول ښوونځي",
+    allSections: "ټولې څانګې",
     applied: "غوښتونکی",
     applyingGrade: "د غوښتنې درجه/ټولګی",
     approvalAdmission: "ذکر شوی زده کوونکی په دې ټولګي کې شامل شو",

@@ -37,6 +37,7 @@ export default {
     allClasses: "جميع الفصول",
     allGenders: "جميع الأجناس",
     allSchools: "جميع المدارس",
+    allSections: "جميع الشعب",
     applied: "تم التقديم",
     applyingGrade: "الصف المطلوب",
     approvalAdmission: "students",

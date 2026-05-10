@@ -37,6 +37,7 @@ export default {
     allClasses: "همه صنف‌ها",
     allGenders: "همه جنسیت‌ها",
     allSchools: "همه مکاتب",
+    allSections: "همه بخش‌ها",
     applied: "متقاضی",
     applyingGrade: "درجه درخواستی",
     approvalAdmission: "شاگرد مذکور در درجه قبول شد",

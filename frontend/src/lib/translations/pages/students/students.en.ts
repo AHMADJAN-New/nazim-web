@@ -37,6 +37,7 @@ export default {
     allClasses: "All Classes",
     allGenders: "All Genders",
     allSchools: "All Schools",
+    allSections: "All Sections",
     applied: "Applied",
     applyingGrade: "Applying Grade",
     approvalAdmission: "The mentioned student was admitted to grade",
