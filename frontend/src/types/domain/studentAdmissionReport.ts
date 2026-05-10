@@ -56,6 +56,7 @@ export interface StudentAdmissionReportFilters {
   schoolId?: string;
   academicYearId?: string;
   classId?: string;
+  classAcademicYearId?: string;
   enrollmentStatus?: AdmissionStatus | 'with_admission' | 'without_admission';
   residencyTypeId?: string;
   isBoarder?: boolean;

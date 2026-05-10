@@ -1979,6 +1979,7 @@ export const studentsApi = {
     admission_fee_status?: string;
     academic_year_id?: string;
     class_id?: string;
+    class_academic_year_id?: string;
     search?: string;
     page?: number;
     per_page?: number;
@@ -2002,6 +2003,7 @@ export const studentsApi = {
     admission_fee_status?: string;
     academic_year_id?: string;
     class_id?: string;
+    class_academic_year_id?: string;
     search?: string;
   }) => {
     return apiClient.requestFile('/students/report/export', { method: 'GET', params });
@@ -2301,6 +2303,7 @@ export const studentAdmissionsApi = {
     student_id?: string;
     academic_year_id?: string;
     class_id?: string;
+    class_academic_year_id?: string;
     enrollment_status?: string;
     is_boarder?: boolean;
     residency_type_id?: string;
@@ -2373,12 +2376,14 @@ export const studentAdmissionsApi = {
     school_id?: string;
     academic_year_id?: string;
     class_id?: string;
+    class_academic_year_id?: string;
     enrollment_status?: string;
     admission_presence?: 'with_admission' | 'without_admission';
     residency_type_id?: string;
     is_boarder?: boolean;
     from_date?: string;
     to_date?: string;
+    search?: string;
     page?: number;
     per_page?: number;
   }) => {
@@ -2389,6 +2394,7 @@ export const studentAdmissionsApi = {
     format: 'pdf' | 'xlsx';
     academic_year_id?: string;
     class_id?: string;
+    class_academic_year_id?: string;
     enrollment_status?: string;
     residency_type_id?: string;
     is_boarder?: boolean;

@@ -142,6 +142,7 @@ export default {
     startOver: "شروع مجدد",
     selectAcademicYearFirst: "ابتدا سال تعلیمی را انتخاب کنید",
     selectAcademicYearToSeeClasses: "برای دیدن صنف‌های موجود، سال تعلیمی را در بالا انتخاب کنید",
+    selectClass: "صنف را انتخاب کنید",
     selectClassSection: "صنف و بخش را انتخاب کنید",
     selectResidency: "نوع سکونت را انتخاب کنید",
     shift: "تایم",

@@ -141,6 +141,7 @@ export default {
     startOver: "Start over",
     selectAcademicYearFirst: "Select academic year first",
     selectAcademicYearToSeeClasses: "Select an academic year above to see available classes",
+    selectClass: "Select class",
     selectClassSection: "Select class & section",
     selectResidency: "Select residency",
     selectSchool: "Select school",

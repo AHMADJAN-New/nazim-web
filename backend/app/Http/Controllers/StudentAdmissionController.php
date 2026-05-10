@@ -115,6 +115,10 @@ class StudentAdmissionController extends Controller
             $query->where('class_id', $request->class_id);
         }
 
+        if ($request->has('class_academic_year_id') && $request->class_academic_year_id) {
+            $query->where('class_academic_year_id', $request->class_academic_year_id);
+        }
+
         if ($request->has('enrollment_status') && $request->enrollment_status) {
             $query->where('enrollment_status', $request->enrollment_status);
         }
@@ -719,6 +723,7 @@ class StudentAdmissionController extends Controller
         $validator = Validator::make($request->all(), [
             'academic_year_id' => 'nullable|string',
             'class_id' => 'nullable|string',
+            'class_academic_year_id' => 'nullable|string',
             'enrollment_status' => 'nullable|string',
             'admission_presence' => 'nullable|in:with_admission,without_admission',
             'residency_type_id' => 'nullable|string',
@@ -763,6 +768,10 @@ class StudentAdmissionController extends Controller
 
         if (! empty($filters['class_id'])) {
             $query->where('student_admissions.class_id', $filters['class_id']);
+        }
+
+        if (! empty($filters['class_academic_year_id'])) {
+            $query->where('student_admissions.class_academic_year_id', $filters['class_academic_year_id']);
         }
 
         if (! empty($filters['enrollment_status'])) {
@@ -950,6 +959,7 @@ class StudentAdmissionController extends Controller
             'format' => 'required|in:pdf,xlsx',
             'academic_year_id' => 'nullable|string',
             'class_id' => 'nullable|string',
+            'class_academic_year_id' => 'nullable|string',
             'enrollment_status' => 'nullable|string',
             'admission_presence' => 'nullable|in:with_admission,without_admission',
             'residency_type_id' => 'nullable|string',
@@ -982,6 +992,10 @@ class StudentAdmissionController extends Controller
 
         if (! empty($filters['class_id'])) {
             $query->where('student_admissions.class_id', $filters['class_id']);
+        }
+
+        if (! empty($filters['class_academic_year_id'])) {
+            $query->where('student_admissions.class_academic_year_id', $filters['class_academic_year_id']);
         }
 
         if (! empty($filters['enrollment_status'])) {

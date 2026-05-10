@@ -153,12 +153,13 @@ class StudentController extends Controller
             });
         }
 
-        if ($request->filled('academic_year_id') || $request->filled('class_id')) {
+        if ($request->filled('academic_year_id') || $request->filled('class_id') || $request->filled('class_academic_year_id')) {
             $academicYearId = $request->input('academic_year_id');
             $classId = $request->input('class_id');
+            $classAcademicYearId = $request->input('class_academic_year_id');
             $organizationId = $profile->organization_id;
 
-            $query->whereExists(function ($subQuery) use ($academicYearId, $classId, $organizationId, $currentSchoolId) {
+            $query->whereExists(function ($subQuery) use ($academicYearId, $classId, $classAcademicYearId, $organizationId, $currentSchoolId) {
                 $subQuery->select(DB::raw('1'))
                     ->from('student_admissions as sa')
                     ->whereColumn('sa.student_id', 'students.id')
@@ -172,6 +173,10 @@ class StudentController extends Controller
 
                 if (! empty($classId)) {
                     $subQuery->where('sa.class_id', $classId);
+                }
+
+                if (! empty($classAcademicYearId)) {
+                    $subQuery->where('sa.class_academic_year_id', $classAcademicYearId);
                 }
             });
         }

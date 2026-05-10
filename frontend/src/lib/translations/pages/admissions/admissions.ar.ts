@@ -142,6 +142,7 @@ export default {
     startOver: "ابدأ من جديد",
     selectAcademicYearFirst: "Select academic year first",
     selectAcademicYearToSeeClasses: "Select an academic year above to see available classes",
+    selectClass: "اختر الصف",
     selectClassSection: "اختر الفصل والقسم",
     selectResidency: "اختر الإقامة",
     shift: "الوردية",

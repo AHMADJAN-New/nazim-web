@@ -141,6 +141,7 @@ export default {
     selectAcademicYear: "تعليمي کال وټاکئ",
     selectAcademicYearFirst: "لومړی تعليمي کال وټاکئ",
     selectAcademicYearToSeeClasses: "د ټولګیو لیدو لپاره پورته تعلیمي کال وټاکئ",
+    selectClass: "ټولګی وټاکئ",
     selectClassSection: "ټولګی او څانګه وټاکئ",
     selectResidency: "اوسېدل وټاکئ",
     selectSchool: "ښوونځی وټاکئ",

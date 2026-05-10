@@ -149,6 +149,12 @@ const StudentAdmissionsReport = () => {
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [classAcademicYears]);
+  const sectionOptions = useMemo(() => {
+    if (!filters.classId) return [];
+    return classAcademicYears
+      .filter((entry) => entry.classId === filters.classId)
+      .sort((a, b) => (a.sectionName ?? '').localeCompare(b.sectionName ?? ''));
+  }, [classAcademicYears, filters.classId]);
 
 
   const hasInvalidRange = useMemo(() => {
@@ -176,6 +182,7 @@ const StudentAdmissionsReport = () => {
       schoolId: undefined,
       academicYearId: undefined,
       classId: undefined,
+      classAcademicYearId: undefined,
       residencyTypeId: undefined,
       enrollmentStatus: undefined,
       isBoarder: undefined,
@@ -191,7 +198,8 @@ const StudentAdmissionsReport = () => {
     setFilters((prev) => ({
       ...prev,
       [key]: value === 'all' ? undefined : value,
-      ...(key === 'academicYearId' ? { classId: undefined } : {}),
+      ...(key === 'academicYearId' ? { classId: undefined, classAcademicYearId: undefined } : {}),
+      ...(key === 'classId' ? { classAcademicYearId: undefined } : {}),
     }));
     // Reset to first page when filters change
     setPage(1);
@@ -246,6 +254,10 @@ const StudentAdmissionsReport = () => {
       if (className) {
         filterParts.push(`Class: ${className}`);
       }
+    }
+    if (filters.classAcademicYearId) {
+      const sectionName = sectionOptions.find((item) => item.id === filters.classAcademicYearId)?.sectionName;
+      filterParts.push(`Section: ${sectionName || 'Default'}`);
     }
     if (filters.enrollmentStatus) {
       filterParts.push(`Status: ${filters.enrollmentStatus}`);
@@ -326,6 +338,7 @@ const StudentAdmissionsReport = () => {
       school_id: filters.schoolId,
       academic_year_id: filters.academicYearId,
       class_id: filters.classId,
+      class_academic_year_id: filters.classAcademicYearId,
       enrollment_status:
         filters.enrollmentStatus &&
         filters.enrollmentStatus !== 'with_admission' &&
@@ -363,6 +376,7 @@ const StudentAdmissionsReport = () => {
       filters.schoolId ||
       filters.academicYearId ||
       filters.classId ||
+      filters.classAcademicYearId ||
       filters.residencyTypeId ||
       filters.enrollmentStatus ||
       filters.isBoarder ||
@@ -522,6 +536,26 @@ const StudentAdmissionsReport = () => {
                 {classOptions.map((classOption) => (
                   <SelectItem key={classOption.id} value={classOption.id}>
                     {classOption.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('events.section') || 'Section'}</Label>
+            <Select
+              value={filters.classAcademicYearId || 'all'}
+              onValueChange={(value) => handleFilterChange('classAcademicYearId', value)}
+              disabled={!filters.classId || sectionOptions.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('events.section') || 'Section'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('students.allSections') || 'All Sections'}</SelectItem>
+                {sectionOptions.map((section) => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {section.sectionName || (t('events.default') || 'Default')}
                   </SelectItem>
                 ))}
               </SelectContent>

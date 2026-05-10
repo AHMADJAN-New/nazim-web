@@ -32,6 +32,7 @@ export const useStudentAdmissionReport = (
         organization_id: normalizedFilters.organizationId,
         academic_year_id: normalizedFilters.academicYearId,
         class_id: normalizedFilters.classId,
+        class_academic_year_id: normalizedFilters.classAcademicYearId,
         enrollment_status:
           normalizedFilters.enrollmentStatus &&
           normalizedFilters.enrollmentStatus !== 'with_admission' &&

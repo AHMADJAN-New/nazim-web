@@ -125,6 +125,7 @@ const StudentReport = () => {
   const [applyingGradeFilter, setApplyingGradeFilter] = useState<'all' | string>('all');
   const [academicYearFilter, setAcademicYearFilter] = useState<'all' | string>('all');
   const [classFilter, setClassFilter] = useState<'all' | string>('all');
+  const [sectionFilter, setSectionFilter] = useState<'all' | string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -143,6 +144,12 @@ const StudentReport = () => {
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [classAcademicYears]);
+  const sectionOptions = useMemo(() => {
+    if (classFilter === 'all') return [];
+    return classAcademicYears
+      .filter((entry) => entry.classId === classFilter)
+      .sort((a, b) => (a.sectionName ?? '').localeCompare(b.sectionName ?? ''));
+  }, [classAcademicYears, classFilter]);
 
   const studentFilters = useMemo(() => ({
     search: searchQuery.trim() || undefined,
@@ -161,7 +168,8 @@ const StudentReport = () => {
     applying_grade: applyingGradeFilter !== 'all' ? applyingGradeFilter : undefined,
     academic_year_id: selectedAcademicYearId,
     class_id: classFilter !== 'all' ? classFilter : undefined,
-  }), [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter]);
+    class_academic_year_id: sectionFilter !== 'all' ? sectionFilter : undefined,
+  }), [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter, sectionFilter]);
 
   const {
     data: studentsData,
@@ -179,7 +187,7 @@ const StudentReport = () => {
       return studentsData as Student[];
     }
     if (typeof studentsData === 'object' && 'data' in studentsData) {
-      return ((studentsData as any).data || []) as Student[];
+      return ((studentsData as { data?: Student[] }).data || []) as Student[];
     }
     return [];
   }, [studentsData]);
@@ -198,6 +206,7 @@ const StudentReport = () => {
       applying_grade: studentFilters.applying_grade,
       academic_year_id: studentFilters.academic_year_id,
       class_id: studentFilters.class_id,
+      class_academic_year_id: studentFilters.class_academic_year_id,
     });
 
     const apiStudents = Array.isArray(response)
@@ -212,8 +221,12 @@ const StudentReport = () => {
   }, [selectedAcademicYearId]);
 
   useEffect(() => {
+    setSectionFilter('all');
+  }, [classFilter]);
+
+  useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter]);
+  }, [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter, sectionFilter]);
 
   const handleViewDetails = (student: Student) => {
     setSelectedStudent(student);
@@ -283,6 +296,10 @@ const StudentReport = () => {
         filters.push(`Class: ${className}`);
       }
     }
+    if (sectionFilter !== 'all') {
+      const sectionName = sectionOptions.find((section) => section.id === sectionFilter)?.sectionName;
+      filters.push(`Section: ${sectionName || 'Default'}`);
+    }
     if (searchQuery) {
       filters.push(`Search: ${searchQuery}`);
     }
@@ -335,7 +352,7 @@ const StudentReport = () => {
     });
   }, [allExportColumns]);
 
-  const columns: ColumnDef<Student, any>[] = useMemo(() => [
+  const columns: ColumnDef<Student>[] = useMemo(() => [
     {
       id: 'avatar',
       header: '',
@@ -619,6 +636,25 @@ const StudentReport = () => {
               {classOptions.map((classOption) => (
                 <SelectItem key={classOption.id} value={classOption.id}>
                   {classOption.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={sectionFilter}
+            onValueChange={(value) => {
+              setSectionFilter(value as typeof sectionFilter);
+            }}
+            disabled={classFilter === 'all' || sectionOptions.length === 0}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('events.section') || 'Section'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('students.allSections') || 'All Sections'}</SelectItem>
+              {sectionOptions.map((section) => (
+                <SelectItem key={section.id} value={section.id}>
+                  {section.sectionName || (t('events.default') || 'Default')}
                 </SelectItem>
               ))}
             </SelectContent>

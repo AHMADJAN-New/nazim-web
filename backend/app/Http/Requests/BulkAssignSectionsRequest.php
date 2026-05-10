@@ -7,6 +7,35 @@ use Illuminate\Validation\Rule;
 
 class BulkAssignSectionsRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $sections = $this->input('sections');
+
+        if (is_string($sections)) {
+            $sections = [$sections];
+        }
+
+        if (is_array($sections)) {
+            $normalized = [];
+
+            foreach ($sections as $section) {
+                if (! is_string($section)) {
+                    continue;
+                }
+
+                foreach (preg_split('/[,،]/u', $section) ?: [] as $part) {
+                    $part = trim($part);
+
+                    if ($part !== '') {
+                        $normalized[] = $part;
+                    }
+                }
+            }
+
+            $this->merge(['sections' => array_values($normalized)]);
+        }
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */

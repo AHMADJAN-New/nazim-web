@@ -77,15 +77,21 @@ const assignClassSchema = z.object({
     notes: z.string().max(500, 'Notes must be 500 characters or less').optional().nullable(),
 });
 
+const splitSectionNames = (value: string): string[] =>
+    value
+        .split(/[,،]/)
+        .map((section) => section.trim())
+        .filter(Boolean);
+
 const bulkSectionsSchema = z.object({
     class_id: z.string().uuid('Invalid class'),
     academic_year_id: z.string().uuid('Invalid academic year'),
     sections: z.string().min(1, 'Enter at least one section').refine(
         (val) => {
-            const sections = val.split(',').map(s => s.trim()).filter(Boolean);
+            const sections = splitSectionNames(val);
             return sections.length > 0 && sections.every(s => s.length <= 50);
         },
-        { message: 'Invalid sections format. Use comma-separated values (e.g., A, B, C, D)' }
+        { message: 'Invalid sections format. Use comma-separated values (e.g., A, B, C, D or الف، ب، ج)' }
     ),
     default_room_id: z.string().uuid().optional().nullable(),
     default_capacity: z.number().int().min(1).max(500).optional().nullable(),
@@ -215,7 +221,7 @@ export function ClassesManagement() {
     const filteredClasses = useMemo(() => {
         if (!classes) return [];
         const query = (searchQuery || '').toLowerCase();
-        let filtered = classes.filter((cls) =>
+        const filtered = classes.filter((cls) =>
             cls.name?.toLowerCase().includes(query) ||
             cls.code?.toLowerCase().includes(query) ||
             (cls.description && cls.description.toLowerCase().includes(query))
@@ -434,11 +440,7 @@ export function ClassesManagement() {
 
     const onSubmitBulkSections = (data: BulkSectionsFormData) => {
         if (data.class_id && data.academic_year_id) {
-            // Parse sections from comma-separated string
-            const sections = data.sections
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean);
+            const sections = splitSectionNames(data.sections);
 
             // Convert form data to domain model
             bulkAssignSections.mutate({
@@ -1336,12 +1338,12 @@ export function ClassesManagement() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="bulk_sections">
-                                    {t('academic.classes.sectionsInput')} * ({t('events.example')}: A, B, C, D)
+                                    {t('academic.classes.sectionsInput')} * ({t('events.example')}: A, B, C, D / الف، ب، ج)
                                 </Label>
                                 <Input
                                     id="bulk_sections"
                                     {...registerBulkSections('sections')}
-                                    placeholder={`${t('events.example')}: A, B, C, D`}
+                                    placeholder={`${t('events.example')}: A, B, C, D / الف، ب، ج`}
                                 />
                                 {bulkSectionsErrors.sections && (
                                     <p className="text-sm text-destructive">{bulkSectionsErrors.sections.message}</p>
@@ -1598,4 +1600,3 @@ export function ClassesManagement() {
         </div>
     );
 }
-

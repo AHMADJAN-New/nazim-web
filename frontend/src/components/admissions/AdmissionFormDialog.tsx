@@ -465,6 +465,22 @@ export function AdmissionFormDialog({
     () => classAcademicYears?.find((c) => c.id === classAcademicYearId),
     [classAcademicYears, classAcademicYearId]
   );
+  const classOptionsForYear = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    (classAcademicYears ?? []).forEach((cay) => {
+      if (cay.classId && cay.class?.name && !map.has(cay.classId)) {
+        map.set(cay.classId, { id: cay.classId, name: cay.class.name });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [classAcademicYears]);
+  const selectedClassId = watch('class_id');
+  const sectionOptionsForSelectedClass = useMemo(() => {
+    if (!selectedClassId) return [];
+    return (classAcademicYears ?? [])
+      .filter((cay) => cay.classId === selectedClassId)
+      .sort((a, b) => (a.sectionName ?? '').localeCompare(b.sectionName ?? ''));
+  }, [classAcademicYears, selectedClassId]);
   const selectedRoom = useMemo(() => rooms?.find((r) => r.id === roomId), [rooms, roomId]);
   const getEffectiveCapacity = (cay?: { capacity: number | null; class?: { defaultCapacity: number } }) => {
     if (!cay) return null;
@@ -863,7 +879,50 @@ export function AdmissionFormDialog({
                           </div>
 
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('students.classSection') || 'Class / Section'}</Label>
+                            <Label className="text-sm font-medium">{t('search.class') || 'Class'}</Label>
+                            <Controller
+                              control={control}
+                              name="class_id"
+                              render={({ field }) => (
+                                <Select
+                                  value={field.value || ''}
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    setValue('class_academic_year_id', '', { shouldValidate: false });
+                                  }}
+                                  disabled={!selectedAcademicYear || isCreateDisabled}
+                                >
+                                  <SelectTrigger className="h-10">
+                                    <SelectValue
+                                      placeholder={
+                                        !selectedAcademicYear
+                                          ? t('admissions.selectAcademicYearFirst') || 'Select academic year first'
+                                          : t('admissions.selectClass') || 'Select class'
+                                      }
+                                    />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {classOptionsForYear.length > 0 ? (
+                                      classOptionsForYear.map((classOption) => (
+                                        <SelectItem key={classOption.id} value={classOption.id}>
+                                          {classOption.name}
+                                        </SelectItem>
+                                      ))
+                                    ) : (
+                                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                        {selectedAcademicYear
+                                          ? t('admissions.noClassesForYear') || 'No classes available for this academic year'
+                                          : t('admissions.selectAcademicYearFirst') || 'Please select an academic year first'}
+                                      </div>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('events.section') || 'Section'}</Label>
                             <Controller
                               control={control}
                               name="class_academic_year_id"
@@ -890,13 +949,15 @@ export function AdmissionFormDialog({
                                       placeholder={
                                         !selectedAcademicYear
                                           ? t('admissions.selectAcademicYearFirst') || 'Select academic year first'
-                                          : t('admissions.selectClassSection') || 'Select class & section'
+                                          : !selectedClassId
+                                            ? t('admissions.selectClass') || 'Select class'
+                                            : t('admissions.selectClassSection') || 'Select class & section'
                                       }
                                     />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {classAcademicYears && classAcademicYears.length > 0 ? (
-                                      classAcademicYears.map((cay) => (
+                                    {sectionOptionsForSelectedClass.length > 0 ? (
+                                      sectionOptionsForSelectedClass.map((cay) => (
                                         <SelectItem
                                           key={cay.id}
                                           value={cay.id}
@@ -909,8 +970,7 @@ export function AdmissionFormDialog({
                                             })()
                                           }
                                         >
-                                          {cay.class?.name || cay.classId || t('search.class') || 'Class'}
-                                          {cay.sectionName ? ` - ${cay.sectionName}` : ''}
+                                          {cay.sectionName || (t('events.default') || 'Default')}
                                           {getEffectiveCapacity(cay) !== null && cay.currentStudentCount !== undefined && (
                                             <span className="text-xs text-muted-foreground ml-2">
                                               ({cay.currentStudentCount}/{getEffectiveCapacity(cay)})
@@ -923,7 +983,7 @@ export function AdmissionFormDialog({
                                       ))
                                     ) : (
                                       <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                        {selectedAcademicYear
+                                        {selectedAcademicYear && selectedClassId
                                           ? t('admissions.noClassesForYear') || 'No classes available for this academic year'
                                           : t('admissions.selectAcademicYearFirst') || 'Please select an academic year first'}
                                       </div>

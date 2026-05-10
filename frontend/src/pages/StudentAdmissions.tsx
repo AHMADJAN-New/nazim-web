@@ -89,6 +89,7 @@ export function StudentAdmissions() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [academicYearFilter, setAcademicYearFilter] = useState<string>('all');
   const [classFilter, setClassFilter] = useState<string>('all');
+  const [sectionFilter, setSectionFilter] = useState<string>('all');
   const [originalProvinceFilter, setOriginalProvinceFilter] = useState<string>('all');
 
   const selectedAcademicYearId = academicYearFilter !== 'all' ? academicYearFilter : undefined;
@@ -103,6 +104,12 @@ export function StudentAdmissions() {
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [classAcademicYears]);
+  const sectionOptions = useMemo(() => {
+    if (classFilter === 'all') return [];
+    return classAcademicYears
+      .filter((entry) => entry.classId === classFilter)
+      .sort((a, b) => (a.sectionName ?? '').localeCompare(b.sectionName ?? ''));
+  }, [classAcademicYears, classFilter]);
 
   const admissionFilters = useMemo(() => ({
     search: searchQuery.trim() || undefined,
@@ -111,7 +118,8 @@ export function StudentAdmissions() {
     residency_type_id: residencyFilter !== 'all' ? residencyFilter : undefined,
     academic_year_id: selectedAcademicYearId,
     class_id: classFilter !== 'all' ? classFilter : undefined,
-  }), [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter]);
+    class_academic_year_id: sectionFilter !== 'all' ? sectionFilter : undefined,
+  }), [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, sectionFilter]);
 
   const { 
     admissions, 
@@ -160,9 +168,13 @@ export function StudentAdmissions() {
   }, [selectedAcademicYearId]);
 
   useEffect(() => {
+    setSectionFilter('all');
+  }, [classFilter]);
+
+  useEffect(() => {
     setPage(1);
     setSelectedAdmissionIds(new Set());
-  }, [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, setPage]);
+  }, [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, sectionFilter, setPage]);
 
   // Server-side filtering returns only matching records.
   const filteredAdmissions = useMemo(() => {
@@ -697,6 +709,23 @@ export function StudentAdmissions() {
               {classOptions.map((classOption) => (
                 <SelectItem key={classOption.id} value={classOption.id}>
                   {classOption.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={sectionFilter}
+            onValueChange={setSectionFilter}
+            disabled={classFilter === 'all' || sectionOptions.length === 0}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t('events.section') || 'Section'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('students.allSections') || 'All Sections'}</SelectItem>
+              {sectionOptions.map((section) => (
+                <SelectItem key={section.id} value={section.id}>
+                  {section.sectionName || (t('events.default') || 'Default')}
                 </SelectItem>
               ))}
             </SelectContent>
