@@ -129,4 +129,6 @@ export interface AttendanceTotalsReportFilters {
   sessionsLimit?: number;
   studentBreakdownPage?: number;
   studentBreakdownPerPage?: number;
+  buildingId?: string;
+  roomId?: string;
 }

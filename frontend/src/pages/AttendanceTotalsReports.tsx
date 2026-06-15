@@ -25,6 +25,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { AttendanceBuildingRoomFilters } from '@/components/attendance/AttendanceBuildingRoomFilters';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
@@ -89,6 +90,8 @@ const buildTotalsInsightsSearchParams = (filters: AttendanceTotalsReportFilters)
   if (filters.dateTo) params.set('date_to', filters.dateTo);
   if (filters.studentId) params.set('student_id', filters.studentId);
   if (filters.studentType) params.set('student_type', filters.studentType);
+  if (filters.buildingId) params.set('building_id', filters.buildingId);
+  if (filters.roomId) params.set('room_id', filters.roomId);
   return params;
 };
 
@@ -145,6 +148,8 @@ export default function AttendanceTotalsReports() {
     dateTo: undefined,
     studentId: undefined,
     studentType: undefined,
+    buildingId: undefined,
+    roomId: undefined,
   });
 
   const [studentBreakdownPage, setStudentBreakdownPage] = useState(1);
@@ -186,6 +191,8 @@ export default function AttendanceTotalsReports() {
       studentId: searchParams.get('student_id') || undefined,
       studentType:
         (searchParams.get('student_type') as AttendanceTotalsReportFilters['studentType']) || undefined,
+      buildingId: searchParams.get('building_id') || undefined,
+      roomId: searchParams.get('room_id') || undefined,
     };
     if (Object.values(paramsFilters).some(Boolean)) {
       setFilters((prev) => ({ ...prev, ...paramsFilters }));
@@ -205,6 +212,8 @@ export default function AttendanceTotalsReports() {
     filters.dateTo,
     filters.studentId,
     filters.studentType,
+    filters.buildingId,
+    filters.roomId,
   ]);
 
   const students = useMemo(() => {
@@ -286,6 +295,8 @@ export default function AttendanceTotalsReports() {
       sessionsLimit: 80,
       studentBreakdownPage,
       studentBreakdownPerPage,
+      buildingId: filters.buildingId || undefined,
+      roomId: filters.roomId || undefined,
     }),
     [
       profile?.organization_id,
@@ -296,6 +307,8 @@ export default function AttendanceTotalsReports() {
       filters.dateTo,
       filters.studentId,
       filters.studentType,
+      filters.buildingId,
+      filters.roomId,
       studentBreakdownPage,
       studentBreakdownPerPage,
     ]
@@ -527,6 +540,8 @@ export default function AttendanceTotalsReports() {
       dateTo,
       studentId: undefined,
       studentType: undefined,
+      buildingId: undefined,
+      roomId: undefined,
     });
   };
 
@@ -583,6 +598,8 @@ export default function AttendanceTotalsReports() {
         academic_year_id: filters.academicYearId || undefined,
         student_id: filters.studentId || undefined,
         student_type: studentTypeParam,
+        building_id: filters.buildingId || undefined,
+        room_id: filters.roomId || undefined,
       })) as {
         success?: boolean;
         download_url?: string;
@@ -860,6 +877,16 @@ export default function AttendanceTotalsReports() {
               />
             </div>
           </div>
+
+          <AttendanceBuildingRoomFilters
+            buildingId={filters.buildingId ?? ''}
+            roomId={filters.roomId ?? ''}
+            onBuildingChange={(value) =>
+              setFilters((prev) => ({ ...prev, buildingId: value || undefined, roomId: undefined }))
+            }
+            onRoomChange={(value) => setFilters((prev) => ({ ...prev, roomId: value || undefined }))}
+            className="rounded-lg border p-3"
+          />
 
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
             <div className="space-y-2 rounded-lg border p-3">

@@ -33,6 +33,20 @@ describe('attendanceReportUtils', () => {
     });
   });
 
+  it('includes building and room filters in attendance report params', () => {
+    expect(
+      buildAttendanceReportParams({
+        organizationId: 'org-1',
+        buildingId: 'building-1',
+        roomId: 'room-2',
+      })
+    ).toEqual({
+      organization_id: 'org-1',
+      building_id: 'building-1',
+      room_id: 'room-2',
+    });
+  });
+
   it('maps attendance report rows using the current multi-class session shape', () => {
     const mapped = mapAttendanceReportRecord({
       id: 'record-1',
@@ -126,4 +140,3 @@ describe('attendanceReportUtils', () => {
     });
   });
 });
-

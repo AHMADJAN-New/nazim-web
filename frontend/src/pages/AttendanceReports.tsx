@@ -22,6 +22,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { AttendanceBuildingRoomFilters } from '@/components/attendance/AttendanceBuildingRoomFilters';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -170,6 +171,8 @@ export default function AttendanceReports() {
       page: 1,
       perPage: 25,
       attendanceSessionId: '',
+      buildingId: '',
+      roomId: '',
     };
   });
 
@@ -350,6 +353,8 @@ export default function AttendanceReports() {
           ? filters.studentType
           : undefined,
       attendanceSessionId: filters.attendanceSessionId || undefined,
+      buildingId: filters.buildingId || undefined,
+      roomId: filters.roomId || undefined,
       sessionsLimit: 80,
     }),
     [
@@ -361,6 +366,8 @@ export default function AttendanceReports() {
       filters.studentId,
       filters.studentType,
       filters.attendanceSessionId,
+      filters.buildingId,
+      filters.roomId,
     ]
   );
 
@@ -399,6 +406,8 @@ export default function AttendanceReports() {
         page: filters.page,
         perPage: filters.perPage,
         attendanceSessionId: filters.attendanceSessionId || undefined,
+        buildingId: filters.buildingId || undefined,
+        roomId: filters.roomId || undefined,
       });
 
       let response: unknown;
@@ -569,6 +578,8 @@ export default function AttendanceReports() {
       page: 1,
       perPage: 25,
       attendanceSessionId: '',
+      buildingId: '',
+      roomId: '',
     });
   };
 
@@ -620,6 +631,8 @@ export default function AttendanceReports() {
         student_type: (filters.studentType || undefined) as 'boarders' | 'day_scholars' | 'all' | undefined,
         date_from: filters.dateFrom || undefined,
         date_to: filters.dateTo || undefined,
+        building_id: filters.buildingId || undefined,
+        room_id: filters.roomId || undefined,
       });
 
       if (response.success && response.download_url) {
@@ -799,13 +812,15 @@ export default function AttendanceReports() {
 
   const hasActiveFilters =
     filters.studentId || filters.classId || filters.academicYearId || filters.status ||
-    filters.studentType || filters.dateFrom || filters.dateTo;
+    filters.studentType || filters.dateFrom || filters.dateTo || filters.buildingId || filters.roomId;
   const activeFilterCount = [
     filters.studentId,
     filters.classId,
     filters.academicYearId,
     filters.status,
     filters.studentType,
+    filters.buildingId,
+    filters.roomId,
     filters.dateFrom || filters.dateTo ? 'date-range' : '',
   ].filter(Boolean).length;
 
@@ -1085,6 +1100,14 @@ export default function AttendanceReports() {
               />
             </div>
           </div>
+
+          <AttendanceBuildingRoomFilters
+            buildingId={filters.buildingId}
+            roomId={filters.roomId}
+            onBuildingChange={(value) => handleFilterChange('buildingId', value)}
+            onRoomChange={(value) => handleFilterChange('roomId', value)}
+            className="rounded-xl border bg-muted/20 p-3"
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* Row 2: Status chips */}

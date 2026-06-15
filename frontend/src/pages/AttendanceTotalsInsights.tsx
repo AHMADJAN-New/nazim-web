@@ -18,6 +18,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { AttendanceBuildingRoomFilters } from '@/components/attendance/AttendanceBuildingRoomFilters';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -101,6 +102,8 @@ const buildTotalsInsightsSearchParams = (filters: AttendanceTotalsReportFilters)
   if (filters.dateTo) params.set('date_to', filters.dateTo);
   if (filters.studentId) params.set('student_id', filters.studentId);
   if (filters.studentType) params.set('student_type', filters.studentType);
+  if (filters.buildingId) params.set('building_id', filters.buildingId);
+  if (filters.roomId) params.set('room_id', filters.roomId);
   return params;
 };
 
@@ -123,6 +126,8 @@ export default function AttendanceTotalsInsights() {
     dateTo: undefined,
     studentId: undefined,
     studentType: undefined,
+    buildingId: undefined,
+    roomId: undefined,
   });
   const [sessionType, setSessionType] = useState<'class' | 'room'>('class');
   const [dateRangePreset, setDateRangePreset] = useState<'1week' | '1month' | '4months' | 'custom'>('1week');
@@ -137,6 +142,8 @@ export default function AttendanceTotalsInsights() {
       studentId: searchParams.get('student_id') || undefined,
       studentType:
         (searchParams.get('student_type') as AttendanceTotalsReportFilters['studentType']) || undefined,
+      buildingId: searchParams.get('building_id') || undefined,
+      roomId: searchParams.get('room_id') || undefined,
     };
     if (Object.values(paramsFilters).some(Boolean)) {
       setFilters((prev) => ({ ...prev, ...paramsFilters }));
@@ -335,6 +342,8 @@ export default function AttendanceTotalsInsights() {
       dateTo,
       studentId: undefined,
       studentType: undefined,
+      buildingId: undefined,
+      roomId: undefined,
     });
   };
 
@@ -436,6 +445,16 @@ export default function AttendanceTotalsInsights() {
               />
             </div>
           </div>
+
+          <AttendanceBuildingRoomFilters
+            buildingId={filters.buildingId ?? ''}
+            roomId={filters.roomId ?? ''}
+            onBuildingChange={(value) =>
+              setFilters((prev) => ({ ...prev, buildingId: value || undefined, roomId: undefined }))
+            }
+            onRoomChange={(value) => setFilters((prev) => ({ ...prev, roomId: value || undefined }))}
+            className="rounded-lg border p-3"
+          />
 
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
             <div className="space-y-2 rounded-lg border p-3">

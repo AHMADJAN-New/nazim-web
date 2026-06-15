@@ -1449,6 +1449,144 @@ class AttendanceSystemTest extends TestCase
         ])->assertStatus(422);
     }
 
+    /** @test */
+    public function attendance_report_filters_by_building_and_room(): void
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $buildingA = Building::create([
+            'building_name' => 'Hostel A',
+            'school_id' => $school->id,
+        ]);
+        $buildingB = Building::create([
+            'building_name' => 'Hostel B',
+            'school_id' => $school->id,
+        ]);
+
+        $roomA = Room::create([
+            'room_number' => '101',
+            'building_id' => $buildingA->id,
+            'school_id' => $school->id,
+        ]);
+        $roomB = Room::create([
+            'room_number' => '201',
+            'building_id' => $buildingB->id,
+            'school_id' => $school->id,
+        ]);
+
+        $studentInRoomA = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $studentInRoomB = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $studentInRoomA->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => true,
+            'room_id' => $roomA->id,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $studentInRoomB->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => true,
+            'room_id' => $roomB->id,
+        ]);
+
+        $session = AttendanceSession::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'session_date' => now()->toDateString(),
+        ]);
+
+        $recordA = AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $studentInRoomA->id,
+            'status' => 'present',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $recordB = AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $studentInRoomB->id,
+            'status' => 'absent',
+            'entry_method' => 'manual',
+            'marked_at' => now(),
+            'marked_by' => $user->id,
+        ]);
+
+        $date = $session->session_date->toDateString();
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/report', [
+            'class_id' => $class->id,
+            'building_id' => $buildingA->id,
+            'date_from' => $date,
+            'date_to' => $date,
+            'per_page' => 25,
+        ])
+            ->assertStatus(200)
+            ->assertJsonFragment(['id' => $recordA->id])
+            ->assertJsonMissing(['id' => $recordB->id]);
+
+        $this->jsonAs($user, 'GET', '/api/attendance-sessions/report', [
+            'class_id' => $class->id,
+            'building_id' => $buildingA->id,
+            'room_id' => $roomA->id,
+            'status' => 'present',
+            'date_from' => $date,
+            'date_to' => $date,
+            'per_page' => 25,
+        ])
+            ->assertStatus(200)
+            ->assertJsonFragment(['id' => $recordA->id, 'status' => 'present'])
+            ->assertJsonMissing(['id' => $recordB->id]);
+
+        $totals = $this->jsonAs($user, 'GET', '/api/attendance-sessions/totals-report', [
+            'class_id' => $class->id,
+            'building_id' => $buildingA->id,
+            'room_id' => $roomA->id,
+            'date_from' => $date,
+            'date_to' => $date,
+        ])->assertStatus(200);
+
+        $this->assertSame(1, (int) $totals->json('totals.present'));
+        $this->assertSame(0, (int) $totals->json('totals.absent'));
+    }
+
     private function createAttendanceRoundName(string $organizationId, string $schoolId, array $overrides = []): AttendanceRoundName
     {
         return AttendanceRoundName::create(array_merge([

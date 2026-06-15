@@ -1077,9 +1077,15 @@ class AttendanceSessionController extends Controller
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:1|max:100',
             'attendance_session_id' => 'nullable|uuid|exists:attendance_sessions,id',
+            'building_id' => 'nullable|uuid|exists:buildings,id',
+            'room_id' => 'nullable|uuid|exists:rooms,id',
         ]);
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        if ($scopeError = $this->validateAttendanceReportBuildingRoomScope($request, $profile->organization_id, $currentSchoolId)) {
+            return $scopeError;
+        }
 
         if (! empty($validatedReport['attendance_session_id'])) {
             $sessionId = (string) $validatedReport['attendance_session_id'];
@@ -1156,6 +1162,13 @@ class AttendanceSessionController extends Controller
             $currentSchoolId
         );
 
+        $this->applyAttendanceReportBuildingRoomFilter(
+            $query,
+            $request,
+            $profile->organization_id,
+            $currentSchoolId
+        );
+
         $perPage = $request->integer('per_page', 25);
         $allowedPerPage = [10, 25, 50, 100];
         if (! in_array($perPage, $allowedPerPage, true)) {
@@ -1173,6 +1186,91 @@ class AttendanceSessionController extends Controller
      *
      * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\AttendanceRecord>  $query
      */
+    private function validateAttendanceReportBuildingRoomScope(
+        Request $request,
+        string $organizationId,
+        string $schoolId
+    ): ?\Illuminate\Http\JsonResponse {
+        if ($request->filled('building_id')) {
+            $exists = DB::table('buildings')
+                ->where('id', $request->input('building_id'))
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+
+            if (! $exists) {
+                return response()->json(['error' => 'Building not found for this school'], 404);
+            }
+        }
+
+        if ($request->filled('room_id')) {
+            $roomQuery = DB::table('rooms')
+                ->where('id', $request->input('room_id'))
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at');
+
+            if ($request->filled('building_id')) {
+                $roomQuery->where('building_id', $request->input('building_id'));
+            }
+
+            if (! $roomQuery->exists()) {
+                return response()->json(['error' => 'Room not found for this school'], 404);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder  $admissionQuery
+     */
+    private function applyAttendanceReportBuildingRoomAdmissionConstraints(
+        $admissionQuery,
+        ?string $buildingId,
+        ?string $roomId
+    ): void {
+        if ($roomId) {
+            $admissionQuery->where('sa.room_id', $roomId);
+        } elseif ($buildingId) {
+            $admissionQuery->whereNotNull('sa.room_id')
+                ->whereExists(function ($roomSub) use ($buildingId) {
+                    $roomSub->from('rooms as r')
+                        ->whereColumn('r.id', 'sa.room_id')
+                        ->where('r.building_id', $buildingId)
+                        ->whereNull('r.deleted_at');
+                });
+        }
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\AttendanceRecord>  $query
+     */
+    private function applyAttendanceReportBuildingRoomFilter(
+        $query,
+        Request $request,
+        string $organizationId,
+        string $schoolId,
+        string $studentIdColumn = 'attendance_records.student_id'
+    ): void {
+        $buildingId = $request->filled('building_id') ? (string) $request->input('building_id') : null;
+        $roomId = $request->filled('room_id') ? (string) $request->input('room_id') : null;
+
+        if (! $buildingId && ! $roomId) {
+            return;
+        }
+
+        $query->whereExists(function ($sub) use ($buildingId, $roomId, $organizationId, $schoolId, $studentIdColumn) {
+            $sub->from('student_admissions as sa')
+                ->whereColumn('sa.student_id', $studentIdColumn)
+                ->where('sa.organization_id', $organizationId)
+                ->where('sa.school_id', $schoolId)
+                ->where('sa.enrollment_status', 'active')
+                ->whereNull('sa.deleted_at');
+
+            $this->applyAttendanceReportBuildingRoomAdmissionConstraints($sub, $buildingId, $roomId);
+        });
+    }
+
     private function applyAttendanceReportStudentTypeToAttendanceRecordQuery(
         $query,
         Request $request,
@@ -1260,12 +1358,16 @@ class AttendanceSessionController extends Controller
         $hasStudent = $request->filled('student_id');
         $type = $request->input('student_type');
         $hasType = is_string($type) && in_array($type, ['boarders', 'day_scholars'], true);
+        $hasBuildingRoom = $request->filled('building_id') || $request->filled('room_id');
 
-        if (! $hasStudent && ! $hasType) {
+        if (! $hasStudent && ! $hasType && ! $hasBuildingRoom) {
             return;
         }
 
-        $sessionQuery->whereExists(function ($sub) use ($request, $organizationId, $schoolId, $hasStudent, $hasType, $type) {
+        $buildingId = $request->filled('building_id') ? (string) $request->input('building_id') : null;
+        $roomId = $request->filled('room_id') ? (string) $request->input('room_id') : null;
+
+        $sessionQuery->whereExists(function ($sub) use ($request, $organizationId, $schoolId, $hasStudent, $hasType, $hasBuildingRoom, $type, $buildingId, $roomId) {
             $sub->from('attendance_records as ar')
                 ->whereColumn('ar.attendance_session_id', 'attendance_sessions.id')
                 ->where('ar.organization_id', $organizationId)
@@ -1295,6 +1397,19 @@ class AttendanceSessionController extends Controller
                         ->where('sa.enrollment_status', 'active')
                         ->where('sa.is_boarder', false)
                         ->whereNull('sa.deleted_at');
+                });
+            }
+
+            if ($hasBuildingRoom) {
+                $sub->whereExists(function ($sa) use ($organizationId, $schoolId, $buildingId, $roomId) {
+                    $sa->from('student_admissions as sa')
+                        ->whereColumn('sa.student_id', 'ar.student_id')
+                        ->where('sa.organization_id', $organizationId)
+                        ->where('sa.school_id', $schoolId)
+                        ->where('sa.enrollment_status', 'active')
+                        ->whereNull('sa.deleted_at');
+
+                    $this->applyAttendanceReportBuildingRoomAdmissionConstraints($sa, $buildingId, $roomId);
                 });
             }
         });
@@ -1354,9 +1469,15 @@ class AttendanceSessionController extends Controller
             'date_to' => 'nullable|date|after_or_equal:date_from',
             'status' => 'nullable|string|in:present,absent,late,excused,sick,leave',
             'attendance_session_id' => 'nullable|uuid|exists:attendance_sessions,id',
+            'building_id' => 'nullable|uuid|exists:buildings,id',
+            'room_id' => 'nullable|uuid|exists:rooms,id',
         ]);
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        if ($scopeError = $this->validateAttendanceReportBuildingRoomScope($request, $profile->organization_id, $currentSchoolId)) {
+            return $scopeError;
+        }
 
         $scopedSessionId = null;
         if (! empty($validated['attendance_session_id'])) {
@@ -1463,6 +1584,13 @@ class AttendanceSessionController extends Controller
         }
 
         $this->applyAttendanceReportStudentTypeToJoinedRecordQuery(
+            $recordQuery,
+            $request,
+            $profile->organization_id,
+            $currentSchoolId
+        );
+
+        $this->applyAttendanceReportBuildingRoomFilter(
             $recordQuery,
             $request,
             $profile->organization_id,
@@ -1763,9 +1891,16 @@ class AttendanceSessionController extends Controller
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
             'academic_year_id' => 'nullable|uuid',
+            'building_id' => 'nullable|uuid|exists:buildings,id',
+            'room_id' => 'nullable|uuid|exists:rooms,id',
         ]);
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        if ($scopeError = $this->validateAttendanceReportBuildingRoomScope($request, $profile->organization_id, $currentSchoolId)) {
+            return $scopeError;
+        }
+
         $calendarPreference = $validated['calendar_preference'] ?? 'jalali';
         $language = $validated['language'] ?? 'ps';
         $reportTexts = $this->getAttendanceReportTexts($language);
@@ -1818,6 +1953,13 @@ class AttendanceSessionController extends Controller
         }
 
         $this->applyAttendanceReportStudentTypeToAttendanceRecordQuery(
+            $query,
+            $request,
+            $profile->organization_id,
+            $currentSchoolId
+        );
+
+        $this->applyAttendanceReportBuildingRoomFilter(
             $query,
             $request,
             $profile->organization_id,

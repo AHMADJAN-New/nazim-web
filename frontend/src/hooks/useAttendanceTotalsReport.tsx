@@ -42,6 +42,8 @@ export const useAttendanceTotalsReport = (
         sessions_limit: normalizedFilters.sessionsLimit,
         student_breakdown_page: normalizedFilters.studentBreakdownPage,
         student_breakdown_per_page: normalizedFilters.studentBreakdownPerPage,
+        building_id: normalizedFilters.buildingId,
+        room_id: normalizedFilters.roomId,
       };
       // Strict school scoping: do not allow client-selected school_id.
 

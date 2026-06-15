@@ -12,6 +12,8 @@ export interface AttendanceReportFilters {
   page?: number;
   perPage?: number;
   attendanceSessionId?: string;
+  buildingId?: string;
+  roomId?: string;
 }
 
 export interface AttendanceReportRecord {
@@ -51,6 +53,8 @@ export const buildAttendanceReportParams = (filters: AttendanceReportFilters) =>
     page: filters.page,
     per_page: filters.perPage,
     attendance_session_id: filters.attendanceSessionId,
+    building_id: filters.buildingId,
+    room_id: filters.roomId,
   };
 
   if (filters.classId) {
