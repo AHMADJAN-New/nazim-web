@@ -1034,6 +1034,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
 
         // Academic Years (core feature)
         Route::get('/academic-years', [AcademicYearController::class, 'index']);
+        Route::get('/academic-years/{academic_year}/deletion-check', [AcademicYearController::class, 'deletionCheck']);
         Route::get('/academic-years/{academic_year}', [AcademicYearController::class, 'show']);
         Route::middleware(['subscription:write'])->group(function () {
             Route::post('/academic-years', [AcademicYearController::class, 'store']);

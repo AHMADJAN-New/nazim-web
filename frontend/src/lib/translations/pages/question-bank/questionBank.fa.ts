@@ -44,6 +44,9 @@ export default {
     "type.mcq": "چند گزینه‌ای",
     "type.short": "جواب کوتاه",
     "type.true_false": "درست/غلط",
+    "difficulty.easy": "آسان",
+    "difficulty.medium": "متوسط",
+    "difficulty.hard": "سخت",
     viewQuestion: "مشاهده سوال"
   }
 };

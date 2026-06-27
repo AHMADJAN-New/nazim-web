@@ -119,4 +119,14 @@ class ClassAcademicYear extends Model
     {
         return $query->where('is_active', true);
     }
+
+    /**
+     * Only rows whose academic year still exists and is not soft-deleted.
+     */
+    public function scopeForLiveAcademicYear($query)
+    {
+        return $query->whereHas('academicYear', function ($academicYearQuery) {
+            $academicYearQuery->whereNull('deleted_at');
+        });
+    }
 }

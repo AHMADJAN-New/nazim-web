@@ -58,8 +58,8 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useRooms } from '@/hooks/useRooms';
 import { useSchools } from '@/hooks/useSchools';
 import type { Class, ClassAcademicYear } from '@/types/domain/class';
-import type { TranslationKey } from '@/lib/translations/keys.generated';
-import { buildClassYearBlockerLink, hasClassYearBlockerLink } from '@/lib/classYearBlockerLinks';
+import { buildClassYearBlockerLink, CLASS_YEAR_BLOCKER_KEYS, hasClassYearBlockerLink } from '@/lib/classYearBlockerLinks';
+import { useClassYearUrlFilters } from '@/hooks/useClassYearUrlFilters';
 
 const classSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -111,18 +111,6 @@ type AssignClassFormData = z.infer<typeof assignClassSchema>;
 type BulkSectionsFormData = z.infer<typeof bulkSectionsSchema>;
 type CopyClassesFormData = z.infer<typeof copyClassesSchema>;
 
-const CLASS_YEAR_BLOCKER_KEYS: Record<string, TranslationKey> = {
-    student_admissions: 'academic.classes.blockerStudentAdmissions',
-    exam_classes: 'academic.classes.blockerExamClasses',
-    class_subjects: 'academic.classes.blockerClassSubjects',
-    teacher_subject_assignments: 'academic.classes.blockerTeacherSubjectAssignments',
-    timetable_entries: 'academic.classes.blockerTimetableEntries',
-    fee_structures: 'academic.classes.blockerFeeStructures',
-    fee_assignments: 'academic.classes.blockerFeeAssignments',
-    exam_paper_templates: 'academic.classes.blockerExamPaperTemplates',
-    questions: 'academic.classes.blockerQuestions',
-};
-
 export function ClassesManagement() {
     const { t } = useLanguage();
     const { data: profile } = useProfile();
@@ -146,6 +134,18 @@ export function ClassesManagement() {
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>();
     const [viewingHistoryFor, setViewingHistoryFor] = useState<string | null>(null);
     const [copyFromYearId, setCopyFromYearId] = useState<string | undefined>();
+
+    useClassYearUrlFilters(({ academicYearId, classAcademicYearId, tab }) => {
+        if (academicYearId) {
+            setSelectedAcademicYearId(academicYearId);
+        }
+        if (tab === 'year') {
+            setActiveTab('year');
+        }
+        if (classAcademicYearId) {
+            setSelectedClassInstance(classAcademicYearId);
+        }
+    });
 
     const organizationId = profile?.organization_id;
     const { data: schools } = useSchools();
@@ -1653,17 +1653,19 @@ export function ClassesManagement() {
 
             {/* Remove Class Instance Confirmation Dialog */}
             <AlertDialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
+                <AlertDialogContent className="flex w-[calc(100%-2rem)] max-h-[min(90vh,720px)] max-w-lg flex-col gap-0 overflow-hidden p-0">
+                    <AlertDialogHeader className="shrink-0 space-y-2 px-4 pb-2 pt-4 sm:px-6 sm:pt-6">
                         <AlertDialogTitle>
                             {deletionCheck && !deletionCheck.can_delete
                                 ? t('academic.classes.removeBlockedTitle')
                                 : t('academic.classes.removeFromYearTitle')}
                         </AlertDialogTitle>
+                    </AlertDialogHeader>
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6">
                         <AlertDialogDescription asChild>
-                            <div className="space-y-3">
+                            <div className="space-y-3 pb-4 text-sm text-muted-foreground">
                                 {deletionCheckLoading ? (
-                                    <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-2 py-2">
                                         <RefreshCw className="h-4 w-4 animate-spin" />
                                         <span>{t('academic.classes.checkingDeletion')}</span>
                                     </div>
@@ -1684,18 +1686,18 @@ export function ClassesManagement() {
                                     <>
                                         <p>{t('academic.classes.removeBlockedHint')}</p>
                                         {deletionCheck?.blockers && deletionCheck.blockers.length > 0 && (
-                                            <ul className="list-disc space-y-2 ps-5 text-sm">
+                                            <ul className="list-disc space-y-2 ps-5">
                                                 {deletionCheck.blockers.map((blocker) => {
                                                     const blockerLink = getBlockerLink(blocker.key);
                                                     return (
                                                         <li key={blocker.key} className="list-item">
                                                             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                                                                <span>{getBlockerLabel(blocker.key, blocker.count, blocker.message)}</span>
+                                                                <span className="min-w-0 break-words">{getBlockerLabel(blocker.key, blocker.count, blocker.message)}</span>
                                                                 {blockerLink && (
                                                                     <Button
                                                                         variant="link"
                                                                         size="sm"
-                                                                        className="h-auto shrink-0 p-0 text-primary"
+                                                                        className="h-auto shrink-0 self-start p-0 text-primary"
                                                                         asChild
                                                                     >
                                                                         <a
@@ -1704,7 +1706,8 @@ export function ClassesManagement() {
                                                                             rel="noopener noreferrer"
                                                                         >
                                                                             <ExternalLink className="me-1.5 h-3.5 w-3.5" />
-                                                                            <span>{t('academic.classes.openBlockerLink')}</span>
+                                                                            <span className="hidden sm:inline">{t('academic.classes.openBlockerLink')}</span>
+                                                                            <span className="sm:hidden">{t('common.open')}</span>
                                                                         </a>
                                                                     </Button>
                                                                 )}
@@ -1718,16 +1721,18 @@ export function ClassesManagement() {
                                 )}
                             </div>
                         </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleRemoveConfirm}
-                            disabled={deletionCheckLoading || !deletionCheck?.can_delete || removeClass.isPending}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
-                        >
-                            {t('academic.classes.removeFromYear')}
-                        </AlertDialogAction>
+                    </div>
+                    <AlertDialogFooter className="shrink-0 gap-2 border-t px-4 py-3 sm:px-6 sm:py-4">
+                        <AlertDialogCancel className="mt-0">{t('events.cancel')}</AlertDialogCancel>
+                        {deletionCheck?.can_delete !== false && (
+                            <AlertDialogAction
+                                onClick={handleRemoveConfirm}
+                                disabled={deletionCheckLoading || !deletionCheck?.can_delete || removeClass.isPending}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+                            >
+                                {t('academic.classes.removeFromYear')}
+                            </AlertDialogAction>
+                        )}
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

@@ -259,4 +259,115 @@ class ClassAcademicYearDeletionTest extends TestCase
 
         $response->assertStatus(404);
     }
+
+    /** @test */
+    public function base_class_can_be_deleted_when_only_assignments_are_on_deleted_academic_years(): void
+    {
+        $fixture = $this->createClassAcademicYearFixture();
+        $user = $this->createUserWithClassDeletePermission($fixture['organization'], $fixture['school']);
+
+        $fixture['academicYear']->delete();
+
+        $this->assertDatabaseHas('class_academic_years', [
+            'id' => $fixture['classAcademicYear']->id,
+            'deleted_at' => null,
+        ]);
+
+        $response = $this->jsonAs(
+            $user,
+            'DELETE',
+            '/api/classes/'.$fixture['class']->id
+        );
+
+        $response->assertNoContent();
+
+        $this->assertSoftDeleted('classes', ['id' => $fixture['class']->id]);
+    }
+
+    /** @test */
+    public function cannot_delete_academic_year_while_classes_are_assigned(): void
+    {
+        $fixture = $this->createClassAcademicYearFixture();
+        $user = $this->createUserWithAcademicYearDeletePermission($fixture['organization'], $fixture['school']);
+
+        $response = $this->jsonAs(
+            $user,
+            'DELETE',
+            '/api/academic-years/'.$fixture['academicYear']->id
+        );
+
+        $response->assertStatus(409)
+            ->assertJsonPath('blockers.0.key', 'class_academic_years');
+
+        $this->assertDatabaseHas('academic_years', [
+            'id' => $fixture['academicYear']->id,
+            'deleted_at' => null,
+        ]);
+        $this->assertDatabaseHas('class_academic_years', [
+            'id' => $fixture['classAcademicYear']->id,
+            'deleted_at' => null,
+        ]);
+    }
+
+    /** @test */
+    public function academic_year_can_be_deleted_after_all_classes_removed_from_year(): void
+    {
+        $fixture = $this->createClassAcademicYearFixture();
+        $user = $this->createUserWithAcademicYearDeletePermission($fixture['organization'], $fixture['school']);
+
+        $fixture['classAcademicYear']->delete();
+
+        $response = $this->jsonAs(
+            $user,
+            'DELETE',
+            '/api/academic-years/'.$fixture['academicYear']->id
+        );
+
+        $response->assertNoContent();
+        $this->assertSoftDeleted('academic_years', ['id' => $fixture['academicYear']->id]);
+    }
+
+    /** @test */
+    public function academic_year_deletion_check_reports_assigned_classes(): void
+    {
+        $fixture = $this->createClassAcademicYearFixture();
+        $user = $this->createUserWithAcademicYearDeletePermission($fixture['organization'], $fixture['school']);
+
+        $response = $this->jsonAs(
+            $user,
+            'GET',
+            '/api/academic-years/'.$fixture['academicYear']->id.'/deletion-check'
+        );
+
+        $response->assertStatus(200)
+            ->assertJsonPath('can_delete', false)
+            ->assertJsonPath('assigned_class_count', 1)
+            ->assertJsonPath('blockers.0.key', 'class_academic_years')
+            ->assertJsonPath('class_instances.0.id', $fixture['classAcademicYear']->id);
+    }
+
+    private function createUserWithAcademicYearDeletePermission(Organization $organization, SchoolBranding $school)
+    {
+        $user = $this->createUser(
+            [],
+            ['organization_id' => $organization->id, 'default_school_id' => $school->id],
+            $organization,
+            $school,
+            null,
+            ['withRole' => false]
+        );
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $permission = Permission::firstOrCreate([
+            'name' => 'academic_years.delete',
+            'guard_name' => 'web',
+            'organization_id' => $organization->id,
+        ]);
+
+        setPermissionsTeamId($organization->id);
+        $user->givePermissionTo($permission);
+        setPermissionsTeamId(null);
+
+        return $user;
+    }
 }

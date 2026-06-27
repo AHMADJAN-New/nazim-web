@@ -39,6 +39,8 @@ docker/.update-app-state
 .graphify_*
 .graphify_python
 graphify-out/
+graphify-out/graph.json
+graphify-out/GRAPH_REPORT.md
 
 # Desktop renderer build artifacts
 desktop/dist-renderer/

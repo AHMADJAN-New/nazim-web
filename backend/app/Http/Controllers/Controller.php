@@ -128,4 +128,23 @@ abstract class Controller
 
         return $hasPermission;
     }
+
+    /**
+     * Whether the request body tries to set tenant scope fields.
+     * Query-string school_id is allowed (injected by the API client for middleware context).
+     */
+    protected function requestBodyIncludesScopeFields(Request $request): bool
+    {
+        if ($request->isJson()) {
+            $payload = $request->json()->all();
+
+            return is_array($payload) && (
+                array_key_exists('organization_id', $payload)
+                || array_key_exists('school_id', $payload)
+            );
+        }
+
+        return $request->request->has('organization_id')
+            || $request->request->has('school_id');
+    }
 }

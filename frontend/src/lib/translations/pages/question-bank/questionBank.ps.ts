@@ -44,6 +44,9 @@ export default {
     "type.mcq": "څو ځوابیزه (MCQ)",
     "type.short": "لنډ ځواب",
     "type.true_false": "صحیح / غلط",
+    "difficulty.easy": "اسانه",
+    "difficulty.medium": "منځنی",
+    "difficulty.hard": "سخت",
     viewQuestion: "پوښتنه وګورئ"
   }
 };

@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
 
 import { academicYearsApi } from '@/lib/api/client';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
 import { mapAcademicYearApiToDomain, mapAcademicYearDomainToInsert, mapAcademicYearDomainToUpdate } from '@/mappers/academicYearMapper';
 import type * as AcademicYearApi from '@/types/api/academicYear';
@@ -12,6 +13,23 @@ import type { AcademicYear } from '@/types/domain/academicYear';
 
 // Re-export domain types for convenience
 export type { AcademicYear } from '@/types/domain/academicYear';
+
+function resolveAcademicYearDate(
+  value: Date | string | undefined | null,
+  fallback: Date,
+): Date {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? fallback : value;
+  }
+  if (typeof value === 'string') {
+    const parsed = parseLocalDate(value);
+    return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+  }
+  return fallback;
+}
 
 export const useAcademicYears = (organizationId?: string) => {
   const { user, profile } = useAuth();
@@ -113,12 +131,8 @@ export const useCreateAcademicYear = () => {
       }
 
       // Convert dates to Date objects if strings
-      const startDate = typeof academicYearData.startDate === 'string' 
-        ? new Date(academicYearData.startDate) 
-        : academicYearData.startDate;
-      const endDate = typeof academicYearData.endDate === 'string'
-        ? new Date(academicYearData.endDate)
-        : academicYearData.endDate;
+      const startDate = resolveAcademicYearDate(academicYearData.startDate, new Date(NaN));
+      const endDate = resolveAcademicYearDate(academicYearData.endDate, new Date(NaN));
       
       // Validate dates are valid Date objects
       if (!startDate || !(startDate instanceof Date) || isNaN(startDate.getTime())) {
@@ -193,7 +207,10 @@ export const useUpdateAcademicYear = () => {
       }
 
       // Prevent organizationId changes (all users)
-      if (updates.organizationId !== undefined) {
+      if (
+        updates.organizationId !== undefined &&
+        updates.organizationId !== currentAcademicYear.organizationId
+      ) {
         throw new Error('Cannot change organizationId');
       }
 
@@ -202,25 +219,41 @@ export const useUpdateAcademicYear = () => {
         throw new Error(t('academic.academicYears.nameMaxLength'));
       }
 
-      // Validation: date range
-      const startDate = updates.startDate || currentAcademicYear.startDate;
-      const endDate = updates.endDate || currentAcademicYear.endDate;
-      
-      // Validate dates are valid Date objects
-      if (!startDate || !(startDate instanceof Date) || isNaN(startDate.getTime())) {
+      // Validation: date range — form sends YYYY-MM-DD strings; keep existing dates when omitted/invalid
+      const startDate = resolveAcademicYearDate(
+        updates.startDate as Date | string | undefined,
+        currentAcademicYear.startDate,
+      );
+      const endDate = resolveAcademicYearDate(
+        updates.endDate as Date | string | undefined,
+        currentAcademicYear.endDate,
+      );
+
+      if (Number.isNaN(startDate.getTime())) {
         throw new Error('Invalid start date format');
       }
-      
-      if (!endDate || !(endDate instanceof Date) || isNaN(endDate.getTime())) {
+
+      if (Number.isNaN(endDate.getTime())) {
         throw new Error('Invalid end date format');
       }
-      
+
       if (endDate <= startDate) {
         throw new Error(t('academic.academicYears.dateRangeError'));
       }
 
-      // Prepare update data
-      const updateData: Partial<AcademicYear> = { ...updates };
+      // Prepare update data (merge with current so unchanged fields are preserved)
+      const updateData: Partial<AcademicYear> = {
+        name: updates.name ?? currentAcademicYear.name,
+        startDate,
+        endDate,
+        isCurrent: updates.isCurrent ?? currentAcademicYear.isCurrent,
+        description:
+          updates.description !== undefined
+            ? updates.description
+            : currentAcademicYear.description,
+        status: updates.status ?? currentAcademicYear.status,
+      };
+      delete updateData.organizationId;
       if (updateData.name) {
         const trimmedName = updateData.name.trim();
         if (!trimmedName) {
@@ -246,6 +279,30 @@ export const useUpdateAcademicYear = () => {
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.academicYears.updateFailed');
     },
+  });
+};
+
+export const useAcademicYearDeletionCheck = (id: string | null, enabled = true) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<AcademicYearApi.AcademicYearDeletionCheck>({
+    queryKey: [
+      'academic-year-deletion-check',
+      id,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
+    queryFn: async () => {
+      if (!id) {
+        throw new Error('Academic year ID is required');
+      }
+
+      return await academicYearsApi.deletionCheck(id);
+    },
+    enabled: !!user && !!profile && !!id && enabled,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
@@ -288,6 +345,7 @@ export const useDeleteAcademicYear = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });
       queryClient.invalidateQueries({ queryKey: ['current-academic-year'] });
+      queryClient.invalidateQueries({ queryKey: ['academic-year-deletion-check'] });
       showToast.success('academic.academicYears.academicYearDeleted');
     },
     onError: (error: Error) => {

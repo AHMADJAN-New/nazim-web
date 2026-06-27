@@ -44,6 +44,9 @@ export default {
     "type.mcq": "اختيار من متعدد",
     "type.short": "إجابة قصيرة",
     "type.true_false": "صح/خطأ",
+    "difficulty.easy": "سهل",
+    "difficulty.medium": "متوسط",
+    "difficulty.hard": "صعب",
     viewQuestion: "Question Bank"
   }
 };

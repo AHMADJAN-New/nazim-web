@@ -44,6 +44,9 @@ export default {
     "type.mcq": "Multiple Choice",
     "type.short": "Short Answer",
     "type.true_false": "True/False",
+    "difficulty.easy": "Easy",
+    "difficulty.medium": "Medium",
+    "difficulty.hard": "Hard",
     viewQuestion: "View Question"
   }
 };

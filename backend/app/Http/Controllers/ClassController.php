@@ -233,8 +233,8 @@ class ClassController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Prevent scope changes
-        if ($request->has('organization_id') || $request->has('school_id')) {
+        // Prevent scope changes in request body (query school_id is for middleware)
+        if ($this->requestBodyIncludesScopeFields($request)) {
             return response()->json(['error' => 'Cannot change scope fields'], 403);
         }
 
@@ -306,10 +306,13 @@ class ClassController extends Controller
             return response()->json(['error' => 'Class not found'], 404);
         }
 
-        // Check if class is in use (has active class_academic_years)
-        $activeInstances = ClassAcademicYear::where('class_id', $id)
+        // Block only when assigned to a live (non-deleted) academic year.
+        $activeInstances = ClassAcademicYear::query()
+            ->where('class_id', $id)
+            ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->forLiveAcademicYear()
             ->exists();
 
         if ($activeInstances) {

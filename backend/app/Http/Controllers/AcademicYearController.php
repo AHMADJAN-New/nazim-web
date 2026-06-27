@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
+use App\Services\Academic\AcademicYearDeletionService;
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,8 @@ use Illuminate\Validation\Rule;
 class AcademicYearController extends Controller
 {
     public function __construct(
-        private ActivityLogService $activityLogService
+        private ActivityLogService $activityLogService,
+        private AcademicYearDeletionService $deletionService
     ) {}
     /**
      * Display a listing of academic years
@@ -288,8 +290,8 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Cannot update academic year from different school'], 403);
             }
 
-            // Prevent scope changes (all users)
-            if ($request->has('organization_id') || $request->has('school_id')) {
+            // Prevent scope changes in request body (query school_id is for middleware)
+            if ($this->requestBodyIncludesScopeFields($request)) {
                 return response()->json(['error' => 'Cannot change scope fields'], 403);
             }
 
@@ -359,6 +361,46 @@ class AcademicYearController extends Controller
     }
 
     /**
+     * Assess whether an academic year can be deleted.
+     */
+    public function deletionCheck(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (! $user->hasPermissionTo('academic_years.delete')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Permission check failed for academic_years.delete: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $academicYear = AcademicYear::whereNull('deleted_at')->find($id);
+
+        if (! $academicYear) {
+            return response()->json(['error' => 'Academic year not found'], 404);
+        }
+
+        if ($academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
+            return response()->json(['error' => 'Cannot access academic year from different school'], 403);
+        }
+
+        return response()->json($this->deletionService->assess($academicYear, $currentSchoolId));
+    }
+
+    /**
      * Remove the specified academic year (soft delete)
      */
     public function destroy(string $id)
@@ -392,7 +434,7 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
-            $currentSchoolId = request()->get('current_school_id');
+            $currentSchoolId = $this->getCurrentSchoolId(request());
             if ($academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
                 return response()->json(['error' => 'Cannot delete academic year from different school'], 403);
             }
@@ -400,6 +442,16 @@ class AcademicYearController extends Controller
             // Prevent deletion of current year
             if ($academicYear->is_current) {
                 return response()->json(['error' => 'Cannot delete the current academic year. Please set another year as current first.'], 400);
+            }
+
+            $assessment = $this->deletionService->assess($academicYear, $currentSchoolId);
+
+            if (! $assessment['can_delete']) {
+                return response()->json([
+                    'error' => 'Cannot delete academic year while classes are still assigned. Remove all class assignments from this year first.',
+                    'blockers' => $assessment['blockers'],
+                    'class_instances' => $assessment['class_instances'],
+                ], 409);
             }
 
             // Capture data before deletion

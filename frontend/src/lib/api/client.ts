@@ -1644,6 +1644,12 @@ export const academicYearsApi = {
     return apiClient.delete(`/academic-years/${id}`);
   },
 
+  deletionCheck: async (id: string) => {
+    return apiClient.get<import('@/types/api/academicYear').AcademicYearDeletionCheck>(
+      `/academic-years/${id}/deletion-check`
+    );
+  },
+
   setCurrent: async (id: string) => {
     return apiClient.put(`/academic-years/${id}`, { is_current: true });
   },

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Pencil, Trash2, Search, GraduationCap, Calendar, Star } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, GraduationCap, Calendar, Star, RefreshCw, ExternalLink } from 'lucide-react';
 import { useForm, FormProvider } from 'react-hook-form';
 
 import * as z from 'zod';
@@ -39,7 +39,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 
 
-import { useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear, useSetCurrentAcademicYear, type AcademicYear } from '@/hooks/useAcademicYears';
+import { useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear, useSetCurrentAcademicYear, useAcademicYearDeletionCheck, type AcademicYear } from '@/hooks/useAcademicYears';
 import { useLanguage } from '@/hooks/useLanguage';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
 
@@ -50,6 +50,12 @@ import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { dateToLocalYYYYMMDD } from '@/lib/dateUtils';
+import {
+  buildAcademicYearClassesLink,
+  buildClassYearBlockerLink,
+  CLASS_YEAR_BLOCKER_KEYS,
+  hasClassYearBlockerLink,
+} from '@/lib/classYearBlockerLinks';
 
 const academicYearSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -87,6 +93,21 @@ export function AcademicYearsManagement() {
   const updateAcademicYear = useUpdateAcademicYear();
   const deleteAcademicYear = useDeleteAcademicYear();
   const setCurrentAcademicYear = useSetCurrentAcademicYear();
+  const { data: deletionCheck, isLoading: deletionCheckLoading } = useAcademicYearDeletionCheck(
+    selectedAcademicYear,
+    isDeleteDialogOpen && !!selectedAcademicYear
+  );
+
+  const getBlockerLabel = (key: string, count: number, fallbackMessage?: string) => {
+    if (key === 'class_academic_years') {
+      return t('academic.academicYears.deleteBlockedClassAssignments', { count });
+    }
+    const translationKey = CLASS_YEAR_BLOCKER_KEYS[key];
+    if (translationKey) {
+      return t(translationKey, { count });
+    }
+    return fallbackMessage || `${count}`;
+  };
 
   const formMethods = useForm<AcademicYearFormData>({
     resolver: zodResolver(academicYearSchema),
@@ -179,12 +200,11 @@ export function AcademicYearsManagement() {
         { 
           id: selectedAcademicYear, 
           name: data.name,
-          startDate: data.start_date, // Map snake_case to camelCase
-          endDate: data.end_date, // Map snake_case to camelCase
+          startDate: data.start_date,
+          endDate: data.end_date,
           description: data.description,
           status: data.status,
           isCurrent: data.is_current,
-          organizationId: profile?.organization_id || null,
         },
         {
           onSuccess: () => {
@@ -548,21 +568,138 @@ export function AcademicYearsManagement() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('academic.academicYears.deleteConfirm')}
-            </AlertDialogDescription>
+        <AlertDialogContent className="flex w-[calc(100%-2rem)] max-h-[min(90vh,720px)] max-w-lg flex-col gap-0 overflow-hidden p-0">
+          <AlertDialogHeader className="shrink-0 space-y-2 px-4 pb-2 pt-4 sm:px-6 sm:pt-6">
+            <AlertDialogTitle>
+              {deletionCheck && !deletionCheck.can_delete
+                ? t('academic.academicYears.deleteBlockedTitle')
+                : t('events.delete')}
+            </AlertDialogTitle>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('events.delete')}
-            </AlertDialogAction>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6">
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 pb-4 text-sm text-muted-foreground">
+                {deletionCheckLoading ? (
+                  <div className="flex items-center gap-2 py-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span>{t('academic.academicYears.checkingDeletion')}</span>
+                  </div>
+                ) : deletionCheck?.can_delete ? (
+                  <p>{t('academic.academicYears.deleteConfirm')}</p>
+                ) : (
+                  <>
+                    <p>{t('academic.academicYears.deleteBlockedHint')}</p>
+                    {deletionCheck?.blockers && deletionCheck.blockers.length > 0 && (
+                      <ul className="list-disc space-y-2 ps-5">
+                        {deletionCheck.blockers.map((blocker) => (
+                          <li key={blocker.key} className="list-item">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                              <span className="min-w-0 break-words">{getBlockerLabel(blocker.key, blocker.count, blocker.message)}</span>
+                              {selectedAcademicYear && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto shrink-0 self-start p-0 text-primary"
+                                  asChild
+                                >
+                                  <a
+                                    href={buildAcademicYearClassesLink(selectedAcademicYear)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <ExternalLink className="me-1.5 h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline">{t('academic.academicYears.openYearClassesLink')}</span>
+                                    <span className="sm:hidden">{t('academic.classes.openBlockerLink')}</span>
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {deletionCheck?.class_instances && deletionCheck.class_instances.length > 0 && (
+                      <div className="space-y-3 rounded-md border p-3">
+                        {deletionCheck.class_instances.map((instance) => (
+                          <div key={instance.id} className="space-y-2">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                              <span className="min-w-0 break-words font-medium">
+                                {instance.class_name}
+                                {instance.section_name ? ` (${instance.section_name})` : ''}
+                              </span>
+                              {selectedAcademicYear && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto shrink-0 self-start p-0 text-primary"
+                                  asChild
+                                >
+                                  <a
+                                    href={buildAcademicYearClassesLink(selectedAcademicYear, instance.id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <ExternalLink className="me-1.5 h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline">{t('academic.academicYears.openYearClassesLink')}</span>
+                                    <span className="sm:hidden">{t('academic.classes.openBlockerLink')}</span>
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                            {!instance.can_remove && instance.blockers.length > 0 && (
+                              <ul className="list-disc space-y-1 ps-5 text-muted-foreground">
+                                {instance.blockers.map((blocker) => {
+                                  const blockerLink = hasClassYearBlockerLink(blocker.key)
+                                    ? buildClassYearBlockerLink(blocker.key, {
+                                        classAcademicYearId: instance.id,
+                                        academicYearId: selectedAcademicYear ?? undefined,
+                                        classId: instance.class_id,
+                                      })
+                                    : null;
+                                  return (
+                                    <li key={`${instance.id}-${blocker.key}`}>
+                                      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                        <span className="min-w-0 break-words">{getBlockerLabel(blocker.key, blocker.count, blocker.message)}</span>
+                                        {blockerLink && (
+                                          <Button
+                                            variant="link"
+                                            size="sm"
+                                            className="h-auto shrink-0 self-start p-0 text-primary"
+                                            asChild
+                                          >
+                                            <a href={blockerLink} target="_blank" rel="noopener noreferrer">
+                                              <ExternalLink className="me-1.5 h-3.5 w-3.5" />
+                                              <span className="hidden sm:inline">{t('academic.classes.openBlockerLink')}</span>
+                                              <span className="sm:hidden">{t('common.open')}</span>
+                                            </a>
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </div>
+          <AlertDialogFooter className="shrink-0 gap-2 border-t px-4 py-3 sm:px-6 sm:py-4">
+            <AlertDialogCancel className="mt-0">{t('events.cancel')}</AlertDialogCancel>
+            {deletionCheck?.can_delete !== false && (
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                disabled={deletionCheckLoading || (deletionCheck ? !deletionCheck.can_delete : false)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+              >
+                {t('events.delete')}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

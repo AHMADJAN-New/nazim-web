@@ -39,8 +39,30 @@ export function mapAcademicYearDomainToInsert(domain: Partial<AcademicYear>): Ac
 }
 
 /**
- * Convert Domain AcademicYear model to API AcademicYearUpdate payload
+ * Convert Domain AcademicYear model to API AcademicYearUpdate payload.
+ * Never send organization_id or school_id — backend sets scope from session/middleware.
  */
 export function mapAcademicYearDomainToUpdate(domain: Partial<AcademicYear>): AcademicYearApi.AcademicYearUpdate {
-    return mapAcademicYearDomainToInsert(domain);
+    const payload: AcademicYearApi.AcademicYearUpdate = {};
+
+    if (domain.name !== undefined) {
+        payload.name = domain.name;
+    }
+    if (domain.startDate !== undefined) {
+        payload.start_date = dateToLocalYYYYMMDD(domain.startDate);
+    }
+    if (domain.endDate !== undefined) {
+        payload.end_date = dateToLocalYYYYMMDD(domain.endDate);
+    }
+    if (domain.isCurrent !== undefined) {
+        payload.is_current = domain.isCurrent;
+    }
+    if (domain.description !== undefined) {
+        payload.description = domain.description;
+    }
+    if (domain.status !== undefined) {
+        payload.status = domain.status;
+    }
+
+    return payload;
 }
