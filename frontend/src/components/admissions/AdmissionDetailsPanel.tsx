@@ -1,4 +1,4 @@
-import { User, GraduationCap, Home, FileText, Pencil, Trash2, DollarSign, UserRound, CalendarDays, Clock, School } from 'lucide-react';
+import { User, GraduationCap, Home, FileText, Pencil, Trash2, DollarSign, UserRound, CalendarDays, Clock, School, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -21,6 +21,7 @@ import { useRooms } from '@/hooks/useRooms';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useStudentAdmissions, type StudentAdmission, type AdmissionStatus } from '@/hooks/useStudentAdmissions';
+import { buildAdmissionsDeepLink } from '@/lib/classYearBlockerLinks';
 import { cn, formatDate } from '@/lib/utils';
 
 interface AdmissionDetailsPanelProps {
@@ -129,6 +130,42 @@ export function AdmissionDetailsPanel({
     return b ? `${r.roomNumber} — ${b}` : r.roomNumber;
   }, [cayFromApi, resolvedCay]);
   const sectionNotesDisplay = (cayFromApi?.notes ?? resolvedCay?.notes)?.trim() || null;
+
+  const admissionsListDeepLink = useMemo(() => {
+    if (!admission) {
+      return null;
+    }
+
+    const studentName =
+      admission.student?.fullName ||
+      admission.student?.full_name ||
+      admission.student?.admissionNumber ||
+      admission.student?.admission_no;
+
+    const hasContext =
+      admission.academicYearId ||
+      admission.classId ||
+      admission.classAcademicYearId ||
+      studentName;
+
+    if (!hasContext) {
+      return null;
+    }
+
+    const isOrphaned = admission.placementStatus === 'orphaned';
+
+    return buildAdmissionsDeepLink(
+      {
+        academicYearId: admission.academicYearId ?? undefined,
+        classId: admission.classId ?? undefined,
+        classAcademicYearId: isOrphaned ? undefined : admission.classAcademicYearId ?? undefined,
+      },
+      {
+        search: studentName || undefined,
+        placement: isOrphaned ? 'orphaned' : undefined,
+      }
+    );
+  }, [admission]);
 
   useEffect(() => {
     const hasPicture = student?.picturePath && student.picturePath.trim() !== '' && student?.id;
@@ -271,6 +308,14 @@ export function AdmissionDetailsPanel({
                 <Button variant="outline" size="sm" onClick={() => navigate(`/students/${admission.studentId}/fees`)}>
                   <DollarSign className="mr-2 h-4 w-4 text-green-600 dark:text-green-400" />
                   {t('fees.studentFeeAssignments')}
+                </Button>
+              ) : null}
+              {admissionsListDeepLink ? (
+                <Button variant="outline" size="sm" asChild>
+                  <a href={admissionsListDeepLink} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    {t('admissions.openInList')}
+                  </a>
                 </Button>
               ) : null}
               {onDelete ? (

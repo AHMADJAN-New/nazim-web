@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { MoreHorizontal, Pencil, Trash, Eye, FileText, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FeeStructureForm } from '@/components/fees/FeeStructureForm';
@@ -41,6 +42,16 @@ import type { FeeStructure } from '@/types/domain/fees';
 
 export default function FeeStructuresPage() {
   const { t } = useLanguage();
+  const [searchParams] = useSearchParams();
+  const listFilters = useMemo(() => {
+    const academicYearId = searchParams.get('academicYearId') ?? undefined;
+    const classId = searchParams.get('classId') ?? undefined;
+    const classAcademicYearId = searchParams.get('classAcademicYearId') ?? undefined;
+    if (!academicYearId && !classId && !classAcademicYearId) {
+      return undefined;
+    }
+    return { academicYearId, classId, classAcademicYearId };
+  }, [searchParams]);
   const {
     data: structures = [],
     isLoading,
@@ -49,7 +60,7 @@ export default function FeeStructuresPage() {
     pageSize,
     setPage,
     setPageSize,
-  } = useFeeStructures(undefined, true);
+  } = useFeeStructures(listFilters, true);
   const { data: classes = [] } = useClasses();
   const { data: academicYears = [] } = useAcademicYears();
   const createMutation = useCreateFeeStructure();

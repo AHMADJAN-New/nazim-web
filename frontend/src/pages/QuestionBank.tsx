@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, CheckCircle, XCircle, Eye, X } from 'lucide-react';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
@@ -13,6 +13,7 @@ import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useQuestions, useCreateQuestion, useUpdateQuestion, useDeleteQuestion, useDuplicateQuestion, useBulkUpdateQuestions, QUESTION_TYPES, QUESTION_DIFFICULTIES } from '@/hooks/useQuestions';
 import type { Question, QuestionType, QuestionDifficulty, QuestionOption, QuestionFilters } from '@/hooks/useQuestions';
 import { useClassSubjects } from '@/hooks/useSubjects';
+import { useClassYearUrlFilters } from '@/hooks/useClassYearUrlFilters';
 import { useSchools } from '@/hooks/useSchools';
 import { useProfile } from '@/hooks/useProfiles';
 import { classSubjectsApi, questionsApi } from '@/lib/api/client';
@@ -82,6 +83,15 @@ export function QuestionBank() {
   const [selectedType, setSelectedType] = useState<QuestionType | 'all'>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<QuestionDifficulty | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'inactive'>('all');
+
+  const applyClassYearUrlFilters = useCallback((values: {
+    academicYearId?: string;
+    classAcademicYearId?: string;
+  }) => {
+    if (values.academicYearId) setSelectedAcademicYearId(values.academicYearId);
+    if (values.classAcademicYearId) setSelectedClassAcademicYearId(values.classAcademicYearId);
+  }, []);
+  useClassYearUrlFilters(applyClassYearUrlFilters);
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);

@@ -1125,8 +1125,12 @@ export function Students() {
 
   const getCurrentClassLabel = useCallback(
     (student: Student) => {
-      if (student.latestAdmission?.isAssignedToClass && student.currentClass?.name) {
+      if (student.latestAdmission?.hasValidClassPlacement && student.currentClass?.name) {
         return student.currentClass.name;
+      }
+
+      if (student.latestAdmission?.placementStatus === 'orphaned') {
+        return t('students.invalidClassPlacement');
       }
 
       if (student.latestAdmission?.isCurrentEnrollment) {
@@ -1225,7 +1229,7 @@ export function Students() {
       cell: ({ row }) => {
         const student = row.original;
 
-        if (student.latestAdmission?.isAssignedToClass && student.currentClass?.name) {
+        if (student.latestAdmission?.hasValidClassPlacement && student.currentClass?.name) {
           return (
             <div className="space-y-1">
               <div className="font-medium">{student.currentClass.name}</div>
@@ -1636,7 +1640,7 @@ export function Students() {
                               )}
                             </TableCell>
                             <TableCell className="hidden xl:table-cell">
-                              {student.latestAdmission?.isAssignedToClass && student.currentClass?.name ? (
+                              {student.latestAdmission?.hasValidClassPlacement && student.currentClass?.name ? (
                                 <div className="space-y-1">
                                   <div className="font-medium">{student.currentClass.name}</div>
                                   {student.latestAdmission.sectionName && (

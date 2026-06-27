@@ -358,6 +358,16 @@ class ApiClient {
           throw subscriptionError;
         }
 
+        // Handle 409 conflict errors (e.g. class academic year deletion blockers)
+        if (response.status === 409) {
+          const conflictError = new Error(error.message || error.error || 'Conflict');
+          (conflictError as any).status = 409;
+          if (error.blockers) {
+            (conflictError as any).blockers = error.blockers;
+          }
+          throw conflictError;
+        }
+
         // Handle 503 maintenance mode errors
         if (response.status === 503) {
           // Extract maintenance message from Laravel's maintenance mode response
@@ -1557,6 +1567,12 @@ export const classesApi = {
 
   removeFromYear: async (id: string) => {
     return apiClient.delete(`/classes/academic-years/${id}`);
+  },
+
+  getDeletionCheck: async (id: string) => {
+    return apiClient.get<import('@/types/api/class').ClassAcademicYearDeletionCheck>(
+      `/classes/academic-years/${id}/deletion-check`
+    );
   },
 
   copyBetweenYears: async (data: {

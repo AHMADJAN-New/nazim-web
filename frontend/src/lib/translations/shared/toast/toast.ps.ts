@@ -78,6 +78,16 @@ export default {
     attendanceUpdated: "حاضري په بریالیتوب سره تازه شوه",
     attendanceUpdateFailed: "د حاضرۍ تازه کول ناکام شول",
     categoryCreateFailed: "د کټګورۍ جوړول ناکام شول",
+    classes: {
+      assignFailed: "ټولګی تعلیمي کال ته منسوبول ناکام شول",
+      copyFailed: "د ټولګیو کاپي کول ناکام شول",
+      createFailed: "ټولګی جوړول ناکام شول",
+      deleteFailed: "ټولګی حذفول ناکام شول",
+      instanceUpdateFailed: "د ټولګي معلومات تازه کول ناکام شول",
+      removeFailed: "ټولګی له تعلیمي کال څخه لیرې کول ناکام شول",
+      sectionCreateFailed: "د څانګو جوړول ناکام شول",
+      updateFailed: "ټولګی سمول ناکام شول"
+    },
     categoryDeleteFailed: "د کټګورۍ ړنګول ناکام شول",
     categoryUpdateFailed: "د کټګورۍ تازه کول ناکام شول",
     certificates: {

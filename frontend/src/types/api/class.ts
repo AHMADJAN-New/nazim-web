@@ -59,3 +59,15 @@ export interface ClassAcademicYear {
 
 export type ClassAcademicYearInsert = Omit<ClassAcademicYear, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'class' | 'academic_year' | 'teacher' | 'room'>;
 export type ClassAcademicYearUpdate = Partial<Omit<ClassAcademicYear, 'id' | 'class_id' | 'academic_year_id' | 'organization_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'class' | 'academic_year' | 'teacher' | 'room'>>;
+
+export interface ClassAcademicYearDeletionBlocker {
+    key: string;
+    count: number;
+    message: string;
+}
+
+export interface ClassAcademicYearDeletionCheck {
+    can_delete: boolean;
+    blockers: ClassAcademicYearDeletionBlocker[];
+    active_student_count: number;
+}

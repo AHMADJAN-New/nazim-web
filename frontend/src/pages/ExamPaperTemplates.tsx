@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, Eye, FileText, FileCode, Download } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useClassYearUrlFilters } from '@/hooks/useClassYearUrlFilters';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
@@ -70,6 +71,16 @@ export default function ExamPaperTemplates() {
   const [selectedExamId, setSelectedExamId] = useState<string | undefined>();
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | undefined>();
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>();
+  const [listClassAcademicYearId, setListClassAcademicYearId] = useState<string | undefined>();
+
+  const applyClassYearUrlFilters = useCallback((values: {
+    academicYearId?: string;
+    classAcademicYearId?: string;
+  }) => {
+    if (values.academicYearId) setSelectedAcademicYearId(values.academicYearId);
+    if (values.classAcademicYearId) setListClassAcademicYearId(values.classAcademicYearId);
+  }, []);
+  useClassYearUrlFilters(applyClassYearUrlFilters);
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -300,9 +311,12 @@ export default function ExamPaperTemplates() {
       if (searchQuery && !template.title.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
+      if (listClassAcademicYearId && template.classAcademicYearId !== listClassAcademicYearId) {
+        return false;
+      }
       return true;
     });
-  }, [templates, searchQuery]);
+  }, [templates, searchQuery, listClassAcademicYearId]);
 
   const getSubjectName = (subjectId: string) => {
     const subject = subjects?.find(s => s.id === subjectId);

@@ -19,6 +19,7 @@ import {
   List
 } from 'lucide-react';
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -77,6 +78,7 @@ interface ExamClassCardProps {
   subjectDrafts: Record<string, { totalMarks: string; passingMarks: string; scheduledAt: string }>;
   onDraftChange: (id: string, draft: { totalMarks: string; passingMarks: string; scheduledAt: string }) => void;
   defaultExpanded?: boolean;
+  isHighlighted?: boolean;
 }
 
 function ExamClassCard({
@@ -93,6 +95,7 @@ function ExamClassCard({
   subjectDrafts,
   onDraftChange,
   defaultExpanded = false,
+  isHighlighted = false,
 }: ExamClassCardProps) {
   const { t } = useLanguage();
   // Fix: Ensure we have classAcademicYearId before fetching subjects
@@ -162,7 +165,7 @@ function ExamClassCard({
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <Card className={cn('transition-all duration-200', getStatusColor())}>
+      <Card className={cn('transition-all duration-200', getStatusColor(), isHighlighted && 'ring-2 ring-primary')}>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
             <div className="flex items-center justify-between">
@@ -525,6 +528,19 @@ export function ExamEnrollment() {
   const [selectedAcademicYearFilter, setSelectedAcademicYearFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const [highlightClassAcademicYearId, setHighlightClassAcademicYearId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const academicYearId = searchParams.get('academicYearId');
+    const classAcademicYearId = searchParams.get('classAcademicYearId');
+    if (academicYearId) {
+      setSelectedAcademicYearFilter(academicYearId);
+    }
+    if (classAcademicYearId) {
+      setHighlightClassAcademicYearId(classAcademicYearId);
+    }
+  }, [searchParams]);
 
   // Get unique academic years from exams
   const examAcademicYears = useMemo(() => {
@@ -564,6 +580,21 @@ export function ExamEnrollment() {
   // Fetch exam details
   const { data: examClasses, isLoading: classesLoading } = useExamClasses(selectedExam?.id);
   const { data: examSubjects } = useExamSubjects(selectedExam?.id);
+
+  useEffect(() => {
+    if (!highlightClassAcademicYearId || !examClasses?.length || !selectedExam) {
+      return;
+    }
+    const hasClass = examClasses.some(
+      (examClass) => examClass.classAcademicYearId === highlightClassAcademicYearId
+    );
+    if (!hasClass && filteredExams.length > 1) {
+      const alternateExam = filteredExams.find((exam) => exam.id !== selectedExam.id);
+      if (alternateExam) {
+        setSelectedExam(alternateExam);
+      }
+    }
+  }, [highlightClassAcademicYearId, examClasses, selectedExam, filteredExams]);
   
   // Fix: Ensure we fetch classes for the exam's academic year
   const { data: availableClasses, isLoading: classesLoading2 } = useClassAcademicYears(
@@ -1064,7 +1095,10 @@ export function ExamEnrollment() {
                           updateSubject={updateExamSubject}
                           subjectDrafts={draftSubjects}
                           onDraftChange={onDraftChange}
-                          defaultExpanded={index === 0}
+                          defaultExpanded={
+                            examClass.classAcademicYearId === highlightClassAcademicYearId || index === 0
+                          }
+                          isHighlighted={examClass.classAcademicYearId === highlightClassAcademicYearId}
                         />
                       ))}
                     </div>

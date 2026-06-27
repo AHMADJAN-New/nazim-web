@@ -1,4 +1,5 @@
-import { CalendarDays, GraduationCap, Pencil, Plus, School } from 'lucide-react';
+import { CalendarDays, ExternalLink, GraduationCap, Pencil, Plus, School } from 'lucide-react';
+import { useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { useStudentAdmissions, type AdmissionStatus, type StudentAdmission } from '@/hooks/useStudentAdmissions';
+import { buildAdmissionsDeepLink } from '@/lib/classYearBlockerLinks';
 import { formatDate } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
 
@@ -93,6 +95,27 @@ export function StudentAdmissionsDialog({
     open && !!student?.id && canReadAdmissions
   );
 
+  const admissionsListDeepLink = useMemo(() => {
+    if (!student) {
+      return null;
+    }
+
+    const latest = student.latestAdmission;
+    const isOrphaned = latest?.placementStatus === 'orphaned';
+
+    return buildAdmissionsDeepLink(
+      {
+        academicYearId: latest?.academicYearId ?? undefined,
+        classId: latest?.classId ?? undefined,
+        classAcademicYearId: isOrphaned ? undefined : latest?.classAcademicYearId ?? undefined,
+      },
+      {
+        search: student.fullName || student.admissionNumber || undefined,
+        placement: isOrphaned ? 'orphaned' : undefined,
+      }
+    );
+  }, [student]);
+
   if (!student) {
     return null;
   }
@@ -133,7 +156,15 @@ export function StudentAdmissionsDialog({
                 ) : null}
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex flex-wrap justify-end gap-2">
+                {admissionsListDeepLink ? (
+                  <Button variant="outline" type="button" asChild>
+                    <a href={admissionsListDeepLink} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      {t('admissions.openInList') || 'Open in list'}
+                    </a>
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   onClick={() => onCreateAdmission?.(student)}

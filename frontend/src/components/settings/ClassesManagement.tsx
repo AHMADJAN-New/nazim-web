@@ -41,8 +41,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 
-import { Plus, Pencil, Trash2, Search, GraduationCap, Users, Copy, History, Calendar } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { Plus, Pencil, Trash2, Search, GraduationCap, Users, Copy, History, Calendar, RefreshCw, ExternalLink } from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
 
 
 import { useForm, Controller } from 'react-hook-form';
@@ -51,13 +51,15 @@ import * as z from 'zod';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useClasses, useClassAcademicYears, useClassHistory, useCreateClass, useUpdateClass, useDeleteClass, useAssignClassToYear, useUpdateClassYearInstance, useRemoveClassFromYear, useCopyClassesBetweenYears, useBulkAssignClassSections } from '@/hooks/useClasses';
+import { useClasses, useClassAcademicYears, useClassHistory, useCreateClass, useUpdateClass, useDeleteClass, useAssignClassToYear, useUpdateClassYearInstance, useRemoveClassFromYear, useCopyClassesBetweenYears, useBulkAssignClassSections, useClassAcademicYearDeletionCheck } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { useRooms } from '@/hooks/useRooms';
 import { useSchools } from '@/hooks/useSchools';
 import type { Class, ClassAcademicYear } from '@/types/domain/class';
+import type { TranslationKey } from '@/lib/translations/keys.generated';
+import { buildClassYearBlockerLink, hasClassYearBlockerLink } from '@/lib/classYearBlockerLinks';
 
 const classSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -109,6 +111,18 @@ type AssignClassFormData = z.infer<typeof assignClassSchema>;
 type BulkSectionsFormData = z.infer<typeof bulkSectionsSchema>;
 type CopyClassesFormData = z.infer<typeof copyClassesSchema>;
 
+const CLASS_YEAR_BLOCKER_KEYS: Record<string, TranslationKey> = {
+    student_admissions: 'academic.classes.blockerStudentAdmissions',
+    exam_classes: 'academic.classes.blockerExamClasses',
+    class_subjects: 'academic.classes.blockerClassSubjects',
+    teacher_subject_assignments: 'academic.classes.blockerTeacherSubjectAssignments',
+    timetable_entries: 'academic.classes.blockerTimetableEntries',
+    fee_structures: 'academic.classes.blockerFeeStructures',
+    fee_assignments: 'academic.classes.blockerFeeAssignments',
+    exam_paper_templates: 'academic.classes.blockerExamPaperTemplates',
+    questions: 'academic.classes.blockerQuestions',
+};
+
 export function ClassesManagement() {
     const { t } = useLanguage();
     const { data: profile } = useProfile();
@@ -116,6 +130,7 @@ export function ClassesManagement() {
     const hasUpdatePermission = useHasPermission('classes.update');
     const hasDeletePermission = useHasPermission('classes.delete');
     const hasAssignPermission = useHasPermission('classes.assign');
+    const hasRemovePermission = hasDeletePermission || hasAssignPermission;
     const hasCopyPermission = useHasPermission('classes.copy');
 
     const [activeTab, setActiveTab] = useState('base');
@@ -146,6 +161,10 @@ export function ClassesManagement() {
       setPageSize: setClassesPageSize,
     } = useClasses(organizationId, true);
     const { data: classAcademicYears, isLoading: yearClassesLoading } = useClassAcademicYears(selectedAcademicYearId, organizationId);
+    const { data: deletionCheck, isLoading: deletionCheckLoading } = useClassAcademicYearDeletionCheck(
+        selectedClassInstance,
+        isRemoveDialogOpen && !!selectedClassInstance
+    );
     const { data: classHistory } = useClassHistory(viewingHistoryFor || '');
     const { data: copySourceInstances } = useClassAcademicYears(copyFromYearId, organizationId);
     const { data: rooms } = useRooms(undefined, organizationId);
@@ -158,6 +177,38 @@ export function ClassesManagement() {
     const updateClassInstance = useUpdateClassYearInstance();
     const removeClass = useRemoveClassFromYear();
     const copyClasses = useCopyClassesBetweenYears();
+
+    const selectedYearClassInstance = useMemo(
+        () => classAcademicYears?.find((instance) => instance.id === selectedClassInstance) ?? null,
+        [classAcademicYears, selectedClassInstance]
+    );
+
+    const selectedYearName = useMemo(
+        () => academicYears?.find((year) => year.id === selectedAcademicYearId)?.name ?? '',
+        [academicYears, selectedAcademicYearId]
+    );
+
+    const getBlockerLabel = (key: string, count: number, fallbackMessage?: string) => {
+        const translationKey = CLASS_YEAR_BLOCKER_KEYS[key];
+        if (translationKey) {
+            return t(translationKey, { count });
+        }
+        return fallbackMessage || `${count}`;
+    };
+
+    const getBlockerLink = useCallback(
+        (blockerKey: string) => {
+            if (!selectedYearClassInstance || !hasClassYearBlockerLink(blockerKey)) {
+                return null;
+            }
+            return buildClassYearBlockerLink(blockerKey, {
+                classAcademicYearId: selectedYearClassInstance.id,
+                academicYearId: selectedAcademicYearId,
+                classId: selectedYearClassInstance.classId,
+            });
+        },
+        [selectedYearClassInstance, selectedAcademicYearId]
+    );
 
     // Set default academic year to current year
     useMemo(() => {
@@ -413,6 +464,7 @@ export function ClassesManagement() {
                 notes: null,
             });
         }
+        setSelectedClassInstance(null);
         setIsAssignDialogOpen(true);
     };
 
@@ -543,6 +595,12 @@ export function ClassesManagement() {
 
     const handleRemoveClick = (instanceId: string) => {
         setSelectedClassInstance(instanceId);
+        setIsRemoveDialogOpen(true);
+    };
+
+    const handleRemoveFromEditDialog = () => {
+        if (!selectedClassInstance) return;
+        setIsAssignDialogOpen(false);
         setIsRemoveDialogOpen(true);
     };
 
@@ -868,13 +926,14 @@ export function ClassesManagement() {
                                                                             <Pencil className="h-4 w-4" />
                                                                         </Button>
                                                                     )}
-                                                                    {hasAssignPermission && (
+                                                                    {hasRemovePermission && (
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="sm"
                                                                             onClick={() => handleRemoveClick(instance.id)}
                                                                             className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                                                            title={t('events.delete')}
+                                                                            title={t('academic.classes.removeFromYear')}
+                                                                            aria-label={t('academic.classes.removeFromYear')}
                                                                         >
                                                                             <Trash2 className="h-4 w-4" />
                                                                         </Button>
@@ -1255,13 +1314,28 @@ export function ClassesManagement() {
                                 )}
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={handleCloseAssignDialog}>
-                                {t('events.cancel')}
-                            </Button>
-                            <Button type="submit">
-                                {t('events.save')}
-                            </Button>
+                        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+                            {selectedClassInstance && hasRemovePermission ? (
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={handleRemoveFromEditDialog}
+                                    className="w-full sm:w-auto"
+                                >
+                                    <Trash2 className="h-4 w-4 sm:mr-2" />
+                                    <span>{t('academic.classes.removeFromYear')}</span>
+                                </Button>
+                            ) : (
+                                <div className="hidden sm:block" />
+                            )}
+                            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+                                <Button type="button" variant="outline" onClick={handleCloseAssignDialog}>
+                                    {t('events.cancel')}
+                                </Button>
+                                <Button type="submit">
+                                    {t('events.save')}
+                                </Button>
+                            </div>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -1581,18 +1655,78 @@ export function ClassesManagement() {
             <AlertDialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('events.delete')}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {t('academic.classes.removeConfirm')}
+                        <AlertDialogTitle>
+                            {deletionCheck && !deletionCheck.can_delete
+                                ? t('academic.classes.removeBlockedTitle')
+                                : t('academic.classes.removeFromYearTitle')}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-3">
+                                {deletionCheckLoading ? (
+                                    <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                        <span>{t('academic.classes.checkingDeletion')}</span>
+                                    </div>
+                                ) : deletionCheck?.can_delete ? (
+                                    <p>
+                                        {selectedYearClassInstance
+                                            ? t('academic.classes.removeConfirmDetails', {
+                                                className: selectedYearClassInstance.class?.name || t('academic.classes.class'),
+                                                section: selectedYearClassInstance.sectionName
+                                                    ? ` (${selectedYearClassInstance.sectionName})`
+                                                    : '',
+                                                yearName: selectedYearName,
+                                                studentCount: deletionCheck.active_student_count,
+                                            })
+                                            : t('academic.classes.removeConfirm')}
+                                    </p>
+                                ) : (
+                                    <>
+                                        <p>{t('academic.classes.removeBlockedHint')}</p>
+                                        {deletionCheck?.blockers && deletionCheck.blockers.length > 0 && (
+                                            <ul className="list-disc space-y-2 ps-5 text-sm">
+                                                {deletionCheck.blockers.map((blocker) => {
+                                                    const blockerLink = getBlockerLink(blocker.key);
+                                                    return (
+                                                        <li key={blocker.key} className="list-item">
+                                                            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                                                <span>{getBlockerLabel(blocker.key, blocker.count, blocker.message)}</span>
+                                                                {blockerLink && (
+                                                                    <Button
+                                                                        variant="link"
+                                                                        size="sm"
+                                                                        className="h-auto shrink-0 p-0 text-primary"
+                                                                        asChild
+                                                                    >
+                                                                        <a
+                                                                            href={blockerLink}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                        >
+                                                                            <ExternalLink className="me-1.5 h-3.5 w-3.5" />
+                                                                            <span>{t('academic.classes.openBlockerLink')}</span>
+                                                                        </a>
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleRemoveConfirm}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            disabled={deletionCheckLoading || !deletionCheck?.can_delete || removeClass.isPending}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
                         >
-                            {t('events.delete')}
+                            {t('academic.classes.removeFromYear')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -301,6 +301,7 @@ export default {
     currentEnrollmentInactive: "فعاله داخله نشته",
     waitingForClass: "د ټولګي انتظار",
     notInClass: "په ټولګي کې نه دی",
+    invalidClassPlacement: "برخه لرې شوې — بیا ټاکل",
     mobileAdmissionPrefix: "داخله",
     mobileClassPrefix: "ټولګی",
     selectStudent: "غوره کول",

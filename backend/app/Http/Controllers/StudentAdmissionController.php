@@ -10,6 +10,7 @@ use App\Models\Room;
 use App\Models\Student;
 use App\Models\StudentAdmission;
 use App\Services\ActivityLogService;
+use App\Services\Academic\StudentAdmissionPlacementService;
 use App\Services\IdCards\SyncStudentIdCardClassFromAdmissionService;
 use App\Services\Notifications\NotificationService;
 use App\Services\Reports\DateConversionService;
@@ -28,7 +29,8 @@ class StudentAdmissionController extends Controller
         private DateConversionService $dateService,
         private NotificationService $notificationService,
         private ActivityLogService $activityLogService,
-        private SyncStudentIdCardClassFromAdmissionService $idCardClassSyncService
+        private SyncStudentIdCardClassFromAdmissionService $idCardClassSyncService,
+        private StudentAdmissionPlacementService $placementService
     ) {}
 
     /**
@@ -112,11 +114,24 @@ class StudentAdmissionController extends Controller
         }
 
         if ($request->has('class_id') && $request->class_id) {
-            $query->where('class_id', $request->class_id);
+            $this->placementService->scopeValidClassPlacement($query);
+            $query->whereHas('classAcademicYear', function ($cayQuery) use ($request) {
+                $cayQuery->where('class_id', $request->class_id);
+            });
+        } elseif ($request->has('class_academic_year_id') && $request->class_academic_year_id) {
+            $this->placementService->scopeValidClassPlacement($query);
+            $query->where('student_admissions.class_academic_year_id', $request->class_academic_year_id);
         }
 
-        if ($request->has('class_academic_year_id') && $request->class_academic_year_id) {
-            $query->where('class_academic_year_id', $request->class_academic_year_id);
+        if ($request->filled('placement')) {
+            $placement = $request->input('placement');
+            if (in_array($placement, [
+                StudentAdmissionPlacementService::STATUS_PLACED,
+                StudentAdmissionPlacementService::STATUS_ORPHANED,
+                StudentAdmissionPlacementService::STATUS_UNPLACED,
+            ], true)) {
+                $this->placementService->scopeByPlacement($query, $placement);
+            }
         }
 
         if ($request->has('enrollment_status') && $request->enrollment_status) {
@@ -226,7 +241,7 @@ class StudentAdmissionController extends Controller
             return response()->json(['error' => 'Student admission not found'], 404);
         }
 
-        return response()->json($admission);
+        return response()->json($this->placementService->appendToAdmission($admission));
     }
 
     /**
@@ -393,7 +408,7 @@ class StudentAdmissionController extends Controller
             Log::warning('Failed to log student admission creation: '.$e->getMessage());
         }
 
-        return response()->json($admission, 201);
+        return response()->json($this->placementService->appendToAdmission($admission), 201);
     }
 
     /**
@@ -547,7 +562,7 @@ class StudentAdmissionController extends Controller
             Log::warning('Failed to log student admission update: '.$e->getMessage());
         }
 
-        return response()->json($admission);
+        return response()->json($this->placementService->appendToAdmission($admission));
     }
 
     /**
@@ -1229,16 +1244,36 @@ class StudentAdmissionController extends Controller
             ->whereIn('organization_id', $orgIds)
             ->where('school_id', $currentSchoolId);
 
+        if ($request->filled('academic_year_id')) {
+            $query->where('academic_year_id', $request->input('academic_year_id'));
+        }
+
         $total = (clone $query)->count();
         $active = (clone $query)->where('enrollment_status', 'active')->count();
         $pending = (clone $query)->whereIn('enrollment_status', ['pending', 'admitted'])->count();
         $boarders = (clone $query)->where('is_boarder', true)->count();
+
+        $currentEnrollmentQuery = (clone $query)->whereIn('enrollment_status', StudentAdmission::CURRENT_ENROLLMENT_STATUSES);
+        $placedInClass = (clone $currentEnrollmentQuery);
+        $this->placementService->scopeValidClassPlacement($placedInClass);
+        $placedInClass = $placedInClass->count();
+
+        $needsClass = (clone $currentEnrollmentQuery);
+        $this->placementService->scopeUnplacedCurrentEnrollment($needsClass);
+        $needsClass = $needsClass->count();
+
+        $orphanedPlacement = (clone $currentEnrollmentQuery);
+        $this->placementService->scopeOrphanedClassPlacement($orphanedPlacement);
+        $orphanedPlacement = $orphanedPlacement->count();
 
         return response()->json([
             'total' => $total,
             'active' => $active,
             'pending' => $pending,
             'boarders' => $boarders,
+            'placed_in_class' => $placedInClass,
+            'needs_class' => $needsClass,
+            'orphaned_placement' => $orphanedPlacement,
         ]);
     }
 
@@ -1553,7 +1588,7 @@ class StudentAdmissionController extends Controller
 
                 $query = clone $baseQuery;
                 if ($onlyWithoutClass) {
-                    $query->whereNull('class_academic_year_id');
+                    $this->placementService->scopeWithoutValidClassPlacement($query);
                 }
 
                 $admission = $query->orderByDesc('admission_date')->orderByDesc('created_at')->first();
@@ -1815,7 +1850,7 @@ class StudentAdmissionController extends Controller
         return $admissions->map(function ($admission) use ($latestAdmissionIdByStudentId) {
             $admission->is_latest_admission_for_student = ($latestAdmissionIdByStudentId[$admission->student_id] ?? null) === $admission->id;
 
-            return $admission;
+            return $this->placementService->appendToAdmission($admission);
         });
     }
 

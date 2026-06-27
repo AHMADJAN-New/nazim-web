@@ -187,6 +187,8 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
       academicYearName: api.latest_admission.academic_year_name,
       isCurrentEnrollment: api.latest_admission.is_current_enrollment,
       isAssignedToClass: api.latest_admission.is_assigned_to_class,
+      hasValidClassPlacement: api.latest_admission.has_valid_class_placement ?? api.latest_admission.is_assigned_to_class,
+      placementStatus: api.latest_admission.placement_status,
     } : null,
   };
 }

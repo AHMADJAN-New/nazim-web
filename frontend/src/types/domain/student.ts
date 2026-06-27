@@ -215,6 +215,8 @@ export interface Student {
     academicYearName: string | null;
     isCurrentEnrollment: boolean;
     isAssignedToClass: boolean;
+    hasValidClassPlacement?: boolean;
+    placementStatus?: 'placed' | 'orphaned' | 'unplaced' | 'not_current';
   } | null;
 }
 

@@ -17,6 +17,8 @@ export interface StudentLatestAdmission {
   academic_year_name: string | null;
   is_current_enrollment: boolean;
   is_assigned_to_class: boolean;
+  has_valid_class_placement?: boolean;
+  placement_status?: 'placed' | 'orphaned' | 'unplaced' | 'not_current';
 }
 
 // Student interface matching the database schema

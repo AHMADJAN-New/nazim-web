@@ -251,7 +251,11 @@ export const useDeleteClass = () => {
             showToast.success('academic.classes.classDeleted');
         },
         onError: (error: Error) => {
-            showToast.error(error.message || 'toast.classes.deleteFailed');
+            const message =
+                error.message?.includes('assigned to academic years')
+                    ? 'academic.classes.cannotDeleteInUse'
+                    : error.message || 'toast.classes.deleteFailed';
+            showToast.error(message);
         },
     });
 };
@@ -321,6 +325,30 @@ export const useUpdateClassYearInstance = () => {
     });
 };
 
+export const useClassAcademicYearDeletionCheck = (id: string | null, enabled = true) => {
+    const { user, profile } = useAuth();
+
+    return useQuery<ClassApi.ClassAcademicYearDeletionCheck>({
+        queryKey: [
+            'class-academic-year-deletion-check',
+            id,
+            profile?.organization_id,
+            profile?.default_school_id ?? null,
+        ],
+        queryFn: async () => {
+            if (!id) {
+                throw new Error('Class instance ID is required');
+            }
+
+            return await classesApi.getDeletionCheck(id);
+        },
+        enabled: !!user && !!profile && !!id && enabled,
+        staleTime: 0,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+    });
+};
+
 export const useRemoveClassFromYear = () => {
     const queryClient = useQueryClient();
     const { user, profile } = useAuth();
@@ -333,12 +361,14 @@ export const useRemoveClassFromYear = () => {
 
             await classesApi.removeFromYear(id);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
-            queryClient.invalidateQueries({ queryKey: ['class-history'] });
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
+            await queryClient.refetchQueries({ queryKey: ['class-academic-years'] });
+            await queryClient.invalidateQueries({ queryKey: ['class-history'] });
+            await queryClient.invalidateQueries({ queryKey: ['class-academic-year-deletion-check'] });
             showToast.success('academic.classes.classRemoved');
         },
-        onError: (error: Error) => {
+        onError: (error: Error & { blockers?: ClassApi.ClassAcademicYearDeletionBlocker[] }) => {
             showToast.error(error.message || 'toast.classes.removeFailed');
         },
     });

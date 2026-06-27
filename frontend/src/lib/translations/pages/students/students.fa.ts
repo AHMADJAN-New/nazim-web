@@ -289,6 +289,7 @@ export default {
     currentEnrollmentInactive: "شمولیت جاری نیست",
     waitingForClass: "در انتظار صنف",
     notInClass: "در صنف نیست",
+    invalidClassPlacement: "بخش حذف شده — دوباره تعیین کنید",
     mobileAdmissionPrefix: "شمولیت",
     mobileClassPrefix: "صنف",
     selectStudent: "انتخاب",

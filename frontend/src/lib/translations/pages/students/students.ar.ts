@@ -289,6 +289,7 @@ export default {
     currentEnrollmentInactive: "لا يوجد قبول حالي",
     waitingForClass: "في انتظار الصف",
     notInClass: "ليس في صف",
+    invalidClassPlacement: "تمت إزالة الشعبة — أعد التعيين",
     mobileAdmissionPrefix: "القبول",
     mobileClassPrefix: "الصف",
     selectStudent: "تحديد",

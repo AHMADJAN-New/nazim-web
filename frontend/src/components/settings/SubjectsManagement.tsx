@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X, GraduationCap } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears, useClasses } from '@/hooks/useClasses';
+import { useClassYearUrlFilters } from '@/hooks/useClassYearUrlFilters';
 import { useSubjects, useClassSubjects, useSubjectHistory, useCreateSubject, useUpdateSubject, useDeleteSubject, useAssignSubjectToClass, useUpdateClassSubject, useRemoveSubjectFromClass, useBulkAssignSubjects, useCopySubjectsBetweenYears, useClassSubjectTemplates, useAssignSubjectToClassTemplate, useRemoveSubjectFromClassTemplate, useBulkAssignSubjectsToClassTemplate } from '@/hooks/useSubjects';
 import type { Subject } from '@/types/domain/subject';
 import { useProfile } from '@/hooks/useProfiles';
@@ -125,6 +126,19 @@ export function SubjectsManagement() {
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>();
     const [selectedClassAcademicYearId, setSelectedClassAcademicYearId] = useState<string>('');
     const [copyFromClassYearId, setCopyFromClassYearId] = useState<string | undefined>();
+
+    const applyClassYearUrlFilters = useCallback((values: {
+        academicYearId?: string;
+        classId?: string;
+        classAcademicYearId?: string;
+        tab?: string;
+    }) => {
+        if (values.tab) setActiveTab(values.tab);
+        if (values.academicYearId) setSelectedAcademicYearId(values.academicYearId);
+        if (values.classId) setSelectedClassId(values.classId);
+        if (values.classAcademicYearId) setSelectedClassAcademicYearId(values.classAcademicYearId);
+    }, []);
+    useClassYearUrlFilters(applyClassYearUrlFilters);
 
     // Data hooks - use user's organization
     const { data: academicYears } = useAcademicYears(profile?.organization_id);

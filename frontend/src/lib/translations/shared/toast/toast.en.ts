@@ -78,6 +78,16 @@ export default {
     attendanceUpdated: "Attendance updated successfully",
     attendanceUpdateFailed: "Failed to update attendance",
     categoryCreateFailed: "Failed to create category",
+    classes: {
+      assignFailed: "Failed to assign class to academic year",
+      copyFailed: "Failed to copy classes",
+      createFailed: "Failed to create class",
+      deleteFailed: "Failed to delete class",
+      instanceUpdateFailed: "Failed to update class instance",
+      removeFailed: "Failed to remove class from academic year",
+      sectionCreateFailed: "Failed to create class sections",
+      updateFailed: "Failed to update class"
+    },
     categoryDeleteFailed: "Failed to delete category",
     categoryUpdateFailed: "Failed to update category",
     certificates: {

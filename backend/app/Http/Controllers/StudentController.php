@@ -11,6 +11,7 @@ use App\Models\StudentDisciplineRecord;
 use App\Models\StudentDocument;
 use App\Models\StudentEducationalHistory;
 use App\Services\Notifications\NotificationService;
+use App\Services\Academic\StudentAdmissionPlacementService;
 use App\Services\Reports\BrandingCacheService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Reports\PdfReportService;
@@ -28,7 +29,8 @@ class StudentController extends Controller
         private NotificationService $notificationService,
         private PdfReportService $pdfReportService,
         private BrandingCacheService $brandingCache,
-        private DateConversionService $dateService
+        private DateConversionService $dateService,
+        private StudentAdmissionPlacementService $placementService
     ) {}
 
     /**
@@ -171,12 +173,28 @@ class StudentController extends Controller
                     $subQuery->where('sa.academic_year_id', $academicYearId);
                 }
 
-                if (! empty($classId)) {
-                    $subQuery->where('sa.class_id', $classId);
-                }
+                if (! empty($classId) || ! empty($classAcademicYearId)) {
+                    $subQuery->whereNotNull('sa.class_academic_year_id')
+                        ->whereExists(function ($cayQuery) use ($classId, $classAcademicYearId, $organizationId, $currentSchoolId) {
+                            $cayQuery->select(DB::raw('1'))
+                                ->from('class_academic_years as cay')
+                                ->whereColumn('cay.id', 'sa.class_academic_year_id')
+                                ->whereNull('cay.deleted_at')
+                                ->where('cay.organization_id', $organizationId)
+                                ->where('cay.school_id', $currentSchoolId)
+                                ->where(function ($yearMatch) {
+                                    $yearMatch->whereNull('sa.academic_year_id')
+                                        ->orWhereColumn('cay.academic_year_id', 'sa.academic_year_id');
+                                });
 
-                if (! empty($classAcademicYearId)) {
-                    $subQuery->where('sa.class_academic_year_id', $classAcademicYearId);
+                            if (! empty($classId)) {
+                                $cayQuery->where('cay.class_id', $classId);
+                            }
+
+                            if (! empty($classAcademicYearId)) {
+                                $cayQuery->where('cay.id', $classAcademicYearId);
+                            }
+                        });
                 }
             });
         }
@@ -249,10 +267,12 @@ class StudentController extends Controller
 
             $admission = $latestAdmissionByStudentId[$student->id] ?? null;
             if ($admission) {
-                $resolvedClass = $admission->classAcademicYear?->class ?? $admission->class;
+                $placement = $this->placementService->resolve($admission);
+                $hasValidPlacement = $placement['has_valid_class_placement'];
+                $resolvedClass = $hasValidPlacement ? $admission->classAcademicYear?->class : null;
                 $isCurrentEnrollment = StudentAdmission::isCurrentEnrollmentStatus($admission->enrollment_status);
 
-                if ($isCurrentEnrollment && $resolvedClass) {
+                if ($isCurrentEnrollment && $hasValidPlacement && $resolvedClass) {
                     $student->current_class = $resolvedClass;
                     $student->current_section = $admission->classAcademicYear?->section_name;
                     $student->current_academic_year = $admission->academicYear?->name;
@@ -264,14 +284,15 @@ class StudentController extends Controller
                     'enrollment_status' => $admission->enrollment_status,
                     'class_id' => $admission->class_id,
                     'class_academic_year_id' => $admission->class_academic_year_id,
-                    'class_name' => $resolvedClass?->name,
-                    'section_name' => $admission->classAcademicYear?->section_name,
+                    'class_name' => $hasValidPlacement ? $resolvedClass?->name : null,
+                    'section_name' => $hasValidPlacement ? $admission->classAcademicYear?->section_name : null,
                     'shift' => $admission->shift,
                     'academic_year_id' => $admission->academic_year_id,
                     'academic_year_name' => $admission->academicYear?->name,
                     'is_current_enrollment' => $isCurrentEnrollment,
-                    'is_assigned_to_class' => $isCurrentEnrollment
-                        && ($admission->class_id !== null || $admission->class_academic_year_id !== null),
+                    'has_valid_class_placement' => $hasValidPlacement,
+                    'placement_status' => $placement['placement_status'],
+                    'is_assigned_to_class' => $hasValidPlacement,
                 ];
             }
 

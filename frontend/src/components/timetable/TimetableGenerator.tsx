@@ -12,6 +12,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Printer } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { LoadTimetableDialog } from './LoadTimetableDialog';
@@ -112,6 +113,7 @@ export function TimetableGenerator() {
 	const { data: academicYears } = useAcademicYears(organizationId);
 	const { data: currentAcademicYear } = useCurrentAcademicYear(organizationId);
 	const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>(undefined);
+	const [searchParams] = useSearchParams();
 
 	// Set default to current academic year
 	useEffect(() => {
@@ -130,6 +132,18 @@ export function TimetableGenerator() {
 
 	// Selection states
 	const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
+
+	useEffect(() => {
+		const academicYearId = searchParams.get('academicYearId');
+		const classAcademicYearId = searchParams.get('classAcademicYearId');
+		if (academicYearId) {
+			setSelectedAcademicYearId(academicYearId);
+		}
+		if (classAcademicYearId) {
+			setSelectedClassIds([classAcademicYearId]);
+		}
+	}, [searchParams]);
+
 	const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
 	const [selectedDays, setSelectedDays] = useState<DayName[]>(['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
 	const [allYear, setAllYear] = useState<boolean>(false);

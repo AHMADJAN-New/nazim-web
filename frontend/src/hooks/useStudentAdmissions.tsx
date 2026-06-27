@@ -63,7 +63,7 @@ async function refetchAllStudentAdmissionListQueries(queryClient: QueryClient): 
 }
 
 // Re-export domain types for convenience
-export type { StudentAdmission, StudentAdmissionInsert, StudentAdmissionUpdate, AdmissionStatus, AdmissionStats } from '@/types/domain/studentAdmission';
+export type { StudentAdmission, StudentAdmissionInsert, StudentAdmissionUpdate, AdmissionStatus, AdmissionStats, PlacementStatus } from '@/types/domain/studentAdmission';
 
 export interface StudentAdmissionFilters {
   search?: string;
@@ -73,6 +73,7 @@ export interface StudentAdmissionFilters {
   academic_year_id?: string;
   class_id?: string;
   class_academic_year_id?: string;
+  placement?: 'placed' | 'orphaned' | 'unplaced';
   residency_type_id?: string;
   is_boarder?: boolean;
   school_id?: string;
@@ -144,6 +145,9 @@ export const useStudentAdmissions = (
           }
           if (filters.class_academic_year_id) {
             params.class_academic_year_id = filters.class_academic_year_id;
+          }
+          if (filters.placement) {
+            params.placement = filters.placement;
           }
           if (filters.residency_type_id) {
             params.residency_type_id = filters.residency_type_id;
@@ -344,19 +348,20 @@ export const useDeleteStudentAdmission = () => {
   });
 };
 
-export const useAdmissionStats = (organizationId?: string) => {
+export const useAdmissionStats = (organizationId?: string, academicYearId?: string) => {
   const { user, profile } = useAuth();
 
   const { data: stats, isLoading } = useQuery<AdmissionStats>({
-    queryKey: ['student-admissions-stats', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null],
+    queryKey: ['student-admissions-stats', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null, academicYearId ?? null],
     queryFn: async () => {
       if (!user || !profile) {
-        return { total: 0, active: 0, pending: 0, boarders: 0 };
+        return { total: 0, active: 0, pending: 0, boarders: 0, placedInClass: 0, needsClass: 0, orphanedPlacement: 0 };
       }
 
       const effectiveOrgId = organizationId || profile.organization_id;
       const apiResult = await studentAdmissionsApi.stats({
         organization_id: effectiveOrgId || undefined,
+        ...(academicYearId ? { academic_year_id: academicYearId } : {}),
       });
 
       // Map API → Domain (no transformation needed, but for consistency)
@@ -367,7 +372,18 @@ export const useAdmissionStats = (organizationId?: string) => {
     refetchOnWindowFocus: false,
   });
 
-  return { stats: stats || { total: 0, active: 0, pending: 0, boarders: 0 }, isLoading };
+  return {
+    stats: stats || {
+      total: 0,
+      active: 0,
+      pending: 0,
+      boarders: 0,
+      placedInClass: 0,
+      needsClass: 0,
+      orphanedPlacement: 0,
+    },
+    isLoading,
+  };
 };
 
 export const useBulkDeactivateAdmissions = () => {

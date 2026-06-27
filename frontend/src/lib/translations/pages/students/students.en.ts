@@ -291,6 +291,7 @@ export default {
     currentEnrollmentInactive: "No current admission",
     waitingForClass: "Waiting for class",
     notInClass: "Not in class",
+    invalidClassPlacement: "Section removed — reassign",
     mobileAdmissionPrefix: "Admission",
     mobileClassPrefix: "Class",
     selectStudent: "Select",

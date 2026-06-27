@@ -9,6 +9,7 @@ use App\Http\Requests\StoreClassRequest;
 use App\Http\Requests\UpdateClassRequest;
 use App\Models\ClassAcademicYear;
 use App\Models\ClassModel;
+use App\Services\Academic\ClassAcademicYearDeletionService;
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,8 @@ use Illuminate\Support\Facades\Log;
 class ClassController extends Controller
 {
     public function __construct(
-        private ActivityLogService $activityLogService
+        private ActivityLogService $activityLogService,
+        private ClassAcademicYearDeletionService $deletionService
     ) {}
 
     /**
@@ -582,7 +584,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (! $this->userHasPermission($user, 'classes.read', $profile->organization_id)) {
+            if (! $this->userHasPermission($user, 'classes.update', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -662,37 +664,96 @@ class ClassController extends Controller
     }
 
     /**
-     * Remove class from academic year (soft delete)
+     * Assess whether a class academic year instance can be removed.
      */
-    public function removeFromYear(string $id)
+    public function deletionCheck(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $currentSchoolId = request()->get('current_school_id');
+        if (! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (! $this->userCanRemoveClassFromYear($user, $profile->organization_id)) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $instance = ClassAcademicYear::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->find($id);
+
         if (! $instance) {
             return response()->json(['error' => 'Class instance not found'], 404);
         }
 
-        // Org access enforced by organization middleware + school scope.
+        return response()->json($this->deletionService->assess($instance));
+    }
 
-        // Check if there are enrolled students
-        if ($instance->current_student_count > 0) {
-            return response()->json(['error' => 'Cannot remove class instance that has enrolled students. Please transfer or remove students first.'], 422);
+    /**
+     * Remove class from academic year (soft delete)
+     */
+    public function removeFromYear(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Soft delete
+        if (! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (! $this->userCanRemoveClassFromYear($user, $profile->organization_id)) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $instance = ClassAcademicYear::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
+
+        if (! $instance) {
+            return response()->json(['error' => 'Class instance not found'], 404);
+        }
+
+        $assessment = $this->deletionService->assess($instance);
+
+        if (! $assessment['can_delete']) {
+            return response()->json([
+                'error' => 'Cannot remove class instance while related records exist. Please resolve the blockers first.',
+                'blockers' => $assessment['blockers'],
+            ], 409);
+        }
+
+        $instance->update(['current_student_count' => 0]);
         $instance->delete();
 
         return response()->noContent();
+    }
+
+    /**
+     * Check if user can remove a class from an academic year.
+     */
+    protected function userCanRemoveClassFromYear($user, string $organizationId): bool
+    {
+        try {
+            return $this->userHasPermission($user, 'classes.delete', $organizationId)
+                || $this->userHasPermission($user, 'classes.assign', $organizationId);
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for class academic year removal: '.$e->getMessage());
+
+            return false;
+        }
     }
 
     /**

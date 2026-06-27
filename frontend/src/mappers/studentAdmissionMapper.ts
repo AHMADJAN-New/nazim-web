@@ -29,6 +29,8 @@ export function mapStudentAdmissionApiToDomain(api: StudentAdmissionApi.StudentA
     updatedAt: new Date(api.updated_at),
     deletedAt: api.deleted_at ? new Date(api.deleted_at) : null,
     isLatestAdmissionForStudent: api.is_latest_admission_for_student ?? false,
+    hasValidClassPlacement: api.has_valid_class_placement ?? false,
+    placementStatus: api.placement_status,
     student: api.student ? {
       id: api.student.id,
       fullName: api.student.full_name,
@@ -151,5 +153,13 @@ export function mapStudentAdmissionDomainToUpdate(domain: StudentAdmissionUpdate
  * Convert API AdmissionStats to Domain AdmissionStats (no transformation needed, but for consistency)
  */
 export function mapAdmissionStatsApiToDomain(api: StudentAdmissionApi.AdmissionStats): AdmissionStats {
-  return api;
+  return {
+    total: api.total,
+    active: api.active,
+    pending: api.pending,
+    boarders: api.boarders,
+    placedInClass: api.placed_in_class ?? 0,
+    needsClass: api.needs_class ?? 0,
+    orphanedPlacement: api.orphaned_placement ?? 0,
+  };
 }

@@ -1,7 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, DollarSign, MoreVertical } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PictureCell } from '@/components/shared/PictureCell';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -28,6 +28,7 @@ import {
   useBulkUpdateAdmissionStatus,
   type StudentAdmission,
   type AdmissionStatus,
+  type PlacementStatus,
 } from '@/hooks/useStudentAdmissions';
 import { useResourceUsage } from '@/hooks/useSubscription';
 import { showToast } from '@/lib/toast';
@@ -81,16 +82,72 @@ const isCurrentAdmissionStatus = (status: AdmissionStatus): boolean =>
 export function StudentAdmissions() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlAcademicYearId = searchParams.get('academicYearId');
+  const urlClassId = searchParams.get('classId');
+  const urlClassAcademicYearId = searchParams.get('classAcademicYearId');
+  const urlSearch = searchParams.get('search');
+  const urlPlacement = searchParams.get('placement');
+  const hasUrlClassFilters = Boolean(urlAcademicYearId || urlClassId || urlClassAcademicYearId);
+  const skipFilterResetRef = useRef(false);
   const { data: profile } = useProfile();
   const orgIdForQuery = profile?.organization_id;
 
   const [statusFilter, setStatusFilter] = useState<'all' | AdmissionStatus>('all');
   const [residencyFilter, setResidencyFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [academicYearFilter, setAcademicYearFilter] = useState<string>('all');
-  const [classFilter, setClassFilter] = useState<string>('all');
-  const [sectionFilter, setSectionFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>(() => urlSearch ?? '');
+  const [academicYearFilter, setAcademicYearFilter] = useState<string>(() => urlAcademicYearId ?? 'all');
+  const [classFilter, setClassFilter] = useState<string>(() => urlClassId ?? 'all');
+  const [sectionFilter, setSectionFilter] = useState<string>(() => urlClassAcademicYearId ?? 'all');
+  const [placementFilter, setPlacementFilter] = useState<'all' | PlacementStatus>(() => {
+    if (urlPlacement === 'placed' || urlPlacement === 'orphaned' || urlPlacement === 'unplaced') {
+      return urlPlacement;
+    }
+    return 'all';
+  });
   const [originalProvinceFilter, setOriginalProvinceFilter] = useState<string>('all');
+
+  const applyClassYearUrlFilters = useCallback((values: {
+    academicYearId?: string;
+    classId?: string;
+    classAcademicYearId?: string;
+    search?: string;
+    placement?: string;
+  }) => {
+    skipFilterResetRef.current = true;
+    if (values.academicYearId) setAcademicYearFilter(values.academicYearId);
+    if (values.classId) setClassFilter(values.classId);
+    if (values.classAcademicYearId) setSectionFilter(values.classAcademicYearId);
+    if (values.search) setSearchQuery(values.search);
+    if (
+      values.placement === 'placed' ||
+      values.placement === 'orphaned' ||
+      values.placement === 'unplaced'
+    ) {
+      setPlacementFilter(values.placement);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!urlAcademicYearId && !urlClassId && !urlClassAcademicYearId && !urlSearch && !urlPlacement) {
+      return;
+    }
+
+    applyClassYearUrlFilters({
+      academicYearId: urlAcademicYearId ?? undefined,
+      classId: urlClassId ?? undefined,
+      classAcademicYearId: urlClassAcademicYearId ?? undefined,
+      search: urlSearch ?? undefined,
+      placement: urlPlacement ?? undefined,
+    });
+  }, [
+    urlAcademicYearId,
+    urlClassId,
+    urlClassAcademicYearId,
+    urlSearch,
+    urlPlacement,
+    applyClassYearUrlFilters,
+  ]);
 
   const selectedAcademicYearId = academicYearFilter !== 'all' ? academicYearFilter : undefined;
   const { data: academicYears = [] } = useAcademicYears(orgIdForQuery);
@@ -119,7 +176,8 @@ export function StudentAdmissions() {
     academic_year_id: selectedAcademicYearId,
     class_id: classFilter !== 'all' ? classFilter : undefined,
     class_academic_year_id: sectionFilter !== 'all' ? sectionFilter : undefined,
-  }), [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, sectionFilter]);
+    placement: placementFilter !== 'all' ? placementFilter : undefined,
+  }), [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, sectionFilter, placementFilter]);
 
   const { 
     admissions, 
@@ -142,7 +200,7 @@ export function StudentAdmissions() {
       console.error('[StudentAdmissions] Error:', admissionsError);
     }
   }, [admissions, admissionsError]);
-  const { stats } = useAdmissionStats(orgIdForQuery);
+  const { stats } = useAdmissionStats(orgIdForQuery, selectedAcademicYearId);
   const { data: students } = useStudents(orgIdForQuery);
   const { data: studentAutocomplete } = useStudentAutocomplete();
   const { data: schools } = useSchools(orgIdForQuery);
@@ -164,17 +222,30 @@ export function StudentAdmissions() {
   const [isBulkStatusDialogOpen, setIsBulkStatusDialogOpen] = useState(false);
   const [bulkStatusValue, setBulkStatusValue] = useState<AdmissionStatus>('active');
   useEffect(() => {
+    if (skipFilterResetRef.current) {
+      skipFilterResetRef.current = false;
+      return;
+    }
+    if (hasUrlClassFilters) {
+      return;
+    }
     setClassFilter('all');
-  }, [selectedAcademicYearId]);
+  }, [selectedAcademicYearId, hasUrlClassFilters]);
 
   useEffect(() => {
+    if (skipFilterResetRef.current) {
+      return;
+    }
+    if (hasUrlClassFilters) {
+      return;
+    }
     setSectionFilter('all');
-  }, [classFilter]);
+  }, [classFilter, hasUrlClassFilters]);
 
   useEffect(() => {
     setPage(1);
     setSelectedAdmissionIds(new Set());
-  }, [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, sectionFilter, setPage]);
+  }, [searchQuery, originalProvinceFilter, statusFilter, residencyFilter, selectedAcademicYearId, classFilter, sectionFilter, placementFilter, setPage]);
 
   // Server-side filtering returns only matching records.
   const filteredAdmissions = useMemo(() => {
@@ -381,6 +452,18 @@ export function StudentAdmissions() {
             </div>
           );
         }
+        if (admission.placementStatus === 'orphaned') {
+          return (
+            <div className="space-y-1 min-w-0 sm:min-w-[150px]">
+              <Badge variant="warning" className="text-xs">
+                {t('admissions.placementOrphaned')}
+              </Badge>
+              {admission.class?.name && (
+                <div className="text-xs text-muted-foreground line-through">{admission.class.name}</div>
+              )}
+            </div>
+          );
+        }
         return '—';
       },
     },
@@ -419,7 +502,8 @@ export function StudentAdmissions() {
         const admission = row.original;
         const isLatestAdmission = admission.isLatestAdmissionForStudent ?? false;
         const isCurrentAdmission = isLatestAdmission && isCurrentAdmissionStatus(admission.enrollmentStatus);
-        const isAssignedToClass = isCurrentAdmission && Boolean(admission.classId || admission.classAcademicYearId);
+        const isAssignedToClass = isCurrentAdmission && Boolean(admission.hasValidClassPlacement);
+        const isOrphanedPlacement = isCurrentAdmission && admission.placementStatus === 'orphaned';
 
         return (
           <div className="space-y-1">
@@ -431,11 +515,13 @@ export function StudentAdmissions() {
                   : t('admissions.placementHistory')}
             </Badge>
             <div className="text-xs text-muted-foreground">
-              {isAssignedToClass
-                ? t('admissions.placementInClass')
-                : isCurrentAdmission
-                  ? t('admissions.placementNeedsClass')
-                  : t('admissions.placementNotCurrent')}
+              {isOrphanedPlacement
+                ? t('admissions.placementOrphaned')
+                : isAssignedToClass
+                  ? t('admissions.placementInClass')
+                  : isCurrentAdmission
+                    ? t('admissions.placementNeedsClass')
+                    : t('admissions.placementNotCurrent')}
             </div>
           </div>
         );
@@ -641,13 +727,31 @@ export function StudentAdmissions() {
         onSelectAdmission={(next) => setSelectedAdmission(next)}
       />
 
-      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatsCard
           title={t('admissions.totalAdmissionsLabel')}
           value={stats.total}
           icon={UserCheck}
           description={t('admissions.acrossAllResidencyTypes')}
           color="blue"
+        />
+        <StatsCard
+          title={t('admissions.placedInClass')}
+          value={stats.placedInClass}
+          icon={Shield}
+          description={t('admissions.placedInClassDescription')}
+          color="green"
+        />
+        <StatsCard
+          title={t('admissions.needsClassAssignment')}
+          value={stats.needsClass}
+          icon={ClipboardList}
+          description={
+            stats.orphanedPlacement > 0
+              ? t('admissions.needsClassWithOrphaned', { count: stats.orphanedPlacement })
+              : t('admissions.needsClassDescription')
+          }
+          color="amber"
         />
         <StatsCard
           title={t('admissions.activeStudents')}
@@ -728,6 +832,20 @@ export function StudentAdmissions() {
                   {section.sectionName || (t('events.default') || 'Default')}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={placementFilter}
+            onValueChange={(value) => setPlacementFilter(value as 'all' | PlacementStatus)}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t('admissions.placementColumn')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('admissions.placementFilterAll')}</SelectItem>
+              <SelectItem value="placed">{t('admissions.placementFilterPlaced')}</SelectItem>
+              <SelectItem value="unplaced">{t('admissions.placementFilterNeedsClass')}</SelectItem>
+              <SelectItem value="orphaned">{t('admissions.placementFilterOrphaned')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AdmissionStatus | 'all')}>

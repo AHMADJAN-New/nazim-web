@@ -2,6 +2,8 @@
 
 export type AdmissionStatus = 'pending' | 'admitted' | 'active' | 'inactive' | 'suspended' | 'withdrawn' | 'graduated';
 
+export type PlacementStatus = 'placed' | 'orphaned' | 'unplaced' | 'not_current';
+
 export interface StudentAdmission {
   id: string;
   organization_id: string;
@@ -24,6 +26,8 @@ export interface StudentAdmission {
   updated_at: string;
   deleted_at: string | null;
   is_latest_admission_for_student?: boolean;
+  has_valid_class_placement?: boolean;
+  placement_status?: PlacementStatus;
   student?: {
     id: string;
     full_name: string;
@@ -120,4 +124,7 @@ export interface AdmissionStats {
   active: number;
   pending: number;
   boarders: number;
+  placed_in_class?: number;
+  needs_class?: number;
+  orphaned_placement?: number;
 }

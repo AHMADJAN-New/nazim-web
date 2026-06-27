@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { BookOpen, Clock, Trash2, Plus, Pencil, User, GraduationCap, CheckCircle2, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useClassYearUrlFilters } from '@/hooks/useClassYearUrlFilters';
 import { useLanguage } from '@/hooks/useLanguage';
 import {
     Dialog,
@@ -73,6 +74,16 @@ export function TeacherSubjectAssignments() {
     const [searchQuery, setSearchQuery] = useState('');
     const [teacherFilter, setTeacherFilter] = useState<string>('all');
     const [academicYearFilter, setAcademicYearFilter] = useState<string>('all');
+    const [classAcademicYearUrlFilter, setClassAcademicYearUrlFilter] = useState<string | null>(null);
+
+    const applyClassYearUrlFilters = useCallback((values: {
+        academicYearId?: string;
+        classAcademicYearId?: string;
+    }) => {
+        if (values.academicYearId) setAcademicYearFilter(values.academicYearId);
+        if (values.classAcademicYearId) setClassAcademicYearUrlFilter(values.classAcademicYearId);
+    }, []);
+    useClassYearUrlFilters(applyClassYearUrlFilters);
 
     // Dialog state
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -255,8 +266,14 @@ export function TeacherSubjectAssignments() {
             });
         }
 
+        if (classAcademicYearUrlFilter) {
+            filtered = filtered.filter(
+                (assignment) => assignment.class_academic_year_id === classAcademicYearUrlFilter
+            );
+        }
+
         return filtered;
-    }, [enrichedAssignments, searchQuery]);
+    }, [enrichedAssignments, searchQuery, classAcademicYearUrlFilter]);
 
     const resetForm = () => {
         setCurrentStep(1);

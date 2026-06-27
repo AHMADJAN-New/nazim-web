@@ -33,15 +33,12 @@ frontend/certs/*.key
 # Maintenance script state (per-environment, do not commit)
 docker/.update-app-state
 
-# Graphify local runtime and temp extraction state
+# Graphify local runtime and generated knowledge graph (never commit)
 .graphify-venv/
 .uv-cache/
 .graphify_*
-graphify-out/cache/
-graphify-out/manifest.json
-graphify-out/cost.json
-graphify-out/.graphify_*
-graphify-out/nazim_graph/
+.graphify_python
+graphify-out/
 
 # Desktop renderer build artifacts
 desktop/dist-renderer/

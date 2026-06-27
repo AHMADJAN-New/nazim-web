@@ -78,6 +78,16 @@ export default {
     attendanceUpdated: "حاضري با موفقیت به‌روزرسانی شد",
     attendanceUpdateFailed: "به‌روزرسانی حاضري ناموفق بود",
     categoryCreateFailed: "ایجاد کتگوری ناموفق بود",
+    classes: {
+      assignFailed: "تخصیص صنف به سال تعلیمی ناموفق بود",
+      copyFailed: "کاپی صنف‌ها ناموفق بود",
+      createFailed: "ایجاد صنف ناموفق بود",
+      deleteFailed: "حذف صنف ناموفق بود",
+      instanceUpdateFailed: "به‌روزرسانی صنف ناموفق بود",
+      removeFailed: "حذف صنف از سال تعلیمی ناموفق بود",
+      sectionCreateFailed: "ایجاد بخش‌های صنف ناموفق بود",
+      updateFailed: "ویرایش صنف ناموفق بود"
+    },
     categoryDeleteFailed: "حذف کتگوری ناموفق بود",
     categoryUpdateFailed: "به‌روزرسانی کتگوری ناموفق بود",
     certificates: {

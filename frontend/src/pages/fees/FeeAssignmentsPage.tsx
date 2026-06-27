@@ -82,12 +82,27 @@ export default function FeeAssignmentsPage() {
   const [viewingAssignment, setViewingAssignment] = useState<FeeAssignment | null>(null);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
 
+  useEffect(() => {
+    const academicYearId = searchParams.get('academicYearId');
+    const classAcademicYearId = searchParams.get('classAcademicYearId');
+    if (academicYearId) {
+      setFilterAcademicYear(academicYearId);
+    }
+    if (classAcademicYearId) {
+      setFilterClassAy(classAcademicYearId);
+    }
+  }, [searchParams]);
+
   // Auto-select current academic year, or fall back to first academic year
   // This logic matches FeeReportsPage for consistency
   useEffect(() => {
     // Only run if we're not loading and no academic year is selected
     if (academicYearsLoading || currentAcademicYearLoading) {
       return; // Wait for data to load
+    }
+
+    if (searchParams.get('academicYearId')) {
+      return;
     }
 
     if (filterAcademicYear === '' && academicYears.length > 0) {
@@ -118,7 +133,7 @@ export default function FeeAssignmentsPage() {
       }
       setFilterAcademicYear(academicYears[0].id);
     }
-  }, [academicYears, academicYearsLoading, currentAcademicYear, currentAcademicYearLoading, filterAcademicYear]);
+  }, [academicYears, academicYearsLoading, currentAcademicYear, currentAcademicYearLoading, filterAcademicYear, searchParams]);
   const { data: classAcademicYears = [] } = useClassAcademicYears(filterAcademicYear || undefined);
   const { data: structures = [] } = useFeeStructures({
     academicYearId: filterAcademicYear || undefined,
