@@ -4799,6 +4799,8 @@ export const TRANSLATION_KEYS = [
   "studentReport.reportExported",
   "studentReport.school",
   "studentReport.schoolRequired",
+  "studentReport.sortByClass",
+  "studentReport.sortedByClass",
   "studentReport.studentId",
   "studentReport.withdrawn",
   "studentReportCard.academicPerformance",

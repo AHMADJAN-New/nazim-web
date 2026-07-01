@@ -48,6 +48,8 @@ export default {
     schoolRequired: "المدرسة مطلوبة لتصدير التقرير.",
     selectColumns: "اختيار الأعمدة",
     selectAllColumns: "تحديد الكل",
+    sortByClass: "ترتيب حسب الصف",
+    sortedByClass: "مرتب حسب الصف",
     studentId: "الرقم",
     withAnyAdmission: "مع قبول",
     withoutAdmission: "بدون قبول",

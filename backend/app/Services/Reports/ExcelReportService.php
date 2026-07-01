@@ -5,6 +5,7 @@ namespace App\Services\Reports;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -68,6 +69,24 @@ class ExcelReportService
 
         // Fallback: stringify
         return (string) $value;
+    }
+
+    /**
+     * Excel treats strings beginning with =, +, -, @ as formulas.
+     * Force those values (and all other strings) to plain text cells.
+     */
+    private function setCellValueSafe($sheet, string $coordinate, mixed $value): void
+    {
+        $normalized = $this->normalizeSpreadsheetValue($value);
+        $cell = $sheet->getCell($coordinate);
+
+        if (is_string($normalized)) {
+            $cell->setValueExplicit($normalized, DataType::TYPE_STRING);
+
+            return;
+        }
+
+        $cell->setValue($normalized);
     }
 
     public function __construct(
@@ -543,9 +562,7 @@ class ExcelReportService
                 }
 
                 // Normalize to spreadsheet-safe scalar; PhpSpreadsheet cannot bind arrays/objects.
-                $value = $this->normalizeSpreadsheetValue($value);
-
-                $sheet->getCell("{$colLetter}{$currentRow}")->setValue($value);
+                $this->setCellValueSafe($sheet, "{$colLetter}{$currentRow}", $value);
                 $colIndex++;
             }
 
@@ -633,7 +650,7 @@ class ExcelReportService
                 }
 
                 // Totals row can also contain arrays if caller passes computed structures
-                $sheet->getCell("{$colLetter}{$totalsRow}")->setValue($this->normalizeSpreadsheetValue($value));
+                $this->setCellValueSafe($sheet, "{$colLetter}{$totalsRow}", $value);
                 $colIndex++;
             }
 

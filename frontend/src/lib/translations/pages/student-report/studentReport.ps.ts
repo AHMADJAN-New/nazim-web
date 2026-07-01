@@ -48,6 +48,8 @@ export default {
     schoolRequired: "د راپور صادرولو لپاره ښوونځی اړین دی.",
     selectColumns: "کالمونه وټاکئ",
     selectAllColumns: "ټولې وټاکئ",
+    sortByClass: "د صنف له مخې ترتیب",
+    sortedByClass: "د صنف له مخې ترتیب شوی",
     studentId: "شمېره",
     withAnyAdmission: "د داخلې سره",
     withoutAdmission: "بې داخله",

@@ -140,6 +140,8 @@ const studentAllExportColumnKeys = [
   'tazkira_number',
   'guardian',
   'applying_grade',
+  'class_name',
+  'section_name',
   'school',
   'admission_year',
   'admission_fee_status',

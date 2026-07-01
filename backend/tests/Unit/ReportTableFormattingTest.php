@@ -7,6 +7,7 @@ use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ExcelReportService;
 use App\Services\Reports\ReportConfig;
 use App\Services\Storage\FileStorageService;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Tests\TestCase;
 
@@ -84,6 +85,40 @@ class ReportTableFormattingTest extends TestCase
         $this->assertSame(14, (int) $sheet->getStyle('A2')->getFont()->getSize());
         $this->assertTrue($sheet->getStyle('A1')->getAlignment()->getWrapText());
         $this->assertTrue($sheet->getStyle('A2')->getAlignment()->getWrapText());
+    }
+
+    public function test_excel_table_rows_store_formula_like_strings_as_plain_text(): void
+    {
+        $storage = $this->createMock(FileStorageService::class);
+        $service = new ExcelReportService($storage);
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $addTableSection = \Closure::bind(
+            fn ($sheet, array $context, int $startRow) => $this->addTableSection($sheet, $context, $startRow),
+            $service,
+            $service
+        );
+
+        $addTableSection($sheet, [
+            'COLUMNS' => [
+                ['key' => 'notes', 'label' => 'Notes'],
+                ['key' => 'phone', 'label' => 'Phone'],
+            ],
+            'ROWS' => [
+                ['notes' => '=SUM(A1:A10)', 'phone' => '+93701234567'],
+            ],
+            'PRIMARY_COLOR' => '#0b0b56',
+            'SECONDARY_COLOR' => '#0056b3',
+            'FONT_SIZE' => '11px',
+            'TABLE_FONT_SIZE' => '14px',
+            'table_alternating_colors' => false,
+        ], 1);
+
+        $this->assertSame(DataType::TYPE_STRING, $sheet->getCell('B2')->getDataType());
+        $this->assertSame('=SUM(A1:A10)', $sheet->getCell('B2')->getValue());
+        $this->assertSame(DataType::TYPE_STRING, $sheet->getCell('C2')->getDataType());
+        $this->assertSame('+93701234567', $sheet->getCell('C2')->getValue());
     }
 
     private function buildReportContext(string $fontSize): array

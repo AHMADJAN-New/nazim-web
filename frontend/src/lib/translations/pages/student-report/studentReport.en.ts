@@ -48,6 +48,8 @@ export default {
     schoolRequired: "A school is required to export the report.",
     selectAllColumns: "Select all",
     selectColumns: "Select Columns",
+    sortByClass: "Sort by class",
+    sortedByClass: "Sorted by class",
     studentId: "ID",
     withAnyAdmission: "With any admission",
     withoutAdmission: "Without admission",

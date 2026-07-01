@@ -48,6 +48,8 @@ export default {
     schoolRequired: "برای صدور گزارشات انتخاب مکتب الزامی است.",
     selectColumns: "انتخاب ستون‌ها",
     selectAllColumns: "انتخاب همه",
+    sortByClass: "ترتیب بر اساس صنف",
+    sortedByClass: "ترتیب شده بر اساس صنف",
     studentId: "شناسه",
     withAnyAdmission: "با شمولیت",
     withoutAdmission: "بدون شمولیت",

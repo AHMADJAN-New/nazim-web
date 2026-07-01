@@ -1,6 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { Eye, Search, User } from 'lucide-react';
+import { ArrowDownAZ, Eye, Search, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -110,6 +110,35 @@ const buildLocation = (province?: string | null, district?: string | null, villa
   return parts.length ? parts.join(', ') : '—';
 };
 
+const getStudentClassName = (student: Student): string =>
+  student.currentClass?.name ?? student.latestAdmission?.className ?? '';
+
+const getStudentSectionName = (student: Student): string =>
+  student.latestAdmission?.sectionName ?? '';
+
+const sortStudentsByClass = (list: Student[]): Student[] =>
+  [...list].sort((a, b) => {
+    const classCompare = getStudentClassName(a).localeCompare(
+      getStudentClassName(b),
+      undefined,
+      { sensitivity: 'base', numeric: true }
+    );
+    if (classCompare !== 0) {
+      return classCompare;
+    }
+
+    const sectionCompare = getStudentSectionName(a).localeCompare(
+      getStudentSectionName(b),
+      undefined,
+      { sensitivity: 'base', numeric: true }
+    );
+    if (sectionCompare !== 0) {
+      return sectionCompare;
+    }
+
+    return (a.fullName ?? '').localeCompare(b.fullName ?? '', undefined, { sensitivity: 'base' });
+  });
+
 const StudentReport = () => {
   const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
@@ -127,6 +156,7 @@ const StudentReport = () => {
   const [classFilter, setClassFilter] = useState<'all' | string>('all');
   const [sectionFilter, setSectionFilter] = useState<'all' | string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortByClass, setSortByClass] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -194,6 +224,14 @@ const StudentReport = () => {
 
   const filteredStudents = students;
 
+  const displayStudents = useMemo(() => {
+    if (!sortByClass) {
+      return filteredStudents;
+    }
+
+    return sortStudentsByClass(filteredStudents);
+  }, [filteredStudents, sortByClass]);
+
   const fetchAllFilteredStudentsForExport = async (): Promise<Student[]> => {
     const response = await studentsApi.list({
       organization_id: orgIdForQuery || undefined,
@@ -213,7 +251,9 @@ const StudentReport = () => {
       ? (response as StudentApiModel[])
       : (((response as { data?: StudentApiModel[] })?.data ?? []) as StudentApiModel[]);
 
-    return apiStudents.map(mapStudentApiToDomain);
+    return sortByClass
+      ? sortStudentsByClass(apiStudents.map(mapStudentApiToDomain))
+      : apiStudents.map(mapStudentApiToDomain);
   };
 
   useEffect(() => {
@@ -251,6 +291,8 @@ const StudentReport = () => {
       guardian: student.guardianName || '—',
       notes: student.notes || '—',
       applying_grade: student.applyingGrade || '—',
+      class_name: getStudentClassName(student) || '—',
+      section_name: getStudentSectionName(student) || '—',
       school: schools?.find(s => s.id === student.schoolId)?.schoolName || '—',
       admission_year: student.admissionYear || '—',
       admission_fee_status: student.admissionFeeStatus || '—',
@@ -323,6 +365,8 @@ const StudentReport = () => {
     { key: 'tazkira_number', label: t('students.tazkiraNumber') || 'Tazkira Number' },
     { key: 'guardian', label: t('students.guardian') || 'Guardian' },
     { key: 'applying_grade', label: t('students.applyingGrade') || 'Applying Grade' },
+    { key: 'class_name', label: t('search.class') || 'Class' },
+    { key: 'section_name', label: t('events.section') || 'Section' },
     { key: 'school', label: t('students.school') || 'School' },
     { key: 'admission_year', label: t('students.admissionYear') || 'Admission Year' },
     { key: 'admission_fee_status', label: t('students.admissionFeeStatus') || 'Fee Status' },
@@ -430,6 +474,26 @@ const StudentReport = () => {
       },
     },
     {
+      id: 'className',
+      header: t('search.class') || 'Class',
+      cell: ({ row }) => (
+        <div className="text-sm">{getStudentClassName(row.original) || '—'}</div>
+      ),
+      meta: {
+        className: 'hidden md:table-cell',
+      },
+    },
+    {
+      id: 'sectionName',
+      header: t('events.section') || 'Section',
+      cell: ({ row }) => (
+        <div className="text-sm">{getStudentSectionName(row.original) || '—'}</div>
+      ),
+      meta: {
+        className: 'hidden lg:table-cell',
+      },
+    },
+    {
       accessorKey: 'cardNumber',
       header: t('attendancePage.cardHeader') || 'Card #',
       cell: ({ row }) => (
@@ -521,7 +585,7 @@ const StudentReport = () => {
   ], [t]);
 
   const { table } = useDataTable<Student>({
-    data: filteredStudents,
+    data: displayStudents,
     columns,
     pageCount: pagination?.last_page ?? 1,
     paginationMeta: pagination ?? null,
@@ -540,11 +604,11 @@ const StudentReport = () => {
   const paginationMeta = useMemo(() => ({
     current_page: pagination?.current_page ?? page,
     per_page: pagination?.per_page ?? pageSize,
-    total: pagination?.total ?? filteredStudents.length,
+    total: pagination?.total ?? displayStudents.length,
     last_page: pagination?.last_page ?? 1,
-    from: pagination?.from ?? (filteredStudents.length ? 1 : 0),
-    to: pagination?.to ?? filteredStudents.length,
-  }), [pagination, page, pageSize, filteredStudents.length]);
+    from: pagination?.from ?? (displayStudents.length ? 1 : 0),
+    to: pagination?.to ?? displayStudents.length,
+  }), [pagination, page, pageSize, displayStudents.length]);
 
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full overflow-x-hidden min-w-0">
@@ -568,16 +632,24 @@ const StudentReport = () => {
               }}
             />
             <ReportExportButtons
-              data={filteredStudents}
+              data={displayStudents}
               columns={selectedExportColumns}
               reportKey="student_list"
               title={t('nav.studentReports') || 'Students Report'}
               getExportData={fetchAllFilteredStudentsForExport}
               transformData={transformStudentData}
-              buildFiltersSummary={buildFiltersSummary}
+              buildFiltersSummary={() => {
+                const summary = buildFiltersSummary();
+                if (!sortByClass) {
+                  return summary;
+                }
+
+                const sortLabel = t('studentReport.sortedByClass') || 'Sorted by class';
+                return summary ? `${summary} | ${sortLabel}` : sortLabel;
+              }}
               schoolId={currentSchoolId}
               templateType="student_list"
-              disabled={filteredStudents.length === 0 || isLoading || selectedExportColumns.length === 0}
+              disabled={displayStudents.length === 0 || isLoading || selectedExportColumns.length === 0}
               errorNoSchool={t('studentReport.schoolRequired') || 'A school is required to export the report.'}
               errorNoData={t('events.noDataToExport') || 'No data to export'}
               successPdf={t('studentReport.reportExported') || 'PDF report generated successfully'}
@@ -738,8 +810,20 @@ const StudentReport = () => {
 
       {/* Table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>{t('table.students') || 'Students'} ({paginationMeta.total})</CardTitle>
+          <Button
+            type="button"
+            variant={sortByClass ? 'default' : 'outline'}
+            size="sm"
+            className="flex-shrink-0 self-start sm:self-auto"
+            aria-pressed={sortByClass}
+            aria-label={t('studentReport.sortByClass') || 'Sort by class'}
+            onClick={() => setSortByClass((current) => !current)}
+          >
+            <ArrowDownAZ className="h-4 w-4" />
+            <span className="hidden sm:inline ml-2">{t('studentReport.sortByClass') || 'Sort by class'}</span>
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -759,6 +843,8 @@ const StudentReport = () => {
                             if (columnId === 'avatar') headerClassName = 'w-[60px]';
                             else if (columnId === 'studentCode') headerClassName = 'hidden sm:table-cell';
                             else if (columnId === 'applyingGrade') headerClassName = 'hidden md:table-cell';
+                            else if (columnId === 'className') headerClassName = 'hidden md:table-cell';
+                            else if (columnId === 'sectionName') headerClassName = 'hidden lg:table-cell';
                             else if (columnId === 'cardNumber') headerClassName = 'hidden md:table-cell';
                             else if (columnId === 'origProvince') headerClassName = 'hidden lg:table-cell';
                             else if (columnId === 'originLocation') headerClassName = 'hidden lg:table-cell';
@@ -794,6 +880,8 @@ const StudentReport = () => {
                             if (columnId === 'avatar') cellClassName = 'w-[60px]';
                             else if (columnId === 'studentCode') cellClassName = 'hidden sm:table-cell';
                             else if (columnId === 'applyingGrade') cellClassName = 'hidden md:table-cell';
+                            else if (columnId === 'className') cellClassName = 'hidden md:table-cell';
+                            else if (columnId === 'sectionName') cellClassName = 'hidden lg:table-cell';
                             else if (columnId === 'cardNumber') cellClassName = 'hidden md:table-cell';
                             else if (columnId === 'origProvince') cellClassName = 'hidden lg:table-cell';
                             else if (columnId === 'originLocation') cellClassName = 'hidden lg:table-cell';
