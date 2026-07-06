@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AcademicYear;
+use App\Models\ClassAcademicYear;
 use App\Models\ClassModel;
 use App\Models\Organization;
 use App\Models\SchoolBranding;
@@ -260,6 +261,17 @@ class StudentManagementTest extends TestCase
             'school_id' => $school->id,
         ]);
 
+        $classAcademicYear = ClassAcademicYear::create([
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'section_name' => 'A',
+            'capacity' => 30,
+            'current_student_count' => 0,
+            'is_active' => true,
+        ]);
+
         $activeStudent = Student::factory()->create([
             'organization_id' => $organization->id,
             'school_id' => $school->id,
@@ -278,6 +290,7 @@ class StudentManagementTest extends TestCase
             'student_id' => $activeStudent->id,
             'academic_year_id' => $academicYear->id,
             'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
             'admission_date' => now()->toDateString(),
             'enrollment_status' => 'active',
             'is_boarder' => false,
@@ -289,6 +302,7 @@ class StudentManagementTest extends TestCase
             'student_id' => $inactiveStudent->id,
             'academic_year_id' => $academicYear->id,
             'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
             'admission_date' => now()->subDay()->toDateString(),
             'enrollment_status' => 'inactive',
             'is_boarder' => false,
@@ -297,10 +311,12 @@ class StudentManagementTest extends TestCase
         $response = $this->jsonAs($user, 'GET', '/api/students', [
             'academic_year_id' => $academicYear->id,
             'class_id' => $class->id,
+            'page' => 1,
+            'per_page' => 25,
         ]);
 
         $response->assertStatus(200);
-        $students = $response->json();
+        $students = $response->json('data');
 
         $this->assertCount(2, $students);
         $returnedIds = collect($students)->pluck('id')->all();
@@ -598,5 +614,37 @@ class StudentManagementTest extends TestCase
         $students = $response->json();
 
         $this->assertCount(1, $students);
+    }
+
+    /** @test */
+    public function students_list_pagination_returns_full_count_beyond_non_paginated_limit(): void
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        Student::factory()->count(505)->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $page1 = $this->jsonAs($user, 'GET', '/api/students', [
+            'page' => 1,
+            'per_page' => 100,
+        ]);
+        $page1->assertStatus(200);
+        $this->assertSame(505, $page1->json('total'));
+        $this->assertCount(100, $page1->json('data'));
+
+        $page6 = $this->jsonAs($user, 'GET', '/api/students', [
+            'page' => 6,
+            'per_page' => 100,
+        ]);
+        $page6->assertStatus(200);
+        $this->assertCount(5, $page6->json('data'));
+
+        $page1Ids = collect($page1->json('data'))->pluck('id')->all();
+        $page6Ids = collect($page6->json('data'))->pluck('id')->all();
+        $this->assertEmpty(array_intersect($page1Ids, $page6Ids));
     }
 }

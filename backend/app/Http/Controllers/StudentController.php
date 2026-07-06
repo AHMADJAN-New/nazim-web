@@ -10,8 +10,8 @@ use App\Models\StudentAdmission;
 use App\Models\StudentDisciplineRecord;
 use App\Models\StudentDocument;
 use App\Models\StudentEducationalHistory;
-use App\Services\Notifications\NotificationService;
 use App\Services\Academic\StudentAdmissionPlacementService;
+use App\Services\Notifications\NotificationService;
 use App\Services\Reports\BrandingCacheService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Reports\PdfReportService;
@@ -169,33 +169,13 @@ class StudentController extends Controller
                     ->where('sa.organization_id', $organizationId)
                     ->where('sa.school_id', $currentSchoolId);
 
-                if (! empty($academicYearId)) {
-                    $subQuery->where('sa.academic_year_id', $academicYearId);
-                }
-
-                if (! empty($classId) || ! empty($classAcademicYearId)) {
-                    $subQuery->whereNotNull('sa.class_academic_year_id')
-                        ->whereExists(function ($cayQuery) use ($classId, $classAcademicYearId, $organizationId, $currentSchoolId) {
-                            $cayQuery->select(DB::raw('1'))
-                                ->from('class_academic_years as cay')
-                                ->whereColumn('cay.id', 'sa.class_academic_year_id')
-                                ->whereNull('cay.deleted_at')
-                                ->where('cay.organization_id', $organizationId)
-                                ->where('cay.school_id', $currentSchoolId)
-                                ->where(function ($yearMatch) {
-                                    $yearMatch->whereNull('sa.academic_year_id')
-                                        ->orWhereColumn('cay.academic_year_id', 'sa.academic_year_id');
-                                });
-
-                            if (! empty($classId)) {
-                                $cayQuery->where('cay.class_id', $classId);
-                            }
-
-                            if (! empty($classAcademicYearId)) {
-                                $cayQuery->where('cay.id', $classAcademicYearId);
-                            }
-                        });
-                }
+                $this->placementService->applyClassAcademicFilters(
+                    $subQuery,
+                    $academicYearId ?: null,
+                    $classId ?: null,
+                    $classAcademicYearId ?: null,
+                    'sa'
+                );
             });
         }
 

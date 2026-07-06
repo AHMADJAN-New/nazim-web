@@ -53,6 +53,7 @@ import {
   getDefaultReportColumnKeys,
   normalizeSelectedReportColumnKeys,
 } from '@/lib/reporting/reportColumnSelection';
+import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
 import { mapStudentApiToDomain } from '@/mappers/studentMapper';
 import type { Student } from '@/types/domain/student';
 import type { Student as StudentApiModel } from '@/types/api/student';
@@ -233,7 +234,7 @@ const StudentReport = () => {
   }, [filteredStudents, sortByClass]);
 
   const fetchAllFilteredStudentsForExport = async (): Promise<Student[]> => {
-    const response = await studentsApi.list({
+    const baseParams = {
       organization_id: orgIdForQuery || undefined,
       school_id: profile?.default_school_id || undefined,
       search: studentFilters.search,
@@ -245,6 +246,24 @@ const StudentReport = () => {
       academic_year_id: studentFilters.academic_year_id,
       class_id: studentFilters.class_id,
       class_academic_year_id: studentFilters.class_academic_year_id,
+      per_page: 100,
+    };
+
+    return fetchAllPaginatedRows(async (requestedPage) => {
+      const response = (await studentsApi.list({
+        ...baseParams,
+        page: requestedPage,
+      })) as {
+        data?: StudentApiModel[];
+        current_page: number;
+        last_page: number;
+      };
+
+      return {
+        rows: (response.data ?? []).map(mapStudentApiToDomain),
+        currentPage: response.current_page,
+        lastPage: response.last_page,
+      };
     });
 
     const apiStudents = Array.isArray(response)
@@ -254,6 +273,7 @@ const StudentReport = () => {
     return sortByClass
       ? sortStudentsByClass(apiStudents.map(mapStudentApiToDomain))
       : apiStudents.map(mapStudentApiToDomain);
+
   };
 
   useEffect(() => {

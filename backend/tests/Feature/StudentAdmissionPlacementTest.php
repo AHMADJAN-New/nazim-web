@@ -82,6 +82,31 @@ class StudentAdmissionPlacementTest extends TestCase
         return $user;
     }
 
+    private function createUserWithAdmissionsReport(Organization $organization, SchoolBranding $school)
+    {
+        $user = $this->createUser(
+            [],
+            ['organization_id' => $organization->id, 'default_school_id' => $school->id],
+            $organization,
+            $school,
+            null,
+            ['withRole' => false]
+        );
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $permission = Permission::firstOrCreate([
+            'name' => 'student_admissions.report',
+            'guard_name' => 'web',
+            'organization_id' => $organization->id,
+        ]);
+
+        setPermissionsTeamId($organization->id);
+        $user->givePermissionTo($permission);
+        setPermissionsTeamId(null);
+
+        return $user;
+    }
+
     private function createAdmission(array $fixture, array $overrides = []): StudentAdmission
     {
         $student = Student::factory()->create([
@@ -202,6 +227,43 @@ class StudentAdmissionPlacementTest extends TestCase
         ]);
         $placedOnly->assertOk();
         $this->assertCount(1, $placedOnly->json());
+    }
+
+    /** @test */
+    public function report_class_filter_excludes_orphaned_admissions(): void
+    {
+        $fixture = $this->createFixture();
+        $user = $this->createUserWithAdmissionsReport($fixture['organization'], $fixture['school']);
+
+        $this->createAdmission($fixture);
+        $fixture['classAcademicYear']->delete();
+
+        $orphanedOnly = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'class_id' => $fixture['class']->id,
+        ]);
+        $orphanedOnly->assertOk();
+        $this->assertCount(0, $orphanedOnly->json('recent_admissions'));
+
+        $liveCay = ClassAcademicYear::create([
+            'class_id' => $fixture['class']->id,
+            'academic_year_id' => $fixture['academicYear']->id,
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'section_name' => 'B',
+            'capacity' => 30,
+            'current_student_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $this->createAdmission($fixture, ['class_academic_year_id' => $liveCay->id]);
+
+        $placedOnly = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'class_id' => $fixture['class']->id,
+        ]);
+        $placedOnly->assertOk();
+        $this->assertCount(1, $placedOnly->json('recent_admissions'));
     }
 
     /** @test */

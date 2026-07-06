@@ -9,8 +9,8 @@ use App\Models\ResidencyType;
 use App\Models\Room;
 use App\Models\Student;
 use App\Models\StudentAdmission;
-use App\Services\ActivityLogService;
 use App\Services\Academic\StudentAdmissionPlacementService;
+use App\Services\ActivityLogService;
 use App\Services\IdCards\SyncStudentIdCardClassFromAdmissionService;
 use App\Services\Notifications\NotificationService;
 use App\Services\Reports\DateConversionService;
@@ -109,19 +109,12 @@ class StudentAdmissionController extends Controller
             $query->where('student_id', $request->student_id);
         }
 
-        if ($request->has('academic_year_id') && $request->academic_year_id) {
-            $query->where('academic_year_id', $request->academic_year_id);
-        }
-
-        if ($request->has('class_id') && $request->class_id) {
-            $this->placementService->scopeValidClassPlacement($query);
-            $query->whereHas('classAcademicYear', function ($cayQuery) use ($request) {
-                $cayQuery->where('class_id', $request->class_id);
-            });
-        } elseif ($request->has('class_academic_year_id') && $request->class_academic_year_id) {
-            $this->placementService->scopeValidClassPlacement($query);
-            $query->where('student_admissions.class_academic_year_id', $request->class_academic_year_id);
-        }
+        $this->placementService->applyClassAcademicFilters(
+            $query,
+            $request->filled('academic_year_id') ? $request->input('academic_year_id') : null,
+            $request->filled('class_id') ? $request->input('class_id') : null,
+            $request->filled('class_academic_year_id') ? $request->input('class_academic_year_id') : null
+        );
 
         if ($request->filled('placement')) {
             $placement = $request->input('placement');
@@ -777,17 +770,12 @@ class StudentAdmissionController extends Controller
             ->whereIn('student_admissions.school_id', $schoolIds);
         // organization_id / school_id filters are ignored; scope is enforced by middleware/profile.
 
-        if (! empty($filters['academic_year_id'])) {
-            $query->where('student_admissions.academic_year_id', $filters['academic_year_id']);
-        }
-
-        if (! empty($filters['class_id'])) {
-            $query->where('student_admissions.class_id', $filters['class_id']);
-        }
-
-        if (! empty($filters['class_academic_year_id'])) {
-            $query->where('student_admissions.class_academic_year_id', $filters['class_academic_year_id']);
-        }
+        $this->placementService->applyClassAcademicFilters(
+            $query,
+            $filters['academic_year_id'] ?? null,
+            $filters['class_id'] ?? null,
+            $filters['class_academic_year_id'] ?? null
+        );
 
         if (! empty($filters['enrollment_status'])) {
             $query->where('student_admissions.enrollment_status', $filters['enrollment_status']);
@@ -1001,17 +989,12 @@ class StudentAdmissionController extends Controller
             ->whereIn('student_admissions.organization_id', $orgIds)
             ->whereIn('student_admissions.school_id', $schoolIds);
 
-        if (! empty($filters['academic_year_id'])) {
-            $query->where('student_admissions.academic_year_id', $filters['academic_year_id']);
-        }
-
-        if (! empty($filters['class_id'])) {
-            $query->where('student_admissions.class_id', $filters['class_id']);
-        }
-
-        if (! empty($filters['class_academic_year_id'])) {
-            $query->where('student_admissions.class_academic_year_id', $filters['class_academic_year_id']);
-        }
+        $this->placementService->applyClassAcademicFilters(
+            $query,
+            $filters['academic_year_id'] ?? null,
+            $filters['class_id'] ?? null,
+            $filters['class_academic_year_id'] ?? null
+        );
 
         if (! empty($filters['enrollment_status'])) {
             $query->where('student_admissions.enrollment_status', $filters['enrollment_status']);

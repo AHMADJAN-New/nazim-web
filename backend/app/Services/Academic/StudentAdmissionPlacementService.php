@@ -4,6 +4,7 @@ namespace App\Services\Academic;
 
 use App\Models\ClassAcademicYear;
 use App\Models\StudentAdmission;
+use Illuminate\Contracts\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Builder;
 
 class StudentAdmissionPlacementService
@@ -84,22 +85,49 @@ class StudentAdmissionPlacementService
     }
 
     /**
-     * @param  Builder<StudentAdmission>  $query
-     * @return Builder<StudentAdmission>
+     * Apply academic year and class/section filters with valid class placement rules.
      */
-    public function scopeValidClassPlacement(Builder $query): Builder
-    {
-        return $query->whereNotNull('student_admissions.class_academic_year_id')
-            ->whereExists(function ($subQuery) {
+    public function applyClassAcademicFilters(
+        QueryBuilder $query,
+        ?string $academicYearId,
+        ?string $classId,
+        ?string $classAcademicYearId,
+        string $table = 'student_admissions'
+    ): QueryBuilder {
+        if (! empty($academicYearId)) {
+            $query->where("{$table}.academic_year_id", $academicYearId);
+        }
+
+        if (! empty($classId)) {
+            $this->scopeValidClassPlacement($query, $table);
+            $query->whereExists(function ($subQuery) use ($classId, $table) {
                 $subQuery->selectRaw('1')
                     ->from('class_academic_years as cay')
-                    ->whereColumn('cay.id', 'student_admissions.class_academic_year_id')
+                    ->whereColumn('cay.id', "{$table}.class_academic_year_id")
                     ->whereNull('cay.deleted_at')
-                    ->whereColumn('cay.organization_id', 'student_admissions.organization_id')
-                    ->whereColumn('cay.school_id', 'student_admissions.school_id')
-                    ->where(function ($yearMatch) {
-                        $yearMatch->whereNull('student_admissions.academic_year_id')
-                            ->orWhereColumn('cay.academic_year_id', 'student_admissions.academic_year_id');
+                    ->where('cay.class_id', $classId);
+            });
+        } elseif (! empty($classAcademicYearId)) {
+            $this->scopeValidClassPlacement($query, $table);
+            $query->where("{$table}.class_academic_year_id", $classAcademicYearId);
+        }
+
+        return $query;
+    }
+
+    public function scopeValidClassPlacement(QueryBuilder $query, string $table = 'student_admissions'): QueryBuilder
+    {
+        return $query->whereNotNull("{$table}.class_academic_year_id")
+            ->whereExists(function ($subQuery) use ($table) {
+                $subQuery->selectRaw('1')
+                    ->from('class_academic_years as cay')
+                    ->whereColumn('cay.id', "{$table}.class_academic_year_id")
+                    ->whereNull('cay.deleted_at')
+                    ->whereColumn('cay.organization_id', "{$table}.organization_id")
+                    ->whereColumn('cay.school_id', "{$table}.school_id")
+                    ->where(function ($yearMatch) use ($table) {
+                        $yearMatch->whereNull("{$table}.academic_year_id")
+                            ->orWhereColumn('cay.academic_year_id', "{$table}.academic_year_id");
                     });
             });
     }
