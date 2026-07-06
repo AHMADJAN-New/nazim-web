@@ -217,6 +217,7 @@ export default {
     classesConfigured: "صنف‌های پیکربندی شده",
     classesSubjects: "صنف‌ها و مضامین",
     classesSubjectsDescription: "مدیریت صنف‌ها و مضامین برای این امتحان",
+    classSubjectEnrollment: "ثبت‌نام صنف و مضمون",
     clearAll: "پاک کردن همه",
     complete: "تکمیل",
     configure: "پیکربندی",

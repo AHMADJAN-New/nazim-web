@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Trash2, Plus, Pencil, CheckCircle, Calendar, Settings, Users, 
   ClipboardList, FileText, Clock, MoreHorizontal, Search, UserCheck,
-  ChevronDown, ChevronUp, BookOpen, GraduationCap
+  ChevronDown, ChevronUp, BookOpen, GraduationCap, Layers
 } from 'lucide-react';
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -51,6 +51,7 @@ import { useExamTypes } from '@/hooks/useExamTypes';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
+import { dateToLocalYYYYMMDD, formatDateForInput, parseLocalDate } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Exam, ExamStatus } from '@/types/domain/exam';
@@ -281,8 +282,8 @@ export function Exams() {
         academicYearId: formData.academicYearId,
         examTypeId: formData.examTypeId || undefined,
         description: formData.description || undefined,
-        startDate: formData.startDate ? new Date(formData.startDate) : undefined,
-        endDate: formData.endDate ? new Date(formData.endDate) : undefined,
+        startDate: formData.startDate ? parseLocalDate(formData.startDate) : undefined,
+        endDate: formData.endDate ? parseLocalDate(formData.endDate) : undefined,
         status: formData.status,
       },
       {
@@ -312,8 +313,8 @@ export function Exams() {
           academicYearId: formData.academicYearId,
           examTypeId: formData.examTypeId || undefined,
           description: formData.description || undefined,
-          startDate: formData.startDate ? new Date(formData.startDate) : undefined,
-          endDate: formData.endDate ? new Date(formData.endDate) : undefined,
+          startDate: formData.startDate ? parseLocalDate(formData.startDate) : undefined,
+          endDate: formData.endDate ? parseLocalDate(formData.endDate) : undefined,
         },
       },
       {
@@ -387,8 +388,8 @@ export function Exams() {
       academicYearId: exam.academicYearId,
       examTypeId: exam.examTypeId || '',
       description: exam.description || '',
-      startDate: exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : '',
-      endDate: exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : '',
+      startDate: formatDateForInput(exam.startDate),
+      endDate: formatDateForInput(exam.endDate),
       status: exam.status,
     });
     setIsEditDialogOpen(true);
@@ -601,37 +602,43 @@ export function Exams() {
                           {/* Configuration Actions */}
                           {hasManage && (
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/classes-subjects`)}>
-                              <Settings className="h-4 w-4 mr-2" />
+                              <Settings className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
                               {t('exams.classesSubjects') || 'Classes & Subjects'}
+                            </DropdownMenuItem>
+                          )}
+                          {hasManage && (
+                            <DropdownMenuItem onClick={() => navigate(`/exams/enrollment?examId=${exam.id}`)}>
+                              <Layers className="h-4 w-4 mr-2 text-violet-600 dark:text-violet-400" />
+                              {t('exams.classSubjectEnrollment') || 'Class & Subject Enrollment'}
                             </DropdownMenuItem>
                           )}
                           {hasManageTimetable && (
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/timetable`)}>
-                              <Clock className="h-4 w-4 mr-2" />
+                              <Clock className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />
                               {t('exams.timetable') || 'Timetable'}
                             </DropdownMenuItem>
                           )}
                           {hasEnrollStudents && (
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/students`)}>
-                              <Users className="h-4 w-4 mr-2" />
+                              <Users className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
                               {t('exams.studentEnrollment') || 'Student Enrollment'}
                             </DropdownMenuItem>
                           )}
                           {hasEnterMarks && (
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/marks`)}>
-                              <ClipboardList className="h-4 w-4 mr-2" />
+                              <ClipboardList className="h-4 w-4 mr-2 text-emerald-600 dark:text-emerald-400" />
                               {t('exams.marks') || 'Marks Entry'}
                             </DropdownMenuItem>
                           )}
                           {hasViewReports && (
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/reports`)}>
-                              <FileText className="h-4 w-4 mr-2" />
+                              <FileText className="h-4 w-4 mr-2 text-indigo-600 dark:text-indigo-400" />
                               {t('nav.reports') || 'Reports'}
                             </DropdownMenuItem>
                           )}
                           {(hasManageAttendance || hasViewAttendanceReports) && (
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/attendance`)}>
-                              <UserCheck className="h-4 w-4 mr-2" />
+                              <UserCheck className="h-4 w-4 mr-2 text-teal-600 dark:text-teal-400" />
                               {t('dashboard.markAttendance') || 'Mark Attendance'}
                             </DropdownMenuItem>
                           )}
@@ -657,14 +664,14 @@ export function Exams() {
                           {/* Edit/Delete Actions */}
                           {canEditExam(exam) && (
                             <DropdownMenuItem onClick={() => openEditDialog(exam)}>
-                              <Pencil className="h-4 w-4 mr-2" />
+                              <Pencil className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
                               {t('events.edit') || 'Edit'}
                             </DropdownMenuItem>
                           )}
                           {canDeleteExam(exam) && (
                             <DropdownMenuItem 
                               onClick={() => openDeleteDialog(exam)}
-                              className="text-destructive"
+                              className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               {t('events.delete') || 'Delete'}
@@ -759,11 +766,27 @@ export function Exams() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="create-start-date">{t('events.startDate') || 'Start Date'}</Label>
-                <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                <CalendarDatePicker
+                  date={formData.startDate ? parseLocalDate(formData.startDate) : undefined}
+                  onDateChange={(date) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      startDate: date ? dateToLocalYYYYMMDD(date) : '',
+                    }))
+                  }
+                />
               </div>
               <div>
                 <Label htmlFor="create-end-date">{t('events.endDate') || 'End Date'}</Label>
-                <CalendarDatePicker date={formData.endDate ? new Date(formData.endDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                <CalendarDatePicker
+                  date={formData.endDate ? parseLocalDate(formData.endDate) : undefined}
+                  onDateChange={(date) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      endDate: date ? dateToLocalYYYYMMDD(date) : '',
+                    }))
+                  }
+                />
               </div>
             </div>
           </div>
@@ -848,11 +871,27 @@ export function Exams() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-start-date">{t('events.startDate') || 'Start Date'}</Label>
-                <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                <CalendarDatePicker
+                  date={formData.startDate ? parseLocalDate(formData.startDate) : undefined}
+                  onDateChange={(date) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      startDate: date ? dateToLocalYYYYMMDD(date) : '',
+                    }))
+                  }
+                />
               </div>
               <div>
                 <Label htmlFor="edit-end-date">{t('events.endDate') || 'End Date'}</Label>
-                <CalendarDatePicker date={formData.endDate ? new Date(formData.endDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
+                <CalendarDatePicker
+                  date={formData.endDate ? parseLocalDate(formData.endDate) : undefined}
+                  onDateChange={(date) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      endDate: date ? dateToLocalYYYYMMDD(date) : '',
+                    }))
+                  }
+                />
               </div>
             </div>
           </div>

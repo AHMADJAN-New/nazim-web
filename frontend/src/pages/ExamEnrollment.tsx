@@ -18,7 +18,7 @@ import {
   LayoutGrid,
   List
 } from 'lucide-react';
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { FilterPanel } from '@/components/layout/FilterPanel';
@@ -530,6 +530,8 @@ export function ExamEnrollment() {
   const [showFilters, setShowFilters] = useState(false);
   const [highlightClassAcademicYearId, setHighlightClassAcademicYearId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const examIdFromUrl = searchParams.get('examId');
+  const lastAppliedExamIdFromUrl = useRef<string | null>(null);
 
   useEffect(() => {
     const academicYearId = searchParams.get('academicYearId');
@@ -541,6 +543,22 @@ export function ExamEnrollment() {
       setHighlightClassAcademicYearId(classAcademicYearId);
     }
   }, [searchParams]);
+
+  // Pre-select exam from URL (e.g. from Exams list actions menu)
+  useEffect(() => {
+    if (!examIdFromUrl || !exams?.length) return;
+    const exam = exams.find((e) => e.id === examIdFromUrl);
+    if (!exam) return;
+
+    if (lastAppliedExamIdFromUrl.current !== examIdFromUrl) {
+      lastAppliedExamIdFromUrl.current = examIdFromUrl;
+      setSelectedExam(exam);
+      setSelectedAcademicYearFilter(exam.academicYearId);
+      return;
+    }
+
+    setSelectedExam((prev) => prev ?? exam);
+  }, [examIdFromUrl, exams]);
 
   // Get unique academic years from exams
   const examAcademicYears = useMemo(() => {
@@ -570,12 +588,13 @@ export function ExamEnrollment() {
     });
   }, [exams, searchQuery, selectedAcademicYearFilter]);
 
-  // Auto-select first exam
+  // Auto-select first exam when none selected and no examId in URL
   useEffect(() => {
+    if (examIdFromUrl) return;
     if (filteredExams && filteredExams.length > 0 && !selectedExam) {
       setSelectedExam(filteredExams[0]);
     }
-  }, [filteredExams, selectedExam]);
+  }, [filteredExams, selectedExam, examIdFromUrl]);
 
   // Fetch exam details
   const { data: examClasses, isLoading: classesLoading } = useExamClasses(selectedExam?.id);
