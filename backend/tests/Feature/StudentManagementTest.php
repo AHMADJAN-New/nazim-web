@@ -325,6 +325,151 @@ class StudentManagementTest extends TestCase
     }
 
     /** @test */
+    public function academic_year_filter_matches_legacy_admission_year_text(): void
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'name' => '1405',
+        ]);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $classAcademicYear = ClassAcademicYear::create([
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'section_name' => 'A',
+            'capacity' => 30,
+            'current_student_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $legacyStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $legacyStudent->id,
+            'academic_year_id' => null,
+            'admission_year' => '1405',
+            'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students', [
+            'academic_year_id' => $academicYear->id,
+            'page' => 1,
+            'per_page' => 25,
+        ]);
+
+        $response->assertStatus(200);
+        $returnedIds = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($legacyStudent->id, $returnedIds);
+    }
+
+    /** @test */
+    public function without_admission_with_academic_year_excludes_students_admitted_for_that_year(): void
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $otherYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $classAcademicYear = ClassAcademicYear::create([
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'section_name' => 'A',
+            'capacity' => 30,
+            'current_student_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $noAdmissionStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $admittedForYearStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $admittedOtherYearStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $admittedForYearStudent->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $admittedOtherYearStudent->id,
+            'academic_year_id' => $otherYear->id,
+            'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students', [
+            'academic_year_id' => $academicYear->id,
+            'admission_presence' => 'without_admission',
+            'page' => 1,
+            'per_page' => 25,
+        ]);
+
+        $response->assertStatus(200);
+        $returnedIds = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($noAdmissionStudent->id, $returnedIds);
+        $this->assertContains($admittedOtherYearStudent->id, $returnedIds);
+        $this->assertNotContains($admittedForYearStudent->id, $returnedIds);
+    }
+
+    /** @test */
     public function user_can_filter_students_by_gender()
     {
         $user = $this->authenticate();

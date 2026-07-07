@@ -337,6 +337,8 @@ class StudentAdmissionController extends Controller
             $validated['room_id'] = null;
         }
 
+        $this->placementService->normalizeAdmissionAcademicYear($validated, $organizationId, $currentSchoolId);
+
         // school_id is forced by middleware context
 
         $admission = StudentAdmission::create($validated);
@@ -471,6 +473,12 @@ class StudentAdmissionController extends Controller
         $beforeAcademicYearId = $admission->academic_year_id;
         $beforeClassId = $admission->class_id;
         $beforeClassAcademicYearId = $admission->class_academic_year_id;
+
+        $this->placementService->normalizeAdmissionAcademicYear(
+            $validated,
+            $profile->organization_id,
+            $currentSchoolId
+        );
 
         $admission->update($validated);
 

@@ -267,6 +267,86 @@ class StudentAdmissionPlacementTest extends TestCase
     }
 
     /** @test */
+    public function class_and_section_filters_narrow_results_together(): void
+    {
+        $fixture = $this->createFixture();
+        $user = $this->createUserWithAdmissionsRead($fixture['organization'], $fixture['school']);
+
+        $sectionB = ClassAcademicYear::create([
+            'class_id' => $fixture['class']->id,
+            'academic_year_id' => $fixture['academicYear']->id,
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'section_name' => 'B',
+            'capacity' => 30,
+            'current_student_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $this->createAdmission($fixture, ['class_academic_year_id' => $fixture['classAcademicYear']->id]);
+        $this->createAdmission($fixture, ['class_academic_year_id' => $sectionB->id]);
+
+        $classOnly = $this->jsonAs($user, 'GET', '/api/student-admissions', [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'class_id' => $fixture['class']->id,
+        ]);
+        $classOnly->assertOk();
+        $this->assertCount(2, $classOnly->json());
+
+        $sectionOnly = $this->jsonAs($user, 'GET', '/api/student-admissions', [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'class_id' => $fixture['class']->id,
+            'class_academic_year_id' => $fixture['classAcademicYear']->id,
+        ]);
+        $sectionOnly->assertOk();
+        $this->assertCount(1, $sectionOnly->json());
+        $this->assertSame(
+            $fixture['classAcademicYear']->id,
+            $sectionOnly->json('0.class_academic_year_id')
+        );
+    }
+
+    /** @test */
+    public function report_class_and_section_filters_narrow_results_together(): void
+    {
+        $fixture = $this->createFixture();
+        $user = $this->createUserWithAdmissionsReport($fixture['organization'], $fixture['school']);
+
+        $sectionB = ClassAcademicYear::create([
+            'class_id' => $fixture['class']->id,
+            'academic_year_id' => $fixture['academicYear']->id,
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'section_name' => 'B',
+            'capacity' => 30,
+            'current_student_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $this->createAdmission($fixture, ['class_academic_year_id' => $fixture['classAcademicYear']->id]);
+        $this->createAdmission($fixture, ['class_academic_year_id' => $sectionB->id]);
+
+        $classOnly = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'class_id' => $fixture['class']->id,
+        ]);
+        $classOnly->assertOk();
+        $this->assertCount(2, $classOnly->json('recent_admissions'));
+
+        $sectionOnly = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'class_id' => $fixture['class']->id,
+            'class_academic_year_id' => $fixture['classAcademicYear']->id,
+        ]);
+        $sectionOnly->assertOk();
+        $this->assertCount(1, $sectionOnly->json('recent_admissions'));
+        $this->assertSame(
+            $fixture['classAcademicYear']->id,
+            $sectionOnly->json('recent_admissions.0.class_academic_year_id')
+        );
+    }
+
+    /** @test */
     public function stats_include_placement_breakdown(): void
     {
         $fixture = $this->createFixture();
@@ -287,5 +367,31 @@ class StudentAdmissionPlacementTest extends TestCase
         $response->assertJsonPath('orphaned_placement', 1);
         $response->assertJsonPath('needs_class', 2);
         $response->assertJsonPath('placed_in_class', 0);
+    }
+
+    /** @test */
+    public function creating_admission_resolves_academic_year_id_from_admission_year_text(): void
+    {
+        $fixture = $this->createFixture();
+        $user = $this->createUserWithAdmissionsRead($fixture['organization'], $fixture['school']);
+
+        $fixture['academicYear']->update(['name' => '1405']);
+
+        $student = Student::factory()->create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'POST', '/api/student-admissions', [
+            'student_id' => $student->id,
+            'admission_year' => '1405',
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'admitted',
+            'is_boarder' => false,
+        ]);
+
+        $response->assertCreated();
+        $this->assertSame($fixture['academicYear']->id, $response->json('academic_year_id'));
+        $this->assertSame('1405', $response->json('admission_year'));
     }
 }

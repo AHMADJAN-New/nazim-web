@@ -104,27 +104,19 @@ class StudentController extends Controller
 
         if ($request->has('admission_presence') && $request->admission_presence) {
             $admissionPresence = $request->input('admission_presence');
-
-            if ($admissionPresence === 'with_admission') {
-                $query->whereExists(function ($subQuery) use ($profile, $currentSchoolId) {
-                    $subQuery->select(DB::raw('1'))
-                        ->from('student_admissions as sa')
-                        ->whereColumn('sa.student_id', 'students.id')
-                        ->whereNull('sa.deleted_at')
-                        ->where('sa.organization_id', $profile->organization_id)
-                        ->where('sa.school_id', $currentSchoolId);
-                });
-            } elseif ($admissionPresence === 'without_admission') {
-                $query->whereNotExists(function ($subQuery) use ($profile, $currentSchoolId) {
-                    $subQuery->select(DB::raw('1'))
-                        ->from('student_admissions as sa')
-                        ->whereColumn('sa.student_id', 'students.id')
-                        ->whereNull('sa.deleted_at')
-                        ->where('sa.organization_id', $profile->organization_id)
-                        ->where('sa.school_id', $currentSchoolId);
-                });
-            }
+        } else {
+            $admissionPresence = null;
         }
+
+        $this->placementService->applyStudentAdmissionPresenceFilters(
+            $query,
+            $admissionPresence,
+            $request->filled('academic_year_id') ? $request->input('academic_year_id') : null,
+            $request->filled('class_id') ? $request->input('class_id') : null,
+            $request->filled('class_academic_year_id') ? $request->input('class_academic_year_id') : null,
+            $profile->organization_id,
+            $currentSchoolId
+        );
 
         if ($request->has('gender') && $request->gender) {
             $query->where('gender', $request->gender);
@@ -152,30 +144,6 @@ class StudentController extends Controller
                 $q->where('full_name', 'ilike', "%{$search}%")
                     ->orWhere('admission_no', 'ilike', "%{$search}%")
                     ->orWhere('card_number', 'ilike', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('academic_year_id') || $request->filled('class_id') || $request->filled('class_academic_year_id')) {
-            $academicYearId = $request->input('academic_year_id');
-            $classId = $request->input('class_id');
-            $classAcademicYearId = $request->input('class_academic_year_id');
-            $organizationId = $profile->organization_id;
-
-            $query->whereExists(function ($subQuery) use ($academicYearId, $classId, $classAcademicYearId, $organizationId, $currentSchoolId) {
-                $subQuery->select(DB::raw('1'))
-                    ->from('student_admissions as sa')
-                    ->whereColumn('sa.student_id', 'students.id')
-                    ->whereNull('sa.deleted_at')
-                    ->where('sa.organization_id', $organizationId)
-                    ->where('sa.school_id', $currentSchoolId);
-
-                $this->placementService->applyClassAcademicFilters(
-                    $subQuery,
-                    $academicYearId ?: null,
-                    $classId ?: null,
-                    $classAcademicYearId ?: null,
-                    'sa'
-                );
             });
         }
 

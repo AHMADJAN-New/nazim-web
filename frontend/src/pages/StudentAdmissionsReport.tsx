@@ -441,6 +441,7 @@ const StudentAdmissionsReport = () => {
                 parameters={{
                   academic_year_id: filters.academicYearId || undefined,
                   class_id: filters.classId || undefined,
+                  class_academic_year_id: filters.classAcademicYearId || undefined,
                   enrollment_status:
                     filters.enrollmentStatus &&
                     filters.enrollmentStatus !== 'with_admission' &&

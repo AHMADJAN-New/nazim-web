@@ -393,31 +393,35 @@ export function AdmissionFormDialog({
     appliedPreselectedStudentIdRef.current = preselectedStudentId;
   }, [getValues, isEdit, open, preselectedStudent, preselectedStudentId, setValue]);
 
-  const resolveCurrentAcademicYearName = () => {
+  const resolveCurrentAcademicYear = () => {
     if (!academicYears || academicYears.length === 0) return undefined;
 
     const byFlag = academicYears.find((y) => y.isCurrent);
-    if (byFlag?.name) return byFlag.name;
+    if (byFlag) return byFlag;
 
     const today = new Date();
     const byRange = academicYears.find((y) => y.startDate <= today && today <= y.endDate);
-    if (byRange?.name) return byRange.name;
+    if (byRange) return byRange;
 
-    // Fallback: first academic year (UI will still allow changing it)
-    return academicYears[0]?.name;
+    return academicYears[0];
   };
 
-  // Default admission year ("د داخلې کال") from current academic year when creating.
+  // Default admission year and academic year from current academic year when creating.
   useEffect(() => {
     if (!open || isEdit) return;
 
-    const currentYearName = resolveCurrentAcademicYearName();
-    if (!currentYearName) return;
+    const currentYear = resolveCurrentAcademicYear();
+    if (!currentYear) return;
 
-    // Only set if user hasn't typed something already.
-    const existing = watch('admission_year');
-    if (!existing) {
-      setValue('admission_year', currentYearName, { shouldValidate: false, shouldDirty: false });
+    const existingAdmissionYear = watch('admission_year');
+    if (!existingAdmissionYear) {
+      setValue('admission_year', currentYear.name, { shouldValidate: false, shouldDirty: false });
+    }
+
+    const existingAcademicYearId = watch('academic_year_id');
+    if (!existingAcademicYearId) {
+      setValue('academic_year_id', currentYear.id, { shouldValidate: false, shouldDirty: false });
+      setSelectedAcademicYear(currentYear.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isEdit, academicYears, setValue]);
@@ -855,6 +859,13 @@ export function AdmissionFormDialog({
                                   onValueChange={(value) => {
                                     field.onChange(value);
                                     setSelectedAcademicYear(value);
+                                    const year = academicYears?.find((y) => y.id === value);
+                                    if (year?.name) {
+                                      setValue('admission_year', year.name, {
+                                        shouldValidate: false,
+                                        shouldDirty: false,
+                                      });
+                                    }
                                     // reset dependent fields
                                     setValue('class_academic_year_id', '');
                                     setValue('class_id', '');

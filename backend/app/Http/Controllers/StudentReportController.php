@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use App\Services\Academic\StudentAdmissionPlacementService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
@@ -14,7 +15,8 @@ class StudentReportController extends Controller
 {
     public function __construct(
         private ReportService $reportService,
-        private DateConversionService $dateService
+        private DateConversionService $dateService,
+        private StudentAdmissionPlacementService $placementService
     ) {}
 
     private function ensureAuthorizedUser(Request $request)
@@ -62,29 +64,19 @@ class StudentReportController extends Controller
             $query->where('student_status', $request->student_status);
         }
 
-        if ($request->filled('admission_presence') && $request->admission_presence) {
-            $admissionPresence = $request->input('admission_presence');
+        $admissionPresence = $request->filled('admission_presence') && $request->admission_presence
+            ? $request->input('admission_presence')
+            : null;
 
-            if ($admissionPresence === 'with_admission') {
-                $query->whereExists(function ($subQuery) use ($orgId, $currentSchoolId) {
-                    $subQuery->select(DB::raw('1'))
-                        ->from('student_admissions as sa')
-                        ->whereColumn('sa.student_id', 'students.id')
-                        ->whereNull('sa.deleted_at')
-                        ->where('sa.organization_id', $orgId)
-                        ->where('sa.school_id', $currentSchoolId);
-                });
-            } elseif ($admissionPresence === 'without_admission') {
-                $query->whereNotExists(function ($subQuery) use ($orgId, $currentSchoolId) {
-                    $subQuery->select(DB::raw('1'))
-                        ->from('student_admissions as sa')
-                        ->whereColumn('sa.student_id', 'students.id')
-                        ->whereNull('sa.deleted_at')
-                        ->where('sa.organization_id', $orgId)
-                        ->where('sa.school_id', $currentSchoolId);
-                });
-            }
-        }
+        $this->placementService->applyStudentAdmissionPresenceFilters(
+            $query,
+            $admissionPresence,
+            $request->filled('academic_year_id') ? $request->input('academic_year_id') : null,
+            $request->filled('class_id') ? $request->input('class_id') : null,
+            $request->filled('class_academic_year_id') ? $request->input('class_academic_year_id') : null,
+            $orgId,
+            $currentSchoolId
+        );
 
         if ($request->filled('gender')) {
             $query->where('gender', $request->gender);
@@ -96,6 +88,14 @@ class StudentReportController extends Controller
 
         if ($request->filled('admission_fee_status')) {
             $query->where('admission_fee_status', $request->admission_fee_status);
+        }
+
+        if ($request->filled('orig_province')) {
+            $query->where('orig_province', $request->orig_province);
+        }
+
+        if ($request->filled('applying_grade')) {
+            $query->where('applying_grade', $request->applying_grade);
         }
 
         if ($request->filled('search')) {
@@ -173,6 +173,21 @@ class StudentReportController extends Controller
         }
         if ($request->filled('admission_fee_status')) {
             $filters['admission_fee_status'] = $request->admission_fee_status;
+        }
+        if ($request->filled('academic_year_id')) {
+            $filters['academic_year_id'] = $request->academic_year_id;
+        }
+        if ($request->filled('class_id')) {
+            $filters['class_id'] = $request->class_id;
+        }
+        if ($request->filled('class_academic_year_id')) {
+            $filters['class_academic_year_id'] = $request->class_academic_year_id;
+        }
+        if ($request->filled('orig_province')) {
+            $filters['orig_province'] = $request->orig_province;
+        }
+        if ($request->filled('applying_grade')) {
+            $filters['applying_grade'] = $request->applying_grade;
         }
         if ($request->filled('search')) {
             $filters['search'] = $request->search;

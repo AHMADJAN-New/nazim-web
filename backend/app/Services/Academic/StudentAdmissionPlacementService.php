@@ -2,10 +2,12 @@
 
 namespace App\Services\Academic;
 
+use App\Models\AcademicYear;
 use App\Models\ClassAcademicYear;
 use App\Models\StudentAdmission;
 use Illuminate\Contracts\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class StudentAdmissionPlacementService
 {
@@ -95,11 +97,14 @@ class StudentAdmissionPlacementService
         string $table = 'student_admissions'
     ): QueryBuilder {
         if (! empty($academicYearId)) {
-            $query->where("{$table}.academic_year_id", $academicYearId);
+            $this->applyAcademicYearFilterOnAdmissionTable($query, $academicYearId, $table);
+        }
+
+        if (! empty($classId) || ! empty($classAcademicYearId)) {
+            $this->scopeValidClassPlacement($query, $table);
         }
 
         if (! empty($classId)) {
-            $this->scopeValidClassPlacement($query, $table);
             $query->whereExists(function ($subQuery) use ($classId, $table) {
                 $subQuery->selectRaw('1')
                     ->from('class_academic_years as cay')
@@ -107,12 +112,166 @@ class StudentAdmissionPlacementService
                     ->whereNull('cay.deleted_at')
                     ->where('cay.class_id', $classId);
             });
-        } elseif (! empty($classAcademicYearId)) {
-            $this->scopeValidClassPlacement($query, $table);
+        }
+
+        if (! empty($classAcademicYearId)) {
             $query->where("{$table}.class_academic_year_id", $classAcademicYearId);
         }
 
         return $query;
+    }
+
+    /**
+     * Match admissions by academic_year_id, including legacy rows that only have admission_year text.
+     */
+    public function applyAcademicYearFilterOnAdmissionTable(
+        QueryBuilder $query,
+        string $academicYearId,
+        string $table = 'student_admissions'
+    ): QueryBuilder {
+        return $query->where(function ($yearQuery) use ($academicYearId, $table) {
+            $yearQuery->where("{$table}.academic_year_id", $academicYearId)
+                ->orWhere(function ($legacyQuery) use ($academicYearId, $table) {
+                    $legacyQuery->whereNull("{$table}.academic_year_id")
+                        ->whereExists(function ($nameMatch) use ($academicYearId, $table) {
+                            $nameMatch->selectRaw('1')
+                                ->from('academic_years as ay')
+                                ->whereColumn('ay.name', "{$table}.admission_year")
+                                ->where('ay.id', $academicYearId)
+                                ->whereNull('ay.deleted_at');
+                        });
+                });
+        });
+    }
+
+    /**
+     * Apply with/without admission filters on the students table, optionally scoped to academic year/class.
+     */
+    public function applyStudentAdmissionPresenceFilters(
+        QueryBuilder $query,
+        ?string $admissionPresence,
+        ?string $academicYearId,
+        ?string $classId,
+        ?string $classAcademicYearId,
+        string $organizationId,
+        string $schoolId
+    ): QueryBuilder {
+        $hasPlacementFilter = ! empty($academicYearId) || ! empty($classId) || ! empty($classAcademicYearId);
+
+        $applyAdmissionMatch = function (QueryBuilder $subQuery) use (
+            $academicYearId,
+            $classId,
+            $classAcademicYearId,
+            $organizationId,
+            $schoolId,
+            $hasPlacementFilter
+        ): void {
+            $subQuery->select(DB::raw('1'))
+                ->from('student_admissions as sa')
+                ->whereColumn('sa.student_id', 'students.id')
+                ->whereNull('sa.deleted_at')
+                ->where('sa.organization_id', $organizationId)
+                ->where('sa.school_id', $schoolId);
+
+            if ($hasPlacementFilter) {
+                $this->applyClassAcademicFilters(
+                    $subQuery,
+                    $academicYearId ?: null,
+                    $classId ?: null,
+                    $classAcademicYearId ?: null,
+                    'sa'
+                );
+            }
+        };
+
+        if ($admissionPresence === 'with_admission') {
+            $query->whereExists(function (QueryBuilder $subQuery) use ($applyAdmissionMatch) {
+                $applyAdmissionMatch($subQuery);
+            });
+        } elseif ($admissionPresence === 'without_admission') {
+            $query->whereNotExists(function (QueryBuilder $subQuery) use ($applyAdmissionMatch) {
+                $applyAdmissionMatch($subQuery);
+            });
+        } elseif ($hasPlacementFilter) {
+            $query->whereExists(function (QueryBuilder $subQuery) use ($applyAdmissionMatch) {
+                $applyAdmissionMatch($subQuery);
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Ensure student_admissions rows have academic_year_id aligned with admission_year text when possible.
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    public function normalizeAdmissionAcademicYear(
+        array &$validated,
+        string $organizationId,
+        string $schoolId
+    ): void {
+        if (! empty($validated['class_academic_year_id'])) {
+            return;
+        }
+
+        if (! empty($validated['academic_year_id'])) {
+            if (empty($validated['admission_year'])) {
+                $year = AcademicYear::query()
+                    ->where('id', $validated['academic_year_id'])
+                    ->where('organization_id', $organizationId)
+                    ->where('school_id', $schoolId)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($year) {
+                    $validated['admission_year'] = $year->name;
+                }
+            }
+
+            return;
+        }
+
+        if (! empty($validated['admission_year'])) {
+            $year = AcademicYear::query()
+                ->where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->where('name', $validated['admission_year'])
+                ->first();
+
+            if ($year) {
+                $validated['academic_year_id'] = $year->id;
+
+                return;
+            }
+        }
+
+        $currentYear = AcademicYear::query()
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->where('is_current', true)
+            ->first();
+
+        if (! $currentYear) {
+            $today = now()->toDateString();
+            $currentYear = AcademicYear::query()
+                ->where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->whereDate('start_date', '<=', $today)
+                ->whereDate('end_date', '>=', $today)
+                ->orderByDesc('start_date')
+                ->first();
+        }
+
+        if ($currentYear) {
+            $validated['academic_year_id'] = $currentYear->id;
+            if (empty($validated['admission_year'])) {
+                $validated['admission_year'] = $currentYear->name;
+            }
+        }
     }
 
     public function scopeValidClassPlacement(QueryBuilder $query, string $table = 'student_admissions'): QueryBuilder
