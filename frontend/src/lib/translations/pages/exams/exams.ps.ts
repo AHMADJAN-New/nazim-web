@@ -448,6 +448,7 @@ export default {
     examType: "د ازموینې ډول",
     period: "موده",
     classesSubjects: "ټولګي او مضامین",
+    classSubjectEnrollment: "د ټولګي او مضمون شمولیت",
     timetable: "د ازموینې مهالویش",
     changeStatus: "حالت بدل کړئ",
     selectExamType: "د ازموینې ډول غوره کړئ (اختیاري)",

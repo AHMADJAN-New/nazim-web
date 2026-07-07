@@ -373,7 +373,7 @@ export function CalendarDatePicker({
           <CalendarIcon className="h-4 w-4 shrink-0" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto min-w-[380px] overflow-hidden p-0 [&_.rdp-caption_label]:hidden [&_.rdp-caption_dropdowns_*:not(select)]:hidden" align="start">
+      <PopoverContent className="w-auto min-w-[420px] overflow-hidden p-0 [&_.rdp-caption_label]:hidden [&_.rdp-caption_dropdowns_*:not(select)]:hidden" align="start">
         <Calendar
           mode="single"
           selected={normalizedDate}
@@ -467,12 +467,12 @@ export function CalendarDatePicker({
                       setMonth(newMonth);
                     }}
                   >
-                    <SelectTrigger className="h-9 min-w-[140px] text-sm font-normal">
+                    <SelectTrigger className="h-9 w-auto min-w-[11rem] max-w-[16rem] shrink-0 text-sm font-normal [&>span]:line-clamp-none [&>span]:whitespace-nowrap">
                       <SelectValue>
-                        <span>{currentMonthLabel}</span>
+                        <span className="whitespace-nowrap">{currentMonthLabel}</span>
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
                       {monthOptions.map((option) => (
                         <SelectItem key={option.value} value={String(option.value)}>
                           {option.label}

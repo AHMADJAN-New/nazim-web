@@ -217,6 +217,7 @@ export default {
     classesConfigured: "Classes Configured",
     classesSubjects: "Classes & Subjects",
     classesSubjectsDescription: "Manage classes and subjects for this exam",
+    classSubjectEnrollment: "Class & Subject Enrollment",
     clearAll: "Clear All",
     complete: "Complete",
     configure: "Configure",

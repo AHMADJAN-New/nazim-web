@@ -216,6 +216,7 @@ export default {
     classesConfigured: "Exams",
     classesSubjects: "Exams",
     classesSubjectsDescription: "Exams",
+    classSubjectEnrollment: "تسجيل الصف والمادة",
     clearAll: "مسح الكل",
     complete: "Exams",
     configure: "تكوين",

@@ -2403,6 +2403,7 @@ export const TRANSLATION_KEYS = [
   "exams.classesConfigured",
   "exams.classesSubjects",
   "exams.classesSubjectsDescription",
+  "exams.classSubjectEnrollment",
   "exams.clearAll",
   "exams.complete",
   "exams.configure",
