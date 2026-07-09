@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { Search, MoreHorizontal, Printer, Eye, FileText, Calendar, User } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -23,7 +22,7 @@ import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useSubjects } from '@/hooks/useSubjects';
-
+import { formatDateTime } from '@/lib/utils';
 
 type PrintStatus = 'not_printed' | 'printing' | 'printed' | 'cancelled';
 
@@ -148,8 +147,8 @@ export default function ExamPaperPrintTracking() {
                 exam: template.examId ? getExamName(template.examId) : (t('examPapers.generic') || 'Generic'),
                 printStatus: printStatusConfig[(template.printStatus || 'not_printed') as PrintStatus].label,
                 copiesPrinted: template.copiesPrinted ?? 0,
-                lastPrinted: template.lastPrintedAt 
-                  ? format(new Date(template.lastPrintedAt), 'MMM dd, yyyy HH:mm')
+                lastPrinted: template.lastPrintedAt
+                  ? formatDateTime(template.lastPrintedAt)
                   : '-',
                 printedBy: template.printedBy || '-',
               }))}
@@ -326,7 +325,7 @@ export default function ExamPaperPrintTracking() {
                     const printStatus = (template.printStatus || 'not_printed') as PrintStatus;
                     const statusConfig = printStatusConfig[printStatus];
                     const copiesPrinted = template.copiesPrinted ?? 0;
-                    const lastPrintedAt = template.lastPrintedAt ? new Date(template.lastPrintedAt) : null;
+                    const lastPrintedAt = template.lastPrintedAt ?? null;
                     const printedBy = template.printedBy;
 
                     return (
@@ -365,7 +364,7 @@ export default function ExamPaperPrintTracking() {
                           {lastPrintedAt ? (
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{format(lastPrintedAt, 'MMM dd, yyyy HH:mm')}</span>
+                              <span className="text-sm">{formatDateTime(lastPrintedAt)}</span>
                             </div>
                           ) : (
                             <span className="text-muted-foreground">—</span>
@@ -411,7 +410,7 @@ export default function ExamPaperPrintTracking() {
 
       {/* Details Dialog */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('examPapers.paperDetails') || 'Paper Details'}</DialogTitle>
             <DialogDescription>
@@ -420,7 +419,7 @@ export default function ExamPaperPrintTracking() {
           </DialogHeader>
           {selectedTemplate && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-medium text-muted-foreground">{t('examPapers.paperTitle') || 'Title'}</Label>
                   <p className="text-sm font-medium">{selectedTemplate.title}</p>
@@ -450,7 +449,7 @@ export default function ExamPaperPrintTracking() {
                 {selectedTemplate.lastPrintedAt && (
                   <div>
                     <Label className="text-xs font-medium text-muted-foreground">{t('examPapers.lastPrinted') || 'Last Printed'}</Label>
-                    <p className="text-sm">{format(selectedTemplate.lastPrintedAt, 'MMM dd, yyyy HH:mm')}</p>
+                    <p className="text-sm">{formatDateTime(selectedTemplate.lastPrintedAt)}</p>
                   </div>
                 )}
                 {selectedTemplate.printedBy && (
@@ -463,7 +462,7 @@ export default function ExamPaperPrintTracking() {
                   </div>
                 )}
                 {selectedTemplate.printNotes && (
-                  <div className="col-span-2">
+                  <div className="md:col-span-2">
                     <Label className="text-xs font-medium text-muted-foreground">{t('examPapers.printNotes') || 'Print Notes'}</Label>
                     <p className="text-sm text-muted-foreground">{selectedTemplate.printNotes}</p>
                   </div>

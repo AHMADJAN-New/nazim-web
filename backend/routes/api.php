@@ -97,6 +97,7 @@ use App\Http\Controllers\StudentHistoryController;
 use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\StudentReportController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\SubjectImportController;
 use App\Http\Controllers\TeacherSubjectAssignmentController;
 use App\Http\Controllers\TeacherTimetablePreferenceController;
 use App\Http\Controllers\TimetableController;
@@ -808,6 +809,12 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::post('/subjects', [SubjectController::class, 'store']);
                 Route::put('/subjects/{subject}', [SubjectController::class, 'update']);
                 Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy']);
+
+                // Bulk subject import (gated by subjects.create in controller)
+                Route::post('/subject-import/templates/download', [SubjectImportController::class, 'downloadTemplate']);
+                Route::post('/subject-import/validate', [SubjectImportController::class, 'validateFile']);
+                Route::post('/subject-import/commit', [SubjectImportController::class, 'commit']);
+                Route::get('/subject-import/commit/{jobId}/status', [SubjectImportController::class, 'commitStatus']);
             });
         });
 
@@ -880,6 +887,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/exams/{exam}/times', [ExamTimeController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/exams/{exam}/times', [ExamTimeController::class, 'store']);
+                Route::post('/exams/{exam}/times/bulk-replace', [ExamTimeController::class, 'bulkReplace']);
                 Route::put('/exam-times/{examTime}', [ExamTimeController::class, 'update']);
                 Route::delete('/exam-times/{examTime}', [ExamTimeController::class, 'destroy']);
                 Route::post('/exam-times/{examTime}/toggle-lock', [ExamTimeController::class, 'toggleLock']);

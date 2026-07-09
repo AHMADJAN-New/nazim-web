@@ -309,6 +309,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasExamTypesPermission = useHasPermissionAndFeature('exam_types.read');
   const hasClassesPermission = useHasPermissionAndFeature('classes.read');
   const hasSubjectsPermission = useHasPermissionAndFeature('subjects.read');
+  const hasSubjectsCreatePermission = useHasPermissionAndFeature('subjects.create');
   const hasAssetsPermission = useHasPermissionAndFeature('assets.read');
   const hasStaffPermission = useHasPermissionAndFeature('staff.read');
   const hasOrgHrStaffPermission = useHasPermissionAndFeature('hr_staff.read');
@@ -1549,7 +1550,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           },
         ],
       })] : []),
-      ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [asNavItem({
+      ...((hasClassesPermission || hasSubjectsPermission || hasSubjectsCreatePermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [asNavItem({
         titleKey: "academicManagement",
         icon: Landmark,
         badge: null,
@@ -1568,6 +1569,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "academic.subjects.title",
             url: "/settings/subjects",
             icon: BookText,
+          }] : []),
+          ...(hasSubjectsCreatePermission ? [{
+            title: "Bulk Import Subjects",
+            titleKey: "subjectsImport",
+            url: "/settings/subjects/import",
+            icon: LucideIcons.Upload,
           }] : []),
           ...(hasTeacherSubjectAssignmentsPermission ? [{
             title: "Teacher Subject Assignments",
@@ -1778,7 +1785,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       if (item.titleKey === 'academicManagement') {
         // Show if user has any academic management permission
-        return hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission;
+        return hasClassesPermission || hasSubjectsPermission || hasSubjectsCreatePermission || hasTeacherSubjectAssignmentsPermission;
       }
 
       if (item.titleKey === 'timetables') {
@@ -1798,7 +1805,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [subscriptionBlocked, isOnSubscriptionPage, hasSettingsPermission, hasOrganizationsPermission, hasDashboardPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasExamDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission, hasWebsiteSettingsPermission, hasWebsitePagesPermission, hasWebsitePostsPermission, hasWebsiteEventsPermission, hasWebsiteMediaPermission, hasWebsiteMenusPermission, hasWebsiteAccess, websiteOnlyUser, hasOrganizationDashboardAccess, hasOrganizationDashboardPermissionFromList, role, profile?.schools_access_all, permissions]);
+  }, [subscriptionBlocked, isOnSubscriptionPage, hasSettingsPermission, hasOrganizationsPermission, hasDashboardPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasSubjectsCreatePermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasExamDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission, hasWebsiteSettingsPermission, hasWebsitePagesPermission, hasWebsitePostsPermission, hasWebsiteEventsPermission, hasWebsiteMediaPermission, hasWebsiteMenusPermission, hasWebsiteAccess, websiteOnlyUser, hasOrganizationDashboardAccess, hasOrganizationDashboardPermissionFromList, role, profile?.schools_access_all, permissions]);
 
   const websiteNavItem = useMemo(() => {
     return allNavigationItems.find((item) => item.titleKey === 'websiteManager') ?? null;

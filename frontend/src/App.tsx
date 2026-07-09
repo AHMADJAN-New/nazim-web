@@ -74,6 +74,7 @@ import {
   ExamTypesPage,
   ClassesManagement,
   SubjectsManagement,
+  SubjectsImport,
   Exams,
   ExamEnrollment,
   ExamStudentEnrollment,
@@ -1232,6 +1233,13 @@ const App = () => (
                       <PermissionRoute permission="subjects.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <SubjectsManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/settings/subjects/import" element={
+                      <PermissionRoute permission="subjects.create">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <SubjectsImport />
                         </Suspense>
                       </PermissionRoute>
                     } />

@@ -92,6 +92,7 @@ export default {
     studentHistory: "تاریخچه شاگرد",
     students: "شاگردان",
     studentsImport: "ورود گروهی شاگردان",
+    subjectsImport: "ورود گروهی مضامین",
     translations: "ترجمات",
     phoneBook: "دفتر تلفون",
     markAttendance: "ثبت حاضري",

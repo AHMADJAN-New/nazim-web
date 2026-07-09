@@ -86,6 +86,7 @@ export default {
     studentHistory: "سجل الطالب",
     students: "الطلاب",
     studentsImport: "استيراد جماعي للطلاب",
+    subjectsImport: "استيراد جماعي للمواد",
     translations: "الترجمات",
     phoneBook: "دفتر الهاتف",
     markAttendance: "تسجيل الحضور",

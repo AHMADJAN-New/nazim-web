@@ -92,6 +92,7 @@ export default {
     studentHistory: "د زده کوونکي تاریخچه",
     students: "زده کوونکي",
     studentsImport: "د زده کوونکو ډله ییز واردول",
+    subjectsImport: "د مضامینو ډله ایز واردول",
     translations: "ژباړې",
     phoneBook: "د تلیفون کتاب",
     markAttendance: "حاضري واخلئ ",

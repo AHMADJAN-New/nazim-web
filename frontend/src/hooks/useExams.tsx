@@ -423,6 +423,53 @@ export const useToggleExamTimeLock = () => {
   });
 };
 
+export const useBulkReplaceExamTimes = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: async ({
+      examId,
+      times,
+    }: {
+      examId: string;
+      times: Array<{
+        examClassId: string;
+        examSubjectId: string;
+        date: string;
+        startTime: string;
+        endTime: string;
+        roomId?: string | null;
+        invigilatorId?: string | null;
+        notes?: string | null;
+      }>;
+    }) => {
+      const payload = {
+        times: times.map((row) => ({
+          exam_class_id: row.examClassId,
+          exam_subject_id: row.examSubjectId,
+          date: row.date,
+          start_time: row.startTime,
+          end_time: row.endTime,
+          room_id: row.roomId ?? null,
+          invigilator_id: row.invigilatorId ?? null,
+          notes: row.notes ?? null,
+        })),
+      };
+      const response = await examTimesApi.bulkReplace(examId, payload);
+      const rows = (response as { data?: ExamApi.ExamTime[] })?.data ?? [];
+      return (rows as ExamApi.ExamTime[]).map(mapExamTimeApiToDomain);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.examTimetableApplied') || 'Exam timetable applied');
+      await queryClient.invalidateQueries({ queryKey: ['exam-times'] });
+      await queryClient.refetchQueries({ queryKey: ['exam-times'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.examTimetableApplyFailed') || 'Failed to apply exam timetable');
+    },
+  });
+};
+
 // ========== Exam Reports Hooks ==========
 
 export const useExamReport = (examId?: string) => {

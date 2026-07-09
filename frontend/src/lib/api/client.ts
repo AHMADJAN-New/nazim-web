@@ -2217,6 +2217,47 @@ export const studentImportApi = {
   },
 };
 
+// Subject Import (Excel templates + bulk import: subjects + Step 1 + Step 2)
+export const subjectImportApi = {
+  downloadTemplate: async (data: {
+    subject_fields?: string[];
+    academic_year_id: string;
+    class_academic_year_ids: string[];
+    class_defaults?: Array<{
+      class_academic_year_id: string;
+      room_id?: string | null;
+      is_required?: boolean | null;
+      hours_per_week?: number | null;
+      credits?: number | null;
+    }>;
+  }) => {
+    return apiClient.requestFile('/subject-import/templates/download', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  validate: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post('/subject-import/validate', formData, {
+      headers: {},
+    });
+  },
+
+  commit: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post('/subject-import/commit', formData, {
+      headers: {},
+    });
+  },
+
+  commitStatus: async (jobId: string) => {
+    return apiClient.get(`/subject-import/commit/${jobId}/status`);
+  },
+};
+
 // Student Documents API
 export const studentDocumentsApi = {
   list: async (studentId: string) => {
@@ -3658,6 +3699,24 @@ export const examTimesApi = {
     notes?: string | null;
   }) => {
     return apiClient.post(`/exams/${examId}/times`, data);
+  },
+
+  bulkReplace: async (examId: string, data: {
+    times: Array<{
+      exam_class_id: string;
+      exam_subject_id: string;
+      date: string;
+      start_time: string;
+      end_time: string;
+      room_id?: string | null;
+      invigilator_id?: string | null;
+      notes?: string | null;
+    }>;
+  }) => {
+    return apiClient.post<{ data: unknown[]; created_count: number }>(
+      `/exams/${examId}/times/bulk-replace`,
+      data
+    );
   },
 
   update: async (id: string, data: {

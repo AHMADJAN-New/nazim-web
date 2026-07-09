@@ -200,7 +200,7 @@ export function PaperGenerator({ templateId, open, onOpenChange }: PaperGenerato
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Generate PDF</DialogTitle>
           <DialogDescription>

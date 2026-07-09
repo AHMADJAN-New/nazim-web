@@ -920,7 +920,7 @@ export function QuestionBank() {
         </div>
 
       {/* Type, Difficulty, Marks */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <Label>{t('events.type') || 'Type'} *</Label>
           <Controller
@@ -1390,8 +1390,14 @@ export function QuestionBank() {
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
+      <Dialog
+        open={isCreateDialogOpen}
+        onOpenChange={(open) => {
+          setIsCreateDialogOpen(open);
+          if (!open) resetForm();
+        }}
+      >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('events.create') || 'Create Question'}</DialogTitle>
             <DialogDescription>
@@ -1424,8 +1430,14 @@ export function QuestionBank() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) resetForm();
+        }}
+      >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('events.edit') || 'Edit Question'}</DialogTitle>
             <DialogDescription>
@@ -1448,9 +1460,12 @@ export function QuestionBank() {
 
       {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('questionBank.viewQuestion') || 'View Question'}</DialogTitle>
+            <DialogDescription>
+              {t('questionBank.viewDescription') || 'View question details'}
+            </DialogDescription>
           </DialogHeader>
           {selectedQuestion && (
             <div className="space-y-4">
@@ -1522,7 +1537,7 @@ export function QuestionBank() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <Label className="text-muted-foreground">{t('questionBank.subject') || 'Subject'}</Label>
                   <p>{selectedQuestion.subject?.name || '—'}</p>

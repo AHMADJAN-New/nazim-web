@@ -92,6 +92,7 @@ export default {
     studentHistory: "Student History",
     students: "Students",
     studentsImport: "Bulk Import Students",
+    subjectsImport: "Bulk Import Subjects",
     translations: "Translations",
     phoneBook: "Phone Book",
     markAttendance: "Mark Attendance",

@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef } from '@tanstack/react-table';
-import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X, GraduationCap } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X, GraduationCap, Upload } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import * as z from 'zod';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -103,6 +104,7 @@ type CopySubjectsFormData = z.infer<typeof copySubjectsSchema>;
 
 export function SubjectsManagement() {
     const { t } = useLanguage();
+    const navigate = useNavigate();
     const { data: profile } = useProfile();
     const hasCreatePermission = useHasPermission('subjects.create');
     const hasUpdatePermission = useHasPermission('subjects.update');
@@ -643,10 +645,22 @@ export function SubjectsManagement() {
                                     </CardDescription>
                                 </div>
                                 {hasCreatePermission && (
-                                    <Button onClick={() => handleOpenSubjectDialog()} className="flex-shrink-0" data-tour="subjects-create-button">
-                                        <Plus className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">{t('academic.subjects.addSubject')}</span>
-                                    </Button>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => navigate('/settings/subjects/import')}
+                                            className="flex-shrink-0"
+                                            aria-label={t('academic.subjects.bulkImport')}
+                                            data-tour="subjects-import-button"
+                                        >
+                                            <Upload className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">{t('academic.subjects.bulkImport')}</span>
+                                        </Button>
+                                        <Button onClick={() => handleOpenSubjectDialog()} className="flex-shrink-0" data-tour="subjects-create-button">
+                                            <Plus className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">{t('academic.subjects.addSubject')}</span>
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
                         </CardHeader>

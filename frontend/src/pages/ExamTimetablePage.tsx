@@ -2,9 +2,14 @@ import {
   ArrowLeft, Plus, Trash2, Clock, Calendar as CalendarIcon, Lock, Unlock,
   Pencil, MapPin, User
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
+import { ExamTimetableBoard } from '@/components/exams/ExamTimetableBoard';
+import {
+  ExamTimetableGeneratePanel,
+  type ExamTimetableGenerateConfig,
+} from '@/components/exams/ExamTimetableGeneratePanel';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
   AlertDialog,
@@ -23,6 +28,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { 
   useExam, useExamClasses, useExamSubjects, useExamTimes,
   useCreateExamTime, useUpdateExamTime, useDeleteExamTime, useToggleExamTimeLock,
+  useBulkReplaceExamTimes,
   useExams, useLatestExamFromCurrentYear
 } from '@/hooks/useExams';
 import { useRooms } from '@/hooks/useRooms';
@@ -46,8 +52,14 @@ import {
 } from '@/components/ui/dialog';
 import { showToast } from '@/lib/toast';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import type { ExamTime, ExamClass, ExamSubject } from '@/types/domain/exam';
+import {
+  buildExamDays,
+  solveExamTimetable,
+  type ExamSolverEntry,
+} from '@/lib/examTimetableSolver';
+import { buildExamTimetableMatrixExport } from '@/lib/examTimetableMatrixExport';
+import { formatDate } from '@/lib/utils';
+import type { ExamTime } from '@/types/domain/exam';
 
 export function ExamTimetablePage() {
   const { t } = useLanguage();
@@ -99,6 +111,7 @@ export function ExamTimetablePage() {
   const updateExamTime = useUpdateExamTime();
   const deleteExamTime = useDeleteExamTime();
   const toggleLock = useToggleExamTimeLock();
+  const bulkReplaceExamTimes = useBulkReplaceExamTimes();
 
   // Permissions
   const hasManageTimetable = useHasPermission('exams.manage_timetable');
@@ -109,6 +122,12 @@ export function ExamTimetablePage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
+  const [pendingGenerateConfig, setPendingGenerateConfig] = useState<ExamTimetableGenerateConfig | null>(null);
+  const [boardEntries, setBoardEntries] = useState<ExamSolverEntry[]>([]);
+  const [boardAllDays, setBoardAllDays] = useState<string[]>([]);
+  const [boardRestDays, setBoardRestDays] = useState<string[]>([]);
+  const [boardDirty, setBoardDirty] = useState(false);
   const [timeToEdit, setTimeToEdit] = useState<ExamTime | null>(null);
   const [timeToDelete, setTimeToDelete] = useState<ExamTime | null>(null);
   const [formData, setFormData] = useState({
@@ -128,17 +147,40 @@ export function ExamTimetablePage() {
     return examSubjects.filter(es => es.examClassId === formData.examClassId);
   }, [formData.examClassId, examSubjects]);
 
+  const toDateKey = (value: Date | string) => {
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+      return value.slice(0, 10);
+    }
+    return dateToLocalYYYYMMDD(value instanceof Date ? value : new Date(value));
+  };
+
+  const examDateBounds = useMemo(() => {
+    const toBoundDate = (value?: Date | string | null) => {
+      if (!value) return undefined;
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? undefined : value;
+      }
+      const key = String(value).slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return undefined;
+      const parsed = parseLocalDate(key);
+      return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+    };
+    return {
+      minDate: toBoundDate(exam?.startDate),
+      maxDate: toBoundDate(exam?.endDate),
+    };
+  }, [exam?.startDate, exam?.endDate]);
+
   // Filter exam times
   const filteredExamTimes = useMemo(() => {
     if (!examTimes) return [];
     return examTimes.filter(et => {
       const matchesClass = selectedClassFilter === 'all' || et.examClassId === selectedClassFilter;
-      const matchesDate = !selectedDateFilter || 
-        new Date(et.date).toISOString().slice(0, 10) === selectedDateFilter;
+      const matchesDate = !selectedDateFilter || toDateKey(et.date) === selectedDateFilter;
       return matchesClass && matchesDate;
     }).sort((a, b) => {
       // Sort by date, then by start time
-      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+      const dateCompare = toDateKey(a.date).localeCompare(toDateKey(b.date));
       if (dateCompare !== 0) return dateCompare;
       return a.startTime.localeCompare(b.startTime);
     });
@@ -148,7 +190,7 @@ export function ExamTimetablePage() {
   const groupedByDate = useMemo(() => {
     const groups: Record<string, ExamTime[]> = {};
     filteredExamTimes.forEach(et => {
-      const dateKey = new Date(et.date).toISOString().slice(0, 10);
+      const dateKey = toDateKey(et.date);
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(et);
     });
@@ -169,6 +211,196 @@ export function ExamTimetablePage() {
   const getSubjectName = (examSubjectId: string) => {
     const examSubject = examSubjects?.find(es => es.id === examSubjectId);
     return examSubject?.subject?.name || 'Subject';
+  };
+
+  // Class × date matrix for PDF/Excel export (matches printed timetable layout)
+  // Sections of the same class are merged into one row (no section names in export).
+  const examTimetableMatrix = useMemo(() => {
+    const classes = (examClasses ?? []).map((ec) => {
+      const baseName = ec.classAcademicYear?.class?.name || 'Class';
+      const classId = ec.classAcademicYear?.classId || ec.classAcademicYear?.class?.id || ec.id;
+      return {
+        id: ec.id,
+        name: baseName,
+        groupKey: classId,
+      };
+    });
+    const slots = filteredExamTimes.map((et) => ({
+      examClassId: et.examClassId,
+      date: toDateKey(et.date),
+      subjectName: getSubjectName(et.examSubjectId),
+    }));
+    return buildExamTimetableMatrixExport(classes, slots, {
+      classColumnLabel: t('search.class') || t('exams.boardClass') || 'Class',
+      formatDayHeader: (dateYmd, weekdayKey) => {
+        const dayLabel =
+          t(`academic.timetable.days.${weekdayKey}`) ||
+          t(`timetable.days.${weekdayKey}`) ||
+          weekdayKey;
+        return `${dayLabel}\n${formatDate(dateYmd)}`;
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredExamTimes, examClasses, examSubjects, t]);
+
+  const canModify =
+    hasManageTimetable &&
+    !!exam &&
+    exam.status !== 'completed' &&
+    exam.status !== 'archived';
+
+  const examStartKey = exam?.startDate ? toDateKey(exam.startDate) : '';
+  const examEndKey = exam?.endDate ? toDateKey(exam.endDate) : '';
+
+  const boardClasses = useMemo(
+    () =>
+      (examClasses ?? []).map((ec) => ({
+        id: ec.id,
+        name: getClassName(ec.id),
+      })),
+    // getClassName depends on examClasses
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [examClasses]
+  );
+
+  // Reset draft when switching exams
+  useEffect(() => {
+    setBoardDirty(false);
+    setBoardEntries([]);
+    setBoardAllDays([]);
+    setBoardRestDays([]);
+    setPendingGenerateConfig(null);
+    setIsRegenerateConfirmOpen(false);
+  }, [examId]);
+
+  // Seed board from server when not dirty
+  useEffect(() => {
+    if (boardDirty || !examTimes) return;
+    if (!examStartKey || !examEndKey || examTimes.length === 0) {
+      setBoardEntries([]);
+      setBoardAllDays([]);
+      setBoardRestDays([]);
+      return;
+    }
+    const allDays = buildExamDays(examStartKey, examEndKey, []);
+    setBoardAllDays(allDays);
+    setBoardRestDays([]);
+    setBoardEntries(
+      examTimes.map((et) => ({
+        examClassId: et.examClassId,
+        examSubjectId: et.examSubjectId,
+        subjectId: et.examSubject?.subjectId ?? '',
+        date: toDateKey(et.date),
+        startTime: et.startTime.slice(0, 5),
+        endTime: et.endTime.slice(0, 5),
+        roomId: et.roomId ?? null,
+        invigilatorId: et.invigilatorId ?? null,
+        isLocked: et.isLocked,
+        subjectName: getSubjectName(et.examSubjectId),
+        className: getClassName(et.examClassId),
+      }))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [examTimes, examStartKey, examEndKey, boardDirty, examId]);
+
+  const runGenerate = useCallback(
+    (config: ExamTimetableGenerateConfig) => {
+      if (!examSubjects?.length || !examClasses?.length) {
+        showToast.error('exams.needClassesAndSubjects');
+        return;
+      }
+
+      const allDaysInclusive = buildExamDays(config.startDate, config.endDate, []);
+      const examDays = buildExamDays(config.startDate, config.endDate, config.restDays);
+      const lockedSlots = (examTimes ?? [])
+        .filter((et) => et.isLocked)
+        .map((et) => ({
+          examSubjectId: et.examSubjectId,
+          examClassId: et.examClassId,
+          date: toDateKey(et.date),
+          startTime: et.startTime.slice(0, 5),
+          endTime: et.endTime.slice(0, 5),
+          roomId: et.roomId ?? null,
+          invigilatorId: et.invigilatorId ?? null,
+        }));
+
+      const subjectsInput = examSubjects.map((es) => ({
+        examSubjectId: es.id,
+        examClassId: es.examClassId,
+        subjectId: es.subjectId,
+        subjectName: es.subject?.name || getSubjectName(es.id),
+        className: getClassName(es.examClassId),
+      }));
+
+      const result = solveExamTimetable(subjectsInput, {
+        examDays,
+        startTime: config.startTime,
+        endTime: config.endTime,
+        lockedSlots,
+        assignRooms: config.assignRooms,
+        rooms: config.assignRooms
+          ? (rooms ?? []).map((r) => ({ id: r.id }))
+          : [],
+        assignInvigilators: config.assignInvigilators,
+        staff: config.assignInvigilators
+          ? (staff ?? []).map((s) => ({ id: s.id }))
+          : [],
+      });
+
+      setBoardAllDays(allDaysInclusive);
+      setBoardRestDays(config.restDays);
+      setBoardEntries(result.entries);
+      setBoardDirty(true);
+
+      if (result.unscheduled.length > 0) {
+        showToast.warning('exams.unscheduledSubjects', {
+          count: result.unscheduled.length,
+        });
+      } else {
+        showToast.success('toast.examTimetableGenerated');
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [examSubjects, examClasses, examTimes, rooms, staff, t]
+  );
+
+  const handleGenerateRequest = (config: ExamTimetableGenerateConfig) => {
+    const hasUnlocked = (examTimes ?? []).some((et) => !et.isLocked);
+    if (hasUnlocked || boardDirty) {
+      setPendingGenerateConfig(config);
+      setIsRegenerateConfirmOpen(true);
+      return;
+    }
+    runGenerate(config);
+  };
+
+  const handleApplyBoard = () => {
+    if (!examId) return;
+    const unlocked = boardEntries.filter((e) => !e.isLocked);
+    bulkReplaceExamTimes.mutate(
+      {
+        examId,
+        times: unlocked.map((e) => ({
+          examClassId: e.examClassId,
+          examSubjectId: e.examSubjectId,
+          date: e.date,
+          startTime: e.startTime.slice(0, 5),
+          endTime: e.endTime.slice(0, 5),
+          roomId: e.roomId ?? null,
+          invigilatorId: e.invigilatorId ?? null,
+        })),
+      },
+      {
+        onSuccess: () => {
+          setBoardDirty(false);
+        },
+      }
+    );
+  };
+
+  const handleDiscardBoard = () => {
+    setBoardDirty(false);
+    showToast.info('toast.examTimetableDiscarded');
   };
 
   const resetForm = () => {
@@ -201,7 +433,7 @@ export function ExamTimetablePage() {
         data: {
           examClassId: formData.examClassId,
           examSubjectId: formData.examSubjectId,
-          date: new Date(formData.date),
+          date: parseLocalDate(formData.date),
           startTime: formData.startTime,
           endTime: formData.endTime,
           roomId: formData.roomId && formData.roomId !== 'none' ? formData.roomId : null,
@@ -237,7 +469,7 @@ export function ExamTimetablePage() {
       {
         id: timeToEdit.id,
         data: {
-          date: new Date(formData.date),
+          date: parseLocalDate(formData.date),
           startTime: formData.startTime,
           endTime: formData.endTime,
           roomId: formData.roomId && formData.roomId !== 'none' ? formData.roomId : null,
@@ -294,7 +526,7 @@ export function ExamTimetablePage() {
     setFormData({
       examClassId: examTime.examClassId,
       examSubjectId: examTime.examSubjectId,
-      date: new Date(examTime.date).toISOString().slice(0, 10),
+      date: toDateKey(examTime.date),
       startTime: examTime.startTime,
       endTime: examTime.endTime,
       roomId: examTime.roomId || 'none',
@@ -302,6 +534,11 @@ export function ExamTimetablePage() {
       notes: examTime.notes || '',
     });
     setIsEditDialogOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setIsCreateDialogOpen(true);
   };
 
   const isLoading = (examIdFromParams ? examLoading : examsLoading) || timesLoading;
@@ -406,8 +643,6 @@ export function ExamTimetablePage() {
     );
   }
 
-  const canModify = hasManageTimetable && ['draft', 'scheduled', 'in_progress'].includes(exam.status);
-
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
@@ -468,6 +703,34 @@ export function ExamTimetablePage() {
         </Card>
       )}
 
+      {/* Auto-generate + drag board */}
+      {canModify && (
+        <ExamTimetableGeneratePanel
+          defaultStartDate={examStartKey || undefined}
+          defaultEndDate={examEndKey || undefined}
+          disabled={!examClasses?.length || !examSubjects?.length}
+          onGenerate={handleGenerateRequest}
+        />
+      )}
+
+      {(boardDirty || boardEntries.length > 0) && boardAllDays.length > 0 && (
+        <ExamTimetableBoard
+          classes={boardClasses}
+          allDays={boardAllDays}
+          restDays={boardRestDays}
+          entries={boardEntries}
+          dirty={boardDirty}
+          isApplying={bulkReplaceExamTimes.isPending}
+          disabled={!canModify}
+          onEntriesChange={(next) => {
+            setBoardEntries(next);
+            setBoardDirty(true);
+          }}
+          onApply={handleApplyBoard}
+          onDiscard={handleDiscardBoard}
+        />
+      )}
+
       {/* Filters and Actions */}
       <Card>
         <CardContent className="pt-6">
@@ -487,7 +750,12 @@ export function ExamTimetablePage() {
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2 flex-1">
-                <CalendarDatePicker date={selectedDateFilter ? parseLocalDate(selectedDateFilter) : undefined} onDateChange={(date) => setSelectedDateFilter(date ? dateToLocalYYYYMMDD(date) : "")} />
+                <CalendarDatePicker
+                  date={selectedDateFilter ? parseLocalDate(selectedDateFilter) : undefined}
+                  onDateChange={(date) => setSelectedDateFilter(date ? dateToLocalYYYYMMDD(date) : '')}
+                  placeholder={t('common.selectDate') || 'Select date'}
+                  className="w-full"
+                />
                 {selectedDateFilter && (
                   <Button variant="ghost" size="sm" onClick={() => setSelectedDateFilter('')} className="flex-shrink-0">
                     {t('events.clear') || 'Clear'}
@@ -498,27 +766,11 @@ export function ExamTimetablePage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
               {filteredExamTimes.length > 0 && (
                 <ReportExportButtons
-                  data={filteredExamTimes}
-                  columns={[
-                    { key: 'date', label: t('events.date') || 'Date' },
-                    { key: 'time', label: t('exams.time') || 'Time' },
-                    { key: 'className', label: t('search.class') || 'Class' },
-                    { key: 'subjectName', label: t('exams.subject') || 'Subject' },
-                    { key: 'roomName', label: t('exams.room') || 'Room' },
-                    { key: 'invigilatorName', label: t('exams.invigilator') || 'Invigilator' },
-                    { key: 'status', label: t('events.status') || 'Status' },
-                  ]}
+                  data={examTimetableMatrix.rows}
+                  columns={examTimetableMatrix.columns}
                   reportKey="exam_timetable"
                   title={`${t('exams.examTimetable') || 'Exam Timetable'} - ${exam?.name || ''}`}
-                  transformData={(data) => data.map((et: ExamTime) => ({
-                    date: formatDate(et.date),
-                    time: `${et.startTime} - ${et.endTime}`,
-                    className: getClassName(et.examClassId),
-                    subjectName: getSubjectName(et.examSubjectId),
-                    roomName: et.room?.name || '-',
-                    invigilatorName: et.invigilator?.fullName || '-',
-                    status: et.isLocked ? (t('exams.locked') || 'Locked') : (t('exams.unlocked') || 'Unlocked'),
-                  }))}
+                  transformData={(rows) => rows}
                   buildFiltersSummary={() => {
                     const parts: string[] = [];
                     if (exam?.name) parts.push(`Exam: ${exam.name}`);
@@ -534,11 +786,11 @@ export function ExamTimetablePage() {
                   }}
                   schoolId={profile?.default_school_id}
                   templateType="exam_timetable"
-                  disabled={filteredExamTimes.length === 0}
+                  disabled={examTimetableMatrix.rows.length === 0}
                 />
               )}
               {canModify && (
-                <Button onClick={() => setIsCreateDialogOpen(true)} disabled={!examClasses?.length || !examSubjects?.length} className="w-full sm:w-auto flex-shrink-0">
+                <Button onClick={openCreateDialog} disabled={!examClasses?.length || !examSubjects?.length} className="w-full sm:w-auto flex-shrink-0">
                   <Plus className="h-4 w-4" />
                   <span className="ml-2">{t('exams.addTimeSlot') || 'Add Time Slot'}</span>
                 </Button>
@@ -688,8 +940,14 @@ export function ExamTimetablePage() {
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <Dialog
+        open={isCreateDialogOpen}
+        onOpenChange={(open) => {
+          setIsCreateDialogOpen(open);
+          if (!open) resetForm();
+        }}
+      >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('exams.addTimeSlot') || 'Add Time Slot'}</DialogTitle>
             <DialogDescription>
@@ -699,12 +957,14 @@ export function ExamTimetablePage() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('search.class') || 'Class'} *</Label>
-                <Select 
-                  value={formData.examClassId} 
-                  onValueChange={(v) => setFormData({ ...formData, examClassId: v, examSubjectId: '' })}
+                <Label htmlFor="create-exam-class">{t('search.class') || 'Class'} *</Label>
+                <Select
+                  value={formData.examClassId}
+                  onValueChange={(v) =>
+                    setFormData((prev) => ({ ...prev, examClassId: v, examSubjectId: '' }))
+                  }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="create-exam-class">
                     <SelectValue placeholder={t('events.selectClass') || 'Select class'} />
                   </SelectTrigger>
                   <SelectContent>
@@ -717,13 +977,13 @@ export function ExamTimetablePage() {
                 </Select>
               </div>
               <div>
-                <Label>{t('exams.subject') || 'Subject'} *</Label>
-                <Select 
-                  value={formData.examSubjectId} 
-                  onValueChange={(v) => setFormData({ ...formData, examSubjectId: v })}
+                <Label htmlFor="create-exam-subject">{t('exams.subject') || 'Subject'} *</Label>
+                <Select
+                  value={formData.examSubjectId}
+                  onValueChange={(v) => setFormData((prev) => ({ ...prev, examSubjectId: v }))}
                   disabled={!formData.examClassId}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="create-exam-subject">
                     <SelectValue placeholder={t('exams.selectSubject') || 'Select subject'} />
                   </SelectTrigger>
                   <SelectContent>
@@ -737,55 +997,75 @@ export function ExamTimetablePage() {
               </div>
             </div>
             <div>
-              <Label>{t('events.date') || 'Date'} *</Label>
-              <CalendarDatePicker date={formData.date ? parseLocalDate(formData.date) : undefined} onDateChange={(date) => setFormData(date ? dateToLocalYYYYMMDD(date) : "")} />
+              <Label htmlFor="create-exam-date">{t('events.date') || 'Date'} *</Label>
+              <CalendarDatePicker
+                date={formData.date ? parseLocalDate(formData.date) : undefined}
+                onDateChange={(date) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    date: date ? dateToLocalYYYYMMDD(date) : '',
+                  }))
+                }
+                minDate={examDateBounds.minDate}
+                maxDate={examDateBounds.maxDate}
+                placeholder={t('common.selectDate') || 'Select date'}
+                className="w-full"
+              />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('exams.startTime') || 'Start Time'} *</Label>
+                <Label htmlFor="create-start-time">{t('exams.startTime') || 'Start Time'} *</Label>
                 <Input
+                  id="create-start-time"
                   type="time"
                   value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, startTime: e.target.value }))}
                 />
               </div>
               <div>
-                <Label>{t('exams.endTime') || 'End Time'} *</Label>
+                <Label htmlFor="create-end-time">{t('exams.endTime') || 'End Time'} *</Label>
                 <Input
+                  id="create-end-time"
                   type="time"
                   value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, endTime: e.target.value }))}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('exams.room') || 'Room'}</Label>
-                <Select value={formData.roomId || 'none'} onValueChange={(v) => setFormData({ ...formData, roomId: v })}>
-                  <SelectTrigger>
+                <Label htmlFor="create-room">{t('exams.room') || 'Room'}</Label>
+                <Select
+                  value={formData.roomId || 'none'}
+                  onValueChange={(v) => setFormData((prev) => ({ ...prev, roomId: v }))}
+                >
+                  <SelectTrigger id="create-room">
                     <SelectValue placeholder={t('exams.selectRoom') || 'Select room'} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                     {rooms?.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
-                        {room.name}
+                        {room.roomNumber}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>{t('exams.invigilator') || 'Invigilator'}</Label>
-                <Select value={formData.invigilatorId || 'none'} onValueChange={(v) => setFormData({ ...formData, invigilatorId: v })}>
-                  <SelectTrigger>
+                <Label htmlFor="create-invigilator">{t('exams.invigilator') || 'Invigilator'}</Label>
+                <Select
+                  value={formData.invigilatorId || 'none'}
+                  onValueChange={(v) => setFormData((prev) => ({ ...prev, invigilatorId: v }))}
+                >
+                  <SelectTrigger id="create-invigilator">
                     <SelectValue placeholder={t('exams.selectInvigilator') || 'Select invigilator'} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                     {staff?.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.firstName} {s.lastName}
+                        {s.fullName || `${s.firstName} ${s.lastName}`.trim()}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -793,17 +1073,24 @@ export function ExamTimetablePage() {
               </div>
             </div>
             <div>
-              <Label>{t('events.notes') || 'Notes'}</Label>
+              <Label htmlFor="create-notes">{t('events.notes') || 'Notes'}</Label>
               <Textarea
+                id="create-notes"
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                 placeholder={t('exams.notesPlaceholder') || 'Optional notes...'}
-                rows={2}
+                rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsCreateDialogOpen(false);
+                resetForm();
+              }}
+            >
               {t('events.cancel') || 'Cancel'}
             </Button>
             <Button onClick={handleCreate} disabled={createExamTime.isPending}>
@@ -814,8 +1101,17 @@ export function ExamTimetablePage() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setTimeToEdit(null);
+            resetForm();
+          }
+        }}
+      >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('exams.editTimeSlot') || 'Edit Time Slot'}</DialogTitle>
             <DialogDescription>
@@ -824,60 +1120,82 @@ export function ExamTimetablePage() {
           </DialogHeader>
           <div className="space-y-4">
             {timeToEdit && (
-              <div className="bg-muted/50 p-3 rounded-lg">
-                <p className="font-medium">{getClassName(timeToEdit.examClassId)} - {getSubjectName(timeToEdit.examSubjectId)}</p>
+              <div className="rounded-lg border bg-muted/50 p-3">
+                <p className="font-medium">
+                  {getClassName(timeToEdit.examClassId)} - {getSubjectName(timeToEdit.examSubjectId)}
+                </p>
               </div>
             )}
             <div>
-              <Label>{t('events.date') || 'Date'} *</Label>
-              <CalendarDatePicker date={formData.date ? parseLocalDate(formData.date) : undefined} onDateChange={(date) => setFormData(date ? dateToLocalYYYYMMDD(date) : "")} />
+              <Label htmlFor="edit-exam-date">{t('events.date') || 'Date'} *</Label>
+              <CalendarDatePicker
+                date={formData.date ? parseLocalDate(formData.date) : undefined}
+                onDateChange={(date) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    date: date ? dateToLocalYYYYMMDD(date) : '',
+                  }))
+                }
+                minDate={examDateBounds.minDate}
+                maxDate={examDateBounds.maxDate}
+                placeholder={t('common.selectDate') || 'Select date'}
+                className="w-full"
+              />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('exams.startTime') || 'Start Time'} *</Label>
+                <Label htmlFor="edit-start-time">{t('exams.startTime') || 'Start Time'} *</Label>
                 <Input
+                  id="edit-start-time"
                   type="time"
                   value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, startTime: e.target.value }))}
                 />
               </div>
               <div>
-                <Label>{t('exams.endTime') || 'End Time'} *</Label>
+                <Label htmlFor="edit-end-time">{t('exams.endTime') || 'End Time'} *</Label>
                 <Input
+                  id="edit-end-time"
                   type="time"
                   value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, endTime: e.target.value }))}
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>{t('exams.room') || 'Room'}</Label>
-                <Select value={formData.roomId || 'none'} onValueChange={(v) => setFormData({ ...formData, roomId: v })}>
-                  <SelectTrigger>
+                <Label htmlFor="edit-room">{t('exams.room') || 'Room'}</Label>
+                <Select
+                  value={formData.roomId || 'none'}
+                  onValueChange={(v) => setFormData((prev) => ({ ...prev, roomId: v }))}
+                >
+                  <SelectTrigger id="edit-room">
                     <SelectValue placeholder={t('exams.selectRoom') || 'Select room'} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                     {rooms?.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
-                        {room.name}
+                        {room.roomNumber}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>{t('exams.invigilator') || 'Invigilator'}</Label>
-                <Select value={formData.invigilatorId || 'none'} onValueChange={(v) => setFormData({ ...formData, invigilatorId: v })}>
-                  <SelectTrigger>
+                <Label htmlFor="edit-invigilator">{t('exams.invigilator') || 'Invigilator'}</Label>
+                <Select
+                  value={formData.invigilatorId || 'none'}
+                  onValueChange={(v) => setFormData((prev) => ({ ...prev, invigilatorId: v }))}
+                >
+                  <SelectTrigger id="edit-invigilator">
                     <SelectValue placeholder={t('exams.selectInvigilator') || 'Select invigilator'} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
                     {staff?.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.firstName} {s.lastName}
+                        {s.fullName || `${s.firstName} ${s.lastName}`.trim()}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -885,17 +1203,25 @@ export function ExamTimetablePage() {
               </div>
             </div>
             <div>
-              <Label>{t('events.notes') || 'Notes'}</Label>
+              <Label htmlFor="edit-notes">{t('events.notes') || 'Notes'}</Label>
               <Textarea
+                id="edit-notes"
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                 placeholder={t('exams.notesPlaceholder') || 'Optional notes...'}
-                rows={2}
+                rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setTimeToEdit(null); resetForm(); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditDialogOpen(false);
+                setTimeToEdit(null);
+                resetForm();
+              }}
+            >
               {t('events.cancel') || 'Cancel'}
             </Button>
             <Button onClick={handleUpdate} disabled={updateExamTime.isPending}>
@@ -925,6 +1251,41 @@ export function ExamTimetablePage() {
             <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
               {t('events.delete') || 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Regenerate confirm */}
+      <AlertDialog
+        open={isRegenerateConfirmOpen}
+        onOpenChange={(open) => {
+          setIsRegenerateConfirmOpen(open);
+          if (!open) setPendingGenerateConfig(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('exams.regeneratingConfirmTitle') || 'Replace unlocked timetable?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('exams.regeneratingConfirmDescription') ||
+                'Unlocked time slots will be replaced. Locked slots stay as they are.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingGenerateConfig) {
+                  runGenerate(pendingGenerateConfig);
+                }
+                setPendingGenerateConfig(null);
+                setIsRegenerateConfirmOpen(false);
+              }}
+            >
+              {t('exams.generate') || 'Generate'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

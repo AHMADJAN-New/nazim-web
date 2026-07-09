@@ -543,7 +543,7 @@ export default function ExamPaperTemplates() {
         </div>
 
         {/* Title & Language */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>{t('certificateTemplates.templateName') || 'Title'} *</Label>
             <Input
@@ -582,7 +582,7 @@ export default function ExamPaperTemplates() {
         </div>
 
         {/* Duration & Total Marks */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>{t('examPapers.duration') || 'Duration (minutes)'} *</Label>
             <Input
@@ -661,7 +661,7 @@ export default function ExamPaperTemplates() {
         </div>
 
         {/* Header & Footer HTML */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>{t('examPapers.headerHtml') || 'Header HTML'}</Label>
             <Textarea
@@ -1020,8 +1020,14 @@ export default function ExamPaperTemplates() {
         </Card>
 
           {/* Create Dialog */}
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={(open) => {
+              setIsCreateDialogOpen(open);
+              if (!open) resetForm();
+            }}
+          >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('examPapers.createPaper') || 'Create Exam Paper'}</DialogTitle>
             <DialogDescription>
@@ -1043,8 +1049,14 @@ export default function ExamPaperTemplates() {
           </Dialog>
 
           {/* Edit Dialog */}
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+          <Dialog
+            open={isEditDialogOpen}
+            onOpenChange={(open) => {
+              setIsEditDialogOpen(open);
+              if (!open) resetForm();
+            }}
+          >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('examPapers.editPaper') || 'Edit Exam Paper'}</DialogTitle>
             <DialogDescription>
@@ -1116,11 +1128,11 @@ export default function ExamPaperTemplates() {
 
       {/* Template Files Manager Dialog */}
       <Dialog open={isTemplateFilesDialogOpen} onOpenChange={setIsTemplateFilesDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Manage Template Files</DialogTitle>
+            <DialogTitle>{t('examPapers.manageTemplateFiles') || 'Manage Template Files'}</DialogTitle>
             <DialogDescription>
-              Create and manage HTML template files for exam papers
+              {t('examPapers.manageTemplateFilesDescription') || 'Create and manage HTML template files for exam papers'}
             </DialogDescription>
           </DialogHeader>
           <TemplateFileManager
@@ -1129,7 +1141,7 @@ export default function ExamPaperTemplates() {
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsTemplateFilesDialogOpen(false)}>
-              Close
+              {t('events.close') || 'Close'}
             </Button>
           </DialogFooter>
         </DialogContent>

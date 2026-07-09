@@ -599,11 +599,11 @@ export default function ExamPaperTemplateEdit() {
 
       {/* Add Question Dialog */}
       <Dialog open={isAddQuestionDialogOpen} onOpenChange={setIsAddQuestionDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Question from Question Bank</DialogTitle>
+            <DialogTitle>{t('examPapers.addQuestionFromBank') || 'Add Question from Question Bank'}</DialogTitle>
             <DialogDescription>
-              Select a question from the question bank. You can filter by academic year to see questions from different years.
+              {t('examPapers.addQuestionFromBankDescription') || 'Select a question from the question bank. You can filter by academic year to see questions from different years.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -831,7 +831,7 @@ export default function ExamPaperTemplateEdit() {
                 {selectedItem?.question?.text || 'No question'}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Marks Override (Optional)</Label>
                 <NumberInput

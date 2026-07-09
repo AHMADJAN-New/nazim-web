@@ -27,6 +27,7 @@ export const ActivityLogsPage = lazy(() => import('@/pages/settings/ActivityLogs
 export const ExamTypesPage = lazy(() => import('@/pages/settings/ExamTypesPage').then(module => ({ default: module.ExamTypesPage })));
 export const ClassesManagement = lazy(() => import('@/components/settings/ClassesManagement').then(module => ({ default: module.ClassesManagement })));
 export const SubjectsManagement = lazy(() => import('@/components/settings/SubjectsManagement').then(module => ({ default: module.SubjectsManagement })));
+export const SubjectsImport = lazy(() => import('@/pages/SubjectsImport'));
 export const Exams = lazy(() => import('@/pages/Exams').then(module => ({ default: module.Exams })));
 export const ExamEnrollment = lazy(() => import('@/pages/ExamEnrollment').then(module => ({ default: module.ExamEnrollment })));
 export const ExamStudentEnrollment = lazy(() => import('@/pages/ExamStudentEnrollment').then(module => ({ default: module.ExamStudentEnrollment })));
