@@ -353,7 +353,7 @@ export default function ExamPaperTemplates() {
     const showSchoolSelect = !userDefaultSchoolId;
 
     return (
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+      <div className="space-y-4">
         {/* School */}
         <div>
           <Label>{t('examPapers.school') || 'School'} *</Label>
@@ -1027,16 +1027,18 @@ export default function ExamPaperTemplates() {
               if (!open) resetForm();
             }}
           >
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('examPapers.createPaper') || 'Create Exam Paper'}</DialogTitle>
             <DialogDescription>
               {t('examPapers.createDescription') || 'Create a new exam paper'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleCreate)}>
-            <TemplateFormFields />
-            <DialogFooter className="mt-4">
+          <form onSubmit={form.handleSubmit(handleCreate)} className="flex min-h-0 flex-1 flex-col">
+            <div className="space-y-4 overflow-y-auto pr-1 flex-1">
+              <TemplateFormFields />
+            </div>
+            <DialogFooter className="mt-4 shrink-0 border-t pt-4">
               <Button type="button" variant="outline" onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}>
                 {t('events.cancel') || 'Cancel'}
               </Button>
@@ -1056,16 +1058,18 @@ export default function ExamPaperTemplates() {
               if (!open) resetForm();
             }}
           >
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('examPapers.editPaper') || 'Edit Exam Paper'}</DialogTitle>
             <DialogDescription>
               {t('examPapers.editDescription') || 'Update the exam paper details'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleUpdate)}>
-            <TemplateFormFields isEdit />
-            <DialogFooter className="mt-4">
+          <form onSubmit={form.handleSubmit(handleUpdate)} className="flex min-h-0 flex-1 flex-col">
+            <div className="space-y-4 overflow-y-auto pr-1 flex-1">
+              <TemplateFormFields isEdit />
+            </div>
+            <DialogFooter className="mt-4 shrink-0 border-t pt-4">
               <Button type="button" variant="outline" onClick={() => { setIsEditDialogOpen(false); resetForm(); }}>
                 {t('events.cancel') || 'Cancel'}
               </Button>
@@ -1128,18 +1132,21 @@ export default function ExamPaperTemplates() {
 
       {/* Template Files Manager Dialog */}
       <Dialog open={isTemplateFilesDialogOpen} onOpenChange={setIsTemplateFilesDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('examPapers.manageTemplateFiles') || 'Manage Template Files'}</DialogTitle>
             <DialogDescription>
               {t('examPapers.manageTemplateFilesDescription') || 'Create and manage HTML template files for exam papers'}
             </DialogDescription>
           </DialogHeader>
-          <TemplateFileManager
-            onSelect={handleTemplateFileSelect}
-            selectedLanguage={watchedLanguage}
-          />
-          <DialogFooter>
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            <TemplateFileManager
+              embedded
+              onSelect={handleTemplateFileSelect}
+              selectedLanguage={watchedLanguage}
+            />
+          </div>
+          <DialogFooter className="shrink-0 border-t pt-4">
             <Button variant="outline" onClick={() => setIsTemplateFilesDialogOpen(false)}>
               {t('events.close') || 'Close'}
             </Button>

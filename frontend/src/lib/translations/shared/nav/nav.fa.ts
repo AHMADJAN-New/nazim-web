@@ -203,6 +203,7 @@ export default {
     "grades.management": "مدیریت درجات",
     examPapers: "اوراق امتحان",
     examPaperPrintTracking: "ردیابی چاپ",
+    examPaperQuestions: "سوالات اوراق",
     consolidatedMarkSheet: "ورقه نمرات یکجا",
     classSubjectMarkSheet: "ورقه نمرات صنف و مضمون",
     studentReportCard: "کارت گزارش شاگرد",

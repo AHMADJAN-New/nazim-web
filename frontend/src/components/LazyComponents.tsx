@@ -47,6 +47,7 @@ export const ClassSubjectMarkSheet = lazy(() => import('@/pages/ClassSubjectMark
 export const StudentExamReport = lazy(() => import('@/pages/StudentExamReport'));
 export const QuestionBank = lazy(() => import('@/pages/QuestionBank').then(module => ({ default: module.QuestionBank })));
 export const ExamPaperTemplates = lazy(() => import('@/pages/ExamPaperTemplates'));
+export const ExamPaperQuestions = lazy(() => import('@/pages/ExamPaperQuestions'));
 export const ExamPaperTemplateEdit = lazy(() => import('@/pages/ExamPaperTemplateEdit'));
 export const ExamPaperPreview = lazy(() => import('@/pages/ExamPaperPreview').then(module => ({ default: module.ExamPaperPreview })));
 export const ExamPaperPrintTracking = lazy(() => import('@/pages/ExamPaperPrintTracking'));

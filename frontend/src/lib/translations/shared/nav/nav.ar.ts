@@ -178,6 +178,7 @@ export default {
     "grades.management": "إدارة الدرجات",
     examPapers: "أوراق الامتحان",
     examPaperPrintTracking: "تتبع الطباعة",
+    examPaperQuestions: "أسئلة الأوراق",
     consolidatedMarkSheet: "ورقة العلامات الموحدة",
     classSubjectMarkSheet: "ورقة علامات الفصل والموضوع",
     studentReportCard: "بطاقة تقرير الطالب",

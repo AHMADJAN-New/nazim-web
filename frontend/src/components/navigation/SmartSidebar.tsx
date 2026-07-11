@@ -1149,6 +1149,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
                 icon: FileQuestion,
               }] : []),
               ...(hasExamsPapersPermission ? [{
+                title: "Paper Questions",
+                titleKey: "examPaperQuestions",
+                url: "/exams/papers/questions",
+                icon: LucideIcons.ListChecks,
+              }] : []),
+              ...(hasExamsPapersPermission ? [{
                 title: "Print Tracking",
                 titleKey: "examPaperPrintTracking",
                 url: "/exams/papers/print-tracking",

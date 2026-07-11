@@ -30,9 +30,10 @@ const languageConfig: Record<'en' | 'ps' | 'fa' | 'ar', { label: string; isRtl: 
 interface TemplateFileManagerProps {
   onSelect?: (templateFile: ExamPaperTemplateFile) => void;
   selectedLanguage?: 'en' | 'ps' | 'fa' | 'ar';
+  embedded?: boolean;
 }
 
-export function TemplateFileManager({ onSelect, selectedLanguage }: TemplateFileManagerProps) {
+export function TemplateFileManager({ onSelect, selectedLanguage, embedded = false }: TemplateFileManagerProps) {
   const { t } = useLanguage();
   const [languageFilter, setLanguageFilter] = useState<'en' | 'ps' | 'fa' | 'ar' | 'all'>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -149,7 +150,7 @@ export function TemplateFileManager({ onSelect, selectedLanguage }: TemplateFile
   }, [templateFiles, languageFilter]);
 
   const TemplateFileFormFields = () => (
-    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+    <div className="space-y-4">
       <div>
         <Label htmlFor="name">Name *</Label>
         <Input
@@ -260,6 +261,7 @@ export function TemplateFileManager({ onSelect, selectedLanguage }: TemplateFile
   return (
     <div className="space-y-4">
       {/* Header */}
+      {!embedded && (
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Template Files</h2>
@@ -275,6 +277,22 @@ export function TemplateFileManager({ onSelect, selectedLanguage }: TemplateFile
           Create Template File
         </Button>
       </div>
+      )}
+
+      {embedded && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={() => {
+              resetForm();
+              setIsCreateDialogOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Template File
+          </Button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-4">
@@ -403,16 +421,18 @@ export function TemplateFileManager({ onSelect, selectedLanguage }: TemplateFile
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Create Template File</DialogTitle>
             <DialogDescription>
               Create a new HTML template file for exam papers
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleCreate)}>
-            <TemplateFileFormFields />
-            <DialogFooter className="mt-4">
+          <form onSubmit={form.handleSubmit(handleCreate)} className="flex min-h-0 flex-1 flex-col">
+            <div className="overflow-y-auto pr-1 flex-1">
+              <TemplateFileFormFields />
+            </div>
+            <DialogFooter className="mt-4 shrink-0 border-t pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -433,16 +453,18 @@ export function TemplateFileManager({ onSelect, selectedLanguage }: TemplateFile
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Template File</DialogTitle>
             <DialogDescription>
               Update the template file
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleUpdate)}>
-            <TemplateFileFormFields />
-            <DialogFooter className="mt-4">
+          <form onSubmit={form.handleSubmit(handleUpdate)} className="flex min-h-0 flex-1 flex-col">
+            <div className="overflow-y-auto pr-1 flex-1">
+              <TemplateFileFormFields />
+            </div>
+            <DialogFooter className="mt-4 shrink-0 border-t pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -485,14 +507,14 @@ export function TemplateFileManager({ onSelect, selectedLanguage }: TemplateFile
 
       {/* Preview Dialog */}
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Template Preview</DialogTitle>
             <DialogDescription>
               Preview of {selectedTemplateFile?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {previewTemplateFile.isPending ? (
               <div className="text-center py-8">Loading preview...</div>
             ) : (
@@ -505,7 +527,7 @@ export function TemplateFileManager({ onSelect, selectedLanguage }: TemplateFile
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t pt-4">
             <Button
               variant="outline"
               onClick={() => setIsPreviewDialogOpen(false)}

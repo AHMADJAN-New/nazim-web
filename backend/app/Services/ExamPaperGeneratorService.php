@@ -209,7 +209,10 @@ class ExamPaperGeneratorService
         
         // Try primary logo binary first
         if ($branding->primary_logo_binary && $branding->primary_logo_mime_type) {
-            $logoData = base64_encode($branding->primary_logo_binary);
+            $logoData = $this->binaryToBase64($branding->primary_logo_binary);
+            if ($logoData === null) {
+                return $this->getPlaceholderLogo();
+            }
             $mimeType = $branding->primary_logo_mime_type;
             return '<img src="data:' . htmlspecialchars($mimeType) . ';base64,' . $logoData . '" alt="' . htmlspecialchars($branding->school_name ?? 'Logo') . '" style="max-height: 80px; max-width: 120px; object-fit: contain; display: block;">';
         }
@@ -259,20 +262,20 @@ class ExamPaperGeneratorService
         }
         
         // Convert binary logos to data URIs
-        $primaryLogoUri = null;
-        if ($branding->primary_logo_binary && $branding->primary_logo_mime_type) {
-            $primaryLogoUri = 'data:' . $branding->primary_logo_mime_type . ';base64,' . base64_encode($branding->primary_logo_binary);
-        }
-        
-        $secondaryLogoUri = null;
-        if ($branding->secondary_logo_binary && $branding->secondary_logo_mime_type) {
-            $secondaryLogoUri = 'data:' . $branding->secondary_logo_mime_type . ';base64,' . base64_encode($branding->secondary_logo_binary);
-        }
-        
-        $ministryLogoUri = null;
-        if ($branding->ministry_logo_binary && $branding->ministry_logo_mime_type) {
-            $ministryLogoUri = 'data:' . $branding->ministry_logo_mime_type . ';base64,' . base64_encode($branding->ministry_logo_binary);
-        }
+        $primaryLogoUri = $this->binaryToDataUri(
+            $branding->primary_logo_binary,
+            $branding->primary_logo_mime_type
+        );
+
+        $secondaryLogoUri = $this->binaryToDataUri(
+            $branding->secondary_logo_binary,
+            $branding->secondary_logo_mime_type
+        );
+
+        $ministryLogoUri = $this->binaryToDataUri(
+            $branding->ministry_logo_binary,
+            $branding->ministry_logo_mime_type
+        );
         
         return [
             'SCHOOL_NAME' => $branding->school_name_pashto ?? $branding->school_name ?? '',
@@ -292,6 +295,50 @@ class ExamPaperGeneratorService
         ];
     }
     
+    /**
+     * Normalize PostgreSQL BYTEA values to a string before encoding.
+     */
+    private function normalizeBinary(mixed $binary): ?string
+    {
+        if ($binary === null || $binary === '') {
+            return null;
+        }
+
+        if (is_resource($binary)) {
+            $binary = stream_get_contents($binary);
+        }
+
+        if ($binary === false || $binary === null || $binary === '') {
+            return null;
+        }
+
+        return (string) $binary;
+    }
+
+    /**
+     * Convert binary logo data to a base64 string.
+     */
+    private function binaryToBase64(mixed $binary): ?string
+    {
+        $normalized = $this->normalizeBinary($binary);
+
+        return $normalized === null ? null : base64_encode($normalized);
+    }
+
+    /**
+     * Convert binary logo data to a data URI.
+     */
+    private function binaryToDataUri(mixed $binary, ?string $mimeType): ?string
+    {
+        if ($mimeType === null || $mimeType === '') {
+            return null;
+        }
+
+        $base64 = $this->binaryToBase64($binary);
+
+        return $base64 === null ? null : 'data:' . $mimeType . ';base64,' . $base64;
+    }
+
     /**
      * Get default branding
      */

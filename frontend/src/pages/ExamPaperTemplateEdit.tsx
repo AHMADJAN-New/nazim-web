@@ -69,7 +69,7 @@ function SortableItem({ item, onEdit, onDelete, onQuickUpdateAnswerLines }: Sort
       <TableCell className="font-medium">{item.position + 1}</TableCell>
       <TableCell>
         <div className="max-w-md">
-          <p className="text-sm line-clamp-2">{question?.text || 'No question'}</p>
+          <p className="text-sm line-clamp-2">{question?.text || t('examPapers.noQuestion')}</p>
           {item.sectionLabel && (
             <Badge variant="outline" className="mt-1 text-xs">
               {item.sectionLabel}
@@ -85,7 +85,7 @@ function SortableItem({ item, onEdit, onDelete, onQuickUpdateAnswerLines }: Sort
         {isEssayType && (
           <div className="flex items-center gap-2">
             <Badge variant={showLines ? "default" : "outline"}>
-              {showLines ? `${currentLines} lines` : 'Hidden'}
+              {showLines ? t('examPapers.linesCount', { count: currentLines }) : t('examPapers.hidden')}
             </Badge>
           </div>
         )}
@@ -93,9 +93,9 @@ function SortableItem({ item, onEdit, onDelete, onQuickUpdateAnswerLines }: Sort
       </TableCell>
       <TableCell>
         {item.isMandatory ? (
-          <Badge variant="default">Required</Badge>
+          <Badge variant="default">{t('examPapers.required')}</Badge>
         ) : (
-          <Badge variant="outline">Optional</Badge>
+          <Badge variant="outline">{t('examPapers.optional')}</Badge>
         )}
       </TableCell>
       <TableCell className="text-right">
@@ -107,40 +107,40 @@ function SortableItem({ item, onEdit, onDelete, onQuickUpdateAnswerLines }: Sort
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onClick={() => onEdit(item)}>
-              Edit
+              {t('common.edit')}
             </DropdownMenuItem>
             {isEssayType && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel>Answer Lines</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('examPapers.answerLines')}</DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={() => onQuickUpdateAnswerLines(item.id, null, !showLines)}
                 >
-                  {showLines ? 'Hide Lines' : 'Show Lines'}
+                  {showLines ? t('examPapers.hideLines') : t('examPapers.showLines')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onQuickUpdateAnswerLines(item.id, 3, null)}
                   disabled={currentLines === 3}
                 >
-                  Set to 3 lines
+                  {t('examPapers.setToLines', { count: 3 })}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onQuickUpdateAnswerLines(item.id, 4, null)}
                   disabled={currentLines === 4}
                 >
-                  Set to 4 lines
+                  {t('examPapers.setToLines', { count: 4 })}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onQuickUpdateAnswerLines(item.id, 6, null)}
                   disabled={currentLines === 6}
                 >
-                  Set to 6 lines
+                  {t('examPapers.setToLines', { count: 6 })}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onQuickUpdateAnswerLines(item.id, 8, null)}
                   disabled={currentLines === 8}
                 >
-                  Set to 8 lines
+                  {t('examPapers.setToLines', { count: 8 })}
                 </DropdownMenuItem>
               </>
             )}
@@ -150,7 +150,7 @@ function SortableItem({ item, onEdit, onDelete, onQuickUpdateAnswerLines }: Sort
               className="text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Remove
+              {t('common.remove')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -301,12 +301,12 @@ export default function ExamPaperTemplateEdit() {
 
   const handleAddQuestions = async () => {
     if (selectedQuestionIds.length === 0) {
-      showToast.error('Please select at least one question');
+      showToast.error(t('toast.examPaperSelectAtLeastOneQuestion'));
       return;
     }
 
     if (!id) {
-      showToast.error('Template ID is missing');
+      showToast.error(t('toast.examPaperTemplateIdMissing'));
       return;
     }
 
@@ -354,12 +354,15 @@ export default function ExamPaperTemplateEdit() {
       // Show success/error message
       if (addedCount > 0) {
         if (errorCount > 0) {
-          showToast.success(`Added ${addedCount} question${addedCount !== 1 ? 's' : ''}. ${errorCount} failed.`);
+          showToast.success(t('toast.examPaperQuestionsAddedPartial'), {
+            added: addedCount,
+            failed: errorCount,
+          });
         } else {
-          showToast.success(`Successfully added ${addedCount} question${addedCount !== 1 ? 's' : ''}`);
+          showToast.success(t('toast.examPaperQuestionsAddedSuccess'), { count: addedCount });
         }
       } else {
-        showToast.error('Failed to add questions');
+        showToast.error(t('toast.examPaperQuestionsAddFailed'));
       }
     } finally {
       setIsAddingQuestions(false);
@@ -450,7 +453,7 @@ export default function ExamPaperTemplateEdit() {
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-center">Loading template...</p>
+            <p className="text-center">{t('examPapers.loadingTemplate')}</p>
           </CardContent>
         </Card>
       </div>
@@ -462,10 +465,10 @@ export default function ExamPaperTemplateEdit() {
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-center text-destructive">Template not found</p>
-            <Button onClick={() => navigate('/exams/paper-templates')} className="mt-4">
+            <p className="text-center text-destructive">{t('examPapers.templateNotFound')}</p>
+            <Button onClick={() => navigate('/exams/papers')} className="mt-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Templates
+              {t('examPapers.backToTemplates')}
             </Button>
           </CardContent>
         </Card>
@@ -474,39 +477,48 @@ export default function ExamPaperTemplateEdit() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate('/exams/paper-templates')}>
+          <Button variant="outline" onClick={() => navigate('/exams/papers')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('common.back')}
           </Button>
           <div>
             <h1 className="text-2xl font-semibold">{template.title}</h1>
             <p className="text-sm text-muted-foreground">
-              {template.items?.length || 0} questions • {totalMarks.toFixed(1).replace(/\.0$/, '')} total marks
+              {t('examPapers.questionsCountSummary', {
+                count: template.items?.length || 0,
+                marks: totalMarks.toFixed(1).replace(/\.0$/, ''),
+              })}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
+            size="sm"
+            className="flex-shrink-0"
             onClick={() => setIsPreviewDialogOpen(true)}
+            aria-label={t('common.preview')}
           >
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline ml-2">{t('common.preview')}</span>
           </Button>
           <Button
             variant="outline"
+            size="sm"
+            className="flex-shrink-0"
             onClick={() => setIsGenerateDialogOpen(true)}
+            aria-label={t('examPapers.generatePdf')}
           >
-            <Download className="h-4 w-4 mr-2" />
-            Generate PDF
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline ml-2">{t('examPapers.generatePdf')}</span>
           </Button>
-          <Button onClick={() => setIsAddQuestionDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Question
+          <Button size="sm" className="flex-shrink-0" onClick={() => setIsAddQuestionDialogOpen(true)}>
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline ml-2">{t('examPapers.addQuestion')}</span>
           </Button>
         </div>
       </div>
@@ -514,24 +526,24 @@ export default function ExamPaperTemplateEdit() {
       {/* Template Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Template Information</CardTitle>
+          <CardTitle>{t('examPapers.templateInformation')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label className="text-xs text-muted-foreground">Subject</Label>
+              <Label className="text-xs text-muted-foreground">{t('examPapers.subject')}</Label>
               <p className="font-medium">{template.subject?.name || '—'}</p>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Language</Label>
+              <Label className="text-xs text-muted-foreground">{t('examPapers.language')}</Label>
               <p className="font-medium">{template.language}</p>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Duration</Label>
-              <p className="font-medium">{template.durationMinutes} min</p>
+              <Label className="text-xs text-muted-foreground">{t('examPapers.duration')}</Label>
+              <p className="font-medium">{template.durationMinutes} {t('examPaperPreview.minutes')}</p>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Total Marks</Label>
+              <Label className="text-xs text-muted-foreground">{t('examPapers.totalMarks')}</Label>
               <p className="font-medium">{totalMarks.toFixed(1).replace(/\.0$/, '')}</p>
             </div>
           </div>
@@ -541,19 +553,20 @@ export default function ExamPaperTemplateEdit() {
       {/* Questions List */}
       <Card>
         <CardHeader>
-          <CardTitle>Questions</CardTitle>
+          <CardTitle>{t('examPapers.questions')}</CardTitle>
           <CardDescription>
-            Drag and drop to reorder questions
+            {t('examPapers.dragToReorder')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {!template.items || template.items.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-sm text-muted-foreground mb-4">
-                No questions added yet. Click "Add Question" to get started.
+                {t('examPapers.noQuestionsYet')}
               </p>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -564,12 +577,12 @@ export default function ExamPaperTemplateEdit() {
                   <TableRow>
                     <TableHead className="w-8"></TableHead>
                     <TableHead>#</TableHead>
-                    <TableHead>Question</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Marks</TableHead>
-                    <TableHead>Answer Lines</TableHead>
-                    <TableHead>Required</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('examPapers.question')}</TableHead>
+                    <TableHead>{t('examPapers.type')}</TableHead>
+                    <TableHead>{t('examPapers.marks')}</TableHead>
+                    <TableHead>{t('examPapers.answerLines')}</TableHead>
+                    <TableHead>{t('examPapers.required')}</TableHead>
+                    <TableHead className="text-right">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -593,6 +606,7 @@ export default function ExamPaperTemplateEdit() {
                 </TableBody>
               </Table>
             </DndContext>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -601,38 +615,38 @@ export default function ExamPaperTemplateEdit() {
       <Dialog open={isAddQuestionDialogOpen} onOpenChange={setIsAddQuestionDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('examPapers.addQuestionFromBank') || 'Add Question from Question Bank'}</DialogTitle>
+            <DialogTitle>{t('examPapers.addQuestionFromBank')}</DialogTitle>
             <DialogDescription>
-              {t('examPapers.addQuestionFromBankDescription') || 'Select a question from the question bank. You can filter by academic year to see questions from different years.'}
+              {t('examPapers.addQuestionFromBankDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {/* Academic Year Filter */}
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <Label>Filter by Academic Year</Label>
+                <Label>{t('examPapers.filterByAcademicYear')}</Label>
                 <Select
                   value={selectedAcademicYearId || '__all__'}
                   onValueChange={(val) => setSelectedAcademicYearId(val === '__all__' ? null : val)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All Academic Years" />
+                    <SelectValue placeholder={t('examPapers.allAcademicYears')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__all__">All Academic Years</SelectItem>
+                    <SelectItem value="__all__">{t('examPapers.allAcademicYears')}</SelectItem>
                     {academicYears?.map((year) => (
                       <SelectItem key={year.id} value={year.id}>
-                        {year.name} {year.isCurrent && '(Current)'}
+                        {year.name} {year.isCurrent && t('examPapers.currentYear')}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="text-sm text-muted-foreground pt-8">
-                {filteredQuestions.length} question{filteredQuestions.length !== 1 ? 's' : ''} available
+                {t('examPapers.questionsAvailable', { count: filteredQuestions.length })}
                 {selectedQuestionIds.length > 0 && (
                   <span className="ml-2 font-medium">
-                    ({selectedQuestionIds.length} selected)
+                    {t('examPapers.selectedCount', { count: selectedQuestionIds.length })}
                   </span>
                 )}
               </div>
@@ -641,24 +655,28 @@ export default function ExamPaperTemplateEdit() {
             {/* Questions Table */}
             {questionsLoading ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">Loading questions...</p>
+                <p className="text-muted-foreground">{t('examPapers.loadingQuestions')}</p>
               </div>
             ) : filteredQuestions.length === 0 ? (
               <div className="text-center py-8 space-y-2">
                 <p className="text-muted-foreground">
                   {questionsError ? (
-                    `Error loading questions: ${questionsError.message}`
+                    t('examPapers.errorLoadingQuestions', { message: questionsError.message })
                   ) : (Array.isArray(availableQuestions) ? availableQuestions.length > 0 : availableQuestions?.data?.length > 0) ? (
-                    `No questions available for the selected filter. ${Array.isArray(availableQuestions) ? availableQuestions.length : availableQuestions.data.length} question${(Array.isArray(availableQuestions) ? availableQuestions.length : availableQuestions.data.length) !== 1 ? 's' : ''} found but already added or filtered out.`
+                    t('examPapers.noQuestionsAvailableForFilter', {
+                      total: Array.isArray(availableQuestions) ? availableQuestions.length : availableQuestions.data.length,
+                    })
                   ) : template?.subjectId ? (
-                    `No questions found for subject "${template.subject?.name || template.subjectId}". Please check if questions exist in the question bank for this subject.`
+                    t('examPapers.noQuestionsForSubject', {
+                      subject: template.subject?.name || template.subjectId,
+                    })
                   ) : (
-                    'Please select a subject for this template first.'
+                    t('examPapers.selectSubjectForTemplateFirst')
                   )}
                 </p>
               </div>
             ) : (
-              <div className="border rounded-lg">
+              <div className="border rounded-lg overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -668,12 +686,12 @@ export default function ExamPaperTemplateEdit() {
                           onCheckedChange={toggleAllQuestions}
                         />
                       </TableHead>
-                      <TableHead>Question Text</TableHead>
-                      <TableHead className="w-24">Type</TableHead>
-                      <TableHead className="w-20">Marks</TableHead>
-                      <TableHead className="w-32">Difficulty</TableHead>
-                      <TableHead className="w-40">Academic Year</TableHead>
-                      <TableHead className="w-32">Reference</TableHead>
+                      <TableHead>{t('examPapers.questionText')}</TableHead>
+                      <TableHead className="w-24">{t('examPapers.type')}</TableHead>
+                      <TableHead className="w-20">{t('examPapers.marks')}</TableHead>
+                      <TableHead className="w-32">{t('examPapers.difficulty')}</TableHead>
+                      <TableHead className="w-40">{t('examPapers.academicYear')}</TableHead>
+                      <TableHead className="w-32">{t('examPapers.reference')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -698,7 +716,7 @@ export default function ExamPaperTemplateEdit() {
                             </p>
                             {question.options && question.options.length > 0 && (
                               <p className="text-xs text-muted-foreground mt-1">
-                                {question.options.length} option{question.options.length !== 1 ? 's' : ''}
+                                {t('examPapers.optionsCount', { count: question.options.length })}
                               </p>
                             )}
                           </div>
@@ -723,7 +741,7 @@ export default function ExamPaperTemplateEdit() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {question.classAcademicYear?.academicYearName || 'N/A'}
+                          {question.classAcademicYear?.academicYearName || '—'}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {question.reference || '-'}
@@ -740,42 +758,42 @@ export default function ExamPaperTemplateEdit() {
               <Card className="mt-4">
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    Settings for {selectedQuestionIds.length} Selected Question{selectedQuestionIds.length !== 1 ? 's' : ''}
+                    {t('examPapers.settingsForSelected', { count: selectedQuestionIds.length })}
                   </CardTitle>
                   <CardDescription>
-                    These settings will be applied to all selected questions
+                    {t('examPapers.settingsAppliedToAll')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label>Marks Override (Optional)</Label>
+                      <Label>{t('examPapers.marksOverride')}</Label>
                       <NumberInput
                         type="number"
                         value={marksOverride || ''}
                         onChange={(e) => setMarksOverride(e.target.value ? parseFloat(e.target.value) : null)}
-                        placeholder="Leave empty to use each question's default marks"
+                        placeholder={t('examPapers.marksOverridePlaceholder')}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Leave empty to use each question's default marks
+                        {t('examPapers.marksOverridePlaceholder')}
                       </p>
                     </div>
                     <div>
-                      <Label>Section Label (Optional)</Label>
+                      <Label>{t('examPapers.sectionLabel')}</Label>
                       <Input
                         value={sectionLabel}
                         onChange={(e) => setSectionLabel(e.target.value)}
-                        placeholder="e.g., Section A, Part 1"
+                        placeholder={t('examPapers.sectionLabelPlaceholder')}
                       />
                     </div>
                   </div>
                   <div>
-                    <Label>Notes (Optional)</Label>
+                    <Label>{t('examPapers.notesOptional')}</Label>
                     <Textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       rows={2}
-                      placeholder="Additional notes for these questions..."
+                      placeholder={t('examPapers.notesPlaceholderQuestions')}
                     />
                   </div>
                   <div className="flex items-center space-x-2">
@@ -785,7 +803,7 @@ export default function ExamPaperTemplateEdit() {
                       onCheckedChange={setIsMandatory}
                     />
                     <Label htmlFor="isMandatory" className="cursor-pointer">
-                      Required (mandatory)
+                      {t('examPapers.requiredMandatory')}
                     </Label>
                   </div>
                 </CardContent>
@@ -804,12 +822,12 @@ export default function ExamPaperTemplateEdit() {
               setIsMandatory(true);
               setNotes('');
             }}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleAddQuestions} disabled={selectedQuestionIds.length === 0 || isAddingQuestions}>
               {isAddingQuestions 
-                ? `Adding ${selectedQuestionIds.length} question${selectedQuestionIds.length !== 1 ? 's' : ''}...` 
-                : `Add ${selectedQuestionIds.length} Question${selectedQuestionIds.length !== 1 ? 's' : ''}`}
+                ? t('examPapers.addingQuestionsCount', { count: selectedQuestionIds.length })
+                : t('examPapers.addQuestionsCount', { count: selectedQuestionIds.length })}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -819,21 +837,21 @@ export default function ExamPaperTemplateEdit() {
       <Dialog open={isEditItemDialogOpen} onOpenChange={setIsEditItemDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Question Item</DialogTitle>
+            <DialogTitle>{t('examPapers.editQuestionItem')}</DialogTitle>
             <DialogDescription>
-              Update the question item settings
+              {t('examPapers.editQuestionItemDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm font-medium">Question:</p>
+              <p className="text-sm font-medium">{t('examPapers.questionLabel')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {selectedItem?.question?.text || 'No question'}
+                {selectedItem?.question?.text || t('examPapers.noQuestion')}
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Marks Override (Optional)</Label>
+                <Label>{t('examPapers.marksOverride')}</Label>
                 <NumberInput
                   type="number"
                   value={marksOverride || ''}
@@ -841,7 +859,7 @@ export default function ExamPaperTemplateEdit() {
                 />
               </div>
               <div>
-                <Label>Section Label (Optional)</Label>
+                <Label>{t('examPapers.sectionLabel')}</Label>
                 <Input
                   value={sectionLabel}
                   onChange={(e) => setSectionLabel(e.target.value)}
@@ -849,7 +867,7 @@ export default function ExamPaperTemplateEdit() {
               </div>
             </div>
             <div>
-              <Label>Notes (Optional)</Label>
+              <Label>{t('examPapers.notesOptional')}</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -857,19 +875,26 @@ export default function ExamPaperTemplateEdit() {
               />
             </div>
             {selectedItem?.question?.type && ['short', 'descriptive', 'essay'].includes(selectedItem.question.type) && (
-              <div className="grid grid-cols-2 gap-4 p-3 bg-muted rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-muted rounded-lg">
                 <div>
-                  <Label>Answer Lines Count (Optional)</Label>
+                  <Label>{t('examPapers.answerLinesCount')}</Label>
                   <NumberInput
                     type="number"
                     min="0"
                     max="50"
                     value={answerLinesCount || ''}
                     onChange={(e) => setAnswerLinesCount(e.target.value ? parseInt(e.target.value) : null)}
-                    placeholder="Auto (based on question type)"
+                    placeholder={t('examPapers.autoBasedOnType')}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Default: {selectedItem.question.type === 'short' ? '3' : selectedItem.question.type === 'essay' ? '6' : '4'} lines
+                    {t('examPapers.defaultLinesCount', {
+                      count:
+                        selectedItem.question.type === 'short'
+                          ? 3
+                          : selectedItem.question.type === 'essay'
+                            ? 6
+                            : 4,
+                    })}
                   </p>
                 </div>
                 <div className="flex flex-col justify-end">
@@ -880,11 +905,11 @@ export default function ExamPaperTemplateEdit() {
                       onCheckedChange={(checked) => setShowAnswerLines(checked)}
                     />
                     <Label htmlFor="editShowAnswerLines" className="cursor-pointer">
-                      Show Answer Lines
+                      {t('examPapers.showAnswerLines')}
                     </Label>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Toggle to show/hide answer lines
+                    {t('examPapers.toggleAnswerLines')}
                   </p>
                 </div>
               </div>
@@ -896,16 +921,16 @@ export default function ExamPaperTemplateEdit() {
                 onCheckedChange={setIsMandatory}
               />
               <Label htmlFor="editIsMandatory" className="cursor-pointer">
-                Required (mandatory)
+                {t('examPapers.requiredMandatory')}
               </Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditItemDialogOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleUpdateItem} disabled={updateItem.isPending}>
-              {updateItem.isPending ? 'Updating...' : 'Update'}
+              {updateItem.isPending ? t('examPapers.updating') : t('common.update')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -915,18 +940,18 @@ export default function ExamPaperTemplateEdit() {
       <AlertDialog open={isDeleteItemDialogOpen} onOpenChange={setIsDeleteItemDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Question</AlertDialogTitle>
+            <AlertDialogTitle>{t('examPapers.removeQuestion')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove this question from the template? This action cannot be undone.
+              {t('examPapers.removeQuestionConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteItem}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Remove
+              {t('common.remove')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

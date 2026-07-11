@@ -94,6 +94,7 @@ import {
   StudentExamReport,
   QuestionBank,
   ExamPaperTemplates,
+  ExamPaperQuestions,
   ExamPaperTemplateEdit,
   ExamPaperPreview,
   ExamPaperPrintTracking,
@@ -1402,6 +1403,14 @@ const App = () => (
                       <PermissionRoute permission="exams.papers.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamPaperTemplates />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Exam Paper Questions list */}
+                    <Route path="/exams/papers/questions" element={
+                      <PermissionRoute permission="exams.papers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamPaperQuestions />
                         </Suspense>
                       </PermissionRoute>
                     } />

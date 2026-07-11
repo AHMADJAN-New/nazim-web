@@ -204,6 +204,7 @@ export default {
     "grades.management": "Grades Management",
     examPapers: "Exam Papers",
     examPaperPrintTracking: "Print Tracking",
+    examPaperQuestions: "Paper Questions",
     consolidatedMarkSheet: "Consolidated Mark Sheet",
     classSubjectMarkSheet: "Class Subject Mark Sheet",
     studentReportCard: "Student Report Card",

@@ -204,6 +204,7 @@ export default {
     "grades.management": "د نمراتو مدیریت",
     examPapers: "د ازموینې پارچې",
     examPaperPrintTracking: "د چاپ تعقیب",
+    examPaperQuestions: "د پاڼې پوښتنې",
     consolidatedMarkSheet: "د یوځای نمراتو پاڼه",
     classSubjectMarkSheet: "د ټولګي د مضامینو نمراتو پاڼه",
     studentReportCard: "د زده کوونکي راپور کارت",
