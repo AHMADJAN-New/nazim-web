@@ -40,6 +40,7 @@ import {
   UserPlus,
   BarChart3,
   Hash,
+  Grid3X3,
   KeyRound,
   Printer,
   Tag,
@@ -355,6 +356,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasExamsViewAttendancePermission = useHasPermissionAndFeature('exams.view_attendance_reports');
   const hasExamsRollNumbersReadPermission = useHasPermissionAndFeature('exams.roll_numbers.read');
   const hasExamsRollNumbersAssignPermission = useHasPermissionAndFeature('exams.roll_numbers.assign');
+  const hasExamSeatingMapsReadPermission = useHasPermissionAndFeature('exam_seating_maps.read');
+  const hasExamSeatingMapsAssignPermission = useHasPermissionAndFeature('exam_seating_maps.assign');
   const hasExamsSecretNumbersReadPermission = useHasPermissionAndFeature('exams.secret_numbers.read');
   const hasExamsSecretNumbersAssignPermission = useHasPermissionAndFeature('exams.secret_numbers.assign');
   const hasExamsNumbersPrintPermission = useHasPermissionAndFeature('exams.numbers.print');
@@ -1100,7 +1103,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: Clock,
           }] : []),
           // Exam Management Submenu (Enrollment, Student Enrollment, Roll Numbers, Secret Numbers)
-          ...((hasExamsManagePermission || hasExamsAssignSubjectsPermission || hasExamsEnrollPermission || hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission || hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
+          ...((hasExamsManagePermission || hasExamsAssignSubjectsPermission || hasExamsEnrollPermission || hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission || hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission || hasExamSeatingMapsReadPermission || hasExamSeatingMapsAssignPermission) ? [{
             title: "Exam Management",
             titleKey: "examManagement",
             icon: Wrench,
@@ -1128,6 +1131,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
                 titleKey: "examRollNumbers",
                 url: "/exams/roll-numbers",
                 icon: Hash,
+              }] : []),
+              ...((hasExamSeatingMapsReadPermission || hasExamSeatingMapsAssignPermission) ? [{
+                title: "Seating Maps",
+                titleKey: "examSeatingMaps",
+                url: "/exams/seating-maps",
+                icon: Grid3X3,
               }] : []),
               ...((hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
                 title: "Secret Numbers",
@@ -1784,6 +1793,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission ||
           hasExamsAttendancePermission || hasExamsViewAttendancePermission ||
           hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission ||
+          hasExamSeatingMapsReadPermission || hasExamSeatingMapsAssignPermission ||
           hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission ||
           hasExamsNumbersPrintPermission ||
           hasExamsQuestionsPermission || hasExamsPapersPermission ||

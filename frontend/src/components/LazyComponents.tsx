@@ -38,6 +38,8 @@ export const ExamTimetablePage = lazy(() => import('@/pages/ExamTimetablePage').
 export const ExamReportsPage = lazy(() => import('@/pages/ExamReportsPage').then(module => ({ default: module.ExamReportsPage })));
 export const ExamAttendancePage = lazy(() => import('@/pages/ExamAttendancePage'));
 export const ExamRollNumbersPage = lazy(() => import('@/pages/ExamRollNumbersPage'));
+export const ExamSeatingMapsPage = lazy(() => import('@/pages/ExamSeatingMapsPage'));
+export const ExamSeatingMapEditorPage = lazy(() => import('@/pages/ExamSeatingMapEditorPage'));
 export const ExamSecretNumbersPage = lazy(() => import('@/pages/ExamSecretNumbersPage'));
 export const ExamNumberReportsPage = lazy(() => import('@/pages/ExamNumberReportsPage'));
 export const GradesManagement = lazy(() => import('@/pages/GradesManagement'));

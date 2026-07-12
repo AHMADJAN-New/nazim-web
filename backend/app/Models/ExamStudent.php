@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -12,9 +13,13 @@ class ExamStudent extends Model
     use HasFactory, SoftDeletes;
 
     protected $connection = 'pgsql';
+
     protected $table = 'exam_students';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -77,6 +82,11 @@ class ExamStudent extends Model
         return $this->hasMany(ExamAttendance::class, 'student_id', 'student_admission_id');
     }
 
+    public function seatAssignment(): HasOne
+    {
+        return $this->hasOne(ExamSeatAssignment::class, 'exam_student_id');
+    }
+
     /**
      * Scope to filter by exam
      */
@@ -133,12 +143,12 @@ class ExamStudent extends Model
         $query = self::where('exam_id', $examId)
             ->where('exam_roll_number', $rollNumber)
             ->whereNull('deleted_at');
-        
+
         if ($excludeId) {
             $query->where('id', '!=', $excludeId);
         }
-        
-        return !$query->exists();
+
+        return ! $query->exists();
     }
 
     /**
@@ -149,12 +159,12 @@ class ExamStudent extends Model
         $query = self::where('exam_id', $examId)
             ->where('exam_secret_number', $secretNumber)
             ->whereNull('deleted_at');
-        
+
         if ($excludeId) {
             $query->where('id', '!=', $excludeId);
         }
-        
-        return !$query->exists();
+
+        return ! $query->exists();
     }
 
     /**
@@ -166,16 +176,16 @@ class ExamStudent extends Model
             ->whereNull('deleted_at')
             ->whereNotNull('exam_roll_number')
             ->max('exam_roll_number');
-        
+
         if ($maxRollNumber === null) {
             return (string) $startFrom;
         }
-        
+
         // Try to extract numeric part
         if (is_numeric($maxRollNumber)) {
             return (string) (intval($maxRollNumber) + 1);
         }
-        
+
         // If not numeric, return startFrom
         return (string) $startFrom;
     }
@@ -189,16 +199,16 @@ class ExamStudent extends Model
             ->whereNull('deleted_at')
             ->whereNotNull('exam_secret_number')
             ->max('exam_secret_number');
-        
+
         if ($maxSecretNumber === null) {
             return (string) $startFrom;
         }
-        
+
         // Try to extract numeric part
         if (is_numeric($maxSecretNumber)) {
             return (string) (intval($maxSecretNumber) + 1);
         }
-        
+
         // If not numeric, return startFrom
         return (string) $startFrom;
     }

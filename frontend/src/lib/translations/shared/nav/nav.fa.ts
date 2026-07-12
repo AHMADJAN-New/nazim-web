@@ -51,6 +51,7 @@ export default {
     examMarks: "نمرات امتحان",
     examReports: "گزارش‌های امتحانات",
     examRollNumbers: "شماره‌های رول",
+    examSeatingMaps: "نقشه‌های نشت",
     exams: "امتحانات",
     examSecretNumbers: "شماره‌های مخفی",
     examStudentEnrollment: "شمولیت شاگردان",

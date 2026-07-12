@@ -29,6 +29,7 @@ use App\Http\Controllers\ExamPaperTemplateController;
 use App\Http\Controllers\ExamPaperTemplateFileController;
 use App\Http\Controllers\ExamReportController;
 use App\Http\Controllers\ExamResultController;
+use App\Http\Controllers\ExamSeatingMapController;
 use App\Http\Controllers\ExamStudentController;
 use App\Http\Controllers\ExamSubjectController;
 use App\Http\Controllers\ExamTimeController;
@@ -966,10 +967,30 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/exams/{exam}/roll-numbers/preview-auto-assign', [ExamNumberController::class, 'previewRollNumberAssignment']);
                 Route::post('/exams/{exam}/roll-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmRollNumberAssignment']);
+                Route::post('/exams/{exam}/seating-maps/{map}/roll-numbers/preview', [ExamNumberController::class, 'previewMapRollNumbers']);
+                Route::post('/exams/{exam}/seating-maps/{map}/roll-numbers/confirm', [ExamNumberController::class, 'confirmMapRollNumbers']);
                 Route::patch('/exams/{exam}/students/{examStudent}/roll-number', [ExamNumberController::class, 'updateRollNumber']);
                 Route::post('/exams/{exam}/secret-numbers/preview-auto-assign', [ExamNumberController::class, 'previewSecretNumberAssignment']);
                 Route::post('/exams/{exam}/secret-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmSecretNumberAssignment']);
                 Route::patch('/exams/{exam}/students/{examStudent}/secret-number', [ExamNumberController::class, 'updateSecretNumber']);
+            });
+        });
+
+        // Exam Seating Maps - requires exams full
+        Route::middleware(['feature:exams_full'])->group(function () {
+            Route::get('/exams/{exam}/seating-maps', [ExamSeatingMapController::class, 'index']);
+            Route::get('/exams/{exam}/seating-maps/{map}', [ExamSeatingMapController::class, 'show']);
+            Route::get('/exams/{exam}/seating-maps/{map}/solve-status', [ExamSeatingMapController::class, 'solveStatus']);
+            Route::get('/exams/{exam}/seating-maps/{map}/report-data', [ExamSeatingMapController::class, 'reportData']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/exams/{exam}/seating-maps', [ExamSeatingMapController::class, 'store']);
+                Route::put('/exams/{exam}/seating-maps/{map}', [ExamSeatingMapController::class, 'update']);
+                Route::delete('/exams/{exam}/seating-maps/{map}', [ExamSeatingMapController::class, 'destroy']);
+                Route::put('/exams/{exam}/seating-maps/{map}/assignments', [ExamSeatingMapController::class, 'syncAssignments']);
+                Route::put('/exams/{exam}/seating-maps/{map}/class-colors', [ExamSeatingMapController::class, 'syncClassColors']);
+                Route::post('/exams/{exam}/seating-maps/{map}/solve', [ExamSeatingMapController::class, 'solve']);
+                Route::post('/exams/{exam}/seating-maps/{map}/finalize', [ExamSeatingMapController::class, 'finalize']);
+                Route::post('/exams/{exam}/seating-maps/{map}/duplicate', [ExamSeatingMapController::class, 'duplicate']);
             });
         });
 

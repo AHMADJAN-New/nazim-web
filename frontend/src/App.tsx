@@ -85,6 +85,8 @@ import {
   ExamReportsPage,
   ExamAttendancePage,
   ExamRollNumbersPage,
+  ExamSeatingMapsPage,
+  ExamSeatingMapEditorPage,
   ExamSecretNumbersPage,
   ExamNumberReportsPage,
   GradesManagement,
@@ -1323,6 +1325,21 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    {/* Exam Seating Maps */}
+                    <Route path="/exams/:examId/seating-maps/:mapId" element={
+                      <PermissionRoute permission="exam_seating_maps.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamSeatingMapEditorPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/:examId/seating-maps" element={
+                      <PermissionRoute permission="exam_seating_maps.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamSeatingMapsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     {/* Secret Number Assignment */}
                     <Route path="/exams/:examId/secret-numbers" element={
                       <PermissionRoute permission="exams.secret_numbers.read">
@@ -1344,6 +1361,13 @@ const App = () => (
                       <PermissionRoute permission="exams.roll_numbers.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamRollNumbersPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/seating-maps" element={
+                      <PermissionRoute permission="exam_seating_maps.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamSeatingMapsPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

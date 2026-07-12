@@ -2,14 +2,14 @@
 
 namespace App\Services\Reports;
 
+use App\Models\ExamSeatingMap;
 use App\Models\ReportRun;
 use App\Models\ReportTemplate;
-use App\Models\SchoolBranding;
+use App\Services\ExamSeating\ExamSeatingMapService;
 use App\Services\StudentHistoryService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * Central report generation orchestrator
@@ -27,9 +27,9 @@ class ReportService
     /**
      * Generate a report based on configuration
      *
-     * @param ReportConfig $config Report configuration
-     * @param array $data Report data (columns, rows, etc.)
-     * @param string|null $organizationId Organization ID
+     * @param  ReportConfig  $config  Report configuration
+     * @param  array  $data  Report data (columns, rows, etc.)
+     * @param  string|null  $organizationId  Organization ID
      * @return ReportRun The report run record
      */
     public function generateReport(
@@ -41,13 +41,21 @@ class ReportService
 
         // CRITICAL: For student history reports (PDF with template or Excel with sheets), fetch data from parameters
         // Check by template name (PDF) or report key + student_id (Excel)
-        $isStudentHistoryReport = ($config->templateName === 'student-history' || 
-                                   ($config->reportKey === 'student_lifetime_history' && 
-                                    !empty($config->parameters['student_id']))) &&
-                                   !empty($config->parameters['student_id']);
-        
+        $isStudentHistoryReport = ($config->templateName === 'student-history' ||
+                                   ($config->reportKey === 'student_lifetime_history' &&
+                                    ! empty($config->parameters['student_id']))) &&
+                                   ! empty($config->parameters['student_id']);
+
         if ($isStudentHistoryReport) {
             $data = $this->fetchStudentHistoryData($config, $organizationId, $data);
+        }
+
+        $isExamSeatingMapReport = ($config->templateName === 'exam_seating_map'
+            || $config->reportKey === 'exam_seating_map')
+            && ! empty($config->parameters['map_id']);
+
+        if ($isExamSeatingMapReport) {
+            $data = $this->fetchExamSeatingMapData($config, $organizationId, $data);
         }
 
         // Create report run record
@@ -84,9 +92,9 @@ class ReportService
             // Build context for template
             $context = $this->buildContext($config, $data, $branding, $layout, $notes, $watermark);
             $reportRun->updateProgress(50, 'Built template context');
-            
+
             // Log final font settings being used
-            \Log::debug("Report context font settings", [
+            \Log::debug('Report context font settings', [
                 'font_family' => $context['FONT_FAMILY'] ?? 'N/A',
                 'font_size' => $context['FONT_SIZE'] ?? 'N/A',
                 'template_font_family' => $layout['font_family'] ?? null,
@@ -166,7 +174,7 @@ class ReportService
     {
         $reportRun = ReportRun::find($reportRunId);
 
-        if (!$reportRun || !$reportRun->isCompleted() || !$reportRun->output_path) {
+        if (! $reportRun || ! $reportRun->isCompleted() || ! $reportRun->output_path) {
             return null;
         }
 
@@ -222,8 +230,9 @@ class ReportService
      */
     private function loadBranding(ReportConfig $config): array
     {
-        if (!$config->brandingId) {
-            \Log::warning("No brandingId provided in config, using default branding");
+        if (! $config->brandingId) {
+            \Log::warning('No brandingId provided in config, using default branding');
+
             return $this->getDefaultBranding();
         }
 
@@ -231,8 +240,9 @@ class ReportService
 
         $branding = $this->brandingCache->getBranding($config->brandingId);
 
-        if (!$branding) {
+        if (! $branding) {
             \Log::warning("Branding not found for {$config->brandingId}, using default branding");
+
             return $this->getDefaultBranding();
         }
 
@@ -243,7 +253,7 @@ class ReportService
             $branding['secondary_color'] = $branding['secondary_color'] ?? '#0056b3';
             $branding['accent_color'] = $branding['accent_color'] ?? '#ff6b35';
         }
-        
+
         \Log::debug("Loaded branding for {$config->brandingId}", [
             'school_name' => $branding['school_name'] ?? 'N/A',
             'primary_color' => $branding['primary_color'] ?? 'N/A',
@@ -251,9 +261,9 @@ class ReportService
             'accent_color' => $branding['accent_color'] ?? 'N/A',
             'font_family' => $branding['font_family'] ?? 'N/A',
             'report_font_size' => $branding['report_font_size'] ?? 'N/A',
-            'has_primary_logo' => !empty($branding['primary_logo_uri']),
-            'has_secondary_logo' => !empty($branding['secondary_logo_uri']),
-            'has_ministry_logo' => !empty($branding['ministry_logo_uri']),
+            'has_primary_logo' => ! empty($branding['primary_logo_uri']),
+            'has_secondary_logo' => ! empty($branding['secondary_logo_uri']),
+            'has_ministry_logo' => ! empty($branding['ministry_logo_uri']),
             'show_primary_logo' => $branding['show_primary_logo'] ?? false,
             'show_secondary_logo' => $branding['show_secondary_logo'] ?? false,
             'show_ministry_logo' => $branding['show_ministry_logo'] ?? false,
@@ -304,11 +314,12 @@ class ReportService
             return ['header' => [], 'body' => [], 'footer' => []];
         }
 
-        if (!$config->brandingId) {
+        if (! $config->brandingId) {
             return ['header' => [], 'body' => [], 'footer' => []];
         }
 
         $format = $config->isPdf() ? 'pdf' : 'excel';
+
         return $this->brandingCache->getNotes($config->brandingId, $config->reportKey, $format);
     }
 
@@ -324,7 +335,7 @@ class ReportService
         }
 
         $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
-        
+
         // Check if template explicitly has no watermark (watermark_id is sentinel UUID)
         $hasNoWatermark = $reportTemplate && $reportTemplate->watermark_id === $noWatermarkSentinel;
         if ($hasNoWatermark) {
@@ -332,28 +343,29 @@ class ReportService
         }
 
         // First, check if report template has a specific watermark assigned (and it's not sentinel UUID)
-        if ($reportTemplate && $reportTemplate->watermark_id && !$hasNoWatermark) {
+        if ($reportTemplate && $reportTemplate->watermark_id && ! $hasNoWatermark) {
             try {
                 $templateWatermark = \App\Models\BrandingWatermark::where('id', $reportTemplate->watermark_id)
                     ->where('is_active', true)
                     ->whereNull('deleted_at')
                     ->first();
-                
+
                 if ($templateWatermark) {
                     $watermark = $templateWatermark->toArray();
                     // Add image data URI if it's an image watermark
                     if ($templateWatermark->isImage()) {
                         $watermark['image_data_uri'] = $templateWatermark->getImageDataUri();
                     }
+
                     return $watermark;
                 }
             } catch (\Exception $e) {
-                \Log::warning("Could not load template watermark: " . $e->getMessage());
+                \Log::warning('Could not load template watermark: '.$e->getMessage());
             }
         }
 
         // Fall back to branding's default watermark (or report-specific watermark)
-        if (!$config->brandingId) {
+        if (! $config->brandingId) {
             return null;
         }
 
@@ -365,7 +377,7 @@ class ReportService
      */
     private function loadReportTemplate(ReportConfig $config): ?ReportTemplate
     {
-        if (!$config->reportTemplateId) {
+        if (! $config->reportTemplateId) {
             return null;
         }
 
@@ -381,7 +393,7 @@ class ReportService
      */
     private function mergeReportTemplate(array $layout, ?ReportTemplate $template, array $branding): array
     {
-        if (!$template) {
+        if (! $template) {
             return $layout;
         }
 
@@ -418,7 +430,7 @@ class ReportService
         if ($template->show_ministry_logo !== null) {
             $layout['show_ministry_logo'] = $template->show_ministry_logo;
         }
-        
+
         // Override logo positions if provided by template
         if ($template->primary_logo_position !== null) {
             $layout['primary_logo_position'] = $template->primary_logo_position;
@@ -478,6 +490,13 @@ class ReportService
             $layout['font_size'] = $layout['font_size'] ?? '11px';
         }
 
+        if ($templateName === 'exam_seating_map') {
+            $layout['font_family'] = 'Bahij Nassim';
+            $layout['font_size'] = $layout['font_size'] ?? '10px';
+            $layout['orientation'] = 'landscape';
+            $layout['page_size'] = 'A4';
+        }
+
         // Calculate column widths
         $columnWidths = $this->calculateColumnWidths($columns, $config);
 
@@ -492,9 +511,9 @@ class ReportService
             'SCHOOL_EMAIL' => $branding['school_email'] ?? '',
             'SCHOOL_WEBSITE' => $branding['school_website'] ?? '',
             // CRITICAL: Always use colors from branding, with fallback defaults
-            'PRIMARY_COLOR' => !empty($branding['primary_color']) ? $branding['primary_color'] : '#0b0b56',
-            'SECONDARY_COLOR' => !empty($branding['secondary_color']) ? $branding['secondary_color'] : '#0056b3',
-            'ACCENT_COLOR' => !empty($branding['accent_color']) ? $branding['accent_color'] : '#ff6b35',
+            'PRIMARY_COLOR' => ! empty($branding['primary_color']) ? $branding['primary_color'] : '#0b0b56',
+            'SECONDARY_COLOR' => ! empty($branding['secondary_color']) ? $branding['secondary_color'] : '#0056b3',
+            'ACCENT_COLOR' => ! empty($branding['accent_color']) ? $branding['accent_color'] : '#ff6b35',
             // CRITICAL: Use template font family from layout first, then branding fallback
             'FONT_FAMILY' => $layout['font_family'] ?? $branding['font_family'] ?? 'Bahij Nassim',
             // CRITICAL: Use template font size from layout first, then branding fallback
@@ -570,7 +589,7 @@ class ReportService
                 $config->calendarPreference,
                 'full',
                 $config->language
-            ) . ' ' . now()->format('H:i'),
+            ).' '.now()->format('H:i'),
             'calendar_preference' => $config->calendarPreference,
             'language' => $config->language,
 
@@ -592,19 +611,26 @@ class ReportService
             'metadata' => $data['metadata'] ?? [],
             'generatedAt' => $data['generatedAt'] ?? now()->toISOString(),
             'labels' => $data['labels'] ?? [],
+            'map' => $data['map'] ?? [],
+            'grid' => $data['grid'] ?? [],
+            'class_colors' => $data['class_colors'] ?? [],
+            'filters' => $data['filters'] ?? [],
 
             // Also pass through any other custom data keys (excluding columns/rows)
             ...array_filter($data, function ($key) {
-                return !in_array($key, ['columns', 'rows', 'student', 'summary', 'sections', 'metadata', 'generatedAt', 'labels']);
+                return ! in_array($key, [
+                    'columns', 'rows', 'student', 'summary', 'sections', 'metadata', 'generatedAt', 'labels',
+                    'map', 'grid', 'class_colors', 'filters', 'assignments',
+                ]);
             }, ARRAY_FILTER_USE_KEY),
         ];
 
         // Debug: Log context data for student-history template
         if ($templateName === 'student-history') {
-            \Log::debug("Student history context built", [
-                'has_student' => !empty($context['student']),
-                'has_summary' => !empty($context['summary']),
-                'has_sections' => !empty($context['sections']),
+            \Log::debug('Student history context built', [
+                'has_student' => ! empty($context['student']),
+                'has_summary' => ! empty($context['summary']),
+                'has_sections' => ! empty($context['sections']),
                 'student_name' => $context['student']['full_name'] ?? 'N/A',
                 'context_keys' => array_keys($context),
                 'data_keys' => array_keys($data),
@@ -671,10 +697,10 @@ class ReportService
     /**
      * Format a date value according to the report's calendar preference
      *
-     * @param mixed $date Date value (string, Carbon, DateTime)
-     * @param string $calendarPreference Calendar type
-     * @param string $format Date format (full, short, numeric)
-     * @param string $language Language code
+     * @param  mixed  $date  Date value (string, Carbon, DateTime)
+     * @param  string  $calendarPreference  Calendar type
+     * @param  string  $format  Date format (full, short, numeric)
+     * @param  string  $language  Language code
      * @return string Formatted date
      */
     public function formatDate($date, string $calendarPreference = 'jalali', string $format = 'full', string $language = 'fa'): string
@@ -691,6 +717,7 @@ class ReportService
                 'calendar' => $calendarPreference,
                 'error' => $e->getMessage(),
             ]);
+
             return (string) $date;
         }
     }
@@ -704,18 +731,69 @@ class ReportService
     }
 
     /**
+     * Fetch seating map grid data for exam_seating_map template/report key.
+     */
+    private function fetchExamSeatingMapData(ReportConfig $config, ?string $organizationId, array $data): array
+    {
+        $mapId = $config->parameters['map_id'] ?? null;
+        if (! $mapId) {
+            \Log::warning('Map ID not provided in parameters for exam_seating_map report');
+
+            return $data;
+        }
+
+        if (! $organizationId) {
+            $user = Auth::user();
+            if ($user) {
+                $profile = DB::table('profiles')->where('id', $user->id)->first();
+                $organizationId = $profile->organization_id ?? null;
+            }
+        }
+
+        $schoolId = $config->brandingId;
+        if (! $organizationId || ! $schoolId) {
+            \Log::warning('Organization or school ID not available for exam seating map report fetch');
+
+            return $data;
+        }
+
+        $map = ExamSeatingMap::query()
+            ->whereNull('deleted_at')
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->find($mapId);
+
+        if (! $map) {
+            \Log::warning('Exam seating map not found for report generation', [
+                'map_id' => $mapId,
+                'organization_id' => $organizationId,
+                'school_id' => $schoolId,
+            ]);
+
+            return $data;
+        }
+
+        /** @var ExamSeatingMapService $mapService */
+        $mapService = app(ExamSeatingMapService::class);
+        $reportData = $mapService->buildReportData($map);
+
+        return array_merge($data, $reportData);
+    }
+
+    /**
      * Fetch student history data for student-history template
      * This method is called when template_name is 'student-history' and parameters.student_id is provided
      */
     private function fetchStudentHistoryData(ReportConfig $config, ?string $organizationId, array $data): array
     {
         $studentId = $config->parameters['student_id'] ?? null;
-        if (!$studentId) {
+        if (! $studentId) {
             \Log::warning('Student ID not provided in parameters for student-history template');
+
             return $data;
         }
 
-        if (!$organizationId) {
+        if (! $organizationId) {
             // Try to get organization from authenticated user
             $user = Auth::user();
             if ($user) {
@@ -724,8 +802,9 @@ class ReportService
             }
         }
 
-        if (!$organizationId) {
+        if (! $organizationId) {
             \Log::warning('Organization ID not available for student history data fetch');
+
             return $data;
         }
 
@@ -733,7 +812,7 @@ class ReportService
         $schoolId = $config->brandingId;
 
         try {
-            \Log::debug("Fetching student history data", [
+            \Log::debug('Fetching student history data', [
                 'student_id' => $studentId,
                 'organization_id' => $organizationId,
                 'school_id' => $schoolId,
@@ -742,7 +821,7 @@ class ReportService
 
             // Prepare filters (sections filter if provided)
             $filters = [];
-            if (!empty($config->parameters['sections']) && is_array($config->parameters['sections'])) {
+            if (! empty($config->parameters['sections']) && is_array($config->parameters['sections'])) {
                 $filters['sections'] = $config->parameters['sections'];
             }
 
@@ -754,10 +833,10 @@ class ReportService
                 $filters
             );
 
-            \Log::debug("Student history fetched", [
-                'has_student' => !empty($history['student']),
-                'has_summary' => !empty($history['summary']),
-                'has_sections' => !empty($history['sections']),
+            \Log::debug('Student history fetched', [
+                'has_student' => ! empty($history['student']),
+                'has_summary' => ! empty($history['summary']),
+                'has_sections' => ! empty($history['sections']),
                 'sections_keys' => array_keys($history['sections'] ?? []),
             ]);
 
@@ -785,13 +864,13 @@ class ReportService
                 'nationality' => $student['nationality'] ?? '',
                 'preferred_language' => $student['preferredLanguage'] ?? '',
                 'is_orphan' => $student['isOrphan'] ?? false,
-                
+
                 // Contact Information
                 'phone' => $student['phone'] ?? '',
                 'home_address' => $student['homeAddress'] ?? '',
                 'emergency_contact_name' => $student['emergencyContactName'] ?? '',
                 'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
-                
+
                 // Location Information
                 'orig_province' => $student['origProvince'] ?? '',
                 'orig_district' => $student['origDistrict'] ?? '',
@@ -799,19 +878,19 @@ class ReportService
                 'curr_province' => $student['currProvince'] ?? '',
                 'curr_district' => $student['currDistrict'] ?? '',
                 'curr_village' => $student['currVillage'] ?? '',
-                
+
                 // Guardian Information
                 'guardian_name' => $student['guardianName'] ?? '',
                 'guardian_relation' => $student['guardianRelation'] ?? '',
                 'guardian_phone' => $student['guardianPhone'] ?? '',
                 'guardian_tazkira' => $student['guardianTazkira'] ?? '',
-                
+
                 // Guarantor (Zamin) Information
                 'zamin_name' => $student['zaminName'] ?? '',
                 'zamin_phone' => $student['zaminPhone'] ?? '',
                 'zamin_tazkira' => $student['zaminTazkira'] ?? '',
                 'zamin_address' => $student['zaminAddress'] ?? '',
-                
+
                 // Academic Information
                 'current_class' => $student['currentClass']['name'] ?? '',
                 'current_section' => $student['currentClass']['section'] ?? '',
@@ -819,10 +898,10 @@ class ReportService
                 'admission_year' => $student['admissionYear'] ?? '',
                 'applying_grade' => $student['applyingGrade'] ?? '',
                 'admission_fee_status' => $student['admissionFeeStatus'] ?? '',
-                
+
                 // Financial Information
                 'family_income' => $student['familyIncome'] ?? '',
-                
+
                 // System Information
                 'status' => $student['status'] ?? '',
                 'student_code' => $student['studentCode'] ?? '',
@@ -895,7 +974,7 @@ class ReportService
                             'is_absent' => $result['isAbsent'] ?? false,
                         ];
                     }, $exam['subjectResults'] ?? []);
-                    
+
                     return [
                         'exam_name' => $exam['examName'] ?? '',
                         'class_name' => $exam['className'] ?? '',
@@ -925,7 +1004,7 @@ class ReportService
                             'reference_no' => $payment['referenceNo'] ?? '',
                         ];
                     }, $assignment['feePayments'] ?? []);
-                    
+
                     return [
                         'fee_structure' => $assignment['feeStructure']['name'] ?? '',
                         'academic_year' => $assignment['academicYear']['name'] ?? '',
@@ -1026,10 +1105,10 @@ class ReportService
                 'labels' => [], // Will be populated by template based on language
             ]);
 
-            \Log::debug("Student history data merged", [
-                'has_student' => !empty($mergedData['student']),
-                'has_summary' => !empty($mergedData['summary']),
-                'has_sections' => !empty($mergedData['sections']),
+            \Log::debug('Student history data merged', [
+                'has_student' => ! empty($mergedData['student']),
+                'has_summary' => ! empty($mergedData['summary']),
+                'has_sections' => ! empty($mergedData['sections']),
                 'student_name' => $mergedData['student']['full_name'] ?? 'N/A',
                 'sections_count' => count($mergedData['sections'] ?? []),
             ]);
@@ -1042,6 +1121,7 @@ class ReportService
                 'organization_id' => $organizationId,
                 'error' => $e->getMessage(),
             ]);
+
             return $data; // Return original data on error
         }
     }
@@ -1066,8 +1146,8 @@ class ReportService
                     ['field' => 'Father Name', 'value' => $student['fatherName'] ?? ''],
                     ['field' => 'Status', 'value' => $student['status'] ?? ''],
                     ['field' => 'Total Academic Years', 'value' => (string) ($summary['totalAcademicYears'] ?? 0)],
-                    ['field' => 'Attendance Rate', 'value' => ($summary['attendanceRate'] ?? 0) . '%'],
-                    ['field' => 'Average Exam Score', 'value' => ($summary['averageExamScore'] ?? 0) . '%'],
+                    ['field' => 'Attendance Rate', 'value' => ($summary['attendanceRate'] ?? 0).'%'],
+                    ['field' => 'Average Exam Score', 'value' => ($summary['averageExamScore'] ?? 0).'%'],
                     ['field' => 'Outstanding Fees', 'value' => (string) ($summary['outstandingFees'] ?? 0)],
                 ],
             ],
@@ -1105,7 +1185,7 @@ class ReportService
                         'className' => $exam['className'] ?? '',
                         'totalMarks' => (string) ($exam['totalMarks'] ?? 0),
                         'maxMarks' => (string) ($exam['maxMarks'] ?? 0),
-                        'percentage' => ($exam['percentage'] ?? 0) . '%',
+                        'percentage' => ($exam['percentage'] ?? 0).'%',
                     ];
                 }, $sections['exams']['exams'] ?? []),
             ],
@@ -1171,7 +1251,7 @@ class ReportService
                         'present' => (string) ($item['present'] ?? 0),
                         'absent' => (string) ($item['absent'] ?? 0),
                         'late' => (string) ($item['late'] ?? 0),
-                        'rate' => round($item['rate'] ?? 0, 2) . '%',
+                        'rate' => round($item['rate'] ?? 0, 2).'%',
                     ];
                 }, $sections['attendance']['monthlyBreakdown'] ?? []),
             ],

@@ -51,6 +51,7 @@ export default {
     examMarks: "د ازموینې نمرې",
     examReports: "د ازموینې راپورونه",
     examRollNumbers: "رقم الجلوس",
+    examSeatingMaps: "د ناستې نقشې",
     exams: "ازموینې",
     examSecretNumbers: "رقم السري ",
     examStudentEnrollment: "د زده کوونکو شمولیت",

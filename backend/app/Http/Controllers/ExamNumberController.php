@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Exam;
-use App\Models\ExamStudent;
 use App\Models\ExamClass;
-use App\Models\ExamSubject;
-use App\Models\StudentAdmission;
+use App\Models\ExamSeatingMap;
+use App\Models\ExamStudent;
 use App\Services\ActivityLogService;
+use App\Services\ExamSeating\ExamSeatingMapService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -16,9 +16,9 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 class ExamNumberController extends Controller
 {
     public function __construct(
-        private ActivityLogService $activityLogService
-    ) {
-    }
+        private ActivityLogService $activityLogService,
+        private ExamSeatingMapService $mapService
+    ) {}
 
     /**
      * Get students with their numbers for an exam
@@ -29,22 +29,23 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.read')) {
+            if (! $user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.read: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -54,14 +55,14 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         $query = ExamStudent::with([
             'examClass.classAcademicYear.class',
             'studentAdmission.student',
-            'studentAdmission.classAcademicYear.class'
+            'studentAdmission.classAcademicYear.class',
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
@@ -74,8 +75,8 @@ class ExamNumberController extends Controller
 
         // Sort by class name, then student name
         $examStudents = $query->get()->sortBy([
-            fn($a, $b) => ($a->examClass?->classAcademicYear?->class?->name ?? '') <=> ($b->examClass?->classAcademicYear?->class?->name ?? ''),
-            fn($a, $b) => ($a->studentAdmission?->student?->full_name ?? '') <=> ($b->studentAdmission?->student?->full_name ?? ''),
+            fn ($a, $b) => ($a->examClass?->classAcademicYear?->class?->name ?? '') <=> ($b->examClass?->classAcademicYear?->class?->name ?? ''),
+            fn ($a, $b) => ($a->studentAdmission?->student?->full_name ?? '') <=> ($b->studentAdmission?->student?->full_name ?? ''),
         ])->values();
 
         $students = $examStudents->map(function ($examStudent) {
@@ -110,10 +111,10 @@ class ExamNumberController extends Controller
             'students' => $students,
             'summary' => [
                 'total' => $students->count(),
-                'with_roll_number' => $students->filter(fn($s) => $s['exam_roll_number'] !== null)->count(),
-                'with_secret_number' => $students->filter(fn($s) => $s['exam_secret_number'] !== null)->count(),
-                'missing_roll_number' => $students->filter(fn($s) => $s['exam_roll_number'] === null)->count(),
-                'missing_secret_number' => $students->filter(fn($s) => $s['exam_secret_number'] === null)->count(),
+                'with_roll_number' => $students->filter(fn ($s) => $s['exam_roll_number'] !== null)->count(),
+                'with_secret_number' => $students->filter(fn ($s) => $s['exam_secret_number'] !== null)->count(),
+                'missing_roll_number' => $students->filter(fn ($s) => $s['exam_roll_number'] === null)->count(),
+                'missing_secret_number' => $students->filter(fn ($s) => $s['exam_secret_number'] === null)->count(),
             ],
         ]);
     }
@@ -127,14 +128,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.read')) {
+            if (! $user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -147,7 +148,7 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -167,18 +168,19 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.roll_numbers.assign')) {
+            if (! $user->hasPermissionTo('exams.roll_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.roll_numbers.assign: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.roll_numbers.assign: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -195,7 +197,7 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -203,13 +205,13 @@ class ExamNumberController extends Controller
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot assign roll numbers to a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
         $query = ExamStudent::with([
             'examClass.classAcademicYear.class',
-            'studentAdmission.student'
+            'studentAdmission.student',
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
@@ -217,14 +219,14 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at');
 
         // Filter by scope
-        if ($validated['scope'] === 'class' && !empty($validated['exam_class_id'])) {
+        if ($validated['scope'] === 'class' && ! empty($validated['exam_class_id'])) {
             $query->where('exam_class_id', $validated['exam_class_id']);
         }
 
         // Sort deterministically
         $examStudents = $query->get()->sortBy([
-            fn($a, $b) => ($a->examClass?->classAcademicYear?->class?->name ?? '') <=> ($b->examClass?->classAcademicYear?->class?->name ?? ''),
-            fn($a, $b) => ($a->studentAdmission?->student?->full_name ?? '') <=> ($b->studentAdmission?->student?->full_name ?? ''),
+            fn ($a, $b) => ($a->examClass?->classAcademicYear?->class?->name ?? '') <=> ($b->examClass?->classAcademicYear?->class?->name ?? ''),
+            fn ($a, $b) => ($a->studentAdmission?->student?->full_name ?? '') <=> ($b->studentAdmission?->student?->full_name ?? ''),
         ])->values();
 
         $overrideExisting = $validated['override_existing'] ?? false;
@@ -246,7 +248,7 @@ class ExamNumberController extends Controller
             $hasExisting = $examStudent->exam_roll_number !== null;
 
             // Skip if has number and not overriding
-            if ($hasExisting && !$overrideExisting) {
+            if ($hasExisting && ! $overrideExisting) {
                 continue;
             }
 
@@ -289,14 +291,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.roll_numbers.assign')) {
+            if (! $user->hasPermissionTo('exams.roll_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -315,14 +317,14 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot assign roll numbers to a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -339,20 +341,22 @@ class ExamNumberController extends Controller
                     ->whereNull('deleted_at')
                     ->first();
 
-                if (!$examStudent) {
+                if (! $examStudent) {
                     $errors[] = [
                         'exam_student_id' => $item['exam_student_id'],
-                        'error' => 'Student not found in this exam'
+                        'error' => 'Student not found in this exam',
                     ];
+
                     continue;
                 }
 
                 // Check uniqueness
-                if (!ExamStudent::isRollNumberUnique($examId, $item['new_roll_number'], $item['exam_student_id'])) {
+                if (! ExamStudent::isRollNumberUnique($examId, $item['new_roll_number'], $item['exam_student_id'])) {
                     $errors[] = [
                         'exam_student_id' => $item['exam_student_id'],
-                        'error' => "Roll number {$item['new_roll_number']} is already assigned"
+                        'error' => "Roll number {$item['new_roll_number']} is already assigned",
                     ];
+
                     continue;
                 }
 
@@ -369,7 +373,253 @@ class ExamNumberController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Roll number assignment failed: " . $e->getMessage());
+            Log::error('Roll number assignment failed: '.$e->getMessage());
+
+            return response()->json(['error' => 'Assignment failed', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Preview roll numbers from seating map seat numbers
+     * POST /api/exams/{exam}/seating-maps/{map}/roll-numbers/preview
+     */
+    public function previewMapRollNumbers(Request $request, string $examId, string $mapId)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile || ! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        try {
+            if (! $user->hasPermissionTo('exams.roll_numbers.assign')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for exams.roll_numbers.assign: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $examId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        if ($exam->isConfigurationLocked()) {
+            return response()->json([
+                'error' => 'Cannot assign roll numbers to a completed or archived exam',
+                'status' => $exam->status,
+            ], 422);
+        }
+
+        $map = ExamSeatingMap::query()
+            ->with([
+                'assignments.examStudent.studentAdmission.student',
+                'assignments.examStudent.examClass.classAcademicYear.class',
+            ])
+            ->where('id', $mapId)
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $map) {
+            return response()->json(['error' => 'Seating map not found'], 404);
+        }
+
+        $existingNumbers = ExamStudent::query()
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->whereNotNull('exam_roll_number')
+            ->pluck('id', 'exam_roll_number');
+
+        $items = [];
+        $willOverrideCount = 0;
+
+        foreach ($map->assignments as $assignment) {
+            if ($assignment->exam_student_id === null || $assignment->is_disabled) {
+                continue;
+            }
+
+            $examStudent = $assignment->examStudent;
+            if (! $examStudent) {
+                continue;
+            }
+
+            $newNumber = (string) $assignment->seat_number;
+            $hasExisting = $examStudent->exam_roll_number !== null;
+            $collision = $existingNumbers->has($newNumber)
+                && $existingNumbers->get($newNumber) !== $examStudent->id;
+
+            if ($hasExisting) {
+                $willOverrideCount++;
+            }
+
+            $items[] = [
+                'exam_student_id' => $examStudent->id,
+                'student_id' => $examStudent->studentAdmission?->student_id,
+                'student_name' => $examStudent->studentAdmission?->student?->full_name ?? 'Unknown',
+                'class_name' => $examStudent->examClass?->classAcademicYear?->class?->name ?? 'Unknown',
+                'seat_number' => $assignment->seat_number,
+                'current_roll_number' => $examStudent->exam_roll_number,
+                'new_roll_number' => $newNumber,
+                'will_override' => $hasExisting,
+                'has_collision' => $collision,
+            ];
+        }
+
+        return response()->json([
+            'map_id' => $map->id,
+            'revision' => $map->revision,
+            'input_checksum' => $map->input_checksum ? trim($map->input_checksum) : null,
+            'total' => count($items),
+            'will_override_count' => $willOverrideCount,
+            'items' => $items,
+        ]);
+    }
+
+    /**
+     * Confirm roll numbers from seating map seat numbers
+     * POST /api/exams/{exam}/seating-maps/{map}/roll-numbers/confirm
+     */
+    public function confirmMapRollNumbers(Request $request, string $examId, string $mapId)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile || ! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        try {
+            if (! $user->hasPermissionTo('exams.roll_numbers.assign')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'revision' => 'required|integer|min:1',
+            'input_checksum' => ['required', 'string', 'regex:/^[0-9a-f]{64}$/'],
+        ]);
+
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $examId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        if ($exam->isConfigurationLocked()) {
+            return response()->json([
+                'error' => 'Cannot assign roll numbers to a completed or archived exam',
+                'status' => $exam->status,
+            ], 422);
+        }
+
+        $map = ExamSeatingMap::query()
+            ->with(['assignments.examStudent'])
+            ->where('id', $mapId)
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $map) {
+            return response()->json(['error' => 'Seating map not found'], 404);
+        }
+
+        try {
+            $this->mapService->validateRevisionChecksum(
+                $map,
+                (int) $validated['revision'],
+                $validated['input_checksum']
+            );
+        } catch (\RuntimeException $exception) {
+            return response()->json(['error' => $exception->getMessage()], 409);
+        }
+
+        $errors = [];
+        $updated = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($map->assignments as $assignment) {
+                if ($assignment->exam_student_id === null || $assignment->is_disabled) {
+                    continue;
+                }
+
+                $examStudent = ExamStudent::query()
+                    ->where('id', $assignment->exam_student_id)
+                    ->where('exam_id', $examId)
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (! $examStudent) {
+                    $errors[] = [
+                        'exam_student_id' => $assignment->exam_student_id,
+                        'error' => 'Student not found in this exam',
+                    ];
+
+                    continue;
+                }
+
+                $newNumber = (string) $assignment->seat_number;
+
+                if (! ExamStudent::isRollNumberUnique($examId, $newNumber, $examStudent->id)) {
+                    $errors[] = [
+                        'exam_student_id' => $examStudent->id,
+                        'error' => "Roll number {$newNumber} is already assigned",
+                    ];
+
+                    continue;
+                }
+
+                $examStudent->exam_roll_number = $newNumber;
+                $examStudent->save();
+                $updated++;
+            }
+
+            $map->refresh();
+            $map->status = ExamSeatingMap::STATUS_APPLIED;
+            $map->applied_at = now();
+            $map->applied_by = $user->id;
+            $map->revision = $map->revision + 1;
+            $map->save();
+            $this->mapService->refreshInputChecksum($map);
+
+            DB::commit();
+
+            return response()->json([
+                'updated' => $updated,
+                'errors' => $errors,
+                'map' => $this->mapService->serializeMap($map->fresh(['assignments', 'classColors', 'room'])),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Map roll number assignment failed: '.$e->getMessage());
+
             return response()->json(['error' => 'Assignment failed', 'message' => $e->getMessage()], 500);
         }
     }
@@ -383,14 +633,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.roll_numbers.assign')) {
+            if (! $user->hasPermissionTo('exams.roll_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -407,14 +657,14 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot modify roll numbers for a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -425,7 +675,7 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examStudent) {
+        if (! $examStudent) {
             return response()->json(['error' => 'Exam student not found'], 404);
         }
 
@@ -433,9 +683,9 @@ class ExamNumberController extends Controller
         $newRollNumber = $validated['exam_roll_number'];
 
         // Check uniqueness if setting a value
-        if ($newRollNumber !== null && !ExamStudent::isRollNumberUnique($examId, $newRollNumber, $examStudentId)) {
+        if ($newRollNumber !== null && ! ExamStudent::isRollNumberUnique($examId, $newRollNumber, $examStudentId)) {
             return response()->json([
-                'error' => "Roll number {$newRollNumber} is already assigned to another student"
+                'error' => "Roll number {$newRollNumber} is already assigned to another student",
             ], 422);
         }
 
@@ -462,7 +712,7 @@ class ExamNumberController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log roll number update: ' . $e->getMessage());
+            Log::warning('Failed to log roll number update: '.$e->getMessage());
         }
 
         return response()->json([
@@ -481,14 +731,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.read')) {
+            if (! $user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -501,7 +751,7 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -521,18 +771,19 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.secret_numbers.assign')) {
+            if (! $user->hasPermissionTo('exams.secret_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.secret_numbers.assign: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.secret_numbers.assign: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -549,34 +800,34 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot assign secret numbers to a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
         $query = ExamStudent::with([
             'examClass.classAcademicYear.class',
-            'studentAdmission.student'
+            'studentAdmission.student',
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
-        if ($validated['scope'] === 'class' && !empty($validated['exam_class_id'])) {
+        if ($validated['scope'] === 'class' && ! empty($validated['exam_class_id'])) {
             $query->where('exam_class_id', $validated['exam_class_id']);
         }
 
         // Sort deterministically (same as roll numbers for consistency)
         $examStudents = $query->get()->sortBy([
-            fn($a, $b) => ($a->examClass?->classAcademicYear?->class?->name ?? '') <=> ($b->examClass?->classAcademicYear?->class?->name ?? ''),
-            fn($a, $b) => ($a->studentAdmission?->student?->full_name ?? '') <=> ($b->studentAdmission?->student?->full_name ?? ''),
+            fn ($a, $b) => ($a->examClass?->classAcademicYear?->class?->name ?? '') <=> ($b->examClass?->classAcademicYear?->class?->name ?? ''),
+            fn ($a, $b) => ($a->studentAdmission?->student?->full_name ?? '') <=> ($b->studentAdmission?->student?->full_name ?? ''),
         ])->values();
 
         $overrideExisting = $validated['override_existing'] ?? false;
@@ -596,7 +847,7 @@ class ExamNumberController extends Controller
         foreach ($examStudents as $examStudent) {
             $hasExisting = $examStudent->exam_secret_number !== null;
 
-            if ($hasExisting && !$overrideExisting) {
+            if ($hasExisting && ! $overrideExisting) {
                 continue;
             }
 
@@ -637,14 +888,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.secret_numbers.assign')) {
+            if (! $user->hasPermissionTo('exams.secret_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -663,14 +914,14 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot assign secret numbers to a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -687,19 +938,21 @@ class ExamNumberController extends Controller
                     ->whereNull('deleted_at')
                     ->first();
 
-                if (!$examStudent) {
+                if (! $examStudent) {
                     $errors[] = [
                         'exam_student_id' => $item['exam_student_id'],
-                        'error' => 'Student not found in this exam'
+                        'error' => 'Student not found in this exam',
                     ];
+
                     continue;
                 }
 
-                if (!ExamStudent::isSecretNumberUnique($examId, $item['new_secret_number'], $item['exam_student_id'])) {
+                if (! ExamStudent::isSecretNumberUnique($examId, $item['new_secret_number'], $item['exam_student_id'])) {
                     $errors[] = [
                         'exam_student_id' => $item['exam_student_id'],
-                        'error' => "Secret number {$item['new_secret_number']} is already assigned"
+                        'error' => "Secret number {$item['new_secret_number']} is already assigned",
                     ];
+
                     continue;
                 }
 
@@ -716,7 +969,8 @@ class ExamNumberController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Secret number assignment failed: " . $e->getMessage());
+            Log::error('Secret number assignment failed: '.$e->getMessage());
+
             return response()->json(['error' => 'Assignment failed', 'message' => $e->getMessage()], 500);
         }
     }
@@ -730,14 +984,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.secret_numbers.assign')) {
+            if (! $user->hasPermissionTo('exams.secret_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -754,14 +1008,14 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot modify secret numbers for a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -772,16 +1026,16 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examStudent) {
+        if (! $examStudent) {
             return response()->json(['error' => 'Exam student not found'], 404);
         }
 
         $oldSecretNumber = $examStudent->exam_secret_number;
         $newSecretNumber = $validated['exam_secret_number'];
 
-        if ($newSecretNumber !== null && !ExamStudent::isSecretNumberUnique($examId, $newSecretNumber, $examStudentId)) {
+        if ($newSecretNumber !== null && ! ExamStudent::isSecretNumberUnique($examId, $newSecretNumber, $examStudentId)) {
             return response()->json([
-                'error' => "Secret number {$newSecretNumber} is already assigned to another student"
+                'error' => "Secret number {$newSecretNumber} is already assigned to another student",
             ], 422);
         }
 
@@ -808,7 +1062,7 @@ class ExamNumberController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log secret number update: ' . $e->getMessage());
+            Log::warning('Failed to log secret number update: '.$e->getMessage());
         }
 
         return response()->json([
@@ -827,14 +1081,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.secret_numbers.read')) {
+            if (! $user->hasPermissionTo('exams.secret_numbers.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -852,13 +1106,13 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         $examStudent = ExamStudent::with([
             'examClass.classAcademicYear.class',
-            'studentAdmission.student'
+            'studentAdmission.student',
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
@@ -867,7 +1121,7 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examStudent) {
+        if (! $examStudent) {
             return response()->json(['error' => 'Student not found with this secret number'], 404);
         }
 
@@ -901,14 +1155,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.roll_numbers.read')) {
+            if (! $user->hasPermissionTo('exams.roll_numbers.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -922,13 +1176,13 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         $query = ExamStudent::with([
             'examClass.classAcademicYear.class',
-            'studentAdmission.student'
+            'studentAdmission.student',
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
@@ -981,14 +1235,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.numbers.print')) {
+            if (! $user->hasPermissionTo('exams.numbers.print')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -1002,7 +1256,7 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -1018,7 +1272,7 @@ class ExamNumberController extends Controller
         $query = ExamStudent::with([
             'examClass.classAcademicYear.class',
             'studentAdmission.student',
-            'studentAdmission.room'
+            'studentAdmission.room',
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
@@ -1038,10 +1292,10 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->with([
                 'examSubjects.subject',
-                'examSubjects.examTimes' => function($query) {
+                'examSubjects.examTimes' => function ($query) {
                     $query->whereNull('deleted_at')->orderBy('date', 'asc');
                 },
-                'classAcademicYear.class'
+                'classAcademicYear.class',
             ])
             ->get()
             ->keyBy('id');
@@ -1112,14 +1366,14 @@ class ExamNumberController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.numbers.print')) {
+            if (! $user->hasPermissionTo('exams.numbers.print')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -1132,16 +1386,16 @@ class ExamNumberController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         $query = ExamStudent::with([
             'examClass.classAcademicYear.class',
             'examClass.examSubjects.subject',
-            'examClass.examSubjects.examTimes' => function($query) {
+            'examClass.examSubjects.examTimes' => function ($query) {
                 $query->whereNull('deleted_at')->orderBy('date', 'asc');
-            }
+            },
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
@@ -1221,7 +1475,7 @@ class ExamNumberController extends Controller
             $finalSubjectName = $subjectName;
             $finalSubjectDate = $subjectExamDate;
 
-            if (!$finalSubjectName && $examClass && $examClass->examSubjects) {
+            if (! $finalSubjectName && $examClass && $examClass->examSubjects) {
                 // Get first subject if no filter
                 $firstSubject = $examClass->examSubjects->whereNull('deleted_at')->first();
                 if ($firstSubject) {
@@ -1266,7 +1520,7 @@ class ExamNumberController extends Controller
         foreach ($slips as &$slip) {
             try {
                 // Only generate QR code if roll number exists
-                if (!empty($slip['exam_roll_number'])) {
+                if (! empty($slip['exam_roll_number'])) {
                     // Use SVG format first, then convert to PNG data URI
                     // SVG is more reliable and can be embedded directly
                     $qrCodeSvg = QrCode::format('svg')
@@ -1276,7 +1530,7 @@ class ExamNumberController extends Controller
                         ->generate($slip['exam_roll_number']);
 
                     // For SVG, we can use it directly as data URI
-                    $slip['qr_code'] = 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg);
+                    $slip['qr_code'] = 'data:image/svg+xml;base64,'.base64_encode($qrCodeSvg);
                     $slip['qr_code_format'] = 'svg';
                 } else {
                     $slip['qr_code'] = null;
@@ -1285,14 +1539,14 @@ class ExamNumberController extends Controller
             } catch (\Exception $e) {
                 // If SVG fails, try PNG
                 try {
-                    if (!empty($slip['exam_roll_number'])) {
+                    if (! empty($slip['exam_roll_number'])) {
                         $qrCodePng = QrCode::format('png')
                             ->size(200)
                             ->margin(2)
                             ->errorCorrection('H')
                             ->generate($slip['exam_roll_number']);
 
-                        $slip['qr_code'] = 'data:image/png;base64,' . base64_encode($qrCodePng);
+                        $slip['qr_code'] = 'data:image/png;base64,'.base64_encode($qrCodePng);
                         $slip['qr_code_format'] = 'png';
                     } else {
                         $slip['qr_code'] = null;
@@ -1302,7 +1556,7 @@ class ExamNumberController extends Controller
                     // If both fail, leave it empty
                     $slip['qr_code'] = null;
                     $slip['qr_code_format'] = null;
-                    Log::error('Failed to generate QR code (both SVG and PNG) for roll number: ' . ($slip['exam_roll_number'] ?? 'unknown'), [
+                    Log::error('Failed to generate QR code (both SVG and PNG) for roll number: '.($slip['exam_roll_number'] ?? 'unknown'), [
                         'svg_error' => $e->getMessage(),
                         'png_error' => $e2->getMessage(),
                     ]);
@@ -1324,9 +1578,9 @@ class ExamNumberController extends Controller
      * Build secret labels HTML (1x2 inch labels)
      * Uses Blade template for easier editing
      *
-     * @param array $labels Array of label data
-     * @param string $examName Exam name
-     * @param string $layout Layout type: 'single' for one label per page, 'grid' for A4 grid
+     * @param  array  $labels  Array of label data
+     * @param  string  $examName  Exam name
+     * @param  string  $layout  Layout type: 'single' for one label per page, 'grid' for A4 grid
      * @return string HTML content
      */
     private function buildSecretLabelsHtml(array $labels, string $examName, string $layout = 'grid'): string
@@ -1335,7 +1589,7 @@ class ExamNumberController extends Controller
         foreach ($labels as &$label) {
             try {
                 // Only generate barcode if secret number exists
-                if (!empty($label['exam_secret_number'])) {
+                if (! empty($label['exam_secret_number'])) {
                     // Use SVG format first, then convert to PNG data URI
                     $barcodeSvg = QrCode::format('svg')
                         ->size(150)
@@ -1344,7 +1598,7 @@ class ExamNumberController extends Controller
                         ->generate($label['exam_secret_number']);
 
                     // For SVG, we can use it directly as data URI
-                    $label['barcode'] = 'data:image/svg+xml;base64,' . base64_encode($barcodeSvg);
+                    $label['barcode'] = 'data:image/svg+xml;base64,'.base64_encode($barcodeSvg);
                     $label['barcode_format'] = 'svg';
                 } else {
                     $label['barcode'] = null;
@@ -1353,14 +1607,14 @@ class ExamNumberController extends Controller
             } catch (\Exception $e) {
                 // If SVG fails, try PNG
                 try {
-                    if (!empty($label['exam_secret_number'])) {
+                    if (! empty($label['exam_secret_number'])) {
                         $barcodePng = QrCode::format('png')
                             ->size(150)
                             ->margin(1)
                             ->errorCorrection('H')
                             ->generate($label['exam_secret_number']);
 
-                        $label['barcode'] = 'data:image/png;base64,' . base64_encode($barcodePng);
+                        $label['barcode'] = 'data:image/png;base64,'.base64_encode($barcodePng);
                         $label['barcode_format'] = 'png';
                     } else {
                         $label['barcode'] = null;
@@ -1370,7 +1624,7 @@ class ExamNumberController extends Controller
                     // If both fail, leave it empty
                     $label['barcode'] = null;
                     $label['barcode_format'] = null;
-                    Log::error('Failed to generate barcode (both SVG and PNG) for secret number: ' . ($label['exam_secret_number'] ?? 'unknown'), [
+                    Log::error('Failed to generate barcode (both SVG and PNG) for secret number: '.($label['exam_secret_number'] ?? 'unknown'), [
                         'svg_error' => $e->getMessage(),
                         'png_error' => $e2->getMessage(),
                     ]);

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -12,18 +13,26 @@ class Exam extends Model
     use HasFactory, SoftDeletes;
 
     protected $connection = 'pgsql';
+
     protected $table = 'exams';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $primaryKey = 'id';
 
     /**
      * Allowed status values for exam lifecycle
      */
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_SCHEDULED = 'scheduled';
+
     public const STATUS_IN_PROGRESS = 'in_progress';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_ARCHIVED = 'archived';
 
     public const STATUSES = [
@@ -122,6 +131,21 @@ class Exam extends Model
     public function examAttendances()
     {
         return $this->hasMany(ExamAttendance::class, 'exam_id');
+    }
+
+    public function seatingMaps(): HasMany
+    {
+        return $this->hasMany(ExamSeatingMap::class, 'exam_id');
+    }
+
+    public function seatAssignments(): HasMany
+    {
+        return $this->hasMany(ExamSeatAssignment::class, 'exam_id');
+    }
+
+    public function seatingRuns(): HasMany
+    {
+        return $this->hasMany(ExamSeatingRun::class, 'exam_id');
     }
 
     /**
@@ -233,11 +257,12 @@ class Exam extends Model
      */
     public function isDateWithinPeriod($date): bool
     {
-        if (!$this->start_date || !$this->end_date) {
+        if (! $this->start_date || ! $this->end_date) {
             return true; // Allow if dates not set
         }
-        
+
         $checkDate = is_string($date) ? \Carbon\Carbon::parse($date) : $date;
+
         return $checkDate->between($this->start_date, $this->end_date);
     }
 
@@ -261,6 +286,7 @@ class Exam extends Model
     public function canTransitionTo(string $newStatus): bool
     {
         $allowedTransitions = self::getStatusTransitionRules()[$this->status] ?? [];
+
         return in_array($newStatus, $allowedTransitions);
     }
 }

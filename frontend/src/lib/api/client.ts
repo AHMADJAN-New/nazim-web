@@ -3663,6 +3663,95 @@ export const examsApi = {
   },
 };
 
+// Exam Seating Maps API
+export const examSeatingApi = {
+  list: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/seating-maps`);
+  },
+
+  get: async (examId: string, mapId: string) => {
+    return apiClient.get(`/exams/${examId}/seating-maps/${mapId}`);
+  },
+
+  create: async (examId: string, data: {
+    name: string;
+    rows: number;
+    columns: number;
+    start_seat_number?: number;
+    room_id?: string | null;
+  }) => {
+    return apiClient.post(`/exams/${examId}/seating-maps`, data);
+  },
+
+  update: async (examId: string, mapId: string, data: {
+    name?: string;
+    rows?: number;
+    columns?: number;
+    start_seat_number?: number;
+    room_id?: string | null;
+  }) => {
+    return apiClient.put(`/exams/${examId}/seating-maps/${mapId}`, data);
+  },
+
+  delete: async (examId: string, mapId: string) => {
+    return apiClient.delete(`/exams/${examId}/seating-maps/${mapId}`);
+  },
+
+  syncAssignments: async (examId: string, mapId: string, data: {
+    revision: number;
+    assignments: Array<{
+      row_number: number;
+      column_number: number;
+      exam_student_id?: string | null;
+      is_locked?: boolean;
+      is_disabled?: boolean;
+    }>;
+  }) => {
+    return apiClient.put(`/exams/${examId}/seating-maps/${mapId}/assignments`, data);
+  },
+
+  syncClassColors: async (examId: string, mapId: string, data: {
+    colors: Array<{
+      exam_class_id: string;
+      color_hex: string;
+    }>;
+  }) => {
+    return apiClient.put(`/exams/${examId}/seating-maps/${mapId}/class-colors`, data);
+  },
+
+  solve: async (examId: string, mapId: string, data: {
+    revision: number;
+    strict_mode?: boolean;
+    seed?: number;
+  }) => {
+    return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/solve`, data);
+  },
+
+  getSolveStatus: async (examId: string, mapId: string) => {
+    return apiClient.get(`/exams/${examId}/seating-maps/${mapId}/solve-status`);
+  },
+
+  finalize: async (examId: string, mapId: string, data: { revision: number }) => {
+    return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/finalize`, data);
+  },
+
+  duplicate: async (examId: string, mapId: string) => {
+    return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/duplicate`, {});
+  },
+
+  getReportData: async (examId: string, mapId: string) => {
+    return apiClient.get(`/exams/${examId}/seating-maps/${mapId}/report-data`);
+  },
+
+  previewMapRollNumbers: async (examId: string, mapId: string) => {
+    return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/roll-numbers/preview`, {});
+  },
+
+  confirmMapRollNumbers: async (examId: string, mapId: string) => {
+    return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/roll-numbers/confirm`, {});
+  },
+};
+
 // Exam Classes API
 export const examClassesApi = {
   list: async (params?: { exam_id?: string }) => {

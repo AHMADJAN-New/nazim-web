@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Models\ExamSeatingMap;
 use App\Models\ReportRun;
 use App\Models\ReportTemplate;
+use App\Services\ExamSeating\ExamSeatingMapService;
 use App\Services\Reports\BrandingCacheService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ExcelReportService;
@@ -56,8 +58,9 @@ class GenerateReportJob implements ShouldQueue
         // Find the report run
         $reportRun = ReportRun::find($this->reportRunId);
 
-        if (!$reportRun) {
-            Log::error("Report run not found", ['report_run_id' => $this->reportRunId]);
+        if (! $reportRun) {
+            Log::error('Report run not found', ['report_run_id' => $this->reportRunId]);
+
             return;
         }
 
@@ -69,11 +72,11 @@ class GenerateReportJob implements ShouldQueue
             $config = ReportConfig::fromArray($this->configData);
 
             // Debug: Log config values
-            Log::debug("Report generation job config (Job)", [
+            Log::debug('Report generation job config (Job)', [
                 'template_name' => $config->templateName,
                 'report_key' => $config->reportKey,
                 'report_type' => $config->reportType,
-                'has_parameters' => !empty($config->parameters),
+                'has_parameters' => ! empty($config->parameters),
                 'parameters_keys' => array_keys($config->parameters ?? []),
                 'student_id' => $config->parameters['student_id'] ?? null,
             ]);
@@ -82,12 +85,12 @@ class GenerateReportJob implements ShouldQueue
             $reportData = $this->reportData;
             // Check by template name (PDF) or report key + student_id (Excel)
             $isStudentHistoryTemplate = in_array($config->templateName, ['student-history', 'reports.student-history']);
-            $hasStudentId = !empty($config->parameters['student_id']);
+            $hasStudentId = ! empty($config->parameters['student_id']);
             $isReportKeyMatch = $config->reportKey === 'student_lifetime_history';
             $isStudentHistoryReport = $isStudentHistoryTemplate || ($isReportKeyMatch && $hasStudentId);
-            
+
             // Debug: Log all condition values
-            Log::debug("Student history condition check (Job)", [
+            Log::debug('Student history condition check (Job)', [
                 'template_name' => $config->templateName,
                 'report_key' => $config->reportKey,
                 'report_type' => $config->reportType,
@@ -96,9 +99,9 @@ class GenerateReportJob implements ShouldQueue
                 'has_student_id' => $hasStudentId,
                 'is_student_history_report' => $isStudentHistoryReport,
             ]);
-            
+
             if ($isStudentHistoryReport && $hasStudentId) {
-                Log::debug("Fetching student history data (Job) - condition met", [
+                Log::debug('Fetching student history data (Job) - condition met', [
                     'template_name' => $config->templateName,
                     'report_key' => $config->reportKey,
                     'report_type' => $config->reportType,
@@ -106,7 +109,7 @@ class GenerateReportJob implements ShouldQueue
                 ]);
                 $reportData = $this->fetchStudentHistoryData($config, $reportRun->organization_id, $reportData, $studentHistoryService);
             } else {
-                Log::debug("Skipping student history fetch (Job) - condition not met", [
+                Log::debug('Skipping student history fetch (Job) - condition not met', [
                     'template_name' => $config->templateName,
                     'report_key' => $config->reportKey,
                     'report_type' => $config->reportType,
@@ -115,6 +118,14 @@ class GenerateReportJob implements ShouldQueue
                     'has_student_id' => $hasStudentId,
                     'is_student_history_report' => $isStudentHistoryReport,
                 ]);
+            }
+
+            $isExamSeatingMapReport = ($config->templateName === 'exam_seating_map'
+                || $config->reportKey === 'exam_seating_map')
+                && ! empty($config->parameters['map_id']);
+
+            if ($isExamSeatingMapReport) {
+                $reportData = $this->fetchExamSeatingMapData($config, $reportRun->organization_id, $reportData);
             }
 
             // Generate the report using the service
@@ -177,24 +188,24 @@ class GenerateReportJob implements ShouldQueue
         // Build context for template
         $context = $this->buildContext($config, $data, $branding, $layout, $notes, $watermark, $dateService);
         $reportRun->updateProgress(50, 'Built template context');
-        
+
         // Debug: Log context data for student-history template
         $isStudentHistoryTemplate = in_array($config->templateName, ['student-history', 'reports.student-history']);
         if ($isStudentHistoryTemplate) {
-            Log::debug("Student history context built (Job)", [
+            Log::debug('Student history context built (Job)', [
                 'template_name' => $config->templateName,
-                'has_student' => !empty($context['student']),
-                'has_summary' => !empty($context['summary']),
-                'has_sections' => !empty($context['sections']),
+                'has_student' => ! empty($context['student']),
+                'has_summary' => ! empty($context['summary']),
+                'has_sections' => ! empty($context['sections']),
                 'student_name' => $context['student']['full_name'] ?? 'N/A',
                 'context_keys' => array_keys($context),
                 'student_keys' => array_keys($context['student'] ?? []),
                 'sections_keys' => array_keys($context['sections'] ?? []),
             ]);
         }
-        
+
         // Log final font settings being used
-        Log::debug("Report context font settings (Job)", [
+        Log::debug('Report context font settings (Job)', [
             'font_family' => $context['FONT_FAMILY'] ?? 'N/A',
             'font_size' => $context['FONT_SIZE'] ?? 'N/A',
             'table_font_size' => $context['TABLE_FONT_SIZE'] ?? 'N/A',
@@ -208,12 +219,12 @@ class GenerateReportJob implements ShouldQueue
         // CRITICAL: Reports are school-scoped and MUST include both organizationId and schoolId
         $organizationId = $reportRun->organization_id;
         $schoolId = $config->brandingId ?? $reportRun->branding_id;
-        
+
         // Validate required IDs
-        if (!$organizationId) {
+        if (! $organizationId) {
             throw new \Exception('Organization ID is required for report generation');
         }
-        if (!$schoolId) {
+        if (! $schoolId) {
             throw new \Exception('School ID (branding_id) is required for report generation');
         }
 
@@ -269,8 +280,9 @@ class GenerateReportJob implements ShouldQueue
      */
     private function loadBranding(ReportConfig $config, BrandingCacheService $brandingCache): array
     {
-        if (!$config->brandingId) {
-            Log::warning("No brandingId provided in config (Job), using default branding");
+        if (! $config->brandingId) {
+            Log::warning('No brandingId provided in config (Job), using default branding');
+
             return $this->getDefaultBranding();
         }
 
@@ -278,12 +290,13 @@ class GenerateReportJob implements ShouldQueue
 
         $branding = $brandingCache->getBranding($config->brandingId);
 
-        if (!$branding) {
+        if (! $branding) {
             Log::warning("Branding not found for {$config->brandingId} (Job), using default branding");
+
             return $this->getDefaultBranding();
         }
 
-        Log::debug("Loaded branding (Job)", [
+        Log::debug('Loaded branding (Job)', [
             'school_name' => $branding['school_name'] ?? 'N/A',
             'font_family' => $branding['font_family'] ?? 'N/A',
             'report_font_size' => $branding['report_font_size'] ?? 'N/A',
@@ -330,11 +343,12 @@ class GenerateReportJob implements ShouldQueue
      */
     private function loadNotes(ReportConfig $config, BrandingCacheService $brandingCache): array
     {
-        if ($config->notesMode === 'none' || !$config->brandingId) {
+        if ($config->notesMode === 'none' || ! $config->brandingId) {
             return ['header' => [], 'body' => [], 'footer' => []];
         }
 
         $format = $config->isPdf() ? 'pdf' : 'excel';
+
         return $brandingCache->getNotes($config->brandingId, $config->reportKey, $format);
     }
 
@@ -343,7 +357,7 @@ class GenerateReportJob implements ShouldQueue
      */
     private function loadWatermark(ReportConfig $config, BrandingCacheService $brandingCache): ?array
     {
-        if ($config->watermarkMode === 'none' || !$config->brandingId) {
+        if ($config->watermarkMode === 'none' || ! $config->brandingId) {
             return null;
         }
 
@@ -355,7 +369,7 @@ class GenerateReportJob implements ShouldQueue
      */
     private function loadReportTemplate(ReportConfig $config): ?ReportTemplate
     {
-        if (!$config->reportTemplateId) {
+        if (! $config->reportTemplateId) {
             return null;
         }
 
@@ -371,7 +385,7 @@ class GenerateReportJob implements ShouldQueue
      */
     private function mergeReportTemplate(array $layout, ?ReportTemplate $template, array $branding): array
     {
-        if (!$template) {
+        if (! $template) {
             return $layout;
         }
 
@@ -408,7 +422,7 @@ class GenerateReportJob implements ShouldQueue
         if ($template->show_ministry_logo !== null) {
             $layout['show_ministry_logo'] = $template->show_ministry_logo;
         }
-        
+
         // Override logo positions if provided by template
         if ($template->primary_logo_position !== null) {
             $layout['primary_logo_position'] = $template->primary_logo_position;
@@ -458,7 +472,7 @@ class GenerateReportJob implements ShouldQueue
     ): array {
         $columns = $data['columns'] ?? [];
         $rows = $data['rows'] ?? [];
-        
+
         // Format date fields in rows based on user's calendar preference
         $rows = $this->formatDateFieldsInRows($rows, $dateService, $config);
 
@@ -470,6 +484,13 @@ class GenerateReportJob implements ShouldQueue
             $layout['font_family'] = 'Bahij Nassim';
             // Slightly smaller default to fit more student fields
             $layout['font_size'] = $layout['font_size'] ?? '11px';
+        }
+
+        if ($templateName === 'exam_seating_map') {
+            $layout['font_family'] = 'Bahij Nassim';
+            $layout['font_size'] = $layout['font_size'] ?? '10px';
+            $layout['orientation'] = 'landscape';
+            $layout['page_size'] = 'A4';
         }
 
         $resolvedFontSize = $layout['font_size'] ?? $branding['report_font_size'] ?? '12px';
@@ -489,9 +510,9 @@ class GenerateReportJob implements ShouldQueue
             'SCHOOL_EMAIL' => $branding['school_email'] ?? '',
             'SCHOOL_WEBSITE' => $branding['school_website'] ?? '',
             // CRITICAL: Always use colors from branding, with fallback defaults
-            'PRIMARY_COLOR' => !empty($branding['primary_color']) ? $branding['primary_color'] : '#0b0b56',
-            'SECONDARY_COLOR' => !empty($branding['secondary_color']) ? $branding['secondary_color'] : '#0056b3',
-            'ACCENT_COLOR' => !empty($branding['accent_color']) ? $branding['accent_color'] : '#ff6b35',
+            'PRIMARY_COLOR' => ! empty($branding['primary_color']) ? $branding['primary_color'] : '#0b0b56',
+            'SECONDARY_COLOR' => ! empty($branding['secondary_color']) ? $branding['secondary_color'] : '#0056b3',
+            'ACCENT_COLOR' => ! empty($branding['accent_color']) ? $branding['accent_color'] : '#ff6b35',
             // CRITICAL: Use template font family from layout first, then branding fallback
             'FONT_FAMILY' => $layout['font_family'] ?? $branding['font_family'] ?? 'Bahij Nassim',
             // CRITICAL: Use template font size from layout first, then branding fallback
@@ -564,7 +585,7 @@ class GenerateReportJob implements ShouldQueue
                 $config->calendarPreference,
                 'full',
                 $config->language
-            ) . ' ' . now()->format('H:i'),
+            ).' '.now()->format('H:i'),
             'calendar_preference' => $config->calendarPreference,
             'language' => $config->language,
 
@@ -576,7 +597,7 @@ class GenerateReportJob implements ShouldQueue
 
             // Date service for row data
             'date_service' => $dateService,
-            
+
             // CRITICAL: Explicitly add student history data if present
             'student' => $data['student'] ?? [],
             'summary' => $data['summary'] ?? [],
@@ -584,7 +605,52 @@ class GenerateReportJob implements ShouldQueue
             'metadata' => $data['metadata'] ?? [],
             'generatedAt' => $data['generatedAt'] ?? now()->toISOString(),
             'labels' => $data['labels'] ?? [],
+            'map' => $data['map'] ?? [],
+            'grid' => $data['grid'] ?? [],
+            'class_colors' => $data['class_colors'] ?? [],
+            'filters' => $data['filters'] ?? [],
         ];
+    }
+
+    /**
+     * Fetch seating map grid data for exam_seating_map template/report key.
+     */
+    private function fetchExamSeatingMapData(ReportConfig $config, ?string $organizationId, array $data): array
+    {
+        $mapId = $config->parameters['map_id'] ?? null;
+        if (! $mapId) {
+            Log::warning('Map ID not provided in parameters for exam_seating_map report');
+
+            return $data;
+        }
+
+        $schoolId = $config->brandingId;
+        if (! $organizationId || ! $schoolId) {
+            Log::warning('Organization or school ID not available for exam seating map report fetch');
+
+            return $data;
+        }
+
+        $map = ExamSeatingMap::query()
+            ->whereNull('deleted_at')
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->find($mapId);
+
+        if (! $map) {
+            Log::warning('Exam seating map not found for report generation', [
+                'map_id' => $mapId,
+                'organization_id' => $organizationId,
+                'school_id' => $schoolId,
+            ]);
+
+            return $data;
+        }
+
+        /** @var ExamSeatingMapService $mapService */
+        $mapService = app(ExamSeatingMapService::class);
+
+        return array_merge($data, $mapService->buildReportData($map));
     }
 
     private function clampFontSize(string $fontSize, int $minimum): string
@@ -594,7 +660,7 @@ class GenerateReportJob implements ShouldQueue
             return "{$minimum}px";
         }
 
-        if (!preg_match('/(?P<value>\d+(?:\.\d+)?)(?P<unit>[a-z%]*)/i', $normalized, $matches)) {
+        if (! preg_match('/(?P<value>\d+(?:\.\d+)?)(?P<unit>[a-z%]*)/i', $normalized, $matches)) {
             return "{$minimum}px";
         }
 
@@ -667,7 +733,7 @@ class GenerateReportJob implements ShouldQueue
         $reportRun = ReportRun::find($this->reportRunId);
 
         if ($reportRun) {
-            $reportRun->markFailed("Job failed after {$this->tries} attempts: " . $exception->getMessage(), 0);
+            $reportRun->markFailed("Job failed after {$this->tries} attempts: ".$exception->getMessage(), 0);
         }
 
         Log::error('Report generation job permanently failed', [
@@ -675,7 +741,7 @@ class GenerateReportJob implements ShouldQueue
             'error' => $exception->getMessage(),
         ]);
     }
-    
+
     /**
      * Format date fields in report rows based on calendar preference
      * Automatically detects date fields (ending with _at, _date, date) and formats them
@@ -685,15 +751,15 @@ class GenerateReportJob implements ShouldQueue
         if (empty($rows)) {
             return $rows;
         }
-        
+
         // Common date field patterns
         $dateFieldPatterns = ['_at', '_date', 'date'];
-        
+
         foreach ($rows as &$row) {
-            if (!is_array($row)) {
+            if (! is_array($row)) {
                 continue;
             }
-            
+
             foreach ($row as $key => $value) {
                 // Check if this field looks like a date
                 $isDateField = false;
@@ -703,8 +769,8 @@ class GenerateReportJob implements ShouldQueue
                         break;
                     }
                 }
-                
-                if ($isDateField && !empty($value)) {
+
+                if ($isDateField && ! empty($value)) {
                     try {
                         // Try to parse the date value
                         $dateValue = null;
@@ -716,7 +782,7 @@ class GenerateReportJob implements ShouldQueue
                         } elseif ($value instanceof \DateTime || $value instanceof \Carbon\Carbon) {
                             $dateValue = \Carbon\Carbon::instance($value);
                         }
-                        
+
                         if ($dateValue) {
                             // Format the date based on user's calendar preference
                             $row[$key] = $dateService->formatDate(
@@ -728,12 +794,12 @@ class GenerateReportJob implements ShouldQueue
                         }
                     } catch (\Exception $e) {
                         // If date parsing fails, leave the value as-is
-                        \Log::debug("Failed to format date field {$key}: " . $e->getMessage());
+                        \Log::debug("Failed to format date field {$key}: ".$e->getMessage());
                     }
                 }
             }
         }
-        
+
         return $rows;
     }
 
@@ -747,13 +813,15 @@ class GenerateReportJob implements ShouldQueue
         StudentHistoryService $studentHistoryService
     ): array {
         $studentId = $config->parameters['student_id'] ?? null;
-        if (!$studentId) {
+        if (! $studentId) {
             Log::warning('Student ID not provided in parameters for student-history template');
+
             return $data;
         }
 
-        if (!$organizationId) {
+        if (! $organizationId) {
             Log::warning('Organization ID not available for student history data fetch');
+
             return $data;
         }
 
@@ -761,7 +829,7 @@ class GenerateReportJob implements ShouldQueue
         $schoolId = $config->brandingId;
 
         try {
-            Log::debug("Fetching student history data (Job)", [
+            Log::debug('Fetching student history data (Job)', [
                 'student_id' => $studentId,
                 'organization_id' => $organizationId,
                 'school_id' => $schoolId,
@@ -770,7 +838,7 @@ class GenerateReportJob implements ShouldQueue
 
             // Prepare filters (sections filter if provided)
             $filters = [];
-            if (!empty($config->parameters['sections']) && is_array($config->parameters['sections'])) {
+            if (! empty($config->parameters['sections']) && is_array($config->parameters['sections'])) {
                 $filters['sections'] = $config->parameters['sections'];
             }
 
@@ -782,10 +850,10 @@ class GenerateReportJob implements ShouldQueue
                 $filters
             );
 
-            Log::debug("Student history fetched (Job)", [
-                'has_student' => !empty($history['student']),
-                'has_summary' => !empty($history['summary']),
-                'has_sections' => !empty($history['sections']),
+            Log::debug('Student history fetched (Job)', [
+                'has_student' => ! empty($history['student']),
+                'has_summary' => ! empty($history['summary']),
+                'has_sections' => ! empty($history['sections']),
                 'sections_keys' => array_keys($history['sections'] ?? []),
             ]);
 
@@ -813,13 +881,13 @@ class GenerateReportJob implements ShouldQueue
                 'nationality' => $student['nationality'] ?? '',
                 'preferred_language' => $student['preferredLanguage'] ?? '',
                 'is_orphan' => $student['isOrphan'] ?? false,
-                
+
                 // Contact Information
                 'phone' => $student['phone'] ?? '',
                 'home_address' => $student['homeAddress'] ?? '',
                 'emergency_contact_name' => $student['emergencyContactName'] ?? '',
                 'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
-                
+
                 // Location Information
                 'orig_province' => $student['origProvince'] ?? '',
                 'orig_district' => $student['origDistrict'] ?? '',
@@ -827,19 +895,19 @@ class GenerateReportJob implements ShouldQueue
                 'curr_province' => $student['currProvince'] ?? '',
                 'curr_district' => $student['currDistrict'] ?? '',
                 'curr_village' => $student['currVillage'] ?? '',
-                
+
                 // Guardian Information
                 'guardian_name' => $student['guardianName'] ?? '',
                 'guardian_relation' => $student['guardianRelation'] ?? '',
                 'guardian_phone' => $student['guardianPhone'] ?? '',
                 'guardian_tazkira' => $student['guardianTazkira'] ?? '',
-                
+
                 // Guarantor (Zamin) Information
                 'zamin_name' => $student['zaminName'] ?? '',
                 'zamin_phone' => $student['zaminPhone'] ?? '',
                 'zamin_tazkira' => $student['zaminTazkira'] ?? '',
                 'zamin_address' => $student['zaminAddress'] ?? '',
-                
+
                 // Academic Information
                 'current_class' => $student['currentClass']['name'] ?? '',
                 'current_section' => $student['currentClass']['section'] ?? '',
@@ -847,10 +915,10 @@ class GenerateReportJob implements ShouldQueue
                 'admission_year' => $student['admissionYear'] ?? '',
                 'applying_grade' => $student['applyingGrade'] ?? '',
                 'admission_fee_status' => $student['admissionFeeStatus'] ?? '',
-                
+
                 // Financial Information
                 'family_income' => $student['familyIncome'] ?? '',
-                
+
                 // System Information
                 'status' => $student['status'] ?? '',
                 'student_code' => $student['studentCode'] ?? '',
@@ -923,7 +991,7 @@ class GenerateReportJob implements ShouldQueue
                             'is_absent' => $result['isAbsent'] ?? false,
                         ];
                     }, $exam['subjectResults'] ?? []);
-                    
+
                     return [
                         'exam_name' => $exam['examName'] ?? '',
                         'class_name' => $exam['className'] ?? '',
@@ -953,7 +1021,7 @@ class GenerateReportJob implements ShouldQueue
                             'reference_no' => $payment['referenceNo'] ?? '',
                         ];
                     }, $assignment['feePayments'] ?? []);
-                    
+
                     return [
                         'fee_structure' => $assignment['feeStructure']['name'] ?? '',
                         'academic_year' => $assignment['academicYear']['name'] ?? '',
@@ -1040,15 +1108,15 @@ class GenerateReportJob implements ShouldQueue
                     ],
                     'metadata' => $metadata,
                 ];
-                
-                Log::debug("Student history Excel data built (Job)", [
-                    'has_student' => !empty($excelData['student']),
-                    'has_summary' => !empty($excelData['summary']),
-                    'has_sheets' => !empty($excelData['parameters']['sheets']),
+
+                Log::debug('Student history Excel data built (Job)', [
+                    'has_student' => ! empty($excelData['student']),
+                    'has_summary' => ! empty($excelData['summary']),
+                    'has_sheets' => ! empty($excelData['parameters']['sheets']),
                     'sheets_count' => count($excelData['parameters']['sheets'] ?? []),
                     'sheets_keys' => array_keys($excelData['parameters']['sheets'] ?? []),
                 ]);
-                
+
                 return $excelData;
             }
 
@@ -1062,19 +1130,20 @@ class GenerateReportJob implements ShouldQueue
                 'labels' => [], // Will be populated by template based on language
             ]);
 
-            Log::debug("Student history data merged (Job)", [
-                'has_student' => !empty($mergedData['student']),
-                'has_summary' => !empty($mergedData['summary']),
-                'has_sections' => !empty($mergedData['sections']),
+            Log::debug('Student history data merged (Job)', [
+                'has_student' => ! empty($mergedData['student']),
+                'has_summary' => ! empty($mergedData['summary']),
+                'has_sections' => ! empty($mergedData['sections']),
                 'student_name' => $mergedData['student']['full_name'] ?? 'N/A',
             ]);
 
             return $mergedData;
         } catch (\Exception $e) {
-            Log::error("Failed to fetch student history data (Job): " . $e->getMessage(), [
+            Log::error('Failed to fetch student history data (Job): '.$e->getMessage(), [
                 'student_id' => $studentId,
                 'error' => $e->getTraceAsString(),
             ]);
+
             // Return original data on error
             return $data;
         }
@@ -1100,8 +1169,8 @@ class GenerateReportJob implements ShouldQueue
                     ['field' => 'Father Name', 'value' => $student['fatherName'] ?? ''],
                     ['field' => 'Status', 'value' => $student['status'] ?? ''],
                     ['field' => 'Total Academic Years', 'value' => (string) ($summary['totalAcademicYears'] ?? 0)],
-                    ['field' => 'Attendance Rate', 'value' => ($summary['attendanceRate'] ?? 0) . '%'],
-                    ['field' => 'Average Exam Score', 'value' => ($summary['averageExamScore'] ?? 0) . '%'],
+                    ['field' => 'Attendance Rate', 'value' => ($summary['attendanceRate'] ?? 0).'%'],
+                    ['field' => 'Average Exam Score', 'value' => ($summary['averageExamScore'] ?? 0).'%'],
                     ['field' => 'Outstanding Fees', 'value' => (string) ($summary['outstandingFees'] ?? 0)],
                 ],
             ],
@@ -1139,7 +1208,7 @@ class GenerateReportJob implements ShouldQueue
                         'className' => $exam['className'] ?? '',
                         'totalMarks' => (string) ($exam['totalMarks'] ?? 0),
                         'maxMarks' => (string) ($exam['maxMarks'] ?? 0),
-                        'percentage' => ($exam['percentage'] ?? 0) . '%',
+                        'percentage' => ($exam['percentage'] ?? 0).'%',
                     ];
                 }, $sections['exams']['exams'] ?? []),
             ],
@@ -1205,7 +1274,7 @@ class GenerateReportJob implements ShouldQueue
                         'present' => (string) ($item['present'] ?? 0),
                         'absent' => (string) ($item['absent'] ?? 0),
                         'late' => (string) ($item['late'] ?? 0),
-                        'rate' => round($item['rate'] ?? 0, 2) . '%',
+                        'rate' => round($item['rate'] ?? 0, 2).'%',
                     ];
                 }, $sections['attendance']['monthlyBreakdown'] ?? []),
             ],

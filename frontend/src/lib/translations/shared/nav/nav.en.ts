@@ -51,6 +51,7 @@ export default {
     examMarks: "Exam Marks",
     examReports: "Exam Reports",
     examRollNumbers: "Roll Numbers",
+    examSeatingMaps: "Seating Maps",
     exams: "Exams",
     examSecretNumbers: "Secret Numbers",
     examStudentEnrollment: "Student Enrollment",

@@ -51,6 +51,7 @@ export default {
     examMarks: "درجات الامتحانات",
     examReports: "تقارير الامتحانات",
     examRollNumbers: "Roll Numbers",
+    examSeatingMaps: "Seating Maps",
     exams: "الامتحانات",
     examSecretNumbers: "Secret Numbers",
     examStudentEnrollment: "تسجيل الطلاب",
