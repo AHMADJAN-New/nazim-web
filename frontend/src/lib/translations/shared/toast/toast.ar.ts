@@ -6,7 +6,7 @@
 export default {
   toast: {
     admissionsCreated: "تم إنشاء {count} سجل(ات) قبول",
-    allStudentsEnrolled: "All students enrolled",
+    allStudentsEnrolled: "تم تسجيل {enrolled} طالب في جميع الصفوف. {skipped} مسجلون مسبقاً.",
     articleCreated: "Article created successfully",
     articleCreateFailed: "Failed to create article",
     articleDeleted: "Article deleted successfully",

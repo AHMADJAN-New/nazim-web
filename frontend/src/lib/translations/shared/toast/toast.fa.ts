@@ -6,7 +6,7 @@
 export default {
   toast: {
     admissionsCreated: "{count} ریکارد(های) شمولیت ایجاد شد",
-    allStudentsEnrolled: "تمام شاگردان شامل شدند",
+    allStudentsEnrolled: "{enrolled} شاگرد در تمام صنف‌ها ثبت‌نام شد. {skipped} قبلاً ثبت‌نام شده بودند.",
     articleCreated: "مقاله با موفقیت ایجاد شد",
     articleCreateFailed: "ایجاد مقاله ناموفق بود",
     articleDeleted: "مقاله با موفقیت حذف شد",

@@ -6,7 +6,7 @@
 export default {
   toast: {
     admissionsCreated: "{count} د داخلې ریکارډ(ونه) جوړ شول",
-    allStudentsEnrolled: "ټول زده کوونکي شامل شول",
+    allStudentsEnrolled: "په ټولو ټولګیو کې {enrolled} زده کوونکي شامل شول. {skipped} مخکې شامل و.",
     articleCreated: "مقاله په بریالیتوب سره جوړه شوه",
     articleCreateFailed: "د مقالې جوړول ناکام شول",
     articleDeleted: "مقاله په بریالیتوب سره ړنګه شوه",
@@ -553,10 +553,10 @@ export default {
     schoolRulesUpdated: "د ښوونځي قوانین په بریالیتوب سره تازه شول",
     schoolRulesUpdateFailed: "د ښوونځي قوانینو د تازه کولو کې پاتې راغی",
     secretNumberAssignFailed: "د پټو شمېرو سپارل ناکام شول",
-    secretNumbersAssigned: "پټې شمېرې وسپارل شوې",
-    secretNumbersAssignedWithErrors: "پټې شمېرې د تېروتنو سره وسپارل شوې",
+    secretNumbersAssigned: "رقم السري  وسپارل شوې",
+    secretNumbersAssignedWithErrors: "رقم السري  د تېروتنو سره وسپارل شوې",
     secretNumberUpdated: "پټه شمېره تازه شوه",
-    secretNumberUpdateFailed: "د پټې شمېرې تازه کول ناکام شول",
+    secretNumberUpdateFailed: "د رقم السري  تازه کول ناکام شول",
     studentEnrollFailed: "د زده کوونکي شاملول ناکام شول",
     studentInformationUpdated: "د زده کوونکي معلومات تازه شول",
     studentRegistered: "زده کوونکی په بریالیتوب سره ثبت شو",

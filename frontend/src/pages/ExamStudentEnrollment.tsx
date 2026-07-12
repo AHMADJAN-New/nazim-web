@@ -64,6 +64,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export function ExamStudentEnrollment() {
   const { t } = useLanguage();
@@ -91,6 +97,8 @@ export function ExamStudentEnrollment() {
   const [showBulkEnroll, setShowBulkEnroll] = useState(false);
   const [studentToRemove, setStudentToRemove] = useState<ExamStudent | null>(null);
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
+  const [isEnrollAllClassesDialogOpen, setIsEnrollAllClassesDialogOpen] = useState(false);
+  const [isEnrollClassDialogOpen, setIsEnrollClassDialogOpen] = useState(false);
 
   // Fetch exam classes and students
   const { data: examClasses, isLoading: classesLoading } = useExamClasses(selectedExam?.id);
@@ -219,7 +227,14 @@ export function ExamStudentEnrollment() {
   const bulkEnrollStudents = useBulkEnrollStudents();
   const removeStudent = useRemoveStudentFromExam();
 
-  const hasAssign = useHasPermission('exams.assign');
+  const hasEnrollStudents = useHasPermission('exams.enroll_students');
+
+  const selectedClassLabel = useMemo(() => {
+    if (!selectedExamClass) return '';
+    const className = selectedExamClass.classAcademicYear?.class?.name ?? '';
+    const section = selectedExamClass.classAcademicYear?.sectionName;
+    return section ? `${className} - ${section}` : className;
+  }, [selectedExamClass]);
 
   // Handlers
   const handleEnroll = () => {
@@ -262,6 +277,34 @@ export function ExamStudentEnrollment() {
     });
   };
 
+  const handleEnrollEntireClass = () => {
+    if (!selectedExam?.id || !selectedExamClass?.id) return;
+
+    bulkEnrollStudents.mutate(
+      {
+        exam_id: selectedExam.id,
+        exam_class_id: selectedExamClass.id,
+      },
+      {
+        onSuccess: () => {
+          setIsEnrollClassDialogOpen(false);
+          setSelectedStudentIds([]);
+        },
+      }
+    );
+  };
+
+  const handleEnrollAllClasses = () => {
+    if (!selectedExam?.id) return;
+
+    enrollAllStudents.mutate(selectedExam.id, {
+      onSuccess: () => {
+        setIsEnrollAllClassesDialogOpen(false);
+        setSelectedStudentIds([]);
+      },
+    });
+  };
+
   const toggleStudentSelection = (studentId: string) => {
     setSelectedStudentIds(prev => 
       prev.includes(studentId) 
@@ -298,16 +341,28 @@ export function ExamStudentEnrollment() {
                   </Badge>
                 </>
               )}
-              {selectedExam && hasAssign && (
-                <Button 
-                  variant="default"
-                  onClick={() => enrollAllStudents.mutate(selectedExam.id)}
-                  disabled={enrollAllStudents.isPending}
-                  className="flex-shrink-0"
-                >
-                  <UsersRound className="h-4 w-4 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">{t('exams.enrollAllClasses') || 'Enroll All Classes'}</span>
-                </Button>
+              {selectedExam && hasEnrollStudents && (examClasses?.length ?? 0) > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="default"
+                        onClick={() => setIsEnrollAllClassesDialogOpen(true)}
+                        disabled={enrollAllStudents.isPending}
+                        className="flex-shrink-0"
+                        aria-label={t('exams.enrollAllClasses') || 'Enroll All Classes'}
+                      >
+                        <UsersRound className="h-4 w-4" />
+                        <span className="hidden sm:inline sm:ml-2 text-xs sm:text-sm">
+                          {t('exams.enrollAllClasses') || 'Enroll All Classes'}
+                        </span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="sm:hidden">
+                      <p>{t('exams.enrollAllClasses') || 'Enroll All Classes'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
           }
@@ -446,6 +501,54 @@ export function ExamStudentEnrollment() {
                       </SelectContent>
                     </Select>
                   </div>
+                )}
+
+                {selectedExam && hasEnrollStudents && (examClasses?.length ?? 0) > 0 && (
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader className="pb-2 pt-4">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <UsersRound className="h-4 w-4 text-primary" />
+                        {t('exams.bulkEnrollment') || 'Bulk Enrollment'}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {t('exams.bulkEnrollmentDescription') || 'Enroll all active students at once'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2 pb-4">
+                      {selectedExamClass && (
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start gap-2"
+                          onClick={() => setIsEnrollClassDialogOpen(true)}
+                          disabled={
+                            bulkEnrollStudents.isPending ||
+                            enrollAllStudents.isPending ||
+                            stats.availableCount === 0
+                          }
+                        >
+                          <UserPlus className="h-4 w-4 shrink-0" />
+                          <span className="truncate text-left text-xs sm:text-sm">
+                            {t('exams.enrollClassStudents') || 'Enroll Entire Class'}
+                          </span>
+                        </Button>
+                      )}
+                      <Button
+                        variant="default"
+                        className="w-full justify-start gap-2"
+                        onClick={() => setIsEnrollAllClassesDialogOpen(true)}
+                        disabled={bulkEnrollStudents.isPending || enrollAllStudents.isPending}
+                      >
+                        <UsersRound className="h-4 w-4 shrink-0" />
+                        <span className="truncate text-left text-xs sm:text-sm">
+                          {t('exams.enrollAllClasses') || 'Enroll All Classes'}
+                        </span>
+                      </Button>
+                      <p className="text-xs text-muted-foreground pt-1">
+                        {t('exams.bulkEnrollmentHint', { count: examClasses?.length ?? 0 }) ||
+                          `Covers ${examClasses?.length ?? 0} class(es) assigned to this exam.`}
+                      </p>
+                    </CardContent>
+                  </Card>
                 )}
 
                 {!selectedExam && (
@@ -798,7 +901,7 @@ export function ExamStudentEnrollment() {
                                       {examStudent.examClass?.classAcademicYear?.class?.name || '—'}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                      {hasAssign && (
+                                      {hasEnrollStudents && (
                                         <Button
                                           variant="ghost"
                                           size="icon"
@@ -849,6 +952,60 @@ export function ExamStudentEnrollment() {
               className="bg-destructive text-destructive-foreground"
             >
               {t('events.remove') || 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Enroll entire class confirmation */}
+      <AlertDialog open={isEnrollClassDialogOpen} onOpenChange={setIsEnrollClassDialogOpen}>
+        <AlertDialogContent className="w-[95vw] sm:max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('exams.enrollClassStudentsConfirm') || 'Enroll entire class?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('exams.enrollClassStudentsConfirmDescription', {
+                className: selectedClassLabel,
+                count: stats.availableCount,
+              }) ||
+                `This will enroll all ${stats.availableCount} active student(s) from ${selectedClassLabel || 'the selected class'} who are not already in this exam.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEnrollEntireClass}
+              disabled={bulkEnrollStudents.isPending}
+            >
+              {t('exams.enrollClassStudents') || 'Enroll Entire Class'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Enroll all classes confirmation */}
+      <AlertDialog open={isEnrollAllClassesDialogOpen} onOpenChange={setIsEnrollAllClassesDialogOpen}>
+        <AlertDialogContent className="w-[95vw] sm:max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('exams.enrollAllClassesConfirm') || 'Enroll all classes?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('exams.enrollAllClassesConfirmDescription', {
+                examName: selectedExam?.name ?? '',
+                count: examClasses?.length ?? 0,
+              }) ||
+                `This will enroll all active students from all ${examClasses?.length ?? 0} class(es) in "${selectedExam?.name ?? 'this exam'}". Students already enrolled will be skipped.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEnrollAllClasses}
+              disabled={enrollAllStudents.isPending}
+            >
+              {t('exams.enrollAllClasses') || 'Enroll All Classes'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

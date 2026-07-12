@@ -6,7 +6,7 @@
 export default {
   toast: {
     admissionsCreated: "Created {count} admission record(s)",
-    allStudentsEnrolled: "All students enrolled",
+    allStudentsEnrolled: "Enrolled {enrolled} students across all classes. {skipped} already enrolled.",
     articleCreated: "Article created successfully",
     articleCreateFailed: "Failed to create article",
     articleDeleted: "Article deleted successfully",

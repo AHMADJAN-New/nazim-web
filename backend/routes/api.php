@@ -877,6 +877,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/exam-subjects', [ExamSubjectController::class, 'index']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/exam-subjects', [ExamSubjectController::class, 'store']);
+                Route::post('/exam-subjects/bulk-assign-all', [ExamSubjectController::class, 'bulkAssignAll']);
+                Route::post('/exam-subjects/bulk-update-marks', [ExamSubjectController::class, 'bulkUpdateMarks']);
                 Route::put('/exam-subjects/{exam_subject}', [ExamSubjectController::class, 'update']);
                 Route::delete('/exam-subjects/{exam_subject}', [ExamSubjectController::class, 'destroy']);
             });

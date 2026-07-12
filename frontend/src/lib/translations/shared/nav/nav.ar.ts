@@ -45,6 +45,7 @@ export default {
     examAnalytics: "Exam Analytics",
     examAttendance: "Exam Attendance",
     examEnrollment: "تسجيل الفصول والمواد",
+    examClassesSubjects: "الصفوف والمواد",
     examInsights: "Exam Insights",
     examManagement: "Exam Management",
     examMarks: "درجات الامتحانات",

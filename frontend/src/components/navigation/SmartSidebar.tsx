@@ -342,6 +342,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasTimetablesPermission = useHasPermissionAndFeature('timetables.read');
   const hasExamsPermission = useHasPermissionAndFeature('exams.read');
   const hasExamsManagePermission = useHasPermissionAndFeature('exams.manage');
+  const hasExamsAssignSubjectsPermission = useHasPermissionAndFeature('exams.assign');
   const hasExamsTimetablePermission = useHasPermissionAndFeature('exams.manage_timetable');
   const hasExamsEnrollPermission = useHasPermissionAndFeature('exams.enroll_students');
   const hasExamsMarksPermission = useHasPermissionAndFeature('exams.enter_marks');
@@ -1099,7 +1100,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: Clock,
           }] : []),
           // Exam Management Submenu (Enrollment, Student Enrollment, Roll Numbers, Secret Numbers)
-          ...((hasExamsManagePermission || hasExamsEnrollPermission || hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission || hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
+          ...((hasExamsManagePermission || hasExamsAssignSubjectsPermission || hasExamsEnrollPermission || hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission || hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
             title: "Exam Management",
             titleKey: "examManagement",
             icon: Wrench,
@@ -1109,6 +1110,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
                 titleKey: "examEnrollment",
                 url: "/exams/enrollment",
                 icon: BadgeCheck,
+              }] : []),
+              ...((hasExamsManagePermission || hasExamsAssignSubjectsPermission) ? [{
+                title: "Classes & Subjects",
+                titleKey: "examClassesSubjects",
+                url: "/exams/classes-subjects",
+                icon: Layers,
               }] : []),
               ...(hasExamsEnrollPermission ? [{
                 title: "Student Enrollment",

@@ -1251,6 +1251,13 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/exams/classes-subjects" element={
+                      <AnyPermissionRoute permissions={['exams.manage', 'exams.assign']}>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamClassesSubjectsPage />
+                        </Suspense>
+                      </AnyPermissionRoute>
+                    } />
                     <Route path="/exams/:examId/classes-subjects" element={
                       <PermissionRoute permission="exams.manage">
                         <Suspense fallback={<PageSkeleton />}>

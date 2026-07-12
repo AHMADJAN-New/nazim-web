@@ -45,6 +45,7 @@ export default {
     examAnalytics: "Exam Analytics",
     examAttendance: "Exam Attendance",
     examEnrollment: "Class and Subject Enrollment",
+    examClassesSubjects: "Classes & Subjects",
     examInsights: "Exam Insights",
     examManagement: "Exam Management",
     examMarks: "Exam Marks",

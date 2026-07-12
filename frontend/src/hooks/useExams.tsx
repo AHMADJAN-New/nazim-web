@@ -334,6 +334,56 @@ export const useUpdateExamSubject = () => {
   });
 };
 
+export const useBulkAssignAllExamSubjects = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: (payload: {
+      exam_id: string;
+      total_marks?: number | null;
+      passing_marks?: number | null;
+    }) => examSubjectsApi.bulkAssignAll(payload),
+    onSuccess: async (result, variables) => {
+      const assigned = result?.assigned_count ?? 0;
+      const skipped = result?.skipped_count ?? 0;
+      showToast.success(
+        t('exams.bulkAssignSubjectsSuccess', { count: assigned, skipped }) ||
+          `Assigned ${assigned} subject(s). ${skipped} already assigned.`
+      );
+      await queryClient.invalidateQueries({ queryKey: ['exam-subjects', variables.exam_id] });
+      await queryClient.refetchQueries({ queryKey: ['exam-subjects', variables.exam_id] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('exams.bulkAssignSubjectsFailed') || 'Failed to bulk assign subjects');
+    },
+  });
+};
+
+export const useBulkUpdateExamSubjectMarks = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: (payload: {
+      exam_id: string;
+      total_marks: number;
+      passing_marks: number;
+      only_unset?: boolean;
+    }) => examSubjectsApi.bulkUpdateMarks(payload),
+    onSuccess: async (result, variables) => {
+      const updated = result?.updated_count ?? 0;
+      showToast.success(
+        t('exams.bulkUpdateMarksSuccess', { count: updated }) ||
+          `Updated marks for ${updated} subject(s).`
+      );
+      await queryClient.invalidateQueries({ queryKey: ['exam-subjects', variables.exam_id] });
+      await queryClient.refetchQueries({ queryKey: ['exam-subjects', variables.exam_id] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('exams.bulkUpdateMarksFailed') || 'Failed to bulk update marks');
+    },
+  });
+};
+
 // ========== Exam Timetable Hooks ==========
 
 export const useExamTimes = (examId?: string, examClassId?: string) => {

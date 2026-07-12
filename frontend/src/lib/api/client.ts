@@ -3771,6 +3771,34 @@ export const examSubjectsApi = {
   delete: async (id: string) => {
     return apiClient.delete(`/exam-subjects/${id}`);
   },
+
+  bulkAssignAll: async (data: {
+    exam_id: string;
+    total_marks?: number | null;
+    passing_marks?: number | null;
+  }) => {
+    return apiClient.post<{
+      message: string;
+      assigned_count: number;
+      skipped_count: number;
+      error_count: number;
+      assigned: string[];
+      skipped: Array<{ exam_class_id: string; class_subject_id: string; reason: string }>;
+      errors: Array<{ exam_class_id: string; class_subject_id: string; error: string }>;
+    }>('/exam-subjects/bulk-assign-all', data);
+  },
+
+  bulkUpdateMarks: async (data: {
+    exam_id: string;
+    total_marks: number;
+    passing_marks: number;
+    only_unset?: boolean;
+  }) => {
+    return apiClient.post<{
+      message: string;
+      updated_count: number;
+    }>('/exam-subjects/bulk-update-marks', data);
+  },
 };
 
 // Exam Students API

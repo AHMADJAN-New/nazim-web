@@ -45,6 +45,7 @@ export default {
     examAnalytics: "تحلیل امتحانات",
     examAttendance: "حاضري امتحان",
     examEnrollment: "شمولیت صنف و مضمون",
+    examClassesSubjects: "صنف‌ها و مضامین",
     examInsights: "بینش امتحانات",
     examManagement: "مدیریت امتحانات",
     examMarks: "نمرات امتحان",

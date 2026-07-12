@@ -1,8 +1,8 @@
 import { 
   ArrowLeft, Plus, Trash2, BookOpen, GraduationCap, CheckCircle2, Circle,
-  Settings2
+  Settings2, Layers, Pencil
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import {
@@ -24,6 +24,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -34,9 +35,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { 
-  useExam, useExamClasses, useExamSubjects,
+  useExam, useExamClasses, useExamSubjects, useExams, useLatestExamFromCurrentYear,
   useAssignClassToExam, useRemoveClassFromExam,
-  useEnrollSubjectToExam, useRemoveExamSubject, useUpdateExamSubject
+  useEnrollSubjectToExam, useRemoveExamSubject, useUpdateExamSubject,
+  useBulkAssignAllExamSubjects, useBulkUpdateExamSubjectMarks,
 } from '@/hooks/useExams';
 import { useClassSubjects } from '@/hooks/useSubjects';
 import { useProfile } from '@/hooks/useProfiles';
@@ -49,13 +51,41 @@ import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
 import type { ExamClass, ExamSubject } from '@/types/domain/exam';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export function ExamClassesSubjectsPage() {
   const { t } = useLanguage();
-  const { examId } = useParams<{ examId: string }>();
+  const { examId: examIdFromParams } = useParams<{ examId?: string }>();
   const navigate = useNavigate();
   const { data: profile } = useProfile();
   const organizationId = profile?.organization_id;
+
+  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
+  const examId = examIdFromParams || selectedExamId || undefined;
+
+  const { data: allExams } = useExams(organizationId);
+  const latestExam = useLatestExamFromCurrentYear(organizationId);
+
+  useEffect(() => {
+    if (examIdFromParams) {
+      setSelectedExamId(undefined);
+    }
+  }, [examIdFromParams]);
+
+  useEffect(() => {
+    if (!examIdFromParams && !selectedExamId) {
+      if (latestExam) {
+        setSelectedExamId(latestExam.id);
+      } else if (allExams && allExams.length > 0) {
+        setSelectedExamId(allExams[0].id);
+      }
+    }
+  }, [allExams, latestExam, selectedExamId, examIdFromParams]);
 
   // Data hooks
   const { data: exam, isLoading: examLoading } = useExam(examId);
@@ -69,6 +99,8 @@ export function ExamClassesSubjectsPage() {
   const enrollSubject = useEnrollSubjectToExam();
   const removeSubject = useRemoveExamSubject();
   const updateSubject = useUpdateExamSubject();
+  const bulkAssignAll = useBulkAssignAllExamSubjects();
+  const bulkUpdateMarks = useBulkUpdateExamSubjectMarks();
 
   // Permissions
   const hasManage = useHasPermission('exams.manage');
@@ -90,6 +122,13 @@ export function ExamClassesSubjectsPage() {
   const [subjectToRemove, setSubjectToRemove] = useState<ExamSubject | null>(null);
   const [isEditSubjectDialogOpen, setIsEditSubjectDialogOpen] = useState(false);
   const [subjectToEdit, setSubjectToEdit] = useState<ExamSubject | null>(null);
+  const [isBulkAssignDialogOpen, setIsBulkAssignDialogOpen] = useState(false);
+  const [isBulkMarksDialogOpen, setIsBulkMarksDialogOpen] = useState(false);
+  const [bulkFormData, setBulkFormData] = useState({
+    totalMarks: '100',
+    passingMarks: '40',
+  });
+  const [bulkMarksOnlyUnset, setBulkMarksOnlyUnset] = useState(false);
 
   // Get class subjects for the selected exam class
   const selectedExamClass = examClasses?.find(ec => ec.id === selectedExamClassId);
@@ -241,7 +280,115 @@ export function ExamClassesSubjectsPage() {
     setIsEditSubjectDialogOpen(true);
   };
 
-  const isLoading = examLoading || classesLoading || subjectsLoading;
+  const totalExamSubjects = examSubjects?.length || 0;
+  const subjectsWithoutMarks = examSubjects?.filter(
+    (s) => s.totalMarks == null || s.passingMarks == null
+  ).length || 0;
+
+  const handleBulkAssignAll = () => {
+    if (!examId) return;
+
+    const totalMarks = bulkFormData.totalMarks ? parseInt(bulkFormData.totalMarks, 10) : null;
+    const passingMarks = bulkFormData.passingMarks ? parseInt(bulkFormData.passingMarks, 10) : null;
+
+    if (
+      totalMarks != null &&
+      passingMarks != null &&
+      !Number.isNaN(totalMarks) &&
+      !Number.isNaN(passingMarks) &&
+      passingMarks > totalMarks
+    ) {
+      showToast.error(t('exams.passingMarksExceedTotal') || 'Passing marks cannot exceed total marks');
+      return;
+    }
+
+    bulkAssignAll.mutate(
+      {
+        exam_id: examId,
+        total_marks: totalMarks != null && !Number.isNaN(totalMarks) ? totalMarks : null,
+        passing_marks: passingMarks != null && !Number.isNaN(passingMarks) ? passingMarks : null,
+      },
+      {
+        onSuccess: () => {
+          setIsBulkAssignDialogOpen(false);
+        },
+      }
+    );
+  };
+
+  const handleBulkUpdateMarks = () => {
+    if (!examId) return;
+
+    const totalMarks = parseInt(bulkFormData.totalMarks, 10);
+    const passingMarks = parseInt(bulkFormData.passingMarks, 10);
+
+    if (Number.isNaN(totalMarks) || Number.isNaN(passingMarks)) {
+      showToast.error(t('exams.marksRequired') || 'Total marks and passing marks are required');
+      return;
+    }
+
+    if (passingMarks > totalMarks) {
+      showToast.error(t('exams.passingMarksExceedTotal') || 'Passing marks cannot exceed total marks');
+      return;
+    }
+
+    bulkUpdateMarks.mutate(
+      {
+        exam_id: examId,
+        total_marks: totalMarks,
+        passing_marks: passingMarks,
+        only_unset: bulkMarksOnlyUnset,
+      },
+      {
+        onSuccess: () => {
+          setIsBulkMarksDialogOpen(false);
+          setBulkMarksOnlyUnset(false);
+        },
+      }
+    );
+  };
+
+  const isLoading = !!examId && (examLoading || classesLoading || subjectsLoading);
+
+  if (!examId) {
+    return (
+      <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
+        <div>
+          <h1 className="text-2xl font-semibold">{t('exams.classesSubjects') || 'Classes & Subjects'}</h1>
+          <p className="text-sm text-muted-foreground">
+            {t('exams.classesSubjectsDescription') || 'Manage classes and subjects for this exam'}
+          </p>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t('exams.selectExam') || 'Select Exam'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full max-w-md">
+              <Select
+                value={selectedExamId || ''}
+                onValueChange={(value) => setSelectedExamId(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('exams.selectExamPlaceholder') || 'Select an exam...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {allExams?.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name} {e.academicYear?.name ? `(${e.academicYear.name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">{t('exams.selectExamFirst') || 'Please select an exam to continue'}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -269,20 +416,49 @@ export function ExamClassesSubjectsPage() {
   const canModify = (hasManage || hasAssign) && ['draft', 'scheduled'].includes(exam.status);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/exams')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-semibold">{exam.name}</h1>
+          <h1 className="text-2xl font-semibold">
+            {!examIdFromParams ? (t('exams.classesSubjects') || 'Classes & Subjects') : exam.name}
+          </h1>
           <p className="text-sm text-muted-foreground">
             {t('exams.classesSubjectsDescription') || 'Manage classes and subjects for this exam'}
           </p>
         </div>
         <Badge variant="outline">{exam.academicYear?.name || 'N/A'}</Badge>
       </div>
+
+      {!examIdFromParams && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t('exams.selectExam') || 'Select Exam'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full max-w-md">
+              <Select
+                value={selectedExamId || ''}
+                onValueChange={(value) => setSelectedExamId(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('exams.selectExamPlaceholder') || 'Select an exam...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {allExams?.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name} {e.academicYear?.name ? `(${e.academicYear.name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Progress Card */}
       <Card>
@@ -325,10 +501,66 @@ export function ExamClassesSubjectsPage() {
             </CardDescription>
           </div>
           {canModify && hasAssign && (
-            <Button onClick={() => setIsAddClassDialogOpen(true)} disabled={availableClassAcademicYears.length === 0}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t('exams.addClass') || 'Add Class'}
-            </Button>
+            <TooltipProvider>
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-shrink-0"
+                      onClick={() => {
+                        setBulkFormData({ totalMarks: '100', passingMarks: '40' });
+                        setIsBulkAssignDialogOpen(true);
+                      }}
+                      disabled={!examClasses || examClasses.length === 0}
+                      aria-label={t('exams.bulkAssignAllSubjects') || 'Assign All Subjects'}
+                    >
+                      <Layers className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-2">
+                        {t('exams.bulkAssignAllSubjects') || 'Assign All Subjects'}
+                      </span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="sm:hidden">
+                    <p>{t('exams.bulkAssignAllSubjects') || 'Assign All Subjects'}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-shrink-0"
+                      onClick={() => {
+                        setBulkFormData({ totalMarks: '100', passingMarks: '40' });
+                        setBulkMarksOnlyUnset(false);
+                        setIsBulkMarksDialogOpen(true);
+                      }}
+                      disabled={totalExamSubjects === 0}
+                      aria-label={t('exams.bulkEditMarks') || 'Bulk Edit Marks'}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-2">
+                        {t('exams.bulkEditMarks') || 'Bulk Edit Marks'}
+                      </span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="sm:hidden">
+                    <p>{t('exams.bulkEditMarks') || 'Bulk Edit Marks'}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Button
+                  onClick={() => setIsAddClassDialogOpen(true)}
+                  disabled={availableClassAcademicYears.length === 0}
+                  size="sm"
+                  className="flex-shrink-0"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">{t('exams.addClass') || 'Add Class'}</span>
+                </Button>
+              </div>
+            </TooltipProvider>
           )}
         </CardHeader>
         <CardContent>
@@ -666,6 +898,149 @@ export function ExamClassesSubjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Assign All Subjects Dialog */}
+      <Dialog open={isBulkAssignDialogOpen} onOpenChange={setIsBulkAssignDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('exams.bulkAssignAllSubjects') || 'Assign All Subjects'}</DialogTitle>
+            <DialogDescription>
+              {t('exams.bulkAssignAllSubjectsDescription') ||
+                'Assign every class subject from all assigned classes to this exam. Already assigned subjects will be skipped.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+              <p>
+                {t('exams.classesAssigned') || 'Classes Assigned'}:{' '}
+                <span className="font-medium">{totalClasses}</span>
+              </p>
+              <p>
+                {t('exams.subjectsAlreadyAssigned') || 'Subjects already assigned'}:{' '}
+                <span className="font-medium">{totalExamSubjects}</span>
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="bulk-assign-total-marks">{t('exams.totalMarks') || 'Total Marks'}</Label>
+                <Input
+                  id="bulk-assign-total-marks"
+                  type="number"
+                  min="0"
+                  value={bulkFormData.totalMarks}
+                  onChange={(e) => setBulkFormData({ ...bulkFormData, totalMarks: e.target.value })}
+                  placeholder="100"
+                />
+              </div>
+              <div>
+                <Label htmlFor="bulk-assign-passing-marks">{t('exams.passingMarks') || 'Passing Marks'}</Label>
+                <Input
+                  id="bulk-assign-passing-marks"
+                  type="number"
+                  min="0"
+                  max={bulkFormData.totalMarks || undefined}
+                  value={bulkFormData.passingMarks}
+                  onChange={(e) => setBulkFormData({ ...bulkFormData, passingMarks: e.target.value })}
+                  placeholder="40"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('exams.bulkAssignMarksHint') ||
+                'Optional default marks applied to newly assigned subjects. Leave blank to assign without marks.'}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBulkAssignDialogOpen(false)}>
+              {t('events.cancel') || 'Cancel'}
+            </Button>
+            <Button onClick={handleBulkAssignAll} disabled={bulkAssignAll.isPending || totalClasses === 0}>
+              {bulkAssignAll.isPending
+                ? (t('common.loading') || 'Loading...')
+                : (t('exams.bulkAssignAllSubjects') || 'Assign All Subjects')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Edit Marks Dialog */}
+      <Dialog open={isBulkMarksDialogOpen} onOpenChange={setIsBulkMarksDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('exams.bulkEditMarks') || 'Bulk Edit Marks'}</DialogTitle>
+            <DialogDescription>
+              {t('exams.bulkEditMarksDescription') ||
+                'Set the same total and passing marks for all subjects in this exam.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+              <p>
+                {t('exams.totalSubjects') || 'Total subjects'}:{' '}
+                <span className="font-medium">{totalExamSubjects}</span>
+              </p>
+              <p>
+                {t('exams.subjectsWithoutMarks') || 'Subjects without marks'}:{' '}
+                <span className="font-medium">{subjectsWithoutMarks}</span>
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="bulk-edit-total-marks">{t('exams.totalMarks') || 'Total Marks'} *</Label>
+                <Input
+                  id="bulk-edit-total-marks"
+                  type="number"
+                  min="0"
+                  value={bulkFormData.totalMarks}
+                  onChange={(e) => setBulkFormData({ ...bulkFormData, totalMarks: e.target.value })}
+                  placeholder="100"
+                />
+              </div>
+              <div>
+                <Label htmlFor="bulk-edit-passing-marks">{t('exams.passingMarks') || 'Passing Marks'} *</Label>
+                <Input
+                  id="bulk-edit-passing-marks"
+                  type="number"
+                  min="0"
+                  max={bulkFormData.totalMarks || undefined}
+                  value={bulkFormData.passingMarks}
+                  onChange={(e) => setBulkFormData({ ...bulkFormData, passingMarks: e.target.value })}
+                  placeholder="40"
+                />
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="bulk-marks-only-unset"
+                checked={bulkMarksOnlyUnset}
+                onCheckedChange={(checked) => setBulkMarksOnlyUnset(checked === true)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="bulk-marks-only-unset" className="font-normal cursor-pointer">
+                  {t('exams.bulkEditMarksOnlyUnset') || 'Only update subjects without marks'}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('exams.bulkEditMarksOnlyUnsetHint') ||
+                    'When checked, subjects that already have marks will not be changed.'}
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBulkMarksDialogOpen(false)}>
+              {t('events.cancel') || 'Cancel'}
+            </Button>
+            <Button
+              onClick={handleBulkUpdateMarks}
+              disabled={bulkUpdateMarks.isPending || totalExamSubjects === 0}
+            >
+              {bulkUpdateMarks.isPending
+                ? (t('common.loading') || 'Loading...')
+                : (t('exams.applyMarks') || 'Apply Marks')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
