@@ -753,12 +753,12 @@ export const permissionsManagementCatalogPs: PermissionsManagementCatalog = {
       "description": "لوستل — ازموینې"
     },
     "exams.roll_numbers.assign": {
-      "actionLabel": "د رول نمبر ټاکل",
-      "description": "د رول نمبر ټاکل — ازموینې"
+      "actionLabel": "د رقم الجلوس  ټاکل",
+      "description": "د رقم الجلوس  ټاکل — ازموینې"
     },
     "exams.roll_numbers.read": {
-      "actionLabel": "د رول نمبر لوستل",
-      "description": "د رول نمبر لوستل — ازموینې"
+      "actionLabel": "د رقم الجلوس  لوستل",
+      "description": "د رقم الجلوس  لوستل — ازموینې"
     },
     "exams.secret_numbers.assign": {
       "actionLabel": "د پټ نمبر ټاکل",

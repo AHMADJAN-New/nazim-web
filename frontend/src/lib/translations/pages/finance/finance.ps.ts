@@ -186,7 +186,7 @@ export default {
     referenceNumberPlaceholder: "د مرجع شمېره ولیکئ...",
     documentDate: "د سند نیټه",
     file: "فایل",
-    maxFileSize: "د فایل اعظمي اندازه: ۱۰ مېګابایټ",
+    maxFileSize: "د فایل ټول اندازه: ۱۰ مېګابایټ",
     documents: "اسناد",
     noDocuments: "هیڅ سند ونه موندل شو.",
     fileName: "د فایل نوم",

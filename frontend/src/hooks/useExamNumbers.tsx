@@ -326,7 +326,11 @@ export const useRollNumberReport = (examId?: string, examClassId?: string) => {
   });
 };
 
-export const useRollSlipsHtml = (examId?: string, examClassId?: string) => {
+export const useRollSlipsHtml = (
+  examId?: string,
+  examClassId?: string,
+  options?: { enabled?: boolean }
+) => {
   const { user, profile } = useAuth();
 
   return useQuery<RollSlipsHtmlResponse | null>({
@@ -348,7 +352,7 @@ export const useRollSlipsHtml = (examId?: string, examClassId?: string) => {
         throw error;
       }
     },
-    enabled: !!user && !!profile && !!examId,
+    enabled: !!user && !!profile && !!examId && (options?.enabled ?? true),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1, // Only retry once on failure
@@ -358,7 +362,8 @@ export const useRollSlipsHtml = (examId?: string, examClassId?: string) => {
 export const useSecretLabelsHtml = (
   examId?: string,
   examClassId?: string,
-  subjectId?: string
+  subjectId?: string,
+  options?: { enabled?: boolean }
 ) => {
   const { user, profile } = useAuth();
 
@@ -384,7 +389,7 @@ export const useSecretLabelsHtml = (
         throw error;
       }
     },
-    enabled: !!user && !!profile && !!examId,
+    enabled: !!user && !!profile && !!examId && (options?.enabled ?? true),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1, // Only retry once on failure

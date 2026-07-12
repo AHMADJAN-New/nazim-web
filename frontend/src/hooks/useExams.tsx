@@ -418,6 +418,7 @@ export const useCreateExamTime = () => {
     onSuccess: () => {
       showToast.success(t('toast.examTimeCreated') || 'Exam time slot created');
       void queryClient.invalidateQueries({ queryKey: ['exam-times'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-report'] });
     },
     onError: (error: Error) => {
       showToast.error(error?.message || t('toast.examTimeCreateFailed') || 'Failed to create time slot');
@@ -436,6 +437,7 @@ export const useUpdateExamTime = () => {
     onSuccess: () => {
       showToast.success(t('toast.examTimeUpdated') || 'Exam time slot updated');
       void queryClient.invalidateQueries({ queryKey: ['exam-times'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-report'] });
     },
     onError: (error: Error) => {
       showToast.error(error?.message || t('toast.examTimeUpdateFailed') || 'Failed to update time slot');
@@ -451,6 +453,7 @@ export const useDeleteExamTime = () => {
     onSuccess: async () => {
       showToast.success(t('toast.examTimeDeleted') || 'Exam time slot deleted');
       await queryClient.invalidateQueries({ queryKey: ['exam-times'] });
+      await queryClient.invalidateQueries({ queryKey: ['exam-report'] });
     },
     onError: (error: Error) => {
       showToast.error(error?.message || t('toast.examTimeDeleteFailed') || 'Failed to delete time slot');
@@ -513,6 +516,7 @@ export const useBulkReplaceExamTimes = () => {
       showToast.success(t('toast.examTimetableApplied') || 'Exam timetable applied');
       await queryClient.invalidateQueries({ queryKey: ['exam-times'] });
       await queryClient.refetchQueries({ queryKey: ['exam-times'] });
+      await queryClient.invalidateQueries({ queryKey: ['exam-report'] });
     },
     onError: (error: Error) => {
       showToast.error(error?.message || t('toast.examTimetableApplyFailed') || 'Failed to apply exam timetable');

@@ -7,6 +7,7 @@ use App\Models\ExamClass;
 use App\Models\ExamSubject;
 use App\Models\ExamTime;
 use App\Services\ActivityLogService;
+use App\Services\ExamSubjectScheduleService;
 use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,9 +17,10 @@ class ExamTimeController extends Controller
 {
     public function __construct(
         private ActivityLogService $activityLogService,
-        private NotificationService $notificationService
-    ) {
-    }
+        private NotificationService $notificationService,
+        private ExamSubjectScheduleService $examSubjectScheduleService
+    ) {}
+
     /**
      * Get all exam times for an exam
      */
@@ -27,22 +29,23 @@ class ExamTimeController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.read')) {
+            if (! $user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.read: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -53,16 +56,16 @@ class ExamTimeController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         $query = ExamTime::with([
-                'examClass.classAcademicYear.class',
-                'examSubject.subject',
-                'room',
-                'invigilator'
-            ])
+            'examClass.classAcademicYear.class',
+            'examSubject.subject',
+            'room',
+            'invigilator',
+        ])
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->where('exam_id', $examId)
@@ -96,22 +99,23 @@ class ExamTimeController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_timetable')) {
+            if (! $user->hasPermissionTo('exams.manage_timetable')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_timetable: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_timetable: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -122,7 +126,7 @@ class ExamTimeController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -130,7 +134,7 @@ class ExamTimeController extends Controller
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot add timetable to a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -153,7 +157,7 @@ class ExamTimeController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examClass) {
+        if (! $examClass) {
             return response()->json(['error' => 'Exam class does not belong to this exam'], 422);
         }
 
@@ -166,12 +170,12 @@ class ExamTimeController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examSubject) {
+        if (! $examSubject) {
             return response()->json(['error' => 'Exam subject does not belong to this exam class'], 422);
         }
 
         // Validate date is within exam period
-        if (!$exam->isDateWithinPeriod($validated['date'])) {
+        if (! $exam->isDateWithinPeriod($validated['date'])) {
             return response()->json([
                 'error' => 'Date must be within the exam period',
                 'exam_start_date' => $exam->start_date?->format('Y-m-d'),
@@ -187,7 +191,7 @@ class ExamTimeController extends Controller
         }
 
         // Check for room conflicts if room is specified
-        if (!empty($validated['room_id'])) {
+        if (! empty($validated['room_id'])) {
             $roomConflict = ExamTime::where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
                 ->where('room_id', $validated['room_id'])
@@ -196,7 +200,7 @@ class ExamTimeController extends Controller
                 ->where(function ($query) use ($validated) {
                     $query->where(function ($q) use ($validated) {
                         $q->where('start_time', '<', $validated['end_time'])
-                          ->where('end_time', '>', $validated['start_time']);
+                            ->where('end_time', '>', $validated['start_time']);
                     });
                 })
                 ->first();
@@ -208,7 +212,7 @@ class ExamTimeController extends Controller
                         'date' => $roomConflict->date,
                         'start_time' => $roomConflict->start_time,
                         'end_time' => $roomConflict->end_time,
-                    ]
+                    ],
                 ], 422);
             }
         }
@@ -224,7 +228,7 @@ class ExamTimeController extends Controller
 
         if ($duplicateSubject) {
             return response()->json([
-                'error' => 'This subject is already scheduled at this date and time'
+                'error' => 'This subject is already scheduled at this date and time',
             ], 422);
         }
 
@@ -248,7 +252,7 @@ class ExamTimeController extends Controller
             'examSubject.subject',
             'room',
             'invigilator',
-            'exam'
+            'exam',
         ]);
 
         // Notify about timetable update
@@ -293,8 +297,10 @@ class ExamTimeController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log exam time creation: ' . $e->getMessage());
+            Log::warning('Failed to log exam time creation: '.$e->getMessage());
         }
+
+        $this->examSubjectScheduleService->syncExamSubject($examTime->exam_subject_id);
 
         return response()->json($examTime, 201);
     }
@@ -307,22 +313,23 @@ class ExamTimeController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_timetable')) {
+            if (! $user->hasPermissionTo('exams.manage_timetable')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_timetable: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_timetable: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -332,7 +339,7 @@ class ExamTimeController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examTime) {
+        if (! $examTime) {
             return response()->json(['error' => 'Exam time not found'], 404);
         }
 
@@ -346,13 +353,13 @@ class ExamTimeController extends Controller
         if ($exam && $exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot modify timetable for a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
         // Capture old values before update
         $oldValues = $examTime->only([
-            'date', 'start_time', 'end_time', 'room_id', 'invigilator_id', 'notes', 'is_locked'
+            'date', 'start_time', 'end_time', 'room_id', 'invigilator_id', 'notes', 'is_locked',
         ]);
 
         $validated = $request->validate([
@@ -367,7 +374,7 @@ class ExamTimeController extends Controller
 
         // Validate date is within exam period
         $newDate = $validated['date'] ?? $examTime->date;
-        if ($exam && !$exam->isDateWithinPeriod($newDate)) {
+        if ($exam && ! $exam->isDateWithinPeriod($newDate)) {
             return response()->json([
                 'error' => 'Date must be within the exam period',
                 'exam_start_date' => $exam->start_date?->format('Y-m-d'),
@@ -378,7 +385,7 @@ class ExamTimeController extends Controller
         // Validate time consistency
         $startTime = $validated['start_time'] ?? $examTime->start_time;
         $endTime = $validated['end_time'] ?? $examTime->end_time;
-        
+
         $start = \Carbon\Carbon::createFromFormat('H:i', $startTime);
         $end = \Carbon\Carbon::createFromFormat('H:i', $endTime);
         if ($end->lte($start)) {
@@ -397,7 +404,7 @@ class ExamTimeController extends Controller
                 ->where(function ($query) use ($startTime, $endTime) {
                     $query->where(function ($q) use ($startTime, $endTime) {
                         $q->where('start_time', '<', $endTime)
-                          ->where('end_time', '>', $startTime);
+                            ->where('end_time', '>', $startTime);
                     });
                 })
                 ->first();
@@ -409,7 +416,7 @@ class ExamTimeController extends Controller
                         'date' => $roomConflict->date,
                         'start_time' => $roomConflict->start_time,
                         'end_time' => $roomConflict->end_time,
-                    ]
+                    ],
                 ], 422);
             }
         }
@@ -422,7 +429,7 @@ class ExamTimeController extends Controller
             'examSubject.subject',
             'room',
             'invigilator',
-            'exam'
+            'exam',
         ]);
 
         // Notify about timetable update
@@ -460,14 +467,16 @@ class ExamTimeController extends Controller
                     'exam_id' => $examTime->exam_id,
                     'old_values' => $oldValues,
                     'new_values' => $examTime->only([
-                        'date', 'start_time', 'end_time', 'room_id', 'invigilator_id', 'notes', 'is_locked'
+                        'date', 'start_time', 'end_time', 'room_id', 'invigilator_id', 'notes', 'is_locked',
                     ]),
                 ],
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log exam time update: ' . $e->getMessage());
+            Log::warning('Failed to log exam time update: '.$e->getMessage());
         }
+
+        $this->examSubjectScheduleService->syncExamSubject($examTime->exam_subject_id);
 
         return response()->json($examTime);
     }
@@ -480,22 +489,23 @@ class ExamTimeController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_timetable')) {
+            if (! $user->hasPermissionTo('exams.manage_timetable')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_timetable: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_timetable: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -505,7 +515,7 @@ class ExamTimeController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examTime) {
+        if (! $examTime) {
             return response()->json(['error' => 'Exam time not found'], 404);
         }
 
@@ -519,7 +529,7 @@ class ExamTimeController extends Controller
         if ($exam && $exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot delete timetable for a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -527,7 +537,7 @@ class ExamTimeController extends Controller
         $examTime->load([
             'examClass.classAcademicYear.class',
             'examSubject.subject',
-            'exam'
+            'exam',
         ]);
 
         // Log exam time deletion
@@ -551,10 +561,14 @@ class ExamTimeController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log exam time deletion: ' . $e->getMessage());
+            Log::warning('Failed to log exam time deletion: '.$e->getMessage());
         }
 
+        $examSubjectId = $examTime->exam_subject_id;
+
         $examTime->delete();
+
+        $this->examSubjectScheduleService->syncExamSubject($examSubjectId);
 
         return response()->noContent();
     }
@@ -567,22 +581,23 @@ class ExamTimeController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_timetable')) {
+            if (! $user->hasPermissionTo('exams.manage_timetable')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_timetable: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_timetable: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -592,19 +607,19 @@ class ExamTimeController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examTime) {
+        if (! $examTime) {
             return response()->json(['error' => 'Exam time not found'], 404);
         }
 
         $wasLocked = $examTime->is_locked;
-        $examTime->is_locked = !$examTime->is_locked;
+        $examTime->is_locked = ! $examTime->is_locked;
         $examTime->save();
 
         $examTime->load([
             'examClass.classAcademicYear.class',
             'examSubject.subject',
             'room',
-            'invigilator'
+            'invigilator',
         ]);
 
         // Log lock/unlock event
@@ -626,12 +641,12 @@ class ExamTimeController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log exam time lock toggle: ' . $e->getMessage());
+            Log::warning('Failed to log exam time lock toggle: '.$e->getMessage());
         }
 
         return response()->json([
             'message' => $examTime->is_locked ? 'Time slot locked' : 'Time slot unlocked',
-            'exam_time' => $examTime
+            'exam_time' => $examTime,
         ]);
     }
 
@@ -645,22 +660,23 @@ class ExamTimeController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_timetable')) {
+            if (! $user->hasPermissionTo('exams.manage_timetable')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_timetable: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_timetable: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -670,7 +686,7 @@ class ExamTimeController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -717,11 +733,11 @@ class ExamTimeController extends Controller
                     $dateKey = $locked->date instanceof \Carbon\Carbon
                         ? $locked->date->format('Y-m-d')
                         : substr((string) $locked->date, 0, 10);
-                    $lockedClassDates[$locked->exam_class_id . '|' . $dateKey] = true;
+                    $lockedClassDates[$locked->exam_class_id.'|'.$dateKey] = true;
                     $lockedSubjectIds[$locked->exam_subject_id] = true;
                     if ($locked->room_id) {
                         $start = substr((string) $locked->start_time, 0, 5);
-                        $lockedRooms[$locked->room_id . '|' . $dateKey . '|' . $start] = true;
+                        $lockedRooms[$locked->room_id.'|'.$dateKey.'|'.$start] = true;
                     }
                 }
 
@@ -742,7 +758,7 @@ class ExamTimeController extends Controller
                     $dateKey = substr((string) $row['date'], 0, 10);
                     $startTime = $row['start_time'];
                     $endTime = $row['end_time'];
-                    $classDateKey = $row['exam_class_id'] . '|' . $dateKey;
+                    $classDateKey = $row['exam_class_id'].'|'.$dateKey;
 
                     if (isset($lockedSubjectIds[$row['exam_subject_id']])) {
                         throw new \InvalidArgumentException(
@@ -777,7 +793,7 @@ class ExamTimeController extends Controller
                         ->whereNull('deleted_at')
                         ->first();
 
-                    if (!$examClass) {
+                    if (! $examClass) {
                         throw new \InvalidArgumentException(
                             "times.{$index}: Exam class does not belong to this exam"
                         );
@@ -791,13 +807,13 @@ class ExamTimeController extends Controller
                         ->whereNull('deleted_at')
                         ->first();
 
-                    if (!$examSubject) {
+                    if (! $examSubject) {
                         throw new \InvalidArgumentException(
                             "times.{$index}: Exam subject does not belong to this exam class"
                         );
                     }
 
-                    if (!$exam->isDateWithinPeriod($dateKey)) {
+                    if (! $exam->isDateWithinPeriod($dateKey)) {
                         throw new \InvalidArgumentException(
                             "times.{$index}: Date must be within the exam period"
                         );
@@ -813,7 +829,7 @@ class ExamTimeController extends Controller
 
                     $roomId = $row['room_id'] ?? null;
                     if ($roomId) {
-                        $roomKey = $roomId . '|' . $dateKey . '|' . $startTime;
+                        $roomKey = $roomId.'|'.$dateKey.'|'.$startTime;
                         if (isset($lockedRooms[$roomKey]) || isset($seenRooms[$roomKey])) {
                             throw new \InvalidArgumentException(
                                 "times.{$index}: Room is already booked at this date and time"
@@ -863,7 +879,8 @@ class ExamTimeController extends Controller
         } catch (\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         } catch (\Exception $e) {
-            Log::error('Exam timetable bulk replace failed: ' . $e->getMessage());
+            Log::error('Exam timetable bulk replace failed: '.$e->getMessage());
+
             return response()->json(['error' => 'Failed to replace exam timetable'], 500);
         }
 
@@ -890,7 +907,7 @@ class ExamTimeController extends Controller
             $this->activityLogService->logEvent(
                 subject: $exam,
                 event: 'exam_timetable_bulk_replaced',
-                description: "Bulk replaced exam timetable for {$exam->name} (" . count($created) . ' slots)',
+                description: "Bulk replaced exam timetable for {$exam->name} (".count($created).' slots)',
                 properties: [
                     'exam_id' => $examId,
                     'created_count' => count($created),
@@ -898,8 +915,14 @@ class ExamTimeController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log exam timetable bulk replace: ' . $e->getMessage());
+            Log::warning('Failed to log exam timetable bulk replace: '.$e->getMessage());
         }
+
+        $this->examSubjectScheduleService->syncExam(
+            $examId,
+            $profile->organization_id,
+            $currentSchoolId
+        );
 
         $examTimes = ExamTime::with([
             'examClass.classAcademicYear.class',

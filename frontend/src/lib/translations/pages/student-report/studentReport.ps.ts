@@ -66,7 +66,7 @@ export default {
     generating: " راپور  جوړېږي...",
     grade: "درجه",
     grandTotal: "ټول مجموعه",
-    maxMarks: "اعظمي نمرې",
+    maxMarks: "ټولې  نمرې",
     motherName: "د مور نوم",
     noExamsFound: "د دې زده کوونکي لپاره ازموینې ونه موندل شوې",
     noRemarks: "تبصرې نشته",

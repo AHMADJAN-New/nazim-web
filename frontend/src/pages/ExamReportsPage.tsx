@@ -102,8 +102,8 @@ export function ExamReportsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{t('nav.examReports') || 'Exam Reports'}</h1>
-            <p className="text-muted-foreground">{t('examReports.classSubjectEnrollmentDescription') || 'Overview of assigned classes and exam subjects with student counts.'}</p>
+            <h1 className="text-2xl font-bold">{t('nav.examAnalytics')}</h1>
+            <p className="text-muted-foreground">{t('exams.analyticsDescription')}</p>
           </div>
           {!examIdFromParams && (
             <div className="w-64">
@@ -207,7 +207,7 @@ export function ExamReportsPage() {
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-bold">{t('nav.examReports') || 'Exam Reports'}</h1>
+            <h1 className="text-2xl font-bold">{t('nav.examAnalytics')}</h1>
             <p className="text-muted-foreground">{exam.name}</p>
           </div>
         </div>

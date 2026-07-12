@@ -1,5 +1,5 @@
 import {
-  ArrowLeft, Printer, Download, FileText, Hash, KeyRound,
+  ArrowLeft, Printer, FileText, Hash, KeyRound,
   Search, List, Tag, AlertCircle, Eye, EyeOff
 } from 'lucide-react';
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
@@ -25,14 +25,45 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  useRollNumberReport,
+import { useRollNumberReport,
   useRollSlipsHtml,
   useSecretLabelsHtml,
 } from '@/hooks/useExamNumbers';
 import { useExam, useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useLanguage } from '@/hooks/useLanguage';
+import { showToast } from '@/lib/toast';
 import type { RollNumberReportStudent } from '@/types/domain/exam';
+
+/** Screen-only styles so A4/label pages center inside the preview iframe (print output unchanged). */
+function withPrintPreviewStyles(html: string): string {
+  const style = `<style id="nazim-print-preview">
+@media screen {
+  html, body {
+    margin: 0 !important;
+    padding: 12px !important;
+    width: 100% !important;
+    min-height: 100% !important;
+    box-sizing: border-box;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    background: #f3f4f6 !important;
+  }
+  .page {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-bottom: 16px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+  }
+}
+</style>`;
+  if (html.includes('</head>')) {
+    return html.replace('</head>', `${style}</head>`);
+  }
+  return `${style}${html}`;
+}
 
 export function ExamNumberReportsPage() {
   const { t } = useLanguage();
@@ -86,12 +117,13 @@ export function ExamNumberReportsPage() {
   const { data: rollSlipsHtml, isLoading: rollSlipsLoading, error: rollSlipsError } = useRollSlipsHtml(
     examId,
     selectedClassId,
-    printType === 'roll-slips' && showPrintPreview
+    { enabled: showPrintPreview && printType === 'roll-slips' }
   );
   const { data: secretLabelsHtml, isLoading: secretLabelsLoading, error: secretLabelsError } = useSecretLabelsHtml(
     examId,
     selectedClassId,
-    printType === 'secret-labels' && showPrintPreview
+    undefined,
+    { enabled: showPrintPreview && printType === 'secret-labels' }
   );
 
   // Permissions
@@ -119,9 +151,8 @@ export function ExamNumberReportsPage() {
       total: students.length,
       withRollNumber: students.filter(s => s.examRollNumber).length,
       missingRollNumber: students.filter(s => !s.examRollNumber).length,
-      // Note: examSecretNumber may not be available in roll number report
-      withSecretNumber: students.filter(s => (s as any).examSecretNumber).length,
-      missingSecretNumber: students.filter(s => !(s as any).examSecretNumber).length,
+      withSecretNumber: students.filter(s => s.examSecretNumber).length,
+      missingSecretNumber: students.filter(s => !s.examSecretNumber).length,
     };
   }, [reportData?.students]);
 
@@ -152,9 +183,7 @@ export function ExamNumberReportsPage() {
       const classSummary = classMap.get(key)!;
       classSummary.total++;
       if (student.examRollNumber) classSummary.withRollNumber++;
-      // Note: examSecretNumber may not be available in roll number report
-      // This will be 0 if not available, which is fine
-      if ((student as any).examSecretNumber) classSummary.withSecretNumber++;
+      if (student.examSecretNumber) classSummary.withSecretNumber++;
     });
 
     return Array.from(classMap.values());
@@ -177,9 +206,17 @@ export function ExamNumberReportsPage() {
 
   // Handle print
   const handlePrint = useCallback((type: 'roll-slips' | 'secret-labels') => {
+    if (type === 'secret-labels' && summary.withSecretNumber === 0) {
+      showToast.warning(t('exams.numberReports.emptySecretLabelsPreview'));
+      return;
+    }
+    if (type === 'roll-slips' && summary.withRollNumber === 0) {
+      showToast.warning(t('exams.numberReports.emptyRollSlipsPreview'));
+      return;
+    }
     setPrintType(type);
     setShowPrintPreview(true);
-  }, []);
+  }, [summary.withRollNumber, summary.withSecretNumber, t]);
 
   // Execute print using iframe
   const executePrint = useCallback(() => {
@@ -187,7 +224,8 @@ export function ExamNumberReportsPage() {
     if (!iframe) return;
 
     const htmlContent = printType === 'roll-slips' ? rollSlipsHtml?.html : secretLabelsHtml?.html;
-    if (!htmlContent) return;
+    const totalItems = printType === 'roll-slips' ? rollSlipsHtml?.totalSlips : secretLabelsHtml?.totalLabels;
+    if (!htmlContent || !totalItems) return;
 
     const doc = iframe.contentDocument;
     if (!doc) return;
@@ -202,34 +240,20 @@ export function ExamNumberReportsPage() {
     }, 500);
   }, [printType, rollSlipsHtml, secretLabelsHtml]);
 
-  // Export as CSV
-  const handleExportCsv = useCallback(() => {
-    if (!reportData?.students) return;
-
-    const headers = ['Roll Number', 'Student Code', 'Name', 'Father Name', 'Class', 'Section', 'Secret Number'];
-    const rows = reportData.students.map((s) => [
-      s.examRollNumber || '',
-      s.studentCode || '',
-      s.fullName,
-      s.fatherName || '',
-      s.className,
-      s.section || '',
-      s.examSecretNumber || '',
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')),
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `roll-numbers-${exam?.name || 'exam'}-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, [reportData, exam]);
+  const isRollSlipsPreview = printType === 'roll-slips';
+  const previewLoading = isRollSlipsPreview ? rollSlipsLoading : secretLabelsLoading;
+  const previewError = isRollSlipsPreview ? rollSlipsError : secretLabelsError;
+  const previewHtml = isRollSlipsPreview ? rollSlipsHtml?.html : secretLabelsHtml?.html;
+  const previewTotal = isRollSlipsPreview ? rollSlipsHtml?.totalSlips : secretLabelsHtml?.totalLabels;
+  const hasPreviewContent = !!previewHtml && (
+    (previewTotal ?? 0) > 0
+    || previewHtml.includes('data-secret-number')
+    || previewHtml.includes('class="slip"')
+  );
+  const previewDoc = useMemo(
+    () => (previewHtml ? withPrintPreviewStyles(previewHtml) : ''),
+    [previewHtml]
+  );
 
   const isLoading = (examLoading || reportLoading || examsLoading) && !exam;
 
@@ -339,10 +363,6 @@ export function ExamNumberReportsPage() {
                       </Button>
                     </>
                   )}
-                  <Button variant="outline" onClick={handleExportCsv}>
-                    <Download className="h-4 w-4 mr-2" />
-                    {t('exams.numberReports.exportCsv') || 'Export CSV'}
-                  </Button>
                   {reportData?.students && reportData.students.length > 0 && (
                     <ReportExportButtons
                       data={filteredStudents}
@@ -659,8 +679,8 @@ export function ExamNumberReportsPage() {
 
           {/* Print Preview Dialog */}
           <Dialog open={showPrintPreview} onOpenChange={setShowPrintPreview}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-              <DialogHeader>
+            <DialogContent className="flex h-[min(90vh,920px)] w-[min(96vw,1152px)] max-w-[min(96vw,1152px)] flex-col gap-4 overflow-hidden p-4 sm:p-6">
+              <DialogHeader className="shrink-0">
                 <DialogTitle>
                   {printType === 'roll-slips'
                     ? (t('exams.numberReports.rollSlipsPreview') || 'Roll Slips Preview')
@@ -671,47 +691,63 @@ export function ExamNumberReportsPage() {
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex-1 overflow-auto border rounded-md bg-gray-50 min-h-[400px]">
-                {(rollSlipsLoading || secretLabelsLoading) ? (
-                  <div className="flex items-center justify-center h-full">
+              <div className="relative min-h-0 flex-1 overflow-hidden rounded-md border bg-muted/30">
+                {previewLoading ? (
+                  <div className="flex h-full min-h-[320px] items-center justify-center">
                     <Skeleton className="h-8 w-32" />
                   </div>
-                ) : (printType === 'roll-slips' && rollSlipsError) || (printType === 'secret-labels' && secretLabelsError) ? (
-                  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">
+                ) : previewError ? (
+                  <div className="flex h-full min-h-[320px] flex-col items-center justify-center p-8 text-center">
+                    <AlertCircle className="mb-4 h-12 w-12 text-destructive" />
+                    <h3 className="mb-2 text-lg font-semibold">
                       {t('exams.numberReports.errorLoadingPreview') || 'Error Loading Preview'}
                     </h3>
-                    <p className="text-muted-foreground mb-4">
+                    <p className="mb-4 text-muted-foreground">
                       {t('exams.numberReports.errorLoadingPreviewDescription') || 'Failed to load the print preview. Please try again or contact support if the issue persists.'}
                     </p>
                     <Button variant="outline" onClick={() => {
-                      // Retry by closing and reopening
                       setShowPrintPreview(false);
                       setTimeout(() => setShowPrintPreview(true), 100);
                     }}>
                       {t('events.retry') || 'Retry'}
                     </Button>
                   </div>
+                ) : !hasPreviewContent ? (
+                  <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-4 p-8 text-center">
+                    <KeyRound className="h-12 w-12 text-muted-foreground" />
+                    <p className="max-w-md text-muted-foreground">
+                      {isRollSlipsPreview
+                        ? (t('exams.numberReports.emptyRollSlipsPreview') || 'No students have roll numbers assigned. Assign roll numbers first.')
+                        : (t('exams.numberReports.emptySecretLabelsPreview') || 'No students have secret numbers assigned. Assign secret numbers first.')}
+                    </p>
+                    {!isRollSlipsPreview && examId && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowPrintPreview(false);
+                          navigate(`/exams/${examId}/secret-numbers`);
+                        }}
+                      >
+                        <KeyRound className="mr-2 h-4 w-4" />
+                        {t('exams.numberReports.goToAssignSecretNumbers') || 'Assign Secret Numbers'}
+                      </Button>
+                    )}
+                  </div>
                 ) : (
-                  <div
-                    className="p-4"
-                    dir="rtl"
-                    style={{ direction: 'rtl' }}
-                    dangerouslySetInnerHTML={{
-                      __html: printType === 'roll-slips'
-                        ? (rollSlipsHtml?.html || '<p class="text-center text-muted-foreground p-8">No content available. Please ensure roll numbers are assigned.</p>')
-                        : (secretLabelsHtml?.html || '<p class="text-center text-muted-foreground p-8">No content available. Please ensure secret numbers are assigned.</p>'),
-                    }}
+                  <iframe
+                    title={isRollSlipsPreview ? 'Roll slips preview' : 'Secret labels preview'}
+                    srcDoc={previewDoc}
+                    className="absolute inset-0 h-full w-full border-0 bg-white"
+                    sandbox="allow-same-origin"
                   />
                 )}
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="shrink-0">
                 <Button variant="outline" onClick={() => setShowPrintPreview(false)}>
                   {t('events.cancel') || 'Cancel'}
                 </Button>
-                <Button onClick={executePrint} disabled={rollSlipsLoading || secretLabelsLoading}>
+                <Button onClick={executePrint} disabled={previewLoading || !hasPreviewContent}>
                   <Printer className="h-4 w-4 mr-2" />
                   {t('events.print') || 'Print'}
                 </Button>

@@ -35,7 +35,7 @@ export default function ExamReportsHub() {
     },
     {
       id: 'student-report',
-      title: t('nav.examReports'),
+      title: t('nav.studentReportCard'),
       description: t('studentReportCard.selectStudentPrompt'),
       icon: User,
       path: '/exams/reports/student',

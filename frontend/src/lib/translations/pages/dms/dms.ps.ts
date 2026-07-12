@@ -559,7 +559,7 @@ export default {
       namePlaceholder: "اصلي عمودي سرپاڼه",
       fileLabel: "فایل",
       uploadHint: "د اپلوډ لپاره کلیک وکړئ",
-      fileTypesHint: "پي ډي اېف، جي پي جي، پي ان جي، وېب پي (اعظمي ۱۰ MB)",
+      fileTypesHint: "پي ډي اېف، جي پي جي، پي ان جي، وېب پي (ټول ۱۰ MB)",
       letterheadTypeLabel: "د سرپاڼې ډول",
       backgroundLabel: "شالید",
       backgroundDescription: "بشپړ مخ شالید چې په ټولو پاڼو کې ښکاري",

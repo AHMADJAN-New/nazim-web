@@ -2,19 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\GradeCalculator;
 use App\Models\Exam;
 use App\Models\ExamClass;
-use App\Models\ExamSubject;
-use App\Models\ExamStudent;
 use App\Models\ExamResult;
+use App\Models\ExamStudent;
+use App\Models\ExamSubject;
 use App\Models\StudentAdmission;
-use App\Helpers\GradeCalculator;
+use App\Services\ExamSubjectScheduleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExamReportController extends Controller
 {
+    public function __construct(
+        private ExamSubjectScheduleService $examSubjectScheduleService
+    ) {}
+
     /**
      * Get exam overview report (existing show method)
      */
@@ -23,22 +28,23 @@ class ExamReportController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_reports')) {
+            if (! $user->hasPermissionTo('exams.view_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -49,7 +55,7 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -57,6 +63,11 @@ class ExamReportController extends Controller
             'classAcademicYear.class',
             'classAcademicYear.academicYear',
             'examSubjects.classSubject.subject',
+            'examSubjects.examTimes' => function ($query) {
+                $query->whereNull('deleted_at')
+                    ->orderBy('date')
+                    ->orderBy('start_time');
+            },
         ])
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
@@ -80,6 +91,8 @@ class ExamReportController extends Controller
                     return $examSubject->deleted_at === null;
                 })
                 ->map(function ($examSubject) {
+                    $scheduledAt = $this->examSubjectScheduleService->resolveScheduledAt($examSubject);
+
                     return [
                         'id' => $examSubject->id,
                         'subject_id' => $examSubject->subject_id ?? $examSubject->classSubject->subject_id ?? null,
@@ -87,7 +100,7 @@ class ExamReportController extends Controller
                         'class_subject_id' => $examSubject->class_subject_id,
                         'total_marks' => $examSubject->total_marks,
                         'passing_marks' => $examSubject->passing_marks,
-                        'scheduled_at' => $examSubject->scheduled_at,
+                        'scheduled_at' => $scheduledAt?->toIso8601String(),
                     ];
                 })->values();
 
@@ -107,8 +120,8 @@ class ExamReportController extends Controller
 
         $totals = [
             'classes' => $classes->count(),
-            'subjects' => $classes->sum(fn($c) => count($c['subjects'])),
-            'students' => $classes->sum(fn($c) => $c['student_count'] ?? 0),
+            'subjects' => $classes->sum(fn ($c) => count($c['subjects'])),
+            'students' => $classes->sum(fn ($c) => $c['student_count'] ?? 0),
         ];
 
         return response()->json([
@@ -128,22 +141,23 @@ class ExamReportController extends Controller
             $user = $request->user();
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             $currentSchoolId = $this->getCurrentSchoolId($request);
 
             try {
-                if (!$user->hasPermissionTo('exams.view_reports')) {
+                if (! $user->hasPermissionTo('exams.view_reports')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
-                Log::warning("Permission check failed for exams.view_reports: " . $e->getMessage());
+                Log::warning('Permission check failed for exams.view_reports: '.$e->getMessage());
+
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
@@ -154,14 +168,15 @@ class ExamReportController extends Controller
                 ->whereNull('deleted_at')
                 ->first();
 
-            if (!$exam) {
+            if (! $exam) {
                 return response()->json(['error' => 'Exam not found'], 404);
             }
         } catch (\Exception $e) {
-            Log::error('Error in summary method: ' . $e->getMessage(), [
+            Log::error('Error in summary method: '.$e->getMessage(), [
                 'exam_id' => $examId,
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'An error occurred while fetching the summary'], 500);
         }
 
@@ -200,7 +215,7 @@ class ExamReportController extends Controller
                 ->first();
 
             // Ensure resultStats is not null
-            if (!$resultStats) {
+            if (! $resultStats) {
                 $resultStats = (object) [
                     'total_results' => 0,
                     'absent_count' => 0,
@@ -208,7 +223,7 @@ class ExamReportController extends Controller
                 ];
             }
         } catch (\Exception $e) {
-            Log::error('Error fetching basic stats in summary: ' . $e->getMessage(), [
+            Log::error('Error fetching basic stats in summary: '.$e->getMessage(), [
                 'exam_id' => $examId,
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -245,13 +260,15 @@ class ExamReportController extends Controller
 
             foreach ($examStudents as $examStudent) {
                 // Skip if exam_class_id is not set
-                if (!$examStudent->exam_class_id) {
+                if (! $examStudent->exam_class_id) {
                     continue;
                 }
-                
+
                 // Get subjects for this student's class
                 $studentSubjects = $allExamSubjects->get($examStudent->exam_class_id, collect());
-                if ($studentSubjects->isEmpty()) continue;
+                if ($studentSubjects->isEmpty()) {
+                    continue;
+                }
 
                 $studentPassedAll = true;
                 $studentFailedAny = false;
@@ -271,7 +288,7 @@ class ExamReportController extends Controller
                             // Absent counts as fail
                             $studentPassedAll = false;
                             $studentFailedAny = true;
-                        } else if ($result->marks_obtained !== null && $examSubject->passing_marks !== null) {
+                        } elseif ($result->marks_obtained !== null && $examSubject->passing_marks !== null) {
                             // Check if passed or failed
                             if ($result->marks_obtained < $examSubject->passing_marks) {
                                 $studentPassedAll = false;
@@ -283,7 +300,7 @@ class ExamReportController extends Controller
 
                 // Only count if student has at least one result
                 if ($hasAnyResult) {
-                    if ($studentPassedAll && !$studentFailedAny) {
+                    if ($studentPassedAll && ! $studentFailedAny) {
                         $passCount++;
                     } else {
                         $failCount++;
@@ -291,7 +308,7 @@ class ExamReportController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Error calculating pass/fail stats: ' . $e->getMessage(), [
+            Log::error('Error calculating pass/fail stats: '.$e->getMessage(), [
                 'exam_id' => $examId,
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -313,7 +330,7 @@ class ExamReportController extends Controller
                 ->whereNotNull('marks_obtained')
                 ->avg('marks_obtained');
         } catch (\Exception $e) {
-            Log::error('Error calculating average marks: ' . $e->getMessage());
+            Log::error('Error calculating average marks: '.$e->getMessage());
             $avgMarks = null;
         }
 
@@ -351,7 +368,7 @@ class ExamReportController extends Controller
                 ")
                 ->get();
         } catch (\Exception $e) {
-            Log::error('Error calculating marks distribution: ' . $e->getMessage());
+            Log::error('Error calculating marks distribution: '.$e->getMessage());
             $marksDistribution = collect([]);
         }
 
@@ -386,13 +403,14 @@ class ExamReportController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in summary method response: ' . $e->getMessage(), [
+            Log::error('Error in summary method response: '.$e->getMessage(), [
                 'exam_id' => $examId,
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json([
                 'error' => 'An error occurred while generating the summary report',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -406,22 +424,23 @@ class ExamReportController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_reports')) {
+            if (! $user->hasPermissionTo('exams.view_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -431,7 +450,7 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -443,7 +462,7 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examClass) {
+        if (! $examClass) {
             return response()->json(['error' => 'Exam class not found'], 404);
         }
 
@@ -486,7 +505,7 @@ class ExamReportController extends Controller
                 $result = $studentResults->firstWhere('exam_subject_id', $examSubject->id);
                 $marks = $result ? $result->marks_obtained : null;
                 $isAbsent = $result ? $result->is_absent : false;
-                
+
                 $subjectMarks[] = [
                     'exam_subject_id' => $examSubject->id,
                     'subject_name' => $examSubject->subject?->name ?? 'Unknown',
@@ -494,12 +513,12 @@ class ExamReportController extends Controller
                     'passing_marks' => $examSubject->passing_marks,
                     'marks_obtained' => $marks,
                     'is_absent' => $isAbsent,
-                    'is_pass' => !$isAbsent && $marks !== null && $examSubject->passing_marks !== null 
-                        ? $marks >= $examSubject->passing_marks 
+                    'is_pass' => ! $isAbsent && $marks !== null && $examSubject->passing_marks !== null
+                        ? $marks >= $examSubject->passing_marks
                         : null,
                 ];
 
-                if (!$isAbsent && $marks !== null) {
+                if (! $isAbsent && $marks !== null) {
                     $totalObtained += $marks;
                 }
                 if ($examSubject->total_marks) {
@@ -541,7 +560,7 @@ class ExamReportController extends Controller
                 'name' => $examClass->classAcademicYear?->class?->name ?? 'Unknown',
                 'section' => $examClass->classAcademicYear?->section_name,
             ],
-            'subjects' => $examSubjects->map(fn($s) => [
+            'subjects' => $examSubjects->map(fn ($s) => [
                 'id' => $s->id,
                 'name' => $s->subject?->name ?? 'Unknown',
                 'total_marks' => $s->total_marks,
@@ -564,22 +583,23 @@ class ExamReportController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_reports')) {
+            if (! $user->hasPermissionTo('exams.view_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -590,14 +610,14 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         // Find exam student enrollment
         $examStudent = ExamStudent::with([
             'studentAdmission.student',
-            'examClass.classAcademicYear.class'
+            'examClass.classAcademicYear.class',
         ])
             ->where('id', $studentId)
             ->where('exam_id', $examId)
@@ -606,7 +626,7 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examStudent) {
+        if (! $examStudent) {
             return response()->json(['error' => 'Student not enrolled in this exam'], 404);
         }
 
@@ -631,18 +651,18 @@ class ExamReportController extends Controller
         // Build subject results
         $subjectResults = $examSubjects->map(function ($examSubject) use ($results) {
             $result = $results->firstWhere('exam_subject_id', $examSubject->id);
-            
+
             $marks = $result ? $result->marks_obtained : null;
             $isAbsent = $result ? $result->is_absent : false;
             $remarks = $result ? $result->remarks : null;
 
             $isPass = null;
-            if (!$isAbsent && $marks !== null && $examSubject->passing_marks !== null) {
+            if (! $isAbsent && $marks !== null && $examSubject->passing_marks !== null) {
                 $isPass = $marks >= $examSubject->passing_marks;
             }
 
             $percentage = null;
-            if (!$isAbsent && $marks !== null && $examSubject->total_marks) {
+            if (! $isAbsent && $marks !== null && $examSubject->total_marks) {
                 $percentage = round(($marks / $examSubject->total_marks) * 100, 2);
             }
 
@@ -675,14 +695,14 @@ class ExamReportController extends Controller
         foreach ($subjectResults as $result) {
             if ($result['is_absent']) {
                 $absentSubjects++;
-            } else if ($result['marks']['obtained'] !== null) {
+            } elseif ($result['marks']['obtained'] !== null) {
                 $totalObtained += $result['marks']['obtained'];
                 if ($result['marks']['total']) {
                     $totalMax += $result['marks']['total'];
                 }
                 if ($result['is_pass'] === true) {
                     $passedSubjects++;
-                } else if ($result['is_pass'] === false) {
+                } elseif ($result['is_pass'] === false) {
                     $failedSubjects++;
                 }
             }
@@ -731,22 +751,23 @@ class ExamReportController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_reports')) {
+            if (! $user->hasPermissionTo('exams.view_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -757,7 +778,7 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -769,7 +790,7 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examClass) {
+        if (! $examClass) {
             return response()->json(['error' => 'Exam class not found'], 404);
         }
 
@@ -816,12 +837,12 @@ class ExamReportController extends Controller
                 $isAbsent = $result ? $result->is_absent : false;
 
                 $isPass = null;
-                if (!$isAbsent && $marks !== null && $examSubject->passing_marks !== null) {
+                if (! $isAbsent && $marks !== null && $examSubject->passing_marks !== null) {
                     $isPass = $marks >= $examSubject->passing_marks;
-                    if (!$isPass) {
+                    if (! $isPass) {
                         $failedInAny = true;
                     }
-                } else if ($isAbsent) {
+                } elseif ($isAbsent) {
                     $isPass = false;
                     $failedInAny = true;
                 }
@@ -836,7 +857,7 @@ class ExamReportController extends Controller
                     'is_pass' => $isPass,
                 ];
 
-                if (!$isAbsent && $marks !== null) {
+                if (! $isAbsent && $marks !== null) {
                     $totalObtained += $marks;
                 } else {
                     $hasIncompleteMarks = true;
@@ -858,9 +879,9 @@ class ExamReportController extends Controller
 
             // Determine overall result
             $result = 'Fail';
-            if (!$hasIncompleteMarks && !$isAbsentInAny && !$failedInAny) {
+            if (! $hasIncompleteMarks && ! $isAbsentInAny && ! $failedInAny) {
                 $result = 'Pass';
-            } else if ($hasIncompleteMarks) {
+            } elseif ($hasIncompleteMarks) {
                 $result = 'Incomplete';
             }
 
@@ -895,7 +916,7 @@ class ExamReportController extends Controller
                 'name' => $examClass->classAcademicYear?->class?->name ?? 'Unknown',
                 'section' => $examClass->classAcademicYear?->section_name,
             ],
-            'subjects' => $examSubjects->map(fn($s) => [
+            'subjects' => $examSubjects->map(fn ($s) => [
                 'id' => $s->id,
                 'subject_id' => $s->subject_id,
                 'name' => $s->subject?->name ?? 'Unknown',
@@ -922,22 +943,23 @@ class ExamReportController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_reports')) {
+            if (! $user->hasPermissionTo('exams.view_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -961,7 +983,7 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -973,7 +995,7 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examClass) {
+        if (! $examClass) {
             return response()->json(['error' => 'Exam class not found'], 404);
         }
 
@@ -987,7 +1009,7 @@ class ExamReportController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examSubject) {
+        if (! $examSubject) {
             return response()->json(['error' => 'Exam subject not found'], 404);
         }
 
@@ -1017,12 +1039,12 @@ class ExamReportController extends Controller
             $isAbsent = $result ? $result->is_absent : false;
 
             $percentage = null;
-            if (!$isAbsent && $marks !== null && $examSubject->total_marks) {
+            if (! $isAbsent && $marks !== null && $examSubject->total_marks) {
                 $percentage = round(($marks / $examSubject->total_marks) * 100, 2);
             }
 
             $isPass = null;
-            if (!$isAbsent && $marks !== null && $examSubject->passing_marks !== null) {
+            if (! $isAbsent && $marks !== null && $examSubject->passing_marks !== null) {
                 $isPass = $marks >= $examSubject->passing_marks;
             }
 
@@ -1048,7 +1070,7 @@ class ExamReportController extends Controller
             $markSheet = $sortOrder === 'desc'
                 ? $markSheet->sortByDesc('marks_obtained')
                 : $markSheet->sortBy('marks_obtained');
-        } else if ($sortBy === 'father_name') {
+        } elseif ($sortBy === 'father_name') {
             $markSheet = $sortOrder === 'desc'
                 ? $markSheet->sortByDesc('father_name')
                 : $markSheet->sortBy('father_name');
@@ -1064,7 +1086,7 @@ class ExamReportController extends Controller
         // Calculate ranks if requested
         if ($showRank) {
             // Create a sorted list by marks (descending) for ranking
-            $sortedByMarks = $markSheet->filter(fn($s) => !$s['is_absent'] && $s['marks_obtained'] !== null)
+            $sortedByMarks = $markSheet->filter(fn ($s) => ! $s['is_absent'] && $s['marks_obtained'] !== null)
                 ->sortByDesc('marks_obtained')
                 ->values();
 
@@ -1088,6 +1110,7 @@ class ExamReportController extends Controller
             // Add ranks to mark sheet
             $markSheet = $markSheet->map(function ($student) use ($ranks) {
                 $student['rank'] = $ranks[$student['admission_no']] ?? null;
+
                 return $student;
             });
         }

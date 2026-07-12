@@ -99,7 +99,7 @@ export default {
     personalInformation: "شخصي معلومات",
     phoneNumber: "د ټیلیفون شمېره",
     photo: "عکس",
-    pictureHelper: "د پروفایل عکس پورته کړئ (اعظمي 5MB, jpg, png, gif, webp)",
+    pictureHelper: "د پروفایل عکس پورته کړئ (ټول 5MB, jpg, png, gif, webp)",
     pleaseSelectStaffType: "مهرباني وکړئ د کارمند ډول وټاکئ",
     pleaseWait: "مهرباني وکړئ د پروفایل بارېدو ته انتظار وکړئ...",
     position: "دنده / بست",

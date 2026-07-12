@@ -552,7 +552,7 @@ export default {
     schoolUpdated: "ښوونځی په بریالیتوب سره تازه شو",
     schoolRulesUpdated: "د ښوونځي قوانین په بریالیتوب سره تازه شول",
     schoolRulesUpdateFailed: "د ښوونځي قوانینو د تازه کولو کې پاتې راغی",
-    secretNumberAssignFailed: "د پټو شمېرو سپارل ناکام شول",
+    secretNumberAssignFailed: "د رقم السري شمېرو سپارل ناکام شول",
     secretNumbersAssigned: "رقم السري  وسپارل شوې",
     secretNumbersAssignedWithErrors: "رقم السري  د تېروتنو سره وسپارل شوې",
     secretNumberUpdated: "پټه شمېره تازه شوه",

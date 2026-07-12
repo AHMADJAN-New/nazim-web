@@ -268,4 +268,75 @@ class ExamTimetableBulkReplaceTest extends TestCase
         $response->assertStatus(422);
         $this->assertStringContainsString('locked', strtolower($response->json('error') ?? ''));
     }
+
+    /** @test */
+    public function bulk_replace_syncs_exam_subject_scheduled_at_for_exam_report(): void
+    {
+        $fixture = $this->createFixture();
+        $dateA = now()->addDays(2)->toDateString();
+        $dateB = now()->addDays(3)->toDateString();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $viewReportsPermission = Permission::firstOrCreate([
+            'name' => 'exams.view_reports',
+            'guard_name' => 'web',
+            'organization_id' => $fixture['organization']->id,
+        ], [
+            'resource' => 'exams',
+            'action' => 'view_reports',
+        ]);
+
+        setPermissionsTeamId($fixture['organization']->id);
+        $fixture['user']->givePermissionTo($viewReportsPermission);
+        setPermissionsTeamId(null);
+
+        $this->jsonAs(
+            $fixture['user'],
+            'POST',
+            "/api/exams/{$fixture['exam']->id}/times/bulk-replace",
+            [
+                'times' => [
+                    [
+                        'exam_class_id' => $fixture['examClass']->id,
+                        'exam_subject_id' => $fixture['examSubjectA']->id,
+                        'date' => $dateA,
+                        'start_time' => '09:00',
+                        'end_time' => '12:00',
+                    ],
+                    [
+                        'exam_class_id' => $fixture['examClass']->id,
+                        'exam_subject_id' => $fixture['examSubjectB']->id,
+                        'date' => $dateB,
+                        'start_time' => '13:00',
+                        'end_time' => '16:00',
+                    ],
+                ],
+            ]
+        )->assertStatus(200);
+
+        $fixture['examSubjectA']->refresh();
+        $fixture['examSubjectB']->refresh();
+
+        $this->assertNotNull($fixture['examSubjectA']->scheduled_at);
+        $this->assertNotNull($fixture['examSubjectB']->scheduled_at);
+        $this->assertSame($dateA, $fixture['examSubjectA']->scheduled_at->format('Y-m-d'));
+        $this->assertSame($dateB, $fixture['examSubjectB']->scheduled_at->format('Y-m-d'));
+
+        $report = $this->jsonAs(
+            $fixture['user'],
+            'GET',
+            "/api/exams/{$fixture['exam']->id}/report"
+        );
+
+        $report->assertStatus(200);
+
+        $subjects = collect($report->json('classes.0.subjects'));
+        $subjectA = $subjects->firstWhere('id', $fixture['examSubjectA']->id);
+        $subjectB = $subjects->firstWhere('id', $fixture['examSubjectB']->id);
+
+        $this->assertNotNull($subjectA['scheduled_at'] ?? null);
+        $this->assertNotNull($subjectB['scheduled_at'] ?? null);
+        $this->assertStringStartsWith($dateA, $subjectA['scheduled_at']);
+        $this->assertStringStartsWith($dateB, $subjectB['scheduled_at']);
+    }
 }

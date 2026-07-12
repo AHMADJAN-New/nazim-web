@@ -97,7 +97,7 @@ export default {
     management: "د کورسونو مدیریت",
     markCompleted: "بشپړ شوی نښه کړئ",
     markDropped: "پرېښودل شوی نښه کړئ",
-    maxStudents: "د زده کوونکو اعظمي شمیر",
+    maxStudents: "د زده کوونکو ټول شمیر",
     maxStudentsPlaceholder: "د بیلګې په توګه: ۲۵",
     nameOrAdmission: "نوم یا د نوم لیکنې شمیر",
     noCoursesFound: "هیڅ دوره/ کورس ونه موندل شو",
