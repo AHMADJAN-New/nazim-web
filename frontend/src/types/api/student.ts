@@ -28,6 +28,7 @@ export interface Student {
   school_id: string | null;
   card_number: string | null;
   room_number?: string | null;
+  building_name?: string | null;
   tazkira_number: string | null;
   phone: string | null;
   notes: string | null;

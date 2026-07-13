@@ -5,6 +5,7 @@ namespace App\Services\ExamSeating;
 use App\Models\ExamSeatAssignment;
 use App\Models\ExamSeatingMap;
 use App\Models\ExamStudent;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 
@@ -32,10 +33,13 @@ class ExamSeatingSolverService
 
         $checksum = $this->computeChecksum($inputPayload);
 
+        $studentCount = count($inputPayload['students']);
+        $cpSatTimeout = $this->resolveCpSatTimeoutSeconds($studentCount);
+
         $payload = array_merge($inputPayload, [
             'strict_mode' => $strictMode,
             'seed' => $seed ?? random_int(1, 2_147_483_647),
-            'timeout_seconds' => (float) config('exam_seating.timeout_seconds', 120),
+            'timeout_seconds' => (float) $cpSatTimeout,
         ]);
 
         return [
@@ -72,7 +76,9 @@ class ExamSeatingSolverService
     {
         $pythonPath = (string) config('exam_seating.python_path', 'python');
         $scriptPath = (string) config('exam_seating.solver_script');
-        $timeout = (int) config('exam_seating.timeout_seconds', 120);
+        $cpSatTimeout = (int) ($payload['timeout_seconds'] ?? config('exam_seating.timeout_seconds', 300));
+        // Strict mode may run CP-SAT twice (strict, then fallback).
+        $processTimeout = ($cpSatTimeout * 2) + 60;
 
         if (! is_file($scriptPath)) {
             throw new RuntimeException("Exam seating solver script not found at {$scriptPath}");
@@ -80,7 +86,15 @@ class ExamSeatingSolverService
 
         $process = new Process([$pythonPath, $scriptPath]);
         $process->setInput($this->canonicalJson($payload));
-        $process->setTimeout($timeout);
+        $process->setTimeout($processTimeout);
+
+        Log::info('Exam seating solver process starting', [
+            'students' => count($payload['students'] ?? []),
+            'seats' => count($payload['seats'] ?? []),
+            'cp_sat_timeout_seconds' => $cpSatTimeout,
+            'process_timeout_seconds' => $processTimeout,
+        ]);
+
         $process->run();
 
         if (! $process->isSuccessful()) {
@@ -165,9 +179,7 @@ class ExamSeatingSolverService
                     'row' => $assignment->row_number - 1,
                     'col' => $assignment->column_number - 1,
                     'seat_number' => $assignment->seat_number,
-                    'is_disabled' => $hasStudent || $assignment->is_locked
-                        ? (bool) $assignment->is_disabled
-                        : false,
+                    'is_disabled' => (bool) $assignment->is_disabled,
                     'locked' => $hasStudent ? true : (bool) $assignment->is_locked,
                     'exam_student_id' => $assignment->exam_student_id,
                 ];
@@ -177,22 +189,15 @@ class ExamSeatingSolverService
     }
 
     /**
+     * Students available for this map: selected classes, not locked on applied/finalized maps.
+     * Students already seated on other editable maps are included so solve can claim them.
+     *
      * @return list<array<string, string>>
      */
     private function buildStudentsPayload(ExamSeatingMap $map): array
     {
-        $assignedElsewhere = ExamSeatAssignment::query()
-            ->where('exam_id', $map->exam_id)
-            ->where('organization_id', $map->organization_id)
-            ->where('school_id', $map->school_id)
-            ->where('exam_seating_map_id', '!=', $map->id)
-            ->whereNull('deleted_at')
-            ->whereNotNull('exam_student_id')
-            ->pluck('exam_student_id');
-
-        $onThisMap = $map->assignments
-            ->whereNotNull('exam_student_id')
-            ->pluck('exam_student_id');
+        $lockedElsewhereIds = $this->examStudentIdsLockedOnOtherMaps($map);
+        $mapClassIds = $map->examClassIds();
 
         return ExamStudent::query()
             ->with('examClass')
@@ -200,16 +205,54 @@ class ExamSeatingSolverService
             ->where('organization_id', $map->organization_id)
             ->where('school_id', $map->school_id)
             ->whereNull('deleted_at')
-            ->where(function ($query) use ($assignedElsewhere, $onThisMap): void {
-                $query->whereNotIn('id', $assignedElsewhere)
-                    ->orWhereIn('id', $onThisMap);
-            })
+            ->when(
+                $mapClassIds !== [],
+                fn ($query) => $query->whereIn('exam_class_id', $mapClassIds),
+                fn ($query) => $query->whereRaw('1 = 0')
+            )
+            ->when(
+                $lockedElsewhereIds !== [],
+                fn ($query) => $query->whereNotIn('id', $lockedElsewhereIds)
+            )
             ->get()
             ->sortBy(fn (ExamStudent $student) => $student->id)
             ->map(fn (ExamStudent $student): array => [
                 'exam_student_id' => $student->id,
                 'exam_class_id' => (string) $student->exam_class_id,
             ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function examStudentIdsLockedOnOtherMaps(ExamSeatingMap $map): array
+    {
+        $lockedMapIds = ExamSeatingMap::query()
+            ->where('exam_id', $map->exam_id)
+            ->where('organization_id', $map->organization_id)
+            ->where('school_id', $map->school_id)
+            ->where('id', '!=', $map->id)
+            ->whereNull('deleted_at')
+            ->whereIn('status', [
+                ExamSeatingMap::STATUS_APPLIED,
+                ExamSeatingMap::STATUS_FINALIZED,
+            ])
+            ->pluck('id')
+            ->all();
+
+        if ($lockedMapIds === []) {
+            return [];
+        }
+
+        return ExamSeatAssignment::query()
+            ->whereIn('exam_seating_map_id', $lockedMapIds)
+            ->whereNull('deleted_at')
+            ->whereNotNull('exam_student_id')
+            ->pluck('exam_student_id')
+            ->map(fn ($id): string => (string) $id)
+            ->unique()
             ->values()
             ->all();
     }
@@ -258,5 +301,14 @@ class ExamSeatingSolverService
         }
 
         return array_keys($data) === range(0, count($data) - 1);
+    }
+
+    private function resolveCpSatTimeoutSeconds(int $studentCount): int
+    {
+        $base = (int) config('exam_seating.timeout_seconds', 300);
+        $max = (int) config('exam_seating.max_timeout_seconds', 900);
+        $scaled = 60 + (int) ceil($studentCount * 0.3);
+
+        return min($max, max($base, $scaled));
     }
 }

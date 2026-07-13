@@ -92,6 +92,29 @@ vi.mock('@/hooks/useStudentAutocomplete', () => ({
   }),
 }));
 
+vi.mock('@tanstack/react-query', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-query')>();
+  return {
+    ...actual,
+    useQuery: () => ({ data: [] }),
+  };
+});
+
+vi.mock('@/lib/api/client', () => ({
+  studentsApi: { list: vi.fn() },
+  roomsApi: { list: vi.fn() },
+}));
+
+vi.mock('@/components/attendance/AttendanceBuildingRoomFilters', () => ({
+  AttendanceBuildingRoomFilters: () => null,
+}));
+
+vi.mock('@/hooks/useBuildings', () => ({
+  useBuildings: () => ({
+    data: [],
+  }),
+}));
+
 vi.mock('@/hooks/use-data-table', () => ({
   useDataTable: () => ({
     table: {
@@ -142,6 +165,8 @@ const studentAllExportColumnKeys = [
   'applying_grade',
   'class_name',
   'section_name',
+  'building_name',
+  'room_number',
   'school',
   'admission_year',
   'admission_fee_status',

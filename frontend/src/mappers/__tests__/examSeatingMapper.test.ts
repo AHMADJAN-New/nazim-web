@@ -5,6 +5,7 @@ import {
   mapExamSeatingMapApiToDomain,
   mapExamSeatingMapFormToInsert,
   mapSyncAssignmentsDomainToApi,
+  mapSyncClassColorsDomainToApi,
 } from '@/mappers/examSeatingMapper';
 
 describe('examSeatingMapper', () => {
@@ -132,5 +133,31 @@ describe('examSeatingMapper', () => {
     });
     expect(payload.assignments[1].exam_student_id).toBeNull();
     expect(payload.assignments[1].is_disabled).toBe(true);
+  });
+
+  it('preserves enabled empty seat flag in sync payload', () => {
+    const payload = mapSyncAssignmentsDomainToApi(1, [
+      {
+        rowNumber: 2,
+        columnNumber: 1,
+        examStudentId: null,
+        isLocked: false,
+        isDisabled: false,
+      },
+    ]);
+
+    expect(payload.assignments[0].is_disabled).toBe(false);
+  });
+
+  it('maps class colors to API payload with class_colors key', () => {
+    const payload = mapSyncClassColorsDomainToApi([
+      { examClassId: 'class-1', colorHex: '#FF0000' },
+      { examClassId: 'class-2', colorHex: '#00FF00' },
+    ]);
+
+    expect(payload.class_colors).toEqual([
+      { exam_class_id: 'class-1', color_hex: '#FF0000' },
+      { exam_class_id: 'class-2', color_hex: '#00FF00' },
+    ]);
   });
 });

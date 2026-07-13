@@ -749,6 +749,8 @@ class StudentAdmissionController extends Controller
             'search' => 'nullable|string|max:255',
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:1|max:100',
+            'building_id' => 'nullable|uuid|exists:buildings,id',
+            'room_id' => 'nullable|uuid|exists:rooms,id',
         ]);
 
         if ($validator->fails()) {
@@ -759,6 +761,16 @@ class StudentAdmissionController extends Controller
         }
 
         $filters = $validator->validated();
+
+        $scopeError = $this->placementService->validateBuildingRoomScope(
+            $currentSchoolId,
+            $filters['building_id'] ?? null,
+            $filters['room_id'] ?? null
+        );
+
+        if ($scopeError) {
+            return response()->json(['error' => $scopeError], 404);
+        }
 
         if (! empty($filters['from_date']) && ! empty($filters['to_date'])) {
             $fromDate = Carbon::parse($filters['from_date']);
@@ -818,6 +830,12 @@ class StudentAdmissionController extends Controller
         if (! empty($filters['search'])) {
             $this->applyAdmissionsStudentSearch($query, $filters['search']);
         }
+
+        $this->placementService->applyAdmissionBuildingRoomFilter(
+            $query,
+            $filters['building_id'] ?? null,
+            $filters['room_id'] ?? null
+        );
 
         if (! empty($filters['admission_presence'])) {
             if ($filters['admission_presence'] === 'without_admission') {
@@ -891,7 +909,8 @@ class StudentAdmissionController extends Controller
                 'class:id,name,grade_level',
                 'classAcademicYear:id,section_name',
                 'residencyType:id,name',
-                'room:id,room_number',
+                'room:id,room_number,building_id',
+                'room.building:id,building_name',
             ])
             ->orderBy('student_admissions.admission_date', 'desc')
             ->orderBy('student_admissions.created_at', 'desc');
@@ -980,6 +999,8 @@ class StudentAdmissionController extends Controller
             'search' => 'nullable|string|max:255',
             'calendar_preference' => 'nullable|in:gregorian,jalali,qamari',
             'language' => 'nullable|in:en,ps,fa,ar',
+            'building_id' => 'nullable|uuid|exists:buildings,id',
+            'room_id' => 'nullable|uuid|exists:rooms,id',
         ]);
 
         if ($validator->fails()) {
@@ -990,6 +1011,16 @@ class StudentAdmissionController extends Controller
         }
 
         $filters = $validator->validated();
+
+        $scopeError = $this->placementService->validateBuildingRoomScope(
+            $currentSchoolId,
+            $filters['building_id'] ?? null,
+            $filters['room_id'] ?? null
+        );
+
+        if ($scopeError) {
+            return response()->json(['error' => $scopeError], 404);
+        }
 
         // Build query with same filters as report method
         $query = StudentAdmission::query()
@@ -1038,6 +1069,12 @@ class StudentAdmissionController extends Controller
             $this->applyAdmissionsStudentSearch($query, $filters['search']);
         }
 
+        $this->placementService->applyAdmissionBuildingRoomFilter(
+            $query,
+            $filters['building_id'] ?? null,
+            $filters['room_id'] ?? null
+        );
+
         if (! empty($filters['admission_presence'])) {
             if ($filters['admission_presence'] === 'without_admission') {
                 // Export uses admission rows; "without admission" yields an empty export by design.
@@ -1055,7 +1092,8 @@ class StudentAdmissionController extends Controller
                 'class:id,name,grade_level',
                 'classAcademicYear:id,section_name',
                 'residencyType:id,name',
-                'room:id,room_number',
+                'room:id,room_number,building_id',
+                'room.building:id,building_name',
             ])
             ->orderBy('student_admissions.admission_date', 'desc')
             ->orderBy('student_admissions.created_at', 'desc')

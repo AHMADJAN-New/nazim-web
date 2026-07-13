@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, Shield, Play, Globe, Cloud, CloudOff, RefreshCw } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -59,7 +60,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const [searchQuery, setSearchQuery] = useState("");
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isInlineDropdownOpen, setIsInlineDropdownOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
+  const [themeMounted, setThemeMounted] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [desktopSyncStatus, setDesktopSyncStatus] = useState<DesktopSyncStatus | null>(null);
@@ -242,10 +244,14 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
     // { code: "ar" as const, name: "العربية", flag: "🇸🇦" }
   ];
 
+  useEffect(() => {
+    setThemeMounted(true);
+  }, []);
+
+  const isDarkMode = themeMounted && resolvedTheme === 'dark';
+
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    // In real app, this would update theme context
-    document.documentElement.classList.toggle('dark');
+    setTheme(isDarkMode ? 'light' : 'dark');
   };
 
   // Keyboard shortcut handler for Ctrl+K / Cmd+K

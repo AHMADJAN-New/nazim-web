@@ -39,6 +39,8 @@ export default {
     error: "خطا رخ داد",
     example: "مثلاً",
     export: "صدور",
+    exportExcel: "صدور Excel",
+    exportPdf: "صدور PDF",
     fail: "ناکام",
     fair: "متوسط",
     filter: "فیلتر",

@@ -107,6 +107,29 @@ class StudentReportController extends Controller
             });
         }
 
+        if ($request->filled('building_id') || $request->filled('room_id')) {
+            $scopeError = $this->placementService->validateBuildingRoomScope(
+                $currentSchoolId,
+                $request->filled('building_id') ? (string) $request->input('building_id') : null,
+                $request->filled('room_id') ? (string) $request->input('room_id') : null
+            );
+
+            if ($scopeError) {
+                abort(404, $scopeError);
+            }
+
+            $this->placementService->applyStudentBuildingRoomFilter(
+                $query,
+                $request->filled('building_id') ? (string) $request->input('building_id') : null,
+                $request->filled('room_id') ? (string) $request->input('room_id') : null,
+                $orgId,
+                $currentSchoolId,
+                $request->filled('academic_year_id') ? (string) $request->input('academic_year_id') : null,
+                $request->filled('class_id') ? (string) $request->input('class_id') : null,
+                $request->filled('class_academic_year_id') ? (string) $request->input('class_academic_year_id') : null
+            );
+        }
+
         return $query;
     }
 

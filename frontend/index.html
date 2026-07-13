@@ -31,6 +31,16 @@
 
     <!-- Crypto.randomUUID polyfill (external file avoids inline script). pdfmake needs script-src 'unsafe-eval' (nginx CSP). -->
     <script src="./crypto-randomuuid-polyfill.js"></script>
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem('nazim-theme');
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>

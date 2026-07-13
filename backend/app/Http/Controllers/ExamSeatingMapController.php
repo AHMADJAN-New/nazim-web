@@ -6,6 +6,7 @@ use App\Http\Requests\ExamSeating\SolveExamSeatingMapRequest;
 use App\Http\Requests\ExamSeating\StoreExamSeatingMapRequest;
 use App\Http\Requests\ExamSeating\SyncExamSeatingAssignmentsRequest;
 use App\Http\Requests\ExamSeating\SyncExamSeatingClassColorsRequest;
+use App\Http\Requests\ExamSeating\SyncExamSeatingMapClassesRequest;
 use App\Http\Requests\ExamSeating\UpdateExamSeatingMapRequest;
 use App\Jobs\RunExamSeatingSolverJob;
 use App\Models\Exam;
@@ -15,6 +16,7 @@ use App\Services\ExamSeating\ExamSeatingMapService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -39,7 +41,7 @@ class ExamSeatingMapController extends Controller
         }
 
         $maps = ExamSeatingMap::query()
-            ->with(['assignments', 'classColors', 'room'])
+            ->with(['assignments', 'classColors', 'mapClasses', 'room'])
             ->where('exam_id', $exam->id)
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
@@ -73,7 +75,7 @@ class ExamSeatingMapController extends Controller
                 $request->validated()
             );
 
-            return response()->json($this->mapService->serializeMap($map), 201);
+            return response()->json($this->mapService->serializeMap($map, detailed: true), 201);
         } catch (RuntimeException $exception) {
             return $this->runtimeErrorResponse($exception);
         }
@@ -97,7 +99,7 @@ class ExamSeatingMapController extends Controller
             return response()->json(['error' => 'Seating map not found'], 404);
         }
 
-        return response()->json($this->mapService->serializeMap($map));
+        return response()->json($this->mapService->serializeMap($map, detailed: true));
     }
 
     public function update(UpdateExamSeatingMapRequest $request, string $examId, string $mapId): JsonResponse
@@ -121,13 +123,13 @@ class ExamSeatingMapController extends Controller
         try {
             $updated = $this->mapService->updateMap($map, $exam, $request->validated());
 
-            return response()->json($this->mapService->serializeMap($updated));
+            return response()->json($this->mapService->serializeMap($updated, detailed: true));
         } catch (RuntimeException $exception) {
             return $this->runtimeErrorResponse($exception);
         }
     }
 
-    public function destroy(Request $request, string $examId, string $mapId): JsonResponse
+    public function destroy(Request $request, string $examId, string $mapId): Response
     {
         [$user, $profile, $currentSchoolId] = $this->resolveContext($request);
 
@@ -183,7 +185,7 @@ class ExamSeatingMapController extends Controller
                 $user->id
             );
 
-            return response()->json($this->mapService->serializeMap($updated));
+            return response()->json($this->mapService->serializeMap($updated, detailed: true));
         } catch (RuntimeException $exception) {
             return $this->runtimeErrorResponse($exception);
         }
@@ -217,7 +219,41 @@ class ExamSeatingMapController extends Controller
                 $request->validated('class_colors', [])
             );
 
-            return response()->json($this->mapService->serializeMap($updated));
+            return response()->json($this->mapService->serializeMap($updated, detailed: true));
+        } catch (RuntimeException $exception) {
+            return $this->runtimeErrorResponse($exception);
+        }
+    }
+
+    public function syncMapClasses(
+        SyncExamSeatingMapClassesRequest $request,
+        string $examId,
+        string $mapId
+    ): JsonResponse {
+        [$user, $profile, $currentSchoolId] = $this->resolveContext($request);
+
+        if (! $this->checkPermission($user, 'exam_seating_maps.update')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $exam = $this->findExam($examId, $profile->organization_id, $currentSchoolId);
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        $map = $this->findMap($mapId, $exam, $profile->organization_id, $currentSchoolId);
+        if (! $map) {
+            return response()->json(['error' => 'Seating map not found'], 404);
+        }
+
+        try {
+            $updated = $this->mapService->syncMapClasses(
+                $map,
+                $exam,
+                $request->validated('exam_class_ids', [])
+            );
+
+            return response()->json($this->mapService->serializeMap($updated, detailed: true));
         } catch (RuntimeException $exception) {
             return $this->runtimeErrorResponse($exception);
         }
@@ -251,6 +287,7 @@ class ExamSeatingMapController extends Controller
                 (int) $validated['revision'],
                 $validated['input_checksum']
             );
+            $this->mapService->assertMapHasStudentsForSolve($map);
 
             $idempotencyKey = sprintf(
                 'map:%s:revision:%d:checksum:%s',
@@ -310,24 +347,10 @@ class ExamSeatingMapController extends Controller
             ->first();
 
         return response()->json([
-            'map_id' => $map->id,
-            'revision' => $map->revision,
-            'input_checksum' => $map->input_checksum ? trim($map->input_checksum) : null,
+            'map' => $this->mapService->serializeMap($map),
+            'run' => $latestRun ? $this->mapService->serializeRun($latestRun) : null,
             'solver_status' => $map->solver_status,
             'solver_diagnostics' => $map->solver_diagnostics,
-            'status' => $map->status,
-            'latest_run' => $latestRun ? [
-                'id' => $latestRun->id,
-                'status' => $latestRun->status,
-                'revision' => $latestRun->revision,
-                'input_checksum' => $latestRun->input_checksum ? trim($latestRun->input_checksum) : null,
-                'conflict_count' => $latestRun->conflict_count,
-                'diagnostics' => $latestRun->diagnostics,
-                'error_message' => $latestRun->error_message,
-                'started_at' => $latestRun->started_at?->toIso8601String(),
-                'completed_at' => $latestRun->completed_at?->toIso8601String(),
-                'failed_at' => $latestRun->failed_at?->toIso8601String(),
-            ] : null,
         ]);
     }
 
@@ -352,7 +375,34 @@ class ExamSeatingMapController extends Controller
         try {
             $finalized = $this->mapService->finalizeMap($map, $exam, $user->id);
 
-            return response()->json($this->mapService->serializeMap($finalized));
+            return response()->json($this->mapService->serializeMap($finalized, detailed: true));
+        } catch (RuntimeException $exception) {
+            return $this->runtimeErrorResponse($exception);
+        }
+    }
+
+    public function reopen(Request $request, string $examId, string $mapId): JsonResponse
+    {
+        [$user, $profile, $currentSchoolId] = $this->resolveContext($request);
+
+        if (! $this->checkPermission($user, 'exam_seating_maps.update')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $exam = $this->findExam($examId, $profile->organization_id, $currentSchoolId);
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        $map = $this->findMap($mapId, $exam, $profile->organization_id, $currentSchoolId);
+        if (! $map) {
+            return response()->json(['error' => 'Seating map not found'], 404);
+        }
+
+        try {
+            $reopened = $this->mapService->reopenMap($map, $exam);
+
+            return response()->json($this->mapService->serializeMap($reopened, detailed: true));
         } catch (RuntimeException $exception) {
             return $this->runtimeErrorResponse($exception);
         }
@@ -387,7 +437,7 @@ class ExamSeatingMapController extends Controller
                 $validated['name'] ?? null
             );
 
-            return response()->json($this->mapService->serializeMap($duplicate), 201);
+            return response()->json($this->mapService->serializeMap($duplicate, detailed: true), 201);
         } catch (RuntimeException $exception) {
             return $this->runtimeErrorResponse($exception);
         }
@@ -461,7 +511,7 @@ class ExamSeatingMapController extends Controller
         string $schoolId
     ): ?ExamSeatingMap {
         return ExamSeatingMap::query()
-            ->with(['assignments', 'classColors', 'room'])
+            ->with(['assignments', 'classColors', 'mapClasses', 'room'])
             ->where('id', $mapId)
             ->where('exam_id', $exam->id)
             ->where('organization_id', $organizationId)

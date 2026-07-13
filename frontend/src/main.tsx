@@ -9,6 +9,7 @@ import './index.css'
 
 import { RootBootstrap } from './RootBootstrap';
 
+import { ThemeProvider } from '@/components/ThemeProvider';
 import { DatePreferenceProvider } from '@/hooks/useDatePreference';
 import { LanguageProvider } from '@/hooks/useLanguage';
 
@@ -61,12 +62,14 @@ document.addEventListener('contextmenu', (e) => {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <LanguageProvider>
-      <DatePreferenceProvider>
-        <RootBootstrap>
-          <App />
-        </RootBootstrap>
-      </DatePreferenceProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <DatePreferenceProvider>
+          <RootBootstrap>
+            <App />
+          </RootBootstrap>
+        </DatePreferenceProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </StrictMode>
 );

@@ -4,7 +4,7 @@ namespace App\Http\Requests\ExamSeating;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreExamSeatingMapRequest extends FormRequest
+class SyncExamSeatingMapClassesRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -17,11 +17,6 @@ class StoreExamSeatingMapRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'room_id' => 'nullable|uuid|exists:rooms,id',
-            'rows' => 'required|integer|min:1|max:100',
-            'columns' => 'required|integer|min:1|max:100',
-            'start_seat_number' => 'sometimes|integer|min:1',
             'exam_class_ids' => 'required|array|min:1',
             'exam_class_ids.*' => 'required|uuid|distinct|exists:exam_classes,id',
         ];

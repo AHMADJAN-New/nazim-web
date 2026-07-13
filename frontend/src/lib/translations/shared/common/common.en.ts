@@ -39,6 +39,8 @@ export default {
     error: "Something went wrong",
     example: "e.g.",
     export: "Export",
+    exportExcel: "Export Excel",
+    exportPdf: "Export PDF",
     fail: "Fail",
     fair: "Fair",
     filter: "Filter",

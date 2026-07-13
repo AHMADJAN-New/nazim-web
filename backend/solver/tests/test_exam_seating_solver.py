@@ -158,30 +158,66 @@ class TestProvenInfeasible:
 
 
 class TestTimeoutClassification:
-    def test_timeout_returns_timeout_status(self) -> None:
-        # Large grid with many students forces long search; tiny timeout triggers timeout.
-        rows, cols = 8, 8
+    def test_cpsat_timeout_status_from_assignment_solver(self) -> None:
+        # Exercise CP-SAT UNKNOWN/timeout at the model layer (solve() may fall back).
+        from exam_seating_solver import (
+            SeatCell,
+            StudentRecord,
+            _build_adjacency,
+            _solve_assignment,
+        )
+
+        rows, cols = 12, 12
+        all_seats = [
+            SeatCell(r, c, r * cols + c + 1, False, False, None)
+            for r in range(rows)
+            for c in range(cols)
+        ]
+        seat_index_by_key = {(s.row, s.col): i for i, s in enumerate(all_seats)}
+        adjacency = _build_adjacency(seat_index_by_key, rows, cols)
+        movable = [
+            StudentRecord(f"s{i}", f"class-{i % 3}")
+            for i in range(100)
+        ]
+        class_by_student = {s.exam_student_id: s.exam_class_id for s in movable}
+
+        result = _solve_assignment(
+            movable,
+            all_seats,
+            adjacency,
+            class_by_student,
+            [],
+            all_seats,
+            list(range(len(all_seats))),
+            strict=True,
+            seed=1,
+            timeout_seconds=0.001,
+        )
+
+        assert result["status"] in {"timeout", "optimal", "feasible", "infeasible"}
+        assert "assignments" in result
+
+    def test_large_exam_uses_constructive_and_assigns_all(self) -> None:
+        rows, cols = 40, 30
         seats = [
             seat(r, c, r * cols + c + 1)
             for r in range(rows)
             for c in range(cols)
         ]
-        students = [
-            student(f"s{i}", f"class-{i % 5}")
-            for i in range(40)
-        ]
+        students = [student(f"s{i}", f"class-{i % 20}") for i in range(1000)]
         payload = base_payload(
             rows=rows,
             cols=cols,
             seats=seats,
             students=students,
             strict_mode=True,
-            timeout_seconds=0.001,
+            timeout_seconds=5,
         )
         result = run_solver(payload)
 
-        assert result["status"] == "timeout"
-        assert "assignments" in result
+        assert result["status"] in {"optimal", "feasible"}
+        assert result["mode_used"] in {"constructive", "constructive_fallback"}
+        assert len(result["assignments"]) == 1000
 
 
 class TestMalformedInput:

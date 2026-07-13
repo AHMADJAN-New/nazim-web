@@ -52,6 +52,7 @@ export interface ExamSeatingMap {
   room?: ExamSeatingMapRoom | null;
   assignedCount?: number;
   totalSeats?: number;
+  examClassIds?: string[];
 }
 
 export interface ExamSeatingAssignmentStudent {
@@ -127,10 +128,19 @@ export interface ExamSeatingUnassignedStudent {
   examClassId: string;
 }
 
+export interface ExamSeatingSeatedElsewhereMap {
+  id: string;
+  name: string;
+  count: number;
+}
+
 export interface ExamSeatingMapDetail extends ExamSeatingMap {
   assignments: ExamSeatingAssignment[];
   classColors: ExamSeatingClassColor[];
   unassignedStudents: ExamSeatingUnassignedStudent[];
+  availableStudentCount: number;
+  seatedElsewhereCount: number;
+  seatedElsewhereMaps: ExamSeatingSeatedElsewhereMap[];
   latestRun: ExamSeatingRun | null;
 }
 
@@ -140,6 +150,7 @@ export interface ExamSeatingMapFormData {
   columns: number;
   startSeatNumber: number;
   roomId: string | null;
+  examClassIds: string[];
 }
 
 export interface SyncExamSeatingAssignmentItem {

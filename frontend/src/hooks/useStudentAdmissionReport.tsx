@@ -50,6 +50,8 @@ export const useStudentAdmissionReport = (
         from_date: normalizedFilters.fromDate,
         to_date: normalizedFilters.toDate,
         search: normalizedFilters.search?.trim() || undefined,
+        building_id: normalizedFilters.buildingId,
+        room_id: normalizedFilters.roomId,
         page: normalizedFilters.page || 1,
         per_page: normalizedFilters.perPage || 25,
       };

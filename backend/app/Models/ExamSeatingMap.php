@@ -165,9 +165,27 @@ class ExamSeatingMap extends Model
         return $this->hasMany(ExamSeatingClassColor::class, 'exam_seating_map_id');
     }
 
+    public function mapClasses(): HasMany
+    {
+        return $this->hasMany(ExamSeatingMapClass::class, 'exam_seating_map_id');
+    }
+
     public function runs(): HasMany
     {
         return $this->hasMany(ExamSeatingRun::class, 'exam_seating_map_id');
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function examClassIds(): array
+    {
+        return $this->mapClasses()
+            ->whereNull('deleted_at')
+            ->pluck('exam_class_id')
+            ->map(fn ($id): string => (string) $id)
+            ->values()
+            ->all();
     }
 
     public function scopeForOrganization(Builder $query, string $organizationId): Builder

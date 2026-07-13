@@ -45,6 +45,8 @@ export interface StudentFilters {
   academic_year_id?: string;
   class_id?: string;
   class_academic_year_id?: string;
+  building_id?: string;
+  room_id?: string;
 }
 
 export const useStudents = (organizationId?: string, usePaginated?: boolean, filters?: StudentFilters) => {
@@ -88,6 +90,8 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
           academic_year_id?: string;
           class_id?: string;
           class_academic_year_id?: string;
+          building_id?: string;
+          room_id?: string;
         } = {
           organization_id: effectiveOrgId || undefined,
           school_id: profile.default_school_id || undefined,
@@ -111,6 +115,8 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
           if (filters.academic_year_id) params.academic_year_id = filters.academic_year_id;
           if (filters.class_id) params.class_id = filters.class_id;
           if (filters.class_academic_year_id) params.class_academic_year_id = filters.class_academic_year_id;
+          if (filters.building_id) params.building_id = filters.building_id;
+          if (filters.room_id) params.room_id = filters.room_id;
         }
 
         const apiStudents = await studentsApi.list(params);

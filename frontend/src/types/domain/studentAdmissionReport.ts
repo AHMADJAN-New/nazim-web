@@ -64,6 +64,8 @@ export interface StudentAdmissionReportFilters {
   toDate?: string;
   /** Student name, admission number, or card number (server-side). */
   search?: string;
+  buildingId?: string;
+  roomId?: string;
   page?: number;
   perPage?: number;
 }

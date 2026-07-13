@@ -91,6 +91,11 @@ export interface StudentAdmission {
   room?: {
     id: string;
     room_number: string;
+    building_id?: string | null;
+    building?: {
+      id: string;
+      building_name: string;
+    };
   };
   school?: {
     id: string;

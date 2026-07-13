@@ -486,7 +486,7 @@ class GenerateReportJob implements ShouldQueue
             $layout['font_size'] = $layout['font_size'] ?? '11px';
         }
 
-        if ($templateName === 'exam_seating_map') {
+        if ($templateName === 'exam_seating_map' || $config->reportKey === 'exam_seating_map') {
             $layout['font_family'] = 'Bahij Nassim';
             $layout['font_size'] = $layout['font_size'] ?? '10px';
             $layout['orientation'] = 'landscape';
@@ -592,8 +592,8 @@ class GenerateReportJob implements ShouldQueue
             // Template
             'template_name' => $templateName,
 
-            // Parameters
-            'parameters' => $config->parameters,
+            // Parameters (merge data-provided sheets/overrides from fetch helpers)
+            'parameters' => array_merge($config->parameters ?? [], $data['parameters'] ?? []),
 
             // Date service for row data
             'date_service' => $dateService,
@@ -650,7 +650,18 @@ class GenerateReportJob implements ShouldQueue
         /** @var ExamSeatingMapService $mapService */
         $mapService = app(ExamSeatingMapService::class);
 
-        return array_merge($data, $mapService->buildReportData($map));
+        $merged = array_merge($data, $mapService->buildReportData($map));
+
+        if ($config->isExcel()) {
+            $merged['parameters'] = array_merge($merged['parameters'] ?? [], [
+                'sheets' => $mapService->buildExcelExportSheets($merged, (string) $config->title),
+            ]);
+            // Clear top-level table payload; sheets drive the workbook.
+            $merged['columns'] = [];
+            $merged['rows'] = [];
+        }
+
+        return $merged;
     }
 
     private function clampFontSize(string $fontSize, int $minimum): string

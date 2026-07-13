@@ -82,6 +82,7 @@ export const mapExamSeatingMapApiToDomain = (
     : null,
   assignedCount: api.assigned_count,
   totalSeats: api.total_seats,
+  examClassIds: api.exam_class_ids ?? [],
 });
 
 const mapAssignmentStudentApiToDomain = (
@@ -176,6 +177,13 @@ export const mapExamSeatingMapDetailApiToDomain = (
   assignments: (api.assignments ?? []).map(mapExamSeatingAssignmentApiToDomain),
   classColors: (api.class_colors ?? []).map(mapExamSeatingClassColorApiToDomain),
   unassignedStudents: (api.unassigned_students ?? []).map(mapUnassignedStudentApiToDomain),
+  availableStudentCount: api.available_student_count ?? 0,
+  seatedElsewhereCount: api.seated_elsewhere_count ?? 0,
+  seatedElsewhereMaps: (api.seated_elsewhere_maps ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    count: row.count,
+  })),
   latestRun: api.latest_run ? mapExamSeatingRunApiToDomain(api.latest_run) : null,
 });
 
@@ -187,6 +195,7 @@ export const mapExamSeatingMapFormToInsert = (
   columns: domain.columns,
   start_seat_number: domain.startSeatNumber,
   room_id: domain.roomId,
+  exam_class_ids: domain.examClassIds,
 });
 
 export const mapExamSeatingMapFormToUpdate = (
@@ -197,6 +206,12 @@ export const mapExamSeatingMapFormToUpdate = (
   ...(domain.columns !== undefined ? { columns: domain.columns } : {}),
   ...(domain.startSeatNumber !== undefined ? { start_seat_number: domain.startSeatNumber } : {}),
   ...(domain.roomId !== undefined ? { room_id: domain.roomId } : {}),
+});
+
+export const mapSyncMapClassesDomainToApi = (
+  examClassIds: string[]
+): ExamSeatingApi.SyncExamSeatingMapClassesPayload => ({
+  exam_class_ids: examClassIds,
 });
 
 export const mapSyncAssignmentsDomainToApi = (
@@ -216,7 +231,7 @@ export const mapSyncAssignmentsDomainToApi = (
 export const mapSyncClassColorsDomainToApi = (
   colors: Array<{ examClassId: string; colorHex: string }>
 ): ExamSeatingApi.SyncExamSeatingClassColorsPayload => ({
-  colors: colors.map((color) => ({
+  class_colors: colors.map((color) => ({
     exam_class_id: color.examClassId,
     color_hex: color.colorHex,
   })),
@@ -231,13 +246,23 @@ export const mapSolveResponseApiToDomain = (
 });
 
 export const mapSolveStatusApiToDomain = (
-  api: ExamSeatingApi.SolveStatusResponse
-): SolveStatusResult => ({
-  map: mapExamSeatingMapApiToDomain(api.map),
-  run: api.run ? mapExamSeatingRunApiToDomain(api.run) : null,
-  solverStatus: api.solver_status,
-  solverDiagnostics: mapSolverDiagnosticsApiToDomain(api.solver_diagnostics),
-});
+  api: ExamSeatingApi.SolveStatusResponse & {
+    latest_run?: ExamSeatingApi.ExamSeatingRun | null;
+    map_id?: string;
+  }
+): SolveStatusResult => {
+  const run = api.run ?? api.latest_run ?? null;
+  const mapSource = api.map ?? (api as unknown as ExamSeatingApi.ExamSeatingMap);
+
+  return {
+    map: mapExamSeatingMapApiToDomain(mapSource),
+    run: run ? mapExamSeatingRunApiToDomain(run) : null,
+    solverStatus: api.solver_status ?? mapSource.solver_status,
+    solverDiagnostics: mapSolverDiagnosticsApiToDomain(
+      api.solver_diagnostics ?? mapSource.solver_diagnostics
+    ),
+  };
+};
 
 export const mapReportDataApiToDomain = (
   api: ExamSeatingApi.ExamSeatingReportDataResponse

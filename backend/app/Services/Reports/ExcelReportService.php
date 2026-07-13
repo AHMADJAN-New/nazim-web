@@ -134,6 +134,11 @@ class ExcelReportService
             $this->reportProgress($progressCallback, 5, 'Preparing multi-sheet workbook');
 
             $spreadsheet = new Spreadsheet;
+            $defaultFont = (string) ($context['FONT_FAMILY'] ?? 'Bahij Nassim');
+            if (trim($defaultFont) === '') {
+                $defaultFont = 'Bahij Nassim';
+            }
+            $spreadsheet->getDefaultStyle()->getFont()->setName($defaultFont);
 
             foreach (array_values($sheets) as $sheetIndex => $sheetSpec) {
                 $sheet = $sheetIndex === 0 ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet();
@@ -144,7 +149,9 @@ class ExcelReportService
 
                 // Sheet-specific context overrides
                 $sheetContext = $context;
+                $sheetType = 'table';
                 if (is_array($sheetSpec)) {
+                    $sheetType = (string) ($sheetSpec['type'] ?? 'table');
                     if (isset($sheetSpec['columns']) && is_array($sheetSpec['columns'])) {
                         $sheetContext['COLUMNS'] = $sheetSpec['columns'];
                     }
@@ -154,11 +161,29 @@ class ExcelReportService
                     if (isset($sheetSpec['title']) && is_string($sheetSpec['title'])) {
                         $sheetContext['TABLE_TITLE'] = $sheetSpec['title'];
                     }
+                    if (isset($sheetSpec['page_size'])) {
+                        $sheetContext['page_size'] = $sheetSpec['page_size'];
+                    }
+                    if (isset($sheetSpec['orientation'])) {
+                        $sheetContext['orientation'] = $sheetSpec['orientation'];
+                    }
                 }
 
                 // Set RTL if needed
                 if ($sheetContext['rtl'] ?? true) {
                     $sheet->setRightToLeft(true);
+                }
+
+                // Visual seating map grid (matches desktop roll_number_map Excel export)
+                if ($sheetType === 'seating_grid' && is_array($sheetSpec)) {
+                    $sheetContext['margins'] = $sheetContext['margins'] ?? '12mm 6mm 12mm 6mm';
+                    $this->addSeatingGridSheet($sheet, $sheetSpec, $sheetContext);
+                    $this->applyPageSettings($sheet, $sheetContext);
+
+                    $pct = 10 + (int) floor((($sheetIndex + 1) / max(1, count($sheets))) * 80);
+                    $this->reportProgress($progressCallback, min(90, $pct), 'Built sheet '.($sheetIndex + 1).' of '.count($sheets));
+
+                    continue;
                 }
 
                 $currentRow = 1;
@@ -493,8 +518,13 @@ class ExcelReportService
         // Style header row
         $lastCol = $this->getColumnLetter($colIndex - 1);
         $tableFontSize = $this->parseFontSize($context['TABLE_FONT_SIZE'] ?? $context['FONT_SIZE'] ?? '14px');
+        $tableFontFamily = (string) ($context['FONT_FAMILY'] ?? 'Bahij Nassim');
+        if (trim($tableFontFamily) === '') {
+            $tableFontFamily = 'Bahij Nassim';
+        }
         $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->applyFromArray([
             'font' => [
+                'name' => $tableFontFamily,
                 'bold' => true,
                 'size' => $tableFontSize,
                 'color' => ['argb' => 'FFFFFFFF'],
@@ -528,6 +558,7 @@ class ExcelReportService
             $sheet->getCell("A{$currentRow}")->setValue('هیڅ معلومات ونه موندل شول.');
             $sheet->getStyle("A{$currentRow}")->applyFromArray([
                 'font' => [
+                    'name' => $tableFontFamily,
                     'size' => $fontSize,
                     'color' => ['argb' => 'FF666666'],
                 ],
@@ -569,6 +600,7 @@ class ExcelReportService
             // Style data row
             $rowStyle = [
                 'font' => [
+                    'name' => $tableFontFamily,
                     'size' => $fontSize,
                 ],
                 'alignment' => [
@@ -1033,6 +1065,109 @@ class ExcelReportService
         }
 
         return $index;
+    }
+
+    /**
+     * Render a visual seating-map grid sheet (title + colored seat cells).
+     * Matches the desktop Python export: seat #, ID, name, father, class per cell.
+     *
+     * @param  \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet  $sheet
+     * @param  array<string, mixed>  $sheetSpec
+     * @param  array<string, mixed>  $context
+     */
+    private function addSeatingGridSheet($sheet, array $sheetSpec, array $context): void
+    {
+        $gridRows = max(1, (int) ($sheetSpec['grid_rows'] ?? 1));
+        $gridColumns = max(1, (int) ($sheetSpec['grid_columns'] ?? 1));
+        $title = (string) ($sheetSpec['title'] ?? ($context['TABLE_TITLE'] ?? 'Seating Map'));
+        // Match desktop seating export: title = Bahij Titr, cells = Bahij Nassim
+        $titleFontFamily = 'Bahij Titr';
+        $cellFontFamily = 'Bahij Nassim';
+
+        // Dynamic title size (Python: base 45 at 20 columns)
+        $titleSize = max(14, (int) round(45 * ($gridColumns / 20)));
+
+        $lastColLetter = $this->getColumnLetter($gridColumns);
+        $sheet->mergeCells("A1:{$lastColLetter}1");
+        $sheet->setCellValue('A1', $title);
+        $sheet->getStyle('A1')->applyFromArray([
+            'font' => [
+                'name' => $titleFontFamily,
+                'size' => $titleSize,
+                'bold' => true,
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+                'wrapText' => true,
+            ],
+        ]);
+        $sheet->getStyle('A1')->getFont()->setName($titleFontFamily)->setSize($titleSize)->setBold(true);
+        $sheet->getRowDimension(1)->setRowHeight($titleSize * 1.5);
+
+        $cellsByPosition = [];
+        foreach (($sheetSpec['cells'] ?? []) as $cell) {
+            if (! is_array($cell)) {
+                continue;
+            }
+            $r = (int) ($cell['row'] ?? 0);
+            $c = (int) ($cell['col'] ?? 0);
+            if ($r < 1 || $c < 1) {
+                continue;
+            }
+            $cellsByPosition["{$r}-{$c}"] = $cell;
+        }
+
+        $thinBorder = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['argb' => 'FF666666'],
+                ],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+                'wrapText' => true,
+            ],
+            'font' => [
+                'name' => $cellFontFamily,
+                'size' => 14,
+            ],
+        ];
+
+        for ($row = 1; $row <= $gridRows; $row++) {
+            $excelRow = $row + 1;
+            $sheet->getRowDimension($excelRow)->setRowHeight(80);
+
+            for ($col = 1; $col <= $gridColumns; $col++) {
+                $cellSpec = $cellsByPosition["{$row}-{$col}"] ?? null;
+                $text = is_array($cellSpec) ? (string) ($cellSpec['text'] ?? '') : '';
+                $fillHex = strtoupper(ltrim((string) (is_array($cellSpec) ? ($cellSpec['fill'] ?? 'FFFFFF') : 'FFFFFF'), '#'));
+                if ($fillHex === '' || strlen($fillHex) !== 6 || ! ctype_xdigit($fillHex)) {
+                    $fillHex = 'FFFFFF';
+                }
+
+                $colLetter = $this->getColumnLetter($col);
+                $coordinate = "{$colLetter}{$excelRow}";
+                $sheet->setCellValueExplicit($coordinate, $text, DataType::TYPE_STRING);
+                $sheet->getStyle($coordinate)->applyFromArray($thinBorder);
+                $sheet->getStyle($coordinate)->getFont()
+                    ->setName($cellFontFamily)
+                    ->setSize(14);
+                $sheet->getStyle($coordinate)->getFill()
+                    ->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()
+                    ->setARGB('FF'.$fillHex);
+                $sheet->getStyle($coordinate)->getFill()
+                    ->getEndColor()
+                    ->setARGB('FF'.$fillHex);
+            }
+        }
+
+        for ($col = 1; $col <= $gridColumns; $col++) {
+            $sheet->getColumnDimension($this->getColumnLetter($col))->setWidth(15);
+        }
     }
 
     /**

@@ -91,6 +91,7 @@ export function mapStudentAdmissionApiToDomain(api: StudentAdmissionApi.StudentA
     room: api.room ? {
       id: api.room.id,
       roomNumber: api.room.room_number,
+      buildingName: api.room.building?.building_name ?? null,
     } : undefined,
     school: api.school ? {
       id: api.school.id,

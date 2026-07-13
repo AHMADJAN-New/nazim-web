@@ -147,6 +147,29 @@ class StudentController extends Controller
             });
         }
 
+        if ($request->filled('building_id') || $request->filled('room_id')) {
+            $scopeError = $this->placementService->validateBuildingRoomScope(
+                $currentSchoolId,
+                $request->filled('building_id') ? (string) $request->input('building_id') : null,
+                $request->filled('room_id') ? (string) $request->input('room_id') : null
+            );
+
+            if ($scopeError) {
+                return response()->json(['error' => $scopeError], 404);
+            }
+
+            $this->placementService->applyStudentBuildingRoomFilter(
+                $query,
+                $request->filled('building_id') ? (string) $request->input('building_id') : null,
+                $request->filled('room_id') ? (string) $request->input('room_id') : null,
+                $profile->organization_id,
+                $currentSchoolId,
+                $request->filled('academic_year_id') ? (string) $request->input('academic_year_id') : null,
+                $request->filled('class_id') ? (string) $request->input('class_id') : null,
+                $request->filled('class_academic_year_id') ? (string) $request->input('class_academic_year_id') : null
+            );
+        }
+
         // Support pagination if page and per_page parameters are provided
         if ($request->has('page') || $request->has('per_page')) {
             $perPage = $request->input('per_page', 25);
@@ -194,7 +217,7 @@ class StudentController extends Controller
             ->whereNull('deleted_at')
             ->where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
-            ->with(['classAcademicYear.class', 'class', 'academicYear', 'room:id,room_number'])
+            ->with(['classAcademicYear.class', 'class', 'academicYear', 'room:id,room_number,building_id', 'room.building:id,building_name'])
             ->orderByDesc('admission_date')
             ->orderByDesc('created_at')
             ->get();
@@ -211,6 +234,7 @@ class StudentController extends Controller
             $student->current_section = null;
             $student->current_academic_year = null;
             $student->room_number = null;
+            $student->building_name = null;
             $student->latest_admission = null;
 
             $admission = $latestAdmissionByStudentId[$student->id] ?? null;
@@ -225,6 +249,12 @@ class StudentController extends Controller
                     $student->current_section = $admission->classAcademicYear?->section_name;
                     $student->current_academic_year = $admission->academicYear?->name;
                     $student->room_number = $admission->room?->room_number;
+                    $student->building_name = $admission->room?->building?->building_name;
+                }
+
+                if ($admission->room) {
+                    $student->room_number = $student->room_number ?? $admission->room->room_number;
+                    $student->building_name = $student->building_name ?? $admission->room->building?->building_name;
                 }
 
                 $student->latest_admission = [

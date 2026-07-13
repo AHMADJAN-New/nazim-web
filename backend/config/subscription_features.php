@@ -202,6 +202,7 @@ return [
         'exams_full' => [
             'exams.manage_timetable', 'exams.manage_attendance', 'exams.view_attendance_reports',
             'exams.roll_numbers.read', 'exams.roll_numbers.assign', 'exams.secret_numbers.read', 'exams.secret_numbers.assign', 'exams.numbers.print',
+            'exam_seating_maps.read', 'exam_seating_maps.create', 'exam_seating_maps.update', 'exam_seating_maps.delete', 'exam_seating_maps.assign', 'exam_seating_maps.print',
             'exam_times.read', 'exam_times.create', 'exam_times.update', 'exam_times.delete',
             'exam_types.read', 'exam_types.create', 'exam_types.update', 'exam_types.delete',
             'exam_documents.read', 'exam_documents.create', 'exam_documents.update', 'exam_documents.delete',

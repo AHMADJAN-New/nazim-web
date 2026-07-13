@@ -39,6 +39,8 @@ export default {
     error: "یوه ستونزه رامنځته شوه",
     example: "د بیلګې په توګه",
     export: "صادرول",
+    exportExcel: "Excel صادرول",
+    exportPdf: "PDF صادرول",
     fail: "ناکام",
     fair: "متوسط",
     filter: "فلټر",

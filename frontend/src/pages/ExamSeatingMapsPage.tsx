@@ -3,6 +3,7 @@ import {
   Copy,
   Grid3X3,
   LayoutGrid,
+  Pencil,
   Plus,
   RefreshCw,
   Trash2,
@@ -49,12 +50,19 @@ import {
   useDeleteExamSeatingMap,
   useDuplicateExamSeatingMap,
   useExamSeatingMaps,
+  useReopenExamSeatingMap,
 } from '@/hooks/useExamSeating';
-import { useExam, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
+import { useExam, useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useRooms } from '@/hooks/useRooms';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  getNextAvailableStartSeat,
+  getSeatRangeEnd,
+  getSeatRangeOverlap,
+} from '@/lib/examSeatingUtils';
 import type { ExamSeatingMap } from '@/types/domain/examSeating';
 
 const STATUS_VARIANTS: Record<ExamSeatingMap['status'], 'default' | 'secondary' | 'outline' | 'destructive'> = {
@@ -81,16 +89,19 @@ export function ExamSeatingMapsPage() {
   const [formColumns, setFormColumns] = useState('8');
   const [formStartSeat, setFormStartSeat] = useState('1');
   const [formRoomId, setFormRoomId] = useState<string>('none');
+  const [formExamClassIds, setFormExamClassIds] = useState<string[]>([]);
 
   const { data: allExams, isLoading: examsLoading } = useExams(organizationId);
   const latestExam = useLatestExamFromCurrentYear(organizationId);
   const { data: exam, isLoading: examLoading } = useExam(examId);
+  const { data: examClasses = [] } = useExamClasses(examId);
   const { data: maps = [], isLoading: mapsLoading, refetch } = useExamSeatingMaps(examId);
   const { data: rooms = [] } = useRooms(profile?.default_school_id, organizationId);
 
   const createMutation = useCreateExamSeatingMap();
   const deleteMutation = useDeleteExamSeatingMap();
   const duplicateMutation = useDuplicateExamSeatingMap();
+  const reopenMutation = useReopenExamSeatingMap();
 
   const hasReadPermission = useHasPermission('exam_seating_maps.read');
   const hasCreatePermission = useHasPermission('exam_seating_maps.create');
@@ -113,41 +124,102 @@ export function ExamSeatingMapsPage() {
     }
   }, [allExams, latestExam, selectedExamId, examIdFromParams]);
 
+  const parsedRows = Math.max(1, Number(formRows) || 1);
+  const parsedColumns = Math.max(1, Number(formColumns) || 1);
+  const parsedStartSeat = Math.max(1, Number(formStartSeat) || 1);
+
+  const suggestedStartSeat = useMemo(
+    () => getNextAvailableStartSeat(maps, parsedRows, parsedColumns),
+    [maps, parsedRows, parsedColumns]
+  );
+
+  const seatRangeOverlap = useMemo(
+    () => getSeatRangeOverlap(maps, parsedStartSeat, parsedRows, parsedColumns),
+    [maps, parsedStartSeat, parsedRows, parsedColumns]
+  );
+
+  const openCreateDialog = () => {
+    const rows = 10;
+    const columns = 8;
+    const startSeat = getNextAvailableStartSeat(maps, rows, columns);
+    setFormName('');
+    setFormRows(String(rows));
+    setFormColumns(String(columns));
+    setFormStartSeat(String(startSeat));
+    setFormRoomId('none');
+    setFormExamClassIds(examClasses.map((examClass) => examClass.id));
+    setShowCreateDialog(true);
+  };
+
   const resetCreateForm = () => {
     setFormName('');
     setFormRows('10');
     setFormColumns('8');
     setFormStartSeat('1');
     setFormRoomId('none');
+    setFormExamClassIds([]);
+  };
+
+  const toggleFormExamClass = (examClassId: string, checked: boolean) => {
+    setFormExamClassIds((prev) => {
+      if (checked) {
+        return prev.includes(examClassId) ? prev : [...prev, examClassId];
+      }
+      return prev.filter((id) => id !== examClassId);
+    });
   };
 
   const handleCreate = async () => {
-    if (!examId || !formName.trim()) return;
-    const created = await createMutation.mutateAsync({
-      examId,
-      data: {
-        name: formName.trim(),
-        rows: Number(formRows),
-        columns: Number(formColumns),
-        startSeatNumber: Number(formStartSeat) || 1,
-        roomId: formRoomId === 'none' ? null : formRoomId,
-      },
-    });
-    setShowCreateDialog(false);
-    resetCreateForm();
-    navigate(`/exams/${examId}/seating-maps/${created.id}`);
+    if (!examId || !formName.trim() || seatRangeOverlap || formExamClassIds.length === 0) return;
+    try {
+      const created = await createMutation.mutateAsync({
+        examId,
+        data: {
+          name: formName.trim(),
+          rows: parsedRows,
+          columns: parsedColumns,
+          startSeatNumber: parsedStartSeat,
+          roomId: formRoomId === 'none' ? null : formRoomId,
+          examClassIds: formExamClassIds,
+        },
+      });
+      setShowCreateDialog(false);
+      resetCreateForm();
+      navigate(`/exams/${examId}/seating-maps/${created.id}`);
+    } catch {
+      // Toast is shown by mutation onError; avoid unhandled rejection.
+    }
   };
 
   const handleDelete = async () => {
     if (!examId || !deleteTarget) return;
-    await deleteMutation.mutateAsync({ examId, mapId: deleteTarget.id });
-    setDeleteTarget(null);
+    try {
+      await deleteMutation.mutateAsync({ examId, mapId: deleteTarget.id });
+      setDeleteTarget(null);
+    } catch {
+      // Toast is shown by mutation onError; avoid unhandled rejection / retries noise.
+      setDeleteTarget(null);
+    }
   };
 
   const handleDuplicate = async (map: ExamSeatingMap) => {
     if (!examId) return;
-    const duplicated = await duplicateMutation.mutateAsync({ examId, mapId: map.id });
-    navigate(`/exams/${examId}/seating-maps/${duplicated.id}`);
+    try {
+      const duplicated = await duplicateMutation.mutateAsync({ examId, mapId: map.id });
+      navigate(`/exams/${examId}/seating-maps/${duplicated.id}`);
+    } catch {
+      // Toast is shown by mutation onError.
+    }
+  };
+
+  const handleReopen = async (map: ExamSeatingMap) => {
+    if (!examId) return;
+    try {
+      await reopenMutation.mutateAsync({ examId, mapId: map.id });
+      navigate(`/exams/${examId}/seating-maps/${map.id}`);
+    } catch {
+      // Toast is shown by mutation onError.
+    }
   };
 
   const isLoading = examsLoading || examLoading || mapsLoading;
@@ -187,7 +259,7 @@ export function ExamSeatingMapsPage() {
             ? {
                 label: t('exams.seatingMaps.createMap') || 'Create Map',
                 icon: <Plus className="h-4 w-4" />,
-                onClick: () => setShowCreateDialog(true),
+                onClick: openCreateDialog,
               }
             : undefined
         }
@@ -313,7 +385,22 @@ export function ExamSeatingMapsPage() {
                               </span>
                             </Button>
                           )}
-                          {hasDeletePermission && map.status === 'draft' && (
+                          {hasUpdatePermission && (map.status === 'applied' || map.status === 'finalized') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-shrink-0"
+                              aria-label={t('exams.seatingMaps.reopen') || 'Edit'}
+                              onClick={() => void handleReopen(map)}
+                              disabled={reopenMutation.isPending}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              <span className="hidden sm:inline ml-2">
+                                {t('exams.seatingMaps.editMap') || t('common.edit') || 'Edit'}
+                              </span>
+                            </Button>
+                          )}
+                          {hasDeletePermission && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -381,14 +468,47 @@ export function ExamSeatingMapsPage() {
             </div>
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="map-start-seat">{t('exams.seatingMaps.startSeat') || 'Start Seat Number'}</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="map-start-seat">{t('exams.seatingMaps.startSeat') || 'Start Seat Number'}</Label>
+                  {suggestedStartSeat !== parsedStartSeat && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setFormStartSeat(String(suggestedStartSeat))}
+                    >
+                      {t('exams.seatingMaps.useNextStartSeat') || 'Use next available'}
+                    </Button>
+                  )}
+                </div>
                 <Input
                   id="map-start-seat"
                   type="number"
                   min={1}
                   value={formStartSeat}
                   onChange={(e) => setFormStartSeat(e.target.value)}
+                  aria-invalid={!!seatRangeOverlap}
                 />
+                <p className="text-xs text-muted-foreground">
+                  {t('exams.seatingMaps.startSeatHint', {
+                    start: suggestedStartSeat,
+                    end: getSeatRangeEnd(suggestedStartSeat, parsedRows, parsedColumns),
+                  }) ||
+                    `Next available: ${suggestedStartSeat}-${getSeatRangeEnd(suggestedStartSeat, parsedRows, parsedColumns)}`}
+                </p>
+                {seatRangeOverlap && (
+                  <p className="text-xs text-destructive">
+                    {t('exams.seatingMaps.seatRangeOverlap', {
+                      newStart: seatRangeOverlap.newStart,
+                      newEnd: seatRangeOverlap.newEnd,
+                      mapName: seatRangeOverlap.mapName,
+                      existingStart: seatRangeOverlap.existingStart,
+                      existingEnd: seatRangeOverlap.existingEnd,
+                    }) ||
+                      `Seat range ${seatRangeOverlap.newStart}-${seatRangeOverlap.newEnd} overlaps "${seatRangeOverlap.mapName}" (${seatRangeOverlap.existingStart}-${seatRangeOverlap.existingEnd})`}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>{t('exams.room') || 'Room'}</Label>
@@ -407,6 +527,72 @@ export function ExamSeatingMapsPage() {
                 </Select>
               </div>
             </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label>{t('exams.seatingMaps.selectClasses') || 'Classes for this map'}</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={() => setFormExamClassIds(examClasses.map((c) => c.id))}
+                    disabled={examClasses.length === 0}
+                  >
+                    {t('common.selectAll') || 'Select all'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={() => setFormExamClassIds([])}
+                    disabled={formExamClassIds.length === 0}
+                  >
+                    {t('common.clear') || 'Clear'}
+                  </Button>
+                </div>
+              </div>
+              <div className="max-h-48 overflow-y-auto rounded-md border p-3 space-y-2">
+                {examClasses.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t('exams.seatingMaps.noExamClasses') || 'No classes on this exam yet.'}
+                  </p>
+                ) : (
+                  examClasses.map((examClass) => {
+                    const className =
+                      examClass.classAcademicYear?.class?.name ||
+                      examClass.classAcademicYear?.sectionName ||
+                      examClass.id;
+                    const sectionName = examClass.classAcademicYear?.sectionName;
+                    const label =
+                      sectionName && !String(className).includes(String(sectionName))
+                        ? `${className} — ${sectionName}`
+                        : String(className);
+                    const checked = formExamClassIds.includes(examClass.id);
+                    return (
+                      <label
+                        key={examClass.id}
+                        className="flex items-center gap-2 text-sm cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) =>
+                            toggleFormExamClass(examClass.id, value === true)
+                          }
+                        />
+                        <span>{label}</span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              {formExamClassIds.length === 0 && examClasses.length > 0 && (
+                <p className="text-xs text-destructive">
+                  {t('exams.seatingMaps.classesRequired') || 'Select at least one class.'}
+                </p>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
@@ -414,7 +600,12 @@ export function ExamSeatingMapsPage() {
             </Button>
             <Button
               onClick={() => void handleCreate()}
-              disabled={!formName.trim() || createMutation.isPending}
+              disabled={
+                !formName.trim() ||
+                !!seatRangeOverlap ||
+                formExamClassIds.length === 0 ||
+                createMutation.isPending
+              }
             >
               {t('common.create') || 'Create'}
             </Button>

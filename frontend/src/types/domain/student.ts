@@ -108,6 +108,7 @@ export interface Student {
   cardNumber?: string | null;
   rollNumber?: string;
   roomNumber?: string | null;
+  buildingName?: string | null;
   isBoarder?: boolean | null;
   residencyTypeName?: string | null;
   tazkiraNumber?: string | null;

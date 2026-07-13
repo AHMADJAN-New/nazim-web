@@ -376,4 +376,119 @@ class StudentAdmissionPlacementService
     {
         return $admissions->map(fn (StudentAdmission $admission) => $this->appendToAdmission($admission));
     }
+
+    /**
+     * Validate building/room belong to the current school and are consistent with each other.
+     */
+    public function validateBuildingRoomScope(string $schoolId, ?string $buildingId, ?string $roomId): ?string
+    {
+        if ($buildingId) {
+            $buildingExists = DB::table('buildings')
+                ->where('id', $buildingId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+
+            if (! $buildingExists) {
+                return 'Building not found for this school';
+            }
+        }
+
+        if ($roomId) {
+            $roomQuery = DB::table('rooms')
+                ->where('id', $roomId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at');
+
+            if ($buildingId) {
+                $roomQuery->where('building_id', $buildingId);
+            }
+
+            if (! $roomQuery->exists()) {
+                return 'Room not found for this school';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Filter admission rows by hostel room assignment (room_id on student_admissions).
+     */
+    public function applyAdmissionBuildingRoomFilter(
+        QueryBuilder $query,
+        ?string $buildingId,
+        ?string $roomId,
+        string $table = 'student_admissions'
+    ): QueryBuilder {
+        if (! $buildingId && ! $roomId) {
+            return $query;
+        }
+
+        if ($roomId) {
+            $query->where("{$table}.room_id", $roomId);
+        } elseif ($buildingId) {
+            $query->whereNotNull("{$table}.room_id")
+                ->whereExists(function ($roomSub) use ($buildingId, $table) {
+                    $roomSub->from('rooms as r')
+                        ->whereColumn('r.id', "{$table}.room_id")
+                        ->where('r.building_id', $buildingId)
+                        ->whereNull('r.deleted_at');
+                });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Filter students who have at least one admission matching building/room (and optional class/year scope).
+     */
+    public function applyStudentBuildingRoomFilter(
+        QueryBuilder $query,
+        ?string $buildingId,
+        ?string $roomId,
+        string $organizationId,
+        string $schoolId,
+        ?string $academicYearId = null,
+        ?string $classId = null,
+        ?string $classAcademicYearId = null
+    ): QueryBuilder {
+        if (! $buildingId && ! $roomId) {
+            return $query;
+        }
+
+        $hasPlacementFilter = ! empty($academicYearId) || ! empty($classId) || ! empty($classAcademicYearId);
+
+        $query->whereExists(function (QueryBuilder $sub) use (
+            $buildingId,
+            $roomId,
+            $organizationId,
+            $schoolId,
+            $academicYearId,
+            $classId,
+            $classAcademicYearId,
+            $hasPlacementFilter
+        ) {
+            $sub->select(DB::raw('1'))
+                ->from('student_admissions as sa')
+                ->whereColumn('sa.student_id', 'students.id')
+                ->whereNull('sa.deleted_at')
+                ->where('sa.organization_id', $organizationId)
+                ->where('sa.school_id', $schoolId);
+
+            if ($hasPlacementFilter) {
+                $this->applyClassAcademicFilters(
+                    $sub,
+                    $academicYearId ?: null,
+                    $classId ?: null,
+                    $classAcademicYearId ?: null,
+                    'sa'
+                );
+            }
+
+            $this->applyAdmissionBuildingRoomFilter($sub, $buildingId, $roomId, 'sa');
+        });
+
+        return $query;
+    }
 }

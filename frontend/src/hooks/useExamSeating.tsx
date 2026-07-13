@@ -18,6 +18,7 @@ import {
   mapSolveStatusApiToDomain,
   mapSyncAssignmentsDomainToApi,
   mapSyncClassColorsDomainToApi,
+  mapSyncMapClassesDomainToApi,
 } from '@/mappers/examSeatingMapper';
 import { showToast } from '@/lib/toast';
 import { useServerReport } from '@/hooks/useServerReport';
@@ -122,7 +123,7 @@ export const useExamSeatingMap = (examId?: string, mapId?: string) => {
       return mapExamSeatingMapDetailApiToDomain(detail);
     },
     enabled: !!user && !!profile && !!profile.organization_id && !!profile.default_school_id && !!examId && !!mapId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
@@ -303,6 +304,39 @@ export const useSyncExamSeatingClassColors = () => {
   });
 };
 
+export const useSyncExamSeatingMapClasses = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({
+      examId,
+      mapId,
+      examClassIds,
+    }: {
+      examId: string;
+      mapId: string;
+      examClassIds: string[];
+    }) => {
+      const response = await examSeatingApi.syncMapClasses(
+        examId,
+        mapId,
+        mapSyncMapClassesDomainToApi(examClassIds)
+      );
+      const detail = (response as { data?: ExamSeatingApi.ExamSeatingMapDetail }).data
+        ?? (response as ExamSeatingApi.ExamSeatingMapDetail);
+      return mapExamSeatingMapDetailApiToDomain(detail);
+    },
+    onSuccess: async (_data, variables) => {
+      showToast.success(t('toast.seatingMapClassesUpdated'));
+      await invalidateSeatingCaches(queryClient, variables.examId, variables.mapId);
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.seatingMapClassesUpdateFailed'));
+    },
+  });
+};
+
 export const useSolveExamSeatingMap = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
@@ -312,17 +346,20 @@ export const useSolveExamSeatingMap = () => {
       examId,
       mapId,
       revision,
+      inputChecksum,
       strictMode,
       seed,
     }: {
       examId: string;
       mapId: string;
       revision: number;
+      inputChecksum: string;
       strictMode?: boolean;
       seed?: number;
     }): Promise<SolveExamSeatingMapResult> => {
       const response = await examSeatingApi.solve(examId, mapId, {
         revision,
+        input_checksum: inputChecksum,
         strict_mode: strictMode,
         seed,
       });
@@ -363,6 +400,27 @@ export const useFinalizeExamSeatingMap = () => {
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.seatingMapFinalizeFailed'));
+    },
+  });
+};
+
+export const useReopenExamSeatingMap = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ examId, mapId }: { examId: string; mapId: string }) => {
+      const response = await examSeatingApi.reopen(examId, mapId);
+      const detail = (response as { data?: ExamSeatingApi.ExamSeatingMapDetail }).data
+        ?? (response as ExamSeatingApi.ExamSeatingMapDetail);
+      return mapExamSeatingMapDetailApiToDomain(detail);
+    },
+    onSuccess: async (_data, variables) => {
+      showToast.success(t('toast.seatingMapReopened') || t('toast.seatingMapUpdated'));
+      await invalidateSeatingCaches(queryClient, variables.examId, variables.mapId);
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.seatingMapReopenFailed') || t('toast.seatingMapUpdateFailed'));
     },
   });
 };
@@ -417,11 +475,18 @@ export const useConfirmMapRollNumbers = () => {
     mutationFn: async ({
       examId,
       mapId,
+      revision,
+      inputChecksum,
     }: {
       examId: string;
       mapId: string;
+      revision: number;
+      inputChecksum: string;
     }): Promise<MapRollNumberConfirmResponse> => {
-      const response = await examSeatingApi.confirmMapRollNumbers(examId, mapId);
+      const response = await examSeatingApi.confirmMapRollNumbers(examId, mapId, {
+        revision,
+        input_checksum: inputChecksum,
+      });
       return mapRollNumberConfirmApiToDomain(response as ExamSeatingApi.MapRollNumberConfirmResponse);
     },
     onSuccess: async (data, variables) => {
@@ -461,32 +526,25 @@ export const useExamSeatingMapReport = () => {
       title,
       brandingId,
       reportTemplateId,
-      calendarPreference,
-      language,
     }: {
       reportData: ExamSeatingReportData;
       reportType: 'pdf' | 'excel';
       title: string;
       brandingId?: string | null;
       reportTemplateId?: string | null;
-      calendarPreference?: string;
-      language?: string;
     }) => {
       await generateReport({
         reportKey: 'exam_seating_map',
         reportType,
         title,
-        brandingId,
-        reportTemplateId,
+        brandingId: brandingId ?? undefined,
+        reportTemplateId: reportTemplateId ?? undefined,
         templateName: reportType === 'pdf' ? 'exam_seating_map' : undefined,
-        calendarPreference,
-        language,
         async: true,
-        data: {
-          columns: reportData.columns,
-          rows: reportData.rows,
-          filters: reportData.filters ?? {},
-        },
+        // Server re-fetches seating data via parameters.map_id; still send
+        // columns/rows so Excel validation (no custom template) succeeds.
+        columns: reportData.columns,
+        rows: reportData.rows,
         parameters: {
           map_id: reportData.map.id,
           map_name: reportData.map.name,

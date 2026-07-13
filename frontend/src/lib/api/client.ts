@@ -3711,7 +3711,7 @@ export const examSeatingApi = {
   },
 
   syncClassColors: async (examId: string, mapId: string, data: {
-    colors: Array<{
+    class_colors: Array<{
       exam_class_id: string;
       color_hex: string;
     }>;
@@ -3719,8 +3719,15 @@ export const examSeatingApi = {
     return apiClient.put(`/exams/${examId}/seating-maps/${mapId}/class-colors`, data);
   },
 
+  syncMapClasses: async (examId: string, mapId: string, data: {
+    exam_class_ids: string[];
+  }) => {
+    return apiClient.put(`/exams/${examId}/seating-maps/${mapId}/classes`, data);
+  },
+
   solve: async (examId: string, mapId: string, data: {
     revision: number;
+    input_checksum: string;
     strict_mode?: boolean;
     seed?: number;
   }) => {
@@ -3735,6 +3742,10 @@ export const examSeatingApi = {
     return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/finalize`, data);
   },
 
+  reopen: async (examId: string, mapId: string) => {
+    return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/reopen`, {});
+  },
+
   duplicate: async (examId: string, mapId: string) => {
     return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/duplicate`, {});
   },
@@ -3747,8 +3758,11 @@ export const examSeatingApi = {
     return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/roll-numbers/preview`, {});
   },
 
-  confirmMapRollNumbers: async (examId: string, mapId: string) => {
-    return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/roll-numbers/confirm`, {});
+  confirmMapRollNumbers: async (examId: string, mapId: string, data: {
+    revision: number;
+    input_checksum: string;
+  }) => {
+    return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/roll-numbers/confirm`, data);
   },
 };
 

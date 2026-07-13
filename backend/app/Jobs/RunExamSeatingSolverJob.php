@@ -20,7 +20,8 @@ class RunExamSeatingSolverJob implements ShouldQueue
 
     public int $tries = 1;
 
-    public int $timeout = 300;
+    /** Allow long CP-SAT runs (strict + fallback) for large exams. */
+    public int $timeout = 1200;
 
     public function __construct(
         public string $mapId,
@@ -56,17 +57,16 @@ class RunExamSeatingSolverJob implements ShouldQueue
 
         try {
             $mapService->validateRevisionChecksum($map, $this->revision, $this->inputChecksum);
+            $mapService->assertMapHasStudentsForSolve($map);
 
             $solved = $solverService->solve($map, $this->strictMode, $this->seed);
             $result = $solved['result'];
 
             $map->refresh();
 
-            if ($map->revision === $this->revision) {
-                $currentChecksum = $solverService->buildSolverInput($map)['checksum'];
-
-                if (hash_equals($currentChecksum, trim($this->inputChecksum))
-                    && in_array($result['status'], ['optimal', 'feasible'], true)) {
+            $applied = false;
+            if (in_array($result['status'], ['optimal', 'feasible'], true)) {
+                try {
                     $mapService->applySolverResults(
                         $map,
                         $this->revision,
@@ -74,7 +74,23 @@ class RunExamSeatingSolverJob implements ShouldQueue
                         $result,
                         $this->userId
                     );
+                    $applied = true;
+                } catch (Throwable $applyException) {
+                    Log::error('Exam seating solver apply failed after successful solve', [
+                        'map_id' => $this->mapId,
+                        'status' => $result['status'] ?? null,
+                        'assignment_count' => count($result['assignments'] ?? []),
+                        'error' => $applyException->getMessage(),
+                    ]);
+                    throw $applyException;
                 }
+            } else {
+                Log::warning('Exam seating solver finished without usable assignments', [
+                    'map_id' => $this->mapId,
+                    'status' => $result['status'] ?? null,
+                    'message' => $result['message'] ?? null,
+                    'mode_used' => $result['mode_used'] ?? null,
+                ]);
             }
 
             $map->refresh();
@@ -96,13 +112,15 @@ class RunExamSeatingSolverJob implements ShouldQueue
                     'mode_used' => $result['mode_used'] ?? null,
                     'conflict_pairs' => $result['conflict_pairs'] ?? [],
                     'message' => $result['message'] ?? null,
+                    'applied' => $applied,
+                    'assignment_count' => count($result['assignments'] ?? []),
                 ],
                 'started_at' => $startedAt,
                 'completed_at' => now(),
             ]);
 
             if ($map->solver_status !== ExamSeatingMap::SOLVER_SUCCEEDED) {
-                $map->solver_status = in_array($result['status'], ['optimal', 'feasible'], true)
+                $map->solver_status = $applied
                     ? ExamSeatingMap::SOLVER_SUCCEEDED
                     : ExamSeatingMap::SOLVER_FAILED;
                 $map->solver_diagnostics = [
@@ -111,6 +129,7 @@ class RunExamSeatingSolverJob implements ShouldQueue
                     'conflicts_count' => $result['conflicts_count'] ?? 0,
                     'conflict_pairs' => $result['conflict_pairs'] ?? [],
                     'message' => $result['message'] ?? null,
+                    'applied' => $applied,
                 ];
                 $map->save();
             }

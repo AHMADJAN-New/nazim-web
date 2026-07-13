@@ -490,7 +490,7 @@ class ReportService
             $layout['font_size'] = $layout['font_size'] ?? '11px';
         }
 
-        if ($templateName === 'exam_seating_map') {
+        if ($templateName === 'exam_seating_map' || $config->reportKey === 'exam_seating_map') {
             $layout['font_family'] = 'Bahij Nassim';
             $layout['font_size'] = $layout['font_size'] ?? '10px';
             $layout['orientation'] = 'landscape';
@@ -596,8 +596,8 @@ class ReportService
             // Template
             'template_name' => $templateName,
 
-            // Parameters
-            'parameters' => $config->parameters,
+            // Parameters (merge data-provided sheets/overrides from fetch helpers)
+            'parameters' => array_merge($config->parameters ?? [], $data['parameters'] ?? []),
 
             // Date service for row data
             'date_service' => $this->dateService,
@@ -775,9 +775,17 @@ class ReportService
 
         /** @var ExamSeatingMapService $mapService */
         $mapService = app(ExamSeatingMapService::class);
-        $reportData = $mapService->buildReportData($map);
+        $merged = array_merge($data, $mapService->buildReportData($map));
 
-        return array_merge($data, $reportData);
+        if ($config->isExcel()) {
+            $merged['parameters'] = array_merge($merged['parameters'] ?? [], [
+                'sheets' => $mapService->buildExcelExportSheets($merged, (string) $config->title),
+            ]);
+            $merged['columns'] = [];
+            $merged['rows'] = [];
+        }
+
+        return $merged;
     }
 
     /**

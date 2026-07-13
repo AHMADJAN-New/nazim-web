@@ -155,6 +155,7 @@ class ExamSeatingMapApiTest extends TestCase
             'rows' => 2,
             'columns' => 2,
             'start_seat_number' => 1,
+            'exam_class_ids' => [$fixture['examClass']->id],
         ]);
 
         $create->assertCreated()
@@ -175,6 +176,65 @@ class ExamSeatingMapApiTest extends TestCase
     }
 
     /** @test */
+    public function it_returns_unassigned_exam_students_on_map_detail(): void
+    {
+        $fixture = $this->createFixture([
+            'exam_seating_maps.read',
+            'exam_seating_maps.create',
+        ]);
+
+        $create = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps", [
+            'name' => 'Hall A',
+            'rows' => 2,
+            'columns' => 2,
+            'start_seat_number' => 1,
+            'exam_class_ids' => [$fixture['examClass']->id],
+        ])->assertCreated();
+
+        $mapId = $create->json('id');
+
+        $this->jsonAs($fixture['user'], 'GET', "/api/exams/{$fixture['exam']->id}/seating-maps/{$mapId}")
+            ->assertOk()
+            ->assertJsonCount(1, 'unassigned_students')
+            ->assertJsonPath('unassigned_students.0.exam_student_id', $fixture['examStudent']->id)
+            ->assertJsonPath('unassigned_students.0.full_name', 'Ahmad Test');
+    }
+
+    /** @test */
+    public function it_persists_enabled_empty_seats_without_exam_student_id(): void
+    {
+        $fixture = $this->createFixture([
+            'exam_seating_maps.read',
+            'exam_seating_maps.create',
+            'exam_seating_maps.assign',
+        ]);
+
+        $create = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps", [
+            'name' => 'Hall A',
+            'rows' => 1,
+            'columns' => 1,
+            'start_seat_number' => 1,
+            'exam_class_ids' => [$fixture['examClass']->id],
+        ])->assertCreated();
+
+        $mapId = $create->json('id');
+        $revision = $create->json('revision');
+
+        $this->jsonAs($fixture['user'], 'PUT', "/api/exams/{$fixture['exam']->id}/seating-maps/{$mapId}/assignments", [
+            'revision' => $revision,
+            'assignments' => [[
+                'row_number' => 1,
+                'column_number' => 1,
+                'exam_student_id' => null,
+                'is_disabled' => false,
+            ]],
+        ])
+            ->assertOk()
+            ->assertJsonPath('assignments.0.is_disabled', false)
+            ->assertJsonPath('assignments.0.exam_student_id', null);
+    }
+
+    /** @test */
     public function it_rejects_overlapping_seat_ranges_for_the_same_exam(): void
     {
         $fixture = $this->createFixture([
@@ -186,6 +246,7 @@ class ExamSeatingMapApiTest extends TestCase
             'rows' => 2,
             'columns' => 2,
             'start_seat_number' => 1,
+            'exam_class_ids' => [$fixture['examClass']->id],
         ])->assertCreated();
 
         $overlap = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps", [
@@ -193,6 +254,7 @@ class ExamSeatingMapApiTest extends TestCase
             'rows' => 2,
             'columns' => 2,
             'start_seat_number' => 3,
+            'exam_class_ids' => [$fixture['examClass']->id],
         ]);
 
         $overlap->assertStatus(409)
@@ -234,6 +296,7 @@ class ExamSeatingMapApiTest extends TestCase
             'rows' => 2,
             'columns' => 2,
             'start_seat_number' => 1,
+            'exam_class_ids' => [$fixture['examClass']->id],
         ])->assertCreated();
 
         $mapId = $create->json('id');
@@ -270,6 +333,13 @@ class ExamSeatingMapApiTest extends TestCase
             'start_seat_number' => 1,
         ]);
 
+        \App\Models\ExamSeatingMapClass::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_seating_map_id' => $map->id,
+            'exam_class_id' => $fixture['examClass']->id,
+        ]);
+
         ExamSeatAssignment::create([
             'organization_id' => $fixture['organization']->id,
             'school_id' => $fixture['school']->id,
@@ -278,7 +348,7 @@ class ExamSeatingMapApiTest extends TestCase
             'row_number' => 1,
             'column_number' => 1,
             'seat_number' => 1,
-            'is_disabled' => true,
+            'is_disabled' => false,
             'exam_student_id' => null,
         ]);
 
@@ -344,6 +414,7 @@ class ExamSeatingMapApiTest extends TestCase
             'name' => 'Finalize map',
             'rows' => 2,
             'columns' => 2,
+            'exam_class_ids' => [$fixture['examClass']->id],
         ])->assertCreated();
 
         $mapId = $create->json('id');

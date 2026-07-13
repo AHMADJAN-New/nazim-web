@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\AcademicYear;
+use App\Models\Building;
 use App\Models\ClassAcademicYear;
 use App\Models\ClassModel;
 use App\Models\Organization;
 use App\Models\Permission;
+use App\Models\Room;
 use App\Models\SchoolBranding;
 use App\Models\Student;
 use App\Models\StudentAdmission;
@@ -393,5 +395,77 @@ class StudentAdmissionPlacementTest extends TestCase
         $response->assertCreated();
         $this->assertSame($fixture['academicYear']->id, $response->json('academic_year_id'));
         $this->assertSame('1405', $response->json('admission_year'));
+    }
+
+    /** @test */
+    public function report_room_filter_narrows_to_matching_admission(): void
+    {
+        $fixture = $this->createFixture();
+        $user = $this->createUserWithAdmissionsReport($fixture['organization'], $fixture['school']);
+
+        $buildingA = Building::create([
+            'building_name' => 'Hostel A',
+            'school_id' => $fixture['school']->id,
+        ]);
+        $buildingB = Building::create([
+            'building_name' => 'Hostel B',
+            'school_id' => $fixture['school']->id,
+        ]);
+        $roomA = Room::create([
+            'room_number' => '101',
+            'building_id' => $buildingA->id,
+            'school_id' => $fixture['school']->id,
+        ]);
+        $roomB = Room::create([
+            'room_number' => '201',
+            'building_id' => $buildingB->id,
+            'school_id' => $fixture['school']->id,
+        ]);
+
+        $this->createAdmission($fixture, ['is_boarder' => true, 'room_id' => $roomA->id]);
+        $this->createAdmission($fixture, ['is_boarder' => true, 'room_id' => $roomB->id]);
+
+        $all = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'academic_year_id' => $fixture['academicYear']->id,
+        ]);
+        $all->assertOk();
+        $this->assertCount(2, $all->json('recent_admissions'));
+
+        $roomOnly = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'building_id' => $buildingA->id,
+            'room_id' => $roomA->id,
+        ]);
+        $roomOnly->assertOk();
+        $this->assertCount(1, $roomOnly->json('recent_admissions'));
+        $this->assertSame($roomA->id, $roomOnly->json('recent_admissions.0.room_id'));
+
+        $buildingOnly = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'academic_year_id' => $fixture['academicYear']->id,
+            'building_id' => $buildingB->id,
+        ]);
+        $buildingOnly->assertOk();
+        $this->assertCount(1, $buildingOnly->json('recent_admissions'));
+        $this->assertSame($roomB->id, $buildingOnly->json('recent_admissions.0.room_id'));
+    }
+
+    /** @test */
+    public function report_rejects_invalid_building_for_school(): void
+    {
+        $fixture = $this->createFixture();
+        $otherSchool = SchoolBranding::factory()->create(['organization_id' => $fixture['organization']->id]);
+        $user = $this->createUserWithAdmissionsReport($fixture['organization'], $fixture['school']);
+
+        $foreignBuilding = Building::create([
+            'building_name' => 'Other School Hostel',
+            'school_id' => $otherSchool->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'building_id' => $foreignBuilding->id,
+        ]);
+
+        $response->assertNotFound();
+        $response->assertJsonPath('error', 'Building not found for this school');
     }
 }

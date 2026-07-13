@@ -2,9 +2,11 @@ import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { ArrowDownAZ, Eye, Search, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { AttendanceBuildingRoomFilters } from '@/components/attendance/AttendanceBuildingRoomFilters';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportColumnSelector } from '@/components/reports/ReportColumnSelector';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
@@ -42,11 +44,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useBuildings } from '@/hooks/useBuildings';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
 import { useStudentAutocomplete } from '@/hooks/useStudentAutocomplete';
-import { studentsApi } from '@/lib/api/client';
+import { studentsApi, roomsApi } from '@/lib/api/client';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
 import {
   filterSelectedReportColumns,
@@ -55,8 +58,10 @@ import {
 } from '@/lib/reporting/reportColumnSelection';
 import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
 import { mapStudentApiToDomain } from '@/mappers/studentMapper';
+import { mapRoomApiToDomain } from '@/mappers/roomMapper';
 import type { Student } from '@/types/domain/student';
 import type { Student as StudentApiModel } from '@/types/api/student';
+import type * as RoomApi from '@/types/api/room';
 
 export const studentCoreExportColumnKeys = [
   'admission_no',
@@ -67,6 +72,10 @@ export const studentCoreExportColumnKeys = [
   'gender',
   'phone',
   'applying_grade',
+  'class_name',
+  'section_name',
+  'building_name',
+  'room_number',
   'school',
   'admission_year',
 ] as const;
@@ -147,6 +156,7 @@ const StudentReport = () => {
   const orgIdForQuery = profile?.organization_id;
   const { data: schools } = useSchools(orgIdForQuery);
   const { data: academicYears = [] } = useAcademicYears(orgIdForQuery);
+  const { data: buildings = [] } = useBuildings(profile?.default_school_id ?? undefined, orgIdForQuery);
 
   type StudentStatusFilter = 'all' | Student['status'] | 'with_admission' | 'without_admission';
   const [statusFilter, setStatusFilter] = useState<StudentStatusFilter>('all');
@@ -156,10 +166,24 @@ const StudentReport = () => {
   const [academicYearFilter, setAcademicYearFilter] = useState<'all' | string>('all');
   const [classFilter, setClassFilter] = useState<'all' | string>('all');
   const [sectionFilter, setSectionFilter] = useState<'all' | string>('all');
+  const [buildingFilter, setBuildingFilter] = useState('');
+  const [roomFilter, setRoomFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortByClass, setSortByClass] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  const { data: filterRooms = [] } = useQuery({
+    queryKey: ['rooms', 'student-report-filters', profile?.default_school_id ?? null, buildingFilter],
+    queryFn: async () => {
+      if (!profile?.default_school_id || !buildingFilter) return [];
+      const raw = await roomsApi.list({ school_id: profile.default_school_id, building_id: buildingFilter });
+      return (raw as RoomApi.Room[]).map(mapRoomApiToDomain);
+    },
+    enabled: !!profile?.default_school_id && !!buildingFilter,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   const selectedAcademicYearId = academicYearFilter !== 'all' ? academicYearFilter : undefined;
   const { data: classAcademicYears = [] } = useClassAcademicYears(selectedAcademicYearId, orgIdForQuery);
@@ -200,7 +224,9 @@ const StudentReport = () => {
     academic_year_id: selectedAcademicYearId,
     class_id: classFilter !== 'all' ? classFilter : undefined,
     class_academic_year_id: sectionFilter !== 'all' ? sectionFilter : undefined,
-  }), [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter, sectionFilter]);
+    building_id: buildingFilter || undefined,
+    room_id: roomFilter || undefined,
+  }), [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter, sectionFilter, buildingFilter, roomFilter]);
 
   const {
     data: studentsData,
@@ -246,10 +272,12 @@ const StudentReport = () => {
       academic_year_id: studentFilters.academic_year_id,
       class_id: studentFilters.class_id,
       class_academic_year_id: studentFilters.class_academic_year_id,
+      building_id: studentFilters.building_id,
+      room_id: studentFilters.room_id,
       per_page: 100,
     };
 
-    return fetchAllPaginatedRows(async (requestedPage) => {
+    const rows = await fetchAllPaginatedRows(async (requestedPage) => {
       const response = (await studentsApi.list({
         ...baseParams,
         page: requestedPage,
@@ -266,14 +294,7 @@ const StudentReport = () => {
       };
     });
 
-    const apiStudents = Array.isArray(response)
-      ? (response as StudentApiModel[])
-      : (((response as { data?: StudentApiModel[] })?.data ?? []) as StudentApiModel[]);
-
-    return sortByClass
-      ? sortStudentsByClass(apiStudents.map(mapStudentApiToDomain))
-      : apiStudents.map(mapStudentApiToDomain);
-
+    return sortByClass ? sortStudentsByClass(rows) : rows;
   };
 
   useEffect(() => {
@@ -286,7 +307,7 @@ const StudentReport = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter, sectionFilter]);
+  }, [searchQuery, statusFilter, genderFilter, originalProvinceFilter, applyingGradeFilter, selectedAcademicYearId, classFilter, sectionFilter, buildingFilter, roomFilter]);
 
   const handleViewDetails = (student: Student) => {
     setSelectedStudent(student);
@@ -313,6 +334,8 @@ const StudentReport = () => {
       applying_grade: student.applyingGrade || '—',
       class_name: getStudentClassName(student) || '—',
       section_name: getStudentSectionName(student) || '—',
+      building_name: student.buildingName || '—',
+      room_number: student.roomNumber || '—',
       school: schools?.find(s => s.id === student.schoolId)?.schoolName || '—',
       admission_year: student.admissionYear || '—',
       admission_fee_status: student.admissionFeeStatus || '—',
@@ -362,6 +385,16 @@ const StudentReport = () => {
       const sectionName = sectionOptions.find((section) => section.id === sectionFilter)?.sectionName;
       filters.push(`Section: ${sectionName || 'Default'}`);
     }
+    if (buildingFilter) {
+      const buildingName = buildings.find((building) => building.id === buildingFilter)?.buildingName;
+      if (buildingName) {
+        filters.push(`${t('hostel.building') || 'Building'}: ${buildingName}`);
+      }
+    }
+    if (roomFilter) {
+      const roomLabel = filterRooms.find((room) => room.id === roomFilter)?.roomNumber || roomFilter;
+      filters.push(`${t('admissions.room') || 'Room'}: ${roomLabel}`);
+    }
     if (searchQuery) {
       filters.push(`Search: ${searchQuery}`);
     }
@@ -387,6 +420,8 @@ const StudentReport = () => {
     { key: 'applying_grade', label: t('students.applyingGrade') || 'Applying Grade' },
     { key: 'class_name', label: t('search.class') || 'Class' },
     { key: 'section_name', label: t('events.section') || 'Section' },
+    { key: 'building_name', label: t('hostel.building') || 'Building' },
+    { key: 'room_number', label: t('admissions.room') || 'Room' },
     { key: 'school', label: t('students.school') || 'School' },
     { key: 'admission_year', label: t('students.admissionYear') || 'Admission Year' },
     { key: 'admission_fee_status', label: t('students.admissionFeeStatus') || 'Fee Status' },
@@ -508,6 +543,26 @@ const StudentReport = () => {
       header: t('events.section') || 'Section',
       cell: ({ row }) => (
         <div className="text-sm">{getStudentSectionName(row.original) || '—'}</div>
+      ),
+      meta: {
+        className: 'hidden lg:table-cell',
+      },
+    },
+    {
+      id: 'buildingName',
+      header: t('hostel.building') || 'Building',
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.buildingName || '—'}</div>
+      ),
+      meta: {
+        className: 'hidden lg:table-cell',
+      },
+    },
+    {
+      id: 'roomNumber',
+      header: t('admissions.room') || 'Room',
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.roomNumber || '—'}</div>
       ),
       meta: {
         className: 'hidden lg:table-cell',
@@ -825,6 +880,20 @@ const StudentReport = () => {
               ))}
             </SelectContent>
           </Select>
+          <div className="sm:col-span-2 lg:col-span-4">
+            <AttendanceBuildingRoomFilters
+              buildingId={buildingFilter}
+              roomId={roomFilter}
+              onBuildingChange={(value) => {
+                setBuildingFilter(value);
+                setPage(1);
+              }}
+              onRoomChange={(value) => {
+                setRoomFilter(value);
+                setPage(1);
+              }}
+            />
+          </div>
         </div>
       </FilterPanel>
 
@@ -865,6 +934,8 @@ const StudentReport = () => {
                             else if (columnId === 'applyingGrade') headerClassName = 'hidden md:table-cell';
                             else if (columnId === 'className') headerClassName = 'hidden md:table-cell';
                             else if (columnId === 'sectionName') headerClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'buildingName') headerClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'roomNumber') headerClassName = 'hidden lg:table-cell';
                             else if (columnId === 'cardNumber') headerClassName = 'hidden md:table-cell';
                             else if (columnId === 'origProvince') headerClassName = 'hidden lg:table-cell';
                             else if (columnId === 'originLocation') headerClassName = 'hidden lg:table-cell';
@@ -902,6 +973,8 @@ const StudentReport = () => {
                             else if (columnId === 'applyingGrade') cellClassName = 'hidden md:table-cell';
                             else if (columnId === 'className') cellClassName = 'hidden md:table-cell';
                             else if (columnId === 'sectionName') cellClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'buildingName') cellClassName = 'hidden lg:table-cell';
+                            else if (columnId === 'roomNumber') cellClassName = 'hidden lg:table-cell';
                             else if (columnId === 'cardNumber') cellClassName = 'hidden md:table-cell';
                             else if (columnId === 'origProvince') cellClassName = 'hidden lg:table-cell';
                             else if (columnId === 'originLocation') cellClassName = 'hidden lg:table-cell';

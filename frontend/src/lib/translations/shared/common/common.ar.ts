@@ -37,6 +37,8 @@ export default {
     email: "Email",
     error: "حدث خطأ",
     export: "تصدير",
+    exportExcel: "تصدير Excel",
+    exportPdf: "تصدير PDF",
     fail: "Fail",
     filter: "تصفية",
     filters: "Filters",

@@ -988,8 +988,10 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::delete('/exams/{exam}/seating-maps/{map}', [ExamSeatingMapController::class, 'destroy']);
                 Route::put('/exams/{exam}/seating-maps/{map}/assignments', [ExamSeatingMapController::class, 'syncAssignments']);
                 Route::put('/exams/{exam}/seating-maps/{map}/class-colors', [ExamSeatingMapController::class, 'syncClassColors']);
+                Route::put('/exams/{exam}/seating-maps/{map}/classes', [ExamSeatingMapController::class, 'syncMapClasses']);
                 Route::post('/exams/{exam}/seating-maps/{map}/solve', [ExamSeatingMapController::class, 'solve']);
                 Route::post('/exams/{exam}/seating-maps/{map}/finalize', [ExamSeatingMapController::class, 'finalize']);
+                Route::post('/exams/{exam}/seating-maps/{map}/reopen', [ExamSeatingMapController::class, 'reopen']);
                 Route::post('/exams/{exam}/seating-maps/{map}/duplicate', [ExamSeatingMapController::class, 'duplicate']);
             });
         });

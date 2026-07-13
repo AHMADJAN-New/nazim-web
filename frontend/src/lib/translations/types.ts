@@ -814,6 +814,8 @@ export const TRANSLATION_KEYS = [
   "common.error",
   "common.example",
   "common.export",
+  "common.exportExcel",
+  "common.exportPdf",
   "common.fail",
   "common.fair",
   "common.filter",

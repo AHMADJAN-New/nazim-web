@@ -1,8 +1,10 @@
 import { BarChart3, RefreshCw, UserCheck, Building2, AlertTriangle, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { AttendanceBuildingRoomFilters } from '@/components/attendance/AttendanceBuildingRoomFilters';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportColumnSelector } from '@/components/reports/ReportColumnSelector';
@@ -12,19 +14,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useBuildings } from '@/hooks/useBuildings';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useResidencyTypes } from '@/hooks/useResidencyTypes';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudentAdmissionReport } from '@/hooks/useStudentAdmissionReport';
-import { studentAdmissionsApi } from '@/lib/api/client';
+import { studentAdmissionsApi, roomsApi } from '@/lib/api/client';
 import { fetchAllPaginatedRows } from '@/lib/reporting/paginatedExport';
 import { mapStudentAdmissionReportApiToDomain } from '@/mappers/studentAdmissionReportMapper';
+import { mapRoomApiToDomain } from '@/mappers/roomMapper';
 import type { AdmissionStatus } from '@/types/domain/studentAdmission';
 import type { StudentAdmission } from '@/types/domain/studentAdmission';
 import type { StudentAdmissionReportFilters } from '@/types/domain/studentAdmissionReport';
 import type { StudentAdmissionReport as StudentAdmissionReportApi } from '@/types/api/studentAdmissionReport';
+import type * as RoomApi from '@/types/api/room';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -127,6 +132,7 @@ const StudentAdmissionsReport = () => {
   const { data: schools } = useSchools(profile?.organization_id);
   const { data: academicYears } = useAcademicYears(profile?.organization_id);
   const { data: residencyTypes } = useResidencyTypes(profile?.organization_id);
+  const { data: buildings = [] } = useBuildings(profile?.default_school_id ?? undefined, profile?.organization_id);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -155,6 +161,18 @@ const StudentAdmissionsReport = () => {
       .filter((entry) => entry.classId === filters.classId)
       .sort((a, b) => (a.sectionName ?? '').localeCompare(b.sectionName ?? ''));
   }, [classAcademicYears, filters.classId]);
+
+  const { data: filterRooms = [] } = useQuery({
+    queryKey: ['rooms', 'admissions-report-filters', profile?.default_school_id ?? null, filters.buildingId],
+    queryFn: async () => {
+      if (!profile?.default_school_id || !filters.buildingId) return [];
+      const raw = await roomsApi.list({ school_id: profile.default_school_id, building_id: filters.buildingId });
+      return (raw as RoomApi.Room[]).map(mapRoomApiToDomain);
+    },
+    enabled: !!profile?.default_school_id && !!filters.buildingId,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
 
   const hasInvalidRange = useMemo(() => {
@@ -187,6 +205,8 @@ const StudentAdmissionsReport = () => {
       enrollmentStatus: undefined,
       isBoarder: undefined,
       search: undefined,
+      buildingId: undefined,
+      roomId: undefined,
       page: 1,
       perPage: 25,
     });
@@ -218,6 +238,7 @@ const StudentAdmissionsReport = () => {
       academic_year: admission.academicYear?.name || '—',
       residency_type: admission.residencyType?.name || '—',
       is_boarder: admission.isBoarder ? (currentLanguage === 'ps' ? 'هو' : (currentLanguage === 'fa' ? 'بله' : (currentLanguage === 'ar' ? 'نعم' : 'Yes'))) : (currentLanguage === 'ps' ? 'نه' : (currentLanguage === 'fa' ? 'خیر' : (currentLanguage === 'ar' ? 'لا' : 'No'))),
+      building: admission.room?.buildingName || '—',
       room: admission.room?.roomNumber || '—',
       guardian_name: admission.student?.guardianName || '—',
       guardian_phone: admission.student?.guardianPhone || '—',
@@ -271,6 +292,16 @@ const StudentAdmissionsReport = () => {
     if (filters.isBoarder !== undefined) {
       filterParts.push(`Boarder: ${filters.isBoarder ? 'Yes' : 'No'}`);
     }
+    if (filters.buildingId) {
+      const buildingName = buildings.find((building) => building.id === filters.buildingId)?.buildingName;
+      if (buildingName) {
+        filterParts.push(`${t('hostel.building') || 'Building'}: ${buildingName}`);
+      }
+    }
+    if (filters.roomId) {
+      const roomLabel = filterRooms.find((room) => room.id === filters.roomId)?.roomNumber || filters.roomId;
+      filterParts.push(`${t('admissions.room') || 'Room'}: ${roomLabel}`);
+    }
     if (filters.fromDate && filters.toDate) {
       filterParts.push(`Date Range: ${filters.fromDate} to ${filters.toDate}`);
     }
@@ -293,6 +324,7 @@ const StudentAdmissionsReport = () => {
     { key: 'academic_year', label: t('admissions.academicYear') || 'Academic Year' },
     { key: 'residency_type', label: t('admissions.residency') || 'Residency Type' },
     { key: 'is_boarder', label: t('admissions.boarder') || 'Boarder' },
+    { key: 'building', label: t('hostel.building') || 'Building' },
     { key: 'room', label: t('admissions.room') || 'Room' },
     { key: 'guardian_name', label: t('admissions.guardian') || 'Guardian Name' },
     { key: 'guardian_phone', label: t('admissions.guardianPhone') || 'Guardian Phone' },
@@ -352,6 +384,8 @@ const StudentAdmissionsReport = () => {
       from_date: filters.fromDate,
       to_date: filters.toDate,
       search: filters.search?.trim() || undefined,
+      building_id: filters.buildingId,
+      room_id: filters.roomId,
       per_page: pageSize,
     };
 
@@ -382,7 +416,9 @@ const StudentAdmissionsReport = () => {
       filters.isBoarder ||
       filters.fromDate ||
       filters.toDate ||
-      filters.search?.trim()
+      filters.search?.trim() ||
+      filters.buildingId ||
+      filters.roomId
     );
   }, [filters]);
 
@@ -459,6 +495,8 @@ const StudentAdmissionsReport = () => {
                   from_date: filters.fromDate || undefined,
                   to_date: filters.toDate || undefined,
                   search: filters.search?.trim() || undefined,
+                  building_id: filters.buildingId || undefined,
+                  room_id: filters.roomId || undefined,
                 }}
               />
             </div>
@@ -618,6 +656,27 @@ const StudentAdmissionsReport = () => {
             <Switch
               checked={!!filters.isBoarder}
               onCheckedChange={(checked) => handleFilterChange('isBoarder', checked ? true : undefined)}
+            />
+          </div>
+          <div className="lg:col-span-2">
+            <AttendanceBuildingRoomFilters
+              buildingId={filters.buildingId || ''}
+              roomId={filters.roomId || ''}
+              onBuildingChange={(value) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  buildingId: value || undefined,
+                  roomId: undefined,
+                }));
+                setPage(1);
+              }}
+              onRoomChange={(value) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  roomId: value || undefined,
+                }));
+                setPage(1);
+              }}
             />
           </div>
         </div>
@@ -921,6 +980,11 @@ const StudentAdmissionsReport = () => {
                                   {admission.isBoarder ? t('admissions.boarderYes') || 'Boarder' : t('admissions.boarderNo') || 'Day'}
                                 </Badge>
                               </div>
+                              {(admission.room?.buildingName || admission.room?.roomNumber) && (
+                                <div className="text-xs text-muted-foreground">
+                                  {[admission.room?.buildingName, admission.room?.roomNumber].filter(Boolean).join(' · ')}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">

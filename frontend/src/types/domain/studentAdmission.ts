@@ -90,6 +90,7 @@ export interface StudentAdmission {
   room?: {
     id: string;
     roomNumber: string;
+    buildingName?: string | null;
   };
   school?: {
     id: string;

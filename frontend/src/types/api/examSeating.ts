@@ -52,6 +52,7 @@ export interface ExamSeatingMap {
   room?: ExamSeatingMapRoom | null;
   assigned_count?: number;
   total_seats?: number;
+  exam_class_ids?: string[];
 }
 
 export interface ExamSeatingAssignmentStudent {
@@ -131,6 +132,9 @@ export interface ExamSeatingMapDetail extends ExamSeatingMap {
   assignments: ExamSeatingAssignment[];
   class_colors: ExamSeatingClassColor[];
   unassigned_students?: ExamSeatingUnassignedStudent[];
+  available_student_count?: number;
+  seated_elsewhere_count?: number;
+  seated_elsewhere_maps?: Array<{ id: string; name: string; count: number }>;
   latest_run?: ExamSeatingRun | null;
 }
 
@@ -140,9 +144,14 @@ export interface ExamSeatingMapInsert {
   columns: number;
   start_seat_number?: number;
   room_id?: string | null;
+  exam_class_ids: string[];
 }
 
-export type ExamSeatingMapUpdate = Partial<ExamSeatingMapInsert>;
+export type ExamSeatingMapUpdate = Partial<Omit<ExamSeatingMapInsert, 'exam_class_ids'>>;
+
+export interface SyncExamSeatingMapClassesPayload {
+  exam_class_ids: string[];
+}
 
 export interface SyncExamSeatingAssignmentsPayload {
   revision: number;
@@ -156,7 +165,7 @@ export interface SyncExamSeatingAssignmentsPayload {
 }
 
 export interface SyncExamSeatingClassColorsPayload {
-  colors: Array<{
+  class_colors: Array<{
     exam_class_id: string;
     color_hex: string;
   }>;
@@ -164,8 +173,14 @@ export interface SyncExamSeatingClassColorsPayload {
 
 export interface SolveExamSeatingMapPayload {
   revision: number;
+  input_checksum: string;
   strict_mode?: boolean;
   seed?: number;
+}
+
+export interface ConfirmMapRollNumbersPayload {
+  revision: number;
+  input_checksum: string;
 }
 
 export interface SolveExamSeatingMapResponse {
