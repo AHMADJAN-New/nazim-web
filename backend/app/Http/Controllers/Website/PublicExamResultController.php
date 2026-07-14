@@ -74,10 +74,13 @@ class PublicExamResultController extends Controller
 
         foreach ($students as $student) {
             // ... (Logic remains same) ...
-            // 2. Check if student is enrolled in this exam
+            // 2. Check if student is enrolled in this exam via a live active admission
             $examStudent = ExamStudent::where('exam_id', $examId)
-                ->where('student_id', $student->id)
                 ->whereNull('deleted_at')
+                ->withLiveActiveAdmission()
+                ->whereHas('studentAdmission', function ($query) use ($student) {
+                    $query->where('student_id', $student->id);
+                })
                 ->first();
 
             if (!$examStudent) {

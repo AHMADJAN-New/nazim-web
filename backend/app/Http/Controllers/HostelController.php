@@ -81,7 +81,8 @@ class HostelController extends Controller
             )
             ->get();
 
-        // Fetch admissions (boarders and day scholars) scoped to accessible schools and organization
+        // Fetch admissions (boarders and day scholars) scoped to accessible schools and organization.
+        // Always join live students so soft-deleted registrations never appear in hostel occupancy.
         $admissions = DB::table('student_admissions as sa')
             ->join('students as s', function ($join) {
                 $join->on('sa.student_id', '=', 's.id')

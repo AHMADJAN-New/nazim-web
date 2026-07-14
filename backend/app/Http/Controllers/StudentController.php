@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Models\ExamStudent;
 use App\Models\SchoolAdmissionRules;
 use App\Models\Student;
 use App\Models\StudentAdmission;
@@ -663,7 +664,41 @@ class StudentController extends Controller
         $studentName = $student->full_name ?? 'Unknown';
         $admissionNo = $student->admission_no ?? 'N/A';
         $studentData = $student->toArray();
-        $student->delete();
+
+        DB::transaction(function () use ($student, $profile, $currentSchoolId) {
+            // Soft-deleting the student alone does not fire FK ON DELETE CASCADE.
+            // Soft-delete related admissions and exam enrollments so they leave those lists.
+            $admissionIds = StudentAdmission::query()
+                ->where('student_id', $student->id)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->pluck('id');
+
+            if ($admissionIds->isNotEmpty()) {
+                ExamStudent::query()
+                    ->whereIn('student_admission_id', $admissionIds)
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->whereNull('deleted_at')
+                    ->get()
+                    ->each(fn (ExamStudent $examStudent) => $examStudent->delete());
+
+                StudentAdmission::query()
+                    ->whereIn('id', $admissionIds)
+                    ->get()
+                    ->each(function (StudentAdmission $admission) {
+                        // Free hostel bed before soft-delete (overview only counts non-deleted rows).
+                        if ($admission->room_id !== null) {
+                            $admission->room_id = null;
+                            $admission->save();
+                        }
+                        $admission->delete();
+                    });
+            }
+
+            $student->delete();
+        });
 
         // Activity is logged by Student model's LogsActivityWithContext trait
         return response()->noContent();

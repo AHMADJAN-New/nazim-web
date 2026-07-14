@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 
-# System deps (PHP extensions, image/PDF tooling, Chromium for Browsershot)
+# System deps (PHP extensions, image/PDF tooling, Chromium for Browsershot,
+# Python + pip for the exam seating OR-Tools CP-SAT solver)
 # CRITICAL: Install postgresql-client-18 to match PostgreSQL 18 server version
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
@@ -37,6 +38,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu \
     fonts-noto \
     fonts-noto-color-emoji \
+    python3 \
+    python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
 # Node.js 20 (required by spatie/browsershot)
@@ -98,6 +102,12 @@ RUN npm install -g puppeteer --cache=/var/www/.cache/npm \
 # Install PHP deps (prod)
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
+# Exam seating solver (OR-Tools CP-SAT) — required by ExamSeatingSolverService
+COPY backend/solver/requirements.txt /tmp/exam-seating-solver-requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/exam-seating-solver-requirements.txt \
+    && rm -f /tmp/exam-seating-solver-requirements.txt \
+    && test -f /var/www/backend/solver/exam_seating_solver.py
+
 # Copy entrypoint script
 COPY docker/php/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
@@ -105,7 +115,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 # Browsershot defaults (can be overridden via env)
 ENV BROWSERSHOT_CHROME_PATH=/usr/bin/chromium \
     BROWSERSHOT_NODE_BINARY=/usr/bin/node \
-    PUPPETEER_CACHE_DIR=/var/www/.cache/puppeteer
+    PUPPETEER_CACHE_DIR=/var/www/.cache/puppeteer \
+    EXAM_SEATING_PYTHON_PATH=python3
 
 EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

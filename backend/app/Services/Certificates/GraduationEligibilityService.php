@@ -79,6 +79,7 @@ class GraduationEligibilityService
             ->whereIn('exam_class_id', $examClassIds)
             ->where('organization_id', $organizationId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($academicYearId)
             ->get();
 
         $results = $examStudents->map(function (ExamStudent $examStudent) use ($subjectTotals, $organizationId, $schoolId) {
@@ -284,6 +285,7 @@ class GraduationEligibilityService
             ->whereIn('exam_class_id', $allExamClassIds)
             ->where('organization_id', $organizationId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($academicYearId)
             ->get();
 
         // Group students by student_id

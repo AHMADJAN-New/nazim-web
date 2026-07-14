@@ -460,4 +460,103 @@ class HostelOverviewTest extends TestCase
         $this->assertSame(0, $json['summary']['occupied_rooms'] ?? -1);
         $this->assertSame(0, $json['summary']['total_students_in_rooms'] ?? -1);
     }
+
+    #[Test]
+    public function hostel_overview_excludes_soft_deleted_students_from_occupancy(): void
+    {
+        $organization = Organization::factory()->create();
+        $school = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+
+        $user = $this->createUser(
+            [],
+            [
+                'organization_id' => $organization->id,
+                'default_school_id' => $school->id,
+            ],
+            $organization,
+            $school,
+            null,
+            ['withRole' => false]
+        );
+
+        $this->grantHostelPermissions($organization, $user);
+        $this->enableHostelAddon($organization->id);
+
+        $building = Building::create([
+            'building_name' => 'Hostel Block Deleted',
+            'school_id' => $school->id,
+        ]);
+
+        $room = Room::create([
+            'room_number' => 'DEL-1',
+            'building_id' => $building->id,
+            'school_id' => $school->id,
+            'capacity' => 4,
+        ]);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $classAcademicYear = $this->createClassAcademicYearForSchool(
+            $organization,
+            $school,
+            $class,
+            $academicYear
+        );
+
+        $liveStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $deletedStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $liveStudent->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => true,
+            'room_id' => $room->id,
+        ]);
+
+        $orphanedAdmission = StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $deletedStudent->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => true,
+            'room_id' => $room->id,
+        ]);
+
+        $deletedStudent->delete();
+        $this->assertNull($orphanedAdmission->fresh()->deleted_at);
+
+        $response = $this->jsonAs($user, 'GET', '/api/hostel/overview');
+        if ($response->status() === 403) {
+            $this->markTestSkipped('Hostel feature not available on subscription in this test environment.');
+        }
+
+        $response->assertOk();
+        $roomPayload = collect($response->json('rooms') ?? [])->firstWhere('id', $room->id);
+        $this->assertIsArray($roomPayload);
+        $occupantStudentIds = collect($roomPayload['occupants'] ?? [])->pluck('student_id')->all();
+        $this->assertSame([$liveStudent->id], $occupantStudentIds);
+        $this->assertSame(1, $response->json('summary.total_students_in_rooms'));
+    }
 }

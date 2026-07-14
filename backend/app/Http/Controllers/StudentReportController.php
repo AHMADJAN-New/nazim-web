@@ -55,7 +55,8 @@ class StudentReportController extends Controller
 
     private function applyFilters(Request $request, $query, string $orgId, string $currentSchoolId)
     {
-        // Strict school scoping (ignore client-provided org/school ids)
+        // Strict school scoping (ignore client-provided org/school ids).
+        // SoftDeletes on Student already excludes trashed rows; keep deleted_at filter explicit.
         $query->where('organization_id', $orgId)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
