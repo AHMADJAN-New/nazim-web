@@ -230,6 +230,69 @@ class StudentManagementTest extends TestCase
     }
 
     /** @test */
+    public function admissions_report_excludes_soft_deleted_students()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $liveStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $deletedStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $liveAdmission = StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $liveStudent->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        $orphanedAdmission = StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $deletedStudent->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        $deletedStudent->delete();
+        $this->assertNull($orphanedAdmission->fresh()->deleted_at);
+
+        $response = $this->jsonAs($user, 'GET', '/api/student-admissions/report', [
+            'academic_year_id' => $academicYear->id,
+            'page' => 1,
+            'per_page' => 50,
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertSame(1, $response->json('totals.total'));
+        $ids = collect($response->json('recent_admissions'))->pluck('id')->all();
+        $this->assertContains($liveAdmission->id, $ids);
+        $this->assertNotContains($orphanedAdmission->id, $ids);
+    }
+
+    /** @test */
     public function admissions_list_and_stats_exclude_rows_for_soft_deleted_students()
     {
         $user = $this->authenticate();

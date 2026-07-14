@@ -244,4 +244,46 @@ class ExamStudentLiveAdmissionTest extends TestCase
         $this->assertCount(1, $students);
         $this->assertSame($fixture['liveExamStudent']->id, $students->first()['id']);
     }
+
+    /** @test */
+    public function deleting_student_soft_deletes_related_exam_enrollments(): void
+    {
+        $fixture = $this->createFixture(['students.delete']);
+
+        $examStudentId = $fixture['liveExamStudent']->id;
+        $admissionId = $fixture['liveExamStudent']->student_admission_id;
+        $studentId = StudentAdmission::findOrFail($admissionId)->student_id;
+
+        $response = $this->jsonAs(
+            $fixture['user'],
+            'DELETE',
+            "/api/students/{$studentId}"
+        );
+
+        $response->assertStatus(204);
+
+        $this->assertSoftDeleted('students', ['id' => $studentId]);
+        $this->assertSoftDeleted('student_admissions', ['id' => $admissionId]);
+        $this->assertSoftDeleted('exam_students', ['id' => $examStudentId]);
+    }
+
+    /** @test */
+    public function exam_students_soft_delete_orphaned_command_repairs_legacy_rows(): void
+    {
+        $fixture = $this->createFixture();
+
+        $orphanedId = $fixture['deletedStudentExamStudent']->id;
+
+        // Fixture left exam enrollment alive while student is soft-deleted.
+        $this->assertDatabaseHas('exam_students', [
+            'id' => $orphanedId,
+            'deleted_at' => null,
+        ]);
+
+        $this->artisan('exam-students:soft-delete-orphaned', [
+            '--organization-id' => $fixture['organization']->id,
+        ])->assertSuccessful();
+
+        $this->assertSoftDeleted('exam_students', ['id' => $orphanedId]);
+    }
 }

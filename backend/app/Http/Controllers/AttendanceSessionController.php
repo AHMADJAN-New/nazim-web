@@ -635,16 +635,20 @@ class AttendanceSessionController extends Controller
             return [];
         }
 
-        return DB::table('student_admissions')
-            ->whereIn('class_id', $sessionClassIds)
-            ->where('organization_id', $organizationId)
-            ->where('school_id', $currentSchoolId)
-            ->when($session->academic_year_id, function ($query) use ($session) {
-                $query->where('academic_year_id', $session->academic_year_id);
+        return DB::table('student_admissions as sa')
+            ->join('students as s', function ($join) {
+                $join->on('sa.student_id', '=', 's.id')
+                    ->whereNull('s.deleted_at');
             })
-            ->whereNull('deleted_at')
+            ->whereIn('sa.class_id', $sessionClassIds)
+            ->where('sa.organization_id', $organizationId)
+            ->where('sa.school_id', $currentSchoolId)
+            ->when($session->academic_year_id, function ($query) use ($session) {
+                $query->where('sa.academic_year_id', $session->academic_year_id);
+            })
+            ->whereNull('sa.deleted_at')
             ->distinct()
-            ->pluck('student_id')
+            ->pluck('sa.student_id')
             ->filter(fn ($studentId) => is_string($studentId) && $studentId !== '')
             ->values()
             ->all();
@@ -746,13 +750,17 @@ class AttendanceSessionController extends Controller
         }
 
         // Check enrollment: student must be in one of the session's classes (strict school isolation)
-        $enrolled = DB::table('student_admissions')
-            ->whereIn('student_id', $studentIds)
-            ->whereIn('class_id', $sessionClassIds)
-            ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $currentSchoolId)
-            ->whereNull('deleted_at')
-            ->pluck('student_id')
+        $enrolled = DB::table('student_admissions as sa')
+            ->join('students as s', function ($join) {
+                $join->on('sa.student_id', '=', 's.id')
+                    ->whereNull('s.deleted_at');
+            })
+            ->whereIn('sa.student_id', $studentIds)
+            ->whereIn('sa.class_id', $sessionClassIds)
+            ->where('sa.organization_id', $profile->organization_id)
+            ->where('sa.school_id', $currentSchoolId)
+            ->whereNull('sa.deleted_at')
+            ->pluck('sa.student_id')
             ->toArray();
 
         $invalid = $studentIds->diff($enrolled);
@@ -855,12 +863,16 @@ class AttendanceSessionController extends Controller
         // Get all class IDs for this session (supports multi-class sessions)
         $sessionClassIds = $this->getSessionClassIds($session);
 
-        $isEnrolled = ! empty($sessionClassIds) && DB::table('student_admissions')
-            ->where('student_id', $student->id)
-            ->whereIn('class_id', $sessionClassIds)
-            ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $currentSchoolId)
-            ->whereNull('deleted_at')
+        $isEnrolled = ! empty($sessionClassIds) && DB::table('student_admissions as sa')
+            ->join('students as s', function ($join) {
+                $join->on('sa.student_id', '=', 's.id')
+                    ->whereNull('s.deleted_at');
+            })
+            ->where('sa.student_id', $student->id)
+            ->whereIn('sa.class_id', $sessionClassIds)
+            ->where('sa.organization_id', $profile->organization_id)
+            ->where('sa.school_id', $currentSchoolId)
+            ->whereNull('sa.deleted_at')
             ->exists();
 
         if (! $isEnrolled) {
@@ -2854,12 +2866,16 @@ SQL;
             // Auto-fill unmarked enrolled students as absent.
             $sessionClassIds = $this->getSessionClassIds($session);
             if (! empty($sessionClassIds)) {
-                $enrolledIds = DB::table('student_admissions')
-                    ->whereIn('class_id', $sessionClassIds)
-                    ->where('organization_id', $profile->organization_id)
-                    ->where('school_id', $currentSchoolId)
-                    ->whereNull('deleted_at')
-                    ->pluck('student_id')
+                $enrolledIds = DB::table('student_admissions as sa')
+                    ->join('students as s', function ($join) {
+                        $join->on('sa.student_id', '=', 's.id')
+                            ->whereNull('s.deleted_at');
+                    })
+                    ->whereIn('sa.class_id', $sessionClassIds)
+                    ->where('sa.organization_id', $profile->organization_id)
+                    ->where('sa.school_id', $currentSchoolId)
+                    ->whereNull('sa.deleted_at')
+                    ->pluck('sa.student_id')
                     ->unique();
                 $alreadyMarked = DB::table('attendance_records')
                     ->where('attendance_session_id', $session->id)

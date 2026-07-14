@@ -1163,13 +1163,17 @@ class ClassController extends Controller
             $instanceIds = $instances->pluck('id')->filter()->values();
             $liveStudentCounts = collect();
             if ($instanceIds->isNotEmpty()) {
-                $liveStudentCounts = DB::table('student_admissions')
-                    ->select('class_academic_year_id', DB::raw('COUNT(*) as total'))
-                    ->whereIn('class_academic_year_id', $instanceIds->toArray())
-                    ->whereNull('deleted_at')
-                    ->whereIn('enrollment_status', ['active', 'admitted'])
-                    ->groupBy('class_academic_year_id')
-                    ->pluck('total', 'class_academic_year_id');
+                $liveStudentCounts = DB::table('student_admissions as sa')
+                    ->join('students as s', function ($join) {
+                        $join->on('sa.student_id', '=', 's.id')
+                            ->whereNull('s.deleted_at');
+                    })
+                    ->select('sa.class_academic_year_id', DB::raw('COUNT(*) as total'))
+                    ->whereIn('sa.class_academic_year_id', $instanceIds->toArray())
+                    ->whereNull('sa.deleted_at')
+                    ->whereIn('sa.enrollment_status', ['active', 'admitted'])
+                    ->groupBy('sa.class_academic_year_id')
+                    ->pluck('total', 'sa.class_academic_year_id');
             }
 
             $enriched = $instances->map(function ($instance) use ($academicYear, $rooms, $classes, $liveStudentCounts) {

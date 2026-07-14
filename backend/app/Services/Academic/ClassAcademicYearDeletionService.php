@@ -21,12 +21,16 @@ class ClassAcademicYearDeletionService
         $organizationId = $instance->organization_id;
         $schoolId = $instance->school_id;
 
-        $activeStudentCount = (int) DB::table('student_admissions')
-            ->where('class_academic_year_id', $classAcademicYearId)
-            ->where('organization_id', $organizationId)
-            ->where('school_id', $schoolId)
-            ->whereNull('deleted_at')
-            ->whereIn('enrollment_status', ['active', 'admitted'])
+        $activeStudentCount = (int) DB::table('student_admissions as sa')
+            ->join('students as s', function ($join) {
+                $join->on('sa.student_id', '=', 's.id')
+                    ->whereNull('s.deleted_at');
+            })
+            ->where('sa.class_academic_year_id', $classAcademicYearId)
+            ->where('sa.organization_id', $organizationId)
+            ->where('sa.school_id', $schoolId)
+            ->whereNull('sa.deleted_at')
+            ->whereIn('sa.enrollment_status', ['active', 'admitted'])
             ->count();
 
         $checks = [

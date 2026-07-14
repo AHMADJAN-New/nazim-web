@@ -123,6 +123,7 @@ class FeeAssignmentController extends Controller
         $admission = StudentAdmission::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
+            ->whereHas('student')
             ->find($validated['student_admission_id']);
 
         if (!$admission) {

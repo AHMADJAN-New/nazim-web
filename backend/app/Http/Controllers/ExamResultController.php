@@ -736,6 +736,7 @@ class ExamResultController extends Controller
                 ->where('organization_id', $profile->organization_id)
                 ->where('exam_id', $examId)
                 ->whereNull('deleted_at')
+                ->withLiveActiveAdmission($exam->academic_year_id)
                 ->count();
 
             // Count results entered for this subject

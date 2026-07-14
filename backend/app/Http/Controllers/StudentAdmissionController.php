@@ -787,6 +787,7 @@ class StudentAdmissionController extends Controller
 
         $query = StudentAdmission::query()
             ->whereNull('student_admissions.deleted_at')
+            ->whereHas('student')
             ->whereIn('student_admissions.organization_id', $orgIds)
             ->whereIn('student_admissions.school_id', $schoolIds);
         // organization_id / school_id filters are ignored; scope is enforced by middleware/profile.
@@ -1026,6 +1027,7 @@ class StudentAdmissionController extends Controller
         // Build query with same filters as report method
         $query = StudentAdmission::query()
             ->whereNull('student_admissions.deleted_at')
+            ->whereHas('student')
             ->whereIn('student_admissions.organization_id', $orgIds)
             ->whereIn('student_admissions.school_id', $schoolIds);
 
@@ -1152,18 +1154,18 @@ class StudentAdmissionController extends Controller
         $rows = [];
         foreach ($admissions as $admission) {
             $rows[] = [
-                'student_name' => $admission->student->full_name ?? '—',
-                'admission_no' => $admission->student->admission_no ?? '—',
-                'card_number' => $admission->student->card_number ?? '—',
-                'school' => $admission->school->school_name ?? '—',
-                'class' => $admission->class->name ?? '—',
-                'section' => $admission->classAcademicYear->section_name ?? '—',
-                'academic_year' => $admission->academicYear->name ?? '—',
-                'residency_type' => $admission->residencyType->name ?? '—',
+                'student_name' => $admission->student?->full_name ?? '—',
+                'admission_no' => $admission->student?->admission_no ?? '—',
+                'card_number' => $admission->student?->card_number ?? '—',
+                'school' => $admission->school?->school_name ?? '—',
+                'class' => $admission->class?->name ?? '—',
+                'section' => $admission->classAcademicYear?->section_name ?? '—',
+                'academic_year' => $admission->academicYear?->name ?? '—',
+                'residency_type' => $admission->residencyType?->name ?? '—',
                 'is_boarder' => $admission->is_boarder ? ($language === 'ps' ? 'هو' : ($language === 'fa' ? 'بله' : ($language === 'ar' ? 'نعم' : 'Yes'))) : ($language === 'ps' ? 'نه' : ($language === 'fa' ? 'خیر' : ($language === 'ar' ? 'لا' : 'No'))),
-                'room' => $admission->room->room_number ?? '—',
-                'guardian_name' => $admission->student->guardian_name ?? '—',
-                'guardian_phone' => $admission->student->guardian_phone ?? '—',
+                'room' => $admission->room?->room_number ?? '—',
+                'guardian_name' => $admission->student?->guardian_name ?? '—',
+                'guardian_phone' => $admission->student?->guardian_phone ?? '—',
                 'enrollment_status' => $admission->enrollment_status ?? '—',
                 'admission_date' => $admission->admission_date ? $this->dateService->formatDate($admission->admission_date, $calendarPreference, 'full', $language) : '—',
             ];

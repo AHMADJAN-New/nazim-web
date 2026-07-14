@@ -938,13 +938,14 @@ class ExamSeatingMapService
 
         return ExamStudent::query()
             ->with([
-                'studentAdmission.student' => fn ($query) => $query->withTrashed(),
+                'studentAdmission.student',
                 'examClass.classAcademicYear.class',
             ])
             ->where('exam_id', $map->exam_id)
             ->where('organization_id', $map->organization_id)
             ->where('school_id', $map->school_id)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($map->exam?->academic_year_id)
             ->when(
                 $mapClassIds !== [],
                 fn ($query) => $query->whereIn('exam_class_id', $mapClassIds),
@@ -990,6 +991,7 @@ class ExamSeatingMapService
             ->where('organization_id', $map->organization_id)
             ->where('school_id', $map->school_id)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($map->exam?->academic_year_id)
             ->whereIn('exam_class_id', $mapClassIds)
             ->when($lockedIds !== [], fn ($query) => $query->whereNotIn('id', $lockedIds))
             ->count();
@@ -1224,6 +1226,7 @@ class ExamSeatingMapService
             ->where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission()
             ->whereNotNull('exam_roll_number')
             ->get(['id', 'exam_roll_number']);
 
@@ -1551,6 +1554,7 @@ class ExamSeatingMapService
             ->where('organization_id', $map->organization_id)
             ->where('school_id', $map->school_id)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($map->exam?->academic_year_id)
             ->whereIn('exam_class_id', $mapClassIds)
             ->pluck('id')
             ->all();

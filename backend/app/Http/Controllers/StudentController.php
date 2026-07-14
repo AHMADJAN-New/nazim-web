@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Models\ExamStudent;
 use App\Models\SchoolAdmissionRules;
 use App\Models\Student;
 use App\Models\StudentAdmission;
@@ -665,15 +666,36 @@ class StudentController extends Controller
         $studentData = $student->toArray();
 
         DB::transaction(function () use ($student, $profile, $currentSchoolId) {
-            // Soft-delete related admissions so they no longer appear in admissions lists/stats.
             // Soft-deleting the student alone does not fire FK ON DELETE CASCADE.
-            StudentAdmission::query()
+            // Soft-delete related admissions and exam enrollments so they leave those lists.
+            $admissionIds = StudentAdmission::query()
                 ->where('student_id', $student->id)
                 ->where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
-                ->get()
-                ->each(fn (StudentAdmission $admission) => $admission->delete());
+                ->pluck('id');
+
+            if ($admissionIds->isNotEmpty()) {
+                ExamStudent::query()
+                    ->whereIn('student_admission_id', $admissionIds)
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->whereNull('deleted_at')
+                    ->get()
+                    ->each(fn (ExamStudent $examStudent) => $examStudent->delete());
+
+                StudentAdmission::query()
+                    ->whereIn('id', $admissionIds)
+                    ->get()
+                    ->each(function (StudentAdmission $admission) {
+                        // Free hostel bed before soft-delete (overview only counts non-deleted rows).
+                        if ($admission->room_id !== null) {
+                            $admission->room_id = null;
+                            $admission->save();
+                        }
+                        $admission->delete();
+                    });
+            }
 
             $student->delete();
         });

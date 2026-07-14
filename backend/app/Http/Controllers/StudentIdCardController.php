@@ -263,6 +263,7 @@ class StudentIdCardController extends Controller
                     $admission = StudentAdmission::where('id', $admissionId)
                         ->where('organization_id', $profile->organization_id)
                         ->whereNull('deleted_at')
+                        ->whereHas('student')
                         ->first();
 
                     if (! $admission) {
