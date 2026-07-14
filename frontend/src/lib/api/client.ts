@@ -32,6 +32,37 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, any>;
 }
 
+/**
+ * Parse Content-Disposition filename and sanitize for <a download>.
+ * Browsers silently ignore download names that start with "-" or "."
+ * (common when non-Latin report titles are reduced to "-______1.xlsx").
+ */
+export function parseContentDispositionFilename(header: string | null): string | null {
+  if (!header) return null;
+
+  const utf8Match = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header);
+  const plainMatch = /filename\s*=\s*("?)([^";]+)\1/i.exec(header);
+  let raw = utf8Match?.[1] ? decodeURIComponent(utf8Match[1].trim()) : plainMatch?.[2]?.trim() || null;
+  if (!raw) return null;
+
+  raw = raw.replace(/["']/g, '').split(/[/\\]/).pop()?.trim() || raw;
+  return sanitizeBrowserDownloadFilename(raw);
+}
+
+export function sanitizeBrowserDownloadFilename(filename: string, fallback = 'report'): string {
+  const trimmed = filename.trim();
+  const extMatch = /\.([a-zA-Z0-9]{1,10})$/.exec(trimmed);
+  const extension = extMatch?.[1] || '';
+  const base = extension ? trimmed.slice(0, -extension.length - 1) : trimmed;
+
+  let safeBase = base.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^[_-]+|[_-]+$/g, '');
+  if (!safeBase || !/[a-zA-Z0-9]/.test(safeBase)) {
+    safeBase = fallback.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^[_-]+|[_-]+$/g, '') || 'report';
+  }
+
+  return extension ? `${safeBase}.${extension}` : safeBase;
+}
+
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
@@ -509,7 +540,15 @@ class ApiClient {
       ...fetchOptions.headers,
     };
 
-    if (!(fetchOptions.body instanceof FormData)) {
+    // Only set JSON Content-Type when we actually send a JSON body.
+    // Setting it on GET file downloads can break proxies and is unnecessary.
+    const method = (fetchOptions.method || 'GET').toUpperCase();
+    const hasJsonBody =
+      !(fetchOptions.body instanceof FormData) &&
+      fetchOptions.body != null &&
+      method !== 'GET' &&
+      method !== 'HEAD';
+    if (hasJsonBody) {
       headers['Content-Type'] = 'application/json';
     }
 
@@ -546,9 +585,7 @@ class ApiClient {
     }
 
     const contentDisposition = response.headers.get('content-disposition');
-    const filename = contentDisposition
-      ? contentDisposition.split('filename=')[1]?.replace(/["']/g, '') || null
-      : null;
+    const filename = parseContentDispositionFilename(contentDisposition);
 
     const blob = await response.blob();
     return { blob, filename };

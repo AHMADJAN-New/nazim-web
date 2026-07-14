@@ -22,11 +22,17 @@ chown -R www-data:www-data /var/www/.cache
 chmod -R 775 /var/www/.cache
 
 # Install Puppeteer if not already installed (for Browsershot)
+# Chrome cache lives in the container FS (not the storage volume), so it is missing
+# after recreate even when the npm package is already global — do not reinstall.
 if [ ! -d "/var/www/.cache/puppeteer/chrome" ] && [ ! -d "/var/www/.cache/puppeteer/chrome-headless-shell" ]; then
-    echo "Installing Puppeteer..."
-    npm install -g puppeteer --cache=/var/www/.cache/npm
-    chown -R www-data:www-data /var/www/.cache
-    chmod -R 775 /var/www/.cache
+    if [ ! -d "/usr/lib/node_modules/puppeteer" ] && [ ! -d "/usr/local/lib/node_modules/puppeteer" ]; then
+        echo "Installing Puppeteer package..."
+        npm install -g puppeteer --cache=/var/www/.cache/npm || true
+    fi
+    echo "Ensuring Puppeteer Chrome browser cache..."
+    npx --yes puppeteer browsers install chrome || true
+    chown -R www-data:www-data /var/www/.cache 2>/dev/null || true
+    chmod -R 775 /var/www/.cache 2>/dev/null || true
 fi
 
 # Ensure storage directories exist with correct permissions

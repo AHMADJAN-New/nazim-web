@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 
-import { apiClient } from '@/lib/api/client';
+import { apiClient, sanitizeBrowserDownloadFilename } from '@/lib/api/client';
 import type {
   ServerReportOptions,
   GenerateReportRequest,
@@ -193,6 +193,8 @@ export function useServerReport(): UseServerReportReturn {
       fileName: null,
       error: null,
     });
+    downloadUrlRef.current = null;
+    reportIdRef.current = null;
 
     try {
       // Build request
@@ -277,7 +279,7 @@ export function useServerReport(): UseServerReportReturn {
       // If not ready, try again after a short delay (max 3 retries)
       if (retryCount < 3) {
         setTimeout(() => {
-          downloadReport(retryCount + 1);
+          void downloadReport(retryCount + 1);
         }, 500);
       } else {
         setState(prev => ({ ...prev, error: 'Download URL not available' }));
@@ -286,25 +288,25 @@ export function useServerReport(): UseServerReportReturn {
     }
 
     try {
-      // Extract the endpoint path from the full URL
-      // downloadUrl from backend is like: http://localhost:8000/api/reports/{id}/download
-      // API client baseUrl is /api, so we need: /reports/{id}/download
-      const url = new URL(currentDownloadUrl);
-      let endpoint = url.pathname;
-      
-      // Remove /api prefix if present (backend URL includes it, API client will add it back)
+      // downloadUrl may be absolute (https://host/api/reports/…) or relative (/api/reports/…)
+      let endpoint: string;
+      try {
+        const url = new URL(currentDownloadUrl, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+        endpoint = url.pathname;
+      } catch {
+        endpoint = currentDownloadUrl;
+      }
+
       if (endpoint.startsWith('/api/')) {
-        endpoint = endpoint.substring(4); // Remove '/api' but keep the leading '/'
+        endpoint = endpoint.substring(4);
       } else if (endpoint.startsWith('/api')) {
         endpoint = endpoint.substring(4);
       }
-      
-      // Ensure endpoint starts with /
+
       if (!endpoint.startsWith('/')) {
-        endpoint = '/' + endpoint;
+        endpoint = `/${endpoint}`;
       }
 
-      // Debug log in development
       if (import.meta.env.DEV) {
         console.log('[useServerReport] Downloading report:', {
           originalUrl: currentDownloadUrl,
@@ -314,37 +316,35 @@ export function useServerReport(): UseServerReportReturn {
         });
       }
 
-      // Use API client's requestFile method (includes authentication automatically)
       const { blob, filename } = await apiClient.requestFile(endpoint);
+      const safeName =
+        filename ||
+        sanitizeBrowserDownloadFilename(state.fileName || `report-${currentReportId}`, 'report');
 
-      // Create a blob URL and download
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = filename || state.fileName || 'report';
+      link.download = safeName;
+      link.rel = 'noopener';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Clean up the blob URL
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to download report';
-      
-      // If it's a 404 and we haven't retried too many times, try again
-      // The file might not be ready yet even though status is "completed"
+
       if (errorMessage.includes('404') || errorMessage.includes('not found')) {
         if (retryCount < 5) {
           if (import.meta.env.DEV) {
             console.log(`[useServerReport] File not ready, retrying... (${retryCount + 1}/5)`);
           }
           setTimeout(() => {
-            downloadReport(retryCount + 1);
-          }, 1000 * (retryCount + 1)); // Exponential backoff
+            void downloadReport(retryCount + 1);
+          }, 1000 * (retryCount + 1));
           return;
         }
       }
-      
+
       setState(prev => ({ ...prev, error: errorMessage }));
       console.error('Download error:', error);
     }
@@ -352,6 +352,8 @@ export function useServerReport(): UseServerReportReturn {
 
   const reset = useCallback(() => {
     stopPolling();
+    downloadUrlRef.current = null;
+    reportIdRef.current = null;
     setState({
       isGenerating: false,
       progress: 0,

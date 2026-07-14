@@ -349,7 +349,11 @@ class ReportGenerationController extends Controller
             ], 404);
         }
 
-        $fileName = $reportRun->file_name ?? "report.{$reportRun->getFileExtension()}";
+        $fileName = $this->sanitizeDownloadFileName(
+            $reportRun->file_name,
+            $reportRun->report_key,
+            $reportRun->getFileExtension()
+        );
 
         if (!empty($resolvedFile['path']) && $resolvedFile['path'] !== $reportRun->output_path) {
             $reportRun->forceFill([
@@ -374,6 +378,33 @@ class ReportGenerationController extends Controller
             $fileName,
             $resolvedFile['disk'] ?? 'local'
         );
+    }
+
+    /**
+     * Ensure download filename is browser-safe (never starts with "-" / ".").
+     * Existing reports may already store bad names like "-______1_….xlsx".
+     */
+    private function sanitizeDownloadFileName(?string $fileName, ?string $reportKey, string $extension): string
+    {
+        $extension = ltrim($extension !== '' ? $extension : 'bin', '.');
+        $raw = $fileName ?: ($reportKey ? "{$reportKey}.{$extension}" : "report.{$extension}");
+        $base = pathinfo($raw, PATHINFO_FILENAME) ?: ($reportKey ?: 'report');
+        $ext = pathinfo($raw, PATHINFO_EXTENSION) ?: $extension;
+
+        $safeBase = trim((string) preg_replace('/[^a-zA-Z0-9_-]+/', '_', $base), '_-');
+        $alnum = preg_replace('/[^a-zA-Z0-9]+/', '', $safeBase) ?? '';
+
+        if ($safeBase === '' || $alnum === '') {
+            $safeBase = trim((string) preg_replace('/[^a-zA-Z0-9_-]+/', '_', (string) ($reportKey ?: 'report')), '_-');
+        }
+
+        if ($safeBase === '' || ! preg_match('/[a-zA-Z0-9]/', $safeBase)) {
+            $safeBase = 'report';
+        }
+
+        $safeExt = preg_replace('/[^a-zA-Z0-9]+/', '', $ext) ?: $extension;
+
+        return "{$safeBase}.{$safeExt}";
     }
 
     /**

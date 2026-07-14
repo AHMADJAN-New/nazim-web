@@ -954,6 +954,10 @@ class FileStorageService
             throw new \RuntimeException("Failed to store report file at path: {$fullPath}");
         }
 
+        // Queue workers may run as root; PHP-FPM serves downloads as www-data.
+        // Ensure the new file (and parent dirs Flysystem created) stay group-readable.
+        $this->ensurePrivatePathPermissions($fullPath);
+
         // Update storage usage after successful storage
         $this->updateStorageUsageForContent($content, $organizationId);
 
@@ -1314,6 +1318,62 @@ class FileStorageService
         }
 
         return null;
+    }
+
+    /**
+     * Make a newly stored private file (and ancestors within the disk root) readable by www-data.
+     * Queue/scheduler historically ran as root and created 0700 dirs that PHP-FPM could not open.
+     */
+    private function ensurePrivatePathPermissions(string $relativePath): void
+    {
+        try {
+            $absolute = Storage::disk(self::DISK_PRIVATE)->path($relativePath);
+            $root = rtrim(Storage::disk(self::DISK_PRIVATE)->path(''), DIRECTORY_SEPARATOR);
+            $current = $absolute;
+
+            while ($current !== '' && $current !== '/' && str_starts_with($current, $root)) {
+                if (is_file($current)) {
+                    @chmod($current, 0664);
+                } elseif (is_dir($current)) {
+                    @chmod($current, 0775);
+                }
+
+                if ($current === $root) {
+                    break;
+                }
+
+                $parent = dirname($current);
+                if ($parent === $current) {
+                    break;
+                }
+                $current = $parent;
+            }
+
+            $wwwUid = function_exists('posix_getpwnam') ? (posix_getpwnam('www-data')['uid'] ?? null) : null;
+            $wwwGid = function_exists('posix_getgrnam') ? (posix_getgrnam('www-data')['gid'] ?? null) : null;
+            if ($wwwUid !== null && $wwwGid !== null && is_file($absolute)) {
+                @chown($absolute, $wwwUid);
+                @chgrp($absolute, $wwwGid);
+                $dir = dirname($absolute);
+                while ($dir !== '' && $dir !== '/' && str_starts_with($dir, $root)) {
+                    @chown($dir, $wwwUid);
+                    @chgrp($dir, $wwwGid);
+                    if ($dir === $root) {
+                        break;
+                    }
+                    $parent = dirname($dir);
+                    if ($parent === $dir) {
+                        break;
+                    }
+                    $dir = $parent;
+                }
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('FileStorageService: Failed to fix private path permissions', [
+                'path' => $relativePath,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

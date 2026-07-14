@@ -79,6 +79,9 @@ export function ReportProgressDialog({
     if (isProcessing) {
       return t('reports.pleaseWait') || 'مهرباني وکړئ انتظار وکړئ...';
     }
+    if (isCompleted && error) {
+      return error;
+    }
     if (isCompleted && fileName) {
       return fileName;
     }
@@ -133,7 +136,12 @@ export function ReportProgressDialog({
           {isCompleted && (
             <>
               <Button
-                onClick={onDownload}
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onDownload?.();
+                }}
                 className="gap-2"
               >
                 <Download className="h-4 w-4" />
@@ -144,6 +152,7 @@ export function ReportProgressDialog({
 
           {(isCompleted || isFailed) && (
             <Button
+              type="button"
               variant="outline"
               onClick={handleClose}
               className="gap-2"
@@ -155,6 +164,7 @@ export function ReportProgressDialog({
 
           {isProcessing && (
             <Button
+              type="button"
               variant="outline"
               onClick={handleClose}
               disabled

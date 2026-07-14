@@ -242,15 +242,32 @@ class PdfReportService
      */
     private function generateFilename(ReportConfig $config): string
     {
-        $baseName = $config->title ?: $config->reportKey;
-        $safeName = trim(preg_replace('/[^a-zA-Z0-9_-]/', '_', $baseName), '_');
-        if ($safeName === '') {
-            $safeName = $config->reportKey ?: 'report';
-        }
+        $safeName = $this->sanitizeDownloadBasename($config->title ?: $config->reportKey, $config->reportKey);
         $timestamp = now()->format('Y-m-d_His');
         $uuid = Str::uuid()->toString();
 
         return "{$safeName}_{$timestamp}_{$uuid}.pdf";
+    }
+
+    /**
+     * ASCII-safe basename for downloads. Avoids leading "-" which makes browsers
+     * ignore the HTML download attribute (common with non-Latin report titles).
+     */
+    private function sanitizeDownloadBasename(string $baseName, ?string $fallback = null): string
+    {
+        $safeName = trim((string) preg_replace('/[^a-zA-Z0-9_-]+/', '_', $baseName), '_-');
+        $alnum = preg_replace('/[^a-zA-Z0-9]+/', '', $safeName) ?? '';
+
+        if ($safeName === '' || $alnum === '') {
+            $fallbackName = $fallback ?: 'report';
+            $safeName = trim((string) preg_replace('/[^a-zA-Z0-9_-]+/', '_', $fallbackName), '_-');
+        }
+
+        if ($safeName === '' || ! preg_match('/[a-zA-Z0-9]/', $safeName)) {
+            $safeName = 'report';
+        }
+
+        return $safeName;
     }
 
     /**

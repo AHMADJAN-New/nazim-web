@@ -1020,7 +1020,8 @@ export function ExamSeatingMapEditorPage() {
 
     // Persist on-screen class colors so Excel/PDF fills match the editor
     // (server rebuilds report data from DB; unsaved palette defaults would be missing).
-    if (classColors.length > 0) {
+    // Skip when map is finalized/applied — syncClassColors is locked and returns 409.
+    if (editable && classColors.length > 0) {
       try {
         await syncColorsMutation.mutateAsync({
           examId,

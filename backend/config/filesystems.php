@@ -38,6 +38,17 @@ return [
             'serve' => false,
             'throw' => false,
             'report' => false,
+            // Queue often runs as root; keep dirs traversable / files readable by www-data (PHP-FPM).
+            'permissions' => [
+                'file' => [
+                    'public' => 0664,
+                    'private' => 0664,
+                ],
+                'dir' => [
+                    'public' => 0775,
+                    'private' => 0775,
+                ],
+            ],
         ],
 
         'private' => [
@@ -46,6 +57,16 @@ return [
             'serve' => false,
             'throw' => false,
             'report' => false,
+            'permissions' => [
+                'file' => [
+                    'public' => 0664,
+                    'private' => 0664,
+                ],
+                'dir' => [
+                    'public' => 0775,
+                    'private' => 0775,
+                ],
+            ],
         ],
 
         'public' => [
