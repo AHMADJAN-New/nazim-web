@@ -12,7 +12,7 @@ import {
   X,
   Grid3x3,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
@@ -115,6 +115,25 @@ const isMapEditable = (map: ExamSeatingMapDetail | null | undefined): boolean =>
   return map.status === 'draft' || map.status === 'generated';
 };
 
+const seatCellKey = (row: number, column: number): string => `${row}-${column}`;
+
+function buildRectangleSelection(
+  from: { row: number; column: number },
+  to: { row: number; column: number }
+): Set<string> {
+  const rowStart = Math.min(from.row, to.row);
+  const rowEnd = Math.max(from.row, to.row);
+  const colStart = Math.min(from.column, to.column);
+  const colEnd = Math.max(from.column, to.column);
+  const next = new Set<string>();
+  for (let row = rowStart; row <= rowEnd; row += 1) {
+    for (let column = colStart; column <= colEnd; column += 1) {
+      next.add(seatCellKey(row, column));
+    }
+  }
+  return next;
+}
+
 export function ExamSeatingMapEditorPage() {
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
@@ -134,6 +153,8 @@ export function ExamSeatingMapEditorPage() {
   const [classColors, setClassColors] = useState<ExamSeatingClassColor[]>([]);
   const [draftMapClassIds, setDraftMapClassIds] = useState<string[]>([]);
   const [selectedCell, setSelectedCell] = useState<{ row: number; column: number } | null>(null);
+  const [selectedCells, setSelectedCells] = useState<Set<string>>(() => new Set());
+  const [selectionAnchor, setSelectionAnchor] = useState<{ row: number; column: number } | null>(null);
   const [movingStudentId, setMovingStudentId] = useState<string | null>(null);
   const [studentSearch, setStudentSearch] = useState('');
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
@@ -152,6 +173,10 @@ export function ExamSeatingMapEditorPage() {
     setPreviewData(null);
     setShowPreviewDialog(false);
     setShowConfirmDialog(false);
+    setSelectedCell(null);
+    setSelectedCells(new Set());
+    setSelectionAnchor(null);
+    setMovingStudentId(null);
   }, [mapId]);
 
   const syncAssignmentsMutation = useSyncExamSeatingAssignments();
@@ -563,9 +588,21 @@ export function ExamSeatingMapEditorPage() {
     []
   );
 
-  const handleCellClick = (row: number, column: number) => {
+  const selectSingleCell = (row: number, column: number) => {
+    setSelectedCell({ row, column });
+    setSelectedCells(new Set([seatCellKey(row, column)]));
+    setSelectionAnchor({ row, column });
+  };
+
+  const clearCellSelection = () => {
+    setSelectedCell(null);
+    setSelectedCells(new Set());
+    setSelectionAnchor(null);
+  };
+
+  const handleCellClick = (row: number, column: number, event: MouseEvent) => {
     if (!editable || !hasAssignPermission) return;
-    const current = assignmentByCell.get(`${row}-${column}`);
+    const current = assignmentByCell.get(seatCellKey(row, column));
     if (!current) return;
 
     if (movingStudentId) {
@@ -605,15 +642,46 @@ export function ExamSeatingMapEditorPage() {
         })
       );
       setMovingStudentId(null);
+      selectSingleCell(row, column);
+      return;
+    }
+
+    if (event.shiftKey && selectionAnchor) {
+      const rectangle = buildRectangleSelection(selectionAnchor, { row, column });
+      setSelectedCells(rectangle);
       setSelectedCell({ row, column });
       return;
     }
 
-    if (selectedCell?.row === row && selectedCell.column === column) {
-      setSelectedCell(null);
+    if (event.ctrlKey || event.metaKey) {
+      const key = seatCellKey(row, column);
+      const next = new Set(selectedCells);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      setSelectedCells(next);
+      if (next.size === 0) {
+        setSelectedCell(null);
+        setSelectionAnchor(null);
+      } else {
+        setSelectedCell({ row, column });
+        setSelectionAnchor({ row, column });
+      }
       return;
     }
-    setSelectedCell({ row, column });
+
+    if (
+      selectedCells.size === 1 &&
+      selectedCell?.row === row &&
+      selectedCell.column === column
+    ) {
+      clearCellSelection();
+      return;
+    }
+
+    selectSingleCell(row, column);
   };
 
   const handleAssignStudent = (examStudentId: string, student: {
@@ -635,20 +703,39 @@ export function ExamSeatingMapEditorPage() {
     }));
   };
 
-  const handleToggleDisabled = () => {
-    if (!selectedCell || !editable || !hasAssignPermission) return;
-    const current = assignmentByCell.get(`${selectedCell.row}-${selectedCell.column}`);
-    if (!current) return;
-    const nextDisabled = !current.isDisabled;
-    updateAssignmentAt(selectedCell.row, selectedCell.column, (assignment) => ({
-      ...assignment,
-      isDisabled: nextDisabled,
-      isLocked: nextDisabled ? false : assignment.isLocked,
-      examStudentId: nextDisabled ? null : assignment.examStudentId,
-      studentName: nextDisabled ? null : assignment.studentName,
-      className: nextDisabled ? null : assignment.className,
-      examClassId: nextDisabled ? null : assignment.examClassId,
-    }));
+  const handleDisableSelectedSeats = () => {
+    if (!editable || !hasAssignPermission || selectedCells.size === 0) return;
+    setDraftAssignments((prev) =>
+      prev.map((assignment) => {
+        if (!selectedCells.has(seatCellKey(assignment.rowNumber, assignment.columnNumber))) {
+          return assignment;
+        }
+        return {
+          ...assignment,
+          isDisabled: true,
+          isLocked: false,
+          examStudentId: null,
+          studentName: null,
+          className: null,
+          examClassId: null,
+        };
+      })
+    );
+  };
+
+  const handleEnableSelectedSeats = () => {
+    if (!editable || !hasAssignPermission || selectedCells.size === 0) return;
+    setDraftAssignments((prev) =>
+      prev.map((assignment) => {
+        if (!selectedCells.has(seatCellKey(assignment.rowNumber, assignment.columnNumber))) {
+          return assignment;
+        }
+        return {
+          ...assignment,
+          isDisabled: false,
+        };
+      })
+    );
   };
 
   const handleToggleLocked = () => {
@@ -785,7 +872,7 @@ export function ExamSeatingMapEditorPage() {
           startSeatNumber: parsedDraftStartSeat,
         },
       });
-      setSelectedCell(null);
+      clearCellSelection();
       setMovingStudentId(null);
       setShowResizeDialog(false);
       await refetch();
@@ -1286,7 +1373,7 @@ export function ExamSeatingMapEditorPage() {
           <CardContent>
             {editable && hasAssignPermission && (
               <p className="mb-3 text-xs text-muted-foreground">
-                {t('exams.seatingMaps.enableSeatsHint')}
+                {t('exams.seatingMaps.multiSelectHint')}
               </p>
             )}
             <div className="overflow-x-auto">
@@ -1298,8 +1385,8 @@ export function ExamSeatingMapEditorPage() {
                   const row = rowIndex + 1;
                   return Array.from({ length: mapDetail.columns }, (_, colIndex) => {
                     const column = colIndex + 1;
-                    const assignment = assignmentByCell.get(`${row}-${column}`);
-                    const isSelected = selectedCell?.row === row && selectedCell.column === column;
+                    const assignment = assignmentByCell.get(seatCellKey(row, column));
+                    const isSelected = selectedCells.has(seatCellKey(row, column));
                     const classColor = assignment?.examClassId
                       ? colorByExamClassId.get(assignment.examClassId)
                       : undefined;
@@ -1313,7 +1400,7 @@ export function ExamSeatingMapEditorPage() {
 
                     return (
                       <button
-                        key={`${row}-${column}`}
+                        key={seatCellKey(row, column)}
                         type="button"
                         className={`relative h-14 rounded-md p-1 text-xs transition-colors ${cellClass} ${
                           isSelected ? 'ring-2 ring-primary' : ''
@@ -1326,7 +1413,7 @@ export function ExamSeatingMapEditorPage() {
                               : undefined,
                           borderColor: classColor || undefined,
                         }}
-                        onClick={() => handleCellClick(row, column)}
+                        onClick={(event) => handleCellClick(row, column, event)}
                         title={
                           assignment?.studentName
                             ? `${assignment.studentName} (${assignment.className})`
@@ -1349,24 +1436,37 @@ export function ExamSeatingMapEditorPage() {
               </div>
             </div>
 
-            {selectedAssignment && editable && hasAssignPermission && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={handleToggleDisabled}>
-                  {selectedAssignment.isDisabled
-                    ? t('exams.seatingMaps.enableSeat') || 'Enable Seat'
+            {selectedCells.size > 0 && editable && hasAssignPermission && (
+              <div className="mt-4 flex flex-wrap gap-2 items-center">
+                <span className="text-xs text-muted-foreground me-1">
+                  {t('exams.seatingMaps.selectedSeatsCount', { count: selectedCells.size })}
+                </span>
+                <Button variant="outline" size="sm" onClick={handleDisableSelectedSeats}>
+                  {selectedCells.size > 1
+                    ? t('exams.seatingMaps.disableSelectedSeats')
                     : t('exams.seatingMaps.disableSeat') || 'Disable Seat'}
                 </Button>
-                {!selectedAssignment.isDisabled && selectedAssignment.examStudentId && (
+                <Button variant="outline" size="sm" onClick={handleEnableSelectedSeats}>
+                  {selectedCells.size > 1
+                    ? t('exams.seatingMaps.enableSelectedSeats')
+                    : t('exams.seatingMaps.enableSeat') || 'Enable Seat'}
+                </Button>
+                {selectedCells.size === 1 && selectedAssignment && !selectedAssignment.isDisabled && selectedAssignment.examStudentId && (
                   <Button variant="outline" size="sm" onClick={handleToggleLocked}>
                     {selectedAssignment.isLocked
                       ? t('exams.seatingMaps.unlockSeat') || 'Unlock'
                       : t('exams.seatingMaps.lockSeat') || 'Lock'}
                   </Button>
                 )}
-                {!selectedAssignment.isDisabled && !selectedAssignment.isLocked && (
+                {selectedCells.size === 1 && selectedAssignment && !selectedAssignment.isDisabled && !selectedAssignment.isLocked && (
                   <Button variant="outline" size="sm" onClick={handleClearSeat}>
                     <X className="h-4 w-4" />
                     <span className="hidden sm:inline ml-2">{t('exams.seatingMaps.clearSeat') || 'Clear'}</span>
+                  </Button>
+                )}
+                {selectedCells.size > 1 && (
+                  <Button variant="ghost" size="sm" onClick={clearCellSelection}>
+                    {t('exams.seatingMaps.clearSelection')}
                   </Button>
                 )}
               </div>

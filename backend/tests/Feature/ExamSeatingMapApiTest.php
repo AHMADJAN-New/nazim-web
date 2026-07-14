@@ -176,6 +176,34 @@ class ExamSeatingMapApiTest extends TestCase
     }
 
     /** @test */
+    public function it_numbers_seats_column_major_top_to_bottom(): void
+    {
+        $fixture = $this->createFixture([
+            'exam_seating_maps.read',
+            'exam_seating_maps.create',
+        ]);
+
+        $create = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps", [
+            'name' => 'Hall A',
+            'rows' => 2,
+            'columns' => 3,
+            'start_seat_number' => 10,
+            'exam_class_ids' => [$fixture['examClass']->id],
+        ])->assertCreated();
+
+        $assignments = collect($create->json('assignments'))
+            ->keyBy(fn (array $assignment): string => "{$assignment['row_number']}:{$assignment['column_number']}");
+
+        // Column 1: 10, 11 — Column 2: 12, 13 — Column 3: 14, 15
+        $this->assertSame(10, $assignments->get('1:1')['seat_number']);
+        $this->assertSame(11, $assignments->get('2:1')['seat_number']);
+        $this->assertSame(12, $assignments->get('1:2')['seat_number']);
+        $this->assertSame(13, $assignments->get('2:2')['seat_number']);
+        $this->assertSame(14, $assignments->get('1:3')['seat_number']);
+        $this->assertSame(15, $assignments->get('2:3')['seat_number']);
+    }
+
+    /** @test */
     public function it_returns_unassigned_exam_students_on_map_detail(): void
     {
         $fixture = $this->createFixture([

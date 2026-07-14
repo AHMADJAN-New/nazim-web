@@ -511,8 +511,8 @@ class ExamSeatingMapService
             $seatNumber = $startSeatNumber;
 
             foreach ($map->assignments->sortBy([
-                ['row_number', 'asc'],
                 ['column_number', 'asc'],
+                ['row_number', 'asc'],
             ]) as $assignment) {
                 ExamSeatAssignment::create([
                     'organization_id' => $map->organization_id,
@@ -1353,8 +1353,9 @@ class ExamSeatingMapService
     {
         $seatNumber = $map->start_seat_number;
 
-        for ($row = 1; $row <= $map->rows; $row++) {
-            for ($column = 1; $column <= $map->columns; $column++) {
+        // Column-major: fill top-to-bottom in each column, then move to the next column.
+        for ($column = 1; $column <= $map->columns; $column++) {
+            for ($row = 1; $row <= $map->rows; $row++) {
                 ExamSeatAssignment::create([
                     'organization_id' => $map->organization_id,
                     'school_id' => $map->school_id,
