@@ -1,6 +1,6 @@
 FROM php:8.3-fpm
 
-# Install system dependencies
+# Install system dependencies (incl. Python for exam seating OR-Tools solver)
 RUN apt-get update && apt-get install -y \
     imagemagick \
     ghostscript \
@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     curl \
+    python3 \
+    python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
@@ -32,6 +35,13 @@ RUN pecl install redis && \
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Exam seating solver deps (script is mounted from the host in compose)
+COPY backend/solver/requirements.txt /tmp/exam-seating-solver-requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/exam-seating-solver-requirements.txt \
+    && rm -f /tmp/exam-seating-solver-requirements.txt
+
+ENV EXAM_SEATING_PYTHON_PATH=python3
 
 # Set working directory
 WORKDIR /var/www

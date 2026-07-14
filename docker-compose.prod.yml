@@ -68,6 +68,10 @@ services:
       - ./backend/app:/var/www/backend/app:ro
       - ./backend/routes:/var/www/backend/routes:ro
       - ./backend/config:/var/www/backend/config:ro
+      # Exam seating OR-Tools solver (not in older images; keep mounted until rebuild includes it)
+      - ./backend/solver:/var/www/backend/solver:ro
+    environment:
+      EXAM_SEATING_PYTHON_PATH: python3
     logging:
       driver: "json-file"
       options:
@@ -97,7 +101,11 @@ services:
       - ./backend/app:/var/www/backend/app:ro
       - ./backend/routes:/var/www/backend/routes:ro
       - ./backend/config:/var/www/backend/config:ro
-    command: ["sh", "-lc", "php artisan queue:work --sleep=3 --tries=3 --timeout=120 --no-interaction"]
+      - ./backend/solver:/var/www/backend/solver:ro
+    environment:
+      EXAM_SEATING_PYTHON_PATH: python3
+    # Must exceed RunExamSeatingSolverJob::$timeout (1200) so CP-SAT can finish
+    command: ["sh", "-lc", "php artisan queue:work --sleep=3 --tries=3 --timeout=1260 --no-interaction"]
     logging:
       driver: "json-file"
       options:
