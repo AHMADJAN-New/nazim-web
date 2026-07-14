@@ -265,6 +265,8 @@ export const useDeleteStudent = () => {
       showToast.success('toast.studentRemoved');
       await queryClient.invalidateQueries({ queryKey: ['students'] });
       await queryClient.refetchQueries({ queryKey: ['students'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
       await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
       await queryClient.refetchQueries({ queryKey: ['subscription-usage'] });
     },

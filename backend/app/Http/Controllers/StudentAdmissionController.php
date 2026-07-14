@@ -100,6 +100,7 @@ class StudentAdmissionController extends Controller
             'room',
         ])
             ->whereNull('deleted_at')
+            ->whereHas('student')
             ->whereIn('organization_id', $orgIds)
             ->whereIn('school_id', $schoolIds);
 
@@ -1270,6 +1271,7 @@ class StudentAdmissionController extends Controller
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = StudentAdmission::whereNull('deleted_at')
+            ->whereHas('student')
             ->whereIn('organization_id', $orgIds)
             ->where('school_id', $currentSchoolId);
 

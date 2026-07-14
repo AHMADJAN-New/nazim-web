@@ -663,7 +663,20 @@ class StudentController extends Controller
         $studentName = $student->full_name ?? 'Unknown';
         $admissionNo = $student->admission_no ?? 'N/A';
         $studentData = $student->toArray();
-        $student->delete();
+
+        DB::transaction(function () use ($student, $profile, $currentSchoolId) {
+            // Soft-delete related admissions so they no longer appear in admissions lists/stats.
+            // Soft-deleting the student alone does not fire FK ON DELETE CASCADE.
+            StudentAdmission::query()
+                ->where('student_id', $student->id)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->get()
+                ->each(fn (StudentAdmission $admission) => $admission->delete());
+
+            $student->delete();
+        });
 
         // Activity is logged by Student model's LogsActivityWithContext trait
         return response()->noContent();

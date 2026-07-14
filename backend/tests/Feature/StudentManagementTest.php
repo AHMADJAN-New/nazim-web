@@ -178,6 +178,181 @@ class StudentManagementTest extends TestCase
     }
 
     /** @test */
+    public function deleting_student_soft_deletes_related_admissions()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $classAcademicYear = ClassAcademicYear::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'section_name' => 'A',
+            'capacity' => 30,
+            'current_student_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $admission = StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        $response = $this->jsonAs($user, 'DELETE', "/api/students/{$student->id}");
+
+        $response->assertStatus(204);
+
+        $this->assertSoftDeleted('students', ['id' => $student->id]);
+        $this->assertSoftDeleted('student_admissions', ['id' => $admission->id]);
+    }
+
+    /** @test */
+    public function admissions_list_and_stats_exclude_rows_for_soft_deleted_students()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $classAcademicYear = ClassAcademicYear::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYear->id,
+            'section_name' => 'A',
+            'capacity' => 30,
+            'current_student_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $liveStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $orphanedStudent = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $liveAdmission = StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $liveStudent->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        $orphanedAdmission = StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $orphanedStudent->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'class_academic_year_id' => $classAcademicYear->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        // Simulate legacy orphans: student soft-deleted without cascading admissions.
+        $orphanedStudent->delete();
+        $this->assertNull($orphanedAdmission->fresh()->deleted_at);
+
+        $listResponse = $this->jsonAs($user, 'GET', '/api/student-admissions', [
+            'page' => 1,
+            'per_page' => 25,
+            'academic_year_id' => $academicYear->id,
+        ]);
+        $listResponse->assertStatus(200);
+        $rows = $listResponse->json('data');
+        $this->assertCount(1, $rows);
+        $this->assertSame($liveAdmission->id, $rows[0]['id']);
+
+        $statsResponse = $this->jsonAs($user, 'GET', '/api/student-admissions/stats', [
+            'academic_year_id' => $academicYear->id,
+        ]);
+        $statsResponse->assertStatus(200)
+            ->assertJsonFragment(['total' => 1, 'active' => 1]);
+    }
+
+    /** @test */
+    public function admissions_soft_delete_orphaned_command_repairs_legacy_rows()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $academicYear = AcademicYear::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+        $class = ClassModel::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $admission = StudentAdmission::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'academic_year_id' => $academicYear->id,
+            'class_id' => $class->id,
+            'admission_date' => now()->toDateString(),
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+
+        $student->delete();
+        $this->assertNull($admission->fresh()->deleted_at);
+
+        $this->artisan('admissions:soft-delete-orphaned', [
+            '--organization-id' => $organization->id,
+        ])->assertSuccessful();
+
+        $this->assertSoftDeleted('student_admissions', ['id' => $admission->id]);
+    }
+
+    /** @test */
     public function student_code_is_auto_generated()
     {
         $user = $this->authenticate();
