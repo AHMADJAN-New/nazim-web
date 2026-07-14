@@ -16,6 +16,9 @@ from ortools.sat.python import cp_model
 
 CONTRACT_VERSION = "1.0"
 SUPPORTED_VERSIONS = {CONTRACT_VERSION}
+STRATEGY_DEFAULT = "default"
+STRATEGY_ZIGZAG = "zigzag"
+SUPPORTED_STRATEGIES = {STRATEGY_DEFAULT, STRATEGY_ZIGZAG}
 
 
 @dataclass(frozen=True)
@@ -51,6 +54,7 @@ class ParsedInput:
     strict_mode: bool
     seed: int
     timeout_seconds: float
+    strategy: str = STRATEGY_DEFAULT
 
 
 def _error(message: str) -> dict[str, Any]:
@@ -125,6 +129,19 @@ def _parse_input(raw: dict[str, Any]) -> ParsedInput | dict[str, Any]:
     except (KeyError, TypeError, ValueError):
         return _error("Invalid solver options")
 
+    strategy_raw = raw.get("strategy", STRATEGY_DEFAULT)
+    if strategy_raw is None or strategy_raw == "":
+        strategy = STRATEGY_DEFAULT
+    elif not isinstance(strategy_raw, str):
+        return _error("Invalid strategy")
+    else:
+        strategy = strategy_raw.strip().lower()
+    if strategy not in SUPPORTED_STRATEGIES:
+        return _error(
+            f"Unsupported strategy: {strategy_raw}. "
+            f"Use one of: {', '.join(sorted(SUPPORTED_STRATEGIES))}"
+        )
+
     return ParsedInput(
         rows=rows,
         cols=cols,
@@ -133,6 +150,7 @@ def _parse_input(raw: dict[str, Any]) -> ParsedInput | dict[str, Any]:
         strict_mode=strict_mode,
         seed=seed,
         timeout_seconds=timeout_seconds,
+        strategy=strategy,
     )
 
 
@@ -144,18 +162,26 @@ def _build_adjacency(
     seat_index_by_key: dict[tuple[int, int], int],
     rows: int,
     cols: int,
+    *,
+    include_diagonals: bool = True,
 ) -> list[tuple[int, int]]:
-    # 8-directional: a diagonal neighbour can still see another student's paper,
-    # so it counts as adjacent. Scanning only the four "forward" offsets (right
-    # and the three below) yields every 8-neighbour pair exactly once.
+    # Default 8-directional: a diagonal neighbour can still see another student's
+    # paper, so it counts as adjacent. Zigzag mode uses orthogonal-only (4-dir)
+    # because the checkerboard lattice places same-class students on diagonals
+    # by design. Scanning only "forward" offsets yields each pair once.
     pairs: set[tuple[int, int]] = set()
+    offsets = (
+        ((0, 1), (1, -1), (1, 0), (1, 1))
+        if include_diagonals
+        else ((0, 1), (1, 0))
+    )
     for r in range(rows):
         for c in range(cols):
             key = (r, c)
             if key not in seat_index_by_key:
                 continue
             i = seat_index_by_key[key]
-            for dr, dc in ((0, 1), (1, -1), (1, 0), (1, 1)):
+            for dr, dc in offsets:
                 nr, nc = r + dr, c + dc
                 neighbor = (nr, nc)
                 if neighbor in seat_index_by_key:
@@ -292,7 +318,11 @@ def _prepare_problem(parsed: ParsedInput) -> dict[str, Any] | tuple[
 
     # Leave empties evenly across the hall instead of packing students into a
     # dense block and dumping leftover seats at one end.
-    if len(movable_students) < len(assignable_seats):
+    # Zigzag keeps the full seat lattice so the checkerboard pattern is intact.
+    if (
+        parsed.strategy != STRATEGY_ZIGZAG
+        and len(movable_students) < len(assignable_seats)
+    ):
         assignable_seats = _select_evenly_spaced_seats(
             assignable_seats,
             len(movable_students),
@@ -301,7 +331,12 @@ def _prepare_problem(parsed: ParsedInput) -> dict[str, Any] | tuple[
 
     seat_index_by_key = {_seat_key(seat): idx for idx, seat in enumerate(parsed.seats)}
     all_seat_indices = list(range(len(parsed.seats)))
-    adjacency = _build_adjacency(seat_index_by_key, parsed.rows, parsed.cols)
+    adjacency = _build_adjacency(
+        seat_index_by_key,
+        parsed.rows,
+        parsed.cols,
+        include_diagonals=parsed.strategy != STRATEGY_ZIGZAG,
+    )
 
     # Adjacency uses separation_group_id (main class), not exam section id.
     class_by_student = {
@@ -754,6 +789,267 @@ def _constructive_assign(
     }
 
 
+def _interleave_students_by_class(
+    students: list[StudentRecord],
+    seed: int,
+) -> list[StudentRecord]:
+    by_class: dict[str, list[StudentRecord]] = {}
+    for student in students:
+        by_class.setdefault(student.separation_group_id, []).append(student)
+
+    if not by_class:
+        return []
+
+    class_order = sorted(by_class.keys())
+    rotate = seed % len(class_order)
+    rotated = class_order[rotate:] + class_order[:rotate]
+    queues = {cid: list(by_class[cid]) for cid in rotated}
+    interleaved: list[StudentRecord] = []
+    while any(queues.values()):
+        for cid in rotated:
+            if queues[cid]:
+                interleaved.append(queues[cid].pop(0))
+    return interleaved
+
+
+def _solve_zigzag(
+    movable_students: list[StudentRecord],
+    assignable_seats: list[SeatCell],
+    adjacency: list[tuple[int, int]],
+    class_by_student: dict[str, str],
+    locked_assignments: list[dict[str, Any]],
+    all_seats: list[SeatCell],
+    *,
+    seed: int,
+) -> dict[str, Any]:
+    """Full-hall checkerboard zigzag for one dominant class.
+
+    The largest separation group is auto-selected and seated on one color of the
+    (row+col)%2 lattice so same-class students are never orthogonal neighbours.
+    Remaining students fill the complementary color (then leftover primary seats).
+    Conflict counting for this mode uses orthogonal adjacency only.
+    """
+    seat_index_by_key = {_seat_key(seat): idx for idx, seat in enumerate(all_seats)}
+    neighbors = _neighbor_globals(adjacency)
+
+    locked_by_seat: dict[int, str] = {}
+    occupied_class: dict[int, str] = {}
+    for item in locked_assignments:
+        idx = seat_index_by_key[(item["row"], item["col"])]
+        student_id = item["exam_student_id"]
+        locked_by_seat[idx] = student_id
+        occupied_class[idx] = class_by_student.get(
+            student_id, str(item.get("exam_class_id", ""))
+        )
+
+    if not movable_students:
+        conflict_count, conflict_pairs = _find_conflicts(
+            {},
+            adjacency,
+            all_seats,
+            class_by_student,
+            locked_by_seat,
+        )
+        status = "optimal" if conflict_count == 0 else "feasible"
+        return {
+            "contract_version": CONTRACT_VERSION,
+            "status": status,
+            "strict_mode": False,
+            "mode_used": "zigzag",
+            "strategy": STRATEGY_ZIGZAG,
+            "assignments": locked_assignments,
+            "conflict_pairs": conflict_pairs,
+            "conflicts_count": conflict_count,
+        }
+
+    largest_id, largest_count = _largest_movable_class(movable_students)
+    large_students = [
+        s for s in movable_students if s.separation_group_id == largest_id
+    ]
+    other_students = [
+        s for s in movable_students if s.separation_group_id != largest_id
+    ]
+
+    # Prefer the parity that already hosts locked members of the large group.
+    locked_parity_counts = {0: 0, 1: 0}
+    for idx, student_id in locked_by_seat.items():
+        if class_by_student.get(student_id) != largest_id:
+            continue
+        seat = all_seats[idx]
+        locked_parity_counts[(seat.row + seat.col) % 2] += 1
+
+    even_seats = [s for s in assignable_seats if (s.row + s.col) % 2 == 0]
+    odd_seats = [s for s in assignable_seats if (s.row + s.col) % 2 == 1]
+    even_seats.sort(key=lambda s: (s.seat_number, s.row, s.col))
+    odd_seats.sort(key=lambda s: (s.seat_number, s.row, s.col))
+
+    def parity_score(parity: int, seats_for_parity: list[SeatCell]) -> tuple[int, int, int]:
+        fits = 1 if len(seats_for_parity) >= largest_count else 0
+        return (fits, locked_parity_counts[parity], len(seats_for_parity))
+
+    scored = [
+        (parity_score(0, even_seats), 0, even_seats),
+        (parity_score(1, odd_seats), 1, odd_seats),
+    ]
+    scored.sort(key=lambda item: item[0], reverse=True)
+    if scored[0][0] == scored[1][0]:
+        # Seed chooses which checkerboard color hosts the largest class.
+        prefer = seed % 2
+        scored = sorted(scored, key=lambda item: 0 if item[1] == prefer else 1)
+
+    primary_parity = scored[0][1]
+    primary_seats = list(scored[0][2])
+    secondary_seats = list(scored[1][2])
+
+    assignment_by_seat: dict[int, str] = {}
+    used_keys: set[tuple[int, int]] = set()
+
+    def take_seats(pool: list[SeatCell], needed: int) -> list[SeatCell]:
+        taken: list[SeatCell] = []
+        for seat in pool:
+            key = _seat_key(seat)
+            if key in used_keys:
+                continue
+            taken.append(seat)
+            used_keys.add(key)
+            if len(taken) >= needed:
+                break
+        return taken
+
+    large_primary = take_seats(primary_seats, len(large_students))
+    remaining_large = len(large_students) - len(large_primary)
+    large_overflow = take_seats(secondary_seats, remaining_large) if remaining_large else []
+    large_seat_list = large_primary + large_overflow
+
+    if len(large_seat_list) < len(large_students):
+        return {
+            "contract_version": CONTRACT_VERSION,
+            "status": "infeasible",
+            "strict_mode": False,
+            "mode_used": "zigzag",
+            "strategy": STRATEGY_ZIGZAG,
+            "message": "Not enough usable seats for zigzag placement of the largest class",
+            "assignments": locked_assignments,
+            "conflict_pairs": [],
+            "conflicts_count": 0,
+            "zigzag_group_id": largest_id,
+            "zigzag_parity": primary_parity,
+        }
+
+    for student, seat in zip(large_students, large_seat_list):
+        idx = seat_index_by_key[_seat_key(seat)]
+        assignment_by_seat[idx] = student.exam_student_id
+        occupied_class[idx] = student.separation_group_id
+
+    remaining_secondary = [
+        s for s in secondary_seats if _seat_key(s) not in used_keys
+    ]
+    remaining_primary = [
+        s for s in primary_seats if _seat_key(s) not in used_keys
+    ]
+    other_pool = remaining_secondary + remaining_primary
+
+    interleaved_others = _interleave_students_by_class(other_students, seed)
+
+    def seat_conflicts(global_idx: int, class_id: str) -> bool:
+        for neighbor in neighbors.get(global_idx, []):
+            if occupied_class.get(neighbor) == class_id:
+                return True
+        return False
+
+    for student in interleaved_others:
+        chosen: SeatCell | None = None
+        # Prefer zero orthogonal same-class conflicts among the remaining pool.
+        for seat in other_pool:
+            key = _seat_key(seat)
+            if key in used_keys:
+                continue
+            idx = seat_index_by_key[key]
+            if not seat_conflicts(idx, student.separation_group_id):
+                chosen = seat
+                break
+        if chosen is None:
+            for seat in other_pool:
+                key = _seat_key(seat)
+                if key not in used_keys:
+                    chosen = seat
+                    break
+        if chosen is None:
+            return {
+                "contract_version": CONTRACT_VERSION,
+                "status": "infeasible",
+                "strict_mode": False,
+                "mode_used": "zigzag",
+                "strategy": STRATEGY_ZIGZAG,
+                "message": "Not enough usable seats for zigzag placement",
+                "assignments": locked_assignments,
+                "conflict_pairs": [],
+                "conflicts_count": 0,
+                "zigzag_group_id": largest_id,
+                "zigzag_parity": primary_parity,
+            }
+
+        key = _seat_key(chosen)
+        used_keys.add(key)
+        idx = seat_index_by_key[key]
+        assignment_by_seat[idx] = student.exam_student_id
+        occupied_class[idx] = student.separation_group_id
+
+    exam_class_by_student = {
+        s.exam_student_id: s.exam_class_id for s in movable_students
+    }
+    result_assignments = list(locked_assignments)
+    for global_idx, student_id in assignment_by_seat.items():
+        seat = all_seats[global_idx]
+        result_assignments.append(
+            {
+                "exam_student_id": student_id,
+                "exam_class_id": exam_class_by_student[student_id],
+                "row": seat.row,
+                "col": seat.col,
+                "seat_number": seat.seat_number,
+            }
+        )
+
+    conflict_count, conflict_pairs = _find_conflicts(
+        assignment_by_seat,
+        adjacency,
+        all_seats,
+        class_by_student,
+        locked_by_seat,
+    )
+
+    overflow_used = len(large_overflow) > 0
+    status = "optimal" if conflict_count == 0 else "feasible"
+    message = None
+    if overflow_used:
+        message = (
+            f"Largest class '{largest_id}' ({largest_count} students) exceeds one "
+            f"checkerboard color ({len(primary_seats)} seats); overflow used the "
+            f"other color, so some side-by-side same-class seats may remain."
+        )
+    elif conflict_count > 0:
+        message = (
+            "Zigzag seating applied; some orthogonal same-class neighbours remain "
+            "among smaller classes."
+        )
+
+    return {
+        "contract_version": CONTRACT_VERSION,
+        "status": status,
+        "strict_mode": False,
+        "mode_used": "zigzag",
+        "strategy": STRATEGY_ZIGZAG,
+        "assignments": result_assignments,
+        "conflict_pairs": conflict_pairs,
+        "conflicts_count": conflict_count,
+        "message": message,
+        "zigzag_group_id": largest_id,
+        "zigzag_parity": primary_parity,
+        "zigzag_overflow": overflow_used,
+    }
+
+
 def _conflict_free_capacity(assignable_seats: list[SeatCell]) -> int:
     """Max students of a *single* class that can be seated with zero 8-directional
     neighbours: the largest of the four (row%2, col%2) parity groups. Cells that
@@ -806,6 +1102,17 @@ def solve(raw: dict[str, Any]) -> dict[str, Any]:
         all_seat_indices,
         all_seats,
     ) = prepared
+
+    if parsed.strategy == STRATEGY_ZIGZAG:
+        return _solve_zigzag(
+            movable_students,
+            assignable_seats,
+            adjacency,
+            class_by_student,
+            locked_assignments,
+            all_seats,
+            seed=parsed.seed,
+        )
 
     # CP-SAT now handles large halls directly (the class-level model solves
     # 1000+ seats in seconds), so every exam flows through the exact solver.

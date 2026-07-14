@@ -389,3 +389,107 @@ class TestMainClassSeparation:
         assert _count_adjacent_same_class(result, group_by_student) == 0
         occupied = _occupied_seats(result)
         assert occupied == {(0, 0), (0, 2)} or occupied == {(0, 2), (0, 0)}
+
+
+def _count_orthogonal_same_class(result: dict, class_by_student: dict[str, str]) -> int:
+    positions: dict[tuple[int, int], str] = {}
+    for assignment in result["assignments"]:
+        positions[(assignment["row"], assignment["col"])] = class_by_student[
+            assignment["exam_student_id"]
+        ]
+
+    conflicts = 0
+    seen: set[tuple[tuple[int, int], tuple[int, int]]] = set()
+    for (r, c), cls in positions.items():
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            neighbor = (r + dr, c + dc)
+            if neighbor in positions and positions[neighbor] == cls:
+                pair = tuple(sorted(((r, c), neighbor)))
+                if pair not in seen:
+                    seen.add(pair)
+                    conflicts += 1
+    return conflicts
+
+
+class TestZigzagStrategy:
+    def test_largest_class_on_checkerboard_no_orthogonal_neighbours(self) -> None:
+        # 4x4 hall: 8 even + 8 odd parity seats. Class A has 8, others share 8.
+        seats = [
+            seat(r, c, r * 4 + c + 1)
+            for r in range(4)
+            for c in range(4)
+        ]
+        students = [student(f"a{i}", "class-a") for i in range(8)]
+        students += [student(f"b{i}", "class-b") for i in range(4)]
+        students += [student(f"c{i}", "class-c") for i in range(4)]
+        payload = base_payload(
+            rows=4,
+            cols=4,
+            seats=seats,
+            students=students,
+            strategy="zigzag",
+        )
+        result = run_solver(payload)
+
+        assert result["status"] in {"optimal", "feasible"}
+        assert result["mode_used"] == "zigzag"
+        assert result["zigzag_group_id"] == "class-a"
+        assert result["conflicts_count"] == 0
+
+        class_by_student = {
+            **{f"a{i}": "class-a" for i in range(8)},
+            **{f"b{i}": "class-b" for i in range(4)},
+            **{f"c{i}": "class-c" for i in range(4)},
+        }
+        assert _count_orthogonal_same_class(result, class_by_student) == 0
+
+        assignments = _assignment_map(result)
+        a_parities = {
+            (assignments[f"a{i}"]["row"] + assignments[f"a{i}"]["col"]) % 2
+            for i in range(8)
+        }
+        assert len(a_parities) == 1
+
+    def test_default_strategy_unchanged_without_strategy_field(self) -> None:
+        payload = base_payload(
+            rows=2,
+            cols=2,
+            seats=[seat(0, 0, 1), seat(0, 1, 2), seat(1, 0, 3), seat(1, 1, 4)],
+            students=[
+                student("s1", "class-a"),
+                student("s2", "class-b"),
+            ],
+        )
+        assert "strategy" in payload
+        # Explicit default must still succeed like before.
+        payload["strategy"] = "default"
+        result = run_solver(payload)
+        assert result["status"] in {"optimal", "feasible"}
+        assert result.get("mode_used") != "zigzag"
+
+    def test_unknown_strategy_returns_error(self) -> None:
+        payload = base_payload(
+            rows=1,
+            cols=2,
+            seats=[seat(0, 0, 1), seat(0, 1, 2)],
+            students=[student("s1", "class-a")],
+            strategy="spiral",
+        )
+        result = run_solver(payload)
+        assert result["status"] == "error"
+        assert "Unsupported strategy" in result["message"]
+
+    def test_auto_picks_largest_separation_group(self) -> None:
+        seats = [seat(r, c, r * 3 + c + 1) for r in range(3) for c in range(3)]
+        students = [student(f"big{i}", "class-big") for i in range(5)]
+        students += [student(f"s{i}", f"class-s{i}") for i in range(4)]
+        payload = base_payload(
+            rows=3,
+            cols=3,
+            seats=seats,
+            students=students,
+            strategy="zigzag",
+        )
+        result = run_solver(payload)
+        assert result["status"] in {"optimal", "feasible"}
+        assert result["zigzag_group_id"] == "class-big"

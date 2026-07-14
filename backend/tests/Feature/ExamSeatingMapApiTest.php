@@ -348,6 +348,39 @@ class ExamSeatingMapApiTest extends TestCase
     }
 
     /** @test */
+    public function it_dispatches_solver_job_with_zigzag_strategy(): void
+    {
+        Queue::fake();
+
+        $fixture = $this->createFixture([
+            'exam_seating_maps.read',
+            'exam_seating_maps.create',
+            'exam_seating_maps.assign',
+        ]);
+
+        $create = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps", [
+            'name' => 'Zigzag solver map',
+            'rows' => 2,
+            'columns' => 2,
+            'start_seat_number' => 1,
+            'exam_class_ids' => [$fixture['examClass']->id],
+        ])->assertCreated();
+
+        $mapId = $create->json('id');
+
+        $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps/{$mapId}/solve", [
+            'revision' => $create->json('revision'),
+            'input_checksum' => $create->json('input_checksum'),
+            'strict_mode' => true,
+            'strategy' => 'zigzag',
+        ])->assertAccepted();
+
+        Queue::assertPushed(RunExamSeatingSolverJob::class, function (RunExamSeatingSolverJob $job) {
+            return $job->strategy === 'zigzag';
+        });
+    }
+
+    /** @test */
     public function solver_job_applies_results_when_mocked_solver_succeeds(): void
     {
         $fixture = $this->createFixture();

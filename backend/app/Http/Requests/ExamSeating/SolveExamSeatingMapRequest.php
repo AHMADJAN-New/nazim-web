@@ -21,6 +21,7 @@ class SolveExamSeatingMapRequest extends FormRequest
             'input_checksum' => ['required', 'string', 'regex:/^[0-9a-f]{64}$/'],
             'strict_mode' => 'sometimes|boolean',
             'seed' => 'nullable|integer|min:1',
+            'strategy' => 'sometimes|string|in:default,zigzag',
         ];
     }
 }

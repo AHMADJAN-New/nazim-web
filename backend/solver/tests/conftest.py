@@ -70,6 +70,7 @@ def base_payload(
     strict_mode: bool = True,
     seed: int = 42,
     timeout_seconds: float = 10.0,
+    strategy: str = "default",
 ) -> dict[str, Any]:
     return {
         "contract_version": "1.0",
@@ -79,4 +80,5 @@ def base_payload(
         "strict_mode": strict_mode,
         "seed": seed,
         "timeout_seconds": timeout_seconds,
+        "strategy": strategy,
     }

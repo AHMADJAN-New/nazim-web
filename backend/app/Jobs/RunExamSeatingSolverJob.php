@@ -30,7 +30,8 @@ class RunExamSeatingSolverJob implements ShouldQueue
         public bool $strictMode,
         public ?int $seed,
         public string $userId,
-        public string $idempotencyKey
+        public string $idempotencyKey,
+        public string $strategy = 'default'
     ) {}
 
     public function handle(
@@ -92,7 +93,7 @@ class RunExamSeatingSolverJob implements ShouldQueue
             $map->unsetRelation('assignments');
             $map->load(['assignments']);
 
-            $solved = $solverService->solve($map, $this->strictMode, $this->seed);
+            $solved = $solverService->solve($map, $this->strictMode, $this->seed, $this->strategy);
             $result = $solved['result'];
 
             $map->refresh();
@@ -143,10 +144,13 @@ class RunExamSeatingSolverJob implements ShouldQueue
                 'diagnostics' => [
                     'status' => $result['status'],
                     'mode_used' => $result['mode_used'] ?? null,
+                    'strategy' => $this->strategy,
                     'conflict_pairs' => $result['conflict_pairs'] ?? [],
                     'message' => $result['message'] ?? null,
                     'applied' => $applied,
                     'assignment_count' => count($result['assignments'] ?? []),
+                    'zigzag_group_id' => $result['zigzag_group_id'] ?? null,
+                    'zigzag_parity' => $result['zigzag_parity'] ?? null,
                 ],
                 'started_at' => $startedAt,
                 'completed_at' => now(),
@@ -159,10 +163,13 @@ class RunExamSeatingSolverJob implements ShouldQueue
                 $map->solver_diagnostics = [
                     'status' => $result['status'],
                     'mode_used' => $result['mode_used'] ?? null,
+                    'strategy' => $this->strategy,
                     'conflicts_count' => $result['conflicts_count'] ?? 0,
                     'conflict_pairs' => $result['conflict_pairs'] ?? [],
                     'message' => $result['message'] ?? null,
                     'applied' => $applied,
+                    'zigzag_group_id' => $result['zigzag_group_id'] ?? null,
+                    'zigzag_parity' => $result['zigzag_parity'] ?? null,
                 ];
                 $map->save();
             }

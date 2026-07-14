@@ -576,6 +576,11 @@ export default {
       solveInProgress: "Solving seating…",
       solveInProgressDescription:
         "The seating solver is running. Please wait and do not refresh the page.",
+      solveStrategy: "Solve strategy",
+      solveStrategyDefault: "Default (all sides)",
+      solveStrategyZigzag: "Zigzag (large class)",
+      solveStrategyZigzagHint:
+        "Places the largest class on a checkerboard so students are not side-by-side or front/back. Use when one class is too large for full separation.",
       solverStatus: "Solver",
       startSeat: "Start Seat",
       startSeatHint: "Next available: {start}-{end}",

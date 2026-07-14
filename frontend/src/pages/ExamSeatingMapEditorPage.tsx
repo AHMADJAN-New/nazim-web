@@ -41,6 +41,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -164,6 +171,7 @@ export function ExamSeatingMapEditorPage() {
   const [showResizeDialog, setShowResizeDialog] = useState(false);
   const [showReportProgress, setShowReportProgress] = useState(false);
   const [awaitingSolve, setAwaitingSolve] = useState(false);
+  const [solveStrategy, setSolveStrategy] = useState<'default' | 'zigzag'>('default');
   const solveLoadingToastIdRef = useRef<string | number | null>(null);
   const [draftRows, setDraftRows] = useState('');
   const [draftColumns, setDraftColumns] = useState('');
@@ -959,6 +967,7 @@ export function ExamSeatingMapEditorPage() {
         revision: saved.revision,
         inputChecksum: saved.inputChecksum,
         strictMode: true,
+        strategy: solveStrategy,
       });
       // Keep awaitingSolve true so status polling continues until terminal state,
       // then the effect above refetches the map and updates the draft grid.
@@ -1254,6 +1263,49 @@ export function ExamSeatingMapEditorPage() {
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="md:hidden">
                         <p>{t('common.save') || 'Save'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1.5 min-w-[9.5rem] sm:min-w-[12rem]">
+                          <Select
+                            value={solveStrategy}
+                            onValueChange={(value) => {
+                              if (value === 'default' || value === 'zigzag') {
+                                setSolveStrategy(value);
+                              }
+                            }}
+                            disabled={solveMutation.isPending || isSolverRunning}
+                          >
+                            <SelectTrigger
+                              className="h-8 text-xs sm:text-sm"
+                              aria-label={
+                                t('exams.seatingMaps.solveStrategy') || 'Solve strategy'
+                              }
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="default">
+                                {t('exams.seatingMaps.solveStrategyDefault') ||
+                                  'Default (all sides)'}
+                              </SelectItem>
+                              <SelectItem value="zigzag">
+                                {t('exams.seatingMaps.solveStrategyZigzag') ||
+                                  'Zigzag (large class)'}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs">
+                        <p>
+                          {solveStrategy === 'zigzag'
+                            ? t('exams.seatingMaps.solveStrategyZigzagHint') ||
+                              'Places the largest class on a checkerboard so students are not side-by-side or front/back.'
+                            : t('exams.seatingMaps.solveStrategyDefault') ||
+                              'Default (all sides)'}
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                     <Tooltip>

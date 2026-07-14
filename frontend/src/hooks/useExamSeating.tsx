@@ -374,6 +374,7 @@ export const useSolveExamSeatingMap = () => {
       inputChecksum,
       strictMode,
       seed,
+      strategy,
     }: {
       examId: string;
       mapId: string;
@@ -381,12 +382,14 @@ export const useSolveExamSeatingMap = () => {
       inputChecksum: string;
       strictMode?: boolean;
       seed?: number;
+      strategy?: 'default' | 'zigzag';
     }): Promise<SolveExamSeatingMapResult> => {
       const response = await examSeatingApi.solve(examId, mapId, {
         revision,
         input_checksum: inputChecksum,
         strict_mode: strictMode,
         seed,
+        strategy,
       });
       return mapSolveResponseApiToDomain(response as ExamSeatingApi.SolveExamSeatingMapResponse);
     },

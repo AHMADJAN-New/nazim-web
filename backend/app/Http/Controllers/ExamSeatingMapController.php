@@ -290,10 +290,11 @@ class ExamSeatingMapController extends Controller
             $this->mapService->assertMapHasStudentsForSolve($map);
 
             $idempotencyKey = sprintf(
-                'map:%s:revision:%d:checksum:%s',
+                'map:%s:revision:%d:checksum:%s:strategy:%s',
                 $map->id,
                 $validated['revision'],
-                $validated['input_checksum']
+                $validated['input_checksum'],
+                $validated['strategy'] ?? 'default'
             );
 
             $map->solver_status = ExamSeatingMap::SOLVER_PENDING;
@@ -307,7 +308,8 @@ class ExamSeatingMapController extends Controller
                 (bool) ($validated['strict_mode'] ?? true),
                 $validated['seed'] ?? null,
                 $user->id,
-                $idempotencyKey
+                $idempotencyKey,
+                (string) ($validated['strategy'] ?? 'default')
             );
 
             return response()->json([

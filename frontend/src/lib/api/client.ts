@@ -3730,6 +3730,7 @@ export const examSeatingApi = {
     input_checksum: string;
     strict_mode?: boolean;
     seed?: number;
+    strategy?: 'default' | 'zigzag';
   }) => {
     return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/solve`, data);
   },

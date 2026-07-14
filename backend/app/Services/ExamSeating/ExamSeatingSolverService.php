@@ -17,8 +17,12 @@ class ExamSeatingSolverService
      *     checksum: string
      * }
      */
-    public function buildSolverInput(ExamSeatingMap $map, bool $strictMode = true, ?int $seed = null): array
-    {
+    public function buildSolverInput(
+        ExamSeatingMap $map,
+        bool $strictMode = true,
+        ?int $seed = null,
+        string $strategy = 'default'
+    ): array {
         $map->loadMissing(['assignments']);
 
         $inputPayload = [
@@ -40,10 +44,16 @@ class ExamSeatingSolverService
         $studentCount = count($inputPayload['students']);
         $cpSatTimeout = $this->resolveCpSatTimeoutSeconds($studentCount);
 
+        $normalizedStrategy = strtolower(trim($strategy));
+        if (! in_array($normalizedStrategy, ['default', 'zigzag'], true)) {
+            $normalizedStrategy = 'default';
+        }
+
         $payload = array_merge($inputPayload, [
             'strict_mode' => $strictMode,
             'seed' => $seed ?? random_int(1, 2_147_483_647),
             'timeout_seconds' => (float) $cpSatTimeout,
+            'strategy' => $normalizedStrategy,
         ]);
 
         return [
@@ -60,9 +70,13 @@ class ExamSeatingSolverService
     /**
      * @return array<string, mixed>
      */
-    public function solve(ExamSeatingMap $map, bool $strictMode = true, ?int $seed = null): array
-    {
-        $built = $this->buildSolverInput($map, $strictMode, $seed);
+    public function solve(
+        ExamSeatingMap $map,
+        bool $strictMode = true,
+        ?int $seed = null,
+        string $strategy = 'default'
+    ): array {
+        $built = $this->buildSolverInput($map, $strictMode, $seed, $strategy);
         $result = $this->invokeSolver($built['payload']);
 
         return [

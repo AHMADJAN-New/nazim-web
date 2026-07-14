@@ -576,6 +576,11 @@ export default {
       solveInProgress: "جاري حل المقاعد…",
       solveInProgressDescription:
         "محلل الجلوس يعمل الآن. يرجى الانتظار وعدم تحديث الصفحة.",
+      solveStrategy: "استراتيجية الحل",
+      solveStrategyDefault: "الافتراضي (كل الجوانب)",
+      solveStrategyZigzag: "متعرج (صف كبير)",
+      solveStrategyZigzagHint:
+        "يضع أكبر صف على نمط رقعة الشطرنج بحيث لا يجلس الطلاب جنبًا إلى جنب أو أمام/خلف بعضهم. استخدمه عندما يكون صف واحد أكبر من أن يُفصل بالكامل.",
       solverStatus: "المحلل",
       startSeat: "رقم البداية",
       startSeatHint: "التالي المتاح: {start}-{end}",

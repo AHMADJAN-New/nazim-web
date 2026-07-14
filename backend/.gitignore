@@ -22,6 +22,8 @@
 /solver/.venv/
 /solver/**/__pycache__/
 /solver/.pytest_cache/
+**/__pycache__/
+*.py[cod]
 Homestead.json
 Homestead.yaml
 Thumbs.db

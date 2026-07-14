@@ -489,6 +489,11 @@ export default {
       solveInProgress: "د ناستې حل روان دی…",
       solveInProgressDescription:
         "د ناستې حل کوونکی کار کوي. مهرباني وکړئ انتظار وکړئ او پاڼه تازه مه کوئ.",
+      solveStrategy: "د حل ستراتیژي",
+      solveStrategyDefault: "اصلي (ټول اړخونه)",
+      solveStrategyZigzag: "زیګزګ (لوی ټولګی)",
+      solveStrategyZigzagHint:
+        "تر ټولو لوی ټولګی په چکربورډ باندې ناستوي ترڅو زده‌کوونکي څنګ په څنګ یا مخامخ نه وي. هغه وخت وکاروئ چې یو ټولګی د بشپړ جلا کولو لپاره ډېر لوی وي.",
       solverStatus: "حل کوونکی",
       startSeat: "لومړۍ ځای ",
       startSeatHint: "راتلونکی شته: {start}-{end}",

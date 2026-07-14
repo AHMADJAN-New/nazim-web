@@ -576,6 +576,11 @@ export default {
       solveInProgress: "در حال حل چیدمان…",
       solveInProgressDescription:
         "حل‌کننده نشت در حال اجرا است. لطفاً منتظر بمانید و صفحه را تازه نکنید.",
+      solveStrategy: "استراتژی حل",
+      solveStrategyDefault: "پیش‌فرض (همه اطراف)",
+      solveStrategyZigzag: "زیگزاگ (صنف بزرگ)",
+      solveStrategyZigzagHint:
+        "بزرگ‌ترین صنف را روی الگوی شطرنجی می‌نشاند تا شاگردان پهلو به پهلو یا روبه‌رو نباشند. وقتی یک صنف برای جدایی کامل خیلی بزرگ است استفاده کنید.",
       solverStatus: "حل‌کننده",
       startSeat: "شماره شروع",
       startSeatHint: "بعدی موجود: {start}-{end}",

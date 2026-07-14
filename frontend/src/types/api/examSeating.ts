@@ -176,6 +176,7 @@ export interface SolveExamSeatingMapPayload {
   input_checksum: string;
   strict_mode?: boolean;
   seed?: number;
+  strategy?: 'default' | 'zigzag';
 }
 
 export interface ConfirmMapRollNumbersPayload {
