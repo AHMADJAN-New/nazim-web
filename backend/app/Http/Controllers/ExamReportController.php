@@ -200,6 +200,7 @@ class ExamReportController extends Controller
                 ->where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
+                ->withLiveActiveAdmission($exam->academic_year_id)
                 ->count();
 
             // Get results statistics
@@ -248,6 +249,7 @@ class ExamReportController extends Controller
                 ->where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
+                ->withLiveActiveAdmission($exam->academic_year_id)
                 ->get();
 
             // Get all exam subjects for this exam, grouped by class
@@ -482,6 +484,7 @@ class ExamReportController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission()
             ->get();
 
         // Get all results for this class
@@ -810,6 +813,7 @@ class ExamReportController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission()
             ->get();
 
         // Get all results for this class
@@ -1020,6 +1024,7 @@ class ExamReportController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission()
             ->get();
 
         // Get results for this subject

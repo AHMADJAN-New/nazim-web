@@ -74,15 +74,16 @@
             display: grid;
             grid-template-columns: 1fr;
             grid-template-rows: repeat(4, 1fr);
-            grid-row-gap: 5mm;
+            grid-row-gap: 3mm;
             width: calc(100% - 20.32mm); /* Reduce by 0.8 inches (20.32mm) */
             max-width: calc(210mm - 20.32mm - 6mm); /* Page width - reduction - padding */
-            height: 291mm; /* 297mm - 6mm padding */
+            /* Leave room under the last slip so the signature is not clipped when printing */
+            height: 285mm;
             margin: 0 auto; /* Center horizontally */
         }
         .slip {
             border: 2px solid #000;
-            padding: 4mm;
+            padding: 3mm 4mm 4mm 4mm;
             box-sizing: border-box;
             min-height: 0; /* Allow flex shrinking */
             display: flex;
@@ -149,6 +150,11 @@
             font-weight: 400;
             display: inline;
         }
+        .info .roll-highlight,
+        .info .seat-highlight {
+            font-weight: 700;
+            font-size: 14pt;
+        }
         .info div {
             margin-bottom: 2mm;
             overflow: hidden;
@@ -160,9 +166,10 @@
             display: flex;
             flex-wrap: wrap;
             gap: 1mm;
-            margin: 1.5mm 0;
-            flex-shrink: 0;
-            max-height: 25mm;
+            margin: 1mm 0;
+            flex-shrink: 1;
+            min-height: 0;
+            max-height: 16mm;
             overflow: hidden;
         }
         .subjects .box {
@@ -198,20 +205,25 @@
         .signature {
             display: flex;
             justify-content: flex-end;
-            align-items: end;
-            margin: 2mm 0 0 0;
+            align-items: flex-end;
+            margin-top: auto;
+            margin-bottom: 0;
             flex-shrink: 0;
-            padding-right: 3mm;
+            padding: 1mm 3mm 2mm 0;
         }
         .signature .line {
             border-bottom: 2px solid #000;
             width: 35mm;
-            height: 12mm;
+            min-height: 10mm;
+            height: 10mm;
             display: flex;
-            align-items: end;
+            align-items: flex-end;
             justify-content: center;
-            font: 700 13pt "BahijNassim", "Arial", sans-serif;
+            padding-bottom: 1mm;
+            box-sizing: border-box;
+            font: 700 12pt "BahijNassim", "Arial", sans-serif;
             text-align: center;
+            line-height: 1.1;
         }
     </style>
 </head>
@@ -235,10 +247,11 @@
                                 <div><span class="label">نوم:</span> <span class="value">{{ $slip['full_name'] }}</span></div>
                                 <div><span class="label">د پلار نوم:</span> <span class="value">{{ $slip['father_name'] ?? '' }}</span></div>
                                 <div><span class="label">د نوم لیک نمبر:</span> <span class="value">{{ $slip['admission_number'] ?? '' }}</span></div>
-                                <div><span class="label">اطاق نمبر:</span> <span class="value">{{ $slip['room_number'] ?? '' }}</span></div>
+                                <div><span class="label">اطاق / تالار:</span> <span class="value">{{ $slip['room_number'] ?? '' }}</span></div>
                             </div>
                             <div class="info">
-                                <div><span class="label">رقم الجلوس:</span> <span class="value">{{ $slip['exam_roll_number'] }}</span></div>
+                                <div><span class="label">رقم الجلوس:</span> <span class="value roll-highlight">{{ $slip['exam_roll_number'] }}</span></div>
+                                <div><span class="label">ځای نمبر:</span> <span class="value seat-highlight">{{ $slip['seat_number'] !== null && $slip['seat_number'] !== '' ? $slip['seat_number'] : '—' }}</span></div>
                                 <div><span class="label">ولایت:</span> <span class="value">{{ $slip['province'] ?? '' }}</span></div>
                                 <div><span class="label">درجه:</span> <span class="value">{{ $slip['class_name'] }}{{ $slip['section'] ? ' - ' . $slip['section'] : '' }}</span></div>
                             </div>

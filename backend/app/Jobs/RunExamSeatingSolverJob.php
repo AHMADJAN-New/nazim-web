@@ -52,12 +52,45 @@ class RunExamSeatingSolverJob implements ShouldQueue
             return;
         }
 
-        $map->solver_status = ExamSeatingMap::SOLVER_RUNNING;
-        $map->save();
-
         try {
-            $mapService->validateRevisionChecksum($map, $this->revision, $this->inputChecksum);
+            // Validate against a freshly loaded map before marking running.
+            // Controller already checked; this catches edits while the job waited
+            // in queue. Revision is the authoritative concurrency token.
+            $map->refresh();
+            $map->unsetRelation('assignments');
+            $map->load(['assignments']);
+
+            if ((int) $map->revision !== (int) $this->revision) {
+                throw new \RuntimeException('Map revision is stale. Reload the map and try again.');
+            }
+
+            $freshChecksum = $solverService->buildSolverInput($map)['checksum'];
+            if (! hash_equals($freshChecksum, trim($this->inputChecksum))) {
+                // Common after solver code changes if queue:work was not restarted.
+                Log::warning('Exam seating solver checksum mismatch', [
+                    'map_id' => $this->mapId,
+                    'revision' => $this->revision,
+                    'expected' => $this->inputChecksum,
+                    'fresh' => $freshChecksum,
+                    'algorithm_version' => config('exam_seating.algorithm_version'),
+                ]);
+                throw new \RuntimeException(
+                    'Map input checksum is stale. Reload the map and try again.'
+                    .' If you recently updated the app, restart the queue worker (php artisan queue:restart) first.'
+                );
+            }
+
             $mapService->assertMapHasStudentsForSolve($map);
+
+            $map->solver_status = ExamSeatingMap::SOLVER_RUNNING;
+            $map->save();
+
+            // Free unlocked empty seats left disabled by a previous solve so the
+            // solver can rearrange students and spread empties across the hall.
+            // Checksum is revalidated against the solved payload below.
+            $mapService->reopenUnlockedEmptySeatsForSolve($map);
+            $map->unsetRelation('assignments');
+            $map->load(['assignments']);
 
             $solved = $solverService->solve($map, $this->strictMode, $this->seed);
             $result = $solved['result'];
@@ -70,7 +103,7 @@ class RunExamSeatingSolverJob implements ShouldQueue
                     $mapService->applySolverResults(
                         $map,
                         $this->revision,
-                        $this->inputChecksum,
+                        $solved['checksum'],
                         $result,
                         $this->userId
                     );

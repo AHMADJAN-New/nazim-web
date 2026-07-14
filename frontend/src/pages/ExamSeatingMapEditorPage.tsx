@@ -143,9 +143,16 @@ export function ExamSeatingMapEditorPage() {
   const [showResizeDialog, setShowResizeDialog] = useState(false);
   const [showReportProgress, setShowReportProgress] = useState(false);
   const [awaitingSolve, setAwaitingSolve] = useState(false);
+  const solveLoadingToastIdRef = useRef<string | number | null>(null);
   const [draftRows, setDraftRows] = useState('');
   const [draftColumns, setDraftColumns] = useState('');
   const [draftStartSeat, setDraftStartSeat] = useState('');
+
+  useEffect(() => {
+    setPreviewData(null);
+    setShowPreviewDialog(false);
+    setShowConfirmDialog(false);
+  }, [mapId]);
 
   const syncAssignmentsMutation = useSyncExamSeatingAssignments();
   const syncColorsMutation = useSyncExamSeatingClassColors();
@@ -179,6 +186,28 @@ export function ExamSeatingMapEditorPage() {
     isSolverRunning ? 1500 : false
   );
 
+  const dismissSolveLoadingToast = useCallback(() => {
+    if (solveLoadingToastIdRef.current != null) {
+      showToast.dismiss(solveLoadingToastIdRef.current);
+      solveLoadingToastIdRef.current = null;
+    }
+  }, []);
+
+  // Keep a loading toast visible for the whole queue solve (often 5–10s).
+  useEffect(() => {
+    if (isSolverRunning) {
+      if (solveLoadingToastIdRef.current == null) {
+        solveLoadingToastIdRef.current = showToast.loading(
+          t('toast.seatingMapSolveInProgress') ||
+            t('exams.seatingMaps.solveInProgress') ||
+            'Seating solver is running — please wait…'
+        );
+      }
+      return;
+    }
+    dismissSolveLoadingToast();
+  }, [isSolverRunning, t, dismissSolveLoadingToast]);
+
   const hasReadPermission = useHasPermission('exam_seating_maps.read');
   const hasAssignPermission = useHasPermission('exam_seating_maps.assign');
   const hasUpdatePermission = useHasPermission('exam_seating_maps.update');
@@ -186,8 +215,29 @@ export function ExamSeatingMapEditorPage() {
 
   const editable = isMapEditable(mapDetail);
 
+  // Rebuild local draft whenever server map identity/layout changes (not only object identity).
+  const mapDraftSyncKey = mapDetail
+    ? [
+        mapDetail.id,
+        mapDetail.revision,
+        mapDetail.inputChecksum ?? '',
+        mapDetail.solverStatus,
+        mapDetail.status,
+        mapDetail.assignedCount ?? 0,
+        mapDetail.updatedAt instanceof Date
+          ? mapDetail.updatedAt.getTime()
+          : String(mapDetail.updatedAt ?? ''),
+        mapDetail.assignments
+          .map(
+            (a) =>
+              `${a.rowNumber}:${a.columnNumber}:${a.examStudentId ?? ''}:${a.isDisabled ? 1 : 0}:${a.isLocked ? 1 : 0}`
+          )
+          .join('|'),
+      ].join('::')
+    : null;
+
   useEffect(() => {
-    if (!mapDetail) return;
+    if (!mapDetail || !mapDraftSyncKey) return;
     setDraftAssignments(
       mapDetail.assignments.map((assignment) => ({
         rowNumber: assignment.rowNumber,
@@ -196,7 +246,7 @@ export function ExamSeatingMapEditorPage() {
         examStudentId: assignment.examStudentId,
         isLocked: assignment.isLocked,
         isDisabled: assignment.isDisabled,
-        studentName: assignment.examStudent?.fullName ?? null,
+        studentName: assignment.examStudent?.fullName || null,
         className: assignment.examStudent?.className ?? null,
         examClassId: assignment.examStudent?.examClassId ?? null,
       }))
@@ -205,7 +255,7 @@ export function ExamSeatingMapEditorPage() {
     setDraftRows(String(mapDetail.rows));
     setDraftColumns(String(mapDetail.columns));
     setDraftStartSeat(String(mapDetail.startSeatNumber));
-  }, [mapDetail]);
+  }, [mapDetail, mapDraftSyncKey]);
 
   useEffect(() => {
     if (!mapDetail) return;
@@ -285,6 +335,7 @@ export function ExamSeatingMapEditorPage() {
 
     const finish = (refreshedMap: ExamSeatingMapDetail | null | undefined) => {
       if (cancelled) return;
+      dismissSolveLoadingToast();
       if (terminalStatus === 'succeeded') {
         const assigned =
           refreshedMap?.assignments.filter((a) => a.examStudentId && !a.isDisabled).length ?? 0;
@@ -343,6 +394,7 @@ export function ExamSeatingMapEditorPage() {
     solveStatus?.solverDiagnostics,
     refetch,
     t,
+    dismissSolveLoadingToast,
   ]);
 
   const assignmentByCell = useMemo(() => {
@@ -492,14 +544,6 @@ export function ExamSeatingMapEditorPage() {
       a.className.localeCompare(b.className, undefined, { sensitivity: 'base' })
     );
   }, [examClassIdToMainClassId, examClasses, filteredUnassignedStudents, t]);
-
-  const enabledEmptySeatCount = useMemo(
-    () =>
-      draftAssignments.filter(
-        (assignment) => !assignment.isDisabled && !assignment.examStudentId && !assignment.isLocked
-      ).length,
-    [draftAssignments]
-  );
 
   const conflictCount = useMemo(() => {
     const diagnostics = solveStatus?.solverDiagnostics ?? mapDetail?.solverDiagnostics;
@@ -773,17 +817,34 @@ export function ExamSeatingMapEditorPage() {
   const handleSolve = async () => {
     if (!examId || !mapId || !mapDetail) return;
 
-    const studentsToPlace = filteredUnassignedStudents.length;
-    if (studentsToPlace > 0 && enabledEmptySeatCount === 0) {
+    // Prepare a clean solve payload: unlock the hall for rearranging so a stale
+    // draft cannot overwrite a better server layout or leave empties disabled.
+    const preparedAssignments = draftAssignments.map((assignment) => ({
+      rowNumber: assignment.rowNumber,
+      columnNumber: assignment.columnNumber,
+      examStudentId: assignment.isLocked ? assignment.examStudentId : null,
+      isLocked: assignment.isLocked,
+      isDisabled: assignment.isLocked ? assignment.isDisabled : false,
+    }));
+
+    const unlockedCapacity = preparedAssignments.filter(
+      (assignment) => !assignment.isLocked && !assignment.isDisabled
+    ).length;
+    const studentsForSolve =
+      filteredUnassignedStudents.length +
+      draftAssignments.filter((assignment) => !!assignment.examStudentId && !assignment.isLocked)
+        .length;
+
+    if (studentsForSolve > 0 && unlockedCapacity === 0) {
       showToast.error(t('exams.seatingMaps.enableSeatsBeforeSolve'));
       return;
     }
 
-    if (studentsToPlace > enabledEmptySeatCount) {
+    if (studentsForSolve > unlockedCapacity) {
       showToast.error(
         t('exams.seatingMaps.notEnoughEnabledSeats', {
-          students: studentsToPlace,
-          seats: enabledEmptySeatCount,
+          students: studentsForSolve,
+          seats: unlockedCapacity,
         })
       );
       return;
@@ -796,16 +857,12 @@ export function ExamSeatingMapEditorPage() {
         examId,
         mapId,
         revision: mapDetail.revision,
-        assignments: draftAssignments.map((assignment) => ({
-          rowNumber: assignment.rowNumber,
-          columnNumber: assignment.columnNumber,
-          examStudentId: assignment.examStudentId,
-          isLocked: assignment.isLocked,
-          isDisabled: assignment.isDisabled,
-        })),
+        assignments: preparedAssignments,
+        silent: true,
       });
       if (!saved.inputChecksum) {
         setAwaitingSolve(false);
+        dismissSolveLoadingToast();
         showToast.error(t('toast.seatingMapSolveFailed'));
         return;
       }
@@ -820,6 +877,7 @@ export function ExamSeatingMapEditorPage() {
       // then the effect above refetches the map and updates the draft grid.
     } catch {
       setAwaitingSolve(false);
+      dismissSolveLoadingToast();
       // Toast is shown by mutation onError.
     }
   };
@@ -843,15 +901,21 @@ export function ExamSeatingMapEditorPage() {
   };
 
   const handleConfirmRollNumbers = async () => {
-    if (!examId || !mapId || !mapDetail?.inputChecksum) return;
+    if (!examId || !mapId) return;
+    // Must use tokens from the latest preview (seat-layout checksum), not
+    // mapDetail.inputChecksum (solver checksum — changes when other maps apply).
+    const revision = previewData?.revision;
+    const inputChecksum = previewData?.inputChecksum;
+    if (!revision || !inputChecksum) return;
     await confirmRollMutation.mutateAsync({
       examId,
       mapId,
-      revision: mapDetail.revision,
-      inputChecksum: mapDetail.inputChecksum,
+      revision,
+      inputChecksum,
     });
     setShowConfirmDialog(false);
     setShowPreviewDialog(false);
+    setPreviewData(null);
     await refetch();
   };
 
@@ -971,7 +1035,9 @@ export function ExamSeatingMapEditorPage() {
           {
             label: t('common.refresh') || 'Refresh',
             icon: <RefreshCw className="h-4 w-4" />,
-            onClick: () => void refetch(),
+            onClick: () => {
+              void refetch({ cancelRefetch: false });
+            },
             variant: 'outline',
           },
         ]}
@@ -981,8 +1047,20 @@ export function ExamSeatingMapEditorPage() {
         <Badge variant="outline">
           {t(`exams.seatingMaps.status.${mapDetail.status}`) || mapDetail.status}
         </Badge>
-        <Badge variant="outline">
-          {t(`exams.seatingMaps.solver.${mapDetail.solverStatus}`) || mapDetail.solverStatus}
+        <Badge
+          variant={isSolverRunning ? 'default' : 'outline'}
+          className="gap-1.5"
+          aria-live="polite"
+          aria-busy={isSolverRunning}
+        >
+          {isSolverRunning && <RefreshCw className="h-3 w-3 animate-spin" aria-hidden />}
+          {isSolverRunning
+            ? t(
+                mapDetail.solverStatus === 'pending' || mapDetail.solverStatus === 'running'
+                  ? `exams.seatingMaps.solver.${mapDetail.solverStatus}`
+                  : 'exams.seatingMaps.solveInProgress'
+              ) || 'Solving…'
+            : t(`exams.seatingMaps.solver.${mapDetail.solverStatus}`) || mapDetail.solverStatus}
         </Badge>
         <Badge variant="secondary">
           {t('exams.seatingMaps.revision') || 'Revision'}: {mapDetail.revision}
@@ -1573,6 +1651,11 @@ export function ExamSeatingMapEditorPage() {
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Badge>{t('exams.seatingMaps.total') || 'Total'}: {previewData.total}</Badge>
+                {previewData.startRoll != null && (
+                  <Badge variant="outline">
+                    {t('exams.rollNumbers.startFrom') || 'Start from'}: {previewData.startRoll}
+                  </Badge>
+                )}
                 <Badge variant="secondary">
                   {t('exams.rollNumbers.willOverride') || 'Will override'}: {previewData.willOverrideCount}
                 </Badge>

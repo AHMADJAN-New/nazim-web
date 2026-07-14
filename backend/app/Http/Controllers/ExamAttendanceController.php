@@ -259,6 +259,12 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'Exam time slot not found'], 404);
         }
 
+        $examAcademicYearId = Exam::where('id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->value('academic_year_id');
+
         // Get enrolled students for this class (include roll numbers for fast lookup)
         $examStudents = ExamStudent::with(['studentAdmission.student'])
             ->where('exam_id', $examId)
@@ -266,6 +272,7 @@ class ExamAttendanceController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission(is_string($examAcademicYearId) ? $examAcademicYearId : null)
             ->get();
 
         // Get existing attendance records for this timeslot
@@ -403,6 +410,7 @@ class ExamAttendanceController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission()
             ->with('studentAdmission')
             ->get()
             ->pluck('studentAdmission.student_id')
@@ -691,6 +699,7 @@ class ExamAttendanceController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($exam->academic_year_id)
             ->count();
 
         // Get attendance summary
@@ -950,6 +959,7 @@ class ExamAttendanceController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission()
             ->count();
 
         // Get attendance counts
@@ -1083,6 +1093,7 @@ class ExamAttendanceController extends Controller
             ->where('school_id', $currentSchoolId)
             ->where('exam_roll_number', $rollNumber)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission()
             ->first();
 
         if (!$examStudent) {
@@ -1112,6 +1123,7 @@ class ExamAttendanceController extends Controller
                     $query->where('student_id', $student->id);
                 })
                 ->whereNull('deleted_at')
+                ->withLiveActiveAdmission()
                 ->first();
 
             if (!$examStudent) {

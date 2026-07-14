@@ -293,6 +293,10 @@ export const mapRollNumberPreviewApiToDomain = (
   total: api.total,
   willOverrideCount: api.will_override_count,
   collisionCount: api.collision_count,
+  startRoll: api.start_roll,
+  revision: api.revision,
+  inputChecksum: api.input_checksum ?? null,
+  mapId: api.map_id,
   items: api.items.map(mapRollNumberPreviewItemApiToDomain),
 });
 

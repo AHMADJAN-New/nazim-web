@@ -7,5 +7,5 @@ return [
     'timeout_seconds' => (int) env('EXAM_SEATING_TIMEOUT_SECONDS', 300),
     // Hard cap for scaled timeout (CP-SAT max_time_in_seconds).
     'max_timeout_seconds' => (int) env('EXAM_SEATING_MAX_TIMEOUT_SECONDS', 900),
-    'algorithm_version' => 'ortools-cp-sat-v1',
+    'algorithm_version' => 'ortools-cp-sat-v3-main-class-sep',
 ];

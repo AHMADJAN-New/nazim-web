@@ -23,6 +23,10 @@ class ExamSeatingSolverService
 
         $inputPayload = [
             'contract_version' => '1.0',
+            // Include algorithm version so checksums change when solver input
+            // semantics change (e.g. separation_group_id), forcing clients to
+            // reload rather than silently mismatching a stale queue worker.
+            'algorithm_version' => (string) config('exam_seating.algorithm_version'),
             'map' => [
                 'rows' => $map->rows,
                 'cols' => $map->columns,
@@ -173,15 +177,18 @@ class ExamSeatingSolverService
                 ['column_number', 'asc'],
             ])
             ->map(function (ExamSeatAssignment $assignment): array {
-                $hasStudent = $assignment->exam_student_id !== null;
+                // Only UI-locked seats are fixed. Occupied-but-unlocked seats must be
+                // movable on re-solve, otherwise a previous layout can never be improved.
+                $isLocked = (bool) $assignment->is_locked;
+                $studentId = $isLocked ? $assignment->exam_student_id : null;
 
                 return [
                     'row' => $assignment->row_number - 1,
                     'col' => $assignment->column_number - 1,
                     'seat_number' => $assignment->seat_number,
                     'is_disabled' => (bool) $assignment->is_disabled,
-                    'locked' => $hasStudent ? true : (bool) $assignment->is_locked,
-                    'exam_student_id' => $assignment->exam_student_id,
+                    'locked' => $isLocked,
+                    'exam_student_id' => $studentId,
                 ];
             })
             ->values()
@@ -200,11 +207,12 @@ class ExamSeatingSolverService
         $mapClassIds = $map->examClassIds();
 
         return ExamStudent::query()
-            ->with('examClass')
+            ->with(['examClass.classAcademicYear'])
             ->where('exam_id', $map->exam_id)
             ->where('organization_id', $map->organization_id)
             ->where('school_id', $map->school_id)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission()
             ->when(
                 $mapClassIds !== [],
                 fn ($query) => $query->whereIn('exam_class_id', $mapClassIds),
@@ -216,10 +224,20 @@ class ExamSeatingSolverService
             )
             ->get()
             ->sortBy(fn (ExamStudent $student) => $student->id)
-            ->map(fn (ExamStudent $student): array => [
-                'exam_student_id' => $student->id,
-                'exam_class_id' => (string) $student->exam_class_id,
-            ])
+            ->map(function (ExamStudent $student): array {
+                $examClassId = (string) $student->exam_class_id;
+                $mainClassId = $student->examClass?->classAcademicYear?->class_id;
+
+                return [
+                    'exam_student_id' => $student->id,
+                    'exam_class_id' => $examClassId,
+                    // Sections of the same main class share this id so the
+                    // solver does not seat them next to each other.
+                    'separation_group_id' => $mainClassId
+                        ? (string) $mainClassId
+                        : $examClassId,
+                ];
+            })
             ->values()
             ->all();
     }

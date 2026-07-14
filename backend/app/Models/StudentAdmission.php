@@ -184,6 +184,17 @@ class StudentAdmission extends Model
         return $query->where('enrollment_status', 'active');
     }
 
+    /**
+     * Admissions eligible to enroll in an exam: active status and a live
+     * student registration (student row must not be soft-deleted).
+     */
+    public function scopeEligibleForExamEnrollment($query)
+    {
+        return $query
+            ->where('enrollment_status', 'active')
+            ->whereHas('student');
+    }
+
     public static function isCurrentEnrollmentStatus(?string $status): bool
     {
         return is_string($status) && in_array($status, self::CURRENT_ENROLLMENT_STATUSES, true);

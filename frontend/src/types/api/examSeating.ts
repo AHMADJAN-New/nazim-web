@@ -227,6 +227,10 @@ export interface MapRollNumberPreviewResponse {
   total: number;
   will_override_count: number;
   collision_count: number;
+  start_roll?: number;
+  revision?: number;
+  input_checksum?: string | null;
+  map_id?: string;
   items: MapRollNumberPreviewItem[];
 }
 

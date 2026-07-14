@@ -57,9 +57,18 @@ class ExamStudentController extends Controller
             $q->where('school_id', $currentSchoolId)->whereNull('deleted_at');
         });
 
+        $examAcademicYearId = null;
         if ($request->filled('exam_id')) {
             $query->where('exam_id', $request->exam_id);
+            $examAcademicYearId = Exam::where('id', $request->exam_id)
+                ->whereNull('deleted_at')
+                ->value('academic_year_id');
+            $examAcademicYearId = is_string($examAcademicYearId) && $examAcademicYearId !== ''
+                ? $examAcademicYearId
+                : null;
         }
+
+        $query->withLiveActiveAdmission($examAcademicYearId);
 
         if ($request->filled('exam_class_id')) {
             $query->where('exam_class_id', $request->exam_class_id);
@@ -134,15 +143,31 @@ class ExamStudentController extends Controller
             return response()->json(['error' => 'Exam class does not belong to this exam'], 400);
         }
 
-        // Verify student admission belongs to organization
-        $studentAdmission = StudentAdmission::where('id', $validated['student_admission_id'])
+        // Verify student admission belongs to organization and is still enrollable
+        $studentAdmission = StudentAdmission::with('classAcademicYear')
+            ->where('id', $validated['student_admission_id'])
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->eligibleForExamEnrollment()
             ->first();
 
         if (!$studentAdmission) {
-            return response()->json(['error' => 'Student admission does not belong to your organization'], 403);
+            return response()->json([
+                'error' => 'Student admission not found, inactive, or student registration was deleted',
+            ], 403);
+        }
+
+        if ($exam->academic_year_id
+            && $studentAdmission->academic_year_id
+            && $studentAdmission->academic_year_id !== $exam->academic_year_id
+        ) {
+            $admissionYearMatchesClass = $studentAdmission->classAcademicYear?->academic_year_id === $exam->academic_year_id;
+            if (! $admissionYearMatchesClass) {
+                return response()->json([
+                    'error' => 'Student admission is not for the exam academic year',
+                ], 422);
+            }
         }
 
         // CRITICAL: Verify student belongs to the correct class academic year
@@ -268,11 +293,21 @@ class ExamStudentController extends Controller
         }
 
         // Get all active student admissions for this class academic year
+        // (student registration must still exist — excludes deleted students)
         $studentAdmissions = StudentAdmission::where('class_academic_year_id', $examClass->class_academic_year_id)
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
-            ->where('enrollment_status', 'active') // Only enroll active students
+            ->eligibleForExamEnrollment()
+            ->when(
+                $exam->academic_year_id,
+                fn ($q) => $q->where(function ($yearQ) use ($exam) {
+                    $yearQ->where('academic_year_id', $exam->academic_year_id)
+                        ->orWhereHas('classAcademicYear', function ($cay) use ($exam) {
+                            $cay->where('academic_year_id', $exam->academic_year_id);
+                        });
+                })
+            )
             ->get();
 
         if ($studentAdmissions->isEmpty()) {
@@ -436,7 +471,16 @@ class ExamStudentController extends Controller
                     ->where('organization_id', $profile->organization_id)
                     ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
-                    ->where('enrollment_status', 'active')
+                    ->eligibleForExamEnrollment()
+                    ->when(
+                        $exam->academic_year_id,
+                        fn ($q) => $q->where(function ($yearQ) use ($exam) {
+                            $yearQ->where('academic_year_id', $exam->academic_year_id)
+                                ->orWhereHas('classAcademicYear', function ($cay) use ($exam) {
+                                    $cay->where('academic_year_id', $exam->academic_year_id);
+                                });
+                        })
+                    )
                     ->get();
 
                 $enrolled = 0;
@@ -675,6 +719,7 @@ class ExamStudentController extends Controller
                 ->where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
+                ->withLiveActiveAdmission($exam->academic_year_id)
                 ->count();
 
             // Count available students in this class
@@ -682,7 +727,7 @@ class ExamStudentController extends Controller
                 ->where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
-                ->where('enrollment_status', 'active')
+                ->eligibleForExamEnrollment()
                 ->count();
 
             $classStats[] = [

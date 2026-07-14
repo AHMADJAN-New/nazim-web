@@ -555,6 +555,7 @@ export default {
     seatingMapRollNumbersAppliedWithErrors: "{count} roll numbers applied with {errors} errors",
     seatingMapRollNumbersApplyFailed: "Failed to apply roll numbers from seating map",
     seatingMapSolveFailed: "Failed to start seating solver",
+    seatingMapSolveInProgress: "Seating solver is running — please wait…",
     seatingMapSolveStarted: "Seating solver started",
     seatingMapUpdated: "Seating map updated successfully",
     seatingMapUpdateFailed: "Failed to update seating map",

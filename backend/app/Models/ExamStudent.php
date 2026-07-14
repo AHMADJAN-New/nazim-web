@@ -104,6 +104,34 @@ class ExamStudent extends Model
     }
 
     /**
+     * Keep exam enrollment/attendance/roll lists free of "Unknown" rows:
+     * admission must still be active, and the student registration must exist
+     * (not soft-deleted). Optionally require the admission to belong to the
+     * exam's academic year.
+     */
+    public function scopeWithLiveActiveAdmission($query, ?string $examAcademicYearId = null)
+    {
+        return $query->whereHas('studentAdmission', function ($admissionQuery) use ($examAcademicYearId) {
+            $admissionQuery
+                ->where('enrollment_status', 'active')
+                ->when(
+                    $examAcademicYearId,
+                    function ($yearQuery) use ($examAcademicYearId) {
+                        $yearQuery->where(function ($matchYear) use ($examAcademicYearId) {
+                            $matchYear
+                                ->where('academic_year_id', $examAcademicYearId)
+                                ->orWhereHas('classAcademicYear', function ($cayQuery) use ($examAcademicYearId) {
+                                    $cayQuery->where('academic_year_id', $examAcademicYearId);
+                                });
+                        });
+                    }
+                )
+                // SoftDeletes on Student excludes deleted registrations.
+                ->whereHas('student');
+        });
+    }
+
+    /**
      * Scope to filter students missing roll number
      */
     public function scopeMissingRollNumber($query)

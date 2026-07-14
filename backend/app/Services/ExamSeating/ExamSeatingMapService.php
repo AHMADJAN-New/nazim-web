@@ -10,6 +10,7 @@ use App\Models\ExamSeatingMap;
 use App\Models\ExamSeatingMapClass;
 use App\Models\ExamSeatingRun;
 use App\Models\ExamStudent;
+use App\Models\Student;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -300,6 +301,58 @@ class ExamSeatingMapService
     }
 
     /**
+     * Checksum of this map's seat grid + who sits where.
+     * Used for Apply Roll Numbers so applying/finalizing another map
+     * (which changes the solver "available students" set) does not
+     * invalidate roll confirm tokens for this map.
+     */
+    public function buildSeatAssignmentsChecksum(ExamSeatingMap $map): string
+    {
+        $map->unsetRelation('assignments');
+        $map->load(['assignments']);
+
+        $seats = $map->assignments
+            ->sortBy([
+                ['row_number', 'asc'],
+                ['column_number', 'asc'],
+            ])
+            ->map(fn (ExamSeatAssignment $assignment): array => [
+                'row' => (int) $assignment->row_number,
+                'col' => (int) $assignment->column_number,
+                'seat_number' => (int) $assignment->seat_number,
+                'is_disabled' => (bool) $assignment->is_disabled,
+                'is_locked' => (bool) $assignment->is_locked,
+                'exam_student_id' => $assignment->exam_student_id
+                    ? (string) $assignment->exam_student_id
+                    : null,
+            ])
+            ->values()
+            ->all();
+
+        $payload = [
+            'rows' => (int) $map->rows,
+            'cols' => (int) $map->columns,
+            'start_seat_number' => (int) $map->start_seat_number,
+            'seats' => $seats,
+        ];
+
+        return $this->solverService->computeChecksum($payload);
+    }
+
+    public function validateRevisionSeatChecksum(ExamSeatingMap $map, int $revision, string $checksum): void
+    {
+        if ($map->revision !== $revision) {
+            throw new RuntimeException('Map revision is stale. Reload the map and try again.');
+        }
+
+        $currentChecksum = $this->buildSeatAssignmentsChecksum($map);
+
+        if (! hash_equals($currentChecksum, trim($checksum))) {
+            throw new RuntimeException('Map input checksum is stale. Reload the map and try again.');
+        }
+    }
+
+    /**
      * @param  array<string, mixed>  $solverResult
      */
     public function applySolverResults(
@@ -341,17 +394,17 @@ class ExamSeatingMapService
                 ->get()
                 ->keyBy(fn (ExamSeatAssignment $assignment): string => "{$assignment->row_number}:{$assignment->column_number}");
 
+            // Clear unlocked seats that the solver may reassign. Always leave
+            // unlocked seats enabled so leftover empties stay in the active pool
+            // (even spacing) and re-solve can rearrange freely. Users can disable
+            // seats again after the solve if needed.
             foreach ($cells as $cell) {
                 if ($cell->is_locked) {
                     continue;
                 }
 
-                if ($cell->exam_student_id === null && $cell->is_disabled) {
-                    continue;
-                }
-
                 $cell->exam_student_id = null;
-                $cell->is_disabled = true;
+                $cell->is_disabled = false;
                 $cell->save();
             }
 
@@ -511,7 +564,7 @@ class ExamSeatingMapService
     {
         $map->loadMissing([
             'room',
-            'assignments.examStudent.studentAdmission.student',
+            'assignments.examStudent.studentAdmission.student' => fn ($query) => $query->withTrashed(),
             'assignments.examStudent.examClass.classAcademicYear.class',
             'classColors.examClass.classAcademicYear.class',
         ]);
@@ -532,6 +585,7 @@ class ExamSeatingMapService
             $examClassId = $examStudent?->exam_class_id !== null
                 ? (string) $examStudent->exam_class_id
                 : null;
+            $person = $examStudent ? $this->resolveExamStudentPerson($examStudent) : null;
 
             return [
                 'id' => $assignment->id,
@@ -541,7 +595,7 @@ class ExamSeatingMapService
                 'is_locked' => $assignment->is_locked,
                 'is_disabled' => $assignment->is_disabled,
                 'exam_student_id' => $assignment->exam_student_id,
-                'student_name' => $examStudent?->studentAdmission?->student?->full_name,
+                'student_name' => $person['full_name'] ?? null,
                 'class_name' => $className,
                 'exam_roll_number' => $examStudent?->exam_roll_number,
                 'color_hex' => $this->resolveColorHex($colorLookup, $examClassId, $className),
@@ -600,6 +654,7 @@ class ExamSeatingMapService
                     $examClassId = $examStudent?->exam_class_id !== null
                         ? (string) $examStudent->exam_class_id
                         : null;
+                    $person = $examStudent ? $this->resolveExamStudentPerson($examStudent) : null;
 
                     return [
                         'row_number' => $assignment->row_number,
@@ -608,10 +663,10 @@ class ExamSeatingMapService
                         'is_disabled' => $assignment->is_disabled,
                         'is_locked' => $assignment->is_locked,
                         'exam_student_id' => $assignment->exam_student_id,
-                        'student_id' => $examStudent?->studentAdmission?->student_id,
-                        'admission_no' => $examStudent?->studentAdmission?->student?->admission_no,
-                        'student_name' => $examStudent?->studentAdmission?->student?->full_name,
-                        'father_name' => $examStudent?->studentAdmission?->student?->father_name,
+                        'student_id' => $person['student_id'] ?? null,
+                        'admission_no' => $person['admission_no'] ?? null,
+                        'student_name' => $person['full_name'] ?? null,
+                        'father_name' => $person['father_name'] ?? null,
                         'class_name' => $className,
                         'exam_class_id' => $examClassId,
                         'exam_roll_number' => $examStudent?->exam_roll_number,
@@ -759,7 +814,7 @@ class ExamSeatingMapService
 
         if ($detailed) {
             $relations = [
-                'assignments.examStudent.studentAdmission.student',
+                'assignments.examStudent.studentAdmission.student' => fn ($query) => $query->withTrashed(),
                 'assignments.examStudent.examClass.classAcademicYear.class',
                 'classColors',
                 'mapClasses',
@@ -883,7 +938,7 @@ class ExamSeatingMapService
 
         return ExamStudent::query()
             ->with([
-                'studentAdmission.student',
+                'studentAdmission.student' => fn ($query) => $query->withTrashed(),
                 'examClass.classAcademicYear.class',
             ])
             ->where('exam_id', $map->exam_id)
@@ -899,7 +954,8 @@ class ExamSeatingMapService
             ->get()
             ->sortBy(function (ExamStudent $student): string {
                 $className = $student->examClass?->classAcademicYear?->class?->name ?? '';
-                $fullName = $student->studentAdmission?->student?->full_name ?? $student->id;
+                $person = $this->resolveExamStudentPerson($student);
+                $fullName = $person['full_name'] !== '' ? $person['full_name'] : $student->id;
 
                 return mb_strtolower("{$className}\0{$fullName}");
             })
@@ -945,6 +1001,27 @@ class ExamSeatingMapService
         ];
     }
 
+    /**
+     * Re-open unlocked empty seats before solving so a prior layout's leftover
+     * empties (previously marked disabled) can be redistributed evenly.
+     * User-locked seats are left untouched.
+     */
+    public function reopenUnlockedEmptySeatsForSolve(ExamSeatingMap $map): void
+    {
+        ExamSeatAssignment::query()
+            ->where('exam_seating_map_id', $map->id)
+            ->whereNull('deleted_at')
+            ->where('is_locked', false)
+            ->where('is_disabled', true)
+            ->whereNull('exam_student_id')
+            ->update([
+                'is_disabled' => false,
+                'updated_at' => now(),
+            ]);
+
+        $map->unsetRelation('assignments');
+    }
+
     public function assertMapHasStudentsForSolve(ExamSeatingMap $map): void
     {
         $availability = $this->describeStudentAvailability($map);
@@ -978,11 +1055,13 @@ class ExamSeatingMapService
      */
     private function serializeUnassignedStudent(ExamStudent $student): array
     {
+        $person = $this->resolveExamStudentPerson($student);
+
         return [
             'exam_student_id' => $student->id,
-            'student_id' => $student->studentAdmission?->student_id,
-            'full_name' => $student->studentAdmission?->student?->full_name ?? '',
-            'father_name' => $student->studentAdmission?->student?->father_name,
+            'student_id' => $person['student_id'],
+            'full_name' => $person['full_name'],
+            'father_name' => $person['father_name'],
             'exam_roll_number' => $student->exam_roll_number,
             'class_name' => $student->examClass?->classAcademicYear?->class?->name ?? '',
             'exam_class_id' => (string) $student->exam_class_id,
@@ -998,14 +1077,45 @@ class ExamSeatingMapService
             return null;
         }
 
+        $person = $this->resolveExamStudentPerson($examStudent);
+
         return [
             'id' => $examStudent->id,
-            'student_id' => $examStudent->studentAdmission?->student_id,
-            'full_name' => $examStudent->studentAdmission?->student?->full_name ?? '',
-            'father_name' => $examStudent->studentAdmission?->student?->father_name,
+            'student_id' => $person['student_id'],
+            'full_name' => $person['full_name'],
+            'father_name' => $person['father_name'],
             'exam_roll_number' => $examStudent->exam_roll_number,
             'class_name' => $examStudent->examClass?->classAcademicYear?->class?->name ?? '',
             'exam_class_id' => (string) $examStudent->exam_class_id,
+        ];
+    }
+
+    /**
+     * Resolve display fields for an exam student, including soft-deleted students
+     * (exam seating maps often retain historical enrollments).
+     *
+     * @return array{
+     *     student_id: string|null,
+     *     full_name: string,
+     *     father_name: string|null,
+     *     admission_no: string|null
+     * }
+     */
+    private function resolveExamStudentPerson(ExamStudent $examStudent): array
+    {
+        $admission = $examStudent->studentAdmission;
+        $studentId = $admission?->student_id ? (string) $admission->student_id : null;
+        $student = $admission?->student;
+
+        if (! $student && $studentId) {
+            $student = Student::withTrashed()->find($studentId);
+        }
+
+        return [
+            'student_id' => $studentId,
+            'full_name' => $student?->full_name ?? '',
+            'father_name' => $student?->father_name,
+            'admission_no' => $student?->admission_no,
         ];
     }
 
@@ -1040,11 +1150,151 @@ class ExamSeatingMapService
     public function refreshInputChecksum(ExamSeatingMap $map): void
     {
         $map->refresh();
-        $map->loadMissing(['assignments']);
+        // Always reload seats — loadMissing keeps a pre-sync relation that can
+        // store a checksum that no longer matches the database.
+        $map->unsetRelation('assignments');
+        $map->load(['assignments']);
 
         $checksum = $this->solverService->buildSolverInput($map)['checksum'];
         $map->input_checksum = $checksum;
         $map->save();
+    }
+
+    /**
+     * Build continuous (dense) exam roll numbers for seated students on a map.
+     *
+     * Seat numbers stay on the map for hall layout. Roll numbers are assigned
+     * in seat-number order, continuing after the highest numeric roll already
+     * used by other students in the same exam (students on this map who will
+     * be reassigned are ignored when computing the start).
+     *
+     * @return array{
+     *     items: list<array<string, mixed>>,
+     *     will_override_count: int,
+     *     collision_count: int,
+     *     start_roll: int
+     * }
+     */
+    public function buildContinuousRollAssignmentsFromMap(
+        ExamSeatingMap $map,
+        string $examId,
+        string $organizationId,
+        string $schoolId
+    ): array {
+        if (! $map->relationLoaded('assignments')) {
+            $map->load([
+                'assignments.examStudent.studentAdmission.student',
+                'assignments.examStudent.examClass.classAcademicYear.class',
+            ]);
+        }
+
+        $seatedAssignments = $map->assignments
+            ->filter(static function (ExamSeatAssignment $assignment): bool {
+                if ($assignment->exam_student_id === null || $assignment->is_disabled) {
+                    return false;
+                }
+
+                $admission = $assignment->examStudent?->studentAdmission;
+                $student = $admission?->student;
+
+                // Skip deleted students / inactive admissions (would show as Unknown)
+                return $admission !== null
+                    && $admission->enrollment_status === 'active'
+                    && $student !== null;
+            })
+            ->sortBy([
+                ['seat_number', 'asc'],
+                ['row_number', 'asc'],
+                ['column_number', 'asc'],
+            ])
+            ->values();
+
+        $mapStudentIds = $seatedAssignments
+            ->pluck('exam_student_id')
+            ->filter()
+            ->map(static fn ($id): string => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $mapStudentIdSet = array_fill_keys($mapStudentIds, true);
+
+        $existingStudents = ExamStudent::query()
+            ->where('exam_id', $examId)
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->whereNotNull('exam_roll_number')
+            ->get(['id', 'exam_roll_number']);
+
+        /** @var array<string, string> $existingByRoll */
+        $existingByRoll = [];
+        $maxOtherNumeric = 0;
+
+        foreach ($existingStudents as $existing) {
+            $roll = (string) $existing->exam_roll_number;
+            $existingByRoll[$roll] = (string) $existing->id;
+
+            if (isset($mapStudentIdSet[(string) $existing->id])) {
+                continue;
+            }
+
+            if (ctype_digit($roll)) {
+                $maxOtherNumeric = max($maxOtherNumeric, (int) $roll);
+            }
+        }
+
+        $currentNumber = $maxOtherNumeric + 1;
+        $startRoll = $currentNumber;
+        $willOverrideCount = 0;
+        $collisionCount = 0;
+        $items = [];
+        /** @var array<string, string> $plannedByRoll */
+        $plannedByRoll = [];
+
+        foreach ($seatedAssignments as $assignment) {
+            $examStudent = $assignment->examStudent;
+            if (! $examStudent) {
+                continue;
+            }
+
+            $newNumber = (string) $currentNumber;
+            $currentNumber++;
+
+            $hasExisting = $examStudent->exam_roll_number !== null && $examStudent->exam_roll_number !== '';
+            if ($hasExisting) {
+                $willOverrideCount++;
+            }
+
+            $ownerId = $existingByRoll[$newNumber] ?? $plannedByRoll[$newNumber] ?? null;
+            $collision = $ownerId !== null && $ownerId !== (string) $examStudent->id;
+            if ($collision) {
+                $collisionCount++;
+            }
+
+            $plannedByRoll[$newNumber] = (string) $examStudent->id;
+
+            $person = $this->resolveExamStudentPerson($examStudent);
+
+            $items[] = [
+                'exam_student_id' => $examStudent->id,
+                'student_id' => $person['student_id'],
+                'student_name' => $person['full_name'] !== '' ? $person['full_name'] : 'Unknown',
+                'class_name' => $examStudent->examClass?->classAcademicYear?->class?->name ?? 'Unknown',
+                'seat_number' => $assignment->seat_number,
+                'current_roll_number' => $examStudent->exam_roll_number,
+                'new_roll_number' => $newNumber,
+                'will_override' => $hasExisting,
+                'has_collision' => $collision,
+            ];
+        }
+
+        return [
+            'items' => $items,
+            'will_override_count' => $willOverrideCount,
+            'collision_count' => $collisionCount,
+            'start_roll' => $startRoll,
+        ];
     }
 
     public function assertEditable(ExamSeatingMap $map): void
@@ -1350,7 +1600,7 @@ class ExamSeatingMapService
             return;
         }
 
-        $editableMapIds = ExamSeatingMap::query()
+        $editableMaps = ExamSeatingMap::query()
             ->where('exam_id', $map->exam_id)
             ->where('organization_id', $map->organization_id)
             ->where('school_id', $map->school_id)
@@ -1360,19 +1610,21 @@ class ExamSeatingMapService
                 ExamSeatingMap::STATUS_APPLIED,
                 ExamSeatingMap::STATUS_FINALIZED,
             ])
-            ->pluck('id')
-            ->all();
+            ->get();
 
-        if ($editableMapIds === []) {
+        if ($editableMaps->isEmpty()) {
             return;
         }
 
+        $editableMapIds = $editableMaps->pluck('id')->all();
+
+        $touchedMapIds = [];
         ExamSeatAssignment::query()
             ->whereIn('exam_seating_map_id', $editableMapIds)
             ->whereNull('deleted_at')
             ->whereIn('exam_student_id', $examStudentIds)
             ->get()
-            ->each(function (ExamSeatAssignment $assignment): void {
+            ->each(function (ExamSeatAssignment $assignment) use (&$touchedMapIds): void {
                 if ($assignment->is_locked) {
                     $assignment->is_locked = false;
                     $assignment->locked_at = null;
@@ -1381,7 +1633,19 @@ class ExamSeatingMapService
                 $assignment->exam_student_id = null;
                 $assignment->is_disabled = true;
                 $assignment->save();
+                $touchedMapIds[(string) $assignment->exam_seating_map_id] = true;
             });
+
+        // Keep revision/checksum in sync so Apply Roll / Solve on those maps
+        // does not fail with "checksum is stale" after seats were cleared here.
+        foreach ($editableMaps as $otherMap) {
+            if (! isset($touchedMapIds[(string) $otherMap->id])) {
+                continue;
+            }
+            $otherMap->revision = ((int) $otherMap->revision) + 1;
+            $otherMap->save();
+            $this->refreshInputChecksum($otherMap);
+        }
     }
 
     /**

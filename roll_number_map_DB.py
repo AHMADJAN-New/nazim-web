@@ -65,6 +65,10 @@ VIEW_STUDS = (
     "vw_AdmittedStudentsInExams"  # exam_id, student_id, roll_number, class_name, name, father_name
 )
 
+# 8-directional neighbour offsets (orthogonal + diagonal) — a diagonal neighbour
+# can still see another student's paper, so it counts as "adjacent".
+ADJ_DIRECTIONS = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
+
 
 # ───────────────────────── seat widget ────────────────────────────────────────
 class CellWidget(QFrame):
@@ -561,85 +565,196 @@ class RollNumberMappingApp(QMainWindow):
         # Get only unlocked and selected seats
         available_seats = [cw for row in self.hall_layout for cw in row if cw.selected and not cw.locked]
         m, n = len(self.student_data), len(available_seats)
-        
+
         if n < m:
             # Calculate how many more cells are needed
             needed_cells = m - n
             total_selected = len([cw for row in self.hall_layout for cw in row if cw.selected])
             locked_selected = len([cw for row in self.hall_layout for cw in row if cw.selected and cw.locked])
-            
+
             message = f"کافي څوکۍ نشته.\n\n"
             message += f"• د زده کوونکو شمیر: {m}\n"
             message += f"• د انتخاب شویو څوکیو شمیر: {total_selected}\n"
             message += f"• د قفل شویو څوکیو شمیر: {locked_selected}\n"
             message += f"• د موجودو څوکیو شمیر: {n}\n"
             message += f"• د اړینو څوکیو شمیر: {needed_cells}"
-            
+
             self.show_message_box("کافي څوکۍ نشته", message, QMessageBox.Warning)
             return
 
-        # Precompute adjacency pairs (unique, i<j) - only for available seats
-        idx_map = {cw: i for i, cw in enumerate(available_seats)}
+        # ── Build seat position map in a single O(rows*cols) pass ──
+        seat_index = {cw: i for i, cw in enumerate(available_seats)}
+        pos = {}
+        for r, row in enumerate(self.hall_layout):
+            for c, cw in enumerate(row):
+                if cw in seat_index:
+                    pos[cw] = (r, c)
+
+        # ── Precompute 8-directional adjacency pairs among available seats ──
         neighbor_pairs = set()
-        for cw, i in idx_map.items():
-            # locate cw at (r,c)
-            found = False
-            for r, row in enumerate(self.hall_layout):
-                for c, cw2 in enumerate(row):
-                    if cw2 is cw:
-                        found = True
-                        break
-                if found:
-                    break
-            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        for cw, i in seat_index.items():
+            r, c = pos[cw]
+            for dr, dc in ADJ_DIRECTIONS:
                 nr, nc = r + dr, c + dc
                 if 0 <= nr < self.rows and 0 <= nc < self.cols:
                     cw2 = self.hall_layout[nr][nc]
-                    if cw2 in idx_map:
-                        j = idx_map[cw2]
-                        if i < j:
-                            neighbor_pairs.add((i, j))
+                    j = seat_index.get(cw2)
+                    if j is not None and i < j:
+                        neighbor_pairs.add((i, j))
         neighbor_pairs = list(neighbor_pairs)
 
         # Copy data
         students = list(self.student_data)
-        seat_list = list(available_seats)
+        seat_numbers = [cw.number for cw in available_seats]
 
-        # Show progress dialog
+        # Solver time budget scales with hall size but stays bounded.
+        time_budget = max(5.0, min(30.0, n / 40.0))
+
+        # Show progress dialog (indeterminate) with a cancellation bridge.
         progress = QProgressDialog(
-            "د څوکیو د بهینه کولو (د یو شان صنفونو د نږدې والي د کمولو)...", "لغوه کړئ", 0, 0, self
+            "د څوکیو د بهینه کولو (د یو شان صنفونو د نږدې والي له منځه وړل)...", "لغوه کړئ", 0, 0, self
         )
         progress.setWindowModality(Qt.WindowModal)
         progress.setMinimumDuration(0)
+        cancel_event = threading.Event()
+        progress.canceled.connect(cancel_event.set)
         progress.show()
 
         def worker():
-            # -- initial random assignment --
-            assignment = random.sample(range(n), m)
-            best = assignment[:]
-            best_cost = self._count_conflicts(best, students, neighbor_pairs)
-            start = time.time()
-            timeout = 3.0  # seconds
-
-            # hill climb
-            while time.time() - start < timeout and best_cost > 0:
-                # try a swap
-                a, b = random.sample(range(m), 2)
-                new_assign = best[:]
-                new_assign[a], new_assign[b] = new_assign[b], new_assign[a]
-                cost = self._count_conflicts(new_assign, students, neighbor_pairs)
-                if cost < best_cost:
-                    best, best_cost = new_assign, cost
-                # allow UI to cancel
-                if progress.wasCanceled():
-                    break
-
-            # emit best found
-            # fallback=True only if we timed out with cost>0
+            try:
+                best, best_cost = self._solve_seating(
+                    m, n, students, neighbor_pairs, seat_numbers, cancel_event, time_budget
+                )
+            except Exception:
+                # Any solver failure → robust heuristic fallback.
+                best, best_cost = self._greedy_fallback(
+                    m, n, students, neighbor_pairs, cancel_event, time_budget
+                )
             fallback = best_cost > 0
             self.seatAssignmentResult.emit(best, students, fallback)
 
         threading.Thread(target=worker, daemon=True).start()
+
+    # ───────────────────── CP-SAT exact solver ─────────────────────
+    def _solve_seating(self, m, n, students, neighbor_pairs, seat_numbers, cancel_event, time_budget):
+        """
+        Assign students to seats while minimising same-class adjacency, using
+        OR-Tools CP-SAT. The model works at the *class* level (students within a
+        class are interchangeable for adjacency), which keeps it small and fast
+        even for 1000+ seat halls.
+
+        Returns (assignment, cost) where assignment[k] = seat index for student k
+        and cost = number of remaining same-class adjacent pairs (0 when perfect).
+        """
+        from ortools.sat.python import cp_model
+
+        # Group students by class (values are indices into `students`).
+        classes = {}
+        for k, s in enumerate(students):
+            classes.setdefault(s["Class"], []).append(k)
+        class_names = list(classes.keys())
+        counts = {c: len(ks) for c, ks in classes.items()}
+
+        model = cp_model.CpModel()
+
+        # y[j, c] == 1  ⇔  seat j is occupied by a student of class c.
+        y = {(j, c): model.NewBoolVar(f"y_{j}_{c}") for j in range(n) for c in class_names}
+
+        # Each seat holds at most one class (empty seats allowed when n > m).
+        for j in range(n):
+            model.Add(sum(y[(j, c)] for c in class_names) <= 1)
+
+        # Each class occupies exactly as many seats as it has students.
+        for c in class_names:
+            model.Add(sum(y[(j, c)] for j in range(n)) == counts[c])
+
+        # One conflict var per adjacent seat pair: forced to 1 iff both seats
+        # end up holding the same class.
+        conflicts = []
+        for (a, b) in neighbor_pairs:
+            cf = model.NewBoolVar(f"cf_{a}_{b}")
+            for c in class_names:
+                model.Add(cf >= y[(a, c)] + y[(b, c)] - 1)
+            conflicts.append(cf)
+
+        model.Minimize(sum(conflicts))
+
+        solver = cp_model.CpSolver()
+        solver.parameters.max_time_in_seconds = float(time_budget)
+        # Use all cores for a large hall; ignore if the field name differs.
+        try:
+            solver.parameters.num_workers = 8
+        except Exception:
+            pass
+
+        class _Canceller(cp_model.CpSolverSolutionCallback):
+            def __init__(self, ev):
+                super().__init__()
+                self._ev = ev
+
+            def on_solution_callback(self):
+                if self._ev.is_set():
+                    self.StopSearch()
+
+        status = solver.Solve(model, _Canceller(cancel_event))
+
+        if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            # No usable solution within budget → heuristic fallback.
+            return self._greedy_fallback(m, n, students, neighbor_pairs, cancel_event, time_budget)
+
+        # Determine which class sits in each seat.
+        class_seats = {c: [] for c in class_names}
+        for j in range(n):
+            for c in class_names:
+                if solver.Value(y[(j, c)]) == 1:
+                    class_seats[c].append(j)
+                    break
+
+        # Map students → seats. Sort each class's seats by seat number so roll
+        # numbers flow in a natural reading order across the hall.
+        assignment = [0] * m
+        for c in class_names:
+            seats_c = sorted(class_seats[c], key=lambda j: seat_numbers[j])
+            for idx, k in enumerate(classes[c]):
+                assignment[k] = seats_c[idx]
+
+        cost = int(round(solver.ObjectiveValue()))
+        return assignment, cost
+
+    # ───────────────────── heuristic fallback ─────────────────────
+    def _greedy_fallback(self, m, n, students, neighbor_pairs, cancel_event, time_budget):
+        """
+        Targeted hill-climb, used only if CP-SAT is unavailable or errors out.
+        Unlike the old purely-random version, it relocates students that are
+        *actually* in conflict, so it converges far faster.
+        """
+        best = random.sample(range(n), m)
+        best_cost = self._count_conflicts(best, students, neighbor_pairs)
+        start = time.time()
+
+        while time.time() - start < time_budget and best_cost > 0:
+            if cancel_event.is_set():
+                break
+            occupant = {best[k]: k for k in range(m)}
+            conflicted = []
+            for (a, b) in neighbor_pairs:
+                ka, kb = occupant.get(a), occupant.get(b)
+                if ka is not None and kb is not None and students[ka]["Class"] == students[kb]["Class"]:
+                    conflicted.append(ka)
+                    conflicted.append(kb)
+            if not conflicted:
+                break
+            ka = random.choice(conflicted)
+            kb = random.randrange(m)
+            if ka == kb:
+                continue
+            trial = best[:]
+            trial[ka], trial[kb] = trial[kb], trial[ka]
+            cost = self._count_conflicts(trial, students, neighbor_pairs)
+            if cost < best_cost:
+                best, best_cost = trial, cost
+
+        return best, best_cost
 
     def _count_conflicts(self, assignment, students, neighbor_pairs):
         """Count # of same-class adjacent pairs given assignment[] and neighbor_pairs."""
@@ -797,7 +912,7 @@ class RollNumberMappingApp(QMainWindow):
                 cw = self.hall_layout[r][c]
                 if cw.student_data:
                     cls = cw.student_data["Class"]
-                    for dr, dc in ((1, 0), (0, 1), (-1, 0), (0, -1)):
+                    for dr, dc in ADJ_DIRECTIONS:
                         nr, nc = r + dr, c + dc
                         if 0 <= nr < self.rows and 0 <= nc < self.cols:
                             cw2 = self.hall_layout[nr][nc]
@@ -847,7 +962,7 @@ class RollNumberMappingApp(QMainWindow):
                     d = cw.student_data
                     # find adjacent seats
                     adjs = []
-                    for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    for dr, dc in ADJ_DIRECTIONS:
                         nr, nc = r + dr, c + dc
                         if 0 <= nr < self.rows and 0 <= nc < self.cols:
                             cw2 = self.hall_layout[nr][nc]

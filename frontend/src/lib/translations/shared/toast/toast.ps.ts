@@ -555,6 +555,7 @@ export default {
     seatingMapRollNumbersAppliedWithErrors: "{count} رقم الجلوس د {errors} تېروتنو سره پلي شول",
     seatingMapRollNumbersApplyFailed: "له ناستې نقشې څخه رقم الجلوس پلي کول ناکام شول",
     seatingMapSolveFailed: "د ناستې حل کوونکی پیل ناکام شو",
+    seatingMapSolveInProgress: "د ناستې حل کوونکی روان دی — مهرباني وکړئ انتظار وکړئ…",
     seatingMapSolveStarted: "د ناستې حل کوونکی پیل شو",
     seatingMapUpdated: "د ناستې نقشه تازه شوه",
     seatingMapUpdateFailed: "د ناستې نقشه تازه کول ناکام شول",

@@ -32,6 +32,14 @@ class SeatCell:
 class StudentRecord:
     exam_student_id: str
     exam_class_id: str
+    # Main class (or other grouping key) used for adjacency separation.
+    # Sections of the same main class share this id so they are not seated
+    # next to each other. Falls back to exam_class_id when omitted.
+    separation_group_id: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.separation_group_id:
+            object.__setattr__(self, "separation_group_id", self.exam_class_id)
 
 
 @dataclass
@@ -91,10 +99,18 @@ def _parse_input(raw: dict[str, Any]) -> ParsedInput | dict[str, Any]:
     students: list[StudentRecord] = []
     try:
         for item in raw["students"]:
+            exam_class_id = str(item["exam_class_id"])
+            separation_raw = item.get("separation_group_id")
+            separation_group_id = (
+                str(separation_raw).strip()
+                if separation_raw is not None and str(separation_raw).strip() != ""
+                else exam_class_id
+            )
             students.append(
                 StudentRecord(
                     exam_student_id=str(item["exam_student_id"]),
-                    exam_class_id=str(item["exam_class_id"]),
+                    exam_class_id=exam_class_id,
+                    separation_group_id=separation_group_id,
                 )
             )
     except (KeyError, TypeError, ValueError):
@@ -129,21 +145,66 @@ def _build_adjacency(
     rows: int,
     cols: int,
 ) -> list[tuple[int, int]]:
-    pairs: list[tuple[int, int]] = []
+    # 8-directional: a diagonal neighbour can still see another student's paper,
+    # so it counts as adjacent. Scanning only the four "forward" offsets (right
+    # and the three below) yields every 8-neighbour pair exactly once.
+    pairs: set[tuple[int, int]] = set()
     for r in range(rows):
         for c in range(cols):
             key = (r, c)
             if key not in seat_index_by_key:
                 continue
             i = seat_index_by_key[key]
-            for dr, dc in ((1, 0), (0, 1)):
+            for dr, dc in ((0, 1), (1, -1), (1, 0), (1, 1)):
                 nr, nc = r + dr, c + dc
                 neighbor = (nr, nc)
                 if neighbor in seat_index_by_key:
                     j = seat_index_by_key[neighbor]
-                    if i < j:
-                        pairs.append((i, j))
-    return pairs
+                    pairs.add((i, j) if i < j else (j, i))
+    return sorted(pairs)
+
+
+def _select_evenly_spaced_seats(
+    assignable_seats: list[SeatCell],
+    needed: int,
+    seed: int,
+) -> list[SeatCell]:
+    """Pick `needed` seats spread evenly across the hall.
+
+    When seats > students, using every seat and leaving leftovers wherever
+    CP-SAT finds convenient packs the top densely and dumps empties at the
+    bottom. Index-stride selection keeps skips consistent through the room.
+    """
+    if needed <= 0:
+        return []
+    if needed >= len(assignable_seats):
+        return list(assignable_seats)
+
+    ordered = sorted(
+        assignable_seats,
+        key=lambda seat: (seat.row, seat.col, seat.seat_number),
+    )
+    n = len(ordered)
+    # Phase from seed so re-solves with different seeds shift the lattice.
+    phase = seed % n
+    rotated = ordered[phase:] + ordered[:phase]
+
+    selected: list[SeatCell] = []
+    used: set[int] = set()
+    for i in range(needed):
+        # Evenly spaced indices in [0, n).
+        idx = int(round(i * (n - 1) / (needed - 1))) if needed > 1 else 0
+        if idx in used:
+            # Resolve rare rounding collisions by walking forward.
+            for delta in range(1, n):
+                cand = (idx + delta) % n
+                if cand not in used:
+                    idx = cand
+                    break
+        used.add(idx)
+        selected.append(rotated[idx])
+
+    return selected
 
 
 def _prepare_problem(parsed: ParsedInput) -> dict[str, Any] | tuple[
@@ -229,11 +290,23 @@ def _prepare_problem(parsed: ParsedInput) -> dict[str, Any] | tuple[
             "conflicts_count": 0,
         }
 
+    # Leave empties evenly across the hall instead of packing students into a
+    # dense block and dumping leftover seats at one end.
+    if len(movable_students) < len(assignable_seats):
+        assignable_seats = _select_evenly_spaced_seats(
+            assignable_seats,
+            len(movable_students),
+            parsed.seed,
+        )
+
     seat_index_by_key = {_seat_key(seat): idx for idx, seat in enumerate(parsed.seats)}
     all_seat_indices = list(range(len(parsed.seats)))
     adjacency = _build_adjacency(seat_index_by_key, parsed.rows, parsed.cols)
 
-    class_by_student = {s.exam_student_id: s.exam_class_id for s in parsed.students}
+    # Adjacency uses separation_group_id (main class), not exam section id.
+    class_by_student = {
+        s.exam_student_id: s.separation_group_id for s in parsed.students
+    }
 
     return (
         movable_students,
@@ -350,6 +423,8 @@ def _solve_assignment(
     seat_index_by_key = {_seat_key(seat): idx for idx, seat in enumerate(all_seats)}
     assignable_indices = [seat_index_by_key[_seat_key(seat)] for seat in assignable_seats]
     pos_by_global = {global_idx: pos for pos, global_idx in enumerate(assignable_indices)}
+    num_students = len(movable_students)
+    num_seats = len(assignable_seats)
 
     locked_by_seat: dict[int, str] = {}
     for item in locked_assignments:
@@ -360,15 +435,17 @@ def _solve_assignment(
         )
         locked_by_seat[idx] = item["exam_student_id"]
 
-    # IntVar formulation scales to ~1000 students.
-    # Old bool matrix x[student][seat] + O(n^2) adjacency pairs timed out for large exams.
+    # Lightweight class-level model. Students within a class are interchangeable
+    # for adjacency, so we only decide *which class* (if any) occupies each
+    # assignable seat: y[pos, code] == 1  ⇔  seat `pos` holds a student of class
+    # `code`. This keeps the model small (seats × classes booleans) and solves
+    # 1000+ seat halls to proven-optimal in seconds — the previous per-student
+    # add_element / add_all_different formulation timed out above ~250 students.
     model = cp_model.CpModel()
-    num_students = len(movable_students)
-    num_seats = len(assignable_seats)
 
     class_ids = sorted(
         {
-            *(student.exam_class_id for student in movable_students),
+            *(student.separation_group_id for student in movable_students),
             *(
                 class_by_student[student_id]
                 for student_id in locked_by_seat.values()
@@ -377,51 +454,25 @@ def _solve_assignment(
         }
     )
     class_to_code = {class_id: index + 1 for index, class_id in enumerate(class_ids)}
-    num_classes = len(class_to_code)
+    codes = list(class_to_code.values())
 
-    # class_at[pos] = 0 (empty) or class code of occupant
-    class_at = [
-        model.new_int_var(0, num_classes, f"class_at_{pos}") for pos in range(num_seats)
-    ]
+    movable_count: dict[int, int] = {}
+    for student in movable_students:
+        code = class_to_code[student.separation_group_id]
+        movable_count[code] = movable_count.get(code, 0) + 1
 
-    # seat_of[student] + dummy empties cover every assignable seat exactly once
-    seat_of: list[cp_model.IntVar] = []
-    for s_idx, student in enumerate(movable_students):
-        seat_var = model.new_int_var(0, num_seats - 1, f"seat_of_{s_idx}")
-        seat_of.append(seat_var)
-        model.add_element(seat_var, class_at, class_to_code[student.exam_class_id])
+    y: dict[tuple[int, int], cp_model.IntVar] = {}
+    for pos in range(num_seats):
+        for code in codes:
+            y[(pos, code)] = model.new_bool_var(f"y_{pos}_{code}")
+        # Each seat holds at most one class (empty seats allowed when seats > students).
+        model.add(sum(y[(pos, code)] for code in codes) <= 1)
 
-    all_cover_vars = list(seat_of)
-    for dummy_idx in range(num_seats - num_students):
-        empty_var = model.new_int_var(0, num_seats - 1, f"empty_seat_{dummy_idx}")
-        all_cover_vars.append(empty_var)
-        model.add_element(empty_var, class_at, 0)
-
-    model.add_all_different(all_cover_vars)
+    # Each class occupies exactly as many assignable seats as it has movable students.
+    for code, count in movable_count.items():
+        model.add(sum(y[(pos, code)] for pos in range(num_seats)) == count)
 
     conflict_vars: list[cp_model.IntVar] = []
-
-    def _add_same_class_edge(pos_a: int, pos_b: int, edge_key: str) -> cp_model.IntVar:
-        a_empty = model.new_bool_var(f"a_empty_{edge_key}")
-        b_empty = model.new_bool_var(f"b_empty_{edge_key}")
-        different = model.new_bool_var(f"diff_{edge_key}")
-        conflict = model.new_bool_var(f"conflict_{edge_key}")
-
-        model.add(class_at[pos_a] == 0).only_enforce_if(a_empty)
-        model.add(class_at[pos_a] != 0).only_enforce_if(a_empty.negated())
-        model.add(class_at[pos_b] == 0).only_enforce_if(b_empty)
-        model.add(class_at[pos_b] != 0).only_enforce_if(b_empty.negated())
-        model.add(class_at[pos_a] != class_at[pos_b]).only_enforce_if(different)
-        model.add(class_at[pos_a] == class_at[pos_b]).only_enforce_if(different.negated())
-
-        # conflict <=> both occupied and same class
-        model.add_bool_and(
-            [a_empty.negated(), b_empty.negated(), different.negated()]
-        ).only_enforce_if(conflict)
-        model.add_bool_or([a_empty, b_empty, different]).only_enforce_if(
-            conflict.negated()
-        )
-        return conflict
 
     for adj_a, adj_b in adjacency:
         a_assign = adj_a in pos_by_global
@@ -432,14 +483,20 @@ def _solve_assignment(
         if a_assign and b_assign:
             pos_a = pos_by_global[adj_a]
             pos_b = pos_by_global[adj_b]
-            conflict = _add_same_class_edge(pos_a, pos_b, f"{adj_a}_{adj_b}")
             if strict:
-                model.add(conflict == 0)
+                # Two adjacent seats may not share any class.
+                for code in codes:
+                    model.add(y[(pos_a, code)] + y[(pos_b, code)] <= 1)
             else:
+                conflict = model.new_bool_var(f"conflict_{adj_a}_{adj_b}")
+                for code in codes:
+                    # conflict is forced to 1 iff both seats hold the same class.
+                    model.add(conflict >= y[(pos_a, code)] + y[(pos_b, code)] - 1)
                 conflict_vars.append(conflict)
             continue
 
-        # One seat locked, one assignable: forbid matching the locked class.
+        # One seat locked, one assignable: keep the assignable seat off the
+        # locked neighbour's class.
         if a_assign:
             locked_student_id = locked_by_seat.get(adj_b)
             assignable_pos = pos_by_global[adj_a]
@@ -453,15 +510,10 @@ def _solve_assignment(
         if locked_class_id is None or locked_class_id not in class_to_code:
             continue
         locked_code = class_to_code[locked_class_id]
-        match_locked = model.new_bool_var(f"match_locked_{adj_a}_{adj_b}")
-        model.add(class_at[assignable_pos] == locked_code).only_enforce_if(match_locked)
-        model.add(class_at[assignable_pos] != locked_code).only_enforce_if(
-            match_locked.negated()
-        )
         if strict:
-            model.add(match_locked == 0)
+            model.add(y[(assignable_pos, locked_code)] == 0)
         else:
-            conflict_vars.append(match_locked)
+            conflict_vars.append(y[(assignable_pos, locked_code)])
 
     if not strict and conflict_vars:
         model.minimize(sum(conflict_vars))
@@ -469,7 +521,8 @@ def _solve_assignment(
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = timeout_seconds
     solver.parameters.random_seed = seed
-    # Parallel search helps large maps; keep deterministic-ish via random_seed.
+    # Parallel search helps large maps; small maps stay single-worker so output
+    # is reproducible for the same seed.
     solver.parameters.num_search_workers = 8 if num_students >= 200 else 1
 
     status_code = solver.solve(model)
@@ -500,23 +553,45 @@ def _solve_assignment(
 
     cp_status = "optimal" if status_code == cp_model.OPTIMAL else "feasible"
 
+    # Recover which class landed in each assignable seat.
+    code_at_pos: dict[int, int] = {}
+    for pos in range(num_seats):
+        for code in codes:
+            if solver.value(y[(pos, code)]) == 1:
+                code_at_pos[pos] = code
+                break
+
+    positions_by_code: dict[int, list[int]] = {}
+    for pos, code in code_at_pos.items():
+        positions_by_code.setdefault(code, []).append(pos)
+    # Stable seat order per class so roll numbers flow naturally across the hall.
+    for code in positions_by_code:
+        positions_by_code[code].sort(key=lambda pos: assignable_seats[pos].seat_number)
+
+    students_by_code: dict[int, list[StudentRecord]] = {}
+    for student in movable_students:
+        students_by_code.setdefault(
+            class_to_code[student.separation_group_id], []
+        ).append(student)
+
     assignment_by_seat: dict[int, str] = {}
     result_assignments = list(locked_assignments)
 
-    for s_idx, student in enumerate(movable_students):
-        seat_pos = int(solver.value(seat_of[s_idx]))
-        seat_global_idx = assignable_indices[seat_pos]
-        seat = all_seats[seat_global_idx]
-        assignment_by_seat[seat_global_idx] = student.exam_student_id
-        result_assignments.append(
-            {
-                "exam_student_id": student.exam_student_id,
-                "exam_class_id": student.exam_class_id,
-                "row": seat.row,
-                "col": seat.col,
-                "seat_number": seat.seat_number,
-            }
-        )
+    for code, students_in_class in students_by_code.items():
+        seats_for_code = positions_by_code.get(code, [])
+        for student, pos in zip(students_in_class, seats_for_code):
+            seat_global_idx = assignable_indices[pos]
+            seat = all_seats[seat_global_idx]
+            assignment_by_seat[seat_global_idx] = student.exam_student_id
+            result_assignments.append(
+                {
+                    "exam_student_id": student.exam_student_id,
+                    "exam_class_id": student.exam_class_id,
+                    "row": seat.row,
+                    "col": seat.col,
+                    "seat_number": seat.seat_number,
+                }
+            )
 
     conflict_count, conflict_pairs = _find_conflicts(
         assignment_by_seat,
@@ -567,13 +642,16 @@ def _constructive_assign(
     occupied_class: dict[int, str] = {}
     for item in locked_assignments:
         idx = seat_index_by_key[(item["row"], item["col"])]
-        locked_by_seat[idx] = item["exam_student_id"]
-        occupied_class[idx] = item["exam_class_id"]
+        student_id = item["exam_student_id"]
+        locked_by_seat[idx] = student_id
+        occupied_class[idx] = class_by_student.get(
+            student_id, str(item.get("exam_class_id", ""))
+        )
 
-    # Round-robin by class keeps same-class students spaced when prefer_zero_conflicts.
+    # Round-robin by separation group keeps same main-class students spaced.
     by_class: dict[str, list[StudentRecord]] = {}
     for student in movable_students:
-        by_class.setdefault(student.exam_class_id, []).append(student)
+        by_class.setdefault(student.separation_group_id, []).append(student)
 
     class_order = sorted(by_class.keys())
     # Stable shuffle of class order from seed for variety without randomness drift.
@@ -612,7 +690,7 @@ def _constructive_assign(
                 if pos in used_positions:
                     continue
                 global_idx = assignable_indices[pos]
-                if not seat_conflicts(global_idx, student.exam_class_id):
+                if not seat_conflicts(global_idx, student.separation_group_id):
                     chosen_pos = pos
                     break
         if chosen_pos is None:
@@ -635,15 +713,18 @@ def _constructive_assign(
         global_idx = assignable_indices[chosen_pos]
         used_positions.add(chosen_pos)
         assignment_by_seat[global_idx] = student.exam_student_id
-        occupied_class[global_idx] = student.exam_class_id
+        occupied_class[global_idx] = student.separation_group_id
 
+    exam_class_by_student = {
+        s.exam_student_id: s.exam_class_id for s in movable_students
+    }
     result_assignments = list(locked_assignments)
     for global_idx, student_id in assignment_by_seat.items():
         seat = all_seats[global_idx]
         result_assignments.append(
             {
                 "exam_student_id": student_id,
-                "exam_class_id": class_by_student[student_id],
+                "exam_class_id": exam_class_by_student[student_id],
                 "row": seat.row,
                 "col": seat.col,
                 "seat_number": seat.seat_number,
@@ -673,6 +754,40 @@ def _constructive_assign(
     }
 
 
+def _conflict_free_capacity(assignable_seats: list[SeatCell]) -> int:
+    """Max students of a *single* class that can be seated with zero 8-directional
+    neighbours: the largest of the four (row%2, col%2) parity groups. Cells that
+    share a parity differ by >=2 in a row or column, so each group is an
+    independent set of the king-move grid (and for a full grid the largest one is
+    the true maximum ≈ a quarter of the seats)."""
+    groups: dict[tuple[int, int], int] = {}
+    for seat in assignable_seats:
+        key = (seat.row % 2, seat.col % 2)
+        groups[key] = groups.get(key, 0) + 1
+    return max(groups.values()) if groups else 0
+
+
+def _largest_movable_class(movable_students: list[StudentRecord]) -> tuple[str, int]:
+    counts: dict[str, int] = {}
+    for student in movable_students:
+        counts[student.separation_group_id] = (
+            counts.get(student.separation_group_id, 0) + 1
+        )
+    if not counts:
+        return ("", 0)
+    return max(counts.items(), key=lambda kv: (kv[1], kv[0]))
+
+
+def _capacity_message(class_id: str, class_count: int, capacity: int) -> str:
+    return (
+        f"Class '{class_id}' has {class_count} students, but this seating area can "
+        f"hold at most {capacity} of a single class without same-class neighbours "
+        f"(diagonals included). Full separation is impossible here - seated with the "
+        f"minimum achievable conflicts. Use a larger hall (about {class_count * 4} "
+        f"seats) or split this class across rooms."
+    )
+
+
 def solve(raw: dict[str, Any]) -> dict[str, Any]:
     parsed = _parse_input(raw)
     if isinstance(parsed, dict):
@@ -692,58 +807,22 @@ def solve(raw: dict[str, Any]) -> dict[str, Any]:
         all_seats,
     ) = prepared
 
-    # Large exams: constructive placement finishes in seconds.
-    # Full CP-SAT adjacency models can exceed process timeouts above ~250 students.
-    large_exam = len(movable_students) >= 250
-
-    if large_exam:
-        constructive = _constructive_assign(
-            movable_students,
-            assignable_seats,
-            adjacency,
-            class_by_student,
-            locked_assignments,
-            all_seats,
-            seed=parsed.seed,
-            prefer_zero_conflicts=True,
-        )
-        constructive["strict_mode"] = parsed.strict_mode
-        if constructive["status"] == "infeasible":
-            return constructive
-        if constructive["conflicts_count"] == 0:
-            constructive["mode_used"] = "constructive"
-            constructive["status"] = "optimal"
-        else:
-            constructive["mode_used"] = "constructive_fallback"
-            constructive["status"] = "feasible"
-            constructive["message"] = (
-                constructive.get("message")
-                or "Assigned with some adjacent same-class seats (large-exam constructive mode)"
-            )
-        return constructive
-
+    # CP-SAT now handles large halls directly (the class-level model solves
+    # 1000+ seats in seconds), so every exam flows through the exact solver.
+    # The constructive heuristic below is kept only as a last-resort fallback
+    # when CP-SAT times out or proves infeasible.
     if parsed.strict_mode:
-        strict_result = _solve_assignment(
-            movable_students,
-            assignable_seats,
-            adjacency,
-            class_by_student,
-            locked_assignments,
-            all_seats,
-            all_seat_indices,
-            strict=True,
-            seed=parsed.seed,
-            timeout_seconds=parsed.timeout_seconds,
-        )
+        # Preflight: under 8-directional adjacency a single class can occupy at
+        # most ~a quarter of the hall without neighbours. If the largest class
+        # already exceeds that, strict separation is provably impossible — skip
+        # the expensive infeasibility proof and go straight to minimisation with
+        # an actionable message.
+        capacity = _conflict_free_capacity(assignable_seats)
+        largest_name, largest_count = _largest_movable_class(movable_students)
+        separable = largest_count <= capacity
 
-        if strict_result["status"] in {"optimal", "feasible"} and strict_result[
-            "conflicts_count"
-        ] == 0:
-            strict_result["mode_used"] = "strict"
-            return strict_result
-
-        if strict_result["status"] in {"infeasible", "timeout"}:
-            fallback = _solve_assignment(
+        if separable:
+            strict_result = _solve_assignment(
                 movable_students,
                 assignable_seats,
                 adjacency,
@@ -751,39 +830,25 @@ def solve(raw: dict[str, Any]) -> dict[str, Any]:
                 locked_assignments,
                 all_seats,
                 all_seat_indices,
-                strict=False,
+                strict=True,
                 seed=parsed.seed,
                 timeout_seconds=parsed.timeout_seconds,
             )
-            if fallback["status"] in {"optimal", "feasible"}:
-                fallback["strict_mode"] = True
-                fallback["mode_used"] = "fallback"
-                return fallback
+            if strict_result["status"] in {"optimal", "feasible"} and strict_result[
+                "conflicts_count"
+            ] == 0:
+                strict_result["mode_used"] = "strict"
+                return strict_result
 
-            constructive = _constructive_assign(
-                movable_students,
-                assignable_seats,
-                adjacency,
-                class_by_student,
-                locked_assignments,
-                all_seats,
-                seed=parsed.seed,
-                prefer_zero_conflicts=True,
-            )
-            constructive["strict_mode"] = True
-            if constructive["status"] == "infeasible":
-                return constructive
-            constructive["mode_used"] = (
-                "constructive"
-                if constructive["conflicts_count"] == 0
-                else "constructive_fallback"
-            )
-            if strict_result["status"] == "timeout":
-                constructive["message"] = (
-                    "CP-SAT timed out; used constructive seating assignment"
-                )
-            return constructive
-
+        # Minimise same-class adjacency as the best achievable outcome (either a
+        # class is too large to fully separate, or strict could not reach zero).
+        # When separation is provably impossible we don't need the full budget to
+        # prove optimality of an unavoidably-conflicted layout — cap it so the run
+        # stays responsive (CP-SAT with parallel workers captures most of the
+        # improvement within the first seconds).
+        fallback_timeout = (
+            parsed.timeout_seconds if separable else min(parsed.timeout_seconds, 30.0)
+        )
         fallback = _solve_assignment(
             movable_students,
             assignable_seats,
@@ -794,25 +859,45 @@ def solve(raw: dict[str, Any]) -> dict[str, Any]:
             all_seat_indices,
             strict=False,
             seed=parsed.seed,
-            timeout_seconds=parsed.timeout_seconds,
+            timeout_seconds=fallback_timeout,
         )
-        fallback["strict_mode"] = True
-        fallback["mode_used"] = "fallback"
-        if fallback["status"] in {"timeout", "infeasible", "error"}:
-            constructive = _constructive_assign(
-                movable_students,
-                assignable_seats,
-                adjacency,
-                class_by_student,
-                locked_assignments,
-                all_seats,
-                seed=parsed.seed,
-                prefer_zero_conflicts=False,
-            )
-            constructive["strict_mode"] = True
-            constructive["mode_used"] = "constructive_fallback"
+        if fallback["status"] in {"optimal", "feasible"}:
+            fallback["strict_mode"] = True
+            fallback["mode_used"] = "fallback"
+            if not separable:
+                fallback["message"] = _capacity_message(
+                    largest_name, largest_count, capacity
+                )
+            return fallback
+
+        # CP-SAT could not find any complete layout in time: constructive.
+        constructive = _constructive_assign(
+            movable_students,
+            assignable_seats,
+            adjacency,
+            class_by_student,
+            locked_assignments,
+            all_seats,
+            seed=parsed.seed,
+            prefer_zero_conflicts=separable,
+        )
+        constructive["strict_mode"] = True
+        if constructive["status"] == "infeasible":
             return constructive
-        return fallback
+        constructive["mode_used"] = (
+            "constructive"
+            if constructive["conflicts_count"] == 0
+            else "constructive_fallback"
+        )
+        if not separable:
+            constructive["message"] = _capacity_message(
+                largest_name, largest_count, capacity
+            )
+        elif fallback["status"] == "timeout":
+            constructive["message"] = (
+                "CP-SAT timed out; used constructive seating assignment"
+            )
+        return constructive
 
     return _solve_assignment(
         movable_students,

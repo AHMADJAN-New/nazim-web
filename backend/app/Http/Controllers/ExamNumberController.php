@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Exam;
 use App\Models\ExamClass;
+use App\Models\ExamSeatAssignment;
 use App\Models\ExamSeatingMap;
 use App\Models\ExamStudent;
 use App\Services\ActivityLogService;
@@ -67,7 +68,8 @@ class ExamNumberController extends Controller
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($exam->academic_year_id);
 
         if ($request->filled('exam_class_id')) {
             $query->where('exam_class_id', $request->exam_class_id);
@@ -216,7 +218,8 @@ class ExamNumberController extends Controller
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($exam->academic_year_id);
 
         // Filter by scope
         if ($validated['scope'] === 'class' && ! empty($validated['exam_class_id'])) {
@@ -380,7 +383,7 @@ class ExamNumberController extends Controller
     }
 
     /**
-     * Preview roll numbers from seating map seat numbers
+     * Preview continuous roll numbers from seating map seat order
      * POST /api/exams/{exam}/seating-maps/{map}/roll-numbers/preview
      */
     public function previewMapRollNumbers(Request $request, string $examId, string $mapId)
@@ -437,61 +440,37 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'Seating map not found'], 404);
         }
 
-        $existingNumbers = ExamStudent::query()
-            ->where('exam_id', $examId)
-            ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $currentSchoolId)
-            ->whereNull('deleted_at')
-            ->whereNotNull('exam_roll_number')
-            ->pluck('id', 'exam_roll_number');
+        // Keep solver checksum in sync for Solve, but return seat-layout
+        // checksum for roll confirm (stable when another map is applied).
+        $this->mapService->refreshInputChecksum($map);
+        $map->refresh();
+        $map->unsetRelation('assignments');
+        $map->load([
+            'assignments.examStudent.studentAdmission.student',
+            'assignments.examStudent.examClass.classAcademicYear.class',
+        ]);
 
-        $items = [];
-        $willOverrideCount = 0;
-
-        foreach ($map->assignments as $assignment) {
-            if ($assignment->exam_student_id === null || $assignment->is_disabled) {
-                continue;
-            }
-
-            $examStudent = $assignment->examStudent;
-            if (! $examStudent) {
-                continue;
-            }
-
-            $newNumber = (string) $assignment->seat_number;
-            $hasExisting = $examStudent->exam_roll_number !== null;
-            $collision = $existingNumbers->has($newNumber)
-                && $existingNumbers->get($newNumber) !== $examStudent->id;
-
-            if ($hasExisting) {
-                $willOverrideCount++;
-            }
-
-            $items[] = [
-                'exam_student_id' => $examStudent->id,
-                'student_id' => $examStudent->studentAdmission?->student_id,
-                'student_name' => $examStudent->studentAdmission?->student?->full_name ?? 'Unknown',
-                'class_name' => $examStudent->examClass?->classAcademicYear?->class?->name ?? 'Unknown',
-                'seat_number' => $assignment->seat_number,
-                'current_roll_number' => $examStudent->exam_roll_number,
-                'new_roll_number' => $newNumber,
-                'will_override' => $hasExisting,
-                'has_collision' => $collision,
-            ];
-        }
+        $assignmentPlan = $this->mapService->buildContinuousRollAssignmentsFromMap(
+            $map,
+            $examId,
+            $profile->organization_id,
+            $currentSchoolId
+        );
 
         return response()->json([
             'map_id' => $map->id,
             'revision' => $map->revision,
-            'input_checksum' => $map->input_checksum ? trim($map->input_checksum) : null,
-            'total' => count($items),
-            'will_override_count' => $willOverrideCount,
-            'items' => $items,
+            'input_checksum' => $this->mapService->buildSeatAssignmentsChecksum($map),
+            'total' => count($assignmentPlan['items']),
+            'will_override_count' => $assignmentPlan['will_override_count'],
+            'collision_count' => $assignmentPlan['collision_count'],
+            'start_roll' => $assignmentPlan['start_roll'],
+            'items' => $assignmentPlan['items'],
         ]);
     }
 
     /**
-     * Confirm roll numbers from seating map seat numbers
+     * Confirm continuous roll numbers from seating map seat order
      * POST /api/exams/{exam}/seating-maps/{map}/roll-numbers/confirm
      */
     public function confirmMapRollNumbers(Request $request, string $examId, string $mapId)
@@ -536,7 +515,10 @@ class ExamNumberController extends Controller
         }
 
         $map = ExamSeatingMap::query()
-            ->with(['assignments.examStudent'])
+            ->with([
+                'assignments.examStudent.studentAdmission.student',
+                'assignments.examStudent.examClass.classAcademicYear.class',
+            ])
             ->where('id', $mapId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
@@ -549,7 +531,8 @@ class ExamNumberController extends Controller
         }
 
         try {
-            $this->mapService->validateRevisionChecksum(
+            // Seat-layout checksum: applying another map must not block this map.
+            $this->mapService->validateRevisionSeatChecksum(
                 $map,
                 (int) $validated['revision'],
                 $validated['input_checksum']
@@ -558,18 +541,29 @@ class ExamNumberController extends Controller
             return response()->json(['error' => $exception->getMessage()], 409);
         }
 
+        $assignmentPlan = $this->mapService->buildContinuousRollAssignmentsFromMap(
+            $map,
+            $examId,
+            $profile->organization_id,
+            $currentSchoolId
+        );
+
+        if ($assignmentPlan['collision_count'] > 0) {
+            return response()->json([
+                'error' => 'Cannot apply roll numbers because of collisions. Preview and resolve conflicts first.',
+                'collision_count' => $assignmentPlan['collision_count'],
+                'items' => $assignmentPlan['items'],
+            ], 422);
+        }
+
         $errors = [];
         $updated = 0;
 
         DB::beginTransaction();
         try {
-            foreach ($map->assignments as $assignment) {
-                if ($assignment->exam_student_id === null || $assignment->is_disabled) {
-                    continue;
-                }
-
+            foreach ($assignmentPlan['items'] as $item) {
                 $examStudent = ExamStudent::query()
-                    ->where('id', $assignment->exam_student_id)
+                    ->where('id', $item['exam_student_id'])
                     ->where('exam_id', $examId)
                     ->where('organization_id', $profile->organization_id)
                     ->where('school_id', $currentSchoolId)
@@ -578,14 +572,14 @@ class ExamNumberController extends Controller
 
                 if (! $examStudent) {
                     $errors[] = [
-                        'exam_student_id' => $assignment->exam_student_id,
+                        'exam_student_id' => $item['exam_student_id'],
                         'error' => 'Student not found in this exam',
                     ];
 
                     continue;
                 }
 
-                $newNumber = (string) $assignment->seat_number;
+                $newNumber = (string) $item['new_roll_number'];
 
                 if (! ExamStudent::isRollNumberUnique($examId, $newNumber, $examStudent->id)) {
                     $errors[] = [
@@ -818,7 +812,8 @@ class ExamNumberController extends Controller
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($exam->academic_year_id);
 
         if ($validated['scope'] === 'class' && ! empty($validated['exam_class_id'])) {
             $query->where('exam_class_id', $validated['exam_class_id']);
@@ -1188,6 +1183,7 @@ class ExamNumberController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($exam->academic_year_id)
             ->whereNotNull('exam_roll_number');
 
         if ($request->filled('exam_class_id')) {
@@ -1278,6 +1274,7 @@ class ExamNumberController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($exam->academic_year_id)
             ->whereNotNull('exam_roll_number');
 
         if ($request->filled('exam_class_id')) {
@@ -1285,6 +1282,18 @@ class ExamNumberController extends Controller
         }
 
         $examStudents = $query->get()->sortBy('exam_roll_number')->values();
+
+        // Seat numbers from exam seating maps (one seat per exam student when seated).
+        $seatAssignments = ExamSeatAssignment::query()
+            ->with(['seatingMap.room'])
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->whereNotNull('exam_student_id')
+            ->where('is_disabled', false)
+            ->get()
+            ->groupBy('exam_student_id');
 
         // Get subjects for each class with exam times
         $examClasses = ExamClass::where('exam_id', $examId)
@@ -1307,6 +1316,18 @@ class ExamNumberController extends Controller
             $admission = $examStudent->studentAdmission;
             $classAcademicYear = $examStudent->examClass?->classAcademicYear;
             $examClass = $examClasses->get($examStudent->exam_class_id);
+
+            // Prefer applied/finalized map assignment when a student appears on more than one map.
+            $studentSeats = $seatAssignments->get($examStudent->id) ?? collect();
+            $seatAssignment = $studentSeats->sortByDesc(function (ExamSeatAssignment $assignment): int {
+                $status = $assignment->seatingMap?->status;
+
+                return match ($status) {
+                    ExamSeatingMap::STATUS_FINALIZED => 3,
+                    ExamSeatingMap::STATUS_APPLIED => 2,
+                    default => 1,
+                };
+            })->first();
 
             // Get subjects with their exam dates
             $subjects = [];
@@ -1332,11 +1353,17 @@ class ExamNumberController extends Controller
             // Get original province from student (orig_province is the original province)
             $province = $student?->orig_province ?? $student?->curr_province ?? '';
 
-            // Get room number from admission
-            $roomNumber = $admission?->room?->room_number ?? '';
+            // Prefer exam hall room from seating map; fall back to admission room.
+            $examHallRoom = $seatAssignment?->seatingMap?->room?->room_number
+                ?? $seatAssignment?->seatingMap?->name
+                ?? '';
+            $roomNumber = $examHallRoom !== ''
+                ? $examHallRoom
+                : ($admission?->room?->room_number ?? '');
 
             $slips[] = [
                 'exam_roll_number' => $examStudent->exam_roll_number,
+                'seat_number' => $seatAssignment?->seat_number,
                 'full_name' => $student?->full_name ?? 'Unknown',
                 'father_name' => $student?->father_name ?? '',
                 'admission_number' => $student?->admission_no ?? '',
@@ -1401,6 +1428,7 @@ class ExamNumberController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($exam->academic_year_id)
             ->whereNotNull('exam_secret_number');
 
         if ($request->filled('exam_class_id')) {

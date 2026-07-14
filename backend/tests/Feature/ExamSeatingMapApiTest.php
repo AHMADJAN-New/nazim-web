@@ -429,7 +429,7 @@ class ExamSeatingMapApiTest extends TestCase
     }
 
     /** @test */
-    public function it_previews_and_confirms_roll_numbers_from_seating_map(): void
+    public function it_previews_and_confirms_continuous_roll_numbers_from_seating_map(): void
     {
         $fixture = $this->createFixture([
             'exam_seating_maps.create',
@@ -442,7 +442,7 @@ class ExamSeatingMapApiTest extends TestCase
             'exam_id' => $fixture['exam']->id,
             'name' => 'Roll map',
             'rows' => 1,
-            'columns' => 1,
+            'columns' => 2,
             'start_seat_number' => 10,
         ]);
 
@@ -459,26 +459,238 @@ class ExamSeatingMapApiTest extends TestCase
             'is_locked' => true,
         ]);
 
+        $baseAdmission = $fixture['examStudent']->studentAdmission;
+        $this->assertNotNull($baseAdmission);
+
+        $secondStudent = Student::factory()->create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'full_name' => 'Second Student',
+        ]);
+        $secondAdmission = StudentAdmission::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'student_id' => $secondStudent->id,
+            'academic_year_id' => $baseAdmission->academic_year_id,
+            'class_id' => $baseAdmission->class_id,
+            'class_academic_year_id' => $baseAdmission->class_academic_year_id,
+            'admission_year' => (string) now()->year,
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+        $secondExamStudent = ExamStudent::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_id' => $fixture['exam']->id,
+            'exam_class_id' => $fixture['examClass']->id,
+            'student_admission_id' => $secondAdmission->id,
+        ]);
+
+        ExamSeatAssignment::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_seating_map_id' => $map->id,
+            'exam_id' => $fixture['exam']->id,
+            'exam_student_id' => $secondExamStudent->id,
+            'row_number' => 1,
+            'column_number' => 2,
+            'seat_number' => 20,
+            'is_disabled' => false,
+            'is_locked' => true,
+        ]);
+
+        // Existing roll on another student outside this map should push start to 6.
+        $outsideStudent = Student::factory()->create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'full_name' => 'Outside Student',
+        ]);
+        $outsideAdmission = StudentAdmission::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'student_id' => $outsideStudent->id,
+            'academic_year_id' => $baseAdmission->academic_year_id,
+            'class_id' => $baseAdmission->class_id,
+            'class_academic_year_id' => $baseAdmission->class_academic_year_id,
+            'admission_year' => (string) now()->year,
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+        $outsideExamStudent = ExamStudent::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_id' => $fixture['exam']->id,
+            'exam_class_id' => $fixture['examClass']->id,
+            'student_admission_id' => $outsideAdmission->id,
+            'exam_roll_number' => '5',
+        ]);
+
         $solverService = app(ExamSeatingSolverService::class);
         $map->input_checksum = $solverService->buildSolverInput($map->fresh(['assignments']))['checksum'];
         $map->save();
 
         $preview = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps/{$map->id}/roll-numbers/preview");
         $preview->assertOk()
-            ->assertJsonPath('total', 1)
-            ->assertJsonPath('items.0.new_roll_number', '10')
-            ->assertJsonPath('items.0.seat_number', 10);
+            ->assertJsonPath('total', 2)
+            ->assertJsonPath('start_roll', 6)
+            ->assertJsonPath('items.0.seat_number', 10)
+            ->assertJsonPath('items.0.new_roll_number', '6')
+            ->assertJsonPath('items.1.seat_number', 20)
+            ->assertJsonPath('items.1.new_roll_number', '7');
 
         $confirm = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps/{$map->id}/roll-numbers/confirm", [
-            'revision' => $map->revision,
-            'input_checksum' => $map->input_checksum,
+            'revision' => $preview->json('revision'),
+            'input_checksum' => $preview->json('input_checksum'),
         ]);
 
         $confirm->assertOk()
-            ->assertJsonPath('updated', 1)
+            ->assertJsonPath('updated', 2)
             ->assertJsonPath('map.status', ExamSeatingMap::STATUS_APPLIED);
 
         $fixture['examStudent']->refresh();
-        $this->assertSame('10', $fixture['examStudent']->exam_roll_number);
+        $secondExamStudent->refresh();
+        $outsideExamStudent->refresh();
+        $this->assertSame('6', $fixture['examStudent']->exam_roll_number);
+        $this->assertSame('7', $secondExamStudent->exam_roll_number);
+        $this->assertSame('5', $outsideExamStudent->exam_roll_number);
+    }
+
+    /** @test */
+    public function it_applies_roll_numbers_to_second_map_after_first_without_stale_checksum(): void
+    {
+        $fixture = $this->createFixture([
+            'exam_seating_maps.create',
+            'exams.roll_numbers.assign',
+        ]);
+
+        $mapA = ExamSeatingMap::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_id' => $fixture['exam']->id,
+            'name' => 'Hall A',
+            'rows' => 1,
+            'columns' => 1,
+            'start_seat_number' => 1,
+        ]);
+        \App\Models\ExamSeatingMapClass::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_seating_map_id' => $mapA->id,
+            'exam_class_id' => $fixture['examClass']->id,
+        ]);
+        ExamSeatAssignment::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_seating_map_id' => $mapA->id,
+            'exam_id' => $fixture['exam']->id,
+            'exam_student_id' => $fixture['examStudent']->id,
+            'row_number' => 1,
+            'column_number' => 1,
+            'seat_number' => 1,
+            'is_disabled' => false,
+            'is_locked' => true,
+        ]);
+
+        $baseAdmission = $fixture['examStudent']->studentAdmission;
+        $this->assertNotNull($baseAdmission);
+
+        $secondStudent = Student::factory()->create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'full_name' => 'Second Student',
+        ]);
+        $secondAdmission = StudentAdmission::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'student_id' => $secondStudent->id,
+            'academic_year_id' => $baseAdmission->academic_year_id,
+            'class_id' => $baseAdmission->class_id,
+            'class_academic_year_id' => $baseAdmission->class_academic_year_id,
+            'admission_year' => (string) now()->year,
+            'enrollment_status' => 'active',
+            'is_boarder' => false,
+        ]);
+        $secondExamStudent = ExamStudent::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_id' => $fixture['exam']->id,
+            'exam_class_id' => $fixture['examClass']->id,
+            'student_admission_id' => $secondAdmission->id,
+        ]);
+
+        $mapB = ExamSeatingMap::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_id' => $fixture['exam']->id,
+            'name' => 'Hall B',
+            'rows' => 1,
+            'columns' => 1,
+            'start_seat_number' => 100,
+        ]);
+        \App\Models\ExamSeatingMapClass::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_seating_map_id' => $mapB->id,
+            'exam_class_id' => $fixture['examClass']->id,
+        ]);
+        ExamSeatAssignment::create([
+            'organization_id' => $fixture['organization']->id,
+            'school_id' => $fixture['school']->id,
+            'exam_seating_map_id' => $mapB->id,
+            'exam_id' => $fixture['exam']->id,
+            'exam_student_id' => $secondExamStudent->id,
+            'row_number' => 1,
+            'column_number' => 1,
+            'seat_number' => 100,
+            'is_disabled' => false,
+            'is_locked' => true,
+        ]);
+
+        $mapService = app(\App\Services\ExamSeating\ExamSeatingMapService::class);
+        $solverService = app(ExamSeatingSolverService::class);
+
+        $seatChecksumBefore = $mapService->buildSeatAssignmentsChecksum($mapB->fresh(['assignments']));
+        $solverChecksumBefore = $solverService->buildSolverInput($mapB->fresh(['assignments']))['checksum'];
+
+        $previewA = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps/{$mapA->id}/roll-numbers/preview");
+        $previewA->assertOk();
+        $confirmA = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps/{$mapA->id}/roll-numbers/confirm", [
+            'revision' => $previewA->json('revision'),
+            'input_checksum' => $previewA->json('input_checksum'),
+        ]);
+        $confirmA->assertOk()->assertJsonPath('updated', 1);
+
+        // Applying map A changes B's solver checksum (student locked elsewhere),
+        // but seat-layout checksum for B stays the same.
+        $this->assertNotSame(
+            $solverChecksumBefore,
+            $solverService->buildSolverInput($mapB->fresh(['assignments']))['checksum']
+        );
+        $this->assertSame(
+            $seatChecksumBefore,
+            $mapService->buildSeatAssignmentsChecksum($mapB->fresh(['assignments']))
+        );
+
+        // Old client sending solver checksum must fail against seat-layout validation.
+        $staleConfirm = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps/{$mapB->id}/roll-numbers/confirm", [
+            'revision' => $mapB->revision,
+            'input_checksum' => $solverChecksumBefore,
+        ]);
+        $staleConfirm->assertStatus(409);
+
+        $previewB = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps/{$mapB->id}/roll-numbers/preview");
+        $previewB->assertOk()->assertJsonPath('total', 1);
+        $this->assertSame($seatChecksumBefore, $previewB->json('input_checksum'));
+
+        $confirmB = $this->jsonAs($fixture['user'], 'POST', "/api/exams/{$fixture['exam']->id}/seating-maps/{$mapB->id}/roll-numbers/confirm", [
+            'revision' => $previewB->json('revision'),
+            'input_checksum' => $previewB->json('input_checksum'),
+        ]);
+        $confirmB->assertOk()->assertJsonPath('updated', 1);
+
+        $fixture['examStudent']->refresh();
+        $secondExamStudent->refresh();
+        $this->assertSame('1', $fixture['examStudent']->exam_roll_number);
+        $this->assertSame('2', $secondExamStudent->exam_roll_number);
     }
 }

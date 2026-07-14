@@ -76,10 +76,16 @@ const seatingReportDataQueryKey = (
 const invalidateSeatingCaches = async (
   queryClient: ReturnType<typeof useQueryClient>,
   examId: string,
-  mapId?: string
+  mapId?: string,
+  options?: { invalidateAllMapDetails?: boolean }
 ) => {
   await queryClient.invalidateQueries({ queryKey: ['exam-seating-maps', examId] });
-  if (mapId) {
+  if (options?.invalidateAllMapDetails) {
+    // Solving one map can clear seats on other editable maps — refresh all editors.
+    await queryClient.invalidateQueries({ queryKey: ['exam-seating-map', examId] });
+    await queryClient.invalidateQueries({ queryKey: ['exam-seating-solve-status', examId] });
+    await queryClient.invalidateQueries({ queryKey: ['exam-seating-report-data', examId] });
+  } else if (mapId) {
     await queryClient.invalidateQueries({ queryKey: ['exam-seating-map', examId, mapId] });
     await queryClient.invalidateQueries({ queryKey: ['exam-seating-solve-status', examId, mapId] });
     await queryClient.invalidateQueries({ queryKey: ['exam-seating-report-data', examId, mapId] });
@@ -123,9 +129,11 @@ export const useExamSeatingMap = (examId?: string, mapId?: string) => {
       return mapExamSeatingMapDetailApiToDomain(detail);
     },
     enabled: !!user && !!profile && !!profile.organization_id && !!profile.default_school_id && !!examId && !!mapId,
-    staleTime: 30 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    // Editor must always reflect latest solver/apply results (checksum/layout change often).
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 
@@ -162,7 +170,8 @@ export const useExamSeatingReportData = (examId?: string, mapId?: string) => {
       return mapReportDataApiToDomain(response as ExamSeatingApi.ExamSeatingReportDataResponse);
     },
     enabled: !!user && !!profile && !!profile.organization_id && !!profile.default_school_id && !!examId && !!mapId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
@@ -239,6 +248,7 @@ export const useDeleteExamSeatingMap = () => {
 export const useSyncExamSeatingAssignments = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+  const { data: profile } = useProfile();
 
   return useMutation({
     mutationFn: async ({
@@ -246,11 +256,14 @@ export const useSyncExamSeatingAssignments = () => {
       mapId,
       revision,
       assignments,
+      silent,
     }: {
       examId: string;
       mapId: string;
       revision: number;
       assignments: SyncExamSeatingAssignmentItem[];
+      /** Skip success toast (e.g. pre-solve sync). */
+      silent?: boolean;
     }) => {
       const response = await examSeatingApi.syncAssignments(
         examId,
@@ -261,8 +274,20 @@ export const useSyncExamSeatingAssignments = () => {
         ?? (response as ExamSeatingApi.ExamSeatingMapDetail);
       return mapExamSeatingMapDetailApiToDomain(detail);
     },
-    onSuccess: async (_data, variables) => {
-      showToast.success(t('toast.seatingMapAssignmentsSaved'));
+    onSuccess: async (data, variables) => {
+      if (!variables.silent) {
+        showToast.success(t('toast.seatingMapAssignmentsSaved'));
+      }
+      // Immediately put server detail in cache so the editor draft rebuilds before refetch.
+      queryClient.setQueryData(
+        seatingMapQueryKey(
+          variables.examId,
+          variables.mapId,
+          profile?.organization_id,
+          profile?.default_school_id ?? null
+        ),
+        data
+      );
       await invalidateSeatingCaches(queryClient, variables.examId, variables.mapId);
     },
     onError: (error: Error) => {
@@ -366,8 +391,11 @@ export const useSolveExamSeatingMap = () => {
       return mapSolveResponseApiToDomain(response as ExamSeatingApi.SolveExamSeatingMapResponse);
     },
     onSuccess: async (_data, variables) => {
-      showToast.success(t('toast.seatingMapSolveStarted'));
-      await invalidateSeatingCaches(queryClient, variables.examId, variables.mapId);
+      // Loading feedback is shown on the map editor (spinner + loading toast)
+      // while the queue job runs; do not toast "started" here.
+      await invalidateSeatingCaches(queryClient, variables.examId, variables.mapId, {
+        invalidateAllMapDetails: true,
+      });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.seatingMapSolveFailed'));
@@ -407,6 +435,7 @@ export const useFinalizeExamSeatingMap = () => {
 export const useReopenExamSeatingMap = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+  const { data: profile } = useProfile();
 
   return useMutation({
     mutationFn: async ({ examId, mapId }: { examId: string; mapId: string }) => {
@@ -415,7 +444,16 @@ export const useReopenExamSeatingMap = () => {
         ?? (response as ExamSeatingApi.ExamSeatingMapDetail);
       return mapExamSeatingMapDetailApiToDomain(detail);
     },
-    onSuccess: async (_data, variables) => {
+    onSuccess: async (data, variables) => {
+      queryClient.setQueryData(
+        seatingMapQueryKey(
+          variables.examId,
+          variables.mapId,
+          profile?.organization_id,
+          profile?.default_school_id ?? null
+        ),
+        data
+      );
       showToast.success(t('toast.seatingMapReopened') || t('toast.seatingMapUpdated'));
       await invalidateSeatingCaches(queryClient, variables.examId, variables.mapId);
     },
@@ -497,7 +535,11 @@ export const useConfirmMapRollNumbers = () => {
           })
         : t('toast.seatingMapRollNumbersApplied', { count: data.updated });
       showToast.success(message);
-      await invalidateSeatingCaches(queryClient, variables.examId, variables.mapId);
+      // Applying one map marks it applied and changes other maps' solver
+      // checksums — refresh all map editors for this exam.
+      await invalidateSeatingCaches(queryClient, variables.examId, variables.mapId, {
+        invalidateAllMapDetails: true,
+      });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.seatingMapRollNumbersApplyFailed'));

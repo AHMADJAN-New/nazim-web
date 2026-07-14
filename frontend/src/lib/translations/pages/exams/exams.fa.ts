@@ -508,7 +508,8 @@ export default {
       classColors: "رنگ‌های صنف",
       clearSeat: "پاک کردن",
       columns: "ستون‌ها",
-      confirmRollDescription: "شماره صندلی‌ها به شماره حاضری امتحان نوشته می‌شود.",
+      confirmRollDescription:
+        "شماره‌های حاضری پیوسته بر اساس ترتیب صندلی داده می‌شود. شماره صندلی روی نقشه برای تالار می‌ماند.",
       confirmRollTitle: "شماره حاضری اعمال شود؟",
       conflicts: "{count} تداخل",
       createDescription: "چیدمان تالار را برای این امتحان تعریف کنید.",
@@ -551,7 +552,8 @@ export default {
       editMap: "ویرایش",
       mapLockedTitle: "نقشه قفل است",
       mapLockedDescription: "نقشه‌های اعمال‌شده و نهایی فقط خواندنی هستند. برای ویرایش شبکه، نقشه را بازگشایی کنید.",
-      rollPreviewDescription: "قبل از اعمال، شماره صندلی‌ها را بررسی کنید.",
+      rollPreviewDescription:
+        "شماره‌های حاضری پیوسته (بر اساس ترتیب صندلی) را بررسی کنید. صندلی‌های خالی رد می‌شوند تا شماره بدون فاصله بماند.",
       rollPreviewTitle: "پیش‌نمایش اعمال شماره حاضری",
       rows: "ردیف‌ها",
       saveClasses: "ذخیره صنف‌ها",
@@ -565,6 +567,9 @@ export default {
         "{count} شاگرد از صنف‌های این نقشه قبلاً در نقشه‌های اعمال‌شده/نهایی نشسته اند: {maps}. آن نقشه را بازگشایی کرده و صندلی‌ها را پاک کنید، سپس دوباره حل کنید.",
       solve: "حل",
       solveCompleted: "حل چیدمان تکمیل شد — {count} دانش‌آموز نشسته شدند",
+      solveInProgress: "در حال حل چیدمان…",
+      solveInProgressDescription:
+        "حل‌کننده نشت در حال اجرا است. لطفاً منتظر بمانید و صفحه را تازه نکنید.",
       solverStatus: "حل‌کننده",
       startSeat: "شماره شروع",
       startSeatHint: "بعدی موجود: {start}-{end}",
@@ -577,8 +582,8 @@ export default {
       solver: {
         failed: "ناموفق",
         not_run: "اجرا نشده",
-        pending: "در انتظار",
-        running: "در حال اجرا",
+        pending: "در صف",
+        running: "در حال حل…",
         succeeded: "موفق",
       },
       title: "نقشه‌های نشت امتحان",

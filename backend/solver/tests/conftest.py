@@ -46,11 +46,19 @@ def seat(
     }
 
 
-def student(exam_student_id: str, exam_class_id: str) -> dict[str, Any]:
-    return {
+def student(
+    exam_student_id: str,
+    exam_class_id: str,
+    *,
+    separation_group_id: str | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
         "exam_student_id": exam_student_id,
         "exam_class_id": exam_class_id,
     }
+    if separation_group_id is not None:
+        payload["separation_group_id"] = separation_group_id
+    return payload
 
 
 def base_payload(

@@ -508,8 +508,12 @@ export default {
       classColors: "Class Colors",
       clearSeat: "Clear",
       columns: "Columns",
-      confirmRollDescription: "Seat numbers will be written to exam roll numbers.",
+      confirmRollDescription:
+        "Continuous roll numbers will be assigned by seat order. Seat numbers stay on the map for the hall.",
       confirmRollTitle: "Apply roll numbers?",
+      rollPreviewDescription:
+        "Review continuous roll numbers (by seat order). Empty seats are skipped so rolls stay dense.",
+      rollPreviewTitle: "Apply Roll Numbers Preview",
       conflicts: "{count} conflicts",
       createDescription: "Define the hall layout for this exam.",
       createMap: "Create Map",
@@ -551,8 +555,6 @@ export default {
       editMap: "Edit",
       mapLockedTitle: "Map is locked",
       mapLockedDescription: "Applied and finalized maps are read-only. Reopen the map to edit the seating grid.",
-      rollPreviewDescription: "Review seat numbers before applying as roll numbers.",
-      rollPreviewTitle: "Apply Roll Numbers Preview",
       rows: "Rows",
       saveClasses: "Save Classes",
       saveColors: "Save Colors",
@@ -565,6 +567,9 @@ export default {
         "{count} student(s) from this map's classes are already seated on applied/finalized map(s): {maps}. Reopen that map and clear those seats (or remove those classes), then solve again.",
       solve: "Solve",
       solveCompleted: "Seating solve completed — {count} students seated",
+      solveInProgress: "Solving seating…",
+      solveInProgressDescription:
+        "The seating solver is running. Please wait and do not refresh the page.",
       solverStatus: "Solver",
       startSeat: "Start Seat",
       startSeatHint: "Next available: {start}-{end}",
@@ -577,8 +582,8 @@ export default {
       solver: {
         failed: "Failed",
         not_run: "Not run",
-        pending: "Pending",
-        running: "Running",
+        pending: "Queued",
+        running: "Solving…",
         succeeded: "Succeeded",
       },
       title: "Exam Seating Maps",

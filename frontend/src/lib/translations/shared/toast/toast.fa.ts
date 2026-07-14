@@ -555,6 +555,7 @@ export default {
     seatingMapRollNumbersAppliedWithErrors: "{count} شماره حاضری با {errors} خطا اعمال شد",
     seatingMapRollNumbersApplyFailed: "اعمال شماره حاضری از نقشه نشت ناموفق بود",
     seatingMapSolveFailed: "شروع حل‌کننده نشت ناموفق بود",
+    seatingMapSolveInProgress: "حل‌کننده نشت در حال اجرا است — لطفاً منتظر بمانید…",
     seatingMapSolveStarted: "حل‌کننده نشت آغاز شد",
     seatingMapUpdated: "نقشه نشت به‌روزرسانی شد",
     seatingMapUpdateFailed: "به‌روزرسانی نقشه نشت ناموفق بود",

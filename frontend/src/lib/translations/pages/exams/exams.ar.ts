@@ -508,7 +508,8 @@ export default {
       classColors: "ألوان الصفوف",
       clearSeat: "مسح",
       columns: "الأعمدة",
-      confirmRollDescription: "سيتم كتابة أرقام المقاعد كأرقام جلوس للامتحان.",
+      confirmRollDescription:
+        "ستُعطى أرقام جلوس متسلسلة حسب ترتيب المقاعد. تبقى أرقام المقاعد على الخريطة للقاعة.",
       confirmRollTitle: "تطبيق أرقام الجلوس؟",
       conflicts: "{count} تعارضات",
       createDescription: "حدد تخطيط القاعة لهذا الامتحان.",
@@ -551,7 +552,8 @@ export default {
       editMap: "تعديل",
       mapLockedTitle: "الخريطة مقفلة",
       mapLockedDescription: "الخرائط المطبقة والنهائية للقراءة فقط. أعد فتح الخريطة لتعديل شبكة الجلوس.",
-      rollPreviewDescription: "راجع أرقام المقاعد قبل التطبيق كأرقام جلوس.",
+      rollPreviewDescription:
+        "راجع أرقام الجلوس المتسلسلة (حسب ترتيب المقاعد). تُتخطى المقاعد الفارغة لتبقى الأرقام متصلة.",
       rollPreviewTitle: "معاينة تطبيق أرقام الجلوس",
       rows: "الصفوف",
       saveClasses: "حفظ الصفوف",
@@ -565,6 +567,9 @@ export default {
         "{count} طالباً من صفوف هذه الخريطة جالسون بالفعل على خرائط مطبقة/منتهية: {maps}. أعد فتح تلك الخريطة وامسح المقاعد ثم أعد الحل.",
       solve: "حل",
       solveCompleted: "اكتمل حل المقاعد — تم جلوس {count} طالباً",
+      solveInProgress: "جاري حل المقاعد…",
+      solveInProgressDescription:
+        "محلل الجلوس يعمل الآن. يرجى الانتظار وعدم تحديث الصفحة.",
       solverStatus: "المحلل",
       startSeat: "رقم البداية",
       startSeatHint: "التالي المتاح: {start}-{end}",
@@ -577,8 +582,8 @@ export default {
       solver: {
         failed: "فشل",
         not_run: "لم يعمل",
-        pending: "قيد الانتظار",
-        running: "قيد التشغيل",
+        pending: "في قائمة الانتظار",
+        running: "جاري الحل…",
         succeeded: "نجح",
       },
       title: "خرائط جلوس الامتحان",

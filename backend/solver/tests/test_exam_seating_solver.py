@@ -25,7 +25,16 @@ def _count_adjacent_same_class(result: dict, class_by_student: dict[str, str]) -
     conflicts = 0
     seen: set[tuple[tuple[int, int], tuple[int, int]]] = set()
     for (r, c), cls in positions.items():
-        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        for dr, dc in (
+            (1, 0),
+            (-1, 0),
+            (0, 1),
+            (0, -1),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
+        ):
             nr, nc = r + dr, c + dc
             neighbor = (nr, nc)
             if neighbor in positions and positions[neighbor] == cls:
@@ -108,7 +117,36 @@ class TestExactAssignment:
 
 class TestZeroConflictFeasible:
     def test_strict_mode_finds_zero_conflict_layout(self) -> None:
-        # Two same-class students placed diagonally in 2x2 — zero adjacency conflicts.
+        # Two same-class students on a 1x3 row: seating them at cols 0 and 2
+        # (empty seat between them) is zero-conflict even with diagonal checks.
+        payload = base_payload(
+            rows=1,
+            cols=3,
+            seats=[
+                seat(0, 0, 1),
+                seat(0, 1, 2),
+                seat(0, 2, 3),
+            ],
+            students=[
+                student("s1", "class-a"),
+                student("s2", "class-a"),
+            ],
+            strict_mode=True,
+        )
+        result = run_solver(payload)
+
+        assert result["status"] == "optimal"
+        assert result["mode_used"] == "strict"
+        assert result["conflicts_count"] == 0
+        assert result["conflict_pairs"] == []
+
+        class_by_student = {"s1": "class-a", "s2": "class-a"}
+        assert _count_adjacent_same_class(result, class_by_student) == 0
+
+    def test_strict_mode_avoids_diagonal_same_class(self) -> None:
+        # 2x2 grid, two same-class students: every seat pair (including the
+        # diagonals) is adjacent, so strict separation is impossible and the
+        # solver must fall back rather than seat them corner-to-corner.
         payload = base_payload(
             rows=2,
             cols=2,
@@ -126,13 +164,8 @@ class TestZeroConflictFeasible:
         )
         result = run_solver(payload)
 
-        assert result["status"] == "optimal"
-        assert result["mode_used"] == "strict"
-        assert result["conflicts_count"] == 0
-        assert result["conflict_pairs"] == []
-
-        class_by_student = {"s1": "class-a", "s2": "class-a"}
-        assert _count_adjacent_same_class(result, class_by_student) == 0
+        assert result["mode_used"] == "fallback"
+        assert result["conflicts_count"] >= 1
 
 
 class TestProvenInfeasible:
@@ -197,7 +230,10 @@ class TestTimeoutClassification:
         assert result["status"] in {"timeout", "optimal", "feasible", "infeasible"}
         assert "assignments" in result
 
-    def test_large_exam_uses_constructive_and_assigns_all(self) -> None:
+    def test_large_exam_solves_without_conflicts(self) -> None:
+        # 1000 students / 20 classes on a 1200-seat hall: CP-SAT (class-level
+        # model) must now seat everyone with zero same-class adjacency — no
+        # constructive bypass, no diagonal conflicts.
         rows, cols = 40, 30
         seats = [
             seat(r, c, r * cols + c + 1)
@@ -211,13 +247,59 @@ class TestTimeoutClassification:
             seats=seats,
             students=students,
             strict_mode=True,
-            timeout_seconds=5,
+            timeout_seconds=60,
         )
         result = run_solver(payload)
 
         assert result["status"] in {"optimal", "feasible"}
-        assert result["mode_used"] in {"constructive", "constructive_fallback"}
+        assert result["mode_used"] == "strict"
+        assert result["conflicts_count"] == 0
         assert len(result["assignments"]) == 1000
+        student_ids = [a["exam_student_id"] for a in result["assignments"]]
+        assert len(student_ids) == len(set(student_ids)) == 1000
+
+
+class TestEvenEmptySpacing:
+    def test_empties_spread_across_rows_not_clustered_at_bottom(self) -> None:
+        # 18x37 hall with the real class-size mix from map b15c3fe1: empties
+        # must be distributed through the room (not dumped in the last rows).
+        rows, cols = 18, 37
+        sizes = [60, 57, 39, 38, 36, 30, 30, 28, 28, 27, 27, 27, 23, 18, 17, 16, 16, 3]
+        seats = [
+            seat(r, c, r * cols + c + 1)
+            for r in range(rows)
+            for c in range(cols)
+        ]
+        students: list[dict] = []
+        sid = 0
+        for class_idx, size in enumerate(sizes):
+            for _ in range(size):
+                students.append(student(f"s{sid}", f"class-{class_idx}"))
+                sid += 1
+
+        payload = base_payload(
+            rows=rows,
+            cols=cols,
+            seats=seats,
+            students=students,
+            strict_mode=True,
+            timeout_seconds=60,
+        )
+        result = run_solver(payload)
+
+        assert result["status"] in {"optimal", "feasible"}
+        assert result["conflicts_count"] == 0
+        assert len(result["assignments"]) == sum(sizes)
+
+        occupied = {(a["row"], a["col"]) for a in result["assignments"]}
+        empties_by_row = [
+            sum(1 for c in range(cols) if (r, c) not in occupied) for r in range(rows)
+        ]
+        assert min(empties_by_row) >= 6
+        assert max(empties_by_row) - min(empties_by_row) <= 3
+
+        class_by_student = {s["exam_student_id"]: s["exam_class_id"] for s in students}
+        assert _count_adjacent_same_class(result, class_by_student) == 0
 
 
 class TestMalformedInput:
@@ -280,3 +362,30 @@ class TestDeterminism:
         second = run_solver(payload)
 
         assert first["assignments"] == second["assignments"]
+
+
+class TestMainClassSeparation:
+    def test_different_sections_same_main_class_are_not_adjacent(self) -> None:
+        """UI colors by main class; sections of that class must not sit together."""
+        payload = base_payload(
+            rows=1,
+            cols=3,
+            seats=[
+                seat(0, 0, 1),
+                seat(0, 1, 2),
+                seat(0, 2, 3),
+            ],
+            students=[
+                student("s1", "section-a", separation_group_id="main-oli"),
+                student("s2", "section-b", separation_group_id="main-oli"),
+            ],
+            strict_mode=True,
+        )
+        result = run_solver(payload)
+
+        assert result["status"] == "optimal"
+        assert result["conflicts_count"] == 0
+        group_by_student = {"s1": "main-oli", "s2": "main-oli"}
+        assert _count_adjacent_same_class(result, group_by_student) == 0
+        occupied = _occupied_seats(result)
+        assert occupied == {(0, 0), (0, 2)} or occupied == {(0, 2), (0, 0)}
