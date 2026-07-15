@@ -74,6 +74,9 @@ services:
       - ./backend/solver:/var/www/backend/solver:ro
     environment:
       EXAM_SEATING_PYTHON_PATH: python3
+      # Writable Chrome config/cache (www-data HOME /var/www is not writable)
+      XDG_CONFIG_HOME: /tmp/.chromium
+      XDG_CACHE_HOME: /tmp/.chromium
     logging:
       driver: "json-file"
       options:
@@ -108,6 +111,8 @@ services:
       - ./backend/solver:/var/www/backend/solver:ro
     environment:
       EXAM_SEATING_PYTHON_PATH: python3
+      XDG_CONFIG_HOME: /tmp/.chromium
+      XDG_CACHE_HOME: /tmp/.chromium
     # Must exceed RunExamSeatingSolverJob::$timeout (1200) so CP-SAT can finish
     # FileStorageService::storeReport chowns new report files to www-data for PHP-FPM download.
     command: ["sh", "-lc", "php artisan queue:work --sleep=3 --tries=3 --timeout=1260 --no-interaction"]
@@ -133,6 +138,9 @@ services:
       - nazim_backend_storage:/var/www/backend/storage
       - ./docker/php/entrypoint.prod.sh:/usr/local/bin/entrypoint.sh:ro
       - ./backend/.env:/var/www/backend/.env
+    environment:
+      XDG_CONFIG_HOME: /tmp/.chromium
+      XDG_CACHE_HOME: /tmp/.chromium
     command:
       [
         "sh",

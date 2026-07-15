@@ -113,9 +113,13 @@ COPY docker/php/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Browsershot defaults (can be overridden via env)
+# XDG_* must point at a writable dir: www-data HOME (/var/www) is not writable,
+# which otherwise causes chrome_crashpad_handler: --database is required
 ENV BROWSERSHOT_CHROME_PATH=/usr/bin/chromium \
     BROWSERSHOT_NODE_BINARY=/usr/bin/node \
     PUPPETEER_CACHE_DIR=/var/www/.cache/puppeteer \
+    XDG_CONFIG_HOME=/tmp/.chromium \
+    XDG_CACHE_HOME=/tmp/.chromium \
     EXAM_SEATING_PYTHON_PATH=python3
 
 EXPOSE 9000

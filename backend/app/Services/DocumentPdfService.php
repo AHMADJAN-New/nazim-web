@@ -46,6 +46,8 @@ class DocumentPdfService
                         ->margins(5, 5, 5, 5)
                         ->setDelay(3000); // Add 3 second delay to ensure PDF letterheads converted to images are fully loaded
 
+                    BrowsershotConfigurator::apply($browsershot);
+
                     if ($pageLayout === 'A4_landscape') {
                         $browsershot->landscape();
                     }

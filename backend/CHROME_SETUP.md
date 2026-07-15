@@ -52,11 +52,22 @@ If no output, all dependencies are satisfied.
 
 ### Environment Variable
 
-The Chrome path is configured in `.env`:
+Chrome path (optional overrides):
 
 ```
-PUPPETEER_CHROME_PATH=/home/nazim/.cache/puppeteer/chrome-headless-shell/linux-143.0.7499.169/chrome-headless-shell-linux64/chrome-headless-shell
+PUPPETEER_CHROME_PATH=/var/www/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome
+# or system chromium:
+BROWSERSHOT_CHROME_PATH=/usr/bin/chromium
 ```
+
+In Docker, Chrome also needs writable config/cache dirs (www-data cannot write `/var/www`):
+
+```
+XDG_CONFIG_HOME=/tmp/.chromium
+XDG_CACHE_HOME=/tmp/.chromium
+```
+
+Without these, Chrome fails with `chrome_crashpad_handler: --database is required`.
 
 ### Troubleshooting
 
@@ -71,3 +82,5 @@ PUPPETEER_CHROME_PATH=/home/nazim/.cache/puppeteer/chrome-headless-shell/linux-1
    ```
 
 3. **Chrome path not found**: Update `PUPPETEER_CHROME_PATH` in `.env` to the correct path.
+
+4. **crashpad / --database is required**: Ensure `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` point at a writable directory (e.g. `/tmp/.chromium`), or rely on `BrowsershotConfigurator` which sets these at runtime.

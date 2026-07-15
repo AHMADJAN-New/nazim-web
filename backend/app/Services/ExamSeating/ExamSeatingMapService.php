@@ -726,7 +726,10 @@ class ExamSeatingMapService
                     $studentName = (string) ($cell['student_name'] ?? '');
                     $fatherName = (string) ($cell['father_name'] ?? '');
                     $className = (string) ($cell['class_name'] ?? '');
-                    $rollNumber = (string) ($cell['exam_roll_number'] ?? $seatNumber);
+                    $rollNumber = $cell['exam_roll_number'] ?? null;
+                    $rollNumber = $rollNumber !== null && $rollNumber !== ''
+                        ? (string) $rollNumber
+                        : '';
                     $fill = ltrim((string) ($cell['color_hex'] ?? 'FFFFFF'), '#');
                     if ($fill === '' || strlen($fill) !== 6 || ! ctype_xdigit($fill)) {
                         $fill = 'FFFFFF';
@@ -749,9 +752,11 @@ class ExamSeatingMapService
                         'fill' => $fill,
                     ];
 
+                    // Keep seat and roll separate (same fields as roll number slips)
                     $listRows[] = [
                         'student_id' => $studentId,
-                        'seat_number' => $rollNumber !== '' ? $rollNumber : $seatNumber,
+                        'seat_number' => $seatNumber > 0 ? $seatNumber : '',
+                        'exam_roll_number' => $rollNumber,
                         'student_name' => $studentName,
                         'father_name' => $fatherName,
                         'class_name' => $className,
@@ -793,7 +798,8 @@ class ExamSeatingMapService
                 'title' => 'Student List',
                 'columns' => [
                     ['key' => 'student_id', 'label' => 'ID'],
-                    ['key' => 'seat_number', 'label' => 'Seat / Roll'],
+                    ['key' => 'exam_roll_number', 'label' => 'Roll #'],
+                    ['key' => 'seat_number', 'label' => 'Seat #'],
                     ['key' => 'student_name', 'label' => 'Name'],
                     ['key' => 'father_name', 'label' => 'Father'],
                     ['key' => 'class_name', 'label' => 'Class'],

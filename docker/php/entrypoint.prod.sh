@@ -18,6 +18,9 @@ cd - >/dev/null
 
 # Ensure Puppeteer cache directory exists with correct permissions
 mkdir -p /var/www/.cache/puppeteer /var/www/.cache/npm
+# Chrome crashpad/config needs a writable XDG home (www-data cannot write /var/www)
+mkdir -p /tmp/.chromium
+chmod 1777 /tmp/.chromium 2>/dev/null || true
 chown -R www-data:www-data /var/www/.cache
 chmod -R 775 /var/www/.cache
 

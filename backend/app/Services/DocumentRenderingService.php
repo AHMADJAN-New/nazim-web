@@ -158,6 +158,8 @@ class DocumentRenderingService
                 ->waitUntilNetworkIdle() // Wait for all resources to load
                 ->timeout(120); // 2 minute timeout for complex documents
 
+            BrowsershotConfigurator::apply($browsershot);
+
             if ($orientation === 'landscape') {
                 $browsershot->landscape();
             }

@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Services\BrowsershotConfigurator;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
@@ -118,7 +119,7 @@ class PdfReportService
         $orientation = $context['orientation'] ?? 'portrait';
         $margins = $this->parseMargins($context['margins'] ?? '15mm 12mm 18mm 12mm');
 
-        // Configure Browsershot
+        // Configure Browsershot (Docker-safe Chrome env + binaries)
         $browsershot = Browsershot::html($html)
             ->format($pageSize)
             ->showBackground()
@@ -131,59 +132,12 @@ class PdfReportService
             )
             ->waitUntilNetworkIdle()
             ->setDelay(2000) // Wait 2 seconds for fonts to load from base64 data URLs
-            ->timeout(120)
-            ->addChromiumArguments([
-                'no-sandbox',
-                'disable-setuid-sandbox',
-                'disable-web-security', // Allow loading fonts from data URLs
-                'disable-features=FontLoading', // Disable font loading restrictions
-            ]); // Required for Linux environments without proper sandbox support (no -- prefix, Browsershot adds it)
+            ->timeout(120);
 
-        // Set Node.js path (required for Browsershot/Puppeteer)
-        $nodePath = env('BROWSERSHOT_NODE_BINARY') ?: getenv('BROWSERSHOT_NODE_BINARY') ?: '/usr/bin/node';
-        if (file_exists($nodePath) && is_executable($nodePath)) {
-            \Log::info("Using Node.js path: {$nodePath}");
-            $browsershot->setNodePath($nodePath);
-        } else {
-            \Log::warning("Node.js not found at {$nodePath}, Browsershot will try to find it automatically");
-        }
-
-        // Set npm path (required for Browsershot/Puppeteer)
-        $npmPath = env('BROWSERSHOT_NPM_BINARY') ?: getenv('BROWSERSHOT_NPM_BINARY') ?: '/usr/bin/npm';
-        if (file_exists($npmPath) && is_executable($npmPath)) {
-            \Log::info("Using npm path: {$npmPath}");
-            $browsershot->setNpmPath($npmPath);
-        } else {
-            \Log::warning("npm not found at {$npmPath}, Browsershot will try to find it automatically");
-        }
-
-        // Set Puppeteer cache directory (required for Browsershot)
-        $defaultCacheDir = PHP_OS_FAMILY === 'Windows'
-            ? (getenv('USERPROFILE') ?: getenv('HOMEDRIVE').getenv('HOMEPATH')).DIRECTORY_SEPARATOR.'.cache'.DIRECTORY_SEPARATOR.'puppeteer'
-            : '/var/www/.cache/puppeteer';
-        $puppeteerCacheDir = env('PUPPETEER_CACHE_DIR') ?: getenv('PUPPETEER_CACHE_DIR') ?: $defaultCacheDir;
-        if (is_dir($puppeteerCacheDir)) {
-            \Log::info("Using Puppeteer cache directory: {$puppeteerCacheDir}");
-            putenv("PUPPETEER_CACHE_DIR={$puppeteerCacheDir}");
-        } else {
-            \Log::warning("Puppeteer cache directory not found at {$puppeteerCacheDir}, creating it");
-            @mkdir($puppeteerCacheDir, 0775, true);
-            if (PHP_OS_FAMILY !== 'Windows') {
-                @chown($puppeteerCacheDir, 'www-data');
-                @chmod($puppeteerCacheDir, 0775);
-            }
-            putenv("PUPPETEER_CACHE_DIR={$puppeteerCacheDir}");
-        }
-
-        // Set Chrome/Chromium path if puppeteer is installed
-        // Browsershot will use the Chrome from puppeteer if available
-        $chromePath = $this->findChromePath();
-        if ($chromePath) {
-            \Log::info("Using Chrome path: {$chromePath}");
-            $browsershot->setChromePath($chromePath);
-        } else {
-            \Log::warning('Chrome not found, Browsershot will try to find it automatically');
-        }
+        BrowsershotConfigurator::apply($browsershot, [
+            'disable-web-security', // Allow loading fonts from data URLs
+            'disable-features=FontLoading', // Disable font loading restrictions
+        ]);
 
         // Set orientation
         if ($orientation === 'landscape') {
@@ -340,106 +294,6 @@ class PdfReportService
 </body>
 </html>
 HTML;
-    }
-
-    /**
-     * Find Chrome/Chromium executable path
-     * Checks puppeteer cache first, then system paths.
-     * Supports Linux and Windows.
-     *
-     * Priority:
-     * 1. Environment variable PUPPETEER_CHROME_PATH
-     * 2. Puppeteer cache (e.g. ~/.cache/puppeteer or %USERPROFILE%\.cache\puppeteer)
-     * 3. System-installed Chrome/Chromium
-     */
-    private function findChromePath(): ?string
-    {
-        $envChromePath = env('PUPPETEER_CHROME_PATH') ?: getenv('PUPPETEER_CHROME_PATH');
-        if ($envChromePath && is_file($envChromePath)) {
-            if (PHP_OS_FAMILY === 'Windows' || is_executable($envChromePath)) {
-                \Log::info("Using Chrome from PUPPETEER_CHROME_PATH: {$envChromePath}");
-
-                return $envChromePath;
-            }
-        }
-
-        $sep = DIRECTORY_SEPARATOR;
-        $possibleCacheDirs = [];
-
-        if (PHP_OS_FAMILY === 'Windows') {
-            $userProfile = getenv('USERPROFILE') ?: (getenv('HOMEDRIVE').getenv('HOMEPATH'));
-            if ($userProfile) {
-                $possibleCacheDirs[] = $userProfile.$sep.'.cache'.$sep.'puppeteer';
-            }
-            $possibleCacheDirs[] = getenv('PUPPETEER_CACHE_DIR') ?: null;
-        } else {
-            $possibleCacheDirs = [
-                '/home/nazim/.cache/puppeteer',
-                '/var/www/.cache/puppeteer',
-                getenv('HOME') ? getenv('HOME').'/.cache/puppeteer' : null,
-                '/root/.cache/puppeteer',
-            ];
-        }
-
-        $possibleCacheDirs = array_filter($possibleCacheDirs, fn ($dir) => $dir !== null && $dir !== '' && is_dir($dir));
-
-        $chromePathPatterns = [];
-        foreach ($possibleCacheDirs as $cache) {
-            if (PHP_OS_FAMILY === 'Windows') {
-                $chromePathPatterns[] = $cache.$sep.'chrome-headless-shell'.$sep.'win32-*'.$sep.'chrome-headless-shell'.$sep.'chrome-headless-shell.exe';
-                $chromePathPatterns[] = $cache.$sep.'chrome-headless-shell'.$sep.'win64-*'.$sep.'chrome-headless-shell'.$sep.'chrome-headless-shell.exe';
-                $chromePathPatterns[] = $cache.$sep.'chrome'.$sep.'win64-*'.$sep.'chrome-win64'.$sep.'chrome.exe';
-                $chromePathPatterns[] = $cache.$sep.'chrome'.$sep.'win32-*'.$sep.'chrome-win'.$sep.'chrome.exe';
-            } else {
-                $chromePathPatterns[] = $cache.'/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell';
-                $chromePathPatterns[] = $cache.'/chrome/linux-*/chrome-linux64/chrome';
-            }
-        }
-
-        if (PHP_OS_FAMILY === 'Windows') {
-            $localAppData = getenv('LOCALAPPDATA');
-            $systemChromePaths = [
-                'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-                'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-            ];
-            if ($localAppData) {
-                $systemChromePaths[] = $localAppData.$sep.'Google'.$sep.'Chrome'.$sep.'Application'.$sep.'chrome.exe';
-            }
-            $chromePathPatterns = array_merge($chromePathPatterns, $systemChromePaths);
-        } else {
-            $chromePathPatterns = array_merge($chromePathPatterns, [
-                '/usr/bin/google-chrome',
-                '/usr/bin/chromium',
-                '/usr/bin/chromium-browser',
-                '/snap/bin/chromium',
-                '/usr/bin/google-chrome-stable',
-            ]);
-        }
-
-        foreach ($chromePathPatterns as $pattern) {
-            if ($pattern === null || $pattern === '') {
-                continue;
-            }
-            $matches = glob($pattern);
-            if (! empty($matches)) {
-                rsort($matches);
-                foreach ($matches as $chromePath) {
-                    if (is_file($chromePath) && (PHP_OS_FAMILY === 'Windows' || is_executable($chromePath))) {
-                        \Log::info("Found Chrome at: {$chromePath}");
-
-                        return $chromePath;
-                    }
-                }
-            }
-        }
-
-        \Log::warning('Chrome not found in any of the checked paths', [
-            'checked_paths' => $chromePathPatterns,
-            'possible_cache_dirs' => array_values($possibleCacheDirs),
-            'env_chrome_path' => $envChromePath,
-        ]);
-
-        return null;
     }
 
     /**
