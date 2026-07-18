@@ -27,20 +27,22 @@ class ReportGenerationController extends Controller
     public function generate(Request $request)
     {
         // Determine if using a custom template (custom templates fetch their own data)
-        $hasCustomTemplate = !empty($request->input('template_name'));
-        
+        $hasCustomTemplate = ! empty($request->input('template_name'));
+
         // Check if using multi-sheet Excel structure (parameters.sheets)
         // Multi-sheet Excel reports don't need top-level columns/rows
         $parameters = $request->input('parameters', []);
-        $hasMultiSheetStructure = !empty($parameters['sheets']) || 
-                                 !empty($request->input('parameters.sheets'));
-        
+        $hasMultiSheetStructure = ! empty($parameters['sheets']) ||
+                                 ! empty($request->input('parameters.sheets'));
+
         // Check if this is a student history report (which fetches its own data)
         // Student history reports use parameters.student_id and build data server-side
         $reportKey = $request->input('report_key');
-        $isStudentHistoryReport = $reportKey === 'student_lifetime_history' && 
-                                 !empty($parameters['student_id']);
-        
+        $isStudentHistoryReport = $reportKey === 'student_lifetime_history' &&
+                                 ! empty($parameters['student_id']);
+        $isExamNumberReport = in_array($reportKey, ['exam_roll_slips', 'exam_secret_labels'], true);
+        $isExamSeatingMapReport = $reportKey === 'exam_seating_map' || ! empty($parameters['map_id']);
+
         // Build validation rules conditionally
         $rules = [
             'report_key' => 'required|string|max:100',
@@ -56,25 +58,30 @@ class ReportGenerationController extends Controller
             'column_config' => 'nullable|array',
             'async' => 'nullable|boolean',
         ];
-        
+
         // Columns and rows are only required when:
         // - NOT using a custom template
         // - NOT using multi-sheet structure
-        // - NOT a student history report (which fetches its own data)
-        // Custom templates (like student-history) fetch their own data from parameters
-        // Multi-sheet Excel reports use parameters.sheets instead of top-level columns/rows
-        // Student history reports fetch data server-side using parameters.student_id
-        if (!$hasCustomTemplate && !$hasMultiSheetStructure && !$isStudentHistoryReport) {
+        // - NOT a student history / exam number / seating map report (server-side data)
+        if (! $hasCustomTemplate && ! $hasMultiSheetStructure && ! $isStudentHistoryReport && ! $isExamNumberReport && ! $isExamSeatingMapReport) {
             $rules['columns'] = 'required|array';
             $rules['columns.*'] = 'required';
             $rules['rows'] = 'required|array';
         } else {
-            // For custom templates, multi-sheet reports, or student history reports,
+            // For custom templates, multi-sheet reports, or server-fetched reports,
             // columns and rows are optional (can be empty arrays)
             $rules['columns'] = 'nullable|array';
             $rules['rows'] = 'nullable|array';
         }
-        
+
+        if ($isExamNumberReport) {
+            $rules['parameters.exam_id'] = 'required|uuid';
+            $rules['parameters.exam_class_id'] = 'nullable|uuid';
+            $rules['parameters.subject_id'] = 'nullable|uuid';
+            $rules['parameters.layout'] = 'nullable|in:single,grid';
+            $rules['report_type'] = 'required|in:pdf';
+        }
+
         $validated = $request->validate($rules);
 
         // Get organization from authenticated user
@@ -83,11 +90,21 @@ class ReportGenerationController extends Controller
         $organizationId = $profile?->organization_id;
         $currentSchoolId = $request->get('current_school_id');
 
-        if (!$organizationId) {
+        if (! $organizationId) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
-        if (!$currentSchoolId) {
+        if (! $currentSchoolId) {
             return response()->json(['error' => 'School context is required'], 403);
+        }
+
+        if ($isExamNumberReport) {
+            try {
+                if (! $user->hasPermissionTo('exams.numbers.print')) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
         }
 
         // Check if user has schools_access_all permission
@@ -96,11 +113,11 @@ class ReportGenerationController extends Controller
         // Enforce school scoping: branding_id is the school id (school_branding)
         // For users with schools_access_all, allow generating reports for any school in their organization
         // For other users, branding_id must match their current school
-        if (!empty($validated['branding_id'])) {
-            if (!$hasSchoolsAccessAll && $validated['branding_id'] !== $currentSchoolId) {
+        if (! empty($validated['branding_id'])) {
+            if (! $hasSchoolsAccessAll && $validated['branding_id'] !== $currentSchoolId) {
                 return response()->json(['error' => 'Cannot generate report for a different school'], 403);
             }
-            
+
             // For users with schools_access_all, validate that the branding_id belongs to their organization
             if ($hasSchoolsAccessAll) {
                 $brandingSchool = DB::table('school_branding')
@@ -108,12 +125,26 @@ class ReportGenerationController extends Controller
                     ->where('organization_id', $organizationId)
                     ->whereNull('deleted_at')
                     ->first();
-                
-                if (!$brandingSchool) {
+
+                if (! $brandingSchool) {
                     return response()->json(['error' => 'Invalid school for report generation'], 403);
                 }
             }
         }
+
+        $reportParameters = $validated['parameters'] ?? [];
+        if ($isExamNumberReport) {
+            $reportParameters['school_id'] = $currentSchoolId;
+            if (empty($reportParameters['layout'])) {
+                $reportParameters['layout'] = 'single';
+            }
+        }
+
+        $defaultTemplateName = match ($validated['report_key']) {
+            'exam_roll_slips' => 'roll-slips',
+            'exam_secret_labels' => 'secret-labels',
+            default => $validated['template_name'] ?? null,
+        };
 
         // Create config
         $config = ReportConfig::fromArray([
@@ -122,12 +153,12 @@ class ReportGenerationController extends Controller
             'branding_id' => $validated['branding_id'] ?? $currentSchoolId,
             'layout_id' => $validated['layout_id'] ?? null,
             'report_template_id' => $validated['report_template_id'] ?? null,
-            'template_name' => $validated['template_name'] ?? null,
+            'template_name' => $validated['template_name'] ?? $defaultTemplateName,
             'title' => $validated['title'] ?? '',
             'watermark_mode' => $validated['watermark_mode'] ?? 'default',
             'notes_mode' => $validated['notes_mode'] ?? 'defaults',
             'generated_by' => 'NazimWeb',
-            'parameters' => $validated['parameters'] ?? [],
+            'parameters' => $reportParameters,
             'column_config' => $validated['column_config'] ?? [],
         ]);
 
@@ -148,7 +179,7 @@ class ReportGenerationController extends Controller
         $queueAvailable = $queueConnection !== 'sync';
 
         // If async requested but queue not available, fall back to sync
-        if ($async && !$queueAvailable) {
+        if ($async && ! $queueAvailable) {
             \Log::info('Async report generation requested but queue not available (using sync driver), falling back to sync processing');
             $async = false;
         }
@@ -184,9 +215,9 @@ class ReportGenerationController extends Controller
                 ]);
             } catch (\Exception $e) {
                 // If job dispatch fails, mark as failed and fall back to sync
-                \Log::error('Failed to dispatch report job: ' . $e->getMessage());
-                $reportRun->markFailed('Failed to dispatch job: ' . $e->getMessage(), 0);
-                
+                \Log::error('Failed to dispatch report job: '.$e->getMessage());
+                $reportRun->markFailed('Failed to dispatch job: '.$e->getMessage(), 0);
+
                 // Fall through to sync processing
                 $async = false;
             }
@@ -224,7 +255,7 @@ class ReportGenerationController extends Controller
     {
         $reportRun = ReportRun::find($id);
 
-        if (!$reportRun) {
+        if (! $reportRun) {
             return response()->json([
                 'success' => false,
                 'error' => 'Report not found',
@@ -282,8 +313,9 @@ class ReportGenerationController extends Controller
 
         $reportRun = ReportRun::find($id);
 
-        if (!$reportRun) {
+        if (! $reportRun) {
             \Log::warning('Report not found for download', ['report_id' => $id]);
+
             return response()->json([
                 'success' => false,
                 'error' => 'Report not found',
@@ -298,17 +330,19 @@ class ReportGenerationController extends Controller
                 'report_org_id' => $reportRun->organization_id,
                 'user_org_id' => $profile?->organization_id,
             ]);
+
             return response()->json([
                 'success' => false,
                 'error' => 'Unauthorized',
             ], 403);
         }
 
-        if (!$reportRun->isCompleted()) {
+        if (! $reportRun->isCompleted()) {
             \Log::warning('Report not completed for download', [
                 'report_id' => $id,
                 'status' => $reportRun->status,
             ]);
+
             return response()->json([
                 'success' => false,
                 'error' => 'Report is not ready for download',
@@ -317,11 +351,12 @@ class ReportGenerationController extends Controller
         }
 
         // Check if file exists using FileStorageService (uses correct disk: 'local')
-        if (!$reportRun->output_path) {
+        if (! $reportRun->output_path) {
             \Log::error('Report output_path is empty', [
                 'report_id' => $id,
                 'status' => $reportRun->status,
             ]);
+
             return response()->json([
                 'success' => false,
                 'error' => 'Report file path not found',
@@ -330,7 +365,7 @@ class ReportGenerationController extends Controller
 
         $resolvedFile = $this->resolveDownloadTarget($reportRun);
 
-        if (!$resolvedFile) {
+        if (! $resolvedFile) {
             $relativePath = ltrim($reportRun->output_path, '/');
 
             \Log::error('Report file not found', [
@@ -339,8 +374,8 @@ class ReportGenerationController extends Controller
                 'status' => $reportRun->status,
                 'file_name' => $reportRun->file_name,
                 'storage_exists' => Storage::disk('local')->exists($relativePath),
-                'absolute_path' => storage_path('app/private/' . $relativePath),
-                'physical_exists' => is_file(storage_path('app/private/' . $relativePath)),
+                'absolute_path' => storage_path('app/private/'.$relativePath),
+                'physical_exists' => is_file(storage_path('app/private/'.$relativePath)),
             ]);
 
             return response()->json([
@@ -355,7 +390,7 @@ class ReportGenerationController extends Controller
             $reportRun->getFileExtension()
         );
 
-        if (!empty($resolvedFile['path']) && $resolvedFile['path'] !== $reportRun->output_path) {
+        if (! empty($resolvedFile['path']) && $resolvedFile['path'] !== $reportRun->output_path) {
             $reportRun->forceFill([
                 'output_path' => $resolvedFile['path'],
             ])->save();
@@ -369,7 +404,7 @@ class ReportGenerationController extends Controller
             'absolute_path' => $resolvedFile['absolute_path'] ?? null,
         ]);
 
-        if (!empty($resolvedFile['absolute_path'])) {
+        if (! empty($resolvedFile['absolute_path'])) {
             return response()->download($resolvedFile['absolute_path'], $fileName);
         }
 
@@ -441,8 +476,8 @@ class ReportGenerationController extends Controller
 
         foreach ($relativeCandidates as $candidate) {
             foreach ([
-                storage_path('app/private/' . $candidate),
-                storage_path('app/' . $candidate),
+                storage_path('app/private/'.$candidate),
+                storage_path('app/'.$candidate),
                 storage_path($candidate),
             ] as $absolutePath) {
                 if (is_file($absolutePath)) {
@@ -509,7 +544,7 @@ class ReportGenerationController extends Controller
         }
 
         // Filter by user if not admin
-        if (!Auth::user()?->hasPermissionTo('reports.view_all')) {
+        if (! Auth::user()?->hasPermissionTo('reports.view_all')) {
             $query->where('user_id', Auth::id());
         }
 
@@ -554,7 +589,7 @@ class ReportGenerationController extends Controller
     {
         $reportRun = ReportRun::find($id);
 
-        if (!$reportRun) {
+        if (! $reportRun) {
             return response()->json([
                 'success' => false,
                 'error' => 'Report not found',
@@ -571,7 +606,7 @@ class ReportGenerationController extends Controller
         }
 
         // Only allow deleting own reports or with permission
-        if ($reportRun->user_id !== Auth::id() && !Auth::user()?->hasPermissionTo('reports.delete_all')) {
+        if ($reportRun->user_id !== Auth::id() && ! Auth::user()?->hasPermissionTo('reports.delete_all')) {
             return response()->json([
                 'success' => false,
                 'error' => 'Unauthorized',
@@ -615,30 +650,30 @@ class ReportGenerationController extends Controller
                     \Log::info("Preview: Cleared cache for branding {$brandingId} due to refresh=1.");
                 }
                 $branding = $brandingCache->getBranding($brandingId, $forceRefresh);
-                if (!$branding) {
+                if (! $branding) {
                     \Log::warning("Preview: Branding {$brandingId} not found");
                 } else {
                     \Log::debug("Preview: Branding loaded for {$brandingId}");
-                    \Log::debug("  - primary_logo_uri: " . (isset($branding['primary_logo_uri']) && !empty($branding['primary_logo_uri']) ? "exists (" . strlen($branding['primary_logo_uri']) . " chars)" : "null"));
-                    \Log::debug("  - secondary_logo_uri: " . (isset($branding['secondary_logo_uri']) && !empty($branding['secondary_logo_uri']) ? "exists (" . strlen($branding['secondary_logo_uri']) . " chars)" : "null"));
-                    \Log::debug("  - ministry_logo_uri: " . (isset($branding['ministry_logo_uri']) && !empty($branding['ministry_logo_uri']) ? "exists (" . strlen($branding['ministry_logo_uri']) . " chars)" : "null"));
-                    \Log::debug("  - show_primary_logo: " . (isset($branding['show_primary_logo']) ? ($branding['show_primary_logo'] ? 'true' : 'false') : 'not set'));
-                    \Log::debug("  - show_secondary_logo: " . (isset($branding['show_secondary_logo']) ? ($branding['show_secondary_logo'] ? 'true' : 'false') : 'not set'));
-                    \Log::debug("  - show_ministry_logo: " . (isset($branding['show_ministry_logo']) ? ($branding['show_ministry_logo'] ? 'true' : 'false') : 'not set'));
-                    \Log::debug("  - report_logo_selection: " . (isset($branding['report_logo_selection']) ? $branding['report_logo_selection'] : 'not set'));
-                    \Log::debug("  - primary_color: " . (isset($branding['primary_color']) ? $branding['primary_color'] : 'not set'));
-                    \Log::debug("  - secondary_color: " . (isset($branding['secondary_color']) ? $branding['secondary_color'] : 'not set'));
-                    \Log::debug("  - accent_color: " . (isset($branding['accent_color']) ? $branding['accent_color'] : 'not set'));
-                    \Log::debug("  - font_family: " . (isset($branding['font_family']) ? $branding['font_family'] : 'not set'));
-                    \Log::debug("  - report_font_size: " . (isset($branding['report_font_size']) ? $branding['report_font_size'] : 'not set'));
-                    \Log::debug("  - primary_color: " . (isset($branding['primary_color']) ? $branding['primary_color'] : 'not set'));
-                    \Log::debug("  - secondary_color: " . (isset($branding['secondary_color']) ? $branding['secondary_color'] : 'not set'));
-                    \Log::debug("  - accent_color: " . (isset($branding['accent_color']) ? $branding['accent_color'] : 'not set'));
+                    \Log::debug('  - primary_logo_uri: '.(isset($branding['primary_logo_uri']) && ! empty($branding['primary_logo_uri']) ? 'exists ('.strlen($branding['primary_logo_uri']).' chars)' : 'null'));
+                    \Log::debug('  - secondary_logo_uri: '.(isset($branding['secondary_logo_uri']) && ! empty($branding['secondary_logo_uri']) ? 'exists ('.strlen($branding['secondary_logo_uri']).' chars)' : 'null'));
+                    \Log::debug('  - ministry_logo_uri: '.(isset($branding['ministry_logo_uri']) && ! empty($branding['ministry_logo_uri']) ? 'exists ('.strlen($branding['ministry_logo_uri']).' chars)' : 'null'));
+                    \Log::debug('  - show_primary_logo: '.(isset($branding['show_primary_logo']) ? ($branding['show_primary_logo'] ? 'true' : 'false') : 'not set'));
+                    \Log::debug('  - show_secondary_logo: '.(isset($branding['show_secondary_logo']) ? ($branding['show_secondary_logo'] ? 'true' : 'false') : 'not set'));
+                    \Log::debug('  - show_ministry_logo: '.(isset($branding['show_ministry_logo']) ? ($branding['show_ministry_logo'] ? 'true' : 'false') : 'not set'));
+                    \Log::debug('  - report_logo_selection: '.(isset($branding['report_logo_selection']) ? $branding['report_logo_selection'] : 'not set'));
+                    \Log::debug('  - primary_color: '.(isset($branding['primary_color']) ? $branding['primary_color'] : 'not set'));
+                    \Log::debug('  - secondary_color: '.(isset($branding['secondary_color']) ? $branding['secondary_color'] : 'not set'));
+                    \Log::debug('  - accent_color: '.(isset($branding['accent_color']) ? $branding['accent_color'] : 'not set'));
+                    \Log::debug('  - font_family: '.(isset($branding['font_family']) ? $branding['font_family'] : 'not set'));
+                    \Log::debug('  - report_font_size: '.(isset($branding['report_font_size']) ? $branding['report_font_size'] : 'not set'));
+                    \Log::debug('  - primary_color: '.(isset($branding['primary_color']) ? $branding['primary_color'] : 'not set'));
+                    \Log::debug('  - secondary_color: '.(isset($branding['secondary_color']) ? $branding['secondary_color'] : 'not set'));
+                    \Log::debug('  - accent_color: '.(isset($branding['accent_color']) ? $branding['accent_color'] : 'not set'));
                 }
             } catch (\Exception $e) {
                 // If branding not found, use defaults
-                \Log::error("Preview: Could not load branding {$brandingId}: " . $e->getMessage());
-                \Log::error("Stack trace: " . $e->getTraceAsString());
+                \Log::error("Preview: Could not load branding {$brandingId}: ".$e->getMessage());
+                \Log::error('Stack trace: '.$e->getTraceAsString());
             }
         }
 
@@ -673,9 +708,9 @@ class ReportGenerationController extends Controller
                 ->where('is_default', true)
                 ->whereNull('deleted_at')
                 ->first();
-            
+
             // If no general_report default, try any default template for this school
-            if (!$reportTemplate) {
+            if (! $reportTemplate) {
                 $reportTemplate = \App\Models\ReportTemplate::with('watermark')
                     ->where('school_id', $schoolId)
                     ->where('is_active', true)
@@ -683,9 +718,9 @@ class ReportGenerationController extends Controller
                     ->whereNull('deleted_at')
                     ->first();
             }
-            
+
             // If still no default, try any active template for general_report
-            if (!$reportTemplate) {
+            if (! $reportTemplate) {
                 $reportTemplate = \App\Models\ReportTemplate::with('watermark')
                     ->where('school_id', $schoolId)
                     ->where('template_type', 'general_report')
@@ -731,7 +766,7 @@ class ReportGenerationController extends Controller
             if ($reportTemplate->show_ministry_logo !== null) {
                 $layout['show_ministry_logo'] = $reportTemplate->show_ministry_logo;
             }
-            
+
             // Override logo positions if provided by template
             if ($reportTemplate->primary_logo_position !== null) {
                 $layout['primary_logo_position'] = $reportTemplate->primary_logo_position;
@@ -763,18 +798,18 @@ class ReportGenerationController extends Controller
         // Load watermark: Use template's watermark if set, otherwise use branding's default watermark
         $watermark = null;
         $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
-        
+
         // Check if template explicitly has no watermark (watermark_id is sentinel UUID)
         $hasNoWatermark = $reportTemplate && $reportTemplate->watermark_id === $noWatermarkSentinel;
-        
+
         // First, check if report template has a specific watermark assigned (and it's not sentinel UUID)
-        if ($reportTemplate && $reportTemplate->watermark_id && !$hasNoWatermark) {
+        if ($reportTemplate && $reportTemplate->watermark_id && ! $hasNoWatermark) {
             try {
                 $templateWatermark = \App\Models\BrandingWatermark::where('id', $reportTemplate->watermark_id)
                     ->where('is_active', true)
                     ->whereNull('deleted_at')
                     ->first();
-                
+
                 if ($templateWatermark) {
                     $watermark = $templateWatermark->toArray();
                     // Add image data URI if it's an image watermark
@@ -788,22 +823,22 @@ class ReportGenerationController extends Controller
                     ]);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Preview: Could not load template watermark: " . $e->getMessage());
+                \Log::warning('Preview: Could not load template watermark: '.$e->getMessage());
             }
         }
-        
+
         // If template explicitly has no watermark, don't load any watermark
         if ($hasNoWatermark) {
-            \Log::debug("Preview: Template explicitly has no watermark set");
+            \Log::debug('Preview: Template explicitly has no watermark set');
             $watermark = null;
         }
         // If no template watermark and not explicitly disabled, fall back to branding's default watermark
-        elseif (!$watermark && $brandingId) {
+        elseif (! $watermark && $brandingId) {
             try {
                 $brandingCache = app(\App\Services\Reports\BrandingCacheService::class);
                 // Get default watermark for this branding (null report_key = default watermark)
                 $watermark = $brandingCache->getWatermark($brandingId, null);
-                
+
                 if ($watermark) {
                     \Log::debug("Preview: Using branding's default watermark", [
                         'branding_id' => $brandingId,
@@ -814,7 +849,7 @@ class ReportGenerationController extends Controller
                     \Log::debug("Preview: No default watermark found for branding {$brandingId}");
                 }
             } catch (\Exception $e) {
-                \Log::warning("Preview: Could not load branding watermark: " . $e->getMessage());
+                \Log::warning('Preview: Could not load branding watermark: '.$e->getMessage());
             }
         }
 
@@ -829,48 +864,48 @@ class ReportGenerationController extends Controller
             'SCHOOL_EMAIL' => ($branding && isset($branding['school_email'])) ? $branding['school_email'] : 'info@school.edu',
             'SCHOOL_WEBSITE' => ($branding && isset($branding['school_website'])) ? $branding['school_website'] : 'www.school.edu',
             // CRITICAL: Always use colors from branding, with fallback defaults
-            'PRIMARY_COLOR' => ($branding && !empty($branding['primary_color'])) ? $branding['primary_color'] : '#0b0b56',
-            'SECONDARY_COLOR' => ($branding && !empty($branding['secondary_color'])) ? $branding['secondary_color'] : '#0056b3',
-            'ACCENT_COLOR' => ($branding && !empty($branding['accent_color'])) ? $branding['accent_color'] : '#ff6b35',
-            'FONT_FAMILY' => ($branding && isset($branding['font_family']) && !empty(trim($branding['font_family']))) ? trim($branding['font_family']) : 'Bahij Nassim',
+            'PRIMARY_COLOR' => ($branding && ! empty($branding['primary_color'])) ? $branding['primary_color'] : '#0b0b56',
+            'SECONDARY_COLOR' => ($branding && ! empty($branding['secondary_color'])) ? $branding['secondary_color'] : '#0056b3',
+            'ACCENT_COLOR' => ($branding && ! empty($branding['accent_color'])) ? $branding['accent_color'] : '#ff6b35',
+            'FONT_FAMILY' => ($branding && isset($branding['font_family']) && ! empty(trim($branding['font_family']))) ? trim($branding['font_family']) : 'Bahij Nassim',
             // CRITICAL: Use template font size from layout first, then branding fallback
-            'FONT_SIZE' => $layout['font_size'] ?? (($branding && isset($branding['report_font_size']) && !empty(trim($branding['report_font_size']))) ? trim($branding['report_font_size']) : '12px'),
-            
+            'FONT_SIZE' => $layout['font_size'] ?? (($branding && isset($branding['report_font_size']) && ! empty(trim($branding['report_font_size']))) ? trim($branding['report_font_size']) : '12px'),
+
             // Debug: Log what we're passing to template
             // Note: Remove this in production if not needed
 
             // Logos (use real logos from branding if available)
-            'PRIMARY_LOGO_URI' => ($branding && isset($branding['primary_logo_uri']) && !empty($branding['primary_logo_uri'])) 
-                ? $branding['primary_logo_uri'] 
+            'PRIMARY_LOGO_URI' => ($branding && isset($branding['primary_logo_uri']) && ! empty($branding['primary_logo_uri']))
+                ? $branding['primary_logo_uri']
                 : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjMGIwYjU2Ii8+PHRleHQgeD0iNTAwJSIgeT0iNTAlIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxPR088L3RleHQ+PC9zdmc+',
-            'SECONDARY_LOGO_URI' => ($branding && isset($branding['secondary_logo_uri']) && !empty($branding['secondary_logo_uri'])) 
-                ? $branding['secondary_logo_uri'] 
+            'SECONDARY_LOGO_URI' => ($branding && isset($branding['secondary_logo_uri']) && ! empty($branding['secondary_logo_uri']))
+                ? $branding['secondary_logo_uri']
                 : null,
-            'MINISTRY_LOGO_URI' => ($branding && isset($branding['ministry_logo_uri']) && !empty($branding['ministry_logo_uri'])) 
-                ? $branding['ministry_logo_uri'] 
+            'MINISTRY_LOGO_URI' => ($branding && isset($branding['ministry_logo_uri']) && ! empty($branding['ministry_logo_uri']))
+                ? $branding['ministry_logo_uri']
                 : null,
             // Use template logo settings first, then branding fallback
-            'show_primary_logo' => $layout['show_primary_logo'] ?? (($branding && isset($branding['show_primary_logo'])) 
-                ? (bool)$branding['show_primary_logo'] 
+            'show_primary_logo' => $layout['show_primary_logo'] ?? (($branding && isset($branding['show_primary_logo']))
+                ? (bool) $branding['show_primary_logo']
                 : true),
-            'show_secondary_logo' => $layout['show_secondary_logo'] ?? (($branding && isset($branding['show_secondary_logo'])) 
-                ? (bool)$branding['show_secondary_logo'] 
+            'show_secondary_logo' => $layout['show_secondary_logo'] ?? (($branding && isset($branding['show_secondary_logo']))
+                ? (bool) $branding['show_secondary_logo']
                 : false),
-            'show_ministry_logo' => $layout['show_ministry_logo'] ?? (($branding && isset($branding['show_ministry_logo'])) 
-                ? (bool)$branding['show_ministry_logo'] 
+            'show_ministry_logo' => $layout['show_ministry_logo'] ?? (($branding && isset($branding['show_ministry_logo']))
+                ? (bool) $branding['show_ministry_logo']
                 : false),
-            'primary_logo_position' => ($branding && isset($branding['primary_logo_position'])) 
-                ? $branding['primary_logo_position'] 
+            'primary_logo_position' => ($branding && isset($branding['primary_logo_position']))
+                ? $branding['primary_logo_position']
                 : 'left',
-            'secondary_logo_position' => ($branding && isset($branding['secondary_logo_position'])) 
-                ? $branding['secondary_logo_position'] 
+            'secondary_logo_position' => ($branding && isset($branding['secondary_logo_position']))
+                ? $branding['secondary_logo_position']
                 : 'right',
-            'ministry_logo_position' => ($branding && isset($branding['ministry_logo_position'])) 
-                ? $branding['ministry_logo_position'] 
+            'ministry_logo_position' => ($branding && isset($branding['ministry_logo_position']))
+                ? $branding['ministry_logo_position']
                 : 'right',
             // Header/footer text from template (overrides branding)
-            'header_text' => $layout['header_text'] ?? (($branding && isset($branding['header_text']) && !empty($branding['header_text'])) 
-                ? $branding['header_text'] 
+            'header_text' => $layout['header_text'] ?? (($branding && isset($branding['header_text']) && ! empty($branding['header_text']))
+                ? $branding['header_text']
                 : null),
             'header_text_position' => $layout['header_text_position'] ?? 'below_school_name',
             'footer_text' => $layout['footer_text'] ?? null,
@@ -888,11 +923,11 @@ class ReportGenerationController extends Controller
             'footer_html' => $layout['footer_html'] ?? null,
             'extra_css' => $layout['extra_css'] ?? null,
             // Report settings - CRITICAL: Use template settings from layout first, then branding fallback
-            'table_alternating_colors' => $layout['table_alternating_colors'] ?? (($branding && isset($branding['table_alternating_colors'])) ? (bool)$branding['table_alternating_colors'] : true),
+            'table_alternating_colors' => $layout['table_alternating_colors'] ?? (($branding && isset($branding['table_alternating_colors'])) ? (bool) $branding['table_alternating_colors'] : true),
 
             // Watermark (from branding)
             'WATERMARK' => $watermark,
-            
+
             // Report content
             'TABLE_TITLE' => $request->get('title', 'Sample Report Title'),
             'template_name' => $templateName,
@@ -930,28 +965,28 @@ class ReportGenerationController extends Controller
         ];
 
         // Debug: Log what's being passed to template
-        \Log::debug("Preview template context:");
-        \Log::debug("  - PRIMARY_LOGO_URI: " . (!empty($context['PRIMARY_LOGO_URI']) ? "exists (" . strlen($context['PRIMARY_LOGO_URI']) . " chars, starts with: " . substr($context['PRIMARY_LOGO_URI'], 0, 50) . "...)" : "null/empty"));
-        \Log::debug("  - SECONDARY_LOGO_URI: " . (!empty($context['SECONDARY_LOGO_URI']) ? "exists (" . strlen($context['SECONDARY_LOGO_URI']) . " chars)" : "null/empty"));
-        \Log::debug("  - MINISTRY_LOGO_URI: " . (!empty($context['MINISTRY_LOGO_URI']) ? "exists (" . strlen($context['MINISTRY_LOGO_URI']) . " chars)" : "null/empty"));
-        \Log::debug("  - show_primary_logo: " . ($context['show_primary_logo'] ? 'true' : 'false'));
-        \Log::debug("  - show_secondary_logo: " . ($context['show_secondary_logo'] ? 'true' : 'false'));
-        \Log::debug("  - show_ministry_logo: " . ($context['show_ministry_logo'] ? 'true' : 'false'));
-        
+        \Log::debug('Preview template context:');
+        \Log::debug('  - PRIMARY_LOGO_URI: '.(! empty($context['PRIMARY_LOGO_URI']) ? 'exists ('.strlen($context['PRIMARY_LOGO_URI']).' chars, starts with: '.substr($context['PRIMARY_LOGO_URI'], 0, 50).'...)' : 'null/empty'));
+        \Log::debug('  - SECONDARY_LOGO_URI: '.(! empty($context['SECONDARY_LOGO_URI']) ? 'exists ('.strlen($context['SECONDARY_LOGO_URI']).' chars)' : 'null/empty'));
+        \Log::debug('  - MINISTRY_LOGO_URI: '.(! empty($context['MINISTRY_LOGO_URI']) ? 'exists ('.strlen($context['MINISTRY_LOGO_URI']).' chars)' : 'null/empty'));
+        \Log::debug('  - show_primary_logo: '.($context['show_primary_logo'] ? 'true' : 'false'));
+        \Log::debug('  - show_secondary_logo: '.($context['show_secondary_logo'] ? 'true' : 'false'));
+        \Log::debug('  - show_ministry_logo: '.($context['show_ministry_logo'] ? 'true' : 'false'));
+
         // Additional validation: Check if PRIMARY_LOGO_URI is a valid data URI
-        if (!empty($context['PRIMARY_LOGO_URI'])) {
+        if (! empty($context['PRIMARY_LOGO_URI'])) {
             $uri = $context['PRIMARY_LOGO_URI'];
             if (strpos($uri, 'data:') === 0) {
-                \Log::debug("  - PRIMARY_LOGO_URI is a valid data URI");
+                \Log::debug('  - PRIMARY_LOGO_URI is a valid data URI');
                 // Extract base64 part
                 $parts = explode(',', $uri, 2);
                 if (count($parts) === 2) {
                     $base64Part = $parts[1];
                     $testDecode = @base64_decode($base64Part, true);
                     if ($testDecode !== false) {
-                        \Log::debug("  - PRIMARY_LOGO_URI base64 decodes successfully, decoded size: " . strlen($testDecode) . " bytes");
+                        \Log::debug('  - PRIMARY_LOGO_URI base64 decodes successfully, decoded size: '.strlen($testDecode).' bytes');
                     } else {
-                        \Log::error("  - PRIMARY_LOGO_URI base64 FAILED to decode!");
+                        \Log::error('  - PRIMARY_LOGO_URI base64 FAILED to decode!');
                     }
                 }
             } else {
@@ -960,17 +995,17 @@ class ReportGenerationController extends Controller
         }
 
         // Debug: Log what we're passing to template
-        \Log::debug("Preview template context values:");
-        \Log::debug("  - FONT_FAMILY: " . ($context['FONT_FAMILY'] ?? 'not set'));
-        \Log::debug("  - FONT_SIZE: " . ($context['FONT_SIZE'] ?? 'not set'));
-        \Log::debug("  - PRIMARY_COLOR: " . ($context['PRIMARY_COLOR'] ?? 'not set'));
-        \Log::debug("  - SECONDARY_COLOR: " . ($context['SECONDARY_COLOR'] ?? 'not set'));
-        \Log::debug("  - ACCENT_COLOR: " . ($context['ACCENT_COLOR'] ?? 'not set'));
-        \Log::debug("  - WATERMARK: " . (!empty($context['WATERMARK']) ? "exists (type: " . ($context['WATERMARK']['wm_type'] ?? 'unknown') . ", active: " . ($context['WATERMARK']['is_active'] ?? false ? 'true' : 'false') . ")" : "null/empty"));
+        \Log::debug('Preview template context values:');
+        \Log::debug('  - FONT_FAMILY: '.($context['FONT_FAMILY'] ?? 'not set'));
+        \Log::debug('  - FONT_SIZE: '.($context['FONT_SIZE'] ?? 'not set'));
+        \Log::debug('  - PRIMARY_COLOR: '.($context['PRIMARY_COLOR'] ?? 'not set'));
+        \Log::debug('  - SECONDARY_COLOR: '.($context['SECONDARY_COLOR'] ?? 'not set'));
+        \Log::debug('  - ACCENT_COLOR: '.($context['ACCENT_COLOR'] ?? 'not set'));
+        \Log::debug('  - WATERMARK: '.(! empty($context['WATERMARK']) ? 'exists (type: '.($context['WATERMARK']['wm_type'] ?? 'unknown').', active: '.($context['WATERMARK']['is_active'] ?? false ? 'true' : 'false').')' : 'null/empty'));
 
         // Render the template as HTML
         $viewName = "reports.{$templateName}";
-        if (!\Illuminate\Support\Facades\View::exists($viewName)) {
+        if (! \Illuminate\Support\Facades\View::exists($viewName)) {
             $viewName = 'reports.table_a4_portrait';
         }
 

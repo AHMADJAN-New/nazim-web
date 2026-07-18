@@ -297,6 +297,7 @@ export interface StudentWithNumbers {
   student_id: string | null;
   student_admission_id: string | null;
   student_code: string | null;
+  card_number?: string | null;
   full_name: string;
   father_name: string | null;
   class_name: string;
@@ -329,6 +330,7 @@ export interface NumberAssignmentPreviewItem {
   student_id: string | null;
   student_name: string;
   class_name: string;
+  section?: string | null;
   current_roll_number?: string | null;
   new_roll_number?: string;
   current_secret_number?: string | null;
@@ -337,10 +339,19 @@ export interface NumberAssignmentPreviewItem {
   has_collision: boolean;
 }
 
+export interface NumberAssignmentClassRange {
+  class_name: string;
+  section: string;
+  start: string;
+  end: string;
+  count: number;
+}
+
 export interface NumberAssignmentPreviewResponse {
   total: number;
   will_override_count: number;
   items: NumberAssignmentPreviewItem[];
+  class_ranges?: NumberAssignmentClassRange[];
 }
 
 export interface NumberAssignmentConfirmItem {
@@ -362,6 +373,7 @@ export interface RollNumberReportStudent {
   exam_roll_number: string;
   exam_secret_number?: string | null;
   student_code: string | null;
+  card_number?: string | null;
   full_name: string;
   father_name: string | null;
   class_name: string;
@@ -383,11 +395,16 @@ export interface RollNumberReportResponse {
 export interface RollSlipsHtmlResponse {
   html: string;
   total_slips: number;
+  is_preview?: boolean;
+  preview_count?: number;
 }
 
 export interface SecretLabelsHtmlResponse {
   html: string;
   total_labels: number;
+  is_preview?: boolean;
+  preview_count?: number;
+  layout?: string;
 }
 
 export interface SecretNumberLookupResponse {

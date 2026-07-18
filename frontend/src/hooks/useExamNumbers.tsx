@@ -329,17 +329,21 @@ export const useRollNumberReport = (examId?: string, examClassId?: string) => {
 export const useRollSlipsHtml = (
   examId?: string,
   examClassId?: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean; preview?: boolean }
 ) => {
   const { user, profile } = useAuth();
+  const preview = options?.preview ?? false;
 
   return useQuery<RollSlipsHtmlResponse | null>({
-    queryKey: ['roll-slips-html', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: ['roll-slips-html', examId, examClassId, preview, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
-      const params: { exam_class_id?: string } = {};
+      const params: { exam_class_id?: string; preview?: boolean } = {};
       if (examClassId) {
         params.exam_class_id = examClassId;
+      }
+      if (preview) {
+        params.preview = true;
       }
       try {
         const response = await examsApi.rollSlipsHtml(examId, params);
@@ -363,20 +367,27 @@ export const useSecretLabelsHtml = (
   examId?: string,
   examClassId?: string,
   subjectId?: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean; preview?: boolean; layout?: 'single' | 'grid' }
 ) => {
   const { user, profile } = useAuth();
+  const preview = options?.preview ?? false;
+  const layout = options?.layout ?? 'single';
 
   return useQuery<SecretLabelsHtmlResponse | null>({
-    queryKey: ['secret-labels-html', examId, examClassId, subjectId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: ['secret-labels-html', examId, examClassId, subjectId, preview, layout, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
-      const params: { exam_class_id?: string; subject_id?: string } = {};
+      const params: { exam_class_id?: string; subject_id?: string; preview?: boolean; layout?: string } = {
+        layout,
+      };
       if (examClassId) {
         params.exam_class_id = examClassId;
       }
       if (subjectId) {
         params.subject_id = subjectId;
+      }
+      if (preview) {
+        params.preview = true;
       }
       try {
         const response = await examsApi.secretLabelsHtml(examId, params);

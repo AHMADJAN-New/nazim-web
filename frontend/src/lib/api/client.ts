@@ -3663,12 +3663,32 @@ export const examsApi = {
     return apiClient.get(`/exams/${examId}/reports/roll-numbers`, params);
   },
 
-  rollSlipsHtml: async (examId: string, params?: { exam_class_id?: string }) => {
+  rollSlipsHtml: async (examId: string, params?: { exam_class_id?: string; preview?: boolean }) => {
     return apiClient.get(`/exams/${examId}/reports/roll-slips`, params);
   },
 
-  secretLabelsHtml: async (examId: string, params?: { exam_class_id?: string; subject_id?: string }) => {
+  rollSlipsPdf: async (examId: string, params?: { exam_class_id?: string }) => {
+    return apiClient.requestFile(`/exams/${examId}/reports/roll-slips`, {
+      method: 'GET',
+      params: { ...params, format: 'pdf' },
+    });
+  },
+
+  secretLabelsHtml: async (
+    examId: string,
+    params?: { exam_class_id?: string; subject_id?: string; preview?: boolean; layout?: string }
+  ) => {
     return apiClient.get(`/exams/${examId}/reports/secret-labels`, params);
+  },
+
+  secretLabelsPdf: async (
+    examId: string,
+    params?: { exam_class_id?: string; subject_id?: string; layout?: string }
+  ) => {
+    return apiClient.requestFile(`/exams/${examId}/reports/secret-labels`, {
+      method: 'GET',
+      params: { ...params, format: 'pdf' },
+    });
   },
 
   // New Report Methods

@@ -5,6 +5,7 @@ namespace App\Services\Reports;
 use App\Models\ExamSeatingMap;
 use App\Models\ReportRun;
 use App\Models\ReportTemplate;
+use App\Services\Exams\ExamNumberReportService;
 use App\Services\ExamSeating\ExamSeatingMapService;
 use App\Services\StudentHistoryService;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +23,7 @@ class ReportService
         private ExcelReportService $excelService,
         private DateConversionService $dateService,
         private StudentHistoryService $historyService,
+        private ExamNumberReportService $examNumberReportService,
     ) {}
 
     /**
@@ -64,6 +66,39 @@ class ReportService
         try {
             // Mark as processing
             $reportRun->markProcessing();
+
+            // Standalone exam number PDFs (QR-heavy) — skip branded table pipeline
+            if (ExamNumberReportService::isExamNumberReportKey($config->reportKey)) {
+                $schoolId = $config->brandingId ?? $reportRun->branding_id;
+                $parameters = $config->parameters ?? [];
+                if (! empty($parameters['school_id']) && is_string($parameters['school_id'])) {
+                    $schoolId = $parameters['school_id'];
+                }
+                if (! $organizationId || ! $schoolId) {
+                    throw new \Exception('Organization and school are required for exam number reports');
+                }
+
+                $result = $this->examNumberReportService->generateStoredZip(
+                    $config->reportKey,
+                    $organizationId,
+                    $schoolId,
+                    $parameters,
+                    function ($progress, $message) use ($reportRun) {
+                        $reportRun->updateProgress((float) $progress, (string) $message);
+                    }
+                );
+
+                $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+                $reportRun->update(['row_count' => $result['row_count']]);
+                $reportRun->markCompleted(
+                    outputPath: $result['path'],
+                    fileName: $result['filename'],
+                    fileSize: $result['size'],
+                    durationMs: $durationMs
+                );
+
+                return $reportRun;
+            }
 
             // Load branding data
             $branding = $this->loadBranding($config);

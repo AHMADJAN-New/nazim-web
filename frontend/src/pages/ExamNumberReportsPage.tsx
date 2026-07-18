@@ -1,11 +1,13 @@
 import {
-  ArrowLeft, Printer, FileText, Hash, KeyRound,
-  Search, List, Tag, AlertCircle, Eye, EyeOff
+  ArrowLeft, FileDown, FileText, Hash, KeyRound,
+  Search, List, Tag, AlertCircle, Eye, EyeOff,
+  ArrowUpDown, ArrowUp, ArrowDown, Loader2,
 } from 'lucide-react';
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +33,7 @@ import { useRollNumberReport,
 } from '@/hooks/useExamNumbers';
 import { useExam, useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useServerReport } from '@/hooks/useServerReport';
 import { showToast } from '@/lib/toast';
 import type { RollNumberReportStudent } from '@/types/domain/exam';
 
@@ -108,22 +111,38 @@ export function ExamNumberReportsPage() {
   const [activeTab, setActiveTab] = useState<string>('roll-list');
   const [showPrintPreview, setShowPrintPreview] = useState<boolean>(false);
   const [printType, setPrintType] = useState<'roll-slips' | 'secret-labels'>('roll-slips');
-  const printFrameRef = useRef<HTMLIFrameElement>(null);
+  const [secretLabelLayout, setSecretLabelLayout] = useState<'single' | 'grid'>('single');
+  const [showReportProgress, setShowReportProgress] = useState<boolean>(false);
+  const {
+    generateReport,
+    isGenerating: isGeneratingPdf,
+    progress: reportProgress,
+    status: reportStatus,
+    fileName: reportFileName,
+    error: reportError,
+    downloadReport,
+    reset: resetReport,
+  } = useServerReport();
 
   // Data hooks
   const { data: exam, isLoading: examLoading } = useExam(examId);
   const { data: examClasses } = useExamClasses(examId);
   const { data: reportData, isLoading: reportLoading } = useRollNumberReport(examId, selectedClassId);
+  // Lightweight sample only — full document is generated when the user clicks Print
   const { data: rollSlipsHtml, isLoading: rollSlipsLoading, error: rollSlipsError } = useRollSlipsHtml(
     examId,
     selectedClassId,
-    { enabled: showPrintPreview && printType === 'roll-slips' }
+    { enabled: showPrintPreview && printType === 'roll-slips', preview: true }
   );
   const { data: secretLabelsHtml, isLoading: secretLabelsLoading, error: secretLabelsError } = useSecretLabelsHtml(
     examId,
     selectedClassId,
     undefined,
-    { enabled: showPrintPreview && printType === 'secret-labels' }
+    {
+      enabled: showPrintPreview && printType === 'secret-labels',
+      preview: true,
+      layout: secretLabelLayout,
+    }
   );
 
   // Permissions
@@ -133,6 +152,8 @@ export function ExamNumberReportsPage() {
 
   // State for showing/hiding secret numbers
   const [showSecretNumbers, setShowSecretNumbers] = useState<boolean>(false);
+  const [sortField, setSortField] = useState<'rollNumber' | 'secretNumber'>('rollNumber');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Calculate summary from students data
   const summary = useMemo(() => {
@@ -189,20 +210,86 @@ export function ExamNumberReportsPage() {
     return Array.from(classMap.values());
   }, [reportData?.students]);
 
-  // Filtered students based on search
+  const compareOptionalNumeric = useCallback((a: string | null | undefined, b: string | null | undefined) => {
+    const aEmpty = a == null || a === '';
+    const bEmpty = b == null || b === '';
+    if (aEmpty && bEmpty) return 0;
+    if (aEmpty) return 1;
+    if (bEmpty) return -1;
+    if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+      return Number(a) - Number(b);
+    }
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  }, []);
+
+  const handleSort = useCallback((field: 'rollNumber' | 'secretNumber') => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  }, [sortField]);
+
+  // Filtered + sorted students
   const filteredStudents = useMemo(() => {
     if (!reportData?.students) return [];
-    if (!searchTerm) return reportData.students;
 
-    const term = searchTerm.toLowerCase();
-    return reportData.students.filter(
-      (s) =>
-        s.fullName.toLowerCase().includes(term) ||
-        s.studentCode?.toLowerCase().includes(term) ||
-        s.examRollNumber?.toLowerCase().includes(term) ||
-        s.className.toLowerCase().includes(term)
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = term
+      ? reportData.students.filter(
+          (s) =>
+            s.fullName.toLowerCase().includes(term) ||
+            s.fatherName?.toLowerCase().includes(term) ||
+            s.studentCode?.toLowerCase().includes(term) ||
+            s.cardNumber?.toLowerCase().includes(term) ||
+            s.examRollNumber?.toLowerCase().includes(term) ||
+            s.examSecretNumber?.toLowerCase().includes(term) ||
+            s.className.toLowerCase().includes(term)
+        )
+      : [...reportData.students];
+
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    filtered.sort((a, b) => {
+      const primary =
+        sortField === 'rollNumber'
+          ? compareOptionalNumeric(a.examRollNumber, b.examRollNumber)
+          : compareOptionalNumeric(a.examSecretNumber, b.examSecretNumber);
+      if (primary !== 0) return primary * direction;
+      return a.fullName.localeCompare(b.fullName);
+    });
+
+    return filtered;
+  }, [reportData?.students, searchTerm, sortField, sortDirection, compareOptionalNumeric]);
+
+  const SortHeaderButton = ({
+    field,
+    children,
+  }: {
+    field: 'rollNumber' | 'secretNumber';
+    children: ReactNode;
+  }) => {
+    const isActive = sortField === field;
+    const direction = isActive ? sortDirection : null;
+
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 -ml-2 px-2 font-medium"
+        onClick={() => handleSort(field)}
+      >
+        {children}
+        {direction === 'asc' ? (
+          <ArrowUp className="h-3 w-3 ml-1" />
+        ) : direction === 'desc' ? (
+          <ArrowDown className="h-3 w-3 ml-1" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />
+        )}
+      </Button>
     );
-  }, [reportData?.students, searchTerm]);
+  };
 
   // Handle print
   const handlePrint = useCallback((type: 'roll-slips' | 'secret-labels') => {
@@ -218,33 +305,72 @@ export function ExamNumberReportsPage() {
     setShowPrintPreview(true);
   }, [summary.withRollNumber, summary.withSecretNumber, t]);
 
-  // Execute print using iframe
-  const executePrint = useCallback(() => {
-    const iframe = printFrameRef.current;
-    if (!iframe) return;
+  // Queue ZIP pack on the backend (GenerateReportJob) — one PDF per class/section(/subject)
+  const executeDownloadPdf = useCallback(async () => {
+    if (!examId || isGeneratingPdf) return;
 
-    const htmlContent = printType === 'roll-slips' ? rollSlipsHtml?.html : secretLabelsHtml?.html;
-    const totalItems = printType === 'roll-slips' ? rollSlipsHtml?.totalSlips : secretLabelsHtml?.totalLabels;
-    if (!htmlContent || !totalItems) return;
+    const isRollSlips = printType === 'roll-slips';
+    const title = isRollSlips
+      ? (t('exams.numberReports.printRollSlips') || 'Roll Slips')
+      : (t('exams.numberReports.printSecretLabels') || 'Secret Labels');
 
-    const doc = iframe.contentDocument;
-    if (!doc) return;
+    setShowReportProgress(true);
+    resetReport();
 
-    doc.open();
-    doc.write(htmlContent);
-    doc.close();
-
-    // Wait for content to load, then print
-    setTimeout(() => {
-      iframe.contentWindow?.print();
-    }, 500);
-  }, [printType, rollSlipsHtml, secretLabelsHtml]);
+    try {
+      await generateReport({
+        reportKey: isRollSlips ? 'exam_roll_slips' : 'exam_secret_labels',
+        reportType: 'pdf',
+        title: exam ? `${title} - ${exam.name}` : title,
+        brandingId: profile?.default_school_id ?? undefined,
+        templateName: isRollSlips ? 'roll-slips' : 'secret-labels',
+        async: true,
+        columns: [],
+        rows: [],
+        parameters: {
+          exam_id: examId,
+          ...(selectedClassId ? { exam_class_id: selectedClassId } : {}),
+          ...(!isRollSlips ? { layout: secretLabelLayout } : {}),
+          school_id: profile?.default_school_id,
+        },
+        onComplete: () => {
+          showToast.success('exams.numberReports.zipDownloaded');
+          void downloadReport();
+        },
+        onError: (error) => {
+          showToast.error(error || 'exams.numberReports.zipDownloadFailed');
+        },
+      });
+    } catch (error: unknown) {
+      if (import.meta.env.DEV) {
+        console.error('[ExamNumberReportsPage] ZIP queue failed:', error);
+      }
+      showToast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : 'exams.numberReports.zipDownloadFailed'
+      );
+    }
+  }, [
+    downloadReport,
+    exam,
+    examId,
+    generateReport,
+    isGeneratingPdf,
+    printType,
+    profile?.default_school_id,
+    resetReport,
+    secretLabelLayout,
+    selectedClassId,
+    t,
+  ]);
 
   const isRollSlipsPreview = printType === 'roll-slips';
   const previewLoading = isRollSlipsPreview ? rollSlipsLoading : secretLabelsLoading;
   const previewError = isRollSlipsPreview ? rollSlipsError : secretLabelsError;
   const previewHtml = isRollSlipsPreview ? rollSlipsHtml?.html : secretLabelsHtml?.html;
   const previewTotal = isRollSlipsPreview ? rollSlipsHtml?.totalSlips : secretLabelsHtml?.totalLabels;
+  const previewSampleCount = isRollSlipsPreview ? rollSlipsHtml?.previewCount : secretLabelsHtml?.previewCount;
   const hasPreviewContent = !!previewHtml && (
     (previewTotal ?? 0) > 0
     || previewHtml.includes('data-secret-number')
@@ -368,23 +494,23 @@ export function ExamNumberReportsPage() {
                       data={filteredStudents}
                       columns={[
                         { key: 'rollNumber', label: t('exams.rollNumbers.rollNumber') || 'Roll Number' },
-                        { key: 'studentCode', label: t('exams.studentCode') || 'Student Code' },
+                        ...(hasSecretNumberViewPermission ? [{ key: 'secretNumber', label: t('exams.secretNumbers.secretNumber') || 'Secret Number' }] : []),
                         { key: 'studentName', label: t('exams.studentName') || 'Name' },
                         { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
+                        { key: 'cardNumber', label: t('students.cardNumber') || 'Card Number' },
                         { key: 'className', label: t('search.class') || 'Class' },
                         { key: 'section', label: t('events.section') || 'Section' },
-                        ...(hasSecretNumberViewPermission ? [{ key: 'secretNumber', label: t('exams.secretNumbers.secretNumber') || 'Secret Number' }] : []),
                       ]}
                       reportKey="exam_roll_numbers"
                       title={`${t('exams.numberReports.title') || 'Exam Number Report'} - ${exam?.name || ''}`}
                       transformData={(data) => data.map((student: RollNumberReportStudent) => ({
                         rollNumber: student.examRollNumber || '-',
-                        studentCode: student.studentCode || '-',
+                        ...(hasSecretNumberViewPermission ? { secretNumber: student.examSecretNumber || '-' } : {}),
                         studentName: student.fullName || '-',
                         fatherName: student.fatherName || '-',
+                        cardNumber: student.cardNumber || '-',
                         className: student.className || '-',
                         section: student.section || '-',
-                        ...(hasSecretNumberViewPermission ? { secretNumber: student.examSecretNumber || '-' } : {}),
                       }))}
                       buildFiltersSummary={() => {
                         const parts: string[] = [];
@@ -465,18 +591,21 @@ export function ExamNumberReportsPage() {
             <TabsContent value="roll-list">
               <Card>
                 <CardContent className="pt-6">
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
-                        <TableHead>{t('exams.studentCode') || 'Student Code'}</TableHead>
-                        <TableHead>{t('exams.studentName') || 'Name'}</TableHead>
-                        <TableHead>{t('examReports.fatherName') || 'Father Name'}</TableHead>
-                        <TableHead>{t('search.class') || 'Class'}</TableHead>
+                        <TableHead>
+                          <SortHeaderButton field="rollNumber">
+                            {t('exams.rollNumbers.rollNumber') || 'Roll Number'}
+                          </SortHeaderButton>
+                        </TableHead>
                         {hasSecretNumberViewPermission && (
                           <TableHead>
-                            <div className="flex items-center gap-2">
-                              <span>{t('exams.secretNumbers.secretNumber') || 'Secret Number'}</span>
+                            <div className="flex items-center gap-1">
+                              <SortHeaderButton field="secretNumber">
+                                {t('exams.secretNumbers.secretNumber') || 'Secret Number'}
+                              </SortHeaderButton>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -493,18 +622,22 @@ export function ExamNumberReportsPage() {
                             </div>
                           </TableHead>
                         )}
+                        <TableHead>{t('exams.studentName') || 'Name'}</TableHead>
+                        <TableHead className="hidden md:table-cell">{t('examReports.fatherName') || 'Father Name'}</TableHead>
+                        <TableHead className="hidden md:table-cell">{t('students.cardNumber') || 'Card Number'}</TableHead>
+                        <TableHead className="hidden lg:table-cell">{t('search.class') || 'Class'}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredStudents.length === 0 ? (
                         <TableRow key="no-students">
-                          <TableCell colSpan={hasSecretNumberViewPermission ? 7 : 6} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={hasSecretNumberViewPermission ? 6 : 5} className="text-center py-8 text-muted-foreground">
                             {t('exams.numberReports.noStudents') || 'No students found'}
                           </TableCell>
                         </TableRow>
                       ) : (
                         filteredStudents.map((student: RollNumberReportStudent) => (
-                          <TableRow key={student.examStudentId || `student-${student.fullName}-${student.studentCode}`}>
+                          <TableRow key={student.examStudentId || `student-${student.fullName}-${student.cardNumber || student.studentCode}`}>
                             <TableCell className="font-mono">
                               {student.examRollNumber ? (
                                 <Badge variant="default">{student.examRollNumber}</Badge>
@@ -513,13 +646,6 @@ export function ExamNumberReportsPage() {
                                   {t('exams.rollNumbers.notAssigned') || 'Not assigned'}
                                 </Badge>
                               )}
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">{student.studentCode || '-'}</TableCell>
-                            <TableCell>{student.fullName}</TableCell>
-                            <TableCell>{student.fatherName || '-'}</TableCell>
-                            <TableCell>
-                              {student.className}
-                              {student.section && <span className="text-muted-foreground"> - {student.section}</span>}
                             </TableCell>
                             {hasSecretNumberViewPermission && (
                               <TableCell className="font-mono">
@@ -532,11 +658,31 @@ export function ExamNumberReportsPage() {
                                 )}
                               </TableCell>
                             )}
+                            <TableCell>
+                              <div className="flex flex-col md:hidden gap-1">
+                                <span>{student.fullName}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {student.fatherName || '-'}
+                                  {student.cardNumber ? ` · ${student.cardNumber}` : ''}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {student.className}{student.section && ` - ${student.section}`}
+                                </span>
+                              </div>
+                              <div className="hidden md:block">{student.fullName}</div>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">{student.fatherName || '-'}</TableCell>
+                            <TableCell className="hidden md:table-cell font-mono text-sm">{student.cardNumber || '-'}</TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              {student.className}
+                              {student.section && <span className="text-muted-foreground"> - {student.section}</span>}
+                            </TableCell>
                           </TableRow>
                         ))
                       )}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -687,9 +833,42 @@ export function ExamNumberReportsPage() {
                     : (t('exams.numberReports.secretLabelsPreview') || 'Secret Labels Preview')}
                 </DialogTitle>
                 <DialogDescription>
-                  {t('exams.numberReports.printPreviewDescription') || 'Preview before printing'}
+                  {previewTotal != null && previewSampleCount != null && previewSampleCount < previewTotal
+                    ? (t('exams.numberReports.printPreviewSampleDescription', {
+                        previewCount: previewSampleCount,
+                        total: previewTotal,
+                      }) || `Showing a sample of ${previewSampleCount} of ${previewTotal}. Click Print to generate the full document.`)
+                    : printType === 'secret-labels' && previewTotal != null
+                      ? (t('exams.numberReports.secretLabelsPreviewDescription', { count: previewTotal })
+                        || `${previewTotal} labels (one per subject for each student with a secret number)`)
+                      : (t('exams.numberReports.printPreviewDescription') || 'Preview before printing')}
                 </DialogDescription>
               </DialogHeader>
+
+              {printType === 'secret-labels' && (
+                <div className="shrink-0 flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Label className="text-sm whitespace-nowrap">
+                    {t('exams.numberReports.secretLabelLayout') || 'Label layout'}
+                  </Label>
+                  <Select
+                    value={secretLabelLayout}
+                    onValueChange={(v) => setSecretLabelLayout(v === 'grid' ? 'grid' : 'single')}
+                    disabled={isGeneratingPdf}
+                  >
+                    <SelectTrigger className="w-full sm:w-[320px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single">
+                        {t('exams.numberReports.secretLabelLayoutSingle') || 'Label printer — 1″ × 2″ (one label per page)'}
+                      </SelectItem>
+                      <SelectItem value="grid">
+                        {t('exams.numberReports.secretLabelLayoutGrid') || 'A4 sheet — 35 labels per page'}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="relative min-h-0 flex-1 overflow-hidden rounded-md border bg-muted/30">
                 {previewLoading ? (
@@ -744,25 +923,40 @@ export function ExamNumberReportsPage() {
               </div>
 
               <DialogFooter className="shrink-0">
-                <Button variant="outline" onClick={() => setShowPrintPreview(false)}>
+                <Button variant="outline" onClick={() => setShowPrintPreview(false)} disabled={isGeneratingPdf}>
                   {t('events.cancel') || 'Cancel'}
                 </Button>
-                <Button onClick={executePrint} disabled={previewLoading || !hasPreviewContent}>
-                  <Printer className="h-4 w-4 mr-2" />
-                  {t('events.print') || 'Print'}
+                <Button
+                  onClick={() => void executeDownloadPdf()}
+                  disabled={previewLoading || !hasPreviewContent || isGeneratingPdf}
+                >
+                  {isGeneratingPdf ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileDown className="h-4 w-4 mr-2" />
+                  )}
+                  {isGeneratingPdf
+                    ? (t('exams.numberReports.generatingZipShort') || 'Generating ZIP…')
+                    : (t('exams.numberReports.downloadZip') || 'Download ZIP')}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <ReportProgressDialog
+            open={showReportProgress}
+            onOpenChange={setShowReportProgress}
+            status={reportStatus}
+            progress={reportProgress}
+            fileName={reportFileName}
+            error={reportError}
+            onDownload={() => {
+              void downloadReport();
+            }}
+            onClose={resetReport}
+          />
         </>
       )}
-
-      {/* Hidden iframe for printing */}
-      <iframe
-        ref={printFrameRef}
-        style={{ position: 'absolute', left: '-9999px', width: '0', height: '0' }}
-        title="Print Frame"
-      />
     </div>
   );
 }

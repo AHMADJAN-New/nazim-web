@@ -1,8 +1,8 @@
 import {
   ArrowLeft, Wand2, Save, Search, AlertCircle, CheckCircle, Hash,
-  RefreshCw, Edit2, X
+  RefreshCw, Edit2, X, ArrowUpDown, ArrowUp, ArrowDown,
 } from 'lucide-react';
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import {
@@ -97,6 +97,8 @@ export function ExamRollNumbersPage() {
     currentValue: string | null;
   } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const [sortField, setSortField] = useState<'rollNumber' | 'secretNumber'>('rollNumber');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Data hooks
   const { data: exam, isLoading: examLoading } = useExam(examId);
@@ -123,20 +125,86 @@ export function ExamRollNumbersPage() {
     }
   }, [suggestedStart, startFrom]);
 
-  // Filtered students based on search
+  const compareOptionalNumeric = useCallback((a: string | null | undefined, b: string | null | undefined) => {
+    const aEmpty = a == null || a === '';
+    const bEmpty = b == null || b === '';
+    if (aEmpty && bEmpty) return 0;
+    if (aEmpty) return 1;
+    if (bEmpty) return -1;
+    if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+      return Number(a) - Number(b);
+    }
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  }, []);
+
+  const handleSort = useCallback((field: 'rollNumber' | 'secretNumber') => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  }, [sortField]);
+
+  // Filtered + sorted students
   const filteredStudents = useMemo(() => {
     if (!studentsData?.students) return [];
-    if (!searchTerm) return studentsData.students;
-    
-    const term = searchTerm.toLowerCase();
-    return studentsData.students.filter(
-      (s) =>
-        s.fullName.toLowerCase().includes(term) ||
-        s.studentCode?.toLowerCase().includes(term) ||
-        s.examRollNumber?.toLowerCase().includes(term) ||
-        s.className.toLowerCase().includes(term)
+
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = term
+      ? studentsData.students.filter(
+          (s) =>
+            s.fullName.toLowerCase().includes(term) ||
+            s.fatherName?.toLowerCase().includes(term) ||
+            s.studentCode?.toLowerCase().includes(term) ||
+            s.cardNumber?.toLowerCase().includes(term) ||
+            s.examRollNumber?.toLowerCase().includes(term) ||
+            s.examSecretNumber?.toLowerCase().includes(term) ||
+            s.className.toLowerCase().includes(term)
+        )
+      : [...studentsData.students];
+
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    filtered.sort((a, b) => {
+      const primary =
+        sortField === 'rollNumber'
+          ? compareOptionalNumeric(a.examRollNumber, b.examRollNumber)
+          : compareOptionalNumeric(a.examSecretNumber, b.examSecretNumber);
+      if (primary !== 0) return primary * direction;
+      return a.fullName.localeCompare(b.fullName);
+    });
+
+    return filtered;
+  }, [studentsData?.students, searchTerm, sortField, sortDirection, compareOptionalNumeric]);
+
+  const SortHeaderButton = ({
+    field,
+    children,
+  }: {
+    field: 'rollNumber' | 'secretNumber';
+    children: ReactNode;
+  }) => {
+    const isActive = sortField === field;
+    const direction = isActive ? sortDirection : null;
+
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 -ml-2 px-2 font-medium"
+        onClick={() => handleSort(field)}
+      >
+        {children}
+        {direction === 'asc' ? (
+          <ArrowUp className="h-3 w-3 ml-1" />
+        ) : direction === 'desc' ? (
+          <ArrowDown className="h-3 w-3 ml-1" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />
+        )}
+      </Button>
     );
-  }, [studentsData?.students, searchTerm]);
+  };
 
   // Handle preview
   const handlePreview = useCallback(async () => {
@@ -462,10 +530,19 @@ export function ExamRollNumbersPage() {
             <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t('exams.studentCode') || 'Student Code'}</TableHead>
+                <TableHead>
+                  <SortHeaderButton field="rollNumber">
+                    {t('exams.rollNumbers.rollNumber') || 'Roll Number'}
+                  </SortHeaderButton>
+                </TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  <SortHeaderButton field="secretNumber">
+                    {t('exams.secretNumbers.secretNumber') || 'Secret Number'}
+                  </SortHeaderButton>
+                </TableHead>
                 <TableHead>{t('exams.studentName') || 'Name'}</TableHead>
                 <TableHead className="hidden md:table-cell">{t('examReports.fatherName') || 'Father Name'}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('students.cardNumber') || 'Card Number'}</TableHead>
                 <TableHead className="hidden lg:table-cell">{t('search.class') || 'Class'}</TableHead>
                 {hasAssignPermission && <TableHead className="w-24">{t('events.actions') || 'Actions'}</TableHead>}
               </TableRow>
@@ -473,7 +550,7 @@ export function ExamRollNumbersPage() {
             <TableBody>
               {filteredStudents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={hasAssignPermission ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={hasAssignPermission ? 7 : 6} className="text-center py-8 text-muted-foreground">
                     {t('exams.rollNumbers.noStudents') || 'No students found'}
                   </TableCell>
                 </TableRow>
@@ -519,16 +596,27 @@ export function ExamRollNumbersPage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell font-mono text-sm">{student.studentCode || '-'}</TableCell>
+                    <TableCell className="hidden sm:table-cell font-mono text-sm">
+                      {student.examSecretNumber || '-'}
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col sm:hidden gap-1">
                         <span>{student.fullName}</span>
-                        <span className="text-xs text-muted-foreground font-mono">{student.studentCode || '-'}</span>
-                        <span className="text-xs text-muted-foreground">{student.className}{student.section && ` - ${student.section}`}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {student.fatherName || '-'}
+                          {student.cardNumber ? ` · ${student.cardNumber}` : ''}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          Secret: {student.examSecretNumber || '-'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {student.className}{student.section && ` - ${student.section}`}
+                        </span>
                       </div>
                       <div className="hidden sm:block">{student.fullName}</div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{student.fatherName || '-'}</TableCell>
+                    <TableCell className="hidden md:table-cell font-mono text-sm">{student.cardNumber || '-'}</TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {student.className}
                       {student.section && <span className="text-muted-foreground"> - {student.section}</span>}

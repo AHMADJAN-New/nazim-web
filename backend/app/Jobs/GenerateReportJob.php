@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\ExamSeatingMap;
 use App\Models\ReportRun;
 use App\Models\ReportTemplate;
+use App\Services\Exams\ExamNumberReportService;
 use App\Services\ExamSeating\ExamSeatingMapService;
 use App\Services\Reports\BrandingCacheService;
 use App\Services\Reports\DateConversionService;
@@ -31,8 +32,9 @@ class GenerateReportJob implements ShouldQueue
 
     /**
      * The number of seconds the job can run before timing out.
+     * Exam number ZIP packs (many QR PDFs) need a longer window.
      */
-    public int $timeout = 300;
+    public int $timeout = 600;
 
     /**
      * Create a new job instance.
@@ -51,7 +53,8 @@ class GenerateReportJob implements ShouldQueue
         PdfReportService $pdfService,
         ExcelReportService $excelService,
         DateConversionService $dateService,
-        StudentHistoryService $studentHistoryService
+        StudentHistoryService $studentHistoryService,
+        ExamNumberReportService $examNumberReportService
     ): void {
         $startTime = microtime(true);
 
@@ -70,6 +73,13 @@ class GenerateReportJob implements ShouldQueue
 
             // Create config from data
             $config = ReportConfig::fromArray($this->configData);
+
+            // Standalone exam number PDFs (QR-heavy) — skip branded table pipeline
+            if (ExamNumberReportService::isExamNumberReportKey($config->reportKey)) {
+                $this->generateExamNumberPdf($reportRun, $config, $examNumberReportService, $startTime);
+
+                return;
+            }
 
             // Debug: Log config values
             Log::debug('Report generation job config (Job)', [
@@ -146,6 +156,61 @@ class GenerateReportJob implements ShouldQueue
             // Since tries = 1, this won't retry anyway, but this ensures proper job failure handling
             $this->fail($e);
         }
+    }
+
+    /**
+     * Generate exam roll slips / secret labels PDF via ExamNumberReportService.
+     */
+    private function generateExamNumberPdf(
+        ReportRun $reportRun,
+        ReportConfig $config,
+        ExamNumberReportService $examNumberReportService,
+        float $startTime
+    ): void {
+        $organizationId = $reportRun->organization_id;
+        $schoolId = $config->brandingId ?? $reportRun->branding_id;
+        $parameters = $config->parameters ?? [];
+
+        if (! $organizationId) {
+            throw new \Exception('Organization ID is required for report generation');
+        }
+        if (! $schoolId) {
+            throw new \Exception('School ID (branding_id) is required for report generation');
+        }
+
+        // Prefer school_id from parameters when present (must match branding)
+        if (! empty($parameters['school_id']) && is_string($parameters['school_id'])) {
+            $schoolId = $parameters['school_id'];
+        }
+
+        $result = $examNumberReportService->generateStoredZip(
+            $config->reportKey,
+            $organizationId,
+            $schoolId,
+            $parameters,
+            function ($progress, $message) use ($reportRun) {
+                $reportRun->updateProgress((float) $progress, (string) $message);
+            }
+        );
+
+        $reportRun->update([
+            'row_count' => $result['row_count'],
+            'page_settings' => [
+                'page_size' => ($parameters['layout'] ?? null) === 'grid' || $config->reportKey === 'exam_roll_slips'
+                    ? 'A4'
+                    : 'label_1x2',
+                'orientation' => 'portrait',
+                'margins' => '0',
+            ],
+        ]);
+
+        $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+        $reportRun->markCompleted(
+            outputPath: $result['path'],
+            fileName: $result['filename'],
+            fileSize: $result['size'],
+            durationMs: $durationMs
+        );
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Exams\ExamNumberReportService;
 use App\Services\Reports\BrandingCacheService;
 use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ExcelReportService;
@@ -20,7 +21,7 @@ class ReportServiceProvider extends ServiceProvider
     {
         // Register BrandingCacheService as singleton
         $this->app->singleton(BrandingCacheService::class, function ($app) {
-            return new BrandingCacheService();
+            return new BrandingCacheService;
         });
 
         // Register PdfReportService
@@ -39,7 +40,7 @@ class ReportServiceProvider extends ServiceProvider
 
         // Register DateConversionService
         $this->app->bind(DateConversionService::class, function ($app) {
-            return new DateConversionService();
+            return new DateConversionService;
         });
 
         // Register ReportService
@@ -49,7 +50,8 @@ class ReportServiceProvider extends ServiceProvider
                 $app->make(PdfReportService::class),
                 $app->make(ExcelReportService::class),
                 $app->make(DateConversionService::class),
-                $app->make(StudentHistoryService::class)
+                $app->make(StudentHistoryService::class),
+                $app->make(ExamNumberReportService::class)
             );
         });
     }

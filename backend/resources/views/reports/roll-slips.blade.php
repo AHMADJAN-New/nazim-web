@@ -4,30 +4,7 @@
     <meta charset="utf-8">
     <title>د رقم الجلوس کارت</title>
     <style>
-        @font-face {
-            font-family: "BahijNassim";
-            src: url("/fonts/Bahij Nassim-Regular.woff") format("woff"),
-                 url("/fonts/Bahij Nassim-Regular.ttf") format("truetype");
-            font-weight: 400;
-            font-style: normal;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: "BahijNassim";
-            src: url("/fonts/Bahij Nassim-Bold.woff") format("woff"),
-                 url("/fonts/Bahij Nassim-Bold.ttf") format("truetype");
-            font-weight: 700;
-            font-style: normal;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: "BahijTitr";
-            src: url("/fonts/Bahij Titr-Bold.woff") format("woff"),
-                 url("/fonts/Bahij Titr-Bold.ttf") format("truetype");
-            font-weight: 700;
-            font-style: normal;
-            font-display: swap;
-        }
+        @include('reports.partials.bahij-font-faces')
         html, body {
             margin:0;
             padding:0;

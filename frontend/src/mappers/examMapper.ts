@@ -661,6 +661,7 @@ export const mapStudentWithNumbersApiToDomain = (student: ExamApi.StudentWithNum
   studentId: student.student_id,
   studentAdmissionId: student.student_admission_id,
   studentCode: student.student_code,
+  cardNumber: student.card_number ?? null,
   fullName: student.full_name,
   fatherName: student.father_name,
   className: student.class_name,
@@ -693,6 +694,7 @@ export const mapNumberAssignmentPreviewItemApiToDomain = (
   studentId: item.student_id,
   studentName: item.student_name,
   className: item.class_name,
+  section: item.section ?? null,
   currentRollNumber: item.current_roll_number,
   newRollNumber: item.new_roll_number,
   currentSecretNumber: item.current_secret_number,
@@ -707,6 +709,13 @@ export const mapNumberAssignmentPreviewResponseApiToDomain = (
   total: response.total,
   willOverrideCount: response.will_override_count,
   items: response.items.map(mapNumberAssignmentPreviewItemApiToDomain),
+  classRanges: (response.class_ranges ?? []).map((range) => ({
+    className: range.class_name,
+    section: range.section,
+    start: range.start,
+    end: range.end,
+    count: range.count,
+  })),
 });
 
 export const mapNumberAssignmentConfirmResponseApiToDomain = (
@@ -726,6 +735,7 @@ export const mapRollNumberReportStudentApiToDomain = (
   examRollNumber: student.exam_roll_number,
   examSecretNumber: student.exam_secret_number ?? null,
   studentCode: student.student_code,
+  cardNumber: student.card_number ?? null,
   fullName: student.full_name,
   fatherName: student.father_name,
   className: student.class_name,
@@ -751,6 +761,8 @@ export const mapRollSlipsHtmlResponseApiToDomain = (
 ): RollSlipsHtmlResponse => ({
   html: response.html,
   totalSlips: response.total_slips,
+  isPreview: response.is_preview ?? false,
+  previewCount: response.preview_count,
 });
 
 export const mapSecretLabelsHtmlResponseApiToDomain = (
@@ -758,6 +770,8 @@ export const mapSecretLabelsHtmlResponseApiToDomain = (
 ): SecretLabelsHtmlResponse => ({
   html: response.html,
   totalLabels: response.total_labels,
+  isPreview: response.is_preview ?? false,
+  previewCount: response.preview_count,
 });
 
 export const mapSecretNumberLookupResponseApiToDomain = (

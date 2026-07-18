@@ -5,23 +5,7 @@
     <meta charset="utf-8">
     <title>د سری نمبر لیبلونه</title>
     <style>
-        @font-face {
-            font-family: "BahijNassim";
-            src: url("/fonts/Bahij Nassim-Regular.woff") format("woff"),
-                url("/fonts/Bahij Nassim-Regular.ttf") format("truetype");
-            font-weight: 400;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: "BahijNassim";
-            src: url("/fonts/Bahij Nassim-Bold.woff") format("woff"),
-                url("/fonts/Bahij Nassim-Bold.ttf") format("truetype");
-            font-weight: 700;
-            font-style: normal;
-            font-display: swap;
-        }
+        @include('reports.partials.bahij-font-faces')
 
         html,
         body {
@@ -40,18 +24,19 @@
             margin: 5mm;
         }
 
-        @page.single-label {
+        /* Named page for 1" wide × 2" tall label printers */
+        @page single-label {
             size: 25.4mm 50.8mm;
-            /* 1 inch x 2 inches */
             margin: 0;
         }
 
         /* Single label per page layout (for label printers) */
         .page.single-label {
+            page: single-label;
             width: 25.4mm;
-            /* 1 inch */
+            /* 1 inch wide */
             height: 50.8mm;
-            /* 2 inches */
+            /* 2 inches tall */
             box-sizing: border-box;
             padding: 0;
             direction: rtl;
@@ -60,9 +45,10 @@
             justify-content: center;
             align-items: center;
             page-break-after: always;
+            break-after: page;
         }
 
-        /* A4 grid layout */
+        /* A4 grid layout — 35 labels per sheet (7×5), each still 1" × 2" */
         .page.grid-layout {
             width: 210mm;
             height: 297mm;
