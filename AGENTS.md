@@ -5984,3 +5984,40 @@ const count = DB::raw("SELECT COUNT(*) FROM students WHERE deleted_at IS NULL");
 ```
 
 Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices. **ALWAYS use Laravel Boost and Shadcn UI MCP servers for all relevant tasks.** For Organization Admin area (`/org-admin`), HR hub, staff/assignments lists, and school scoping rules, use the **nazim-org-admin-setup** skill (`.cursor/skills/nazim-org-admin-setup/SKILL.md`).
+
+## Cursor Cloud specific instructions
+
+This environment is Ubuntu 24.04 with PHP 8.3, Composer, PostgreSQL 16, Redis 7, and Node 22 already installed. The startup update script runs `composer install` (backend) and `npm install` (frontend) automatically; you normally do NOT need to reinstall dependencies.
+
+### Services are NOT auto-started — start them each session
+The update script intentionally does not start services. At the beginning of a session, start them (they are safe to re-run; they no-op if already running):
+
+```bash
+sudo pg_ctlcluster 16 main start     # PostgreSQL (port 5432)
+sudo redis-server --daemonize yes    # Redis (port 6379)
+```
+
+### Backend `.env` (already created, persisted in the VM snapshot)
+`backend/.env` is a copy of `backend/.env.example` with three dev overrides: `DB_HOST=127.0.0.1`, `REDIS_HOST=127.0.0.1`, `APP_URL=http://localhost:8000`, `FRONTEND_URL=http://localhost:5173`. The committed `.env.example` uses Docker hostnames (`db`, `redis`) which do NOT resolve in this VM — if you ever recreate `.env`, re-apply those host overrides. The app uses Redis for `SESSION_DRIVER`, `QUEUE_CONNECTION`, and `CACHE_DRIVER`, so Redis must be running for login/caching/queues.
+
+### Database
+PostgreSQL role/db: `nazim` / password `secret` / database `nazim` (dev) and `nazim_testing` (PHPUnit, see `backend/phpunit.xml`). The DB is already migrated and seeded. To reset: `cd backend && php artisan migrate:fresh --seed`.
+
+Seeded login for the main app (`/login`): `platform-admin@nazim.app` / `admin123`. This user has a test organization + "Main School" with full access. The same user is also a platform admin at `/platform/login`. School context (`default_school_id`) is auto-assigned by `EnsureSchoolContext` middleware on the first school-scoped request.
+
+### Running the app (dev)
+Run each in its own tmux session (do not use `composer dev` if you want individual control):
+- Backend API: `cd backend && php artisan serve --host=0.0.0.0 --port=8000`
+- Queue worker (needed for async jobs / report generation): `cd backend && php artisan queue:listen --tries=1`
+- Frontend: `cd frontend && npm run dev` → serves the SPA on port 5173.
+
+Gotcha: the Vite dev server serves over **HTTPS** with a self-signed cert because `frontend/certs/{key,cert}.pem` exist (committed). Open `https://localhost:5173` (not http) and accept the cert warning. Vite proxies `/api` and `/storage` to `http://localhost:8000`, so the backend must be running on 8000.
+
+### Lint / test / build
+- Frontend lint: `cd frontend && npm run lint` (the repo currently has many pre-existing lint errors; a non-zero exit is expected and is not an environment problem).
+- Frontend build: `cd frontend && npm run build`.
+- Frontend unit tests: `cd frontend && npm test` (Vitest). E2E: `npm run test:e2e` (Playwright — browsers may need `npx playwright install`).
+- Backend tests: `cd backend && php artisan test --compact` (uses the `nazim_testing` PostgreSQL DB).
+
+### PDF reports (optional)
+PDF generation uses `spatie/browsershot` (Puppeteer/Chrome). It is NOT required for normal flows and is not installed by the update script. If you need it, run `cd backend && npm install` (downloads Chromium) and the system deps in `backend/install-chrome-deps.sh`.
