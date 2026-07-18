@@ -1000,6 +1000,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::middleware(['feature:exams_full'])->group(function () {
             Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);
             Route::get('/exams/{exam}/attendance/summary', [ExamAttendanceController::class, 'summary']);
+            Route::get('/exams/{exam}/attendance/report/detail', [ExamAttendanceController::class, 'reportDetail']);
             Route::get('/exams/{exam}/attendance/hall/sessions', [ExamAttendanceController::class, 'hallSessions']);
             Route::get('/exams/{exam}/attendance/hall/sessions/students', [ExamAttendanceController::class, 'hallSessionStudents']);
             Route::get('/exams/{exam}/attendance/hall/maps', [ExamAttendanceController::class, 'hallMaps']);

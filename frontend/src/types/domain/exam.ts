@@ -548,6 +548,24 @@ export interface AttendanceSubjectSummary {
   excused: number;
 }
 
+export interface AttendanceClassSubjectSummary {
+  examClassId: string;
+  examSubjectId: string;
+  className: string;
+  sectionName: string | null;
+  classLabel: string;
+  subjectName: string;
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  enrolled: number;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+  unmarked: number;
+}
+
 export interface ExamAttendanceSummary {
   exam: {
     id: string;
@@ -564,6 +582,45 @@ export interface ExamAttendanceSummary {
   };
   byClass: AttendanceClassSummary[];
   bySubject: AttendanceSubjectSummary[];
+  byClassSubject: AttendanceClassSubjectSummary[];
+}
+
+export interface ExamAttendanceReportDetailStudent {
+  studentId: string;
+  studentName: string;
+  fatherName: string;
+  rollNumber: string;
+  admissionNo: string;
+  status: string;
+  statusKey: string;
+  seatNumber: string;
+  notes: string;
+}
+
+export interface ExamAttendanceReportDetail {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+  };
+  examClassId: string;
+  examSubjectId: string;
+  className: string;
+  sectionName: string | null;
+  classLabel: string;
+  subjectName: string;
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  counts: {
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+    unmarked: number;
+    total: number;
+  };
+  students: ExamAttendanceReportDetailStudent[];
 }
 
 // Student attendance report

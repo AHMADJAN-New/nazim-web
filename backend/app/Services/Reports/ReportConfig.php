@@ -22,7 +22,7 @@ class ReportConfig
         public array $parameters = [],
         public array $columnConfig = [],
         public string $calendarPreference = 'jalali', // gregorian, jalali/shamsi, qamari/hijri_qamari
-        public string $language = 'fa', // fa, ps, ar, en
+        public string $language = 'ps', // ps, fa, ar, en — app default is Pashto
     ) {}
 
     /**
@@ -45,7 +45,7 @@ class ReportConfig
             parameters: $data['parameters'] ?? [],
             columnConfig: $data['column_config'] ?? [],
             calendarPreference: $data['calendar_preference'] ?? 'jalali',
-            language: $data['language'] ?? 'fa',
+            language: $data['language'] ?? 'ps',
         );
     }
 

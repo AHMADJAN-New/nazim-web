@@ -5,6 +5,8 @@ namespace App\Services\Reports;
 use App\Models\ExamSeatingMap;
 use App\Models\ReportRun;
 use App\Models\ReportTemplate;
+use App\Services\Exams\ExamAttendanceReportService;
+use App\Services\Exams\ExamMarksEntryReportService;
 use App\Services\Exams\ExamNumberReportService;
 use App\Services\ExamSeating\ExamSeatingMapService;
 use App\Services\StudentHistoryService;
@@ -24,6 +26,8 @@ class ReportService
         private DateConversionService $dateService,
         private StudentHistoryService $historyService,
         private ExamNumberReportService $examNumberReportService,
+        private ExamAttendanceReportService $examAttendanceReportService,
+        private ExamMarksEntryReportService $examMarksEntryReportService,
     ) {}
 
     /**
@@ -79,6 +83,85 @@ class ReportService
                 }
 
                 $result = $this->examNumberReportService->generateStoredZip(
+                    $config->reportKey,
+                    $organizationId,
+                    $schoolId,
+                    $parameters,
+                    function ($progress, $message) use ($reportRun) {
+                        $reportRun->updateProgress((float) $progress, (string) $message);
+                    }
+                );
+
+                $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+                $reportRun->update(['row_count' => $result['row_count']]);
+                $reportRun->markCompleted(
+                    outputPath: $result['path'],
+                    fileName: $result['filename'],
+                    fileSize: $result['size'],
+                    durationMs: $durationMs
+                );
+
+                return $reportRun;
+            }
+
+            if (ExamAttendanceReportService::isAttendanceReportKey($config->reportKey)) {
+                $schoolId = $config->brandingId ?? $reportRun->branding_id;
+                $parameters = $config->parameters ?? [];
+                if (! empty($parameters['school_id']) && is_string($parameters['school_id'])) {
+                    $schoolId = $parameters['school_id'];
+                }
+                if (! $organizationId || ! $schoolId) {
+                    throw new \Exception('Organization and school are required for exam attendance reports');
+                }
+
+                $result = ExamAttendanceReportService::isAttendanceSessionReportKey($config->reportKey)
+                    ? $this->examAttendanceReportService->generateStoredSessionReport(
+                        $config->reportKey,
+                        $organizationId,
+                        $schoolId,
+                        $parameters,
+                        function ($progress, $message) use ($reportRun) {
+                            $reportRun->updateProgress((float) $progress, (string) $message);
+                        }
+                    )
+                    : $this->examAttendanceReportService->generateStoredZip(
+                        $config->reportKey,
+                        $organizationId,
+                        $schoolId,
+                        $parameters,
+                        function ($progress, $message) use ($reportRun) {
+                            $reportRun->updateProgress((float) $progress, (string) $message);
+                        }
+                    );
+
+                $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+                $reportRun->update(['row_count' => $result['row_count']]);
+                $reportRun->markCompleted(
+                    outputPath: $result['path'],
+                    fileName: $result['filename'],
+                    fileSize: $result['size'],
+                    durationMs: $durationMs
+                );
+
+                return $reportRun;
+            }
+
+            if (ExamMarksEntryReportService::isMarksEntryZipReportKey($config->reportKey)) {
+                $schoolId = $config->brandingId ?? $reportRun->branding_id;
+                $parameters = $config->parameters ?? [];
+                if (! empty($parameters['school_id']) && is_string($parameters['school_id'])) {
+                    $schoolId = $parameters['school_id'];
+                }
+                if (! $organizationId || ! $schoolId) {
+                    throw new \Exception('Organization and school are required for exam marks entry reports');
+                }
+
+                // Prefer request/UI language & calendar so branded sheets match user prefs
+                $parameters['language'] = $parameters['language'] ?? $config->language;
+                $parameters['calendar_preference'] = $parameters['calendar_preference'] ?? $config->calendarPreference;
+                $parameters['branding_id'] = $parameters['branding_id'] ?? $schoolId;
+
+                $result = $this->examMarksEntryReportService->generateStoredZip(
                     $config->reportKey,
                     $organizationId,
                     $schoolId,
@@ -192,6 +275,38 @@ class ReportService
 
             throw $e;
         }
+    }
+
+    /**
+     * Generate PDF/Excel binary via the standard branding pipeline (no ReportRun).
+     * Used when embedding branded sheets inside ZIP packs (e.g. marks-entry templates).
+     *
+     * @return array{content: string, filename: string, size: int}
+     */
+    public function generateContentBinary(
+        ReportConfig $config,
+        array $data,
+        string $organizationId,
+        ?callable $progressCallback = null
+    ): array {
+        $branding = $this->loadBranding($config);
+        $layout = $this->loadLayout($config);
+        $reportTemplate = $this->loadReportTemplate($config);
+        $layout = $this->mergeReportTemplate($layout, $reportTemplate, $branding);
+        $notes = $this->loadNotes($config, $branding);
+        $watermark = $this->loadWatermark($config, $branding, $reportTemplate);
+        $context = $this->buildContext($config, $data, $branding, $layout, $notes, $watermark);
+
+        if ($config->isPdf()) {
+            return $this->pdfService->generateContent(
+                $config,
+                $context,
+                $progressCallback,
+                leanChrome: true
+            );
+        }
+
+        return $this->excelService->generateContent($config, $context, $progressCallback);
     }
 
     /**
@@ -534,8 +649,10 @@ class ReportService
 
         // Exam number lists + multi-section class/section PDFs need Arabic-capable fonts
         // (branding often stores UI fonts like Inter which lack Pashto/Arabic glyphs in Excel)
+        // Marks-entry ZIP sheets also embed branded tables with student names in RTL languages
         if (
             $config->reportKey === 'exam_roll_numbers'
+            || str_starts_with($config->reportKey, 'exam_marks_entry')
             || $templateName === 'table_multi_sections'
             || $config->templateName === 'table_multi_sections'
         ) {
@@ -605,8 +722,14 @@ class ReportService
             'header_height_px' => $layout['header_height_px'] ?? 100,
             'header_layout_style' => $layout['header_layout_style'] ?? 'three-column',
             'header_html' => $layout['header_html'] ?? null,
-            'footer_html' => $layout['footer_html'] ?? null,
-            'extra_css' => $layout['extra_css'] ?? null,
+            'footer_html' => $this->mergeInjectedHtml(
+                $layout['footer_html'] ?? null,
+                $config->parameters['footer_html'] ?? null
+            ),
+            'extra_css' => $this->mergeInjectedCss(
+                $layout['extra_css'] ?? null,
+                $config->parameters['extra_css'] ?? null
+            ),
             'header_text' => $layout['header_text'] ?? null,
             'header_text_position' => $layout['header_text_position'] ?? 'below_school_name',
             'footer_text' => $layout['footer_text'] ?? null,
@@ -624,10 +747,15 @@ class ReportService
             'COL_WIDTHS' => $columnWidths,
             'COLUMN_CONFIG' => $config->columnConfig,
 
-            // Notes
-            'NOTES_HEADER' => $notes['header'] ?? [],
-            'NOTES_BODY' => $notes['body'] ?? [],
-            'NOTES_FOOTER' => $notes['footer'] ?? [],
+            // Notes (parameter extras let ZIP packs inject marks-entry instructions / signatures)
+            'NOTES_HEADER' => $this->mergeInjectedNotes($notes['header'] ?? [], $config->parameters['notes_header'] ?? null),
+            'NOTES_BODY' => $this->mergeInjectedNotes($notes['body'] ?? [], $config->parameters['notes_body'] ?? null),
+            'NOTES_FOOTER' => $this->mergeInjectedNotes($notes['footer'] ?? [], $config->parameters['notes_footer'] ?? null),
+
+            // Empty cells: default em dash; marks-entry uses blank for pen writing
+            'EMPTY_CELL_PLACEHOLDER' => array_key_exists('empty_cell_placeholder', $config->parameters ?? [])
+                ? (string) $config->parameters['empty_cell_placeholder']
+                : '—',
 
             // Watermark
             'WATERMARK' => $watermark,
@@ -1377,6 +1505,55 @@ class ReportService
                 }, $sections['graduations'] ?? []),
             ],
         ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $base
+     * @return list<array{note_text: string}>
+     */
+    private function mergeInjectedNotes(array $base, mixed $injected): array
+    {
+        if (! is_array($injected) || $injected === []) {
+            return $base;
+        }
+
+        foreach ($injected as $note) {
+            if (is_string($note) && trim($note) !== '') {
+                $base[] = ['note_text' => trim($note)];
+
+                continue;
+            }
+            if (is_array($note)) {
+                $text = $note['note_text'] ?? $note['text'] ?? null;
+                if (is_string($text) && trim($text) !== '') {
+                    $base[] = ['note_text' => trim($text)];
+                }
+            }
+        }
+
+        return $base;
+    }
+
+    private function mergeInjectedHtml(?string $base, mixed $injected): ?string
+    {
+        if (! is_string($injected) || trim($injected) === '') {
+            return $base;
+        }
+
+        $base = is_string($base) ? $base : '';
+
+        return trim($base."\n".$injected);
+    }
+
+    private function mergeInjectedCss(?string $base, mixed $injected): ?string
+    {
+        if (! is_string($injected) || trim($injected) === '') {
+            return $base;
+        }
+
+        $base = is_string($base) ? $base : '';
+
+        return trim($base."\n".$injected);
     }
 
     /**

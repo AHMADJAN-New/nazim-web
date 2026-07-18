@@ -5,6 +5,8 @@ namespace App\Jobs;
 use App\Models\ExamSeatingMap;
 use App\Models\ReportRun;
 use App\Models\ReportTemplate;
+use App\Services\Exams\ExamAttendanceReportService;
+use App\Services\Exams\ExamMarksEntryReportService;
 use App\Services\Exams\ExamNumberReportService;
 use App\Services\ExamSeating\ExamSeatingMapService;
 use App\Services\Reports\BrandingCacheService;
@@ -32,9 +34,10 @@ class GenerateReportJob implements ShouldQueue
 
     /**
      * The number of seconds the job can run before timing out.
-     * Exam number ZIP packs (many QR PDFs) need a longer window.
+     * Exam number / attendance / marks-entry ZIP packs need a long window.
+     * 0 = no timeout (worker should also use --timeout=0).
      */
-    public int $timeout = 600;
+    public int $timeout = 0;
 
     /**
      * Create a new job instance.
@@ -54,7 +57,9 @@ class GenerateReportJob implements ShouldQueue
         ExcelReportService $excelService,
         DateConversionService $dateService,
         StudentHistoryService $studentHistoryService,
-        ExamNumberReportService $examNumberReportService
+        ExamNumberReportService $examNumberReportService,
+        ExamAttendanceReportService $examAttendanceReportService,
+        ExamMarksEntryReportService $examMarksEntryReportService
     ): void {
         // Queue workers often inherit php.ini max_execution_time=180; disable for long reports/ZIPs.
         if (function_exists('set_time_limit')) {
@@ -83,6 +88,23 @@ class GenerateReportJob implements ShouldQueue
             // Standalone exam number PDFs (QR-heavy) — skip branded table pipeline
             if (ExamNumberReportService::isExamNumberReportKey($config->reportKey)) {
                 $this->generateExamNumberPdf($reportRun, $config, $examNumberReportService, $startTime);
+
+                return;
+            }
+
+            if (ExamAttendanceReportService::isAttendanceReportKey($config->reportKey)) {
+                $this->generateExamAttendanceReport($reportRun, $config, $examAttendanceReportService, $startTime);
+
+                return;
+            }
+
+            if (ExamMarksEntryReportService::isMarksEntryZipReportKey($config->reportKey)) {
+                Log::info('Routing report job to exam marks entry ZIP service', [
+                    'report_run_id' => $reportRun->id,
+                    'report_key' => $config->reportKey,
+                    'report_type' => $config->reportType,
+                ]);
+                $this->generateExamMarksEntryReport($reportRun, $config, $examMarksEntryReportService, $startTime);
 
                 return;
             }
@@ -162,6 +184,132 @@ class GenerateReportJob implements ShouldQueue
             // Since tries = 1, this won't retry anyway, but this ensures proper job failure handling
             $this->fail($e);
         }
+    }
+
+    /**
+     * Generate exam marks-entry template ZIP.
+     */
+    private function generateExamMarksEntryReport(
+        ReportRun $reportRun,
+        ReportConfig $config,
+        ExamMarksEntryReportService $examMarksEntryReportService,
+        float $startTime
+    ): void {
+        $organizationId = $reportRun->organization_id;
+        $schoolId = $config->brandingId ?? $reportRun->branding_id;
+        $parameters = $config->parameters ?? [];
+
+        if (! $organizationId) {
+            throw new \Exception('Organization ID is required for report generation');
+        }
+        if (! $schoolId) {
+            throw new \Exception('School ID (branding_id) is required for report generation');
+        }
+
+        if (! empty($parameters['school_id']) && is_string($parameters['school_id'])) {
+            $schoolId = $parameters['school_id'];
+        }
+
+        // Match sync ReportService path: language/calendar live on ReportConfig and must
+        // be copied into parameters for ExamMarksEntryReportService labels/notes.
+        $parameters['language'] = $parameters['language'] ?? $config->language;
+        $parameters['calendar_preference'] = $parameters['calendar_preference'] ?? $config->calendarPreference;
+        $parameters['branding_id'] = $parameters['branding_id'] ?? $schoolId;
+
+        Log::info('Exam marks entry ZIP language context', [
+            'report_run_id' => $reportRun->id,
+            'language' => $parameters['language'] ?? null,
+            'calendar_preference' => $parameters['calendar_preference'] ?? null,
+        ]);
+
+        $result = $examMarksEntryReportService->generateStoredZip(
+            $config->reportKey,
+            $organizationId,
+            $schoolId,
+            $parameters,
+            function ($progress, $message) use ($reportRun) {
+                $reportRun->updateProgress((float) $progress, (string) $message);
+            }
+        );
+
+        $reportRun->update([
+            'row_count' => $result['row_count'],
+            'page_settings' => [
+                'page_size' => 'A4',
+                'orientation' => 'portrait',
+                'margins' => '10mm',
+            ],
+        ]);
+
+        $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+        $reportRun->markCompleted(
+            outputPath: $result['path'],
+            fileName: $result['filename'],
+            fileSize: $result['size'],
+            durationMs: $durationMs
+        );
+    }
+
+    /**
+     * Generate exam attendance ZIP or combined Hall session report.
+     */
+    private function generateExamAttendanceReport(
+        ReportRun $reportRun,
+        ReportConfig $config,
+        ExamAttendanceReportService $examAttendanceReportService,
+        float $startTime
+    ): void {
+        $organizationId = $reportRun->organization_id;
+        $schoolId = $config->brandingId ?? $reportRun->branding_id;
+        $parameters = $config->parameters ?? [];
+
+        if (! $organizationId) {
+            throw new \Exception('Organization ID is required for report generation');
+        }
+        if (! $schoolId) {
+            throw new \Exception('School ID (branding_id) is required for report generation');
+        }
+
+        if (! empty($parameters['school_id']) && is_string($parameters['school_id'])) {
+            $schoolId = $parameters['school_id'];
+        }
+
+        $result = ExamAttendanceReportService::isAttendanceSessionReportKey($config->reportKey)
+            ? $examAttendanceReportService->generateStoredSessionReport(
+                $config->reportKey,
+                $organizationId,
+                $schoolId,
+                $parameters,
+                function ($progress, $message) use ($reportRun) {
+                    $reportRun->updateProgress((float) $progress, (string) $message);
+                }
+            )
+            : $examAttendanceReportService->generateStoredZip(
+                $config->reportKey,
+                $organizationId,
+                $schoolId,
+                $parameters,
+                function ($progress, $message) use ($reportRun) {
+                    $reportRun->updateProgress((float) $progress, (string) $message);
+                }
+            );
+
+        $reportRun->update([
+            'row_count' => $result['row_count'],
+            'page_settings' => [
+                'page_size' => 'A4',
+                'orientation' => 'portrait',
+                'margins' => '10mm',
+            ],
+        ]);
+
+        $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+        $reportRun->markCompleted(
+            outputPath: $result['path'],
+            fileName: $result['filename'],
+            fileSize: $result['size'],
+            durationMs: $durationMs
+        );
     }
 
     /**

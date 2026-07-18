@@ -697,8 +697,8 @@ export const permissionsManagementCatalogFa: PermissionsManagementCatalog = {
       "description": "ثبت‌نام شاگردان — امتحانات"
     },
     "exams.enter_marks": {
-      "actionLabel": "ثبت نمرات",
-      "description": "ثبت نمرات — امتحانات"
+      "actionLabel": "ثبت نمرې",
+      "description": "ثبت نمرې — امتحانات"
     },
     "exams.manage": {
       "actionLabel": "مدیریت",
@@ -785,8 +785,8 @@ export const permissionsManagementCatalogFa: PermissionsManagementCatalog = {
       "description": "گزارش‌های تجمیعی — امتحانات"
     },
     "exams.view_grade_cards": {
-      "actionLabel": "کارت نمرات",
-      "description": "کارت نمرات — امتحانات"
+      "actionLabel": "کارت نمرې",
+      "description": "کارت نمرې — امتحانات"
     },
     "exams.view_reports": {
       "actionLabel": "مشاهده گزارش‌ها",

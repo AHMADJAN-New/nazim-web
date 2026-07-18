@@ -44,6 +44,7 @@ export const ExamSecretNumbersPage = lazy(() => import('@/pages/ExamSecretNumber
 export const ExamNumberReportsPage = lazy(() => import('@/pages/ExamNumberReportsPage'));
 export const GradesManagement = lazy(() => import('@/pages/GradesManagement'));
 export const ExamReportsHub = lazy(() => import('@/pages/ExamReportsHub'));
+export const ExamAttendanceReportPage = lazy(() => import('@/pages/ExamAttendanceReportPage'));
 export const ConsolidatedMarkSheet = lazy(() => import('@/pages/ConsolidatedMarkSheet'));
 export const ClassSubjectMarkSheet = lazy(() => import('@/pages/ClassSubjectMarkSheet'));
 export const StudentExamReport = lazy(() => import('@/pages/StudentExamReport'));

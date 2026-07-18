@@ -4074,6 +4074,13 @@ export const examAttendanceApi = {
     return apiClient.get(`/exams/${examId}/attendance/summary`);
   },
 
+  reportDetail: async (
+    examId: string,
+    params: { exam_class_id: string; exam_subject_id: string }
+  ) => {
+    return apiClient.get(`/exams/${examId}/attendance/report/detail`, params);
+  },
+
   hallSessions: async (examId: string) => {
     return apiClient.get(`/exams/${examId}/attendance/hall/sessions`);
   },

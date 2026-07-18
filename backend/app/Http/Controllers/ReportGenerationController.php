@@ -41,6 +41,16 @@ class ReportGenerationController extends Controller
         $isStudentHistoryReport = $reportKey === 'student_lifetime_history' &&
                                  ! empty($parameters['student_id']);
         $isExamNumberReport = in_array($reportKey, ['exam_roll_slips', 'exam_secret_labels'], true);
+        $isExamAttendanceZipReport = in_array($reportKey, [
+            'exam_attendance_pdf_zip',
+            'exam_attendance_excel_zip',
+            'exam_attendance_session_pdf',
+            'exam_attendance_session_excel',
+        ], true);
+        $isExamMarksEntryZipReport = in_array($reportKey, [
+            'exam_marks_entry_pdf_zip',
+            'exam_marks_entry_excel_zip',
+        ], true);
         $isExamSeatingMapReport = $reportKey === 'exam_seating_map' || ! empty($parameters['map_id']);
 
         // Build validation rules conditionally
@@ -57,13 +67,15 @@ class ReportGenerationController extends Controller
             'parameters' => 'nullable|array',
             'column_config' => 'nullable|array',
             'async' => 'nullable|boolean',
+            'calendar_preference' => 'nullable|in:gregorian,jalali,shamsi,qamari,hijri_qamari',
+            'language' => 'nullable|in:en,ps,fa,ar',
         ];
 
         // Columns and rows are only required when:
         // - NOT using a custom template
         // - NOT using multi-sheet structure
         // - NOT a student history / exam number / seating map report (server-side data)
-        if (! $hasCustomTemplate && ! $hasMultiSheetStructure && ! $isStudentHistoryReport && ! $isExamNumberReport && ! $isExamSeatingMapReport) {
+        if (! $hasCustomTemplate && ! $hasMultiSheetStructure && ! $isStudentHistoryReport && ! $isExamNumberReport && ! $isExamAttendanceZipReport && ! $isExamMarksEntryZipReport && ! $isExamSeatingMapReport) {
             $rules['columns'] = 'required|array';
             $rules['columns.*'] = 'required';
             $rules['rows'] = 'required|array';
@@ -80,6 +92,32 @@ class ReportGenerationController extends Controller
             $rules['parameters.subject_id'] = 'nullable|uuid';
             $rules['parameters.layout'] = 'nullable|in:single,grid';
             $rules['report_type'] = 'required|in:pdf';
+        }
+
+        if ($isExamAttendanceZipReport) {
+            $rules['parameters.exam_id'] = 'required|uuid';
+            $rules['parameters.exam_class_id'] = 'nullable|uuid';
+            $rules['parameters.exam_subject_id'] = 'nullable|uuid';
+            $rules['parameters.session_date'] = 'nullable|date';
+            $rules['parameters.session_start_time'] = 'nullable|string|max:16';
+            $rules['report_type'] = 'required|in:pdf,excel';
+
+            if (in_array($reportKey, ['exam_attendance_session_pdf', 'exam_attendance_session_excel'], true)) {
+                $rules['parameters.session_date'] = 'required|date';
+                $rules['parameters.session_start_time'] = 'required|string|max:16';
+            }
+        }
+
+        if ($isExamMarksEntryZipReport) {
+            $rules['parameters.exam_id'] = 'required|uuid';
+            $rules['parameters.exam_class_id'] = 'nullable|uuid';
+            $rules['parameters.exam_subject_id'] = 'nullable|uuid';
+            $rules['parameters.exam_class_ids'] = 'nullable|array';
+            $rules['parameters.exam_class_ids.*'] = 'uuid';
+            $rules['parameters.exam_subject_ids'] = 'nullable|array';
+            $rules['parameters.exam_subject_ids.*'] = 'uuid';
+            $rules['parameters.student_id_mode'] = 'required|in:roll,secret,both';
+            $rules['report_type'] = 'required|in:pdf,excel';
         }
 
         $validated = $request->validate($rules);
@@ -104,6 +142,42 @@ class ReportGenerationController extends Controller
                 }
             } catch (\Exception $e) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        }
+
+        if ($isExamAttendanceZipReport) {
+            try {
+                if (! $user->hasPermissionTo('exams.view_attendance_reports')) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
+            $expectedType = in_array($reportKey, ['exam_attendance_excel_zip', 'exam_attendance_session_excel'], true)
+                ? 'excel'
+                : 'pdf';
+            if (($validated['report_type'] ?? null) !== $expectedType) {
+                return response()->json([
+                    'error' => "report_type must be {$expectedType} for {$reportKey}",
+                ], 422);
+            }
+        }
+
+        if ($isExamMarksEntryZipReport) {
+            try {
+                if (! $user->hasPermissionTo('exams.enter_marks')) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
+            $expectedType = $reportKey === 'exam_marks_entry_excel_zip' ? 'excel' : 'pdf';
+            if (($validated['report_type'] ?? null) !== $expectedType) {
+                return response()->json([
+                    'error' => "report_type must be {$expectedType} for {$reportKey}",
+                ], 422);
             }
         }
 
@@ -139,6 +213,17 @@ class ReportGenerationController extends Controller
                 $reportParameters['layout'] = 'single';
             }
         }
+        if ($isExamAttendanceZipReport) {
+            $reportParameters['school_id'] = $currentSchoolId;
+        }
+        if ($isExamMarksEntryZipReport) {
+            $reportParameters['school_id'] = $currentSchoolId;
+            // Ensure language survives async job → ExamMarksEntryReportService (notes/labels)
+            $reportParameters['language'] = $validated['language']
+                ?? ($reportParameters['language'] ?? 'ps');
+            $reportParameters['calendar_preference'] = $validated['calendar_preference']
+                ?? ($reportParameters['calendar_preference'] ?? 'jalali');
+        }
 
         $defaultTemplateName = match ($validated['report_key']) {
             'exam_roll_slips' => 'roll-slips',
@@ -160,6 +245,10 @@ class ReportGenerationController extends Controller
             'generated_by' => 'NazimWeb',
             'parameters' => $reportParameters,
             'column_config' => $validated['column_config'] ?? [],
+            'calendar_preference' => $validated['calendar_preference']
+                ?? ($reportParameters['calendar_preference'] ?? 'jalali'),
+            'language' => $validated['language']
+                ?? ($reportParameters['language'] ?? 'ps'),
         ]);
 
         // Prepare data

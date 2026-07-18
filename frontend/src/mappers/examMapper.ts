@@ -7,6 +7,7 @@ import type {
   ClassMarkSheetStudent, ClassMarkSheetSubject, StudentResultReport, StudentResultSubject,
   EnrollmentStats, EnrollmentClassStats, MarksProgress, SubjectProgress,
   ExamAttendance, ExamAttendanceSummary, AttendanceClassSummary, AttendanceSubjectSummary,
+  ExamAttendanceReportDetail,
   TimeslotStudent, TimeslotStudentsResponse, StudentAttendanceReport, StudentAttendanceSession,
   TimeslotAttendanceSummary
 } from '@/types/domain/exam';
@@ -592,6 +593,50 @@ export const mapAttendanceSummaryApiToDomain = (summary: ExamApi.ExamAttendanceS
     absent: s.absent,
     late: s.late,
     excused: s.excused,
+  })),
+  byClassSubject: (summary.by_class_subject ?? []).map((row) => ({
+    examClassId: row.exam_class_id,
+    examSubjectId: row.exam_subject_id,
+    className: row.class_name,
+    sectionName: row.section_name,
+    classLabel: row.class_label,
+    subjectName: row.subject_name,
+    date: row.date,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    enrolled: row.enrolled,
+    present: row.present,
+    absent: row.absent,
+    late: row.late,
+    excused: row.excused,
+    unmarked: row.unmarked,
+  })),
+});
+
+export const mapExamAttendanceReportDetailApiToDomain = (
+  detail: ExamApi.ExamAttendanceReportDetail
+): ExamAttendanceReportDetail => ({
+  exam: detail.exam,
+  examClassId: detail.exam_class_id,
+  examSubjectId: detail.exam_subject_id,
+  className: detail.class_name,
+  sectionName: detail.section_name,
+  classLabel: detail.class_label,
+  subjectName: detail.subject_name,
+  date: detail.date,
+  startTime: detail.start_time,
+  endTime: detail.end_time,
+  counts: detail.counts,
+  students: detail.students.map((s) => ({
+    studentId: s.student_id,
+    studentName: s.student_name,
+    fatherName: s.father_name,
+    rollNumber: s.roll_number,
+    admissionNo: s.admission_no,
+    status: s.status,
+    statusKey: s.status_key,
+    seatNumber: s.seat_number,
+    notes: s.notes,
   })),
 });
 

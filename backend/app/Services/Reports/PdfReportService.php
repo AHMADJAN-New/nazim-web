@@ -37,12 +37,43 @@ class PdfReportService
     ): array {
         $this->reportProgress($progressCallback, 0, 'Starting PDF generation');
 
-        // Render HTML
+        $binary = $this->generateContent($config, $context, $progressCallback, leanChrome: false);
+        $this->reportProgress($progressCallback, 90, 'Storing PDF');
+
+        $storagePath = $this->fileStorageService->storeReport(
+            $binary['content'],
+            $binary['filename'],
+            $organizationId,
+            $schoolId,
+            $config->reportKey ?? 'general'
+        );
+
+        $this->reportProgress($progressCallback, 100, 'PDF generated');
+
+        return [
+            'path' => $storagePath,
+            'filename' => $binary['filename'],
+            'size' => $binary['size'],
+        ];
+    }
+
+    /**
+     * Generate PDF binary without storing (for ZIP packs).
+     *
+     * @return array{content: string, filename: string, size: int}
+     */
+    public function generateContent(
+        ReportConfig $config,
+        array $context,
+        ?callable $progressCallback = null,
+        bool $leanChrome = true
+    ): array {
+        $this->reportProgress($progressCallback, 0, 'Starting PDF generation');
+
         $html = $this->renderHtml($context, $config);
         $this->reportProgress($progressCallback, 30, 'HTML rendered');
 
-        // Generate PDF file
-        $result = $this->generatePdf($html, $context, $config, $organizationId, $schoolId);
+        $result = $this->generatePdfBinary($html, $context, $config, $leanChrome);
         $this->reportProgress($progressCallback, 100, 'PDF generated');
 
         return $result;
@@ -102,24 +133,20 @@ class PdfReportService
     }
 
     /**
-     * Generate PDF from HTML using Browsershot
-     * CRITICAL: Reports are school-scoped and MUST include both organizationId and schoolId
+     * Generate PDF binary from HTML using Browsershot (required for correct RTL shaping).
+     *
+     * @return array{content: string, filename: string, size: int}
      */
-    private function generatePdf(string $html, array $context, ReportConfig $config, string $organizationId, string $schoolId): array
+    private function generatePdfBinary(string $html, array $context, ReportConfig $config, bool $leanChrome = false): array
     {
-        // Generate unique filename
         $filename = $this->generateFilename($config);
-
-        // Create temporary file for Browsershot (it needs a file path)
         $tempDir = sys_get_temp_dir();
         $tempPath = $tempDir.'/'.$filename;
 
-        // Get page settings
         $pageSize = $context['page_size'] ?? 'A4';
         $orientation = $context['orientation'] ?? 'portrait';
         $margins = $this->parseMargins($context['margins'] ?? '15mm 12mm 18mm 12mm');
 
-        // Configure Browsershot (Docker-safe Chrome env + binaries)
         $browsershot = Browsershot::html($html)
             ->format($pageSize)
             ->showBackground()
@@ -130,32 +157,33 @@ class PdfReportService
                 $margins['left'],
                 'mm'
             )
-            ->waitUntilNetworkIdle()
-            ->setDelay(2000) // Wait 2 seconds for fonts to load from base64 data URLs
             ->timeout(120);
 
+        if ($leanChrome) {
+            // Faster for ZIP packs (many PDFs); fonts are embedded as base64 data URLs
+            $browsershot->setDelay(400);
+        } else {
+            $browsershot->waitUntilNetworkIdle()->setDelay(2000);
+        }
+
         BrowsershotConfigurator::apply($browsershot, [
-            'disable-web-security', // Allow loading fonts from data URLs
-            'disable-features=FontLoading', // Disable font loading restrictions
+            'disable-web-security',
+            'disable-features=FontLoading',
         ]);
 
-        // Set orientation
         if ($orientation === 'landscape') {
             $browsershot->landscape();
         }
 
-        // Add header and footer if configured
         if (! empty($context['show_page_numbers']) || ! empty($context['show_generation_date'])) {
             $footerHtml = $this->buildFooterHtml($context);
             $browsershot->footerHtml($footerHtml);
             $browsershot->showBrowserHeaderAndFooter();
         }
 
-        // Generate PDF to temp file
         try {
             $browsershot->save($tempPath);
         } catch (\Exception $e) {
-            // Browsershot throws exceptions on failure - re-throw with context
             throw new \RuntimeException(
                 "PDF generation failed: {$e->getMessage()}",
                 0,
@@ -163,29 +191,20 @@ class PdfReportService
             );
         }
 
-        // Verify file was created
         if (! file_exists($tempPath)) {
             throw new \RuntimeException("PDF file was not created at: {$tempPath}");
         }
 
-        // Read PDF content
         $pdfContent = file_get_contents($tempPath);
         $fileSize = filesize($tempPath);
-
-        // Store using FileStorageService (school-scoped storage)
-        $storagePath = $this->fileStorageService->storeReport(
-            $pdfContent,
-            $filename,
-            $organizationId,
-            $schoolId,
-            $config->reportKey ?? 'general'
-        );
-
-        // Clean up temp file
         @unlink($tempPath);
 
+        if ($pdfContent === false || $pdfContent === '') {
+            throw new \RuntimeException('Generated PDF was empty');
+        }
+
         return [
-            'path' => $storagePath,
+            'content' => $pdfContent,
             'filename' => $filename,
             'size' => $fileSize,
         ];

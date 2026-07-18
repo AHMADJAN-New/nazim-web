@@ -45,11 +45,11 @@ class ExcelReportService
     /**
      * PhpSpreadsheet cannot bind arrays/objects to a cell; convert to a safe scalar.
      */
-    private function normalizeSpreadsheetValue(mixed $value): string|int|float|bool
+    private function normalizeSpreadsheetValue(mixed $value, string $emptyPlaceholder = '—'): string|int|float|bool
     {
-        // Match PDF behavior for empty cells
+        // Match PDF behavior for empty cells (marks-entry uses blank placeholder)
         if ($value === null || $value === '') {
-            return '—';
+            return $emptyPlaceholder;
         }
 
         // Preserve numeric/bool types where possible (Excel treats them correctly)
@@ -75,9 +75,9 @@ class ExcelReportService
      * Excel treats strings beginning with =, +, -, @ as formulas.
      * Force those values (and all other strings) to plain text cells.
      */
-    private function setCellValueSafe($sheet, string $coordinate, mixed $value): void
+    private function setCellValueSafe($sheet, string $coordinate, mixed $value, string $emptyPlaceholder = '—'): void
     {
-        $normalized = $this->normalizeSpreadsheetValue($value);
+        $normalized = $this->normalizeSpreadsheetValue($value, $emptyPlaceholder);
         $cell = $sheet->getCell($coordinate);
 
         if (is_string($normalized)) {
@@ -212,70 +212,99 @@ class ExcelReportService
                 $this->reportProgress($progressCallback, min(90, $pct), 'Built sheet '.($sheetIndex + 1).' of '.count($sheets));
             }
 
-            $result = $this->saveToFile($spreadsheet, $config, $organizationId, $schoolId);
+            $result = $this->saveToFile($spreadsheet, $config, $organizationId, $schoolId, store: true);
             $this->reportProgress($progressCallback, 100, 'Excel file saved');
 
             return $result;
         }
 
-        // Create spreadsheet
+        $spreadsheet = $this->buildSingleSheetSpreadsheet($config, $context, $progressCallback);
+
+        $result = $this->saveToFile($spreadsheet, $config, $organizationId, $schoolId, store: true);
+        $this->reportProgress($progressCallback, 100, 'Excel file saved');
+
+        return $result;
+    }
+
+    /**
+     * Generate Excel binary without storing (for ZIP packs).
+     *
+     * @return array{content: string, filename: string, size: int}
+     */
+    public function generateContent(
+        ReportConfig $config,
+        array $context,
+        ?callable $progressCallback = null
+    ): array {
+        $this->tempImageFiles = [];
+        $this->reportProgress($progressCallback, 0, 'Starting Excel generation');
+
+        $sheets = $context['parameters']['sheets'] ?? null;
+        if (is_array($sheets) && count($sheets) > 0) {
+            // Multi-sheet path still goes through generate() storage flow; ZIP uses single-sheet tables.
+            throw new \InvalidArgumentException('generateContent does not support multi-sheet workbooks');
+        }
+
+        $spreadsheet = $this->buildSingleSheetSpreadsheet($config, $context, $progressCallback);
+        $result = $this->saveToFile($spreadsheet, $config, '', '', store: false);
+        $this->reportProgress($progressCallback, 100, 'Excel generated');
+
+        return [
+            'content' => $result['content'],
+            'filename' => $result['filename'],
+            'size' => $result['size'],
+        ];
+    }
+
+    /**
+     * @param  callable|null  $progressCallback
+     */
+    private function buildSingleSheetSpreadsheet(
+        ReportConfig $config,
+        array $context,
+        ?callable $progressCallback
+    ): Spreadsheet {
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Set sheet title
         $sheetTitle = $this->sanitizeSheetTitle($config->title ?: 'Report');
         $sheet->setTitle($sheetTitle);
 
         $this->reportProgress($progressCallback, 10, 'Spreadsheet created');
 
-        // Set RTL if needed
         if ($context['rtl'] ?? true) {
             $sheet->setRightToLeft(true);
         }
 
         $currentRow = 1;
 
-        // Add header section with logos
         $currentRow = $this->addHeaderSection($sheet, $context, $currentRow);
         $this->reportProgress($progressCallback, 30, 'Header section added');
 
-        // Add title
         $currentRow = $this->addTitleSection($sheet, $context, $currentRow);
         $this->reportProgress($progressCallback, 40, 'Title section added');
 
-        // Add notes header
         $currentRow = $this->addNotesSection($sheet, $context['NOTES_HEADER'] ?? [], $currentRow);
 
-        // Add table
         $currentRow = $this->addTableSection($sheet, $context, $currentRow);
         $this->reportProgress($progressCallback, 70, 'Table section added');
 
-        // Add notes body
         $currentRow = $this->addNotesSection($sheet, $context['NOTES_BODY'] ?? [], $currentRow);
 
-        // Add footer section
         $currentRow = $this->addFooterSection($sheet, $context, $currentRow);
         $this->reportProgress($progressCallback, 80, 'Footer section added');
 
-        // Add notes footer
         $this->addNotesSection($sheet, $context['NOTES_FOOTER'] ?? [], $currentRow);
 
-        // Apply page settings
         $this->applyPageSettings($sheet, $context);
         $this->reportProgress($progressCallback, 90, 'Page settings applied');
 
-        // Add watermark after all content (so we know dimensions)
-        // Note: In Excel, watermarks added later appear on top, but we position them to simulate background
         $columns = $context['COLUMNS'] ?? [];
-        $colCount = count($columns) + 1; // +1 for row number column
+        $colCount = count($columns) + 1;
         $this->addWatermark($sheet, $context, $currentRow, $colCount);
         $this->reportProgress($progressCallback, 95, 'Watermark added');
 
-        // Save to file
-        $result = $this->saveToFile($spreadsheet, $config, $organizationId, $schoolId);
-        $this->reportProgress($progressCallback, 100, 'Excel file saved');
-
-        return $result;
+        return $spreadsheet;
     }
 
     /**
@@ -504,6 +533,9 @@ class ExcelReportService
         $primaryColor = $this->colorToArgb($context['PRIMARY_COLOR'] ?? '#0b0b56');
         $secondaryColor = $this->colorToArgb($context['SECONDARY_COLOR'] ?? '#0056b3');
         $useAlternating = $context['table_alternating_colors'] ?? true;
+        $emptyPlaceholder = array_key_exists('EMPTY_CELL_PLACEHOLDER', $context)
+            ? (string) $context['EMPTY_CELL_PLACEHOLDER']
+            : '—';
 
         // Add row number header
         $headerRow = $startRow;
@@ -598,7 +630,7 @@ class ExcelReportService
                 }
 
                 // Normalize to spreadsheet-safe scalar; PhpSpreadsheet cannot bind arrays/objects.
-                $this->setCellValueSafe($sheet, "{$colLetter}{$currentRow}", $value);
+                $this->setCellValueSafe($sheet, "{$colLetter}{$currentRow}", $value, $emptyPlaceholder);
                 $colIndex++;
             }
 
@@ -631,8 +663,17 @@ class ExcelReportService
 
             $sheet->getStyle("A{$currentRow}:{$lastCol}{$currentRow}")->applyFromArray($rowStyle);
 
+            // Marks-entry templates: taller blank rows for pen writing
+            if ($emptyPlaceholder === '') {
+                $sheet->getRowDimension($currentRow)->setRowHeight(24);
+            }
+
             $currentRow++;
             $rowNumber++;
+        }
+
+        if ($emptyPlaceholder === '') {
+            $sheet->getColumnDimension('A')->setWidth(8);
         }
 
         // Add totals row if applicable (for reports with numeric data)
@@ -719,24 +760,21 @@ class ExcelReportService
             $currentRow = $totalsRow + 1;
         }
 
-        // Always fit Excel columns to actual cell content.
-        // Do NOT use COL_WIDTHS here — those are PDF percentage widths, and converting them
-        // produced tiny columns (often ~8) that truncated name / father name / class text.
+        // Fit columns to DATA content (not PDF COL_WIDTHS, not inflated RTL headers).
         for ($i = 1; $i <= $colIndex - 1; $i++) {
             $colLetter = $this->getColumnLetter($i);
             $sheet->getColumnDimension($colLetter)->setAutoSize(false);
 
-            // Row-number column stays compact
             if ($i === 1) {
-                $sheet->getColumnDimension($colLetter)->setWidth(6);
+                $sheet->getColumnDimension($colLetter)->setWidth(4.5);
 
                 continue;
             }
 
             $calculatedWidth = $this->calculateColumnWidth($sheet, $colLetter, $headerRow, $currentRow - 1);
             if ($calculatedWidth > 0) {
-                // Extra room for Bahij/RTL names — previous sizes were still slightly tight
-                $finalWidth = max(14, min(120, ($calculatedWidth * 1.25) + 6));
+                // Tight fit: small padding, sensible max for long names only
+                $finalWidth = max(5, min(42, $calculatedWidth + 1.2));
                 $sheet->getColumnDimension($colLetter)->setWidth($finalWidth);
 
                 if (config('app.debug')) {
@@ -748,7 +786,7 @@ class ExcelReportService
                     ]);
                 }
             } else {
-                $sheet->getColumnDimension($colLetter)->setWidth(14);
+                $sheet->getColumnDimension($colLetter)->setWidth(8);
             }
         }
 
@@ -1211,29 +1249,39 @@ class ExcelReportService
      * Save spreadsheet to file
      * CRITICAL: Reports are school-scoped and MUST include both organizationId and schoolId
      */
-    private function saveToFile(Spreadsheet $spreadsheet, ReportConfig $config, string $organizationId, string $schoolId): array
-    {
-        // Generate unique filename
+    /**
+     * @return array{path?: string, content?: string, filename: string, size: int}
+     */
+    private function saveToFile(
+        Spreadsheet $spreadsheet,
+        ReportConfig $config,
+        string $organizationId,
+        string $schoolId,
+        bool $store = true
+    ): array {
         $filename = $this->generateFilename($config);
-
-        // Create temp file for PhpSpreadsheet (it needs a file path)
         $tempDir = sys_get_temp_dir();
         $tempPath = $tempDir.'/'.$filename;
 
         try {
-            // Save file to temp location
-            // NOTE: PhpSpreadsheet needs access to image files during save, so temp image files
-            // must still exist at this point (they're cleaned up after save)
             $writer = new Xlsx($spreadsheet);
             $writer->save($tempPath);
 
-            // Get file size
             $fileSize = filesize($tempPath);
-
-            // Read file content
             $fileContent = file_get_contents($tempPath);
 
-            // Store using FileStorageService (school-scoped storage)
+            if ($fileContent === false || $fileContent === '') {
+                throw new \RuntimeException('Generated Excel file was empty');
+            }
+
+            if (! $store) {
+                return [
+                    'content' => $fileContent,
+                    'filename' => $filename,
+                    'size' => $fileSize,
+                ];
+            }
+
             $storagePath = $this->fileStorageService->storeReport(
                 $fileContent,
                 $filename,
@@ -1248,12 +1296,10 @@ class ExcelReportService
                 'size' => $fileSize,
             ];
         } finally {
-            // Clean up temp Excel file
             if (file_exists($tempPath)) {
                 @unlink($tempPath);
             }
 
-            // Clean up all temporary image files (logos, watermarks) after spreadsheet is saved
             foreach ($this->tempImageFiles as $imagePath) {
                 if (file_exists($imagePath)) {
                     @unlink($imagePath);
@@ -1308,13 +1354,12 @@ class ExcelReportService
      */
     private function calculateColumnWidth($sheet, string $colLetter, int $startRow, int $endRow): float
     {
-        $maxWidth = 0;
-
         $headerFontSize = $sheet->getStyle("{$colLetter}{$startRow}")->getFont()->getSize();
         $defaultFontSize = is_numeric($headerFontSize) ? (float) $headerFontSize : 11.0;
 
-        // Cap scan for very large sheets (still covers typical class lists)
         $scanEnd = min($endRow, $startRow + 2000);
+        $headerWidth = 0.0;
+        $dataWidth = 0.0;
 
         for ($row = $startRow; $row <= $scanEnd; $row++) {
             $value = $sheet->getCell("{$colLetter}{$row}")->getValue();
@@ -1325,21 +1370,48 @@ class ExcelReportService
             $text = (string) $value;
             $cellFontSize = $sheet->getStyle("{$colLetter}{$row}")->getFont()->getSize();
             $fontSize = is_numeric($cellFontSize) ? (float) $cellFontSize : $defaultFontSize;
-            $charCount = mb_strlen($text, 'UTF-8');
-            $fontSizeFactor = max(0.85, $fontSize / 11.0);
+            $width = $this->estimateExcelTextWidth($text, $fontSize);
 
-            // Bahij / Arabic / Pashto glyphs need ~2.4x Latin width in Excel character units
-            $hasRTL = preg_match(
-                '/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}]/u',
-                $text
-            ) === 1;
-            $rtlFactor = $hasRTL ? 2.4 : 1.15;
-
-            $width = ($charCount * $fontSizeFactor * $rtlFactor) + 2.5;
-            $maxWidth = max($maxWidth, $width);
+            if ($row === $startRow) {
+                $headerWidth = $width;
+            } else {
+                $dataWidth = max($dataWidth, $width);
+            }
         }
 
-        return $maxWidth;
+        // Headers wrap (wrapText=true) — do not let long Pashto labels inflate every column.
+        // Size primarily to the widest DATA cell; keep a small floor so short headers stay readable.
+        $headerFloor = min(max($headerWidth * 0.45, 4.5), 12.0);
+
+        return max($dataWidth, $headerFloor);
+    }
+
+    /**
+     * Estimate Excel column width units for a cell value.
+     */
+    private function estimateExcelTextWidth(string $text, float $fontSize): float
+    {
+        $charCount = mb_strlen($text, 'UTF-8');
+        if ($charCount === 0) {
+            return 0.0;
+        }
+
+        $fontSizeFactor = max(0.9, $fontSize / 11.0);
+
+        // Digits / short Latin codes (roll, secret, card) stay compact even under RTL sheets
+        $isMostlyAscii = preg_match('/^[\x20-\x7E]+$/u', $text) === 1;
+        if ($isMostlyAscii) {
+            return ($charCount * $fontSizeFactor * 1.05) + 0.8;
+        }
+
+        // Mixed/RTL (Pashto names): modest boost — not 2x+ which overshoots badly
+        $hasRTL = preg_match(
+            '/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}]/u',
+            $text
+        ) === 1;
+        $rtlFactor = $hasRTL ? 1.28 : 1.05;
+
+        return ($charCount * $fontSizeFactor * $rtlFactor) + 1.0;
     }
 
     /**

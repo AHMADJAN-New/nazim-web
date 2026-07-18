@@ -28,6 +28,7 @@ import {
   mapMarksProgressApiToDomain,
   mapExamAttendanceApiToDomain,
   mapAttendanceSummaryApiToDomain,
+  mapExamAttendanceReportDetailApiToDomain,
   mapTimeslotStudentsResponseApiToDomain,
   mapStudentAttendanceReportApiToDomain,
   mapTimeslotAttendanceSummaryApiToDomain,
@@ -38,6 +39,7 @@ import type {
   ExamSummaryReport, ClassMarkSheetReport, StudentResultReport,
   EnrollmentStats, MarksProgress, ExamStatus, ExamAttendance,
   ExamAttendanceSummary, TimeslotStudentsResponse, StudentAttendanceReport,
+  ExamAttendanceReportDetail,
   TimeslotAttendanceSummary, ExamAttendanceStatus
 } from '@/types/domain/exam';
 
@@ -908,6 +910,36 @@ export const useExamAttendanceSummary = (examId?: string) => {
   });
 };
 
+export const useExamAttendanceReportDetail = (
+  examId?: string,
+  examClassId?: string | null,
+  examSubjectId?: string | null
+) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<ExamAttendanceReportDetail | null>({
+    queryKey: [
+      'exam-attendance-report-detail',
+      examId,
+      examClassId ?? null,
+      examSubjectId ?? null,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
+    queryFn: async () => {
+      if (!user || !profile || !examId || !examClassId || !examSubjectId) return null;
+      const apiDetail = await examAttendanceApi.reportDetail(examId, {
+        exam_class_id: examClassId,
+        exam_subject_id: examSubjectId,
+      });
+      return mapExamAttendanceReportDetailApiToDomain(apiDetail as ExamApi.ExamAttendanceReportDetail);
+    },
+    enabled: !!user && !!profile && !!examId && !!examClassId && !!examSubjectId,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
 export const useTimeslotStudents = (examId?: string, examTimeId?: string) => {
   const { user, profile } = useAuth();
 
@@ -1354,11 +1386,15 @@ export const useMarkHallExamAttendance = () => {
       if (!data.silent) {
         showToast.success(t('toast.attendanceMarked', { count: total }) || `Attendance marked for ${total} students`);
       }
-      void queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
-      void queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
+      // Silent hall taps: skip refetching the large seating payload (causes Opera OOM with ~1000 students).
+      // Local optimistic state already reflects marks; full sync happens on Finish / non-silent save.
       void queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
-      void queryClient.invalidateQueries({ queryKey: ['timeslot-attendance-summary'] });
-      void queryClient.invalidateQueries({ queryKey: ['exam-hall-attendance-students'] });
+      if (!data.silent) {
+        void queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
+        void queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
+        void queryClient.invalidateQueries({ queryKey: ['timeslot-attendance-summary'] });
+        void queryClient.invalidateQueries({ queryKey: ['exam-hall-attendance-students'] });
+      }
     },
     onError: (error: Error) => {
       showToast.error(error?.message || t('toast.attendanceMarkFailed') || 'Failed to mark attendance');

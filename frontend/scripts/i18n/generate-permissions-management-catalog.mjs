@@ -784,7 +784,7 @@ const ACTION_LABEL = {
     enroll_from_main: 'ثبت‌نام از اصلی',
     copy_to_main: 'رونوشت به اصلی',
     enroll_students: 'ثبت‌نام شاگردان',
-    enter_marks: 'ثبت نمرات',
+    enter_marks: 'ثبت نمرې',
     manage_attendance: 'مدیریت حاضری',
     manage_timetable: 'جدول امتحان',
     manage_preferences: 'تنظیم ترجیحات',
@@ -893,7 +893,7 @@ function actionLabelForFixed(lang, action, permissionName) {
   if (examNested.includes(action) && lang === 'fa') {
     const faEx = {
       view_reports: 'مشاهده گزارش‌ها',
-      view_grade_cards: 'کارت نمرات',
+      view_grade_cards: 'کارت نمرې',
       view_consolidated_reports: 'گزارش‌های تجمیعی',
       view_class_reports: 'گزارش صنف',
       view_student_reports: 'گزارش شاگرد',
@@ -901,7 +901,7 @@ function actionLabelForFixed(lang, action, permissionName) {
       manage_timetable: 'جدول زمانی',
       manage_attendance: 'حاضری',
       enroll_students: 'ثبت‌نام شاگردان',
-      enter_marks: 'ثبت نمرات',
+      enter_marks: 'ثبت نمرې',
       'numbers.print': 'چاپ',
     };
     return faEx[action] ?? humanize(action);

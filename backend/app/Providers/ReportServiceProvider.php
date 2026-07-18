@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Exams\ExamAttendanceReportService;
+use App\Services\Exams\ExamMarksEntryReportService;
 use App\Services\Exams\ExamNumberReportService;
 use App\Services\Reports\BrandingCacheService;
 use App\Services\Reports\DateConversionService;
@@ -51,7 +53,9 @@ class ReportServiceProvider extends ServiceProvider
                 $app->make(ExcelReportService::class),
                 $app->make(DateConversionService::class),
                 $app->make(StudentHistoryService::class),
-                $app->make(ExamNumberReportService::class)
+                $app->make(ExamNumberReportService::class),
+                $app->make(ExamAttendanceReportService::class),
+                $app->make(ExamMarksEntryReportService::class)
             );
         });
     }

@@ -91,6 +91,7 @@ import {
   ExamNumberReportsPage,
   GradesManagement,
   ExamReportsHub,
+  ExamAttendanceReportPage,
   ConsolidatedMarkSheet,
   ClassSubjectMarkSheet,
   StudentExamReport,
@@ -1389,6 +1390,13 @@ const App = () => (
                       <PermissionRoute permission="exams.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamReportsHub />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/reports/attendance" element={
+                      <PermissionRoute permission="exams.view_attendance_reports">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamAttendanceReportPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

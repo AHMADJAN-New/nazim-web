@@ -39,7 +39,7 @@ export default {
     export: "تصدير",
     exportExcel: "تصدير Excel",
     exportPdf: "تصدير PDF",
-    fail: "Fail",
+    fail: "راسب",
     filter: "تصفية",
     filters: "Filters",
     from: "من",

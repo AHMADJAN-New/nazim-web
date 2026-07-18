@@ -1185,7 +1185,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: FileOutput,
           }] : []),
           // Reports Submenu - at the end
-          ...((hasExamsReportsPermission || hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission || hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission || hasExamsNumbersPrintPermission) ? [{
+          ...((hasExamsReportsPermission || hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission || hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission || hasExamsViewAttendancePermission || hasExamsNumbersPrintPermission) ? [{
             title: "Reports",
             titleKey: "examReports",
             icon: FileBarChart,
@@ -1201,6 +1201,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
                 titleKey: "examAnalytics",
                 url: "/exams/analytics",
                 icon: ChartSpline,
+              }] : []),
+              ...(hasExamsViewAttendancePermission ? [{
+                title: "Exam Attendance Report",
+                titleKey: "examAttendanceReport",
+                url: "/exams/reports/attendance",
+                icon: ClipboardList,
               }] : []),
               ...(hasExamsViewConsolidatedReportsPermission ? [{
                 title: "Consolidated Mark Sheet",

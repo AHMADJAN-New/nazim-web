@@ -27,6 +27,8 @@ export interface GenerateReportRequest {
   columns: (string | ReportColumn)[];
   rows: Record<string, any>[];
   async?: boolean;
+  calendar_preference?: 'gregorian' | 'jalali' | 'qamari' | 'shamsi' | 'hijri_qamari';
+  language?: 'en' | 'ps' | 'fa' | 'ar';
 }
 
 export interface GenerateReportResponse {
@@ -99,6 +101,8 @@ export interface ServerReportOptions<T extends Record<string, any>> {
   parameters?: Record<string, any>;
   columnConfig?: Record<string, { width?: number; align?: string }>;
   async?: boolean;
+  calendarPreference?: 'gregorian' | 'jalali' | 'qamari';
+  language?: 'en' | 'ps' | 'fa' | 'ar';
   onProgress?: (progress: number, message?: string) => void;
   onComplete?: (downloadUrl?: string | null) => void;
   onError?: (error: string) => void;

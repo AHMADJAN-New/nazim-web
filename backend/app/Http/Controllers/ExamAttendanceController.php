@@ -797,6 +797,14 @@ class ExamAttendanceController extends Controller
             $bySubject[$subjectKey][$row->status] = $row->count;
         }
 
+        $byClassSubject = app(\App\Services\Exams\ExamAttendanceReportService::class)
+            ->buildClassSubjectMatrix(
+                $profile->organization_id,
+                $currentSchoolId,
+                $examId,
+                is_string($exam->academic_year_id) ? $exam->academic_year_id : null
+            );
+
         return response()->json([
             'exam' => [
                 'id' => $exam->id,
@@ -813,6 +821,85 @@ class ExamAttendanceController extends Controller
             ],
             'by_class' => array_values($byClass),
             'by_subject' => array_values($bySubject),
+            'by_class_subject' => $byClassSubject,
+        ]);
+    }
+
+    /**
+     * Class–subject attendance detail for report viewing
+     * GET /api/exams/{exam}/attendance/report/detail
+     */
+    public function reportDetail(Request $request, string $examId)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        try {
+            if (! $user->hasPermissionTo('exams.view_attendance_reports')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for exams.view_attendance_reports: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'exam_class_id' => 'required|uuid',
+            'exam_subject_id' => 'required|uuid',
+        ]);
+
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $examId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        $detail = app(\App\Services\Exams\ExamAttendanceReportService::class)
+            ->buildClassSubjectDetail(
+                $profile->organization_id,
+                $currentSchoolId,
+                $examId,
+                $validated['exam_class_id'],
+                $validated['exam_subject_id'],
+                is_string($exam->academic_year_id) ? $exam->academic_year_id : null
+            );
+
+        if (! $detail) {
+            return response()->json(['error' => 'Class–subject attendance report not found'], 404);
+        }
+
+        return response()->json([
+            'exam' => [
+                'id' => $exam->id,
+                'name' => $exam->name,
+                'status' => $exam->status,
+            ],
+            'exam_class_id' => $detail['exam_class_id'],
+            'exam_subject_id' => $detail['exam_subject_id'],
+            'class_name' => $detail['class_name'],
+            'section_name' => $detail['section_name'],
+            'class_label' => $detail['class_label'],
+            'subject_name' => $detail['subject_name'],
+            'date' => $detail['date'],
+            'start_time' => $detail['start_time'],
+            'end_time' => $detail['end_time'],
+            'counts' => $detail['counts'],
+            'students' => $detail['rows'],
         ]);
     }
 

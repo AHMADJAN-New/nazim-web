@@ -227,7 +227,7 @@ export default {
     filtersDescription: "محدوده تاریخ، سال تعلیمی، صنف، شاگرد و سایر فیلترها را انتخاب کنید. داده‌ها بر اساس مکتب فعال در هدر است.",
     filtersTitle: "فیلترهای گزارش",
     currentSchoolContext: "مکتب فعال: {schoolName}",
-    totalMarkedRecords: "مجموع نمرات حاضری",
+    totalMarkedRecords: "مجموع نمرې حاضری",
     presentTotal: "حاضر (مجموع)",
     absentTotal: "غایب (مجموع)",
     lateTotal: "تأخیر (مجموع)",
@@ -236,7 +236,7 @@ export default {
     tableFooterTotal: "مجموع",
     studentBreakdownTitle: "تجزیه شاگردان",
     studentBreakdownHint:
-      "وقتی صنف یا سال تعلیمی انتخاب شده و شاگرد خاصی انتخاب نشده باشد، شاگردان بر اساس بیشترین نمرات حاضری فهرست می‌شوند و صفحه‌بندی دارند.",
+      "وقتی صنف یا سال تعلیمی انتخاب شده و شاگرد خاصی انتخاب نشده باشد، شاگردان بر اساس بیشترین نمرې حاضری فهرست می‌شوند و صفحه‌بندی دارند.",
     columnAdmission: "شماره شمولیت",
     columnFatherName: "نام پدر",
     columnBuildingRoom: "ساختمان و اتاق",

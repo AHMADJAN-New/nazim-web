@@ -100,19 +100,32 @@ export function ExamHallAttendancePanel({
 
   const seats = data?.seats ?? EMPTY_SEATS;
   const markableStudents = data?.students ?? EMPTY_STUDENTS;
+  /** Fingerprint of server attendance so we don't rebuild Maps / re-render on identical data. */
+  const attendanceSyncKey = useMemo(
+    () =>
+      markableStudents
+        .map((s) => `${s.studentId}:${s.attendance?.status ?? ''}`)
+        .join('|'),
+    [markableStudents]
+  );
 
   useEffect(() => {
-    setStatusByStudent(() => {
+    setStatusByStudent((prev) => {
       const next = new Map<string, ExamAttendanceStatus | null>();
+      let changed = prev.size !== markableStudents.length;
       markableStudents.forEach((s) => {
         if (!s.studentId) return;
         // Keep optimistic local/pending status until the server confirms it
         const pending = pendingRef.current.get(s.studentId);
-        next.set(s.studentId, pending?.status ?? s.attendance?.status ?? null);
+        const value = pending?.status ?? s.attendance?.status ?? null;
+        next.set(s.studentId, value);
+        if (!changed && prev.get(s.studentId) !== value) {
+          changed = true;
+        }
       });
-      return next;
+      return changed ? next : prev;
     });
-  }, [markableStudents, mapId, session.date, session.startTime]);
+  }, [attendanceSyncKey, markableStudents, mapId, session.date, session.startTime]);
 
   const seatsWithStatus = useMemo(() => {
     return seats.map((seat) => ({
@@ -135,12 +148,8 @@ export function ExamHallAttendancePanel({
 
   useEffect(() => {
     setCurrentSliceIndex(0);
-    if (!mapId) {
-      setViewMode('walk');
-    } else {
-      // Prefer full map when a seating map is selected so taps work on the layout
-      setViewMode('map');
-    }
+    // Always start in walk mode — full map with hundreds of detailed cards can OOM browsers (esp. Opera).
+    setViewMode('walk');
   }, [mapId, session.date, session.startTime]);
 
   useEffect(() => {
@@ -208,7 +217,7 @@ export function ExamHallAttendancePanel({
         silent: true,
       });
       setSyncState('saved');
-      void refetch();
+      // Avoid full hall-student refetch on every tap (large payload + DOM rebuild → memory pressure).
     } catch {
       batch.forEach((item) => {
         pendingRef.current.set(item.studentId, {
@@ -327,7 +336,10 @@ export function ExamHallAttendancePanel({
     setSyncState('saving');
     try {
       await flushPending();
+      // One full sync after finish (not after every seat tap)
+      await refetch();
       showToast.success(t('exams.attendance.hallFinished'));
+      setSyncState('saved');
     } catch {
       setSyncState('error');
     }
@@ -371,11 +383,14 @@ export function ExamHallAttendancePanel({
 
   const mapRows = data.map?.rows ?? 0;
   const mapColumns = data.map?.columns ?? 0;
+  /** Large full maps with detailed cards overwhelm Chromium/Opera memory. */
+  const useCompactMap = viewMode === 'map' && seats.length > 80;
 
   const renderSeatCard = (seat: HallAttendanceSeat & { status: ExamAttendanceStatus | null }) => {
     const interactive =
       canMark && seat.markable && !!seat.studentId && !!seat.examTimeId && !seat.isDisabled;
     const status = seat.markable ? seat.status : null;
+    const compact = useCompactMap;
 
     return (
       <button
@@ -384,7 +399,7 @@ export function ExamHallAttendancePanel({
         disabled={!interactive}
         className={cn(
           'rounded-lg border-2 text-start transition-colors select-none h-full w-full flex flex-col touch-manipulation relative overflow-hidden',
-          'min-h-[148px] p-3 gap-1',
+          compact ? 'min-h-[72px] p-1.5 gap-0.5' : 'min-h-[148px] p-3 gap-1',
           seat.isDisabled && 'bg-muted/40 border-muted opacity-50',
           !seat.isDisabled && !seat.studentId && 'bg-muted/20 border-dashed border-muted-foreground/30',
           !seat.isDisabled &&
@@ -430,7 +445,7 @@ export function ExamHallAttendancePanel({
             <span
               className={cn(
                 'inline-flex items-center justify-center rounded-md bg-muted/80 px-1.5 font-semibold tabular-nums shrink-0',
-                'text-sm h-7 min-w-7'
+                compact ? 'text-xs h-6 min-w-6' : 'text-sm h-7 min-w-7'
               )}
             >
               {seat.seatNumber}
@@ -438,11 +453,11 @@ export function ExamHallAttendancePanel({
             {status && (
               <span className="inline-flex items-center gap-1 text-xs font-medium shrink-0">
                 {STATUS_ICONS[status]}
-                <span className="hidden sm:inline">{t(STATUS_LABEL_KEYS[status])}</span>
+                {!compact && <span className="hidden sm:inline">{t(STATUS_LABEL_KEYS[status])}</span>}
               </span>
             )}
           </div>
-          {interactive && (
+          {interactive && !compact && (
             <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0 px-1 py-0.5">
               {t('exams.attendance.hallSetStatus')}
             </span>
@@ -452,30 +467,35 @@ export function ExamHallAttendancePanel({
         <div className="flex-1 w-full min-w-0 text-start pointer-events-none space-y-0.5">
           {seat.fullName ? (
             <>
-              <div className="font-semibold leading-snug text-foreground text-sm sm:text-base break-words">
+              <div
+                className={cn(
+                  'font-semibold leading-snug text-foreground break-words',
+                  compact ? 'text-xs line-clamp-2' : 'text-sm sm:text-base'
+                )}
+              >
                 {seat.fullName}
               </div>
-              {seat.fatherName && (
+              {!compact && seat.fatherName && (
                 <div className="text-xs sm:text-sm text-muted-foreground break-words">
                   {t('exams.fatherName')}: {seat.fatherName}
                 </div>
               )}
               {seat.rollNumber && (
-                <div className="text-xs sm:text-sm text-muted-foreground">
+                <div className={cn('text-muted-foreground', compact ? 'text-[10px]' : 'text-xs sm:text-sm')}>
                   {t('exams.rollNumbers.rollNumber')}: {seat.rollNumber}
                 </div>
               )}
-              {seat.admissionNo && (
+              {!compact && seat.admissionNo && (
                 <div className="text-xs sm:text-sm text-muted-foreground break-all">
                   {t('exams.admissionNo')}: {seat.admissionNo}
                 </div>
               )}
-              {seat.className && (
+              {!compact && seat.className && (
                 <div className="text-xs sm:text-sm text-muted-foreground break-words">
                   {seat.className}
                 </div>
               )}
-              {hasSeatingMap && (
+              {!compact && hasSeatingMap && (
                 <div className="text-[10px] sm:text-xs text-muted-foreground pt-0.5">
                   {t('exams.attendance.hallRow')} {seat.rowNumber}
                   {' · '}
@@ -491,7 +511,7 @@ export function ExamHallAttendancePanel({
             </div>
           )}
 
-          {seat.studentId && !seat.markable && !seat.isDisabled && (
+          {!compact && seat.studentId && !seat.markable && !seat.isDisabled && (
             <div className="text-[10px] text-amber-700 dark:text-amber-400 mt-1">
               {t('exams.attendance.hallSeatNotMarkable')}
             </div>
@@ -699,12 +719,16 @@ export function ExamHallAttendancePanel({
       ) : (
         <div className="overflow-auto -mx-1 px-1 pb-2 max-h-[70vh]">
           <div
-            className="grid gap-3 min-w-max"
+            className={cn('grid min-w-max', useCompactMap ? 'gap-1' : 'gap-3')}
             style={{
-              gridTemplateColumns: `repeat(${mapColumns || 4}, minmax(180px, 200px))`,
-              gridAutoRows: 'minmax(148px, auto)',
+              gridTemplateColumns: useCompactMap
+                ? `repeat(${mapColumns || 4}, minmax(96px, 110px))`
+                : `repeat(${mapColumns || 4}, minmax(180px, 200px))`,
+              gridAutoRows: useCompactMap ? 'minmax(72px, auto)' : 'minmax(148px, auto)',
               gridTemplateRows:
-                mapRows > 0 ? `repeat(${mapRows}, minmax(148px, auto))` : undefined,
+                mapRows > 0
+                  ? `repeat(${mapRows}, minmax(${useCompactMap ? 72 : 148}px, auto))`
+                  : undefined,
             }}
           >
             {seatsWithStatus.map((seat) => renderSeatCard(seat))}

@@ -596,25 +596,25 @@ export default function ExamAttendancePage() {
       {attendanceSummary && (
         <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <StatsCard
-            title="Enrolled Students"
+            title={t('exams.attendance.enrolledStudents')}
             value={attendanceSummary.totals.enrolledStudents}
             icon={Users}
             color="blue"
           />
           <StatsCard
-            title="Present"
+            title={t('exams.attendance.hallPresent')}
             value={attendanceSummary.totals.present}
             icon={Check}
             color="green"
           />
           <StatsCard
-            title="Absent"
+            title={t('exams.attendance.hallAbsent')}
             value={attendanceSummary.totals.absent}
             icon={X}
             color="red"
           />
           <StatsCard
-            title="Late / Excused"
+            title={t('exams.attendance.lateExcused')}
             value={attendanceSummary.totals.late + attendanceSummary.totals.excused}
             icon={Clock}
             color="amber"

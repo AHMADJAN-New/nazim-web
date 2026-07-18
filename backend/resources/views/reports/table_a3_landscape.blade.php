@@ -142,7 +142,8 @@
                             }
                             // Only show non-empty values, otherwise show em dash
                             // NOTE: "0" is a valid value and must be shown.
-                            $displayValue = ($value !== null && $value !== '') ? $value : '—';
+                            $emptyPlaceholder = $EMPTY_CELL_PLACEHOLDER ?? '—';
+                            $displayValue = ($value !== null && $value !== '') ? $value : $emptyPlaceholder;
                         @endphp
                         <td style="padding: 3px 3px;">{{ $displayValue }}</td>
                     @endforeach

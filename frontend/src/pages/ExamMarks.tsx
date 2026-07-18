@@ -1,7 +1,8 @@
-import { CheckCircle, Save, UserX, ArrowLeft, Search, QrCode, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
+import { CheckCircle, Save, UserX, ArrowLeft, Search, QrCode, ArrowUpDown, ArrowUp, ArrowDown, X, Download } from 'lucide-react';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
+import { MarksEntryExportDialog } from '@/components/exams/MarksEntryExportDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +34,7 @@ import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import type { Exam, ExamClass, ExamSubject, ExamStudent, ExamResult } from '@/types/domain/exam';
 
-type SortField = 'name' | 'rollNumber' | 'secretNumber' | 'admissionNo' | 'marks';
+type SortField = 'name' | 'fatherName' | 'rollNumber' | 'secretNumber' | 'marks';
 type SortDirection = 'asc' | 'desc' | null;
 
 interface StudentMarksRowProps {
@@ -57,6 +58,7 @@ function StudentMarksRow({
   isHighlighted = false,
   marksInputRef
 }: StudentMarksRowProps) {
+  const { t } = useLanguage();
   const [marks, setMarks] = useState<string>(result?.marksObtained?.toString() || '');
   const [isAbsent, setIsAbsent] = useState<boolean>(result?.isAbsent || false);
   const [remarks, setRemarks] = useState<string>(result?.remarks || '');
@@ -111,18 +113,18 @@ function StudentMarksRow({
   const studentName = student.studentAdmission?.student?.fullName || 
     (student.studentAdmission?.student as any)?.full_name || 
     student.studentAdmissionId || 
-    'Unknown Student';
-  
-  const admissionNo = (student.studentAdmission?.student as any)?.admission_no || 
-    (student.studentAdmission?.student as any)?.student_code || 
+    t('exams.unknownStudent');
+
+  const fatherName = student.studentAdmission?.student?.fatherName ||
+    (student.studentAdmission?.student as any)?.father_name ||
     '—';
 
   return (
     <TableRow className={cn(isHighlighted && 'bg-primary/10 ring-2 ring-primary')}>
       <TableCell className="font-medium">{studentName}</TableCell>
+      <TableCell>{fatherName}</TableCell>
       <TableCell className="font-mono text-sm">{student.examRollNumber || '—'}</TableCell>
       <TableCell className="font-mono text-sm">{student.examSecretNumber || '—'}</TableCell>
-      <TableCell className="text-muted-foreground font-mono text-sm">{admissionNo}</TableCell>
       <TableCell>
         <Input
           ref={marksInputRef}
@@ -151,20 +153,20 @@ function StudentMarksRow({
             disabled={!hasUpdate}
           />
           <Label className="text-sm cursor-pointer" onClick={() => hasUpdate && handlePresentChange(!isAbsent)}>
-            {isAbsent ? 'Absent' : 'Present'}
+            {isAbsent ? t('exams.absent') : t('exams.present')}
           </Label>
         </div>
       </TableCell>
       <TableCell>
         {marksNum !== null && !isAbsent && (
           <Badge variant={marksNum >= (examSubject.passingMarks || 0) ? 'default' : 'destructive'}>
-            {marksNum >= (examSubject.passingMarks || 0) ? 'Pass' : 'Fail'}
+            {marksNum >= (examSubject.passingMarks || 0) ? t('common.pass') : t('common.fail')}
           </Badge>
         )}
         {isAbsent && (
           <Badge variant="outline">
             <UserX className="h-3 w-3 mr-1" />
-            Absent
+            {t('exams.absent')}
           </Badge>
         )}
         {marksNum === null && !isAbsent && (
@@ -191,6 +193,7 @@ export function ExamMarks() {
 
   const { data: examClasses } = useExamClasses(selectedExamId);
   const { data: examSubjects } = useExamSubjects(selectedExamId, selectedClassId);
+  const { data: allExamSubjects } = useExamSubjects(selectedExamId);
   const { data: examStudents } = useExamStudents(selectedExamId, selectedClassId);
   const { data: examResults } = useExamResults(selectedExamId, selectedSubjectId);
 
@@ -200,6 +203,7 @@ export function ExamMarks() {
 
   const [marksData, setMarksData] = useState<Record<string, { marks: number | null; isAbsent: boolean; remarks: string }>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Search states
   const [searchAdmission, setSearchAdmission] = useState('');
@@ -339,11 +343,11 @@ export function ExamMarks() {
             aValue = a.examSecretNumber || '';
             bValue = b.examSecretNumber || '';
             break;
-          case 'admissionNo':
-            aValue = (a.studentAdmission?.student as any)?.admission_no || 
-              (a.studentAdmission?.student as any)?.student_code || '';
-            bValue = (b.studentAdmission?.student as any)?.admission_no || 
-              (b.studentAdmission?.student as any)?.student_code || '';
+          case 'fatherName':
+            aValue = (a.studentAdmission?.student?.fatherName ||
+              (a.studentAdmission?.student as any)?.father_name || '').toLowerCase();
+            bValue = (b.studentAdmission?.student?.fatherName ||
+              (b.studentAdmission?.student as any)?.father_name || '').toLowerCase();
             break;
           case 'marks':
             aValue = marksData[a.id]?.marks ?? -1;
@@ -390,7 +394,7 @@ export function ExamMarks() {
     );
 
     if (!student) {
-      setFastEntryError('Student not found');
+      setFastEntryError(t('exams.studentNotFound'));
       setTimeout(() => setFastEntryError(''), 2000);
       return;
     }
@@ -488,11 +492,11 @@ export function ExamMarks() {
       {
         onSuccess: () => {
           setIsSaving(false);
-          showToast.success(t('toast.marksSaved') || 'Marks saved successfully');
+          showToast.success(t('toast.marksSaved'));
         },
         onError: (error: Error) => {
           setIsSaving(false);
-          showToast.error(error.message || t('toast.marksSaveFailed') || 'Failed to save marks');
+          showToast.error(error.message || t('toast.marksSaveFailed'));
         },
       }
     );
@@ -522,24 +526,51 @@ export function ExamMarks() {
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-semibold">{t('exams.marks') || 'Exam Marks'}</h1>
+            <h1 className="text-2xl font-semibold">{t('exams.marks')}</h1>
             <p className="text-sm text-muted-foreground">
-              {t('exams.marksDescription') || 'Enter and manage exam marks for students.'}
+              {t('exams.marksDescription')}
             </p>
           </div>
         </div>
-        {selectedSubject && hasUpdate && (
-          <Button onClick={handleBulkSave} disabled={!hasChanges || isSaving || bulkSaveResults.isPending}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? t('events.saving') || 'Saving...' : t('events.saveAll') || 'Save All Marks'}
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {hasUpdate && selectedExamId && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setExportDialogOpen(true)}
+              aria-label={t('exams.downloadMarksEntryTemplates')}
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline ms-2">{t('exams.downloadMarksEntryTemplates')}</span>
+            </Button>
+          )}
+          {selectedSubject && hasUpdate && (
+            <Button onClick={handleBulkSave} disabled={!hasChanges || isSaving || bulkSaveResults.isPending}>
+              <Save className="h-4 w-4 me-2" />
+              {isSaving ? t('common.saving') : t('exams.saveAllMarks')}
+            </Button>
+          )}
+        </div>
       </div>
+
+      {selectedExamId && (
+        <MarksEntryExportDialog
+          open={exportDialogOpen}
+          onOpenChange={setExportDialogOpen}
+          examId={selectedExamId}
+          examName={selectedExam?.name}
+          schoolId={profile?.default_school_id}
+          examClasses={examClasses || []}
+          examSubjects={allExamSubjects || []}
+          defaultClassId={selectedClassId}
+          defaultSubjectId={selectedSubjectId}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t('exams.exam') || 'Exam'}</CardTitle>
+            <CardTitle className="text-base">{t('exams.exam')}</CardTitle>
           </CardHeader>
           <CardContent>
             {examsLoading ? (
@@ -547,7 +578,7 @@ export function ExamMarks() {
             ) : (
               <Select value={selectedExamId || ''} onValueChange={setSelectedExamId}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('exams.selectExam') || 'Select exam'} />
+                  <SelectValue placeholder={t('exams.selectExam')} />
                 </SelectTrigger>
                 <SelectContent>
                   {(exams || []).map((exam) => (
@@ -563,12 +594,12 @@ export function ExamMarks() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t('search.class') || 'Class'}</CardTitle>
+            <CardTitle className="text-base">{t('exams.class')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={selectedClassId || ''} onValueChange={setSelectedClassId} disabled={!selectedExamId}>
               <SelectTrigger>
-                <SelectValue placeholder={t('events.selectClass') || 'Select class'} />
+                <SelectValue placeholder={t('events.selectClass')} />
               </SelectTrigger>
               <SelectContent>
                 {(examClasses || []).map((examClass) => (
@@ -584,12 +615,12 @@ export function ExamMarks() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t('exams.subject') || 'Subject'}</CardTitle>
+            <CardTitle className="text-base">{t('exams.subject')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={selectedSubjectId || ''} onValueChange={setSelectedSubjectId} disabled={!selectedClassId}>
               <SelectTrigger>
-                <SelectValue placeholder={t('exams.selectSubject') || 'Select subject'} />
+                <SelectValue placeholder={t('exams.selectSubject')} />
               </SelectTrigger>
               <SelectContent>
                 {(examSubjects || []).map((subject) => (
@@ -608,13 +639,17 @@ export function ExamMarks() {
           {/* Progress Bar */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">{t('exams.marksEntryProgress') || 'Marks Entry Progress'}</CardTitle>
+              <CardTitle className="text-base">{t('exams.marksEntryProgress')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    {selectedSubject.subject?.name || 'Subject'}: {subjectProgress.entered} / {subjectProgress.total} entered
+                    {t('exams.marksProgressDetail', {
+                      subject: selectedSubject.subject?.name || t('exams.subject'),
+                      entered: subjectProgress.entered,
+                      total: subjectProgress.total,
+                    })}
                   </span>
                   <span className="font-medium">{subjectProgress.percentage.toFixed(0)}%</span>
                 </div>
@@ -630,14 +665,14 @@ export function ExamMarks() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <QrCode className="h-4 w-4" />
-                    Fast Entry Mode
+                    {t('exams.fastEntryMode')}
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={() => setFastEntryMode(false)}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
                 <CardDescription>
-                  Scan roll number or secret number to instantly find and enter marks
+                  {t('exams.fastEntryDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -648,11 +683,11 @@ export function ExamMarks() {
                       value={fastEntryValue}
                       onChange={(e) => setFastEntryValue(e.target.value)}
                       onKeyDown={handleFastEntryKeyDown}
-                      placeholder="Scan roll number or secret number..."
+                      placeholder={t('exams.fastEntryPlaceholder')}
                       className="flex-1"
                     />
                     <Button onClick={() => handleFastEntry(fastEntryValue)}>
-                      Find Student
+                      {t('exams.findStudent')}
                     </Button>
                   </div>
                   {fastEntryError && (
@@ -667,31 +702,35 @@ export function ExamMarks() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{t('exams.marksEntry') || 'Marks Entry'}</CardTitle>
+                <CardTitle className="text-base">{t('exams.marksEntry')}</CardTitle>
                 <Button
                   variant={fastEntryMode ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFastEntryMode(!fastEntryMode)}
                 >
                   <QrCode className="h-4 w-4 mr-2" />
-                  {fastEntryMode ? 'Exit Fast Entry' : 'Fast Entry Mode'}
+                  {fastEntryMode ? t('exams.exitFastEntry') : t('exams.fastEntryMode')}
                 </Button>
               </div>
               <CardDescription>
-                {selectedSubject.subject?.name || 'Subject'} | Total: {selectedSubject.totalMarks || 'N/A'} | Passing: {selectedSubject.passingMarks || 'N/A'}
+                {t('exams.marksEntrySubjectSummary', {
+                  subject: selectedSubject.subject?.name || t('exams.subject'),
+                  total: selectedSubject.totalMarks ?? '—',
+                  passing: selectedSubject.passingMarks ?? '—',
+                })}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {/* Search Fields */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="space-y-2">
-                  <Label className="text-sm">Search by Admission No</Label>
+                  <Label className="text-sm">{t('exams.searchByAdmissionNo')}</Label>
                   <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       value={searchAdmission}
                       onChange={(e) => setSearchAdmission(e.target.value)}
-                      placeholder="Admission number..."
+                      placeholder={t('exams.admissionNoPlaceholder')}
                       className="pl-8"
                     />
                     {searchAdmission && (
@@ -707,13 +746,13 @@ export function ExamMarks() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm">Search by Roll Number</Label>
+                  <Label className="text-sm">{t('exams.searchByRollNumber')}</Label>
                   <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       value={searchRollNumber}
                       onChange={(e) => setSearchRollNumber(e.target.value)}
-                      placeholder="Roll number..."
+                      placeholder={t('exams.rollNumberPlaceholder')}
                       className="pl-8"
                     />
                     {searchRollNumber && (
@@ -729,13 +768,13 @@ export function ExamMarks() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm">Search by Secret Number</Label>
+                  <Label className="text-sm">{t('exams.searchBySecretNumber')}</Label>
                   <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       value={searchSecretNumber}
                       onChange={(e) => setSearchSecretNumber(e.target.value)}
-                      placeholder="Secret number..."
+                      placeholder={t('exams.secretNumberPlaceholder')}
                       className="pl-8"
                     />
                     {searchSecretNumber && (
@@ -759,29 +798,29 @@ export function ExamMarks() {
                     <TableHeader className="sticky top-0 bg-background z-10">
                       <TableRow>
                         <TableHead>
-                          <SortButton field="name">Student Name</SortButton>
+                          <SortButton field="name">{t('examReports.studentName')}</SortButton>
                         </TableHead>
                         <TableHead>
-                          <SortButton field="rollNumber">Roll Number</SortButton>
+                          <SortButton field="fatherName">{t('examReports.fatherName')}</SortButton>
                         </TableHead>
                         <TableHead>
-                          <SortButton field="secretNumber">Secret Number</SortButton>
+                          <SortButton field="rollNumber">{t('exams.rollNumbers.rollNumber')}</SortButton>
                         </TableHead>
                         <TableHead>
-                          <SortButton field="admissionNo">Admission No</SortButton>
+                          <SortButton field="secretNumber">{t('exams.secretNumbers.secretNumber')}</SortButton>
                         </TableHead>
                         <TableHead>
-                          <SortButton field="marks">Marks</SortButton>
+                          <SortButton field="marks">{t('examReports.marksColumn')}</SortButton>
                         </TableHead>
-                        <TableHead>Present/Absent</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>{t('exams.presentAbsent')}</TableHead>
+                        <TableHead>{t('common.status')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredStudents.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                            No students found
+                            {t('exams.noStudentsMatchSearch')}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -819,7 +858,7 @@ export function ExamMarks() {
         <Card>
           <CardContent className="py-8">
             <p className="text-sm text-muted-foreground text-center">
-              {t('exams.noStudentsEnrolled') || 'No students enrolled for this exam class.'}
+              {t('exams.noStudentsEnrolled')}
             </p>
           </CardContent>
         </Card>
@@ -829,7 +868,7 @@ export function ExamMarks() {
         <Card>
           <CardContent className="py-8">
             <p className="text-sm text-muted-foreground text-center">
-              {t('exams.selectExamToStart') || 'Select an exam to start entering marks.'}
+              {t('exams.selectExamToStart')}
             </p>
           </CardContent>
         </Card>

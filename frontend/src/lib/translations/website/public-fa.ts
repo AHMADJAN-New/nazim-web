@@ -140,8 +140,8 @@ export const websitePublicFa: WebsitePublicTranslations = {
       },
       grades: {
         description:
-          'پیگیری و مدیریت نمرات شاگردان، کارنامه‌ها و عملکرد آکادمیک',
-        title: 'مدیریت نمرات'
+          'پیگیری و مدیریت نمرې شاگردان، کارنامه‌ها و عملکرد آکادمیک',
+        title: 'مدیریت نمرې'
       },
       graduation: {
         description: 'مدیریت فراغت و تولید گواهینامه برای شاگردان',

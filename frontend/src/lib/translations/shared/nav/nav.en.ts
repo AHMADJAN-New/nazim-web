@@ -44,6 +44,7 @@ export default {
     documents: "Documents",
     examAnalytics: "Enrollment & Marks Analytics",
     examAttendance: "Exam Attendance",
+    examAttendanceReport: "Exam Attendance Report",
     examEnrollment: "Class and Subject Enrollment",
     examClassesSubjects: "Classes & Subjects",
     examInsights: "Exam Overview",

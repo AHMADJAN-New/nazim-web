@@ -58,7 +58,7 @@ class ReportTableFormattingTest extends TestCase
     {
         $storage = $this->createMock(FileStorageService::class);
         $service = new ExcelReportService($storage);
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         $addTableSection = \Closure::bind(
@@ -87,11 +87,73 @@ class ReportTableFormattingTest extends TestCase
         $this->assertTrue($sheet->getStyle('A2')->getAlignment()->getWrapText());
     }
 
+    public function test_excel_columns_fit_data_not_inflated_rtl_headers(): void
+    {
+        $storage = $this->createMock(FileStorageService::class);
+        $service = new ExcelReportService($storage);
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $addTableSection = \Closure::bind(
+            fn ($sheet, array $context, int $startRow) => $this->addTableSection($sheet, $context, $startRow),
+            $service,
+            $service
+        );
+
+        $addTableSection($sheet, [
+            'COLUMNS' => [
+                ['key' => 'rollNumber', 'label' => 'رقم الجلوس'],
+                ['key' => 'secretNumber', 'label' => 'پټه شمېره'],
+                ['key' => 'studentName', 'label' => 'نوم'],
+                ['key' => 'fatherName', 'label' => 'د پلار نوم'],
+                ['key' => 'cardNumber', 'label' => 'د کارت نمبر'],
+                ['key' => 'className', 'label' => 'ټولګی'],
+                ['key' => 'section', 'label' => 'برخه'],
+            ],
+            'ROWS' => [
+                [
+                    'rollNumber' => '629',
+                    'secretNumber' => '2208',
+                    'studentName' => 'احمدالله',
+                    'fatherName' => 'محمدعارف',
+                    'cardNumber' => 'D 474',
+                    'className' => 'اولی',
+                    'section' => 'اولی الف',
+                ],
+            ],
+            'PRIMARY_COLOR' => '#0b0b56',
+            'SECONDARY_COLOR' => '#0056b3',
+            'FONT_SIZE' => '12px',
+            'TABLE_FONT_SIZE' => '12px',
+            'table_alternating_colors' => true,
+            // Must be ignored for Excel sizing (PDF percentages used to make columns huge)
+            'COL_WIDTHS' => [20, 20, 20, 20, 20, 20, 20],
+        ], 1);
+
+        // A = row #, B = roll, C = secret, D = name, E = father, F = card, G = class, H = section
+        $rollWidth = (float) $sheet->getColumnDimension('B')->getWidth();
+        $secretWidth = (float) $sheet->getColumnDimension('C')->getWidth();
+        $nameWidth = (float) $sheet->getColumnDimension('D')->getWidth();
+        $fatherWidth = (float) $sheet->getColumnDimension('E')->getWidth();
+        $cardWidth = (float) $sheet->getColumnDimension('F')->getWidth();
+
+        // Short numeric / code columns stay compact (not header-inflated)
+        $this->assertLessThan(12, $rollWidth, 'Roll column should fit short numbers');
+        $this->assertLessThan(12, $secretWidth, 'Secret column should fit short numbers');
+        $this->assertLessThan(12, $cardWidth, 'Card column should fit short codes');
+
+        // Name columns wider than roll, but not absurdly wide
+        $this->assertGreaterThan($rollWidth, $nameWidth);
+        $this->assertGreaterThan($rollWidth, $fatherWidth);
+        $this->assertLessThan(30, $nameWidth);
+        $this->assertLessThan(30, $fatherWidth);
+    }
+
     public function test_excel_table_rows_store_formula_like_strings_as_plain_text(): void
     {
         $storage = $this->createMock(FileStorageService::class);
         $service = new ExcelReportService($storage);
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         $addTableSection = \Closure::bind(
@@ -164,7 +226,7 @@ class ReportTableFormattingTest extends TestCase
                 'footer' => [],
             ],
             null,
-            new DateConversionService()
+            new DateConversionService
         );
     }
 }

@@ -213,6 +213,8 @@ export function useServerReport(): UseServerReportReturn {
         columns: options.columns,
         rows: options.rows,
         async: options.async ?? true, // Default to async
+        calendar_preference: options.calendarPreference,
+        language: options.language,
       };
 
       // Make API call

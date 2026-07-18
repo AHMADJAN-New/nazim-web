@@ -1,4 +1,4 @@
-import { FileText, BarChart3, User } from 'lucide-react';
+import { FileText, BarChart3, User, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,19 @@ export default function ExamReportsHub() {
   const navigate = useNavigate();
   const canViewReports = useHasPermission('exams.read');
   const canViewStudents = useHasPermission('students.read');
+  const canViewAttendanceReports = useHasPermission('exams.view_attendance_reports');
 
   const reportTypes = [
+    {
+      id: 'attendance',
+      title: t('examReports.attendanceReport'),
+      description: t('examReports.attendanceReportDescription'),
+      icon: ClipboardList,
+      path: '/exams/reports/attendance',
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50',
+      show: canViewAttendanceReports,
+    },
     {
       id: 'consolidated',
       title: t('examReports.consolidatedMarkSheet'),
@@ -104,6 +115,7 @@ export default function ExamReportsHub() {
           <CardTitle className="text-lg">{t('events.howToUse')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>• {t('examReports.attendanceReport')}: {t('examReports.attendanceReportDescription')}</p>
           <p>• {t('examReports.consolidatedMarkSheet')}: {t('examReports.consolidatedMarkSheetDescription')}</p>
           <p>• {t('examReports.classSubjectMarkSheet')}: {t('examReports.classSubjectMarkSheetDescription')}</p>
         </CardContent>

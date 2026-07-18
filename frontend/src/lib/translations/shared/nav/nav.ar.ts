@@ -44,6 +44,7 @@ export default {
     documents: "Documents",
     examAnalytics: "إحصائيات التسجيل والدرجات",
     examAttendance: "حضور الامتحان",
+    examAttendanceReport: "تقرير حضور الامتحان",
     examEnrollment: "تسجيل الفصول والمواد",
     examClassesSubjects: "الصفوف والمواد",
     examInsights: "نظرة عامة على الامتحان",

@@ -23,7 +23,7 @@ export default {
     filterSchool: "مکتب",
     filterSubject: "مضمون",
     filterType: "نوع",
-    marks: "نمرات",
+    marks: "نمرې",
     noQuestions: "سوالی یافت نشد",
     noQuestionsFound: "سوالی یافت نشد. اولین سوال خود را ایجاد کنید.",
     optionPlaceholder: "متن گزینه...",

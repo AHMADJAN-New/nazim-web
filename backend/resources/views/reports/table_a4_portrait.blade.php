@@ -148,9 +148,10 @@
                             } else {
                                 $value = (string) $value;
                             }
-                            // Only show non-empty values, otherwise show em dash
+                            // Only show non-empty values, otherwise show placeholder (marks-entry uses blank)
                             // NOTE: "0" is a valid value and must be shown.
-                            $displayValue = ($value !== null && $value !== '') ? $value : '—';
+                            $emptyPlaceholder = $EMPTY_CELL_PLACEHOLDER ?? '—';
+                            $displayValue = ($value !== null && $value !== '') ? $value : $emptyPlaceholder;
                         @endphp
                         <td>{{ $displayValue }}</td>
                     @endforeach
