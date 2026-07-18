@@ -56,6 +56,12 @@ class GenerateReportJob implements ShouldQueue
         StudentHistoryService $studentHistoryService,
         ExamNumberReportService $examNumberReportService
     ): void {
+        // Queue workers often inherit php.ini max_execution_time=180; disable for long reports/ZIPs.
+        if (function_exists('set_time_limit')) {
+            @ini_set('max_execution_time', '0');
+            @set_time_limit(0);
+        }
+
         $startTime = microtime(true);
 
         // Find the report run
@@ -558,11 +564,33 @@ class GenerateReportJob implements ShouldQueue
             $layout['page_size'] = 'A4';
         }
 
-        $resolvedFontSize = $layout['font_size'] ?? $branding['report_font_size'] ?? '12px';
+        if (
+            $config->reportKey === 'exam_roll_numbers'
+            || $templateName === 'table_multi_sections'
+            || $config->templateName === 'table_multi_sections'
+        ) {
+            $layout['font_family'] = 'Bahij Nassim';
+            if (count($columns) >= 5) {
+                $layout['orientation'] = 'landscape';
+                $layout['page_size'] = $layout['page_size'] ?? 'A4';
+            }
+        }
+
+        $rtl = (bool) ($layout['rtl'] ?? true);
+        $resolvedFontFamily = $this->resolveReportFontFamily(
+            $layout['font_family'] ?? $branding['font_family'] ?? null,
+            $rtl
+        );
+        $resolvedFontSize = $this->normalizeCssFontSize(
+            $layout['font_size'] ?? $branding['report_font_size'] ?? null,
+            '12px'
+        );
         $tableFontSize = $this->clampFontSize($resolvedFontSize, 14);
 
-        // Calculate column widths
-        $columnWidths = $this->calculateColumnWidths($columns, $config);
+        // Content-weighted widths (name/father/class/section get more space than equal %)
+        $widthCalculator = app(\App\Services\Reports\ReportColumnWidthCalculator::class);
+        $widthRows = $widthCalculator->collectRowsForSizing($rows, $config->parameters ?? []);
+        $columnWidths = $widthCalculator->calculate($columns, $config->columnConfig ?? [], $widthRows);
 
         return [
             // Branding
@@ -578,8 +606,8 @@ class GenerateReportJob implements ShouldQueue
             'PRIMARY_COLOR' => ! empty($branding['primary_color']) ? $branding['primary_color'] : '#0b0b56',
             'SECONDARY_COLOR' => ! empty($branding['secondary_color']) ? $branding['secondary_color'] : '#0056b3',
             'ACCENT_COLOR' => ! empty($branding['accent_color']) ? $branding['accent_color'] : '#ff6b35',
-            // CRITICAL: Use template font family from layout first, then branding fallback
-            'FONT_FAMILY' => $layout['font_family'] ?? $branding['font_family'] ?? 'Bahij Nassim',
+            // Prefer Arabic-capable fonts for RTL (never Inter for Pashto text)
+            'FONT_FAMILY' => $resolvedFontFamily,
             // CRITICAL: Use template font size from layout first, then branding fallback
             'FONT_SIZE' => $resolvedFontSize,
             'TABLE_FONT_SIZE' => $tableFontSize,
@@ -750,25 +778,48 @@ class GenerateReportJob implements ShouldQueue
     }
 
     /**
-     * Calculate column widths
+     * Prefer Bahij Nassim for RTL reports when branding uses Latin UI fonts.
      */
-    private function calculateColumnWidths(array $columns, ReportConfig $config): array
+    private function resolveReportFontFamily(?string $fontFamily, bool $rtl = true): string
     {
-        $columnConfig = $config->columnConfig;
-        $widths = [];
-
-        foreach ($columns as $index => $column) {
-            $key = is_array($column) ? ($column['key'] ?? $index) : $index;
-
-            if (isset($columnConfig[$key]['width'])) {
-                $widths[] = $columnConfig[$key]['width'];
-            } else {
-                $totalColumns = count($columns);
-                $widths[] = round(100 / $totalColumns, 2);
-            }
+        $font = trim((string) $fontFamily);
+        if ($font === '') {
+            return 'Bahij Nassim';
         }
 
-        return $widths;
+        if (! $rtl) {
+            return $font;
+        }
+
+        $normalized = strtolower(preg_replace('/\s+/', '', $font) ?? '');
+        $latinUiFonts = [
+            'inter', 'roboto', 'arial', 'helvetica', 'helveticaneue', 'systemui',
+            'sansserif', 'segoeui', 'calibri', 'timesnewroman', 'georgia', 'verdana',
+            'tahoma', 'opensans', 'lato', 'montserrat', 'nunito', 'poppins',
+        ];
+
+        if (in_array($normalized, $latinUiFonts, true)) {
+            return 'Bahij Nassim';
+        }
+
+        return $font;
+    }
+
+    /**
+     * Ensure CSS font-size has a unit (branding may store bare "12").
+     */
+    private function normalizeCssFontSize(?string $fontSize, string $fallback = '12px'): string
+    {
+        $value = trim((string) $fontSize);
+        if ($value === '') {
+            return $fallback;
+        }
+
+        if (preg_match('/^\d+(\.\d+)?$/', $value)) {
+            return $value.'px';
+        }
+
+        return $value;
     }
 
     /**

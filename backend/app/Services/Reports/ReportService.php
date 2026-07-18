@@ -532,8 +532,42 @@ class ReportService
             $layout['page_size'] = 'A4';
         }
 
-        // Calculate column widths
-        $columnWidths = $this->calculateColumnWidths($columns, $config);
+        // Exam number lists + multi-section class/section PDFs need Arabic-capable fonts
+        // (branding often stores UI fonts like Inter which lack Pashto/Arabic glyphs in Excel)
+        if (
+            $config->reportKey === 'exam_roll_numbers'
+            || $templateName === 'table_multi_sections'
+            || $config->templateName === 'table_multi_sections'
+        ) {
+            $layout['font_family'] = 'Bahij Nassim';
+        }
+
+        // Wide text columns (name, father, class, section) need landscape room on multi-section PDFs
+        if (
+            $config->reportKey === 'exam_roll_numbers'
+            || $templateName === 'table_multi_sections'
+            || $config->templateName === 'table_multi_sections'
+        ) {
+            if (count($columns) >= 5) {
+                $layout['orientation'] = 'landscape';
+                $layout['page_size'] = $layout['page_size'] ?? 'A4';
+            }
+        }
+
+        $rtl = (bool) ($layout['rtl'] ?? true);
+        $resolvedFontFamily = $this->resolveReportFontFamily(
+            $layout['font_family'] ?? $branding['font_family'] ?? null,
+            $rtl
+        );
+        $resolvedFontSize = $this->normalizeCssFontSize(
+            $layout['font_size'] ?? $branding['report_font_size'] ?? null,
+            '12px'
+        );
+
+        // Content-weighted column widths for PDF (and as metadata). Excel fits to content separately.
+        $widthCalculator = app(ReportColumnWidthCalculator::class);
+        $widthRows = $widthCalculator->collectRowsForSizing($rows, $config->parameters ?? []);
+        $columnWidths = $widthCalculator->calculate($columns, $config->columnConfig ?? [], $widthRows);
 
         $context = [
             // Branding
@@ -549,10 +583,10 @@ class ReportService
             'PRIMARY_COLOR' => ! empty($branding['primary_color']) ? $branding['primary_color'] : '#0b0b56',
             'SECONDARY_COLOR' => ! empty($branding['secondary_color']) ? $branding['secondary_color'] : '#0056b3',
             'ACCENT_COLOR' => ! empty($branding['accent_color']) ? $branding['accent_color'] : '#ff6b35',
-            // CRITICAL: Use template font family from layout first, then branding fallback
-            'FONT_FAMILY' => $layout['font_family'] ?? $branding['font_family'] ?? 'Bahij Nassim',
-            // CRITICAL: Use template font size from layout first, then branding fallback
-            'FONT_SIZE' => $layout['font_size'] ?? $branding['report_font_size'] ?? '12px',
+            // CRITICAL: Prefer Arabic-capable fonts for RTL reports (never Inter/Roboto for Pashto text)
+            'FONT_FAMILY' => $resolvedFontFamily,
+            // CRITICAL: Always include a CSS unit (branding may store bare "12")
+            'FONT_SIZE' => $resolvedFontSize,
 
             // Logos
             'PRIMARY_LOGO_URI' => $branding['primary_logo_uri'] ?? null,
@@ -678,26 +712,6 @@ class ReportService
     /**
      * Calculate column widths
      */
-    private function calculateColumnWidths(array $columns, ReportConfig $config): array
-    {
-        $columnConfig = $config->columnConfig;
-        $widths = [];
-
-        foreach ($columns as $index => $column) {
-            $key = is_array($column) ? ($column['key'] ?? $index) : $index;
-
-            if (isset($columnConfig[$key]['width'])) {
-                $widths[] = $columnConfig[$key]['width'];
-            } else {
-                // Auto width based on column count
-                $totalColumns = count($columns);
-                $widths[] = round(100 / $totalColumns, 2);
-            }
-        }
-
-        return $widths;
-    }
-
     /**
      * Get default branding settings
      */
@@ -1363,5 +1377,65 @@ class ReportService
                 }, $sections['graduations'] ?? []),
             ],
         ];
+    }
+
+    /**
+     * Prefer Bahij Nassim for RTL reports when branding uses Latin UI fonts (Inter, Roboto, etc.).
+     */
+    private function resolveReportFontFamily(?string $fontFamily, bool $rtl = true): string
+    {
+        $font = trim((string) $fontFamily);
+        if ($font === '') {
+            return 'Bahij Nassim';
+        }
+
+        if (! $rtl) {
+            return $font;
+        }
+
+        $normalized = strtolower(preg_replace('/\s+/', '', $font) ?? '');
+        $latinUiFonts = [
+            'inter',
+            'roboto',
+            'arial',
+            'helvetica',
+            'helveticaneue',
+            'systemui',
+            'sansserif',
+            'segoeui',
+            'calibri',
+            'timesnewroman',
+            'georgia',
+            'verdana',
+            'tahoma',
+            'opensans',
+            'lato',
+            'montserrat',
+            'nunito',
+            'poppins',
+        ];
+
+        if (in_array($normalized, $latinUiFonts, true)) {
+            return 'Bahij Nassim';
+        }
+
+        return $font;
+    }
+
+    /**
+     * Ensure CSS font-size has a unit (branding may store bare "12").
+     */
+    private function normalizeCssFontSize(?string $fontSize, string $fallback = '12px'): string
+    {
+        $value = trim((string) $fontSize);
+        if ($value === '') {
+            return $fallback;
+        }
+
+        if (preg_match('/^\d+(\.\d+)?$/', $value)) {
+            return $value.'px';
+        }
+
+        return $value;
     }
 }

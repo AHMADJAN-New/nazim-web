@@ -4,13 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Exam;
 use App\Models\ExamAttendance;
-use App\Models\ExamTime;
 use App\Models\ExamClass;
-use App\Models\ExamSubject;
+use App\Models\ExamSeatAssignment;
+use App\Models\ExamSeatingMap;
 use App\Models\ExamStudent;
+use App\Models\ExamTime;
 use App\Models\Student;
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -18,8 +20,7 @@ class ExamAttendanceController extends Controller
 {
     public function __construct(
         private ActivityLogService $activityLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Get all attendance records for an exam
@@ -30,22 +31,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
+            if (! $user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_attendance_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_attendance_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -56,7 +58,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -64,7 +66,7 @@ class ExamAttendanceController extends Controller
             'examTime',
             'examClass.classAcademicYear.class',
             'examSubject.subject',
-            'student'
+            'student',
         ])
             ->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
@@ -108,22 +110,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
+            if (! $user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_attendance_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_attendance_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -134,7 +137,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -146,14 +149,14 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examClass) {
+        if (! $examClass) {
             return response()->json(['error' => 'Exam class not found'], 404);
         }
 
         $attendances = ExamAttendance::with([
             'examTime',
             'examSubject.subject',
-            'student'
+            'student',
         ])
             ->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
@@ -175,22 +178,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
+            if (! $user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_attendance_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_attendance_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -202,7 +206,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examTime) {
+        if (! $examTime) {
             return response()->json(['error' => 'Exam time slot not found'], 404);
         }
 
@@ -227,22 +231,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_attendance') && !$user->hasPermissionTo('exams.view_attendance_reports')) {
+            if (! $user->hasPermissionTo('exams.manage_attendance') && ! $user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_attendance: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_attendance: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -255,7 +260,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examTime) {
+        if (! $examTime) {
             return response()->json(['error' => 'Exam time slot not found'], 404);
         }
 
@@ -286,7 +291,9 @@ class ExamAttendanceController extends Controller
         // Build the response with attendance status
         $students = $examStudents->map(function ($examStudent) use ($existingAttendance) {
             $student = $examStudent->studentAdmission->student ?? null;
-            if (!$student) return null;
+            if (! $student) {
+                return null;
+            }
 
             $attendance = $existingAttendance->get($student->id);
 
@@ -342,22 +349,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_attendance')) {
+            if (! $user->hasPermissionTo('exams.manage_attendance')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_attendance: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_attendance: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -378,12 +386,12 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         // Check if attendance can be marked
-        if (!$exam->canMarkAttendance()) {
+        if (! $exam->canMarkAttendance()) {
             return response()->json([
                 'error' => 'Cannot mark attendance for exam in this status',
                 'status' => $exam->status,
@@ -400,7 +408,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examTime) {
+        if (! $examTime) {
             return response()->json(['error' => 'Exam time slot not found or does not belong to this exam'], 404);
         }
 
@@ -425,11 +433,12 @@ class ExamAttendanceController extends Controller
         try {
             foreach ($validated['attendances'] as $attendanceData) {
                 // Verify student is enrolled
-                if (!in_array($attendanceData['student_id'], $enrolledStudentIds)) {
+                if (! in_array($attendanceData['student_id'], $enrolledStudentIds)) {
                     $errors[] = [
                         'student_id' => $attendanceData['student_id'],
                         'error' => 'Student is not enrolled in this exam class',
                     ];
+
                     continue;
                 }
 
@@ -480,7 +489,8 @@ class ExamAttendanceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error marking attendance: " . $e->getMessage());
+            Log::error('Error marking attendance: '.$e->getMessage());
+
             return response()->json(['error' => 'Failed to mark attendance', 'details' => $e->getMessage()], 500);
         }
     }
@@ -494,22 +504,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_attendance')) {
+            if (! $user->hasPermissionTo('exams.manage_attendance')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_attendance: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_attendance: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -520,7 +531,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$attendance) {
+        if (! $attendance) {
             return response()->json(['error' => 'Attendance record not found'], 404);
         }
 
@@ -530,7 +541,7 @@ class ExamAttendanceController extends Controller
         }
 
         // Check if exam allows attendance modification
-        if (!$attendance->exam->canMarkAttendance()) {
+        if (! $attendance->exam->canMarkAttendance()) {
             return response()->json([
                 'error' => 'Cannot modify attendance for exam in this status',
                 'status' => $attendance->exam->status,
@@ -568,7 +579,7 @@ class ExamAttendanceController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log attendance update: ' . $e->getMessage());
+            Log::warning('Failed to log attendance update: '.$e->getMessage());
         }
 
         return response()->json($attendance->fresh(['examTime', 'student']));
@@ -583,22 +594,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_attendance')) {
+            if (! $user->hasPermissionTo('exams.manage_attendance')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_attendance: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_attendance: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -609,7 +621,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$attendance) {
+        if (! $attendance) {
             return response()->json(['error' => 'Attendance record not found'], 404);
         }
 
@@ -619,7 +631,7 @@ class ExamAttendanceController extends Controller
         }
 
         // Check if exam allows attendance modification
-        if (!$attendance->exam->canMarkAttendance()) {
+        if (! $attendance->exam->canMarkAttendance()) {
             return response()->json([
                 'error' => 'Cannot delete attendance for exam in this status',
                 'status' => $attendance->exam->status,
@@ -645,7 +657,7 @@ class ExamAttendanceController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log attendance deletion: ' . $e->getMessage());
+            Log::warning('Failed to log attendance deletion: '.$e->getMessage());
         }
 
         // Soft delete
@@ -663,22 +675,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
+            if (! $user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_attendance_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_attendance_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -690,7 +703,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -737,7 +750,7 @@ class ExamAttendanceController extends Controller
         $byClass = [];
         foreach ($classSummary as $row) {
             $classKey = $row->exam_class_id;
-            if (!isset($byClass[$classKey])) {
+            if (! isset($byClass[$classKey])) {
                 $byClass[$classKey] = [
                     'exam_class_id' => $row->exam_class_id,
                     'class_name' => $row->class_name,
@@ -771,7 +784,7 @@ class ExamAttendanceController extends Controller
         $bySubject = [];
         foreach ($subjectSummary as $row) {
             $subjectKey = $row->exam_subject_id;
-            if (!isset($bySubject[$subjectKey])) {
+            if (! isset($bySubject[$subjectKey])) {
                 $bySubject[$subjectKey] = [
                     'exam_subject_id' => $row->exam_subject_id,
                     'subject_name' => $row->subject_name,
@@ -812,22 +825,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
+            if (! $user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_attendance_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_attendance_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -838,7 +852,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -848,7 +862,7 @@ class ExamAttendanceController extends Controller
             ->where('school_id', $currentSchoolId)
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
@@ -856,7 +870,7 @@ class ExamAttendanceController extends Controller
         $attendances = ExamAttendance::with([
             'examTime',
             'examSubject.subject',
-            'examClass.classAcademicYear.class'
+            'examClass.classAcademicYear.class',
         ])
             ->where('exam_id', $examId)
             ->where('student_id', $studentId)
@@ -921,22 +935,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
+            if (! $user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_attendance_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_attendance_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -949,7 +964,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examTime) {
+        if (! $examTime) {
             return response()->json(['error' => 'Exam time slot not found'], 404);
         }
 
@@ -986,7 +1001,7 @@ class ExamAttendanceController extends Controller
                 ] : null,
                 'invigilator' => $examTime->invigilator ? [
                     'id' => $examTime->invigilator->id,
-                    'name' => $examTime->invigilator->first_name . ' ' . $examTime->invigilator->last_name,
+                    'name' => $examTime->invigilator->first_name.' '.$examTime->invigilator->last_name,
                 ] : null,
             ],
             'class' => [
@@ -1023,22 +1038,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.manage_attendance')) {
+            if (! $user->hasPermissionTo('exams.manage_attendance')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.manage_attendance: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.manage_attendance: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -1056,12 +1072,12 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
         // Check if attendance can be marked
-        if (!$exam->canMarkAttendance()) {
+        if (! $exam->canMarkAttendance()) {
             return response()->json([
                 'error' => 'Cannot mark attendance for exam in this status',
                 'status' => $exam->status,
@@ -1078,7 +1094,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examTime) {
+        if (! $examTime) {
             return response()->json(['error' => 'Exam time slot not found or does not belong to this exam'], 404);
         }
 
@@ -1096,7 +1112,7 @@ class ExamAttendanceController extends Controller
             ->withLiveActiveAdmission()
             ->first();
 
-        if (!$examStudent) {
+        if (! $examStudent) {
             // Fallback: try to find by student code or admission number if roll number not found
             $searchTerm = $rollNumber;
             $student = Student::where('organization_id', $profile->organization_id)
@@ -1109,7 +1125,7 @@ class ExamAttendanceController extends Controller
                 ->whereNull('deleted_at')
                 ->first();
 
-            if (!$student) {
+            if (! $student) {
                 return response()->json(['error' => 'Student not found'], 404);
             }
 
@@ -1126,13 +1142,13 @@ class ExamAttendanceController extends Controller
                 ->withLiveActiveAdmission()
                 ->first();
 
-            if (!$examStudent) {
+            if (! $examStudent) {
                 return response()->json(['error' => 'Student is not enrolled in this exam class'], 422);
             }
         }
 
         $student = $examStudent->studentAdmission?->student;
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student data not found'], 404);
         }
 
@@ -1178,22 +1194,23 @@ class ExamAttendanceController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
+            if (! $user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_attendance_reports: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.view_attendance_reports: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -1204,7 +1221,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -1216,7 +1233,7 @@ class ExamAttendanceController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examTime) {
+        if (! $examTime) {
             return response()->json(['error' => 'Exam time slot not found'], 404);
         }
 
@@ -1265,5 +1282,795 @@ class ExamAttendanceController extends Controller
         });
 
         return response()->json($scansWithRollNumbers);
+    }
+
+    /**
+     * List exam sessions (date + start_time) across all classes for hall attendance.
+     * GET /api/exams/{exam}/attendance/hall/sessions
+     */
+    public function hallSessions(Request $request, string $examId)
+    {
+        [$profile, $currentSchoolId, $error] = $this->authorizeAttendanceRead($request);
+        if ($error) {
+            return $error;
+        }
+
+        $exam = Exam::query()
+            ->where('id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        $examClassIds = ExamClass::query()
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
+        $sessions = $this->buildHallSessionsForClasses(
+            $examId,
+            $profile->organization_id,
+            $currentSchoolId,
+            $examClassIds
+        );
+
+        return response()->json(['data' => $sessions]);
+    }
+
+    /**
+     * All enrolled students for a hall session (all classes sharing date + start_time).
+     * Does not require a seating map — walk/list mode.
+     * GET /api/exams/{exam}/attendance/hall/sessions/students?date=&start_time=
+     */
+    public function hallSessionStudents(Request $request, string $examId)
+    {
+        [$profile, $currentSchoolId, $error] = $this->authorizeAttendanceRead($request);
+        if ($error) {
+            return $error;
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'start_time' => 'required|string',
+        ]);
+
+        $exam = Exam::query()
+            ->where('id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        $sessionDate = $this->normalizeDate($validated['date']);
+        $sessionStart = $this->normalizeTime($validated['start_time']);
+
+        $examTimes = ExamTime::query()
+            ->with(['examClass.classAcademicYear.class'])
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->get()
+            ->filter(function (ExamTime $time) use ($sessionDate, $sessionStart) {
+                return $this->normalizeDate((string) $time->date) === $sessionDate
+                    && $this->normalizeTime((string) $time->start_time) === $sessionStart;
+            })
+            ->values();
+
+        if ($examTimes->isEmpty()) {
+            return response()->json([
+                'error' => 'No exam time slots found for this hall session',
+                'date' => $sessionDate,
+                'start_time' => $sessionStart,
+            ], 404);
+        }
+
+        /** @var Collection<string, ExamTime> $timeByClassId */
+        $timeByClassId = $examTimes->keyBy(fn (ExamTime $t) => (string) $t->exam_class_id);
+        $examTimeIds = $examTimes->pluck('id')->all();
+        $examClassIds = $examTimes->pluck('exam_class_id')->map(fn ($id) => (string) $id)->all();
+
+        $examStudents = ExamStudent::query()
+            ->with(['studentAdmission.student', 'examClass.classAcademicYear.class'])
+            ->where('exam_id', $examId)
+            ->whereIn('exam_class_id', $examClassIds)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->withLiveActiveAdmission(is_string($exam->academic_year_id) ? $exam->academic_year_id : null)
+            ->get();
+
+        $attendanceByKey = ExamAttendance::query()
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereIn('exam_time_id', $examTimeIds)
+            ->whereNull('deleted_at')
+            ->get()
+            ->keyBy(fn (ExamAttendance $a) => $a->exam_time_id.'|'.$a->student_id);
+
+        // Group by class for stable walk order (class = row, student = column)
+        $byClass = $examStudents->groupBy(fn (ExamStudent $es) => (string) $es->exam_class_id);
+        $classOrder = $examTimes
+            ->pluck('exam_class_id')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values();
+
+        $seats = [];
+        $students = [];
+        $counts = [
+            'total' => 0,
+            'markable' => 0,
+            'marked' => 0,
+            'present' => 0,
+            'absent' => 0,
+            'late' => 0,
+            'excused' => 0,
+            'unmarked' => 0,
+            'unresolved' => 0,
+        ];
+
+        $rowNumber = 0;
+        foreach ($classOrder as $classId) {
+            $classStudents = ($byClass->get($classId) ?? collect())
+                ->sortBy(function (ExamStudent $es) {
+                    $roll = $es->exam_roll_number;
+                    if (is_numeric($roll)) {
+                        return sprintf('%020d', (int) $roll);
+                    }
+
+                    return (string) ($roll ?? '').'|'.$es->id;
+                })
+                ->values();
+
+            if ($classStudents->isEmpty()) {
+                continue;
+            }
+
+            $rowNumber++;
+            $col = 0;
+            foreach ($classStudents as $examStudent) {
+                $col++;
+                $student = $examStudent->studentAdmission?->student;
+                $studentId = $student?->id ? (string) $student->id : null;
+                $examTime = $timeByClassId->get($classId);
+
+                $className = null;
+                $classAcademicYear = $examStudent->examClass?->classAcademicYear;
+                if ($classAcademicYear) {
+                    $classModel = $classAcademicYear->class ?? null;
+                    $name = $classModel->name ?? 'Class';
+                    $section = $classAcademicYear->section_name ?? null;
+                    $className = $section ? "{$name} - {$section}" : $name;
+                }
+
+                $attendance = null;
+                if ($examTime && $studentId) {
+                    $attendance = $attendanceByKey->get($examTime->id.'|'.$studentId);
+                }
+
+                $status = $attendance?->status;
+                $markable = $examTime !== null && $studentId !== null;
+
+                if ($markable) {
+                    $counts['markable']++;
+                    $counts['total']++;
+                    if ($status) {
+                        $counts['marked']++;
+                        if (isset($counts[$status])) {
+                            $counts[$status]++;
+                        }
+                    } else {
+                        $counts['unmarked']++;
+                    }
+                } elseif ($studentId) {
+                    $counts['unresolved']++;
+                }
+
+                $seatNumber = is_numeric($examStudent->exam_roll_number)
+                    ? (int) $examStudent->exam_roll_number
+                    : (($rowNumber - 1) * 1000 + $col);
+
+                $seatPayload = [
+                    'assignment_id' => $examStudent->id,
+                    'row_number' => $rowNumber,
+                    'column_number' => $col,
+                    'seat_number' => $seatNumber,
+                    'is_disabled' => false,
+                    'exam_student_id' => $examStudent->id,
+                    'exam_class_id' => $classId,
+                    'exam_time_id' => $examTime?->id,
+                    'exam_subject_id' => $examTime?->exam_subject_id,
+                    'student_id' => $studentId,
+                    'full_name' => $student?->full_name,
+                    'father_name' => $student?->father_name,
+                    'roll_number' => $examStudent->exam_roll_number,
+                    'admission_no' => $student?->admission_no,
+                    'class_name' => $className,
+                    'markable' => $markable,
+                    'attendance' => $attendance ? [
+                        'id' => $attendance->id,
+                        'status' => $attendance->status,
+                        'checked_in_at' => $attendance->checked_in_at,
+                        'seat_number' => $attendance->seat_number,
+                        'notes' => $attendance->notes,
+                    ] : null,
+                ];
+
+                $seats[] = $seatPayload;
+                if ($markable) {
+                    $students[] = $seatPayload;
+                }
+            }
+        }
+
+        $endTime = $examTimes
+            ->map(fn (ExamTime $t) => $this->normalizeTime((string) $t->end_time))
+            ->filter()
+            ->first();
+
+        return response()->json([
+            'map' => null,
+            'session' => [
+                'date' => $sessionDate,
+                'start_time' => $sessionStart,
+                'end_time' => $endTime,
+                'exam_time_ids' => $examTimeIds,
+                'class_count' => $examTimes->count(),
+            ],
+            'seats' => $seats,
+            'students' => $students,
+            'counts' => $counts,
+        ]);
+    }
+
+    /**
+     * List applied/finalized seating maps with exam sessions for hall attendance.
+     * GET /api/exams/{exam}/attendance/hall/maps
+     */
+    public function hallMaps(Request $request, string $examId)
+    {
+        [$profile, $currentSchoolId, $error] = $this->authorizeAttendanceRead($request);
+        if ($error) {
+            return $error;
+        }
+
+        $exam = Exam::query()
+            ->where('id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        $maps = ExamSeatingMap::query()
+            ->with('room')
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereIn('status', [ExamSeatingMap::STATUS_APPLIED, ExamSeatingMap::STATUS_FINALIZED])
+            ->whereNull('deleted_at')
+            ->orderByDesc('finalized_at')
+            ->orderByDesc('updated_at')
+            ->get();
+
+        $payload = $maps->map(function (ExamSeatingMap $map) use ($profile, $currentSchoolId, $examId) {
+            $examClassIds = $map->examClassIds();
+            $sessions = $this->buildHallSessionsForClasses(
+                $examId,
+                $profile->organization_id,
+                $currentSchoolId,
+                $examClassIds
+            );
+
+            return [
+                'id' => $map->id,
+                'name' => $map->name,
+                'status' => $map->status,
+                'rows' => $map->rows,
+                'columns' => $map->columns,
+                'room_id' => $map->room_id,
+                'room' => $map->room ? [
+                    'id' => $map->room->id,
+                    'name' => $map->room->room_number ?? $map->room->name ?? null,
+                    'room_number' => $map->room->room_number ?? null,
+                ] : null,
+                'exam_class_ids' => $examClassIds,
+                'sessions' => $sessions,
+            ];
+        })->values();
+
+        return response()->json(['data' => $payload]);
+    }
+
+    /**
+     * Seated students for a hall map + session (all classes in that session).
+     * GET /api/exams/{exam}/attendance/hall/maps/{mapId}/students?date=&start_time=
+     */
+    public function hallStudents(Request $request, string $examId, string $mapId)
+    {
+        [$profile, $currentSchoolId, $error] = $this->authorizeAttendanceRead($request);
+        if ($error) {
+            return $error;
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'start_time' => 'required|string',
+        ]);
+
+        $map = ExamSeatingMap::query()
+            ->with('room')
+            ->where('id', $mapId)
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereIn('status', [ExamSeatingMap::STATUS_APPLIED, ExamSeatingMap::STATUS_FINALIZED])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $map) {
+            return response()->json(['error' => 'Seating map not found or not ready for attendance'], 404);
+        }
+
+        $sessionDate = $this->normalizeDate($validated['date']);
+        $sessionStart = $this->normalizeTime($validated['start_time']);
+
+        $examClassIds = $map->examClassIds();
+        $examTimes = ExamTime::query()
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereIn('exam_class_id', $examClassIds)
+            ->whereNull('deleted_at')
+            ->get()
+            ->filter(function (ExamTime $time) use ($sessionDate, $sessionStart) {
+                return $this->normalizeDate((string) $time->date) === $sessionDate
+                    && $this->normalizeTime((string) $time->start_time) === $sessionStart;
+            })
+            ->values();
+
+        if ($examTimes->isEmpty()) {
+            return response()->json([
+                'error' => 'No exam time slots found for this hall session',
+                'date' => $sessionDate,
+                'start_time' => $sessionStart,
+            ], 404);
+        }
+
+        /** @var Collection<string, ExamTime> $timeByClassId */
+        $timeByClassId = $examTimes->keyBy(fn (ExamTime $t) => (string) $t->exam_class_id);
+        $examTimeIds = $examTimes->pluck('id')->all();
+
+        $assignments = ExamSeatAssignment::query()
+            ->with(['examStudent.studentAdmission.student', 'examStudent.examClass.classAcademicYear.class'])
+            ->where('exam_seating_map_id', $map->id)
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->orderBy('row_number')
+            ->orderBy('column_number')
+            ->get();
+
+        $attendanceByKey = ExamAttendance::query()
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereIn('exam_time_id', $examTimeIds)
+            ->whereNull('deleted_at')
+            ->get()
+            ->keyBy(fn (ExamAttendance $a) => $a->exam_time_id.'|'.$a->student_id);
+
+        $seats = [];
+        $students = [];
+        $counts = [
+            'total' => 0,
+            'markable' => 0,
+            'marked' => 0,
+            'present' => 0,
+            'absent' => 0,
+            'late' => 0,
+            'excused' => 0,
+            'unmarked' => 0,
+            'unresolved' => 0,
+        ];
+
+        foreach ($assignments as $assignment) {
+            $examStudent = $assignment->examStudent;
+            $student = $examStudent?->studentAdmission?->student;
+            $examClassId = $examStudent?->exam_class_id ? (string) $examStudent->exam_class_id : null;
+            $examTime = $examClassId ? $timeByClassId->get($examClassId) : null;
+            $studentId = $student?->id ? (string) $student->id : null;
+
+            $className = null;
+            $classAcademicYear = $examStudent?->examClass?->classAcademicYear;
+            if ($classAcademicYear) {
+                $classModel = $classAcademicYear->class ?? null;
+                $name = $classModel->name ?? 'Class';
+                $section = $classAcademicYear->section_name ?? null;
+                $className = $section ? "{$name} - {$section}" : $name;
+            }
+
+            $attendance = null;
+            if ($examTime && $studentId) {
+                $attendance = $attendanceByKey->get($examTime->id.'|'.$studentId);
+            }
+
+            $status = $attendance?->status;
+            $markable = $examTime !== null && $studentId !== null && ! $assignment->is_disabled;
+
+            if ($markable) {
+                $counts['markable']++;
+                $counts['total']++;
+                if ($status) {
+                    $counts['marked']++;
+                    if (isset($counts[$status])) {
+                        $counts[$status]++;
+                    }
+                } else {
+                    $counts['unmarked']++;
+                }
+            } elseif ($studentId && ! $assignment->is_disabled) {
+                $counts['unresolved']++;
+            }
+
+            $seatPayload = [
+                'assignment_id' => $assignment->id,
+                'row_number' => $assignment->row_number,
+                'column_number' => $assignment->column_number,
+                'seat_number' => $assignment->seat_number,
+                'is_disabled' => (bool) $assignment->is_disabled,
+                'exam_student_id' => $examStudent?->id,
+                'exam_class_id' => $examClassId,
+                'exam_time_id' => $examTime?->id,
+                'exam_subject_id' => $examTime?->exam_subject_id,
+                'student_id' => $studentId,
+                'full_name' => $student?->full_name,
+                'father_name' => $student?->father_name,
+                'roll_number' => $examStudent?->exam_roll_number,
+                'admission_no' => $student?->admission_no,
+                'class_name' => $className,
+                'markable' => $markable,
+                'attendance' => $attendance ? [
+                    'id' => $attendance->id,
+                    'status' => $attendance->status,
+                    'checked_in_at' => $attendance->checked_in_at,
+                    'seat_number' => $attendance->seat_number,
+                    'notes' => $attendance->notes,
+                ] : null,
+            ];
+
+            $seats[] = $seatPayload;
+            if ($markable) {
+                $students[] = $seatPayload;
+            }
+        }
+
+        $endTime = $examTimes
+            ->map(fn (ExamTime $t) => $this->normalizeTime((string) $t->end_time))
+            ->filter()
+            ->first();
+
+        return response()->json([
+            'map' => [
+                'id' => $map->id,
+                'name' => $map->name,
+                'status' => $map->status,
+                'rows' => $map->rows,
+                'columns' => $map->columns,
+                'room_id' => $map->room_id,
+                'room' => $map->room ? [
+                    'id' => $map->room->id,
+                    'name' => $map->room->room_number ?? $map->room->name ?? null,
+                    'room_number' => $map->room->room_number ?? null,
+                ] : null,
+            ],
+            'session' => [
+                'date' => $sessionDate,
+                'start_time' => $sessionStart,
+                'end_time' => $endTime,
+                'exam_time_ids' => $examTimeIds,
+                'class_count' => $examTimes->count(),
+            ],
+            'seats' => $seats,
+            'students' => $students,
+            'counts' => $counts,
+        ]);
+    }
+
+    /**
+     * Mark attendance for mixed classes in a hall session (each row has its own exam_time_id).
+     * POST /api/exams/{exam}/attendance/mark-hall
+     */
+    public function markHall(Request $request, string $examId)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        try {
+            if (! $user->hasPermissionTo('exams.manage_attendance')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for exams.manage_attendance: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'attendances' => 'required|array|min:1',
+            'attendances.*.student_id' => 'required|uuid|exists:students,id',
+            'attendances.*.exam_time_id' => 'required|uuid|exists:exam_times,id',
+            'attendances.*.status' => 'required|in:present,absent,late,excused',
+            'attendances.*.checked_in_at' => 'nullable|date',
+            'attendances.*.seat_number' => 'nullable|string|max:50',
+            'attendances.*.notes' => 'nullable|string|max:1000',
+        ]);
+
+        $exam = Exam::query()
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $examId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        if (! $exam->canMarkAttendance()) {
+            return response()->json([
+                'error' => 'Cannot mark attendance for exam in this status',
+                'status' => $exam->status,
+                'allowed_statuses' => [Exam::STATUS_SCHEDULED, Exam::STATUS_IN_PROGRESS],
+            ], 422);
+        }
+
+        $examTimeIds = collect($validated['attendances'])->pluck('exam_time_id')->unique()->values();
+        $examTimes = ExamTime::query()
+            ->whereIn('id', $examTimeIds)
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->get()
+            ->keyBy('id');
+
+        if ($examTimes->count() !== $examTimeIds->count()) {
+            return response()->json(['error' => 'One or more exam time slots are invalid for this exam'], 422);
+        }
+
+        $enrolledByClass = [];
+        foreach ($examTimes as $examTime) {
+            $classId = (string) $examTime->exam_class_id;
+            if (! isset($enrolledByClass[$classId])) {
+                $enrolledByClass[$classId] = ExamStudent::query()
+                    ->where('exam_id', $examId)
+                    ->where('exam_class_id', $classId)
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->whereNull('deleted_at')
+                    ->withLiveActiveAdmission()
+                    ->with('studentAdmission')
+                    ->get()
+                    ->pluck('studentAdmission.student_id')
+                    ->filter()
+                    ->map(fn ($id) => (string) $id)
+                    ->all();
+            }
+        }
+
+        $created = 0;
+        $updated = 0;
+        $errors = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ($validated['attendances'] as $attendanceData) {
+                $examTime = $examTimes->get($attendanceData['exam_time_id']);
+                if (! $examTime) {
+                    $errors[] = [
+                        'student_id' => $attendanceData['student_id'],
+                        'error' => 'Exam time not found',
+                    ];
+
+                    continue;
+                }
+
+                $classId = (string) $examTime->exam_class_id;
+                $enrolled = $enrolledByClass[$classId] ?? [];
+                if (! in_array((string) $attendanceData['student_id'], $enrolled, true)) {
+                    $errors[] = [
+                        'student_id' => $attendanceData['student_id'],
+                        'error' => 'Student is not enrolled in this exam class',
+                    ];
+
+                    continue;
+                }
+
+                $existing = ExamAttendance::query()
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->where('exam_time_id', $examTime->id)
+                    ->where('student_id', $attendanceData['student_id'])
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($existing) {
+                    $existing->update([
+                        'status' => $attendanceData['status'],
+                        'checked_in_at' => $attendanceData['checked_in_at'] ?? now(),
+                        'seat_number' => $attendanceData['seat_number'] ?? $existing->seat_number,
+                        'notes' => $attendanceData['notes'] ?? $existing->notes,
+                    ]);
+                    $updated++;
+                } else {
+                    ExamAttendance::create([
+                        'organization_id' => $profile->organization_id,
+                        'school_id' => $currentSchoolId,
+                        'exam_id' => $examId,
+                        'exam_time_id' => $examTime->id,
+                        'exam_class_id' => $examTime->exam_class_id,
+                        'exam_subject_id' => $examTime->exam_subject_id,
+                        'student_id' => $attendanceData['student_id'],
+                        'status' => $attendanceData['status'],
+                        'checked_in_at' => $attendanceData['checked_in_at'] ?? now(),
+                        'seat_number' => $attendanceData['seat_number'] ?? null,
+                        'notes' => $attendanceData['notes'] ?? null,
+                    ]);
+                    $created++;
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Hall attendance marked successfully',
+                'created' => $created,
+                'updated' => $updated,
+                'errors' => $errors,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to mark hall attendance: '.$e->getMessage());
+
+            return response()->json(['error' => 'Failed to mark hall attendance'], 500);
+        }
+    }
+
+    /**
+     * @return array{0: object|null, 1: string|null, 2: \Illuminate\Http\JsonResponse|null}
+     */
+    private function authorizeAttendanceRead(Request $request): array
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile) {
+            return [null, null, response()->json(['error' => 'Profile not found'], 404)];
+        }
+
+        if (! $profile->organization_id) {
+            return [null, null, response()->json(['error' => 'User must be assigned to an organization'], 403)];
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        try {
+            if (! $user->hasPermissionTo('exams.manage_attendance') && ! $user->hasPermissionTo('exams.view_attendance_reports')) {
+                return [null, null, response()->json(['error' => 'This action is unauthorized'], 403)];
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for hall attendance read: '.$e->getMessage());
+
+            return [null, null, response()->json(['error' => 'This action is unauthorized'], 403)];
+        }
+
+        return [$profile, $currentSchoolId, null];
+    }
+
+    /**
+     * @param  list<string>  $examClassIds
+     * @return list<array<string, mixed>>
+     */
+    private function buildHallSessionsForClasses(
+        string $examId,
+        string $organizationId,
+        string $schoolId,
+        array $examClassIds
+    ): array {
+        if ($examClassIds === []) {
+            return [];
+        }
+
+        $times = ExamTime::query()
+            ->where('exam_id', $examId)
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->whereIn('exam_class_id', $examClassIds)
+            ->whereNull('deleted_at')
+            ->get();
+
+        $grouped = [];
+        foreach ($times as $time) {
+            $date = $this->normalizeDate((string) $time->date);
+            $start = $this->normalizeTime((string) $time->start_time);
+            $end = $this->normalizeTime((string) $time->end_time);
+            $key = $date.'|'.$start;
+            if (! isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'date' => $date,
+                    'start_time' => $start,
+                    'end_time' => $end,
+                    'exam_time_ids' => [],
+                    'class_count' => 0,
+                ];
+            }
+            $grouped[$key]['exam_time_ids'][] = $time->id;
+            $grouped[$key]['class_count']++;
+            if (! $grouped[$key]['end_time'] && $end) {
+                $grouped[$key]['end_time'] = $end;
+            }
+        }
+
+        $sessions = array_values($grouped);
+        usort($sessions, function (array $a, array $b) {
+            $cmp = strcmp($a['date'], $b['date']);
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+
+            return strcmp($a['start_time'], $b['start_time']);
+        });
+
+        return $sessions;
+    }
+
+    private function normalizeDate(string $value): string
+    {
+        try {
+            return \Carbon\Carbon::parse($value)->toDateString();
+        } catch (\Exception) {
+            return substr($value, 0, 10);
+        }
+    }
+
+    private function normalizeTime(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^(\d{1,2}):(\d{2})/', $value, $m)) {
+            return sprintf('%02d:%02d', (int) $m[1], (int) $m[2]);
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->format('H:i');
+        } catch (\Exception) {
+            return $value;
+        }
     }
 }

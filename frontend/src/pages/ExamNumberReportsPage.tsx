@@ -6,7 +6,10 @@ import {
 import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import {
+  MultiSectionReportExportButtons,
+  type MultiSectionReportSection,
+} from '@/components/reports/MultiSectionReportExportButtons';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -262,6 +265,79 @@ export function ExamNumberReportsPage() {
     return filtered;
   }, [reportData?.students, searchTerm, sortField, sortDirection, compareOptionalNumeric]);
 
+  const listExportColumns = useMemo(
+    () => [
+      { key: 'rollNumber', label: t('exams.rollNumbers.rollNumber') || 'Roll Number' },
+      ...(hasSecretNumberViewPermission
+        ? [{ key: 'secretNumber', label: t('exams.secretNumbers.secretNumber') || 'Secret Number' }]
+        : []),
+      { key: 'studentName', label: t('exams.studentName') || 'Name' },
+      { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
+      { key: 'cardNumber', label: t('students.cardNumber') || 'Card Number' },
+      { key: 'className', label: t('search.class') || 'Class' },
+      { key: 'section', label: t('events.section') || 'Section' },
+    ],
+    [hasSecretNumberViewPermission, t]
+  );
+
+  /** One Excel sheet / PDF section per class+section (page break between sections). */
+  const buildListExportSections = useCallback(async (): Promise<MultiSectionReportSection[]> => {
+    if (filteredStudents.length === 0) return [];
+
+    const groups = new Map<string, RollNumberReportStudent[]>();
+    for (const student of filteredStudents) {
+      const className = student.className?.trim() || 'Unknown';
+      const section = student.section?.trim() || '';
+      const key = `${className}\u0000${section}`;
+      const list = groups.get(key);
+      if (list) {
+        list.push(student);
+      } else {
+        groups.set(key, [student]);
+      }
+    }
+
+    const sanitizeSheetName = (name: string): string => {
+      const cleaned = name.replace(/[\\/*?:\[\]]/g, '-').replace(/\s+/g, ' ').trim();
+      return (cleaned || 'Sheet').slice(0, 31);
+    };
+
+    const usedSheetNames = new Set<string>();
+    const uniqueSheetName = (base: string): string => {
+      let name = sanitizeSheetName(base);
+      if (!usedSheetNames.has(name)) {
+        usedSheetNames.add(name);
+        return name;
+      }
+      let n = 2;
+      while (usedSheetNames.has(`${name.slice(0, 28)}_${n}`)) n += 1;
+      const withSuffix = `${name.slice(0, 28)}_${n}`;
+      usedSheetNames.add(withSuffix);
+      return withSuffix;
+    };
+
+    return Array.from(groups.entries()).map(([key, students]) => {
+      const [className, section] = key.split('\u0000');
+      const title = section ? `${className} - ${section}` : className;
+      return {
+        title,
+        sheetName: uniqueSheetName(title),
+        columns: listExportColumns,
+        rows: students.map((student) => ({
+          rollNumber: student.examRollNumber || '-',
+          ...(hasSecretNumberViewPermission
+            ? { secretNumber: student.examSecretNumber || '-' }
+            : {}),
+          studentName: student.fullName || '-',
+          fatherName: student.fatherName || '-',
+          cardNumber: student.cardNumber || '-',
+          className: student.className || '-',
+          section: student.section || '-',
+        })),
+      };
+    });
+  }, [filteredStudents, hasSecretNumberViewPermission, listExportColumns]);
+
   const SortHeaderButton = ({
     field,
     children,
@@ -490,35 +566,26 @@ export function ExamNumberReportsPage() {
                     </>
                   )}
                   {reportData?.students && reportData.students.length > 0 && (
-                    <ReportExportButtons
-                      data={filteredStudents}
-                      columns={[
-                        { key: 'rollNumber', label: t('exams.rollNumbers.rollNumber') || 'Roll Number' },
-                        ...(hasSecretNumberViewPermission ? [{ key: 'secretNumber', label: t('exams.secretNumbers.secretNumber') || 'Secret Number' }] : []),
-                        { key: 'studentName', label: t('exams.studentName') || 'Name' },
-                        { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
-                        { key: 'cardNumber', label: t('students.cardNumber') || 'Card Number' },
-                        { key: 'className', label: t('search.class') || 'Class' },
-                        { key: 'section', label: t('events.section') || 'Section' },
-                      ]}
+                    <MultiSectionReportExportButtons
                       reportKey="exam_roll_numbers"
                       title={`${t('exams.numberReports.title') || 'Exam Number Report'} - ${exam?.name || ''}`}
-                      transformData={(data) => data.map((student: RollNumberReportStudent) => ({
-                        rollNumber: student.examRollNumber || '-',
-                        ...(hasSecretNumberViewPermission ? { secretNumber: student.examSecretNumber || '-' } : {}),
-                        studentName: student.fullName || '-',
-                        fatherName: student.fatherName || '-',
-                        cardNumber: student.cardNumber || '-',
-                        className: student.className || '-',
-                        section: student.section || '-',
-                      }))}
+                      templateType="exam_roll_numbers"
+                      schoolId={profile?.default_school_id}
+                      disabled={filteredStudents.length === 0}
+                      buildSections={buildListExportSections}
                       buildFiltersSummary={() => {
                         const parts: string[] = [];
                         if (exam?.name) parts.push(`Exam: ${exam.name}`);
                         if (selectedClassId) {
                           const selectedClass = examClasses?.find((c) => c.id === selectedClassId);
                           if (selectedClass) {
-                            parts.push(`Class: ${selectedClass.classAcademicYear?.class?.name || ''}${selectedClass.classAcademicYear?.sectionName ? ` - ${selectedClass.classAcademicYear.sectionName}` : ''}`);
+                            parts.push(
+                              `Class: ${selectedClass.classAcademicYear?.class?.name || ''}${
+                                selectedClass.classAcademicYear?.sectionName
+                                  ? ` - ${selectedClass.classAcademicYear.sectionName}`
+                                  : ''
+                              }`
+                            );
                           }
                         } else {
                           parts.push('Class: All Classes');
@@ -526,9 +593,6 @@ export function ExamNumberReportsPage() {
                         parts.push(`Total Students: ${filteredStudents.length}`);
                         return parts.join(' | ');
                       }}
-                      schoolId={profile?.default_school_id}
-                      templateType="exam_roll_numbers"
-                      disabled={!reportData?.students || reportData.students.length === 0}
                     />
                   )}
                 </div>

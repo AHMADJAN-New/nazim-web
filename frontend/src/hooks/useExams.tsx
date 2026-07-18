@@ -956,6 +956,312 @@ export const useStudentAttendanceReport = (examId?: string, studentId?: string) 
   });
 };
 
+export interface HallAttendanceSession {
+  date: string;
+  startTime: string;
+  endTime: string | null;
+  examTimeIds: string[];
+  classCount: number;
+}
+
+export interface HallAttendanceMapOption {
+  id: string;
+  name: string;
+  status: string;
+  rows: number;
+  columns: number;
+  roomId: string | null;
+  roomName: string | null;
+  examClassIds: string[];
+  sessions: HallAttendanceSession[];
+}
+
+export interface HallAttendanceSeat {
+  assignmentId: string;
+  rowNumber: number;
+  columnNumber: number;
+  seatNumber: number;
+  isDisabled: boolean;
+  examStudentId: string | null;
+  examClassId: string | null;
+  examTimeId: string | null;
+  examSubjectId: string | null;
+  studentId: string | null;
+  fullName: string | null;
+  fatherName: string | null;
+  rollNumber: string | null;
+  admissionNo: string | null;
+  className: string | null;
+  markable: boolean;
+  attendance: {
+    id: string;
+    status: ExamAttendanceStatus;
+    checkedInAt: Date | null;
+    seatNumber: string | null;
+    notes: string | null;
+  } | null;
+}
+
+export interface HallAttendanceStudentsResponse {
+  map: {
+    id: string;
+    name: string;
+    status: string;
+    rows: number;
+    columns: number;
+    roomId: string | null;
+    roomName: string | null;
+  } | null;
+  session: HallAttendanceSession;
+  seats: HallAttendanceSeat[];
+  students: HallAttendanceSeat[];
+  counts: {
+    total: number;
+    markable: number;
+    marked: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+    unmarked: number;
+    unresolved: number;
+  };
+}
+
+function mapHallSessionApi(raw: {
+  date: string;
+  start_time: string;
+  end_time?: string | null;
+  exam_time_ids?: string[];
+  class_count?: number;
+}): HallAttendanceSession {
+  return {
+    date: raw.date,
+    startTime: raw.start_time,
+    endTime: raw.end_time ?? null,
+    examTimeIds: raw.exam_time_ids ?? [],
+    classCount: raw.class_count ?? 0,
+  };
+}
+
+function mapHallSeatApi(raw: {
+  assignment_id: string;
+  row_number: number;
+  column_number: number;
+  seat_number: number;
+  is_disabled: boolean;
+  exam_student_id?: string | null;
+  exam_class_id?: string | null;
+  exam_time_id?: string | null;
+  exam_subject_id?: string | null;
+  student_id?: string | null;
+  full_name?: string | null;
+  father_name?: string | null;
+  roll_number?: string | null;
+  admission_no?: string | null;
+  class_name?: string | null;
+  markable: boolean;
+  attendance?: {
+    id: string;
+    status: ExamAttendanceStatus;
+    checked_in_at?: string | null;
+    seat_number?: string | null;
+    notes?: string | null;
+  } | null;
+}): HallAttendanceSeat {
+  return {
+    assignmentId: raw.assignment_id,
+    rowNumber: raw.row_number,
+    columnNumber: raw.column_number,
+    seatNumber: raw.seat_number,
+    isDisabled: raw.is_disabled,
+    examStudentId: raw.exam_student_id ?? null,
+    examClassId: raw.exam_class_id ?? null,
+    examTimeId: raw.exam_time_id ?? null,
+    examSubjectId: raw.exam_subject_id ?? null,
+    studentId: raw.student_id ?? null,
+    fullName: raw.full_name ?? null,
+    fatherName: raw.father_name ?? null,
+    rollNumber: raw.roll_number ?? null,
+    admissionNo: raw.admission_no ?? null,
+    className: raw.class_name ?? null,
+    markable: raw.markable,
+    attendance: raw.attendance
+      ? {
+          id: raw.attendance.id,
+          status: raw.attendance.status,
+          checkedInAt: raw.attendance.checked_in_at ? new Date(raw.attendance.checked_in_at) : null,
+          seatNumber: raw.attendance.seat_number ?? null,
+          notes: raw.attendance.notes ?? null,
+        }
+      : null,
+  };
+}
+
+export const useHallAttendanceSessions = (examId?: string) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<HallAttendanceSession[]>({
+    queryKey: ['exam-hall-attendance-sessions', examId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryFn: async () => {
+      if (!user || !profile || !examId) return [];
+      const response = await examAttendanceApi.hallSessions(examId);
+      const rows = Array.isArray(response)
+        ? response
+        : (response as { data?: Array<Record<string, unknown>> })?.data ?? [];
+      return rows.map((raw) =>
+        mapHallSessionApi(
+          raw as {
+            date: string;
+            start_time: string;
+            end_time?: string | null;
+            exam_time_ids?: string[];
+            class_count?: number;
+          }
+        )
+      );
+    },
+    enabled: !!user && !!profile && !!profile.organization_id && !!profile.default_school_id && !!examId,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useHallAttendanceMaps = (examId?: string) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<HallAttendanceMapOption[]>({
+    queryKey: ['exam-hall-attendance-maps', examId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryFn: async () => {
+      if (!user || !profile || !examId) return [];
+      const response = await examAttendanceApi.hallMaps(examId);
+      const rows = Array.isArray(response)
+        ? response
+        : (response as { data?: Array<Record<string, unknown>> })?.data ?? [];
+      return rows.map((raw) => {
+        const r = raw as {
+          id: string;
+          name: string;
+          status: string;
+          rows: number;
+          columns: number;
+          room_id?: string | null;
+          room?: { id: string; name?: string | null; room_number?: string | null } | null;
+          exam_class_ids?: string[];
+          sessions?: Array<{
+            date: string;
+            start_time: string;
+            end_time?: string | null;
+            exam_time_ids?: string[];
+            class_count?: number;
+          }>;
+        };
+        return {
+          id: r.id,
+          name: r.name,
+          status: r.status,
+          rows: r.rows,
+          columns: r.columns,
+          roomId: r.room_id ?? null,
+          roomName: r.room?.name ?? r.room?.room_number ?? null,
+          examClassIds: r.exam_class_ids ?? [],
+          sessions: (r.sessions ?? []).map(mapHallSessionApi),
+        };
+      });
+    },
+    enabled: !!user && !!profile && !!profile.organization_id && !!profile.default_school_id && !!examId,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+function mapHallStudentsResponse(response: unknown): HallAttendanceStudentsResponse {
+  const raw = response as {
+    map: {
+      id: string;
+      name: string;
+      status: string;
+      rows: number;
+      columns: number;
+      room_id?: string | null;
+      room?: { name?: string | null; room_number?: string | null } | null;
+    } | null;
+    session: {
+      date: string;
+      start_time: string;
+      end_time?: string | null;
+      exam_time_ids?: string[];
+      class_count?: number;
+    };
+    seats: Array<Parameters<typeof mapHallSeatApi>[0]>;
+    students: Array<Parameters<typeof mapHallSeatApi>[0]>;
+    counts: HallAttendanceStudentsResponse['counts'];
+  };
+  return {
+    map: raw.map
+      ? {
+          id: raw.map.id,
+          name: raw.map.name,
+          status: raw.map.status,
+          rows: raw.map.rows,
+          columns: raw.map.columns,
+          roomId: raw.map.room_id ?? null,
+          roomName: raw.map.room?.name ?? raw.map.room?.room_number ?? null,
+        }
+      : null,
+    session: mapHallSessionApi(raw.session),
+    seats: (raw.seats ?? []).map(mapHallSeatApi),
+    students: (raw.students ?? []).map(mapHallSeatApi),
+    counts: raw.counts,
+  };
+}
+
+export const useHallAttendanceStudents = (
+  examId?: string,
+  mapId?: string | null,
+  session?: { date: string; startTime: string } | null
+) => {
+  const { user, profile } = useAuth();
+  const useMap = !!mapId;
+
+  return useQuery<HallAttendanceStudentsResponse | null>({
+    queryKey: [
+      'exam-hall-attendance-students',
+      examId,
+      mapId ?? 'session',
+      session?.date ?? null,
+      session?.startTime ?? null,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
+    queryFn: async () => {
+      if (!user || !profile || !examId || !session) return null;
+      if (useMap && mapId) {
+        const response = await examAttendanceApi.hallStudents(examId, mapId, {
+          date: session.date,
+          start_time: session.startTime,
+        });
+        return mapHallStudentsResponse(response);
+      }
+      const response = await examAttendanceApi.hallSessionStudents(examId, {
+        date: session.date,
+        start_time: session.startTime,
+      });
+      return mapHallStudentsResponse(response);
+    },
+    enabled:
+      !!user &&
+      !!profile &&
+      !!profile.organization_id &&
+      !!profile.default_school_id &&
+      !!examId &&
+      !!session?.date &&
+      !!session?.startTime,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
 export const useMarkExamAttendance = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
@@ -965,6 +1271,7 @@ export const useMarkExamAttendance = () => {
       examId,
       examTimeId,
       attendances,
+      silent,
     }: {
       examId: string;
       examTimeId: string;
@@ -975,8 +1282,10 @@ export const useMarkExamAttendance = () => {
         seatNumber?: string | null;
         notes?: string | null;
       }>;
+      /** When true, skip success toast (used for hall auto-save). */
+      silent?: boolean;
     }) => {
-      return examAttendanceApi.mark(examId, {
+      const result = await examAttendanceApi.mark(examId, {
         exam_time_id: examTimeId,
         attendances: attendances.map((a) => ({
           student_id: a.studentId,
@@ -986,15 +1295,70 @@ export const useMarkExamAttendance = () => {
           notes: a.notes ?? null,
         })),
       });
+      return { result, silent: !!silent };
     },
-    onSuccess: (data: unknown) => {
-      const result = data as { created?: number; updated?: number; errors?: unknown[] };
+    onSuccess: (data) => {
+      const result = data.result as { created?: number; updated?: number; errors?: unknown[] };
       const total = (result?.created || 0) + (result?.updated || 0);
-      showToast.success(t('toast.attendanceMarked', { count: total }) || `Attendance marked for ${total} students`);
+      if (!data.silent) {
+        showToast.success(t('toast.attendanceMarked', { count: total }) || `Attendance marked for ${total} students`);
+      }
       void queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
       void queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
       void queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
       void queryClient.invalidateQueries({ queryKey: ['timeslot-attendance-summary'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-hall-attendance-students'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.attendanceMarkFailed') || 'Failed to mark attendance');
+    },
+  });
+};
+
+export const useMarkHallExamAttendance = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({
+      examId,
+      attendances,
+      silent,
+    }: {
+      examId: string;
+      attendances: Array<{
+        studentId: string;
+        examTimeId: string;
+        status: ExamAttendanceStatus;
+        checkedInAt?: Date | null;
+        seatNumber?: string | null;
+        notes?: string | null;
+      }>;
+      silent?: boolean;
+    }) => {
+      const result = await examAttendanceApi.markHall(examId, {
+        attendances: attendances.map((a) => ({
+          student_id: a.studentId,
+          exam_time_id: a.examTimeId,
+          status: a.status,
+          checked_in_at: a.checkedInAt ? a.checkedInAt.toISOString() : null,
+          seat_number: a.seatNumber ?? null,
+          notes: a.notes ?? null,
+        })),
+      });
+      return { result, silent: !!silent };
+    },
+    onSuccess: (data) => {
+      const result = data.result as { created?: number; updated?: number; errors?: unknown[] };
+      const total = (result?.created || 0) + (result?.updated || 0);
+      if (!data.silent) {
+        showToast.success(t('toast.attendanceMarked', { count: total }) || `Attendance marked for ${total} students`);
+      }
+      void queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
+      void queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
+      void queryClient.invalidateQueries({ queryKey: ['timeslot-attendance-summary'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-hall-attendance-students'] });
     },
     onError: (error: Error) => {
       showToast.error(error?.message || t('toast.attendanceMarkFailed') || 'Failed to mark attendance');

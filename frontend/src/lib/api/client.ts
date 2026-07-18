@@ -4074,6 +4074,22 @@ export const examAttendanceApi = {
     return apiClient.get(`/exams/${examId}/attendance/summary`);
   },
 
+  hallSessions: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/hall/sessions`);
+  },
+
+  hallSessionStudents: async (examId: string, params: { date: string; start_time: string }) => {
+    return apiClient.get(`/exams/${examId}/attendance/hall/sessions/students`, params);
+  },
+
+  hallMaps: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/hall/maps`);
+  },
+
+  hallStudents: async (examId: string, mapId: string, params: { date: string; start_time: string }) => {
+    return apiClient.get(`/exams/${examId}/attendance/hall/maps/${mapId}/students`, params);
+  },
+
   mark: async (examId: string, data: {
     exam_time_id: string;
     attendances: Array<{
@@ -4085,6 +4101,19 @@ export const examAttendanceApi = {
     }>;
   }) => {
     return apiClient.post(`/exams/${examId}/attendance/mark`, data);
+  },
+
+  markHall: async (examId: string, data: {
+    attendances: Array<{
+      student_id: string;
+      exam_time_id: string;
+      status: 'present' | 'absent' | 'late' | 'excused';
+      checked_in_at?: string | null;
+      seat_number?: string | null;
+      notes?: string | null;
+    }>;
+  }) => {
+    return apiClient.post(`/exams/${examId}/attendance/mark-hall`, data);
   },
 
   scan: async (examId: string, data: {

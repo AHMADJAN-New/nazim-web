@@ -1,8 +1,9 @@
 import { format } from 'date-fns';
-import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown, Save, QrCode, ScanLine, Activity, History, Lock, Unlock } from 'lucide-react';
+import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown, Save, QrCode, ScanLine, Activity, History, Lock, Unlock, LayoutGrid } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { ExamHallAttendancePanel } from '@/components/exams/ExamHallAttendancePanel';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
   AlertDialog,
@@ -20,9 +21,23 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed, useLatestExamFromCurrentYear } from '@/hooks/useExams';
+import {
+  useExam,
+  useExamTimes,
+  useTimeslotStudents,
+  useMarkExamAttendance,
+  useExamAttendanceSummary,
+  useExams,
+  useScanExamAttendance,
+  useExamAttendanceScanFeed,
+  useLatestExamFromCurrentYear,
+  useHallAttendanceMaps,
+  useHallAttendanceSessions,
+  useExamClasses,
+  type HallAttendanceMapOption,
+  type HallAttendanceSession,
+} from '@/hooks/useExams';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useExamClasses } from '@/hooks/useExams';
 import { useProfile } from '@/hooks/useProfiles';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -122,6 +137,8 @@ export default function ExamAttendancePage() {
   const [scanError, setScanError] = useState<string | null>(null); // Instant feedback label
   const [studentCache, setStudentCache] = useState<Map<string, Map<string, any>>>(new Map()); // Cache: timeId -> rollNumber -> student
   const [isAttendanceLocked, setIsAttendanceLocked] = useState<boolean>(false);
+  /** Temporary client-side unlock for completed/archived exams (unlock dialog). */
+  const [attendanceUnlockedOverride, setAttendanceUnlockedOverride] = useState(false);
   const [unlockDialogOpen, setUnlockDialogOpen] = useState<boolean>(false);
   const scanInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -179,6 +196,65 @@ export default function ExamAttendancePage() {
     return examTimes.find((t) => t.id === selectedTimeId);
   }, [examTimes, selectedTimeId]);
 
+  const [entryMode, setEntryMode] = useState<'hall' | 'class'>('hall');
+  const [attendanceTab, setAttendanceTab] = useState<string>('manual');
+  const [selectedHallSessionKey, setSelectedHallSessionKey] = useState<string>('');
+  const [selectedHallMapId, setSelectedHallMapId] = useState<string>('none');
+
+  const { data: hallSessions = [], isLoading: hallSessionsLoading } = useHallAttendanceSessions(examId);
+  const { data: hallMaps = [] } = useHallAttendanceMaps(examId);
+
+  const selectedHallSession: HallAttendanceSession | null = useMemo(() => {
+    return (
+      hallSessions.find((s) => `${s.date}|${s.startTime}` === selectedHallSessionKey) ?? null
+    );
+  }, [hallSessions, selectedHallSessionKey]);
+
+  const mapsForSelectedSession: HallAttendanceMapOption[] = useMemo(() => {
+    if (!selectedHallSession) return [];
+    const key = `${selectedHallSession.date}|${selectedHallSession.startTime}`;
+    return hallMaps.filter((m) => m.sessions.some((s) => `${s.date}|${s.startTime}` === key));
+  }, [hallMaps, selectedHallSession]);
+
+  const selectedHallMap: HallAttendanceMapOption | undefined = useMemo(
+    () =>
+      selectedHallMapId !== 'none'
+        ? mapsForSelectedSession.find((m) => m.id === selectedHallMapId)
+        : undefined,
+    [mapsForSelectedSession, selectedHallMapId]
+  );
+
+  // Auto-select first session for this exam
+  useEffect(() => {
+    if (hallSessions.length === 0) {
+      setSelectedHallSessionKey('');
+      return;
+    }
+    const keyExists = hallSessions.some(
+      (s) => `${s.date}|${s.startTime}` === selectedHallSessionKey
+    );
+    if (!keyExists) {
+      const first = hallSessions[0];
+      setSelectedHallSessionKey(`${first.date}|${first.startTime}`);
+    }
+  }, [hallSessions, selectedHallSessionKey]);
+
+  // Keep optional seating map selection valid for the chosen session
+  useEffect(() => {
+    if (selectedHallMapId === 'none') return;
+    if (!mapsForSelectedSession.some((m) => m.id === selectedHallMapId)) {
+      setSelectedHallMapId('none');
+    }
+  }, [mapsForSelectedSession, selectedHallMapId]);
+
+  // Prefer Hall mode when the exam has multi-class sessions
+  useEffect(() => {
+    setEntryMode('hall');
+    setSelectedHallMapId('none');
+    setAttendanceUnlockedOverride(false);
+    setIsAttendanceLocked(false);
+  }, [examId]);
+
   // Check if attendance is locked (exam is completed or archived)
   const isAttendanceLockedForExam = useMemo(() => {
     if (!exam) return false;
@@ -188,8 +264,16 @@ export default function ExamAttendancePage() {
   // Check if attendance can be marked
   const canMarkAttendance = useMemo(() => {
     if (!exam) return false;
-    return !isAttendanceLockedForExam && !isAttendanceLocked && (exam.status === 'scheduled' || exam.status === 'in_progress');
-  }, [exam, isAttendanceLockedForExam, isAttendanceLocked]);
+    // Explicit unlock from dialog allows marking even when exam is completed/archived
+    if (attendanceUnlockedOverride) {
+      return !isAttendanceLocked;
+    }
+    return (
+      !isAttendanceLockedForExam &&
+      !isAttendanceLocked &&
+      (exam.status === 'scheduled' || exam.status === 'in_progress')
+    );
+  }, [exam, isAttendanceLockedForExam, isAttendanceLocked, attendanceUnlockedOverride]);
 
   // Get class name for display
   const getClassName = (classId: string) => {
@@ -538,68 +622,215 @@ export default function ExamAttendancePage() {
         </div>
       )}
 
-      {/* Filters */}
+      {/* Entry mode */}
       <Card>
-        <CardHeader>
-          <CardTitle>{t('exams.attendance.selectTimeslot') || 'Select Time Slot'}</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle>{t('exams.attendance.markAttendance') || 'Mark Attendance'}</CardTitle>
+          <CardDescription>
+            {t('exams.attendance.hallEntryHint') ||
+              'Use Hall to mark all classes that share the same paper time together. Use By class for one class or barcode.'}
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>{t('search.class') || 'Class'}</Label>
-              <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Classes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Classes</SelectItem>
-                  {examClasses.map((examClass) => (
-                    <SelectItem key={examClass.id} value={examClass.id}>
-                      {getClassName(examClass.id)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <CardContent className="space-y-4">
+          <Tabs value={entryMode} onValueChange={(v) => setEntryMode(v as 'hall' | 'class')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="hall" className="flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('exams.attendance.hall') || 'Hall'}</span>
+              </TabsTrigger>
+              <TabsTrigger value="class" className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('exams.attendance.byClass') || 'By class'}</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-            <div className="space-y-2">
-              <Label>{t('exams.timeSlot') || 'Time Slot'}</Label>
-              <Select 
-                value={selectedTimeId || ''} 
-                onValueChange={handleTimeChange}
-                disabled={!examId || filteredTimes.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={
-                    !examId 
-                      ? (t('exams.selectExamFirst') || 'Select an exam first')
-                      : filteredTimes.length === 0
-                      ? (t('exams.noTimeSlots') || 'No time slots available')
-                      : (t('exams.selectTimeSlot') || 'Select time slot')
-                  } />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredTimes.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground text-center">
-                      {t('exams.noTimeSlots') || 'No time slots available'}
-                    </div>
-                  ) : (
-                    filteredTimes.map((time) => (
-                      <SelectItem key={time.id} value={time.id}>
-                        {formatDate(time.date)} - {time.startTime} to {time.endTime}
-                        {time.examSubject?.subject?.name && ` (${time.examSubject.subject.name})`}
+          {entryMode === 'hall' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('exams.attendance.hallSelectSession') || 'Session (date & time)'}</Label>
+                <Select
+                  value={selectedHallSessionKey}
+                  onValueChange={setSelectedHallSessionKey}
+                  disabled={hallSessionsLoading || hallSessions.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        hallSessions.length === 0
+                          ? (t('exams.attendance.hallNoSessions') || 'No sessions in timetable')
+                          : (t('exams.attendance.hallSelectSession') || 'Select session')
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {hallSessions.map((session) => {
+                      const key = `${session.date}|${session.startTime}`;
+                      return (
+                        <SelectItem key={key} value={key}>
+                          {formatDate(session.date)} {session.startTime}
+                          {session.endTime ? ` - ${session.endTime}` : ''}
+                          {` · ${session.classCount} ${t('exams.attendance.hallClasses') || 'classes'}`}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('exams.attendance.hallSelectMap') || 'Seating map (optional)'}</Label>
+                <Select
+                  value={selectedHallMapId}
+                  onValueChange={setSelectedHallMapId}
+                  disabled={!selectedHallSession}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={t('exams.attendance.hallSelectMapOptional') || 'List by class (no map)'}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      {t('exams.attendance.hallNoMapOption') || 'List by class (no seating map)'}
+                    </SelectItem>
+                    {mapsForSelectedSession.map((map) => (
+                      <SelectItem key={map.id} value={map.id}>
+                        {map.name}
+                        {map.roomName ? ` · ${map.roomName}` : ''}
                       </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
+          )}
+
+          {entryMode === 'hall' && hallSessions.length === 0 && !hallSessionsLoading && (
+            <p className="text-sm text-muted-foreground">
+              {t('exams.attendance.hallNoSessionsHint') ||
+                'No timetable sessions found for this exam. Add exam times (same date and start time for classes that share a paper), then return here to take hall attendance for all of them at once.'}
+            </p>
+          )}
+
+          {entryMode === 'class' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('search.class') || 'Class'}</Label>
+                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Classes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {examClasses.map((examClass) => (
+                      <SelectItem key={examClass.id} value={examClass.id}>
+                        {getClassName(examClass.id)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('exams.timeSlot') || 'Time Slot'}</Label>
+                <Select
+                  value={selectedTimeId || ''}
+                  onValueChange={handleTimeChange}
+                  disabled={!examId || filteredTimes.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        !examId
+                          ? t('exams.selectExamFirst') || 'Select an exam first'
+                          : filteredTimes.length === 0
+                            ? t('exams.noTimeSlots') || 'No time slots available'
+                            : t('exams.selectTimeSlot') || 'Select time slot'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredTimes.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        {t('exams.noTimeSlots') || 'No time slots available'}
+                      </div>
+                    ) : (
+                      filteredTimes.map((time) => (
+                        <SelectItem key={time.id} value={time.id}>
+                          {formatDate(time.date)} - {time.startTime} to {time.endTime}
+                          {time.examSubject?.subject?.name && ` (${time.examSubject.subject.name})`}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Attendance Marking */}
-      {selectedTimeId && (
+      {/* Hall attendance */}
+      {entryMode === 'hall' && examId && selectedHallSession && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <LayoutGrid className="h-5 w-5" />
+                  {selectedHallMap?.name || t('exams.attendance.hall')}
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  {formatDate(selectedHallSession.date)} | {selectedHallSession.startTime}
+                  {selectedHallSession.endTime ? ` - ${selectedHallSession.endTime}` : ''}
+                  {selectedHallMap?.roomName ? ` | ${selectedHallMap.roomName}` : ''}
+                  {` | ${selectedHallSession.classCount} ${t('exams.attendance.hallClasses') || 'classes'}`}
+                </CardDescription>
+              </div>
+              {!canMarkAttendance && (isAttendanceLockedForExam || isAttendanceLocked) && (
+                <Button variant="outline" size="sm" onClick={() => setUnlockDialogOpen(true)} className="gap-2">
+                  <Unlock className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('exams.attendance.unlock') || 'Unlock'}</span>
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!canMarkAttendance && (isAttendanceLockedForExam || isAttendanceLocked) && (
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
+                <div className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100">
+                  <Lock className="h-4 w-4 mt-0.5 shrink-0" />
+                  <p>
+                    {isAttendanceLockedForExam
+                      ? t('exams.attendance.unlockExamMessage') ||
+                        'This exam is completed or archived. Unlock to mark or change attendance.'
+                      : t('exams.attendance.unlockMessage') ||
+                        'Attendance marking is locked. Unlock to continue.'}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUnlockDialogOpen(true)}
+                  className="gap-2 shrink-0 border-amber-400"
+                >
+                  <Unlock className="h-4 w-4" />
+                  {t('exams.attendance.unlock') || 'Unlock'}
+                </Button>
+              </div>
+            )}
+            <ExamHallAttendancePanel
+              examId={examId}
+              mapId={selectedHallMap?.id ?? null}
+              session={{ date: selectedHallSession.date, startTime: selectedHallSession.startTime }}
+              canMark={canMarkAttendance}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Class-based attendance (manual / barcode) */}
+      {entryMode === 'class' && selectedTimeId && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -633,7 +864,7 @@ export default function ExamAttendancePage() {
                     <span className="font-medium">{timeslotData.counts.marked}</span> / {timeslotData.counts.total} marked
                   </div>
                 )}
-                {canMarkAttendance && (isAttendanceLockedForExam || isAttendanceLocked) && (
+                {!canMarkAttendance && (isAttendanceLockedForExam || isAttendanceLocked) && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -654,7 +885,7 @@ export default function ExamAttendancePage() {
                 <LoadingSpinner />
               </div>
             ) : timeslotData?.students && timeslotData.students.length > 0 ? (
-              <Tabs defaultValue="manual" className="space-y-4">
+              <Tabs value={attendanceTab} onValueChange={setAttendanceTab} className="space-y-4">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="manual" className="flex items-center gap-2">
                     <UserCheck className="h-4 w-4" />
@@ -1069,8 +1300,8 @@ export default function ExamAttendancePage() {
         </Card>
       )}
 
-      {/* No time slot selected */}
-      {!selectedTimeId && (
+      {/* No time slot selected (class mode only — Hall uses session picker instead) */}
+      {entryMode === 'class' && !selectedTimeId && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Clock className="h-12 w-12 mb-4" />
@@ -1136,6 +1367,7 @@ export default function ExamAttendancePage() {
             <AlertDialogAction
               onClick={() => {
                 setIsAttendanceLocked(false);
+                setAttendanceUnlockedOverride(true);
                 setUnlockDialogOpen(false);
               }}
               className="bg-amber-600 hover:bg-amber-700"

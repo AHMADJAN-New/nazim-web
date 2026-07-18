@@ -38,8 +38,9 @@ class ExamNumberReportService
         ?string $examClassId = null,
         bool $isPreview = false
     ): array {
+        // Never lower the limit — ZIP jobs need many minutes of Chromium work.
         if (! $isPreview) {
-            set_time_limit(180);
+            $this->extendTimeLimit(0);
         }
 
         $exam = Exam::where('organization_id', $organizationId)
@@ -195,8 +196,9 @@ class ExamNumberReportService
         string $layout = 'single',
         bool $isPreview = false
     ): array {
+        // Never lower the limit — ZIP jobs need many minutes of Chromium work.
         if (! $isPreview) {
-            set_time_limit(180);
+            $this->extendTimeLimit(0);
         }
 
         if (! in_array($layout, ['single', 'grid'], true)) {
@@ -364,7 +366,7 @@ class ExamNumberReportService
             ? $parameters['exam_class_id']
             : null;
 
-        set_time_limit(600);
+        $this->extendTimeLimit(0);
         $this->reportProgress($progressCallback, 5, 'Loading exam numbers');
 
         if ($reportKey === 'exam_roll_slips') {
@@ -1090,5 +1092,32 @@ class ExamNumberReportService
         if ($progressCallback) {
             $progressCallback($progress, $message);
         }
+    }
+
+    /**
+     * Disable or raise PHP max_execution_time without ever lowering a higher limit.
+     * Critical for queue workers (default 180s) running multi-PDF ZIP packs.
+     */
+    private function extendTimeLimit(int $seconds): void
+    {
+        if (! function_exists('set_time_limit')) {
+            return;
+        }
+
+        $current = (int) ini_get('max_execution_time');
+        // 0 = unlimited; only raise when current is limited and lower than requested
+        if ($seconds === 0) {
+            @ini_set('max_execution_time', '0');
+            @set_time_limit(0);
+
+            return;
+        }
+
+        if ($current === 0 || $current >= $seconds) {
+            return;
+        }
+
+        @ini_set('max_execution_time', (string) $seconds);
+        @set_time_limit($seconds);
     }
 }

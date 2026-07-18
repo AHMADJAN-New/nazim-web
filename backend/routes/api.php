@@ -1000,6 +1000,10 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
         Route::middleware(['feature:exams_full'])->group(function () {
             Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);
             Route::get('/exams/{exam}/attendance/summary', [ExamAttendanceController::class, 'summary']);
+            Route::get('/exams/{exam}/attendance/hall/sessions', [ExamAttendanceController::class, 'hallSessions']);
+            Route::get('/exams/{exam}/attendance/hall/sessions/students', [ExamAttendanceController::class, 'hallSessionStudents']);
+            Route::get('/exams/{exam}/attendance/hall/maps', [ExamAttendanceController::class, 'hallMaps']);
+            Route::get('/exams/{exam}/attendance/hall/maps/{mapId}/students', [ExamAttendanceController::class, 'hallStudents']);
             Route::get('/exams/{exam}/attendance/class/{classId}', [ExamAttendanceController::class, 'byClass']);
             Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}', [ExamAttendanceController::class, 'byTimeslot']);
             Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/students', [ExamAttendanceController::class, 'getTimeslotStudents']);
@@ -1008,6 +1012,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/exams/{exam}/attendance/students/{studentId}', [ExamAttendanceController::class, 'studentReport']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/exams/{exam}/attendance/mark', [ExamAttendanceController::class, 'mark']);
+                Route::post('/exams/{exam}/attendance/mark-hall', [ExamAttendanceController::class, 'markHall']);
                 Route::post('/exams/{exam}/attendance/scan', [ExamAttendanceController::class, 'scan']);
                 Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
                 Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);

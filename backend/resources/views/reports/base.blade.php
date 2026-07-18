@@ -379,6 +379,7 @@
             width: 100%;
             border-collapse: collapse;
             margin: 10px 0;
+            /* fixed + content-weighted COL_WIDTHS keeps columns readable without mid-word RTL chops */
             table-layout: fixed;
             font-size: {{ $tableFontSize }} !important;
         }
@@ -396,9 +397,9 @@
             text-align: center;
             font-size: {{ $tableFontSize }} !important;
             white-space: normal;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            hyphens: auto;
+            overflow-wrap: break-word;
+            word-break: normal;
+            line-break: auto;
         }
 
         .data-table td {
@@ -408,10 +409,10 @@
             font-size: {{ $tableFontSize }} !important;
             line-height: 1.45;
             white-space: normal;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            hyphens: auto;
-            vertical-align: top;
+            overflow-wrap: break-word;
+            word-break: normal;
+            line-break: auto;
+            vertical-align: middle;
         }
 
         .data-table tr:nth-child(even) td {

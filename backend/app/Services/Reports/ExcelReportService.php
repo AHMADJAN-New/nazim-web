@@ -134,8 +134,11 @@ class ExcelReportService
             $this->reportProgress($progressCallback, 5, 'Preparing multi-sheet workbook');
 
             $spreadsheet = new Spreadsheet;
+            // RTL multi-sheet exports (exam numbers by class) must use Bahij — branding Inter lacks Arabic glyphs
             $defaultFont = (string) ($context['FONT_FAMILY'] ?? 'Bahij Nassim');
-            if (trim($defaultFont) === '') {
+            $normalizedFont = strtolower(preg_replace('/\s+/', '', trim($defaultFont)) ?? '');
+            $latinUiFonts = ['inter', 'roboto', 'arial', 'helvetica', 'systemui', 'sansserif', 'segoeui', 'calibri'];
+            if ($defaultFont === '' || in_array($normalizedFont, $latinUiFonts, true)) {
                 $defaultFont = 'Bahij Nassim';
             }
             $spreadsheet->getDefaultStyle()->getFont()->setName($defaultFont);
@@ -519,7 +522,9 @@ class ExcelReportService
         $lastCol = $this->getColumnLetter($colIndex - 1);
         $tableFontSize = $this->parseFontSize($context['TABLE_FONT_SIZE'] ?? $context['FONT_SIZE'] ?? '14px');
         $tableFontFamily = (string) ($context['FONT_FAMILY'] ?? 'Bahij Nassim');
-        if (trim($tableFontFamily) === '') {
+        $normalizedTableFont = strtolower(preg_replace('/\s+/', '', trim($tableFontFamily)) ?? '');
+        $latinUiFonts = ['inter', 'roboto', 'arial', 'helvetica', 'systemui', 'sansserif', 'segoeui', 'calibri'];
+        if ($tableFontFamily === '' || in_array($normalizedTableFont, $latinUiFonts, true)) {
             $tableFontFamily = 'Bahij Nassim';
         }
         $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->applyFromArray([
@@ -714,48 +719,36 @@ class ExcelReportService
             $currentRow = $totalsRow + 1;
         }
 
-        // Set column widths - use COL_WIDTHS from context if available, otherwise auto-size based on content
-        $colWidths = $context['COL_WIDTHS'] ?? [];
-
+        // Always fit Excel columns to actual cell content.
+        // Do NOT use COL_WIDTHS here — those are PDF percentage widths, and converting them
+        // produced tiny columns (often ~8) that truncated name / father name / class text.
         for ($i = 1; $i <= $colIndex - 1; $i++) {
             $colLetter = $this->getColumnLetter($i);
+            $sheet->getColumnDimension($colLetter)->setAutoSize(false);
 
-            // Use COL_WIDTHS if provided (widths are percentages, convert to Excel column width)
-            if (isset($colWidths[$i - 1])) {
-                // COL_WIDTHS are percentages, convert to approximate Excel column width
-                // Excel column width is in character units (default is ~8.43 for standard font)
-                // For percentage widths, we'll use a base width and scale
-                $baseWidth = 12; // Base width in Excel units
-                $percentage = $colWidths[$i - 1] / 100.0;
-                $excelWidth = max(8, min(50, $baseWidth * $percentage * 2)); // Scale and limit
-                $sheet->getColumnDimension($colLetter)->setWidth($excelWidth);
-            } else {
-                // Disable auto-size first (in case it was set)
-                $sheet->getColumnDimension($colLetter)->setAutoSize(false);
+            // Row-number column stays compact
+            if ($i === 1) {
+                $sheet->getColumnDimension($colLetter)->setWidth(6);
 
-                // Calculate width based on actual content
-                $calculatedWidth = $this->calculateColumnWidth($sheet, $colLetter, $headerRow, $currentRow - 1);
+                continue;
+            }
 
-                if ($calculatedWidth > 0) {
-                    // Add padding (3 units) and set explicit width
-                    // Minimum 8 units, maximum 50 units to prevent extreme sizes
-                    $finalWidth = max(8, min(50, $calculatedWidth + 3));
-                    $sheet->getColumnDimension($colLetter)->setWidth($finalWidth);
+            $calculatedWidth = $this->calculateColumnWidth($sheet, $colLetter, $headerRow, $currentRow - 1);
+            if ($calculatedWidth > 0) {
+                // Extra room for Bahij/RTL names — previous sizes were still slightly tight
+                $finalWidth = max(14, min(120, ($calculatedWidth * 1.25) + 6));
+                $sheet->getColumnDimension($colLetter)->setWidth($finalWidth);
 
-                    // Log for debugging (only in dev mode)
-                    if (config('app.debug')) {
-                        $endRow = $currentRow - 1;
-                        \Log::debug('Excel column width set', [
-                            'column' => $colLetter,
-                            'calculated' => $calculatedWidth,
-                            'final' => $finalWidth,
-                            'rows' => "{$headerRow}-{$endRow}",
-                        ]);
-                    }
-                } else {
-                    // Fallback: set a reasonable default width
-                    $sheet->getColumnDimension($colLetter)->setWidth(12);
+                if (config('app.debug')) {
+                    \Log::debug('Excel column width set', [
+                        'column' => $colLetter,
+                        'calculated' => $calculatedWidth,
+                        'final' => $finalWidth,
+                        'rows' => "{$headerRow}-".($currentRow - 1),
+                    ]);
                 }
+            } else {
+                $sheet->getColumnDimension($colLetter)->setWidth(14);
             }
         }
 
@@ -1317,44 +1310,33 @@ class ExcelReportService
     {
         $maxWidth = 0;
 
-        // Get default font size from header row
         $headerFontSize = $sheet->getStyle("{$colLetter}{$startRow}")->getFont()->getSize();
         $defaultFontSize = is_numeric($headerFontSize) ? (float) $headerFontSize : 11.0;
 
-        // Check all cells in this column
-        for ($row = $startRow; $row <= $endRow; $row++) {
-            $cell = $sheet->getCell("{$colLetter}{$row}");
-            $value = $cell->getValue();
+        // Cap scan for very large sheets (still covers typical class lists)
+        $scanEnd = min($endRow, $startRow + 2000);
 
-            if ($value !== null && $value !== '') {
-                // Convert value to string
-                $text = (string) $value;
-
-                // Get actual cell font size
-                $cellFontSize = $sheet->getStyle("{$colLetter}{$row}")->getFont()->getSize();
-                $fontSize = is_numeric($cellFontSize) ? (float) $cellFontSize : $defaultFontSize;
-
-                // Calculate width based on character count and font size
-                // Excel column width formula: width = (character_count * font_size_factor) + padding
-                // For standard fonts: 1 character ≈ 1 unit at 11pt font
-                $charCount = mb_strlen($text, 'UTF-8');
-
-                // Base width calculation: Excel uses character units
-                // Standard: 1 char = 1 unit at 11pt font
-                $baseCharWidth = 1.0;
-
-                // Adjust for font size (Excel scales proportionally)
-                $fontSizeFactor = $fontSize / 11.0;
-
-                // Check for RTL characters (Arabic/Persian/Pashto) - these are wider
-                $hasRTL = preg_match('/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}]/u', $text);
-                $rtlFactor = $hasRTL ? 1.5 : 1.0; // RTL characters are ~50% wider
-
-                // Calculate width: characters * font_size_factor * rtl_factor
-                $width = $charCount * $baseCharWidth * $fontSizeFactor * $rtlFactor;
-
-                $maxWidth = max($maxWidth, $width);
+        for ($row = $startRow; $row <= $scanEnd; $row++) {
+            $value = $sheet->getCell("{$colLetter}{$row}")->getValue();
+            if ($value === null || $value === '') {
+                continue;
             }
+
+            $text = (string) $value;
+            $cellFontSize = $sheet->getStyle("{$colLetter}{$row}")->getFont()->getSize();
+            $fontSize = is_numeric($cellFontSize) ? (float) $cellFontSize : $defaultFontSize;
+            $charCount = mb_strlen($text, 'UTF-8');
+            $fontSizeFactor = max(0.85, $fontSize / 11.0);
+
+            // Bahij / Arabic / Pashto glyphs need ~2.4x Latin width in Excel character units
+            $hasRTL = preg_match(
+                '/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}]/u',
+                $text
+            ) === 1;
+            $rtlFactor = $hasRTL ? 2.4 : 1.15;
+
+            $width = ($charCount * $fontSizeFactor * $rtlFactor) + 2.5;
+            $maxWidth = max($maxWidth, $width);
         }
 
         return $maxWidth;

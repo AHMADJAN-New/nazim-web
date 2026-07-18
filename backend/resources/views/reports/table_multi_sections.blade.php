@@ -135,12 +135,20 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th class="row-number">#</th>
+        <th class="row-number" style="width: 28px;">#</th>
         @foreach($sectionColumns as $colIndex => $column)
           @php
             $label = is_array($column) ? ($column['label'] ?? $column['key'] ?? '') : $column;
+            // Prefer section-local widths when present; else global COL_WIDTHS (content-weighted)
+            $sectionWidths = is_array($section) ? ($section['widths'] ?? null) : null;
+            $width = null;
+            if (is_array($sectionWidths) && isset($sectionWidths[$colIndex])) {
+              $width = $sectionWidths[$colIndex];
+            } elseif (isset($COL_WIDTHS[$colIndex])) {
+              $width = $COL_WIDTHS[$colIndex];
+            }
           @endphp
-          <th>{{ $label }}</th>
+          <th @if($width !== null) style="width: {{ $width }}%;" @endif>{{ $label }}</th>
         @endforeach
       </tr>
     </thead>
