@@ -286,7 +286,7 @@ export default {
     studentCode: "د زده کوونکي کوډ",
     validate: "تاییدول",
     fullName: "بشپړ نوم",
-    firstName: "لومړی نوم",
+    firstName: "نوم ",
     lastName: "تخلص",
     fatherName: "د پلار نوم",
     motherName: "د مور نوم",

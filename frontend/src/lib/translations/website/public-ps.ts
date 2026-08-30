@@ -248,7 +248,7 @@ export const websitePublicPs: WebsitePublicTranslations = {
           'زموږ د تعلیمي ټیکنالوژۍ متخصصین چمتو دي چې ستاسو د ښوونځي په ځانګړو اړتیاوو بحث وکړي.',
         emailAddress: 'بریښنالیک پته',
         emailSupport: 'د بریښنالیک ملاتړ',
-        firstName: 'لومړی نوم',
+        firstName: 'نوم ',
         formDescription:
           'لاندې فورمه ډکه کړئ او موږ به په ۲۴ ساعتونو کې تاسو سره اړیکه ونیسو.',
         lastName: 'تخلص',

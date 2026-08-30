@@ -116,7 +116,7 @@ export default {
     graduationDate: "د فراغت نېټه",
     yes: "هو",
     no: "نه",
-    firstName: "لومړی نوم",
+    firstName: "نوم ",
     lastName: "تخلص",
     years: "کاله",
     clearFilters: "فلټرونه پاک کړئ",
