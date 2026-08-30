@@ -339,25 +339,20 @@ class StaffController extends Controller
             }
         }
 
-        // Set default staff_type_id if not provided but staff_type is
-        $staffTypeId = $request->staff_type_id;
-        if (!$staffTypeId && $request->staff_type) {
-            $staffType = StaffType::where('code', $request->staff_type)
-                ->whereNull('organization_id')
-                ->whereNull('deleted_at')
-                ->first();
-            if ($staffType) {
-                $staffTypeId = $staffType->id;
-            }
-        }
+        $staffTypeFields = $this->resolveStaffTypeFields(
+            $request->staff_type_id,
+            $request->staff_type,
+            $organizationId,
+            $currentSchoolId
+        );
 
         $staff = Staff::create([
             'profile_id' => $request->profile_id ?? null,
             'organization_id' => $organizationId,
             'employee_id' => $request->employee_id,
             'staff_code' => $request->staff_code ?? null, // Will be auto-generated if null
-            'staff_type' => $request->staff_type ?? 'teacher',
-            'staff_type_id' => $staffTypeId,
+            'staff_type' => $staffTypeFields['staff_type'],
+            'staff_type_id' => $staffTypeFields['staff_type_id'],
             // Force current school (never trust client input)
             'school_id' => $currentSchoolId,
             'first_name' => $request->first_name,
@@ -533,24 +528,14 @@ class StaffController extends Controller
             }
         }
 
-        // Set default staff_type_id if not provided but staff_type is
-        if ($request->has('staff_type') && !$request->has('staff_type_id')) {
-            $staffType = StaffType::where('code', $request->staff_type)
-                ->whereNull('organization_id')
-                ->whereNull('deleted_at')
-                ->first();
-            if ($staffType) {
-                $request->merge(['staff_type_id' => $staffType->id]);
-            }
-        }
-
-        // If staff_type_id is provided but staff_type is not, derive staff_type from staff_type_id
-        // This must happen BEFORE $request->only() to ensure staff_type is included
-        if ($request->has('staff_type_id') && !$request->has('staff_type')) {
-            $staffType = StaffType::find($request->staff_type_id);
-            if ($staffType) {
-                $request->merge(['staff_type' => $staffType->code]);
-            }
+        if ($request->has('staff_type_id') || $request->has('staff_type')) {
+            $staffTypeFields = $this->resolveStaffTypeFields(
+                $request->input('staff_type_id'),
+                $request->input('staff_type'),
+                $staff->organization_id,
+                $staff->school_id
+            );
+            $request->merge($staffTypeFields);
         }
 
         $updateData = $request->only([
@@ -600,15 +585,6 @@ class StaffController extends Controller
         }
         if (isset($updateData['staff_type_id']) && $updateData['staff_type_id'] === null) {
             unset($updateData['staff_type_id']);
-        }
-
-        // Ensure staff_type is set if staff_type_id is being updated
-        // This is a fallback in case the merge above didn't work
-        if (isset($updateData['staff_type_id']) && (!isset($updateData['staff_type']) || $updateData['staff_type'] === null)) {
-            $staffType = StaffType::find($updateData['staff_type_id']);
-            if ($staffType) {
-                $updateData['staff_type'] = $staffType->code;
-            }
         }
 
         $updateData['updated_by'] = $user->id;
@@ -983,6 +959,51 @@ class StaffController extends Controller
             'document' => $document,
             'download_url' => $downloadUrl,
         ], 201);
+    }
+
+    /**
+     * Keep staff_type (legacy code column) in sync with staff_type_id.
+     */
+    private function resolveStaffTypeFields(
+        ?string $staffTypeId,
+        ?string $staffTypeCode,
+        string $organizationId,
+        string $schoolId
+    ): array {
+        if ($staffTypeId) {
+            $staffType = StaffType::whereNull('deleted_at')->find($staffTypeId);
+            if ($staffType) {
+                return [
+                    'staff_type_id' => $staffType->id,
+                    'staff_type' => $staffType->code,
+                ];
+            }
+        }
+
+        if ($staffTypeCode) {
+            $staffType = StaffType::where('code', $staffTypeCode)
+                ->where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($staffType) {
+                return [
+                    'staff_type_id' => $staffType->id,
+                    'staff_type' => $staffType->code,
+                ];
+            }
+
+            return [
+                'staff_type_id' => $staffTypeId,
+                'staff_type' => $staffTypeCode,
+            ];
+        }
+
+        return [
+            'staff_type_id' => null,
+            'staff_type' => 'teacher',
+        ];
     }
 }
 

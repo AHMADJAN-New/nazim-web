@@ -807,7 +807,7 @@ class StudentHistoryService
                 'date' => substr($card['createdAt'], 0, 10),
                 'title' => 'ID Card Issued: '.($card['cardNumber'] ?? 'N/A'),
                 'description' => 'Academic Year: '.($card['academicYear']['name'] ?? 'N/A'),
-                'status' => $card['isPrinted'] ? 'printed' : 'pending',
+                'status' => ($card['isPrinted'] ?? false) ? 'printed' : 'pending',
                 'data' => $card,
             ];
         }

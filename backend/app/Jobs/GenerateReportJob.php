@@ -1330,7 +1330,7 @@ class GenerateReportJob implements ShouldQueue
                     'expiry_date' => isset($card['expiryDate']) && $card['expiryDate'] ? \Carbon\Carbon::parse($card['expiryDate'])->format('Y-m-d') : '',
                     'status' => $card['status'] ?? '',
                 ];
-            }, $sections['idCards'] ?? []);
+            }, $sections['idCards']['cards'] ?? []);
 
             // Format courses section
             $coursesData = array_map(function ($course) {
@@ -1572,10 +1572,10 @@ class GenerateReportJob implements ShouldQueue
                         'academicYear' => $card['academicYear']['name'] ?? '',
                         'class' => $card['class']['name'] ?? '',
                         'issueDate' => isset($card['createdAt']) && $card['createdAt'] ? \Carbon\Carbon::parse($card['createdAt'])->format('Y-m-d') : '',
-                        'isPrinted' => $card['isPrinted'] ? 'Yes' : 'No',
-                        'feePaid' => $card['feePaid'] ? 'Yes' : 'No',
+                        'isPrinted' => ($card['isPrinted'] ?? false) ? 'Yes' : 'No',
+                        'feePaid' => ($card['cardFeePaid'] ?? false) ? 'Yes' : 'No',
                     ];
-                }, $sections['idCards'] ?? []),
+                }, $sections['idCards']['cards'] ?? []),
             ],
             'courses' => [
                 'sheet_name' => 'Courses',

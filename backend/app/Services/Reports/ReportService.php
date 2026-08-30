@@ -1224,9 +1224,9 @@ class ReportService
                     'issued_at' => isset($card['createdAt']) && $card['createdAt'] ? \Carbon\Carbon::parse($card['createdAt'])->format('Y-m-d') : '',
                     'is_printed' => $card['isPrinted'] ?? false,
                     'template' => $card['templateName'] ?? ($card['template']['name'] ?? ''),
-                    'fee_paid' => $card['feePaid'] ?? null,
+                    'fee_paid' => $card['cardFeePaid'] ?? null,
                 ];
-            }, $sections['idCards'] ?? []);
+            }, $sections['idCards']['cards'] ?? []);
 
             // Format courses section
             $coursesData = array_map(function ($course) {
@@ -1459,10 +1459,10 @@ class ReportService
                         'academicYear' => $card['academicYear']['name'] ?? '',
                         'class' => $card['class']['name'] ?? '',
                         'issueDate' => isset($card['createdAt']) && $card['createdAt'] ? \Carbon\Carbon::parse($card['createdAt'])->format('Y-m-d') : '',
-                        'isPrinted' => $card['isPrinted'] ? 'Yes' : 'No',
-                        'feePaid' => $card['feePaid'] ? 'Yes' : 'No',
+                        'isPrinted' => ($card['isPrinted'] ?? false) ? 'Yes' : 'No',
+                        'feePaid' => ($card['cardFeePaid'] ?? false) ? 'Yes' : 'No',
                     ];
-                }, $sections['idCards'] ?? []),
+                }, $sections['idCards']['cards'] ?? []),
             ],
             'courses' => [
                 'sheet_name' => 'Courses',

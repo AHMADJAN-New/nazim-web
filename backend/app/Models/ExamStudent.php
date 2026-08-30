@@ -67,6 +67,18 @@ class ExamStudent extends Model
         return $this->belongsTo(StudentAdmission::class, 'student_admission_id');
     }
 
+    public function student()
+    {
+        return $this->hasOneThrough(
+            Student::class,
+            StudentAdmission::class,
+            'id',
+            'id',
+            'student_admission_id',
+            'student_id'
+        );
+    }
+
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');

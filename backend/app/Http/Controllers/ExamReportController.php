@@ -338,36 +338,35 @@ class ExamReportController extends Controller
 
         // Get marks distribution
         try {
+            $gradeRangeCase = "
+                CASE
+                    WHEN marks_obtained >= 90 THEN '90-100'
+                    WHEN marks_obtained >= 80 THEN '80-89'
+                    WHEN marks_obtained >= 70 THEN '70-79'
+                    WHEN marks_obtained >= 60 THEN '60-69'
+                    WHEN marks_obtained >= 50 THEN '50-59'
+                    WHEN marks_obtained >= 40 THEN '40-49'
+                    ELSE 'Below 40'
+                END
+            ";
+
             $marksDistribution = ExamResult::where('exam_id', $examId)
                 ->where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->where('is_absent', false)
                 ->whereNotNull('marks_obtained')
-                ->selectRaw("
-                    CASE 
-                        WHEN marks_obtained >= 90 THEN '90-100'
-                        WHEN marks_obtained >= 80 THEN '80-89'
-                        WHEN marks_obtained >= 70 THEN '70-79'
-                        WHEN marks_obtained >= 60 THEN '60-69'
-                        WHEN marks_obtained >= 50 THEN '50-59'
-                        WHEN marks_obtained >= 40 THEN '40-49'
-                        ELSE 'Below 40'
-                    END as grade_range,
-                    COUNT(*) as count
-                ")
-                ->groupBy('grade_range')
-                ->orderByRaw("
-                    CASE grade_range
-                        WHEN '90-100' THEN 1
-                        WHEN '80-89' THEN 2
-                        WHEN '70-79' THEN 3
-                        WHEN '60-69' THEN 4
-                        WHEN '50-59' THEN 5
-                        WHEN '40-49' THEN 6
-                        ELSE 7
-                    END
-                ")
+                ->selectRaw("{$gradeRangeCase} as grade_range, COUNT(*) as count")
+                ->groupByRaw($gradeRangeCase)
+                ->orderByRaw('MIN(CASE
+                    WHEN marks_obtained >= 90 THEN 1
+                    WHEN marks_obtained >= 80 THEN 2
+                    WHEN marks_obtained >= 70 THEN 3
+                    WHEN marks_obtained >= 60 THEN 4
+                    WHEN marks_obtained >= 50 THEN 5
+                    WHEN marks_obtained >= 40 THEN 6
+                    ELSE 7
+                END)')
                 ->get();
         } catch (\Exception $e) {
             Log::error('Error calculating marks distribution: '.$e->getMessage());

@@ -337,4 +337,42 @@ class StaffManagementTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    /** @test */
+    public function user_can_update_staff_with_custom_staff_type_code()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+        $school = $this->getUserSchool($user);
+
+        $customType = StaffType::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'code' => 'driver',
+            'name' => 'Driver',
+        ]);
+
+        $staff = Staff::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'PUT', "/api/staff/{$staff->id}", [
+            'first_name' => $staff->first_name,
+            'father_name' => $staff->father_name,
+            'email' => $staff->email,
+            'phone_number' => $staff->phone_number,
+            'birth_date' => $staff->birth_date,
+            'status' => $staff->status,
+            'staff_type_id' => $customType->id,
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('staff', [
+            'id' => $staff->id,
+            'staff_type_id' => $customType->id,
+            'staff_type' => 'driver',
+        ]);
+    }
 }

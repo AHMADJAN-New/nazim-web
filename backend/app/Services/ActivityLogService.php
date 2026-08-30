@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Activity;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -50,9 +51,15 @@ class ActivityLogService
             ->causedBy($user)
             ->withProperties($properties ?? []);
 
-        // Set subject if provided
-        if ($subject) {
+        // Set subject if provided (must be an Eloquent model for Spatie)
+        if ($subject instanceof Model) {
             $logger->performedOn($subject);
+        } elseif ($subject !== null) {
+            $properties = array_merge($properties ?? [], [
+                'subject_type' => is_object($subject) ? class_basename($subject) : gettype($subject),
+                'subject_id' => is_object($subject) && isset($subject->id) ? $subject->id : null,
+            ]);
+            $logger->withProperties($properties);
         }
 
         // Set event if provided
