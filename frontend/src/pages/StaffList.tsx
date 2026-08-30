@@ -184,16 +184,22 @@ export function StaffList() {
     const { data: schools } = useSchools(orgIdForQuery);
     const { data: staffTypes } = useStaffTypes(orgIdForQuery);
 
-    // School options for staff create/edit: only current school for school-level users; all schools for org-level (Org Admin)
+    // School options for staff create/edit: all schools for org-wide users; current school only for school-scoped users
     const schoolsForStaffForm = useMemo(() => {
         if (!schools?.length) return [];
+        const hasOrgWideScope =
+            (profile as { schools_access_all?: boolean } | undefined)?.schools_access_all === true
+            || !profile?.default_school_id;
+        if (hasOrgWideScope) {
+            return schools;
+        }
         const currentSchoolId = profile?.default_school_id;
         if (currentSchoolId) {
             const current = schools.filter((s) => s.id === currentSchoolId);
             return current.length ? current : [schools[0]];
         }
         return schools;
-    }, [schools, profile?.default_school_id]);
+    }, [schools, profile?.default_school_id, profile]);
     // Use paginated version of the hook
     const { 
         data: staff, 
@@ -368,7 +374,10 @@ export function StaffList() {
                                     grandfather_name: row.original.grandfatherName || null,
                                     tazkira_number: row.original.tazkiraNumber || null,
                                     birth_year: row.original.birthYear || null,
-                                    birth_date: row.original.dateOfBirth || null,
+                                    birth_date: row.original.birthDate
+                                        || (row.original.dateOfBirth
+                                            ? dateToLocalYYYYMMDD(row.original.dateOfBirth)
+                                            : null),
                                     phone_number: row.original.phoneNumber || null,
                                     email: row.original.email || null,
                                     home_address: row.original.homeAddress || null,
@@ -1366,7 +1375,6 @@ export function StaffList() {
                             }
 
                         // Convert form data (snake_case) to domain model (camelCase)
-                        const schoolId = data.school_id && data.school_id !== 'none' && data.school_id !== '' ? data.school_id : null;
                         const staffData: Partial<Staff> = {
                             employeeId: data.employee_id,
                             staffTypeId: data.staff_type_id,
@@ -1408,10 +1416,6 @@ export function StaffList() {
                             status: data.status || 'active',
                             notes: data.notes || null,
                         };
-
-                        if (schoolId !== editingStaff.schoolId) {
-                            staffData.schoolId = schoolId;
-                        }
 
                         updateStaff.mutate(
                             { id: editingStaff.id, ...staffData },
@@ -1542,7 +1546,11 @@ export function StaffList() {
                                                                 name="school_id"
                                                                 control={control}
                                                                 render={({ field }) => (
-                                                                    <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
+                                                                    <Select
+                                                                        value={field.value || 'none'}
+                                                                        onValueChange={(value) => field.onChange(value === 'none' ? null : value)}
+                                                                        disabled
+                                                                    >
                                                                         <SelectTrigger><SelectValue placeholder={t('common.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">{t('staff.noSchool')}</SelectItem>

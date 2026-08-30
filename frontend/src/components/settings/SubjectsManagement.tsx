@@ -127,7 +127,6 @@ export function SubjectsManagement() {
     const [selectedClassId, setSelectedClassId] = useState<string | undefined>();
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>();
     const [selectedClassAcademicYearId, setSelectedClassAcademicYearId] = useState<string>('');
-    const [copyFromClassYearId, setCopyFromClassYearId] = useState<string | undefined>();
 
     const applyClassYearUrlFilters = useCallback((values: {
         academicYearId?: string;
@@ -522,7 +521,12 @@ export function SubjectsManagement() {
     };
 
     const handleOpenAssignDialog = () => {
-        resetAssign();
+        resetAssign({
+            class_academic_year_id: selectedClassAcademicYearId || '',
+            subject_id: undefined,
+            room_id: null,
+            notes: undefined,
+        });
         setIsAssignDialogOpen(true);
     };
 
@@ -549,7 +553,11 @@ export function SubjectsManagement() {
     };
 
     const handleOpenBulkAssignDialog = () => {
-        resetBulk();
+        resetBulk({
+            class_academic_year_id: selectedClassAcademicYearId || '',
+            subject_ids: [],
+            default_room_id: null,
+        });
         setIsBulkAssignDialogOpen(true);
     };
 
@@ -576,8 +584,11 @@ export function SubjectsManagement() {
     };
 
     const handleOpenCopyDialog = () => {
-        resetCopy();
-        setCopyFromClassYearId(selectedClassAcademicYearId);
+        resetCopy({
+            from_class_academic_year_id: selectedClassAcademicYearId || '',
+            to_class_academic_year_id: '',
+            copy_assignments: false,
+        });
         setIsCopyDialogOpen(true);
     };
 
@@ -1385,7 +1396,6 @@ export function SubjectsManagement() {
                                 rows={3}
                             />
                         </div>
-                        <input type="hidden" {...registerAssign('class_academic_year_id')} value={selectedClassAcademicYearId || ''} />
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseAssignDialog}>
                                 {t('events.cancel')}
@@ -1524,7 +1534,6 @@ export function SubjectsManagement() {
                             />
                             <p className="text-xs text-muted-foreground">{t('academic.subjects.leaveEmptyForClassRoom')}</p>
                         </div>
-                        <input type="hidden" {...registerBulk('class_academic_year_id')} value={selectedClassAcademicYearId || ''} />
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseBulkAssignDialog}>
                                 {t('events.cancel')}

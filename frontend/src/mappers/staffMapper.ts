@@ -189,7 +189,7 @@ export function mapStaffDomainToUpdate(domain: Partial<Staff>): StaffApi.StaffUp
   if (domain.staffType !== undefined && domain.staffType !== '') {
     updateData.staff_type = insertData.staff_type;
   }
-  if (domain.schoolId !== undefined) updateData.school_id = insertData.school_id;
+  // school_id is scope and cannot be changed via update (backend strips it)
   if (domain.firstName !== undefined) updateData.first_name = insertData.first_name;
   if (domain.fatherName !== undefined) updateData.father_name = insertData.father_name;
   if (domain.grandfatherName !== undefined) updateData.grandfather_name = insertData.grandfather_name;

@@ -263,6 +263,78 @@ class StaffManagementTest extends TestCase
         $response->assertStatus(200);
         $staff = $response->json();
 
-        $this->assertCount(1, $staff);
+        $this->assertCount(2, $staff);
+    }
+
+    /** @test */
+    public function user_with_access_all_can_update_staff_from_another_school_without_switching_context()
+    {
+        $organization = Organization::factory()->create();
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+
+        $user = $this->authenticate(
+            [],
+            ['organization_id' => $organization->id, 'default_school_id' => $school1->id],
+            $organization,
+            $school1,
+            true
+        );
+
+        $staffSchool2 = Staff::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school2->id,
+            'first_name' => 'CrossSchool',
+        ]);
+
+        // No school_id query param — context stays on default school1
+        $response = $this->jsonAs($user, 'PUT', "/api/staff/{$staffSchool2->id}", [
+            'first_name' => 'UpdatedCrossSchool',
+            'father_name' => $staffSchool2->father_name,
+            'email' => $staffSchool2->email,
+            'phone_number' => $staffSchool2->phone_number,
+            'birth_date' => $staffSchool2->birth_date,
+            'status' => $staffSchool2->status,
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('staff', [
+            'id' => $staffSchool2->id,
+            'first_name' => 'UpdatedCrossSchool',
+            'school_id' => $school2->id,
+        ]);
+    }
+
+    /** @test */
+    public function user_cannot_update_staff_from_different_school_without_access_all()
+    {
+        $organization = Organization::factory()->create();
+        $school1 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+        $school2 = SchoolBranding::factory()->create(['organization_id' => $organization->id]);
+
+        $user = $this->authenticate(
+            [],
+            ['organization_id' => $organization->id, 'default_school_id' => $school1->id],
+            $organization,
+            $school1,
+            false
+        );
+
+        $staffSchool2 = Staff::factory()->create([
+            'organization_id' => $organization->id,
+            'school_id' => $school2->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'PUT', "/api/staff/{$staffSchool2->id}", [
+            'first_name' => 'ShouldNotUpdate',
+            'father_name' => $staffSchool2->father_name,
+            'email' => $staffSchool2->email,
+            'phone_number' => $staffSchool2->phone_number,
+            'birth_date' => $staffSchool2->birth_date,
+            'status' => $staffSchool2->status,
+        ]);
+
+        $response->assertStatus(403);
     }
 }

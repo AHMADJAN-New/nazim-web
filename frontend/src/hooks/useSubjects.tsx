@@ -453,6 +453,10 @@ export const useAssignSubjectToClass = () => {
             }
 
             // Convert to API insert payload
+            if (!assignmentData.subject_id) {
+                throw new Error('Subject is required');
+            }
+
             const insertData = mapClassSubjectDomainToInsert({
                 classAcademicYearId: assignmentData.class_academic_year_id,
                 subjectId: assignmentData.subject_id,
@@ -688,27 +692,31 @@ export const useCopySubjectsBetweenYears = () => {
             });
 
             const existingSubjectIds = new Set(
-                (existingAssignments as SubjectApi.ClassSubject[] || []).map((a: any) => a.subject_id)
+                (existingAssignments as SubjectApi.ClassSubject[] || []).map((a) => a.subject_id)
             );
 
             // Create new assignments
             const created: ClassSubject[] = [];
             for (const assignment of sourceAssignments) {
+                if (!assignment.subjectId) {
+                    continue;
+                }
+
                 // Skip if already exists
-                if (existingSubjectIds.has(assignment.subject_id)) {
+                if (existingSubjectIds.has(assignment.subjectId)) {
                     continue;
                 }
 
                 const insertData = mapClassSubjectDomainToInsert({
                     classAcademicYearId: copyData.to_class_academic_year_id,
-                    subjectId: assignment.subject_id,
+                    subjectId: assignment.subjectId,
                     organizationId: targetClassYear.organization_id,
-                    hoursPerWeek: (assignment as any).weekly_hours || null,
+                    hoursPerWeek: assignment.hoursPerWeek ?? null,
                     notes: assignment.notes || null,
-                    isRequired: true,
+                    isRequired: assignment.isRequired ?? true,
                     // Copy assignments if requested
-                    teacherId: copyData.copy_assignments ? (assignment as any).teacher_id : null,
-                    roomId: copyData.copy_assignments ? (assignment as any).room_id : null,
+                    teacherId: copyData.copy_assignments ? assignment.teacherId : null,
+                    roomId: copyData.copy_assignments ? assignment.roomId : null,
                 });
 
                 const apiClassSubject = await classSubjectsApi.create(insertData);

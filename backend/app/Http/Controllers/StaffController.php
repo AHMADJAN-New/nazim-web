@@ -16,6 +16,35 @@ class StaffController extends Controller
     public function __construct(
         private FileStorageService $fileStorageService
     ) {}
+
+    /**
+     * Find staff within the user's organization, enforcing accessible school scope.
+     * List is org-wide; read/update/delete must respect schools_access_all vs single-school users.
+     */
+    private function findAccessibleStaff(Request $request, object $profile, string $id, array $with = []): ?Staff
+    {
+        $query = Staff::query()
+            ->whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('id', $id);
+
+        if ($with !== []) {
+            $query->with($with);
+        }
+
+        $staff = $query->first();
+
+        if (!$staff) {
+            return null;
+        }
+
+        $accessibleSchoolIds = $this->getAccessibleSchoolIds($profile, $request);
+        if (!in_array($staff->school_id, $accessibleSchoolIds, true)) {
+            abort(403, 'Cannot access staff from a different school.');
+        }
+
+        return $staff;
+    }
     /**
      * Display a listing of staff
      */
@@ -170,12 +199,9 @@ class StaffController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $currentSchoolId = request()->get('current_school_id');
-
-        $staff = Staff::with(['staffType', 'organization', 'school', 'profile'])
-            ->whereNull('deleted_at')
-            ->where('school_id', $currentSchoolId)
-            ->find($id);
+        $staff = $this->findAccessibleStaff(request(), $profile, $id, [
+            'staffType', 'organization', 'school', 'profile',
+        ]);
 
         if (!$staff) {
             return response()->json(['error' => 'Staff member not found'], 404);
@@ -400,18 +426,15 @@ class StaffController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $currentSchoolId = $this->getCurrentSchoolId($request);
-        $staff = Staff::whereNull('deleted_at')
-            ->where('school_id', $currentSchoolId)
-            ->find($id);
-
-        if (!$staff) {
-            return response()->json(['error' => 'Staff member not found'], 404);
-        }
-
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $staff = $this->findAccessibleStaff($request, $profile, $id);
+
+        if (!$staff) {
+            return response()->json(['error' => 'Staff member not found'], 404);
         }
 
         // Check permission WITH organization context
@@ -623,18 +646,15 @@ class StaffController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $currentSchoolId = request()->get('current_school_id');
-        $staff = Staff::whereNull('deleted_at')
-            ->where('school_id', $currentSchoolId)
-            ->find($id);
-
-        if (!$staff) {
-            return response()->json(['error' => 'Staff member not found'], 404);
-        }
-
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $staff = $this->findAccessibleStaff(request(), $profile, $id);
+
+        if (!$staff) {
+            return response()->json(['error' => 'Staff member not found'], 404);
         }
 
         // Check permission WITH organization context
@@ -758,20 +778,15 @@ class StaffController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $currentSchoolId = $this->getCurrentSchoolId($request);
-        $staff = Staff::whereNull('deleted_at')
-            ->where('school_id', $currentSchoolId)
-            ->find($id);
-
-        if (!$staff) {
-            return response()->json(['error' => 'Staff member not found'], 404);
-        }
-
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Org access is enforced by organization middleware + school scope.
+        $staff = $this->findAccessibleStaff($request, $profile, $id);
+
+        if (!$staff) {
+            return response()->json(['error' => 'Staff member not found'], 404);
+        }
 
         $request->validate([
             'file' => 'required|file|max:10240', // 10MB max
@@ -850,16 +865,11 @@ class StaffController extends Controller
                 ], 403);
             }
 
-            $currentSchoolId = $this->getCurrentSchoolId($request);
-            $staff = Staff::whereNull('deleted_at')
-                ->where('school_id', $currentSchoolId)
-                ->find($id);
+            $staff = $this->findAccessibleStaff($request, $profile, $id);
 
             if (!$staff) {
                 abort(404, 'Staff member not found');
             }
-
-            // Org access is enforced by organization middleware + school scope.
 
             if (!$staff->picture_url) {
                 Log::info('Staff picture requested but no picture_url', ['staff_id' => $id]);
@@ -925,20 +935,15 @@ class StaffController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $currentSchoolId = $this->getCurrentSchoolId($request);
-        $staff = Staff::whereNull('deleted_at')
-            ->where('school_id', $currentSchoolId)
-            ->find($id);
-
-        if (!$staff) {
-            return response()->json(['error' => 'Staff member not found'], 404);
-        }
-
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Org access is enforced by organization middleware + school scope.
+        $staff = $this->findAccessibleStaff($request, $profile, $id);
+
+        if (!$staff) {
+            return response()->json(['error' => 'Staff member not found'], 404);
+        }
 
         $request->validate([
             'file' => 'required|file|max:10240', // 10MB max
