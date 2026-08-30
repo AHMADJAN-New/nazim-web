@@ -1,19 +1,36 @@
 import { formatDate } from '@/lib/calendarAdapter';
+import { t as translate, type Language } from '@/lib/i18n';
 import type { IdCardLayoutConfig } from '@/types/domain/idCardTemplate';
 import type { Student } from '@/types/domain/student';
 
-export const DEFAULT_ID_CARD_LABEL_TEXTS: Record<string, string> = {
-  studentNameLabel: 'نوم:',
-  fatherNameLabel: 'د پلار نوم:',
-  classLabel: 'درجه:',
-  roomLabel: 'اتاق :',
-  admissionNumberLabel: 'داخله نمبر:',
-  residencyLabel: 'Residency:',
-  studentCodeLabel: 'ID:',
-  cardNumberLabel: 'کارت نمبر:',
-};
+export const ID_CARD_LABEL_FIELD_IDS = [
+  'studentNameLabel',
+  'fatherNameLabel',
+  'classLabel',
+  'roomLabel',
+  'admissionNumberLabel',
+  'residencyLabel',
+  'studentCodeLabel',
+  'cardNumberLabel',
+] as const;
 
-export const ID_CARD_LABEL_FIELD_IDS = Object.keys(DEFAULT_ID_CARD_LABEL_TEXTS);
+export type IdCardLabelFieldId = (typeof ID_CARD_LABEL_FIELD_IDS)[number];
+
+export function getDefaultIdCardLabelTexts(lang: Language = 'en'): Record<IdCardLabelFieldId, string> {
+  return {
+    studentNameLabel: translate('idCards.defaultLabels.studentNameLabel', lang),
+    fatherNameLabel: translate('idCards.defaultLabels.fatherNameLabel', lang),
+    classLabel: translate('idCards.defaultLabels.classLabel', lang),
+    roomLabel: translate('idCards.defaultLabels.roomLabel', lang),
+    admissionNumberLabel: translate('idCards.defaultLabels.admissionNumberLabel', lang),
+    residencyLabel: translate('idCards.defaultLabels.residencyLabel', lang),
+    studentCodeLabel: translate('idCards.defaultLabels.studentCodeLabel', lang),
+    cardNumberLabel: translate('idCards.defaultLabels.cardNumberLabel', lang),
+  };
+}
+
+/** @deprecated Use getDefaultIdCardLabelTexts(language) for locale-aware defaults */
+export const DEFAULT_ID_CARD_LABEL_TEXTS: Record<string, string> = getDefaultIdCardLabelTexts('en');
 
 interface IdCardFieldValueContext {
   student?: Student | null;
@@ -21,6 +38,8 @@ interface IdCardFieldValueContext {
   createdDate?: Date | string | null;
   expiryDate?: Date | string | null;
   locale?: string;
+  language?: Language;
+  defaultLabels?: Record<string, string>;
 }
 
 export const resolveIdCardLocale = (locale?: string): string => {
@@ -40,6 +59,18 @@ export const resolveIdCardLocale = (locale?: string): string => {
   }
 
   return 'en-US';
+};
+
+const resolveIdCardLanguage = (context: IdCardFieldValueContext): Language => {
+  if (context.language) {
+    return context.language;
+  }
+
+  const locale = resolveIdCardLocale(context.locale);
+  if (locale.startsWith('ps')) return 'ps';
+  if (locale.startsWith('fa')) return 'fa';
+  if (locale.startsWith('ar')) return 'ar';
+  return 'en';
 };
 
 export const resolveFirstNonEmptyString = (...values: Array<unknown>): string | null => {
@@ -118,10 +149,12 @@ export const resolveIdCardFieldValue = (
   const student = context.student;
   const fieldValue = layout?.fieldValues?.[fieldId];
   const locale = resolveIdCardLocale(context.locale);
+  const language = resolveIdCardLanguage(context);
+  const defaultLabels = context.defaultLabels ?? getDefaultIdCardLabelTexts(language);
 
-  if (ID_CARD_LABEL_FIELD_IDS.includes(fieldId)) {
+  if (ID_CARD_LABEL_FIELD_IDS.includes(fieldId as IdCardLabelFieldId)) {
     return normalizeIdCardText(
-      resolveFirstNonEmptyString(fieldValue, DEFAULT_ID_CARD_LABEL_TEXTS[fieldId], fallbackText)
+      resolveFirstNonEmptyString(fieldValue, defaultLabels[fieldId], fallbackText)
     );
   }
 
@@ -177,7 +210,7 @@ export const resolveIdCardFieldValue = (
         resolveFirstNonEmptyString(
           fieldValue,
           student?.residencyTypeName,
-          student?.isBoarder === false ? 'Day Scholar' : null,
+          student?.isBoarder === false ? translate('idCards.dayScholar', language) : null,
           fallbackText
         )
       );

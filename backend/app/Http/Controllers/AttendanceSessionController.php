@@ -10,6 +10,7 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceRoundName;
 use App\Models\AttendanceSession;
 use App\Models\ClassModel;
+use App\Models\LeaveRequest;
 use App\Services\ActivityLogService;
 use App\Services\Notifications\NotificationService;
 use App\Services\Reports\DateConversionService;
@@ -282,7 +283,60 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Attendance session not found'], 404);
         }
 
+        if ($session->status === 'open') {
+            $this->syncApprovedLeavesForSession($session, $profile->organization_id, $user->id);
+            $session->load(['records.student']);
+        }
+
         return response()->json($session);
+    }
+
+    private function syncApprovedLeavesForSession(
+        AttendanceSession $session,
+        string $organizationId,
+        string $userId
+    ): void {
+        $sessionDate = Carbon::parse($session->session_date)->toDateString();
+        $classIds = $session->classes()->pluck('classes.id')->filter()->values()->all();
+
+        if (empty($classIds) && $session->class_id) {
+            $classIds = [$session->class_id];
+        }
+
+        if (empty($classIds)) {
+            return;
+        }
+
+        $leaves = LeaveRequest::query()
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $session->school_id)
+            ->where('status', 'approved')
+            ->whereNull('deleted_at')
+            ->whereDate('start_date', '<=', $sessionDate)
+            ->whereDate('end_date', '>=', $sessionDate)
+            ->where(function ($query) use ($classIds) {
+                $query->whereIn('class_id', $classIds)
+                    ->orWhereNull('class_id');
+            })
+            ->get();
+
+        foreach ($leaves as $leave) {
+            AttendanceRecord::updateOrCreate(
+                [
+                    'attendance_session_id' => $session->id,
+                    'student_id' => $leave->student_id,
+                ],
+                [
+                    'organization_id' => $organizationId,
+                    'school_id' => $session->school_id,
+                    'status' => 'leave',
+                    'entry_method' => $session->method,
+                    'marked_at' => now(),
+                    'marked_by' => $userId,
+                    'note' => $leave->reason,
+                ]
+            );
+        }
     }
 
     public function update(Request $request, string $id)
@@ -3045,6 +3099,7 @@ SQL;
                             'note' => $row['note'],
                             'updated_at' => $row['updated_at'],
                         ]);
+
                     continue;
                 }
 

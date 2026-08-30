@@ -17,6 +17,7 @@ import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { useStudentAdmissions, type AdmissionStatus, type StudentAdmission } from '@/hooks/useStudentAdmissions';
 import { buildAdmissionsDeepLink } from '@/lib/classYearBlockerLinks';
+import { getAdmissionEnrollmentStatusLabel } from '@/lib/admissions/enrollmentStatus';
 import { formatDate } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
 
@@ -48,30 +49,6 @@ const statusVariant = (
       return 'success';
     default:
       return 'secondary';
-  }
-};
-
-const getAdmissionStatusLabel = (
-  status: AdmissionStatus,
-  t: ReturnType<typeof useLanguage>['t']
-) => {
-  switch (status) {
-    case 'pending':
-      return t('admissions.pending') || 'Pending';
-    case 'admitted':
-      return t('admissions.admitted') || 'Admitted';
-    case 'active':
-      return t('events.active') || 'Active';
-    case 'inactive':
-      return t('events.inactive') || 'Inactive';
-    case 'suspended':
-      return t('students.suspended') || 'Suspended';
-    case 'withdrawn':
-      return t('admissions.withdrawn') || 'Withdrawn';
-    case 'graduated':
-      return t('students.graduated') || 'Graduated';
-    default:
-      return status;
   }
 };
 
@@ -126,6 +103,12 @@ export function StudentAdmissionsDialog({
         <DialogHeader>
           <DialogTitle>{student.fullName}</DialogTitle>
           <DialogDescription>
+            {student.fatherName ? (
+              <>
+                {t('students.fatherName') || 'Father'}: {student.fatherName}
+                {' · '}
+              </>
+            ) : null}
             {t('admissions.listDescription') || 'Review this student admission history and start a new admission when needed.'}
           </DialogDescription>
         </DialogHeader>
@@ -148,7 +131,7 @@ export function StudentAdmissionsDialog({
                 </Badge>
                 {student.latestAdmission ? (
                   <Badge variant={statusVariant(student.latestAdmission.enrollmentStatus)}>
-                    {getAdmissionStatusLabel(student.latestAdmission.enrollmentStatus, t)}
+                    {getAdmissionEnrollmentStatusLabel(student.latestAdmission.enrollmentStatus, t)}
                   </Badge>
                 ) : null}
                 {student.currentClass?.name ? (
@@ -208,7 +191,7 @@ export function StudentAdmissionsDialog({
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant={statusVariant(admission.enrollmentStatus)}>
-                            {getAdmissionStatusLabel(admission.enrollmentStatus, t)}
+                            {getAdmissionEnrollmentStatusLabel(admission.enrollmentStatus, t)}
                           </Badge>
                           {admission.isLatestAdmissionForStudent ? (
                             <Badge variant="success">

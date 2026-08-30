@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
 import { usePagination } from './usePagination';
 
+import { buildLeaveRequestListParams } from '@/lib/leave/leaveRequestFilters';
 import { leaveRequestsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import { mapLeaveRequestApiToDomain, mapLeaveRequestDomainToInsert, mapLeaveRequestDomainToUpdate } from '@/mappers/leaveMapper';
@@ -33,17 +34,7 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
     queryKey: ['leave-requests', profile?.organization_id ?? null, profile?.default_school_id ?? null, filters, page, pageSize],
     queryFn: async () => {
       if (!user || !profile) return [] as LeaveRequest[];
-      const params: Record<string, any> = {
-        student_id: filters.studentId,
-        class_id: filters.classId,
-        status: filters.status,
-        month: filters.month,
-        year: filters.year,
-        date_from: filters.dateFrom,
-        date_to: filters.dateTo,
-        page,
-        per_page: pageSize,
-      };
+      const params = buildLeaveRequestListParams(filters, page, pageSize);
       // Strict school scoping: do not allow client-selected school_id.
       const response = await leaveRequestsApi.list(params);
       if (response && typeof response === 'object' && 'data' in response && 'current_page' in response) {
@@ -117,9 +108,10 @@ export const useCreateLeaveRequest = () => {
       const response = await leaveRequestsApi.create(apiPayload);
       return mapLeaveRequestApiToDomain(response as LeaveApi.LeaveRequest);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success('toast.leaveRequests.created');
-      void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      await queryClient.refetchQueries({ queryKey: ['leave-requests'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || 'toast.leaveRequests.createFailed');
@@ -154,9 +146,11 @@ export const useApproveLeaveRequest = () => {
       const response = await leaveRequestsApi.approve(id, note ? { approval_note: note } : {});
       return mapLeaveRequestApiToDomain(response as LeaveApi.LeaveRequest);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success('toast.leaveRequests.approved');
-      void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      await queryClient.refetchQueries({ queryKey: ['leave-requests'] });
+      await queryClient.invalidateQueries({ queryKey: ['attendance-session'] });
     },
     onError: (error: Error) => showToast.error(error.message || 'toast.leaveRequests.approveFailed'),
   });

@@ -184,6 +184,77 @@ export default {
     totalFeeCollected: "فیس جمع‌آوری شده",
     useGlobalFont: "استفاده از فونت عمومی",
     width: "عرض (%)",
-    unprinted: "چاپ نشده"
+    unprinted: "چاپ نشده",
+    layoutFields: {
+      studentNameLabel: "برچسب: نام",
+      studentName: "نام شاگرد",
+      fatherNameLabel: "برچسب: نام پدر",
+      fatherName: "نام پدر",
+      classLabel: "برچسب: صنف",
+      roomLabel: "برچسب: اتاق",
+      admissionNumberLabel: "برچسب: شماره داخله",
+      residencyLabel: "برچسب: اقامت",
+      studentCodeLabel: "برچسب: ID",
+      studentCode: "کود شاگرد",
+      admissionNumber: "شماره داخله",
+      class: "صنف",
+      room: "اتاق",
+      residency: "اقامت",
+      schoolName: "نام مکتب",
+      cardNumberLabel: "برچسب: شماره کارت",
+      cardNumber: "شماره کارت",
+      createdDate: "تاریخ ایجاد",
+      expiryDate: "تاریخ انقضا",
+      notes: "یادداشت‌ها",
+      studentPhoto: "عکس شاگرد",
+      qrCode: "کد QR"
+    },
+    defaultLabels: {
+      studentNameLabel: "نام:",
+      fatherNameLabel: "نام پدر:",
+      classLabel: "صنف:",
+      roomLabel: "اتاق:",
+      admissionNumberLabel: "شماره داخله:",
+      residencyLabel: "اقامت:",
+      studentCodeLabel: "ID:",
+      cardNumberLabel: "شماره کارت:"
+    },
+    layoutSamples: {
+      studentName: "احمد محمد",
+      fatherName: "محمد",
+      class: "صنف ۱۰ - الف",
+      room: "اتاق ۱۲",
+      residency: "لیلیه",
+      schoolName: "مکتب اسلامی",
+      studentCode: "STU-2024-001",
+      admissionNumber: "ADM-2024-001",
+      cardNumber: "CARD-2024-001",
+      createdDate: "Apr 13, 2026",
+      expiryDate: "Dec 31, 2025",
+      notes: "اطلاعات اضافی"
+    },
+    labelPlaceholders: {
+      studentNameLabel: "مثلاً: نام",
+      fatherNameLabel: "مثلاً: نام پدر",
+      classLabel: "مثلاً: صنف",
+      roomLabel: "مثلاً: اتاق",
+      admissionNumberLabel: "مثلاً: شماره داخله",
+      residencyLabel: "مثلاً: اقامت",
+      studentCodeLabel: "مثلاً: ID",
+      cardNumberLabel: "مثلاً: شماره کارت"
+    },
+    editableLabels: {
+      nameLabel: "برچسب نام",
+      fatherNameLabel: "برچسب نام پدر",
+      classLabel: "برچسب صنف",
+      roomLabel: "برچسب اتاق",
+      residencyLabel: "برچسب اقامت",
+      admissionNumberLabel: "برچسب شماره داخله",
+      studentCodeLabel: "برچسب ID",
+      cardNumberLabel: "برچسب شماره کارت"
+    },
+    labelEditableDescription: "متن برچسب سفارشی. این برچسب را جداگانه حرکت دهید تا با مقدار پایگاه داده هم‌تراز شود.",
+    dayScholar: "شاگرد روزانه",
+    boarding: "لیلیه"
   }
 };

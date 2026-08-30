@@ -59,7 +59,9 @@ export const staffCoreExportColumnKeys = [
   'staff_code',
   'employee_id',
   'status',
-  'full_name',
+  'first_name',
+  'father_name',
+  'grandfather_name',
   'phone_number',
   'staff_type',
   'position',
@@ -473,19 +475,25 @@ const StaffReport = () => {
       ),
     },
     {
-      accessorKey: 'fullName',
-      header: t('events.name'),
-      cell: ({ row }) => {
-        const staff = row.original;
-        const formattedName = formatStaffName(
-          staff.firstName,
-          staff.fatherName,
-          staff.grandfatherName,
-          t('staff.sonOf'),
-          isRTL
-        );
-        return <div className="font-semibold">{formattedName || staff.fullName}</div>;
-      },
+      accessorKey: 'firstName',
+      header: t('events.firstName'),
+      cell: ({ row }) => (
+        <div className="font-semibold">{row.original.firstName || '—'}</div>
+      ),
+    },
+    {
+      accessorKey: 'fatherName',
+      header: t('examReports.fatherName'),
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.fatherName || '—'}</div>
+      ),
+    },
+    {
+      accessorKey: 'grandfatherName',
+      header: t('staff.grandfatherName'),
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.grandfatherName || '—'}</div>
+      ),
     },
     {
       accessorKey: 'staffType',

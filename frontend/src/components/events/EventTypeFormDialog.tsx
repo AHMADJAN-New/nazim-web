@@ -70,12 +70,12 @@ export function EventTypeFormDialog({
     mutationFn: (data: CreateEventTypeFormData) => eventTypesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
-      showToast.success(t('toast.eventTypeCreated') || 'Event type created successfully');
+      showToast.success('toast.eventTypeCreated');
       reset();
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      showToast.error(error.message || t('toast.eventTypeCreateFailed') || 'Failed to create event type');
+      showToast.error(error.message || t('toast.eventTypeCreateFailed'));
     },
   });
 
@@ -84,11 +84,11 @@ export function EventTypeFormDialog({
       eventTypesApi.update(eventType!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
-      showToast.success(t('toast.eventTypeUpdated') || 'Event type updated successfully');
+      showToast.success('toast.eventTypeUpdated');
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      showToast.error(error.message || t('toast.eventTypeUpdateFailed') || 'Failed to update event type');
+      showToast.error(error.message || t('toast.eventTypeUpdateFailed'));
     },
   });
 
@@ -109,17 +109,17 @@ export function EventTypeFormDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? (t('events.eventTypes.editEventType') || 'Edit Event Type') : (t('events.eventTypes.createEventType') || 'Create Event Type')}
+            {isEditing ? t('events.eventTypes.editEventType') : t('events.eventTypes.createEventType')}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">{t('events.eventTypes.nameLabel') || 'Name *'}</Label>
+            <Label htmlFor="name">{t('events.eventTypes.nameLabel')}</Label>
             <Input
               id="name"
               {...register('name')}
-              placeholder={t('events.eventTypes.namePlaceholder') || 'e.g., Graduation Ceremony'}
+              placeholder={t('events.eventTypes.namePlaceholder')}
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -127,13 +127,13 @@ export function EventTypeFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="school_id">{t('events.eventTypes.schoolLabel') || 'School *'}</Label>
+            <Label htmlFor="school_id">{t('events.eventTypes.schoolLabel')}</Label>
             <Select
               value={selectedSchoolId}
               onValueChange={(value) => setValue('school_id', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t('events.eventTypes.selectSchool') || 'Select a school'} />
+                <SelectValue placeholder={t('events.eventTypes.selectSchool')} />
               </SelectTrigger>
               <SelectContent>
                 {schools?.map((school: any) => (
@@ -149,20 +149,20 @@ export function EventTypeFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">{t('events.eventTypes.descriptionLabel') || 'Description'}</Label>
+            <Label htmlFor="description">{t('events.eventTypes.descriptionLabel')}</Label>
             <Textarea
               id="description"
               {...register('description')}
-              placeholder={t('events.eventTypes.descriptionPlaceholder') || 'Optional description for this event type'}
+              placeholder={t('events.eventTypes.descriptionPlaceholder')}
               rows={3}
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="is_active">{t('events.eventTypes.activeLabel') || 'Active'}</Label>
+              <Label htmlFor="is_active">{t('events.eventTypes.activeLabel')}</Label>
               <p className="text-sm text-muted-foreground">
-                {t('events.eventTypes.activeDescription') || 'Inactive event types cannot be used for new events'}
+                {t('events.eventTypes.activeDescription')}
               </p>
             </div>
             <Switch
@@ -178,10 +178,10 @@ export function EventTypeFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t('events.eventTypes.cancelButton') || 'Cancel'}
+              {t('events.eventTypes.cancelButton')}
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? (t('events.eventTypes.saving') || 'Saving...') : isEditing ? (t('events.eventTypes.updateButton') || 'Update') : (t('events.eventTypes.createButton') || 'Create')}
+              {isPending ? t('events.eventTypes.saving') : isEditing ? t('events.eventTypes.updateButton') : t('events.eventTypes.createButton')}
             </Button>
           </DialogFooter>
         </form>

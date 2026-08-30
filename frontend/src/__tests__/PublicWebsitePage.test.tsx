@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import PublicWebsitePage from '@/website/pages/PublicWebsitePage';
@@ -36,7 +37,9 @@ describe('PublicWebsitePage', () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <PublicWebsitePage />
+        <MemoryRouter initialEntries={['/public-site/alhuda']}>
+          <PublicWebsitePage />
+        </MemoryRouter>
       </QueryClientProvider>
     );
 

@@ -73,5 +73,20 @@ export function mapScheduleSlotDomainToInsert(domain: Partial<ScheduleSlot>): Sc
  * Convert Domain ScheduleSlot model to API ScheduleSlotUpdate payload
  */
 export function mapScheduleSlotDomainToUpdate(domain: Partial<ScheduleSlot>): ScheduleSlotApi.ScheduleSlotUpdate {
-    return mapScheduleSlotDomainToInsert(domain);
+    const update: ScheduleSlotApi.ScheduleSlotUpdate = {};
+
+    if (domain.name !== undefined) update.name = domain.name;
+    if (domain.code !== undefined) update.code = domain.code;
+    if (domain.startTime !== undefined) update.start_time = domain.startTime;
+    if (domain.endTime !== undefined) update.end_time = domain.endTime;
+    if (domain.daysOfWeek !== undefined) update.days_of_week = domain.daysOfWeek;
+    if (domain.defaultDurationMinutes !== undefined) {
+        update.default_duration_minutes = domain.defaultDurationMinutes;
+    }
+    if (domain.academicYearId !== undefined) update.academic_year_id = domain.academicYearId;
+    if (domain.sortOrder !== undefined) update.sort_order = domain.sortOrder;
+    if (domain.isActive !== undefined) update.is_active = domain.isActive;
+    if (domain.description !== undefined) update.description = domain.description;
+
+    return update;
 }

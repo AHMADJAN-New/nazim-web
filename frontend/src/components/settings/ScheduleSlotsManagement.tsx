@@ -221,11 +221,9 @@ export function ScheduleSlotsManagement() {
                     daysOfWeek: values.days_of_week || [],
                     defaultDurationMinutes: values.default_duration_minutes || 45,
                     academicYearId: values.academic_year_id || null,
-                    schoolId: values.school_id || null,
                     sortOrder: values.sort_order || 1,
                     isActive: values.is_active ?? true,
                     description: values.description || null,
-                    organizationId: profile?.organization_id || undefined,
                 });
             } else {
                 // Ensure all required fields are present

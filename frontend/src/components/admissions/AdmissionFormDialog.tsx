@@ -305,12 +305,25 @@ export function AdmissionFormDialog({
       }
       return [];
     }
-    return list.map((student) => ({
-      value: student.id,
-      label: `${student.fullName || student.full_name || 'Unknown'} (${student.admissionNumber || student.admission_no || 'N/A'})`,
-      filterKeywords: student.cardNumber ? String(student.cardNumber) : '',
-    }));
-  }, [availableStudents]);
+    return list.map((student) => {
+      const name = student.fullName || student.full_name || 'Unknown';
+      const admissionNo = student.admissionNumber || student.admission_no || 'N/A';
+      const fatherName = student.fatherName || student.father_name;
+      return {
+        value: student.id,
+        label: `${name} (${admissionNo})`,
+        description: fatherName
+          ? `${t('students.fatherName') || 'Father'}: ${fatherName}`
+          : undefined,
+        filterKeywords: [
+          student.cardNumber ? String(student.cardNumber) : '',
+          fatherName ?? '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+      };
+    });
+  }, [availableStudents, t]);
 
   const roomOptions: ComboboxOption[] = useMemo(() => {
     return (
@@ -1143,8 +1156,8 @@ export function AdmissionFormDialog({
                                   <SelectContent>
                                     <SelectItem value="pending">{t('admissions.pending') || 'Pending'}</SelectItem>
                                     <SelectItem value="admitted">{t('admissions.admitted') || 'Admitted'}</SelectItem>
-                                    <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
-                                    <SelectItem value="inactive">{t('events.inactive') || 'Inactive'}</SelectItem>
+                                    <SelectItem value="active">{t('admissions.active') || 'Active'}</SelectItem>
+                                    <SelectItem value="inactive">{t('admissions.inactive') || 'Inactive'}</SelectItem>
                                     <SelectItem value="suspended">{t('students.suspended') || 'Suspended'}</SelectItem>
                                     <SelectItem value="withdrawn">{t('admissions.withdrawn') || 'Withdrawn'}</SelectItem>
                                     <SelectItem value="graduated">{t('students.graduated') || 'Graduated'}</SelectItem>

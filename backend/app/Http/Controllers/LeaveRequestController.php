@@ -23,21 +23,23 @@ class LeaveRequestController extends Controller
         private ReportService $reportService,
         private DateConversionService $dateService
     ) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('leave_requests.read')) {
+            if (! $user->hasPermissionTo('leave_requests.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for leave_requests.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for leave_requests.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -47,7 +49,7 @@ class LeaveRequestController extends Controller
             'classModel',
             'school',
             'academicYear',
-            'approver'
+            'approver',
         ])
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
@@ -65,11 +67,18 @@ class LeaveRequestController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        if ($request->filled('month')) {
+        if ($request->filled('month') && $request->filled('year')) {
+            $monthStart = Carbon::createFromDate(
+                $request->integer('year'),
+                $request->integer('month'),
+                1
+            )->startOfDay();
+            $monthEnd = $monthStart->copy()->endOfMonth();
+            $query->whereDate('start_date', '<=', $monthEnd->toDateString())
+                ->whereDate('end_date', '>=', $monthStart->toDateString());
+        } elseif ($request->filled('month')) {
             $query->whereMonth('start_date', $request->integer('month'));
-        }
-
-        if ($request->filled('year')) {
+        } elseif ($request->filled('year')) {
             $query->whereYear('start_date', $request->integer('year'));
         }
 
@@ -85,12 +94,13 @@ class LeaveRequestController extends Controller
 
         $perPage = $request->integer('per_page', 25);
         $allowedPerPage = [10, 25, 50, 100];
-        if (!in_array($perPage, $allowedPerPage, true)) {
+        if (! in_array($perPage, $allowedPerPage, true)) {
             $perPage = 25;
         }
 
         try {
             $requests = $query->paginate($perPage);
+
             return response()->json($requests);
         } catch (\Exception $e) {
             Log::error('Error fetching leave requests', [
@@ -101,9 +111,10 @@ class LeaveRequestController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ]);
+
             return response()->json([
                 'error' => 'Failed to fetch leave requests. Please try again.',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -113,16 +124,17 @@ class LeaveRequestController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('leave_requests.create')) {
+            if (! $user->hasPermissionTo('leave_requests.create')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for leave_requests.create: ' . $e->getMessage());
+            Log::warning('Permission check failed for leave_requests.create: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -135,7 +147,7 @@ class LeaveRequestController extends Controller
             ->where('school_id', $currentSchoolId)
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found for this school'], 404);
         }
 
@@ -165,16 +177,17 @@ class LeaveRequestController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('leave_requests.read')) {
+            if (! $user->hasPermissionTo('leave_requests.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for leave_requests.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for leave_requests.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -186,7 +199,7 @@ class LeaveRequestController extends Controller
 
         $requestModel = $requestModel->find($id);
 
-        if (!$requestModel) {
+        if (! $requestModel) {
             return response()->json(['error' => 'Leave request not found'], 404);
         }
 
@@ -198,16 +211,17 @@ class LeaveRequestController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('leave_requests.update')) {
+            if (! $user->hasPermissionTo('leave_requests.update')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for leave_requests.update: ' . $e->getMessage());
+            Log::warning('Permission check failed for leave_requests.update: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -217,7 +231,7 @@ class LeaveRequestController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$leave) {
+        if (! $leave) {
             return response()->json(['error' => 'Leave request not found'], 404);
         }
 
@@ -234,16 +248,17 @@ class LeaveRequestController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('leave_requests.update')) {
+            if (! $user->hasPermissionTo('leave_requests.update')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for leave_requests.update: ' . $e->getMessage());
+            Log::warning('Permission check failed for leave_requests.update: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -257,7 +272,7 @@ class LeaveRequestController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$leave) {
+        if (! $leave) {
             return response()->json(['error' => 'Leave request not found'], 404);
         }
 
@@ -282,16 +297,17 @@ class LeaveRequestController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('leave_requests.update')) {
+            if (! $user->hasPermissionTo('leave_requests.update')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for leave_requests.update: ' . $e->getMessage());
+            Log::warning('Permission check failed for leave_requests.update: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -305,7 +321,7 @@ class LeaveRequestController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$leave) {
+        if (! $leave) {
             return response()->json(['error' => 'Leave request not found'], 404);
         }
 
@@ -324,16 +340,17 @@ class LeaveRequestController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('leave_requests.read')) {
+            if (! $user->hasPermissionTo('leave_requests.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for leave_requests.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for leave_requests.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -344,11 +361,11 @@ class LeaveRequestController extends Controller
             ->whereNull('deleted_at')
             ->find($id);
 
-        if (!$leave) {
+        if (! $leave) {
             return response()->json(['error' => 'Leave request not found'], 404);
         }
 
-        $scanUrl = url('/api/leave-requests/scan/' . $leave->qr_token);
+        $scanUrl = url('/api/leave-requests/scan/'.$leave->qr_token);
 
         return response()->json([
             'request' => $leave,
@@ -362,11 +379,11 @@ class LeaveRequestController extends Controller
             ->where('qr_token', $token)
             ->first();
 
-        if (!$leave) {
+        if (! $leave) {
             return response()->json(['error' => 'Leave request not found'], 404);
         }
 
-        if (!$leave->qr_used_at) {
+        if (! $leave->qr_used_at) {
             $leave->qr_used_at = now();
             $leave->save();
         }
@@ -383,7 +400,7 @@ class LeaveRequestController extends Controller
         $start = Carbon::parse($leave->start_date)->startOfDay();
         $end = Carbon::parse($leave->end_date)->endOfDay();
 
-        if (!$leave->class_id) {
+        if (! $leave->class_id) {
             return;
         }
 
@@ -419,7 +436,7 @@ class LeaveRequestController extends Controller
 
     /**
      * Generate leave requests report
-     * 
+     *
      * POST /api/leave-requests/generate-report
      */
     public function generateReport(Request $request)
@@ -427,16 +444,17 @@ class LeaveRequestController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('leave_requests.read')) {
+            if (! $user->hasPermissionTo('leave_requests.read')) {
                 return response()->json(['error' => 'Access Denied'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning('Permission check failed for leave_requests.read: ' . $e->getMessage());
+            Log::warning('Permission check failed for leave_requests.read: '.$e->getMessage());
+
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
@@ -465,19 +483,19 @@ class LeaveRequestController extends Controller
             ->whereNull('deleted_at');
 
         // Apply filters
-        if (!empty($validated['student_id'])) {
+        if (! empty($validated['student_id'])) {
             $query->where('student_id', $validated['student_id']);
         }
-        if (!empty($validated['class_id'])) {
+        if (! empty($validated['class_id'])) {
             $query->where('class_id', $validated['class_id']);
         }
-        if (!empty($validated['status'])) {
+        if (! empty($validated['status'])) {
             $query->where('status', $validated['status']);
         }
-        if (!empty($validated['date_from'])) {
+        if (! empty($validated['date_from'])) {
             $query->whereDate('start_date', '>=', Carbon::parse($validated['date_from'])->toDateString());
         }
-        if (!empty($validated['date_to'])) {
+        if (! empty($validated['date_to'])) {
             $query->whereDate('end_date', '<=', Carbon::parse($validated['date_to'])->toDateString());
         }
 
@@ -501,14 +519,14 @@ class LeaveRequestController extends Controller
         $dateRangeText = '';
 
         // Build date range text
-        if (!empty($validated['date_from']) && !empty($validated['date_to'])) {
+        if (! empty($validated['date_from']) && ! empty($validated['date_to'])) {
             $dateFrom = $this->dateService->formatDate($validated['date_from'], $calendarPreference, 'full', $language);
             $dateTo = $this->dateService->formatDate($validated['date_to'], $calendarPreference, 'full', $language);
             $dateRangeText = "{$dateFrom} - {$dateTo}";
-        } elseif (!empty($validated['date_from'])) {
+        } elseif (! empty($validated['date_from'])) {
             $dateFrom = $this->dateService->formatDate($validated['date_from'], $calendarPreference, 'full', $language);
             $dateRangeText = "From: {$dateFrom}";
-        } elseif (!empty($validated['date_to'])) {
+        } elseif (! empty($validated['date_to'])) {
             $dateTo = $this->dateService->formatDate($validated['date_to'], $calendarPreference, 'full', $language);
             $dateRangeText = "Until: {$dateTo}";
         }
@@ -537,7 +555,7 @@ class LeaveRequestController extends Controller
                 $approved = $dayRequests->where('status', 'approved')->count();
                 $pending = $dayRequests->where('status', 'pending')->count();
                 $rejected = $dayRequests->where('status', 'rejected')->count();
-                
+
                 $totalApproved += $approved;
                 $totalPending += $pending;
                 $totalRejected += $rejected;
@@ -644,9 +662,10 @@ class LeaveRequestController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json([
                 'success' => false,
-                'error' => 'Failed to generate report: ' . $e->getMessage(),
+                'error' => 'Failed to generate report: '.$e->getMessage(),
             ], 500);
         }
     }

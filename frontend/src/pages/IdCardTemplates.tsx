@@ -7,7 +7,7 @@ import {
   FileText,
   Layout,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { IdCardLayoutEditor } from '@/components/id-cards/IdCardLayoutEditor';
 import {
@@ -54,17 +54,9 @@ import {
   getIdCardBackgroundUrl,
 } from '@/hooks/useIdCardTemplates';
 import { useLanguage } from '@/hooks/useLanguage';
-import { formatDate } from '@/lib/utils';
+import { getDefaultIdCardLabelTexts } from '@/lib/idCards/idCardFieldUtils';
 
-const DEFAULT_LABEL_FIELD_VALUES: Record<string, string> = {
-  studentNameLabel: 'نوم',
-  fatherNameLabel: 'د پلار نوم',
-  classLabel: 'درجه',
-  roomLabel: 'اتاق ',
-  admissionNumberLabel: 'داخله نمبر',
-  studentCodeLabel: 'ID',
-  cardNumberLabel: 'کارت نمبر',
-};
+const DEFAULT_LABEL_FIELD_VALUES = getDefaultIdCardLabelTexts('en');
 
 const FRONT_DEFAULT_FIELDS = [
   'studentNameLabel',
@@ -86,7 +78,8 @@ const FRONT_DEFAULT_FIELDS = [
 const BACK_DEFAULT_FIELDS = ['schoolName', 'cardNumberLabel', 'cardNumber', 'expiryDate'];
 
 export default function IdCardTemplates() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const defaultLabelFieldValues = useMemo(() => getDefaultIdCardLabelTexts(language), [language]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isLayoutEditorOpen, setIsLayoutEditorOpen] = useState(false);
@@ -136,7 +129,7 @@ export default function IdCardTemplates() {
       textColor: '#000000',
       rtl: false,
       enabledFields: FRONT_DEFAULT_FIELDS,
-      fieldValues: DEFAULT_LABEL_FIELD_VALUES,
+      fieldValues: defaultLabelFieldValues,
     });
     setLayoutConfigBack({
       fontSize: 10,
@@ -144,7 +137,7 @@ export default function IdCardTemplates() {
       textColor: '#000000',
       rtl: false,
       enabledFields: BACK_DEFAULT_FIELDS,
-      fieldValues: DEFAULT_LABEL_FIELD_VALUES,
+      fieldValues: defaultLabelFieldValues,
     });
     setSelectedTemplate(null);
   };
@@ -242,14 +235,14 @@ export default function IdCardTemplates() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl">{t('nav.idCards.templates') || 'ID Card Templates'}</CardTitle>
+              <CardTitle className="text-2xl">{t('nav.idCards.templates')}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1 hidden md:block">
-                {t('events.description') || 'Create and manage ID card templates for your organization'}
+                {t('events.description')}
               </p>
             </div>
             <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
               <Plus className="h-4 w-4" />
-              <span className="ml-2">{t('examPapers.createTemplate') || 'Create Template'}</span>
+              <span className="ml-2">{t('examPapers.createTemplate')}</span>
             </Button>
           </div>
         </CardHeader>
@@ -262,9 +255,9 @@ export default function IdCardTemplates() {
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">{t('examPapers.noTemplates') || 'No templates yet'}</p>
+              <p className="text-muted-foreground">{t('examPapers.noTemplates')}</p>
               <Button className="mt-4" onClick={() => handleOpenDialog()}>
-                {t('idCards.createFirstTemplate') || 'Create Your First Template'}
+                {t('idCards.createFirstTemplate')}
               </Button>
             </div>
           ) : (
@@ -272,11 +265,11 @@ export default function IdCardTemplates() {
               <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('idCards.templateName') || 'Template Name'}</TableHead>
-                  <TableHead>{t('events.description') || 'Description'}</TableHead>
-                  <TableHead>{t('idCards.background') || 'Background'}</TableHead>
-                  <TableHead>{t('events.status') || 'Status'}</TableHead>
-                  <TableHead>{t('idCards.created') || 'Created'}</TableHead>
+                  <TableHead>{t('idCards.templateName')}</TableHead>
+                  <TableHead>{t('events.description')}</TableHead>
+                  <TableHead>{t('idCards.background')}</TableHead>
+                  <TableHead>{t('events.status')}</TableHead>
+                  <TableHead>{t('idCards.created')}</TableHead>
                   <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -289,7 +282,7 @@ export default function IdCardTemplates() {
                         {template.isDefault && (
                           <Badge variant="secondary">
                             <Star className="h-3 w-3 mr-1" />
-                            {t('events.default') || 'Default'}
+                            {t('events.default')}
                           </Badge>
                         )}
                       </div>
@@ -302,22 +295,22 @@ export default function IdCardTemplates() {
                         {template.backgroundImagePathFront ? (
                           <div className="flex items-center gap-1 text-green-600">
                             <Image className="h-4 w-4" />
-                            <span className="text-sm">{t('idCards.front') || 'Front'}</span>
+                            <span className="text-sm">{t('idCards.front')}</span>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-sm">{t('events.none') || 'None'}</span>
+                          <span className="text-muted-foreground text-sm">{t('events.none')}</span>
                         )}
                         {template.backgroundImagePathBack && (
                           <div className="flex items-center gap-1 text-green-600">
                             <Image className="h-4 w-4" />
-                            <span className="text-sm">{t('events.back') || 'Back'}</span>
+                            <span className="text-sm">{t('events.back')}</span>
                           </div>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={template.isActive ? 'default' : 'secondary'}>
-                        {template.isActive ? (t('events.active') || 'Active') : (t('events.inactive') || 'Inactive')}
+                        {template.isActive ? (t('events.active')) : (t('events.inactive'))}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -331,10 +324,10 @@ export default function IdCardTemplates() {
                             variant="outline"
                             onClick={() => handleSetDefault(template.id)}
                             className="flex-shrink-0"
-                            aria-label={t('certificateTemplates.setAsDefault') || 'Set as Default'}
+                            aria-label={t('certificateTemplates.setAsDefault')}
                           >
                             <Star className="h-4 w-4" />
-                            <span className="hidden sm:inline ml-2">{t('certificateTemplates.setAsDefault') || 'Set as Default'}</span>
+                            <span className="hidden sm:inline ml-2">{t('certificateTemplates.setAsDefault')}</span>
                           </Button>
                         )}
                         <Button
@@ -342,20 +335,20 @@ export default function IdCardTemplates() {
                           variant="outline"
                           onClick={() => handleOpenLayoutEditor(template)}
                           className="flex-shrink-0"
-                          aria-label={t('certificateTemplates.editLayout') || 'Edit Layout'}
+                          aria-label={t('certificateTemplates.editLayout')}
                         >
                           <Layout className="h-4 w-4" />
-                          <span className="hidden sm:inline ml-2">{t('certificateTemplates.editLayout') || 'Edit Layout'}</span>
+                          <span className="hidden sm:inline ml-2">{t('certificateTemplates.editLayout')}</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenDialog(template)}
                           className="flex-shrink-0"
-                          aria-label={t('events.edit') || 'Edit'}
+                          aria-label={t('events.edit')}
                         >
                           <Pencil className="h-4 w-4" />
-                          <span className="hidden sm:inline ml-2">{t('events.edit') || 'Edit'}</span>
+                          <span className="hidden sm:inline ml-2">{t('events.edit')}</span>
                         </Button>
                         <Button
                           size="sm"
@@ -365,10 +358,10 @@ export default function IdCardTemplates() {
                             setIsDeleteDialogOpen(true);
                           }}
                           className="flex-shrink-0"
-                          aria-label={t('events.delete') || 'Delete'}
+                          aria-label={t('events.delete')}
                         >
                           <Trash2 className="h-4 w-4" />
-                          <span className="hidden sm:inline ml-2">{t('events.delete') || 'Delete'}</span>
+                          <span className="hidden sm:inline ml-2">{t('events.delete')}</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -386,56 +379,56 @@ export default function IdCardTemplates() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedTemplate ? (t('examPapers.editTemplate') || 'Edit Template') : (t('examPapers.createTemplate') || 'Create Template')}
+              {selectedTemplate ? (t('examPapers.editTemplate')) : (t('examPapers.createTemplate'))}
             </DialogTitle>
             <DialogDescription>
               {selectedTemplate 
-                ? (t('idCards.editTemplateDescription') || 'Update the ID card template settings and configuration.')
-                : (t('idCards.createTemplateDescription') || 'Create a new ID card template with custom layout and styling.')
+                ? (t('idCards.editTemplateDescription'))
+                : (t('idCards.createTemplateDescription'))
               }
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t('idCards.templateName') || 'Template Name'} *</Label>
+              <Label>{t('idCards.templateName')} *</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t('idCards.templateNamePlaceholder') || 'e.g., Student ID Card'}
+                placeholder={t('idCards.templateNamePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>{t('events.description') || 'Description'}</Label>
+              <Label>{t('events.description')}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={t('permissions.descriptionPlaceholder') || 'Description of this template...'}
+                placeholder={t('permissions.descriptionPlaceholder')}
                 rows={2}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t('idCards.backgroundFront') || 'Background Image (Front)'}</Label>
+                <Label>{t('idCards.backgroundFront')}</Label>
                 <Input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChangeFront}
                 />
                 {selectedTemplate?.backgroundImagePathFront && !backgroundImageFront && (
-                  <p className="text-sm text-muted-foreground">{t('idCards.currentImageKept') || 'Current image will be kept'}</p>
+                  <p className="text-sm text-muted-foreground">{t('idCards.currentImageKept')}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>{t('idCards.backgroundBack') || 'Background Image (Back)'}</Label>
+                <Label>{t('idCards.backgroundBack')}</Label>
                 <Input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChangeBack}
                 />
                 {selectedTemplate?.backgroundImagePathBack && !backgroundImageBack && (
-                  <p className="text-sm text-muted-foreground">{t('idCards.currentImageKept') || 'Current image will be kept'}</p>
+                  <p className="text-sm text-muted-foreground">{t('idCards.currentImageKept')}</p>
                 )}
               </div>
             </div>
@@ -446,14 +439,14 @@ export default function IdCardTemplates() {
                   checked={isDefault}
                   onCheckedChange={setIsDefault}
                 />
-                <Label>{t('certificateTemplates.setAsDefault') || 'Set as Default'}</Label>
+                <Label>{t('certificateTemplates.setAsDefault')}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
                   checked={isActive}
                   onCheckedChange={setIsActive}
                 />
-                <Label>{t('events.active') || 'Active'}</Label>
+                <Label>{t('events.active')}</Label>
               </div>
             </div>
           </div>
@@ -466,8 +459,8 @@ export default function IdCardTemplates() {
               disabled={!name || createTemplate.isPending || updateTemplate.isPending}
             >
               {createTemplate.isPending || updateTemplate.isPending 
-                ? (t('events.saving') || 'Saving...') 
-                : (t('events.save') || 'Save Template')}
+                ? (t('events.saving')) 
+                : (t('events.save'))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -478,9 +471,9 @@ export default function IdCardTemplates() {
         <Dialog open={isLayoutEditorOpen} onOpenChange={setIsLayoutEditorOpen}>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{t('certificateTemplates.editLayout') || 'Edit Layout'}: {selectedTemplate.name}</DialogTitle>
+              <DialogTitle>{t('certificateTemplates.editLayout')}: {selectedTemplate.name}</DialogTitle>
               <DialogDescription>
-                {t('idCards.editLayoutDescription') || 'Customize the layout, positioning, and styling of ID card elements. Drag elements to reposition them.'}
+                {t('idCards.editLayoutDescription')}
               </DialogDescription>
             </DialogHeader>
             <IdCardLayoutEditor
@@ -500,9 +493,9 @@ export default function IdCardTemplates() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('certificateTemplates.deleteTemplate') || 'Delete Template'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('certificateTemplates.deleteTemplate')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('idCards.deleteConfirmation') || 'Are you sure you want to delete this ID card template? This action cannot be undone.'}
+              {t('idCards.deleteConfirmation')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

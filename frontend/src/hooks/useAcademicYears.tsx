@@ -117,8 +117,8 @@ export const useCreateAcademicYear = () => {
         throw new Error('Cannot create academic year for different organization');
       }
 
-      // Validation: max 100 characters for name
-      if (academicYearData.name.length > 100) {
+      // Validation: max 20 characters for name
+      if (academicYearData.name.length > 20) {
         throw new Error(t('academic.academicYears.nameMaxLength'));
       }
 
@@ -214,8 +214,8 @@ export const useUpdateAcademicYear = () => {
         throw new Error('Cannot change organizationId');
       }
 
-      // Validation: max 100 characters for name
-      if (updates.name && updates.name.length > 100) {
+      // Validation: max 20 characters for name
+      if (updates.name && updates.name.length > 20) {
         throw new Error(t('academic.academicYears.nameMaxLength'));
       }
 

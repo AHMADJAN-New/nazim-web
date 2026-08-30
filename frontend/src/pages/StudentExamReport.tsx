@@ -25,6 +25,10 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProfile } from '@/hooks/useProfiles';
 import { FilterPanel } from '@/components/layout/FilterPanel';
+import { useSchool } from '@/hooks/useSchools';
+import { useCurrentOrganization } from '@/hooks/useOrganizations';
+
+import './student-exam-report-print.css';
 
 // Report data type matching API response
 type StudentReportData = {
@@ -138,8 +142,8 @@ const ReportCardStudentAvatar = ({ studentId, picturePath }: { studentId?: strin
   }, [studentId, picturePath]);
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="w-32 h-32 rounded-lg border-2 border-border overflow-hidden bg-muted/20 flex items-center justify-center">
+    <div className="src-student-photo-wrap flex flex-col items-center">
+      <div className="src-photo-frame w-32 h-32 rounded-lg border-2 border-border overflow-hidden bg-muted/20 flex items-center justify-center print:w-[100px] print:h-[120px]">
         {imageUrl && !imageError ? (
           <img
             src={imageUrl}
@@ -157,22 +161,40 @@ const ReportCardStudentAvatar = ({ studentId, picturePath }: { studentId?: strin
           <User className="h-16 w-16 text-muted-foreground/50" />
         )}
       </div>
-      <p className="text-xs text-muted-foreground mt-2">{t('studentReportCard.studentPhoto')}</p>
+      <p className="src-photo-label text-xs text-muted-foreground mt-2">{t('studentReportCard.studentPhoto')}</p>
     </div>
   );
 };
 
 // Reusable Grade Card Component
-function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t }: {
+function GradeCard({
+  reportData,
+  selectedStudent,
+  selectedExam,
+  academicYear,
+  schoolName,
+  organizationName,
+  t,
+  isRTL,
+}: {
   reportData: StudentReportData | null;
   selectedStudent: any;
   selectedExam: any;
   academicYear: any;
+  schoolName?: string | null;
+  organizationName?: string | null;
   t: (key: string) => string;
+  isRTL: boolean;
 }) {
   const { language } = useLanguage();
   const { data: profile } = useProfile();
   const { data: grades } = useGrades(profile?.organization_id);
+
+  const examName = reportData?.exam?.name || selectedExam?.name;
+  const classLabel = reportData?.student?.class
+    ? `${reportData.student.class}${reportData.student.section ? ` - ${reportData.student.section}` : ''}`
+    : null;
+  const displaySchoolName = schoolName || organizationName || '';
 
   if (!reportData) {
     return (
@@ -189,27 +211,36 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
   }
 
   return (
-    <>
-      {/* Report Card Header with Badges */}
-      <Card className="print:shadow-none border-2">
-        <CardHeader className="text-center border-b pb-4">
+    <div className="student-report-card space-y-4 print:space-y-0" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* School banner — prominent in print, subtle on screen */}
+      <div className="src-school-banner hidden print:block rounded-t-md">
+        {displaySchoolName ? (
+          <h2 className="src-school-name">{displaySchoolName}</h2>
+        ) : null}
+        <p className="src-report-title">{t('nav.studentReportCard')}</p>
+        <p className="src-exam-meta">
+          {[examName, classLabel, academicYear?.name].filter(Boolean).join(' · ')}
+        </p>
+      </div>
+
+      {/* Report Card Header with Badges (screen) */}
+      <Card className="src-card-section print:shadow-none border-2 print:border-0">
+        <CardHeader className="text-center border-b pb-4 src-print-hide">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Award className="h-8 w-8 text-primary" />
             <CardTitle className="text-3xl">{t('nav.studentReportCard')}</CardTitle>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
-            {reportData.exam?.name || selectedExam?.name ? (
+            {examName ? (
               <Badge className="px-3 py-1.5 text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
                 <span className="opacity-70 mr-1">{t('examReports.examName')}:</span>
-                <span className="font-semibold">{reportData.exam?.name || selectedExam?.name}</span>
+                <span className="font-semibold">{examName}</span>
               </Badge>
             ) : null}
-            {reportData.student?.class ? (
+            {classLabel ? (
               <Badge className="px-3 py-1.5 text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200 dark:border-green-800">
                 <span className="opacity-70 mr-1">{t('search.class')}:</span>
-                <span className="font-semibold">
-                  {reportData.student?.class}{reportData.student?.section ? ` - ${reportData.student.section}` : ''}
-                </span>
+                <span className="font-semibold">{classLabel}</span>
               </Badge>
             ) : null}
             {academicYear ? (
@@ -222,50 +253,48 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
         </CardHeader>
 
         {/* Student Information Section */}
-        <CardContent className="pt-6">
-          <div className="grid md:grid-cols-[auto_1fr] gap-6">
-            {/* Student Photo */}
-            <ReportCardStudentAvatar 
+        <CardContent className="src-section-body pt-6 print:pt-0 print:px-0">
+          <div className="src-student-info-grid grid md:grid-cols-[auto_1fr] gap-6">
+            <ReportCardStudentAvatar
               studentId={reportData.student?.id || (selectedStudent && 'id' in selectedStudent ? selectedStudent.id : null)}
               picturePath={(selectedStudent && 'picturePath' in selectedStudent ? selectedStudent.picturePath : null)}
             />
 
-            {/* Student Details */}
             <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <h3 className="src-section-title text-lg font-semibold mb-4 flex items-center gap-2 src-print-hide">
                 <BookOpen className="h-5 w-5 text-primary" />
                 {t('courses.studentInformation')}
               </h3>
-              <div className="grid md:grid-cols-2 gap-x-8 gap-y-3">
-                <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('userManagement.fullName')}:</span>
-                  <span className="text-sm font-semibold">
+              <div className="src-info-fields grid md:grid-cols-2 gap-x-8 gap-y-3">
+                <div className="src-info-row flex items-start gap-2">
+                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('userManagement.fullName')}:</span>
+                  <span className="src-info-value text-sm font-semibold">
                     {reportData.student?.full_name || (selectedStudent && 'fullName' in selectedStudent ? selectedStudent.fullName : '') || '-'}
                   </span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('students.rollNo')}:</span>
-                  <span className="text-sm font-semibold">
+                <div className="src-info-row flex items-start gap-2">
+                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('students.rollNo')}:</span>
+                  <span className="src-info-value text-sm font-semibold">
                     {reportData.student?.roll_number || (selectedStudent && 'rollNumber' in selectedStudent ? selectedStudent.rollNumber : null) || '-'}
                   </span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('examReports.fatherName')}:</span>
-                  <span className="text-sm font-semibold">
+                <div className="src-info-row flex items-start gap-2">
+                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('examReports.fatherName')}:</span>
+                  <span className="src-info-value text-sm font-semibold">
                     {(selectedStudent && 'fatherName' in selectedStudent ? selectedStudent.fatherName : null) || '-'}
                   </span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('studentReportCard.dateOfBirth')}:</span>
-                  <span className="text-sm font-semibold">
+                <div className="src-info-row flex items-start gap-2">
+                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('studentReportCard.dateOfBirth')}:</span>
+                  <span className="src-info-value text-sm font-semibold">
                     {(selectedStudent && 'dateOfBirth' in selectedStudent && selectedStudent.dateOfBirth
                       ? formatDate(selectedStudent.dateOfBirth)
                       : null) || '-'}
                   </span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground min-w-[120px]">{t('examReports.admissionNo')}:</span>
-                  <span className="text-sm font-semibold">
+                <div className="src-info-row flex items-start gap-2">
+                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('examReports.admissionNo')}:</span>
+                  <span className="src-info-value text-sm font-semibold">
                     {reportData.student?.admission_no || (selectedStudent && 'admissionNumber' in selectedStudent ? selectedStudent.admissionNumber : null) || '-'}
                   </span>
                 </div>
@@ -276,15 +305,15 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
       </Card>
 
       {/* Academic Performance Section */}
-      <Card className="print:shadow-none">
-        <CardHeader className="bg-muted/30">
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-amber-500" />
+      <Card className="src-card-section print:shadow-none">
+        <CardHeader className="src-section-header bg-muted/30 print:bg-transparent">
+          <CardTitle className="src-section-title flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-amber-500 src-print-hide" />
             {t('studentReportCard.academicPerformance')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="src-grades-table overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
@@ -339,7 +368,7 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
                   );
                 })}
                 {reportData.summary && (
-                  <TableRow className="bg-amber-50 dark:bg-amber-950/20 font-bold">
+                  <TableRow className="src-total-row bg-amber-50 dark:bg-amber-950/20 font-bold">
                     <TableCell colSpan={2} className="text-right">
                       {t('studentReportCard.grandTotal')}
                     </TableCell>
@@ -363,25 +392,25 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
       </Card>
 
       {/* Overall Result & Remarks */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="src-summary-grid grid md:grid-cols-2 gap-6 print:gap-0">
         {/* Result Card */}
-        <Card className="print:shadow-none">
-          <CardHeader className="bg-muted/30">
-            <CardTitle className="text-lg">{t('studentReportCard.overallResult')}</CardTitle>
+        <Card className="src-card-section print:shadow-none">
+          <CardHeader className="src-section-header bg-muted/30 print:bg-transparent">
+            <CardTitle className="src-section-title text-lg">{t('studentReportCard.overallResult')}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="src-section-body pt-6 print:pt-0">
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
+              <div className="src-result-stat flex justify-between items-center">
                 <span className="text-muted-foreground">{t('studentReportCard.overallPercentage')}:</span>
-                <span className="text-2xl font-bold text-primary">
+                <span className="src-result-value text-2xl font-bold text-primary">
                   {reportData.summary?.overall_percentage !== null && reportData.summary?.overall_percentage !== undefined
                     ? `${reportData.summary.overall_percentage.toFixed(2)}%`
                     : '-'}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="src-result-stat flex justify-between items-center">
                 <span className="text-muted-foreground">{t('studentReportCard.overallGrade')}:</span>
-                <Badge variant="default" className="text-xl px-4 py-2">
+                <Badge variant="default" className="text-xl px-4 py-2 print:text-base print:px-2 print:py-1">
                   {(() => {
                     const overallPercentage = reportData.summary?.overall_percentage;
                     if (overallPercentage !== null && overallPercentage !== undefined) {
@@ -392,12 +421,12 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
                   })()}
                 </Badge>
               </div>
-              <Separator />
-              <div className="flex justify-between items-center">
+              <Separator className="src-print-hide" />
+              <div className="src-result-stat flex justify-between items-center">
                 <span className="text-muted-foreground">{t('examReports.result')}:</span>
                 {reportData.summary?.overall_result?.toLowerCase() === 'pass' ? (
                   <Badge variant="default" className="gap-1 text-base px-3 py-1">
-                    <TrendingUp className="h-4 w-4" />
+                    <TrendingUp className="h-4 w-4 src-print-hide" />
                     {t('events.pass')}
                   </Badge>
                 ) : (
@@ -411,55 +440,55 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
         </Card>
 
         {/* Remarks */}
-        <Card className="print:shadow-none">
-          <CardHeader className="bg-muted/30">
-            <CardTitle className="text-lg">{t('studentReportCard.teacherRemarks')}</CardTitle>
+        <Card className="src-card-section print:shadow-none">
+          <CardHeader className="src-section-header bg-muted/30 print:bg-transparent">
+            <CardTitle className="src-section-title text-lg">{t('studentReportCard.teacherRemarks')}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="min-h-[100px] p-3 border rounded-md bg-muted/10">
-                <p className="text-sm text-muted-foreground italic">
-                  {t('studentReportCard.noRemarks')}
-                </p>
-              </div>
+          <CardContent className="src-section-body pt-6 print:pt-0">
+            <div className="src-remarks-box min-h-[100px] p-3 border rounded-md bg-muted/10">
+              <p className="text-sm text-muted-foreground italic">
+                {t('studentReportCard.noRemarks')}
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Signatures Section */}
-      <Card className="print:shadow-none">
-        <CardHeader>
-          <CardTitle>{t('studentReportCard.signatures')}</CardTitle>
+      <Card className="src-card-section print:shadow-none">
+        <CardHeader className="src-section-header">
+          <CardTitle className="src-section-title">{t('studentReportCard.signatures')}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-8 pt-8">
+        <CardContent className="src-section-body">
+          <div className="src-signatures-grid grid grid-cols-3 gap-8 pt-8 print:pt-4">
             <div className="text-center space-y-2">
-              <div className="h-16 border-b-2 border-muted-foreground/20"></div>
-              <p className="text-sm font-medium">{t('studentReportCard.classTeacher')}</p>
+              <div className="src-signature-line h-16 border-b-2 border-muted-foreground/20 print:h-10 print:border-b print:border-black"></div>
+              <p className="src-signature-label text-sm font-medium">{t('studentReportCard.classTeacher')}</p>
             </div>
             <div className="text-center space-y-2">
-              <div className="h-16 border-b-2 border-muted-foreground/20"></div>
-              <p className="text-sm font-medium">{t('studentReportCard.principal')}</p>
+              <div className="src-signature-line h-16 border-b-2 border-muted-foreground/20 print:h-10 print:border-b print:border-black"></div>
+              <p className="src-signature-label text-sm font-medium">{t('studentReportCard.principal')}</p>
             </div>
             <div className="text-center space-y-2">
-              <div className="h-16 border-b-2 border-muted-foreground/20"></div>
-              <p className="text-sm font-medium">{t('studentReportCard.parent')}</p>
+              <div className="src-signature-line h-16 border-b-2 border-muted-foreground/20 print:h-10 print:border-b print:border-black"></div>
+              <p className="src-signature-label text-sm font-medium">{t('studentReportCard.parent')}</p>
             </div>
           </div>
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>{t('studentReportCard.dateIssued')}: {new Date().toLocaleDateString()}</p>
+          <div className="src-date-issued mt-6 text-center text-sm text-muted-foreground">
+            <p>{t('studentReportCard.dateIssued')}: {formatDate(new Date())}</p>
           </div>
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 }
 
 export default function StudentExamReport() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const canViewReports = useHasPermission('students.read');
   const { data: profile } = useProfile();
+  const { data: organization } = useCurrentOrganization();
+  const { data: school } = useSchool(profile?.default_school_id ?? '');
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string>('');
@@ -626,15 +655,16 @@ export default function StudentExamReport() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="student-exam-report-page container mx-auto py-6 space-y-6 max-w-7xl overflow-x-hidden">
       <PageHeader
         title={t('nav.examReports')}
         description={t('studentReportCard.selectStudentPrompt')}
         icon={<Award className="h-5 w-5" />}
+        className="no-print"
       />
 
       {/* Selection Panel */}
-      <FilterPanel title={t('library.selectStudent')}>
+      <FilterPanel title={t('library.selectStudent')} className="no-print">
         <div className="grid gap-4 md:grid-cols-3">
             {/* Exam Selection */}
             <div className="space-y-2">
@@ -851,13 +881,16 @@ export default function StudentExamReport() {
                 }
 
                 return (
-                  <div key={`report-${uniqueKey}`} className={selectedStudentIds.length > 1 ? 'break-inside-avoid page-break-after' : ''}>
+                  <div key={`report-${uniqueKey}`}>
                     <GradeCard
                       reportData={reportData}
                       selectedStudent={selectedStudent}
                       selectedExam={selectedExam}
                       academicYear={academicYear}
+                      schoolName={school?.schoolName}
+                      organizationName={organization?.name}
                       t={t}
+                      isRTL={isRTL}
                     />
                   </div>
                 );

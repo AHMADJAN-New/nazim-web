@@ -184,6 +184,77 @@ export default {
     totalFeeCollected: "Fee Collected",
     useGlobalFont: "Use global font",
     width: "Width (%)",
-    unprinted: "unprinted"
+    unprinted: "unprinted",
+    layoutFields: {
+      studentNameLabel: "تسمية: الاسم",
+      studentName: "اسم الطالب",
+      fatherNameLabel: "تسمية: اسم الأب",
+      fatherName: "اسم الأب",
+      classLabel: "تسمية: الصف",
+      roomLabel: "تسمية: الغرفة",
+      admissionNumberLabel: "تسمية: رقم القبول",
+      residencyLabel: "تسمية: الإقامة",
+      studentCodeLabel: "تسمية: ID",
+      studentCode: "رمز الطالب",
+      admissionNumber: "رقم القبول",
+      class: "الصف",
+      room: "الغرفة",
+      residency: "الإقامة",
+      schoolName: "اسم المدرسة",
+      cardNumberLabel: "تسمية: رقم البطاقة",
+      cardNumber: "رقم البطاقة",
+      createdDate: "تاريخ الإنشاء",
+      expiryDate: "تاريخ الانتهاء",
+      notes: "ملاحظات",
+      studentPhoto: "صورة الطالب",
+      qrCode: "رمز QR"
+    },
+    defaultLabels: {
+      studentNameLabel: "الاسم:",
+      fatherNameLabel: "اسم الأب:",
+      classLabel: "الصف:",
+      roomLabel: "الغرفة:",
+      admissionNumberLabel: "رقم القبول:",
+      residencyLabel: "الإقامة:",
+      studentCodeLabel: "ID:",
+      cardNumberLabel: "رقم البطاقة:"
+    },
+    layoutSamples: {
+      studentName: "أحمد محمد",
+      fatherName: "محمد",
+      class: "الصف 10 - أ",
+      room: "غرفة 12",
+      residency: "داخلي",
+      schoolName: "المدرسة الإسلامية",
+      studentCode: "STU-2024-001",
+      admissionNumber: "ADM-2024-001",
+      cardNumber: "CARD-2024-001",
+      createdDate: "Apr 13, 2026",
+      expiryDate: "Dec 31, 2025",
+      notes: "معلومات إضافية"
+    },
+    labelPlaceholders: {
+      studentNameLabel: "مثال: الاسم",
+      fatherNameLabel: "مثال: اسم الأب",
+      classLabel: "مثال: الصف",
+      roomLabel: "مثال: الغرفة",
+      admissionNumberLabel: "مثال: رقم القبول",
+      residencyLabel: "مثال: الإقامة",
+      studentCodeLabel: "مثال: ID",
+      cardNumberLabel: "مثال: رقم البطاقة"
+    },
+    editableLabels: {
+      nameLabel: "تسمية الاسم",
+      fatherNameLabel: "تسمية اسم الأب",
+      classLabel: "تسمية الصف",
+      roomLabel: "تسمية الغرفة",
+      residencyLabel: "تسمية الإقامة",
+      admissionNumberLabel: "تسمية رقم القبول",
+      studentCodeLabel: "تسمية ID",
+      cardNumberLabel: "تسمية رقم البطاقة"
+    },
+    labelEditableDescription: "نص تسمية مخصص. حرّك هذه التسمية بشكل منفصل لمحاذاتها مع قيمة قاعدة البيانات.",
+    dayScholar: "طالب نهاري",
+    boarding: "داخلي"
   }
 };

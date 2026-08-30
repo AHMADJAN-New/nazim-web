@@ -218,7 +218,7 @@ export function FinanceDocumentsDialog({
                   onDateChange={(date) => {
                     field.onChange(date ? date.toISOString().slice(0, 10) : '');
                   }}
-                  placeholder={t('finance.documentDate') || 'Select date'}
+                  placeholder={t('finance.documentDate')}
                 />
               )}
             />

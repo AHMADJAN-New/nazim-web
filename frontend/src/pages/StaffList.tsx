@@ -1209,10 +1209,6 @@ export function StaffList() {
                                                             <Label htmlFor="religious_graduation_year">{t('staff.graduationYear')}</Label>
                                                             <Input id="religious_graduation_year" {...register('religious_graduation_year')} />
                                                         </div>
-                                                        <div className="grid gap-2">
-                                                            <Label htmlFor="religious_department">{t('staff.department')}</Label>
-                                                            <Input id="religious_department" {...register('religious_department')} />
-                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="pt-4 border-t">
@@ -1229,10 +1225,6 @@ export function StaffList() {
                                                         <div className="grid gap-2">
                                                             <Label htmlFor="modern_graduation_year">{t('staff.graduationYear')}</Label>
                                                             <Input id="modern_graduation_year" {...register('modern_graduation_year')} />
-                                                        </div>
-                                                        <div className="grid gap-2">
-                                                            <Label htmlFor="modern_department">{t('staff.department')}</Label>
-                                                            <Input id="modern_department" {...register('modern_department')} />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1736,10 +1728,6 @@ export function StaffList() {
                                                             <Label htmlFor="edit_religious_graduation_year">{t('staff.graduationYear')}</Label>
                                                             <Input id="edit_religious_graduation_year" {...register('religious_graduation_year')} />
                                                         </div>
-                                                        <div className="grid gap-2">
-                                                            <Label htmlFor="edit_religious_department">{t('staff.department')}</Label>
-                                                            <Input id="edit_religious_department" {...register('religious_department')} />
-                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="pt-4 border-t">
@@ -1756,10 +1744,6 @@ export function StaffList() {
                                                         <div className="grid gap-2">
                                                             <Label htmlFor="edit_modern_graduation_year">{t('staff.graduationYear')}</Label>
                                                             <Input id="edit_modern_graduation_year" {...register('modern_graduation_year')} />
-                                                        </div>
-                                                        <div className="grid gap-2">
-                                                            <Label htmlFor="edit_modern_department">{t('staff.department')}</Label>
-                                                            <Input id="edit_modern_department" {...register('modern_department')} />
                                                         </div>
                                                     </div>
                                                 </div>

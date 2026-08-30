@@ -173,7 +173,6 @@ export const useUpdateScheduleSlot = () => {
             if (updates.daysOfWeek !== undefined) updateData.daysOfWeek = updates.daysOfWeek;
             if (updates.defaultDurationMinutes !== undefined) updateData.defaultDurationMinutes = updates.defaultDurationMinutes;
             if (updates.academicYearId !== undefined) updateData.academicYearId = updates.academicYearId;
-            if (updates.schoolId !== undefined) updateData.schoolId = updates.schoolId;
             if (updates.sortOrder !== undefined) updateData.sortOrder = updates.sortOrder;
             if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
             if (updates.description !== undefined) updateData.description = updates.description;

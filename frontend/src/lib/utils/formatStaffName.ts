@@ -48,3 +48,28 @@ export function formatStaffName(
   // Join parts with space
   return parts.length > 0 ? parts.join(' ') : '';
 }
+
+/** Teacher/father-name displays: father name only (never grandfather). */
+export function formatTeacherFatherName(
+  fatherName: string | null | undefined,
+): string {
+  return fatherName?.trim() || '';
+}
+
+/** Primary teacher label: employee ID + first name (excludes father/grandfather). */
+export function formatTeacherPrimaryLabel(
+  teacher: {
+    employee_id?: string | null;
+    first_name?: string | null;
+    employeeId?: string | null;
+    firstName?: string | null;
+  } | null | undefined,
+): string {
+  if (!teacher) return '';
+
+  const employeeId = (teacher.employee_id ?? teacher.employeeId)?.trim() || '';
+  const firstName = (teacher.first_name ?? teacher.firstName)?.trim() || '';
+
+  if (employeeId && firstName) return `${employeeId} - ${firstName}`;
+  return employeeId || firstName;
+}

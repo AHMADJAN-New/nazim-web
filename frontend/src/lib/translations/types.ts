@@ -134,6 +134,7 @@ export const TRANSLATION_KEYS = [
   "academic.residencyTypes.isActive",
   "academic.residencyTypes.management",
   "academic.residencyTypes.name",
+  "academic.residencyTypes.nameMaxLength",
   "academic.residencyTypes.noResidencyTypesFound",
   "academic.residencyTypes.noResidencyTypesMessage",
   "academic.residencyTypes.searchPlaceholder",

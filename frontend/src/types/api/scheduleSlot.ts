@@ -33,4 +33,4 @@ export interface ScheduleSlot {
 }
 
 export type ScheduleSlotInsert = Omit<ScheduleSlot, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'academic_year' | 'school'>;
-export type ScheduleSlotUpdate = Partial<Omit<ScheduleSlot, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'organization_id' | 'academic_year' | 'school'>>;
+export type ScheduleSlotUpdate = Partial<Omit<ScheduleSlot, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'organization_id' | 'school_id' | 'academic_year' | 'school'>>;

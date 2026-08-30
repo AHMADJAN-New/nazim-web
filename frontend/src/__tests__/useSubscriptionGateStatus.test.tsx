@@ -2,7 +2,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { ReactNode } from 'react';
-import { vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { useSubscriptionGateStatus } from '../hooks/useSubscription';
 

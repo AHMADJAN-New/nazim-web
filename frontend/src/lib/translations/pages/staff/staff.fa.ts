@@ -142,7 +142,7 @@ export default {
     viewAll: "مشاهده همه",
     totalStaff: "مجموع کارمندان",
     type: "نوع",
-    universityInstitution: "پوهنتون/مؤسسه",
+    universityInstitution: "مدرسه",
     updateStaff: "به‌روزرسانی کارمند",
     updating: "در حال به‌روزرسانی...",
     village: "قریه"

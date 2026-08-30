@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { BookOpen, Clock, Trash2, Plus, Pencil, User, GraduationCap, CheckCircle2, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, type ReactNode } from 'react';
 import { useClassYearUrlFilters } from '@/hooks/useClassYearUrlFilters';
 import { useLanguage } from '@/hooks/useLanguage';
 import {
@@ -53,6 +53,46 @@ import { useSchools } from '@/hooks/useSchools';
 import { useStaff, type Staff } from '@/hooks/useStaff';
 import { useClassSubjectsForMultipleClasses } from '@/hooks/useSubjects';
 import { useTeacherSubjectAssignments, useCreateTeacherSubjectAssignment, useUpdateTeacherSubjectAssignment, useDeleteTeacherSubjectAssignment, type TeacherSubjectAssignment } from '@/hooks/useTeacherSubjectAssignments';
+import { formatTeacherFatherName, formatTeacherPrimaryLabel } from '@/lib/utils/formatStaffName';
+
+type TeacherNameFields = {
+    employee_id?: string | null;
+    first_name?: string | null;
+    father_name?: string | null;
+};
+
+function renderTeacherCell(teacher: TeacherNameFields | null | undefined, unknownLabel: string): ReactNode {
+    if (!teacher) return unknownLabel;
+
+    const primary = formatTeacherPrimaryLabel(teacher);
+    const fatherName = formatTeacherFatherName(teacher.father_name);
+
+    if (!primary && !fatherName) return unknownLabel;
+
+    return (
+        <div>
+            <div>{primary || unknownLabel}</div>
+            {fatherName ? <div className="text-muted-foreground text-sm">{fatherName}</div> : null}
+        </div>
+    );
+}
+
+function formatTeacherExportLabel(teacher: TeacherNameFields | null | undefined, unknownLabel: string): string {
+    if (!teacher) return unknownLabel;
+
+    const primary = formatTeacherPrimaryLabel(teacher);
+    const fatherName = formatTeacherFatherName(teacher.father_name);
+
+    if (primary && fatherName) return `${primary} / ${fatherName}`;
+    return primary || fatherName || unknownLabel;
+}
+
+function formatStaffTeacherOptionLabel(staffMember: Staff): string {
+    return formatTeacherPrimaryLabel({
+        employeeId: staffMember.employeeId,
+        firstName: staffMember.firstName,
+    }) || staffMember.employeeId || staffMember.firstName || '';
+}
 
 type Step = 1 | 2;
 
@@ -532,7 +572,7 @@ export function TeacherSubjectAssignments() {
                                                     key={staffMember.id} 
                                                     value={staffMember.id}
                                                 >
-                                                    {staffMember.employeeId} - {staffMember.fullName || `${staffMember.firstName} ${staffMember.fatherName}`}
+                                                    {formatStaffTeacherOptionLabel(staffMember)}
                                                     {staffMember.staffTypeRelation && ` (${staffMember.staffTypeRelation.name})`}
                                                 </SelectItem>
                                             ))
@@ -587,14 +627,7 @@ export function TeacherSubjectAssignments() {
                                 reportKey="teacher_assignments"
                                 title={t('teacherSubjectAssignments.title') || 'Teacher Assignments Report'}
                                 transformData={(data) => data.map((assignment) => {
-                                    const teacherFullName = assignment.teacher ? [
-                                        assignment.teacher.first_name,
-                                        assignment.teacher.father_name,
-                                        assignment.teacher.grandfather_name
-                                    ].filter(Boolean).join(' ') : '';
-                                    const teacherDisplay = assignment.teacher?.employee_id && teacherFullName
-                                        ? `${assignment.teacher.employee_id} - ${teacherFullName}`
-                                        : teacherFullName || t('events.unknown');
+                                    const teacherDisplay = formatTeacherExportLabel(assignment.teacher, t('events.unknown'));
                                     const academicYearName = assignment.academic_year_id 
                                         ? (academicYearMap.get(assignment.academic_year_id) || 
                                            assignment.academic_year?.name || 
@@ -621,7 +654,7 @@ export function TeacherSubjectAssignments() {
                                     if (searchQuery) filters.push(`Search: ${searchQuery}`);
                                     if (teacherFilter !== 'all') {
                                         const teacher = teacherStaff.find(t => t.id === teacherFilter);
-                                        if (teacher) filters.push(`Teacher: ${teacher.employeeId} - ${teacher.fullName || `${teacher.firstName} ${teacher.fatherName}`}`);
+                                        if (teacher) filters.push(`Teacher: ${formatStaffTeacherOptionLabel(teacher)}`);
                                     }
                                     if (academicYearFilter !== 'all') {
                                         const year = academicYears?.find(y => y.id === academicYearFilter);
@@ -671,16 +704,7 @@ export function TeacherSubjectAssignments() {
                                     {filteredAssignments.map((assignment) => (
                                         <TableRow key={assignment.id}>
                                             <TableCell>
-                                                {(() => {
-                                                    const teacherFullName = assignment.teacher ? [
-                                                        assignment.teacher.first_name,
-                                                        assignment.teacher.father_name,
-                                                        assignment.teacher.grandfather_name
-                                                    ].filter(Boolean).join(' ') : '';
-                                                    return assignment.teacher?.employee_id && teacherFullName
-                                                        ? `${assignment.teacher.employee_id} - ${teacherFullName}`
-                                                        : teacherFullName || t('events.unknown');
-                                                })()}
+                                                {renderTeacherCell(assignment.teacher, t('events.unknown'))}
                                             </TableCell>
                                             <TableCell>
                                                 {assignment.academic_year_id 
@@ -876,7 +900,7 @@ export function TeacherSubjectAssignments() {
                                                                         key={staffMember.id} 
                                                                         value={staffMember.id}
                                                                     >
-                                                                        {staffMember.employeeId} - {staffMember.fullName || `${staffMember.firstName} ${staffMember.fatherName}`}
+                                                                        {formatStaffTeacherOptionLabel(staffMember)}
                                                                         {staffMember.staffTypeRelation && ` (${staffMember.staffTypeRelation.name})`}
                                                                     </SelectItem>
                                                                 ))
@@ -1194,18 +1218,7 @@ export function TeacherSubjectAssignments() {
                                                 <div className="space-y-2">
                                                     <Label>{t('teacherSubjectAssignments.teacher')}</Label>
                                                     <Input 
-                                                        value={
-                                                            (() => {
-                                                                const teacherFullName = editingAssignment.teacher ? [
-                                                                    editingAssignment.teacher.first_name,
-                                                                    editingAssignment.teacher.father_name,
-                                                                    editingAssignment.teacher.grandfather_name
-                                                                ].filter(Boolean).join(' ') : '';
-                                                                return editingAssignment.teacher?.employee_id && teacherFullName
-                                                                    ? `${editingAssignment.teacher.employee_id} - ${teacherFullName}`
-                                                                    : teacherFullName || t('events.unknown');
-                                                            })()
-                                                        } 
+                                                        value={formatTeacherExportLabel(editingAssignment.teacher, t('events.unknown'))}
                                                         disabled 
                                                     />
                                                 </div>

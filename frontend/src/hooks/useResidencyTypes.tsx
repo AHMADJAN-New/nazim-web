@@ -78,7 +78,7 @@ export const useCreateResidencyType = () => {
 
       // Validation: max 100 characters for name
       if (residencyTypeData.name.length > 100) {
-        throw new Error(t('academic.academicYears.nameMaxLength'));
+        throw new Error(t('academic.residencyTypes.nameMaxLength'));
       }
 
       // Validation: max 50 characters for code
@@ -144,7 +144,7 @@ export const useUpdateResidencyType = () => {
 
       // Validation: max 100 characters for name
       if (updates.name && updates.name.length > 100) {
-        throw new Error(t('academic.academicYears.nameMaxLength'));
+        throw new Error(t('academic.residencyTypes.nameMaxLength'));
       }
 
       // Validation: max 50 characters for code

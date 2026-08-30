@@ -11,7 +11,7 @@ export default {
     code: "کوډ",
     employeeId: "د کارمند ID",
     placeholder: "زده کوونکي، ټولګي، استادان لټون...",
-    position: "دنده / بست",
+    position: "بست",
     schools: "ښوونځي",
     staff: "کارکوونکي",
     startTyping: "د لټون لپاره لیکل پیل کړئ...",

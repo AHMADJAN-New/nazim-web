@@ -9,6 +9,9 @@ export * from './dms';
 // Student validation
 export * from './student';
 
+// Academic year validation
+export * from './academicYear';
+
 // Document validation
 export * from './document';
 export * from './fileUpload';

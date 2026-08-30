@@ -15,12 +15,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents } from '@/hooks/useStudents';
 import { idCardTemplatesApi } from '@/lib/api/client';
+import type { Language } from '@/lib/i18n';
 import {
   formatIdCardFontFamilyToken,
+  getDefaultIdCardLabelTexts,
   ID_CARD_RTL_FONT_FALLBACK_STACK,
   normalizeIdCardText,
   resolveIdCardDefaultFontFamily,
   resolveIdCardFieldValue,
+  type IdCardLabelFieldId,
 } from '@/lib/idCards/idCardFieldUtils';
 import { generateLocalQrCodeDataUrl } from '@/lib/idCards/idCardQr';
 import {
@@ -93,18 +96,59 @@ interface FieldConfig {
   defaultHeight?: number;
 }
 
-const DEFAULT_LABEL_TEXTS: Record<string, string> = {
-  studentNameLabel: 'نوم:',
-  fatherNameLabel: 'د پلار نوم:',
-  classLabel: 'درجه:',
-  roomLabel: 'اتاق :',
-  admissionNumberLabel: 'داخله نمبر:',
-  residencyLabel: 'Residency:',
-  studentCodeLabel: 'ID:',
-  cardNumberLabel: 'کارت نمبر:',
-};
+const LABEL_FIELD_IDS: IdCardLabelFieldId[] = [
+  'studentNameLabel',
+  'fatherNameLabel',
+  'classLabel',
+  'roomLabel',
+  'admissionNumberLabel',
+  'residencyLabel',
+  'studentCodeLabel',
+  'cardNumberLabel',
+];
 
-const LABEL_FIELD_IDS = Object.keys(DEFAULT_LABEL_TEXTS);
+const buildFrontFields = (
+  t: (key: string) => string,
+  labels: Record<IdCardLabelFieldId, string>
+): FieldConfig[] => [
+  { id: 'studentNameLabel', label: t('idCards.layoutFields.studentNameLabel'), key: 'studentNameLabelPosition', sampleText: labels.studentNameLabel, defaultFontSize: 10 },
+  { id: 'studentName', label: t('idCards.layoutFields.studentName'), key: 'studentNamePosition', sampleText: t('idCards.layoutSamples.studentName'), defaultFontSize: 14 },
+  { id: 'fatherNameLabel', label: t('idCards.layoutFields.fatherNameLabel'), key: 'fatherNameLabelPosition', sampleText: labels.fatherNameLabel, defaultFontSize: 10 },
+  { id: 'fatherName', label: t('idCards.layoutFields.fatherName'), key: 'fatherNamePosition', sampleText: t('idCards.layoutSamples.fatherName'), defaultFontSize: 12 },
+  { id: 'classLabel', label: t('idCards.layoutFields.classLabel'), key: 'classLabelPosition', sampleText: labels.classLabel, defaultFontSize: 10 },
+  { id: 'roomLabel', label: t('idCards.layoutFields.roomLabel'), key: 'roomLabelPosition', sampleText: labels.roomLabel, defaultFontSize: 10 },
+  { id: 'admissionNumberLabel', label: t('idCards.layoutFields.admissionNumberLabel'), key: 'admissionNumberLabelPosition', sampleText: labels.admissionNumberLabel, defaultFontSize: 10 },
+  { id: 'residencyLabel', label: t('idCards.layoutFields.residencyLabel'), key: 'residencyLabelPosition', sampleText: labels.residencyLabel, defaultFontSize: 10 },
+  { id: 'studentCodeLabel', label: t('idCards.layoutFields.studentCodeLabel'), key: 'studentCodeLabelPosition', sampleText: labels.studentCodeLabel, defaultFontSize: 10 },
+  { id: 'studentCode', label: t('idCards.layoutFields.studentCode'), key: 'studentCodePosition', sampleText: t('idCards.layoutSamples.studentCode'), defaultFontSize: 10 },
+  { id: 'admissionNumber', label: t('idCards.layoutFields.admissionNumber'), key: 'admissionNumberPosition', sampleText: t('idCards.layoutSamples.admissionNumber'), defaultFontSize: 10 },
+  { id: 'class', label: t('idCards.layoutFields.class'), key: 'classPosition', sampleText: t('idCards.layoutSamples.class'), defaultFontSize: 10 },
+  { id: 'room', label: t('idCards.layoutFields.room'), key: 'roomPosition', sampleText: t('idCards.layoutSamples.room'), defaultFontSize: 10 },
+  { id: 'residency', label: t('idCards.layoutFields.residency'), key: 'residencyPosition', sampleText: t('idCards.layoutSamples.residency'), defaultFontSize: 10 },
+  { id: 'schoolName', label: t('idCards.layoutFields.schoolName'), key: 'schoolNamePosition', sampleText: t('idCards.layoutSamples.schoolName'), defaultFontSize: 12 },
+  { id: 'cardNumberLabel', label: t('idCards.layoutFields.cardNumberLabel'), key: 'cardNumberLabelPosition', sampleText: labels.cardNumberLabel, defaultFontSize: 10 },
+  { id: 'cardNumber', label: t('idCards.layoutFields.cardNumber'), key: 'cardNumberPosition', sampleText: t('idCards.layoutSamples.cardNumber'), defaultFontSize: 10 },
+  { id: 'createdDate', label: t('idCards.layoutFields.createdDate'), key: 'createdDatePosition', sampleText: t('idCards.layoutSamples.createdDate'), defaultFontSize: 10 },
+  { id: 'expiryDate', label: t('idCards.layoutFields.expiryDate'), key: 'expiryDatePosition', sampleText: t('idCards.layoutSamples.expiryDate'), defaultFontSize: 10 },
+  { id: 'notes', label: t('idCards.layoutFields.notes'), key: 'notesPosition', sampleText: t('idCards.layoutSamples.notes'), defaultFontSize: 10 },
+  { id: 'studentPhoto', label: t('idCards.layoutFields.studentPhoto'), key: 'studentPhotoPosition', sampleText: '📷', isImage: true, defaultWidth: DEFAULT_STUDENT_PHOTO_WIDTH, defaultHeight: DEFAULT_STUDENT_PHOTO_HEIGHT, defaultFontSize: 12 },
+  { id: 'qrCode', label: t('idCards.layoutFields.qrCode'), key: 'qrCodePosition', sampleText: 'QR', isImage: true, defaultWidth: DEFAULT_QR_CODE_SIZE, defaultHeight: DEFAULT_QR_CODE_SIZE, defaultFontSize: 12 },
+];
+
+const buildBackFields = (
+  t: (key: string) => string,
+  labels: Record<IdCardLabelFieldId, string>
+): FieldConfig[] => [
+  { id: 'createdDate', label: t('idCards.layoutFields.createdDate'), key: 'createdDatePosition', sampleText: t('idCards.layoutSamples.createdDate'), defaultFontSize: 10 },
+  { id: 'residencyLabel', label: t('idCards.layoutFields.residencyLabel'), key: 'residencyLabelPosition', sampleText: labels.residencyLabel, defaultFontSize: 10 },
+  { id: 'residency', label: t('idCards.layoutFields.residency'), key: 'residencyPosition', sampleText: t('idCards.layoutSamples.residency'), defaultFontSize: 10 },
+  { id: 'schoolName', label: t('idCards.layoutFields.schoolName'), key: 'schoolNamePosition', sampleText: t('idCards.layoutSamples.schoolName'), defaultFontSize: 12 },
+  { id: 'roomLabel', label: t('idCards.layoutFields.roomLabel'), key: 'roomLabelPosition', sampleText: labels.roomLabel, defaultFontSize: 10 },
+  { id: 'room', label: t('idCards.layoutFields.room'), key: 'roomPosition', sampleText: t('idCards.layoutSamples.room'), defaultFontSize: 10 },
+  { id: 'cardNumberLabel', label: t('idCards.layoutFields.cardNumberLabel'), key: 'cardNumberLabelPosition', sampleText: labels.cardNumberLabel, defaultFontSize: 10 },
+  { id: 'expiryDate', label: t('idCards.layoutFields.expiryDate'), key: 'expiryDatePosition', sampleText: t('idCards.layoutSamples.expiryDate'), defaultFontSize: 10 },
+  { id: 'cardNumber', label: t('idCards.layoutFields.cardNumber'), key: 'cardNumberPosition', sampleText: t('idCards.layoutSamples.cardNumber'), defaultFontSize: 10 },
+];
 const FRONT_DEFAULT_ENABLED_FIELDS = [
   'studentNameLabel',
   'studentName',
@@ -124,8 +168,11 @@ const FRONT_DEFAULT_ENABLED_FIELDS = [
 const BACK_DEFAULT_ENABLED_FIELDS = ['schoolName', 'cardNumberLabel', 'cardNumber', 'expiryDate'];
 const EDITABLE_TEXT_FIELDS = new Set<string>(['notes', 'expiryDate', 'schoolName', ...LABEL_FIELD_IDS]);
 
-const withDefaultLabelValues = (fieldValues?: Record<string, string | null>): Record<string, string | null> => ({
-  ...DEFAULT_LABEL_TEXTS,
+const withDefaultLabelValues = (
+  fieldValues: Record<string, string | null> | undefined,
+  defaultLabels: Record<IdCardLabelFieldId, string>
+): Record<string, string | null> => ({
+  ...defaultLabels,
   ...(fieldValues || {}),
 });
 
@@ -142,7 +189,9 @@ const getFieldPreviewText = (
   field: FieldConfig,
   config: IdCardLayoutConfig,
   sampleStudent: Student | null,
-  locale: string
+  locale: string,
+  language: Language,
+  defaultLabels: Record<IdCardLabelFieldId, string>
 ): string => {
   return (
     normalizeIdCardText(
@@ -154,6 +203,8 @@ const getFieldPreviewText = (
           notes: sampleStudent?.notes ?? null,
           createdDate: sampleStudent?.createdAt ?? null,
           locale,
+          language,
+          defaultLabels,
         },
         field.sampleText
       )
@@ -162,44 +213,6 @@ const getFieldPreviewText = (
   );
 };
 
-// Front side fields - includes all fields from both front and back
-const FRONT_FIELDS: FieldConfig[] = [
-  { id: 'studentNameLabel', label: 'Label: Name (نوم)', key: 'studentNameLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.studentNameLabel, defaultFontSize: 10 },
-  { id: 'studentName', label: 'Student Name', key: 'studentNamePosition', sampleText: 'Ahmad Mohammad', defaultFontSize: 14 },
-  { id: 'fatherNameLabel', label: 'Label: Father Name (د پلار نوم)', key: 'fatherNameLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.fatherNameLabel, defaultFontSize: 10 },
-  { id: 'fatherName', label: 'Father Name', key: 'fatherNamePosition', sampleText: 'Mohammad', defaultFontSize: 12 },
-  { id: 'classLabel', label: 'Label: Class (درجه)', key: 'classLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.classLabel, defaultFontSize: 10 },
-  { id: 'roomLabel', label: 'Label: Room (اتاق )', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
-  { id: 'admissionNumberLabel', label: 'Label: Admission Number (داخله نمبر)', key: 'admissionNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.admissionNumberLabel, defaultFontSize: 10 },
-  { id: 'residencyLabel', label: 'Label: Residency', key: 'residencyLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.residencyLabel, defaultFontSize: 10 },
-  { id: 'studentCodeLabel', label: 'Label: ID (ID)', key: 'studentCodeLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.studentCodeLabel, defaultFontSize: 10 },
-  { id: 'studentCode', label: 'Student Code', key: 'studentCodePosition', sampleText: 'STU-2024-001', defaultFontSize: 10 },
-  { id: 'admissionNumber', label: 'Admission Number', key: 'admissionNumberPosition', sampleText: 'ADM-2024-001', defaultFontSize: 10 },
-  { id: 'class', label: 'Class', key: 'classPosition', sampleText: 'Grade 10 - Section A', defaultFontSize: 10 },
-  { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
-  { id: 'residency', label: 'Residency', key: 'residencyPosition', sampleText: 'Boarding', defaultFontSize: 10 },
-  { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
-  { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
-  { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
-  { id: 'createdDate', label: 'Created Date', key: 'createdDatePosition', sampleText: 'Apr 13, 2026', defaultFontSize: 10 },
-  { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
-  { id: 'notes', label: 'Notes', key: 'notesPosition', sampleText: 'Additional information', defaultFontSize: 10 },
-  { id: 'studentPhoto', label: 'Student Photo', key: 'studentPhotoPosition', sampleText: '📷', isImage: true, defaultWidth: DEFAULT_STUDENT_PHOTO_WIDTH, defaultHeight: DEFAULT_STUDENT_PHOTO_HEIGHT, defaultFontSize: 12 },
-  { id: 'qrCode', label: 'QR Code', key: 'qrCodePosition', sampleText: 'QR', isImage: true, defaultWidth: DEFAULT_QR_CODE_SIZE, defaultHeight: DEFAULT_QR_CODE_SIZE, defaultFontSize: 12 },
-];
-
-// Back side fields
-const BACK_FIELDS: FieldConfig[] = [
-  { id: 'createdDate', label: 'Created Date', key: 'createdDatePosition', sampleText: 'Apr 13, 2026', defaultFontSize: 10 },
-  { id: 'residencyLabel', label: 'Label: Residency', key: 'residencyLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.residencyLabel, defaultFontSize: 10 },
-  { id: 'residency', label: 'Residency', key: 'residencyPosition', sampleText: 'Boarding', defaultFontSize: 10 },
-  { id: 'schoolName', label: 'School Name', key: 'schoolNamePosition', sampleText: 'Islamic School', defaultFontSize: 12 },
-  { id: 'roomLabel', label: 'Label: Room (اتاق )', key: 'roomLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.roomLabel, defaultFontSize: 10 },
-  { id: 'room', label: 'Room', key: 'roomPosition', sampleText: 'Room 12', defaultFontSize: 10 },
-  { id: 'cardNumberLabel', label: 'Label: Card Number (کارت نمبر)', key: 'cardNumberLabelPosition', sampleText: DEFAULT_LABEL_TEXTS.cardNumberLabel, defaultFontSize: 10 },
-  { id: 'expiryDate', label: 'Expiry Date', key: 'expiryDatePosition', sampleText: 'Dec 31, 2025', defaultFontSize: 10 },
-  { id: 'cardNumber', label: 'Card Number', key: 'cardNumberPosition', sampleText: 'CARD-2024-001', defaultFontSize: 10 },
-];
 
 interface IdCardLayoutEditorProps {
   templateId: string;
@@ -221,20 +234,23 @@ export function IdCardLayoutEditor({
   onCancel,
 }: IdCardLayoutEditorProps) {
   const { t, language, isRTL } = useLanguage();
+  const defaultLabels = useMemo(() => getDefaultIdCardLabelTexts(language), [language]);
+  const frontFields = useMemo(() => buildFrontFields(t, defaultLabels), [t, defaultLabels]);
+  const backFields = useMemo(() => buildBackFields(t, defaultLabels), [t, defaultLabels]);
   const [activeTab, setActiveTab] = useState<'front' | 'back'>('front');
   
   const [configFront, setConfigFront] = useState<IdCardLayoutConfig>(() => ({
     ...layoutConfigFront,
     enabledFields: resolveEnabledFieldsFromStorage(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
     fieldFonts: layoutConfigFront.fieldFonts || {},
-    fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues),
+    fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues, getDefaultIdCardLabelTexts(language)),
   }));
 
   const [configBack, setConfigBack] = useState<IdCardLayoutConfig>(() => ({
     ...layoutConfigBack,
     enabledFields: resolveEnabledFieldsFromStorage(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
     fieldFonts: layoutConfigBack.fieldFonts || {},
-    fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues),
+    fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues, getDefaultIdCardLabelTexts(language)),
   }));
 
   // Update configs when props change
@@ -243,7 +259,7 @@ export function IdCardLayoutEditor({
       ...layoutConfigFront,
       enabledFields: resolveEnabledFieldsFromStorage(layoutConfigFront.enabledFields, FRONT_DEFAULT_ENABLED_FIELDS),
       fieldFonts: layoutConfigFront.fieldFonts || {},
-      fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues),
+      fieldValues: withDefaultLabelValues(layoutConfigFront.fieldValues, defaultLabels),
     };
 
     // Ensure default width/height for image fields if missing
@@ -270,16 +286,16 @@ export function IdCardLayoutEditor({
     }
 
     setConfigFront(updatedConfig);
-  }, [layoutConfigFront]);
+  }, [layoutConfigFront, defaultLabels]);
 
   useEffect(() => {
     setConfigBack({
       ...layoutConfigBack,
       enabledFields: resolveEnabledFieldsFromStorage(layoutConfigBack.enabledFields, BACK_DEFAULT_ENABLED_FIELDS),
       fieldFonts: layoutConfigBack.fieldFonts || {},
-      fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues),
+      fieldValues: withDefaultLabelValues(layoutConfigBack.fieldValues, defaultLabels),
     });
-  }, [layoutConfigBack]);
+  }, [layoutConfigBack, defaultLabels]);
 
   const [draggingField, setDraggingField] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -325,11 +341,11 @@ export function IdCardLayoutEditor({
   const getEditableFieldLabel = (fieldId: string): string => {
     switch (fieldId) {
       case 'notes':
-        return t('idCards.fieldValue') || 'Field Value';
+        return t('idCards.fieldValue');
       case 'expiryDate':
-        return t('idCards.expiryDateValue') || 'Expiry Date';
+        return t('idCards.expiryDateValue');
       case 'schoolName':
-        return t('idCards.schoolNameValue') || 'School Name';
+        return t('idCards.schoolNameValue');
       case 'studentNameLabel':
         return 'Name Label';
       case 'fatherNameLabel':
@@ -347,16 +363,16 @@ export function IdCardLayoutEditor({
       case 'cardNumberLabel':
         return 'Card Number Label';
       default:
-        return t('idCards.fieldValue') || 'Field Value';
+        return t('idCards.fieldValue');
     }
   };
 
   const getEditableFieldPlaceholder = (fieldId: string): string => {
     switch (fieldId) {
       case 'notes':
-        return t('idCards.notesPlaceholder') || 'Enter notes text...';
+        return t('idCards.notesPlaceholder');
       case 'schoolName':
-        return t('idCards.schoolNamePlaceholder') || 'Enter school name...';
+        return t('idCards.schoolNamePlaceholder');
       case 'studentNameLabel':
         return 'e.g., نوم';
       case 'fatherNameLabel':
@@ -381,9 +397,9 @@ export function IdCardLayoutEditor({
   const getEditableFieldDescription = (fieldId: string): string => {
     switch (fieldId) {
       case 'notes':
-        return t('idCards.notesDescription') || 'Custom text to display. Leave empty to use card notes.';
+        return t('idCards.notesDescription');
       case 'schoolName':
-        return t('idCards.schoolNameDescription') || 'Custom school name. Leave empty to use student\'s school name.';
+        return t('idCards.schoolNameDescription');
       case 'studentNameLabel':
       case 'fatherNameLabel':
       case 'classLabel':
@@ -400,7 +416,7 @@ export function IdCardLayoutEditor({
 
   const setCurrentConfig = activeTab === 'front' ? setConfigFront : setConfigBack;
   const currentConfig = activeTab === 'front' ? configFront : configBack;
-  const currentFields = activeTab === 'front' ? FRONT_FIELDS : BACK_FIELDS;
+  const currentFields = activeTab === 'front' ? frontFields : backFields;
   const currentBackgroundUrl = activeTab === 'front' ? backgroundImageUrlFront : backgroundImageUrlBack;
   const currentImageUrl = activeTab === 'front' ? imageUrlFront : imageUrlBack;
   const currentImageLoaded = activeTab === 'front' ? backgroundImageLoadedFront : backgroundImageLoadedBack;
@@ -1509,9 +1525,9 @@ export function IdCardLayoutEditor({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">{t('idCards.layoutEditor') || 'Layout Editor'}</h3>
+          <h3 className="text-lg font-semibold">{t('idCards.layoutEditor')}</h3>
           <p className="text-sm text-muted-foreground">
-            {t('idCards.layoutEditorDescription') || 'Drag fields to position them on the ID card. Click to select a field.'}
+            {t('idCards.layoutEditorDescription')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -1527,8 +1543,8 @@ export function IdCardLayoutEditor({
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'front' | 'back')}>
         <TabsList>
-          <TabsTrigger value="front">{t('idCards.frontSide') || 'Front Side'}</TabsTrigger>
-          <TabsTrigger value="back">{t('idCards.backSide') || 'Back Side'}</TabsTrigger>
+          <TabsTrigger value="front">{t('idCards.frontSide')}</TabsTrigger>
+          <TabsTrigger value="back">{t('idCards.backSide')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="front" className="space-y-4">
@@ -1537,7 +1553,7 @@ export function IdCardLayoutEditor({
             <div className="lg:col-span-2 lg:sticky lg:top-4 self-start">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.frontPreview') || 'Front Preview'}</CardTitle>
+                  <CardTitle className="text-sm">{t('idCards.frontPreview')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div
@@ -1556,7 +1572,7 @@ export function IdCardLayoutEditor({
                     {currentImageError ? (
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
-                          <p>{t('idCards.backgroundNotAvailable') || 'Background image not available'}</p>
+                          <p>{t('idCards.backgroundNotAvailable')}</p>
                         </div>
                       </div>
                     ) : (
@@ -1663,7 +1679,7 @@ export function IdCardLayoutEditor({
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
                       const isImageField = field.isImage;
-                      const displayText = getFieldPreviewText(field, currentConfig, livePreviewStudent, language);
+                      const displayText = getFieldPreviewText(field, currentConfig, livePreviewStudent, language, language, defaultLabels);
 
                       const fieldStyle = getFieldStyle(field);
                       const isStudentName = field.id === 'studentName';
@@ -1834,7 +1850,7 @@ export function IdCardLayoutEditor({
                   <CardHeader className="pb-2">
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" className="h-auto justify-between px-0">
-                        <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
+                        <CardTitle className="text-sm">{t('idCards.fields')}</CardTitle>
                         <ChevronDown className={`h-4 w-4 transition-transform ${showFieldList ? 'rotate-180' : ''}`} />
                       </Button>
                     </CollapsibleTrigger>
@@ -1857,11 +1873,11 @@ export function IdCardLayoutEditor({
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">{t('idCards.alignFields') || 'Align Fields'}</CardTitle>
+                  <CardTitle className="text-sm">{t('idCards.alignFields')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    {t('idCards.alignFieldsDescription') || 'Align labels to the right and values to the left, or distribute rows evenly.'}
+                    {t('idCards.alignFieldsDescription')}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -1869,30 +1885,30 @@ export function IdCardLayoutEditor({
                       variant="outline"
                       size="sm"
                       onClick={alignLabelsRight}
-                      title={t('idCards.alignLabelsRight') || 'Align labels right'}
+                      title={t('idCards.alignLabelsRight')}
                     >
                       <AlignEndHorizontal className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignLabelsRight') || 'Labels right'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignLabelsRight')}</span>
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={alignValuesLeft}
-                      title={t('idCards.alignValuesLeft') || 'Align values left'}
+                      title={t('idCards.alignValuesLeft')}
                     >
                       <AlignStartHorizontal className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignValuesLeft') || 'Values left'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignValuesLeft')}</span>
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={distributeRows}
-                      title={t('idCards.distributeRows') || 'Distribute rows evenly'}
+                      title={t('idCards.distributeRows')}
                     >
                       <Rows3 className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.distributeRows') || 'Distribute rows'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeRows')}</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -1900,11 +1916,11 @@ export function IdCardLayoutEditor({
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">{t('idCards.alignSelected') || 'Align Selected'}</CardTitle>
+                  <CardTitle className="text-sm">{t('idCards.alignSelected')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    {t('idCards.ctrlClickToSelectMultiple') || 'Ctrl+click (Cmd+click on Mac) to select multiple fields, then align them.'}
+                    {t('idCards.ctrlClickToSelectMultiple')}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -1913,10 +1929,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={alignSelectedToStart}
-                      title={t('idCards.alignSelectedToStart') || 'Align selected to start (left)'}
+                      title={t('idCards.alignSelectedToStart')}
                     >
                       <AlignStartHorizontal className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToStart') || 'Align start'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToStart')}</span>
                     </Button>
                     <Button
                       type="button"
@@ -1924,10 +1940,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={alignSelectedToEnd}
-                      title={t('idCards.alignSelectedToEnd') || 'Align selected to end (right)'}
+                      title={t('idCards.alignSelectedToEnd')}
                     >
                       <AlignEndHorizontal className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToEnd') || 'Align end'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToEnd')}</span>
                     </Button>
                     <Button
                       type="button"
@@ -1935,10 +1951,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={alignSelectedToTop}
-                      title={t('idCards.alignSelectedToTop') || 'Align selected to top'}
+                      title={t('idCards.alignSelectedToTop')}
                     >
                       <AlignStartVertical className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToTop') || 'Align top'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToTop')}</span>
                     </Button>
                     <Button
                       type="button"
@@ -1946,10 +1962,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={alignSelectedToBottom}
-                      title={t('idCards.alignSelectedToBottom') || 'Align selected to bottom'}
+                      title={t('idCards.alignSelectedToBottom')}
                     >
                       <AlignEndVertical className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToBottom') || 'Align bottom'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToBottom')}</span>
                     </Button>
                     <Button
                       type="button"
@@ -1957,10 +1973,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={distributeSelectedVertically}
-                      title={t('idCards.distributeSelectedVertically') || 'Distribute selected vertically'}
+                      title={t('idCards.distributeSelectedVertically')}
                     >
                       <Rows3 className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.distributeSelectedVertically') || 'Distribute Y'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeSelectedVertically')}</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -1971,7 +1987,7 @@ export function IdCardLayoutEditor({
                   <CardHeader className="pb-2">
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" className="h-auto justify-between px-0">
-                        <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
+                        <CardTitle className="text-sm">{t('idCards.globalSettings')}</CardTitle>
                         <ChevronDown className={`h-4 w-4 transition-transform ${showGlobalSettings ? 'rotate-180' : ''}`} />
                       </Button>
                     </CollapsibleTrigger>
@@ -1979,7 +1995,7 @@ export function IdCardLayoutEditor({
                   <CollapsibleContent>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
+                        <Label className="text-sm">{t('idCards.fontSize')}</Label>
                         <Input
                           type="number"
                           value={currentConfig.fontSize || 12}
@@ -1987,13 +2003,13 @@ export function IdCardLayoutEditor({
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                        <Label className="text-sm">{t('idCards.fontFamily')}</Label>
                         <Select
                           value={currentConfig.fontFamily || 'Arial'}
                           onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
+                            <SelectValue placeholder={t('idCards.selectFont')} />
                           </SelectTrigger>
                           <SelectContent>
                             {AVAILABLE_FONTS.map((font) => (
@@ -2005,7 +2021,7 @@ export function IdCardLayoutEditor({
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
+                        <Label className="text-sm">{t('idCards.textColor')}</Label>
                         <Input
                           type="color"
                           value={currentConfig.textColor || '#000000'}
@@ -2025,7 +2041,7 @@ export function IdCardLayoutEditor({
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" className="h-auto justify-between px-0 text-left whitespace-normal">
                           <CardTitle className="text-sm">
-                            {t('idCards.fieldSettings') || 'Field Settings'} - {currentFields.find(f => f.id === selectedField)?.label || selectedField}
+                            {t('idCards.fieldSettings')} - {currentFields.find(f => f.id === selectedField)?.label || selectedField}
                           </CardTitle>
                           <ChevronDown className={`h-4 w-4 transition-transform ${showFieldSettings ? 'rotate-180' : ''}`} />
                         </Button>
@@ -2135,7 +2151,7 @@ export function IdCardLayoutEditor({
                     {!currentFields.find(f => f.id === selectedField)?.isImage && (
                       <div className="space-y-3 pt-2 border-t">
                         <div className="flex items-center justify-between">
-                          <Label className="text-sm font-semibold">{t('idCards.fieldSpecificFontSettings') || 'Field-Specific Font Settings'}</Label>
+                          <Label className="text-sm font-semibold">{t('idCards.fieldSpecificFontSettings')}</Label>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -2148,12 +2164,12 @@ export function IdCardLayoutEditor({
                             className="text-xs"
                           >
                             <RotateCcw className="h-3 w-3 mr-1" />
-                            {t('events.reset') || 'Reset'}
+                            {t('events.reset')}
                           </Button>
                         </div>
                         
                         <div className="space-y-2">
-                          <Label className="text-xs">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                          <Label className="text-xs">{t('idCards.fontFamily')}</Label>
                           <Select
                             value={currentConfig.fieldFonts?.[selectedField]?.fontFamily || 'global'}
                             onValueChange={(value) => {
@@ -2165,10 +2181,10 @@ export function IdCardLayoutEditor({
                             }}
                           >
                             <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder={t('idCards.useGlobalFont') || 'Use global font'} />
+                              <SelectValue placeholder={t('idCards.useGlobalFont')} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="global">{t('idCards.useGlobalFont') || 'Use Global Font'}</SelectItem>
+                              <SelectItem value="global">{t('idCards.useGlobalFont')}</SelectItem>
                               {AVAILABLE_FONTS.map((font) => (
                                 <SelectItem key={font.value} value={font.value}>
                                   <span style={{ fontFamily: font.value }}>{font.label}</span>
@@ -2177,12 +2193,12 @@ export function IdCardLayoutEditor({
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">
-                            {t('idCards.selectUseGlobalFont') || 'Select "Use Global Font" to use the global font setting'}
+                            {t('idCards.selectUseGlobalFont')}
                           </p>
                         </div>
 
                         <div className="space-y-2">
-                          <Label className="text-xs">{t('idCards.fontSize') || 'Font Size'} (px)</Label>
+                          <Label className="text-xs">{t('idCards.fontSize')} (px)</Label>
                           <div className="flex gap-2">
                             <Input
                               type="number"
@@ -2198,7 +2214,7 @@ export function IdCardLayoutEditor({
                                   }
                                 }
                               }}
-                              placeholder={t('idCards.autoBasedOnGlobal') || 'Auto (based on global)'}
+                              placeholder={t('idCards.autoBasedOnGlobal')}
                               className="h-8 text-xs"
                               min="8"
                               max="72"
@@ -2208,18 +2224,18 @@ export function IdCardLayoutEditor({
                               variant="outline"
                               onClick={() => clearFieldFont(selectedField, 'fontSize')}
                               className="h-8 px-2"
-                              title={t('events.resetToDefault') || 'Reset to default'}
+                              title={t('events.resetToDefault')}
                             >
                               <RotateCcw className="h-3 w-3" />
                             </Button>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {t('idCards.leaveEmptyToUseGlobal') || 'Leave empty to use global font size'}
+                            {t('idCards.leaveEmptyToUseGlobal')}
                           </p>
                         </div>
 
                         <div className="space-y-2">
-                          <Label className="text-xs">{t('idCards.textColor') || 'Text Color'}</Label>
+                          <Label className="text-xs">{t('idCards.textColor')}</Label>
                           <div className="flex gap-2 items-center">
                             <Input
                               type="color"
@@ -2245,18 +2261,18 @@ export function IdCardLayoutEditor({
                               variant="outline"
                               onClick={() => clearFieldFont(selectedField, 'textColor')}
                               className="h-8 px-2"
-                              title={t('events.resetToDefault') || 'Reset to default'}
+                              title={t('events.resetToDefault')}
                             >
                               <RotateCcw className="h-3 w-3" />
                             </Button>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {t('idCards.fieldColorDescription') || 'Set custom color for this field, or reset to use global color'}
+                            {t('idCards.fieldColorDescription')}
                           </p>
                         </div>
 
                         <div className="space-y-2">
-                          <Label className="text-xs">{t('idCards.textAlignment') || 'Text Alignment'}</Label>
+                          <Label className="text-xs">{t('idCards.textAlignment')}</Label>
                           <div className="flex gap-1">
                             {(['left', 'center', 'right'] as const).map((align) => {
                               const isLabelField = LABEL_FIELD_IDS.includes(selectedField);
@@ -2286,7 +2302,7 @@ export function IdCardLayoutEditor({
                             })}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {t('idCards.textAlignmentDescription') || 'Override default text alignment for this field'}
+                            {t('idCards.textAlignmentDescription')}
                           </p>
                         </div>
                       </div>
@@ -2313,11 +2329,11 @@ export function IdCardLayoutEditor({
                                   },
                                 });
                               }}
-                              placeholder={t('idCards.selectExpiryDate') || 'Select expiry date...'}
+                              placeholder={t('idCards.selectExpiryDate')}
                               className="h-8 text-xs"
                             />
                             <p className="text-xs text-muted-foreground">
-                              {t('idCards.expiryDateDescription') || 'Set a fixed expiry date, or leave empty to use dynamic date (1 year from print date)'}
+                              {t('idCards.expiryDateDescription')}
                             </p>
                           </div>
                         ) : (
@@ -2361,7 +2377,7 @@ export function IdCardLayoutEditor({
             <div className="lg:col-span-2 lg:sticky lg:top-4 self-start">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">{t('idCards.backPreview') || 'Back Preview'}</CardTitle>
+                  <CardTitle className="text-sm">{t('idCards.backPreview')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div
@@ -2380,7 +2396,7 @@ export function IdCardLayoutEditor({
                     {currentImageError ? (
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
-                          <p>{t('idCards.backgroundNotAvailable') || 'Background image not available'}</p>
+                          <p>{t('idCards.backgroundNotAvailable')}</p>
                         </div>
                       </div>
                     ) : (
@@ -2486,7 +2502,7 @@ export function IdCardLayoutEditor({
 
                     {/* Draggable Fields */}
                     {currentFields.filter(field => currentConfig.enabledFields?.includes(field.id)).map((field) => {
-                      const displayText = getFieldPreviewText(field, currentConfig, livePreviewStudent, language);
+                      const displayText = getFieldPreviewText(field, currentConfig, livePreviewStudent, language, language, defaultLabels);
                       
                       return (
                         <div
@@ -2515,7 +2531,7 @@ export function IdCardLayoutEditor({
                   <CardHeader className="pb-2">
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" className="h-auto justify-between px-0">
-                        <CardTitle className="text-sm">{t('idCards.fields') || 'Fields'}</CardTitle>
+                        <CardTitle className="text-sm">{t('idCards.fields')}</CardTitle>
                         <ChevronDown className={`h-4 w-4 transition-transform ${showFieldList ? 'rotate-180' : ''}`} />
                       </Button>
                     </CollapsibleTrigger>
@@ -2538,11 +2554,11 @@ export function IdCardLayoutEditor({
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">{t('idCards.alignFields') || 'Align Fields'}</CardTitle>
+                  <CardTitle className="text-sm">{t('idCards.alignFields')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    {t('idCards.alignFieldsDescription') || 'Align labels to the right and values to the left, or distribute rows evenly.'}
+                    {t('idCards.alignFieldsDescription')}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -2550,30 +2566,30 @@ export function IdCardLayoutEditor({
                       variant="outline"
                       size="sm"
                       onClick={alignLabelsRight}
-                      title={t('idCards.alignLabelsRight') || 'Align labels right'}
+                      title={t('idCards.alignLabelsRight')}
                     >
                       <AlignEndHorizontal className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignLabelsRight') || 'Labels right'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignLabelsRight')}</span>
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={alignValuesLeft}
-                      title={t('idCards.alignValuesLeft') || 'Align values left'}
+                      title={t('idCards.alignValuesLeft')}
                     >
                       <AlignStartHorizontal className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignValuesLeft') || 'Values left'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignValuesLeft')}</span>
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={distributeRows}
-                      title={t('idCards.distributeRows') || 'Distribute rows evenly'}
+                      title={t('idCards.distributeRows')}
                     >
                       <Rows3 className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.distributeRows') || 'Distribute rows'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeRows')}</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -2581,11 +2597,11 @@ export function IdCardLayoutEditor({
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">{t('idCards.alignSelected') || 'Align Selected'}</CardTitle>
+                  <CardTitle className="text-sm">{t('idCards.alignSelected')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    {t('idCards.ctrlClickToSelectMultiple') || 'Ctrl+click (Cmd+click on Mac) to select multiple fields, then align them.'}
+                    {t('idCards.ctrlClickToSelectMultiple')}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -2594,10 +2610,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={alignSelectedToStart}
-                      title={t('idCards.alignSelectedToStart') || 'Align selected to start (left)'}
+                      title={t('idCards.alignSelectedToStart')}
                     >
                       <AlignStartHorizontal className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToStart') || 'Align start'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToStart')}</span>
                     </Button>
                     <Button
                       type="button"
@@ -2605,10 +2621,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={alignSelectedToEnd}
-                      title={t('idCards.alignSelectedToEnd') || 'Align selected to end (right)'}
+                      title={t('idCards.alignSelectedToEnd')}
                     >
                       <AlignEndHorizontal className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToEnd') || 'Align end'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToEnd')}</span>
                     </Button>
                     <Button
                       type="button"
@@ -2616,10 +2632,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={alignSelectedToTop}
-                      title={t('idCards.alignSelectedToTop') || 'Align selected to top'}
+                      title={t('idCards.alignSelectedToTop')}
                     >
                       <AlignStartVertical className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToTop') || 'Align top'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToTop')}</span>
                     </Button>
                     <Button
                       type="button"
@@ -2627,10 +2643,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={alignSelectedToBottom}
-                      title={t('idCards.alignSelectedToBottom') || 'Align selected to bottom'}
+                      title={t('idCards.alignSelectedToBottom')}
                     >
                       <AlignEndVertical className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToBottom') || 'Align bottom'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.alignSelectedToBottom')}</span>
                     </Button>
                     <Button
                       type="button"
@@ -2638,10 +2654,10 @@ export function IdCardLayoutEditor({
                       size="sm"
                       disabled={selectedFields.size < 2}
                       onClick={distributeSelectedVertically}
-                      title={t('idCards.distributeSelectedVertically') || 'Distribute selected vertically'}
+                      title={t('idCards.distributeSelectedVertically')}
                     >
                       <Rows3 className="h-4 w-4 shrink-0" />
-                      <span className="hidden sm:inline ml-1">{t('idCards.distributeSelectedVertically') || 'Distribute Y'}</span>
+                      <span className="hidden sm:inline ml-1">{t('idCards.distributeSelectedVertically')}</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -2652,7 +2668,7 @@ export function IdCardLayoutEditor({
                   <CardHeader className="pb-2">
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" className="h-auto justify-between px-0">
-                        <CardTitle className="text-sm">{t('idCards.globalSettings') || 'Global Settings'}</CardTitle>
+                        <CardTitle className="text-sm">{t('idCards.globalSettings')}</CardTitle>
                         <ChevronDown className={`h-4 w-4 transition-transform ${showGlobalSettings ? 'rotate-180' : ''}`} />
                       </Button>
                     </CollapsibleTrigger>
@@ -2660,7 +2676,7 @@ export function IdCardLayoutEditor({
                   <CollapsibleContent>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-sm">{t('idCards.fontSize') || 'Font Size'}</Label>
+                        <Label className="text-sm">{t('idCards.fontSize')}</Label>
                         <Input
                           type="number"
                           value={currentConfig.fontSize || 10}
@@ -2668,13 +2684,13 @@ export function IdCardLayoutEditor({
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                        <Label className="text-sm">{t('idCards.fontFamily')}</Label>
                         <Select
                           value={currentConfig.fontFamily || 'Arial'}
                           onValueChange={(value) => setCurrentConfig({ ...currentConfig, fontFamily: value })}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={t('idCards.selectFont') || 'Select font'} />
+                            <SelectValue placeholder={t('idCards.selectFont')} />
                           </SelectTrigger>
                           <SelectContent>
                             {AVAILABLE_FONTS.map((font) => (
@@ -2686,7 +2702,7 @@ export function IdCardLayoutEditor({
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm">{t('idCards.textColor') || 'Text Color'}</Label>
+                        <Label className="text-sm">{t('idCards.textColor')}</Label>
                         <Input
                           type="color"
                           value={currentConfig.textColor || '#000000'}
@@ -2705,7 +2721,7 @@ export function IdCardLayoutEditor({
                     <CardHeader className="pb-2">
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" className="h-auto justify-between px-0">
-                          <CardTitle className="text-sm">{t('idCards.fieldSettings') || 'Field Settings'}</CardTitle>
+                          <CardTitle className="text-sm">{t('idCards.fieldSettings')}</CardTitle>
                           <ChevronDown className={`h-4 w-4 transition-transform ${showFieldSettings ? 'rotate-180' : ''}`} />
                         </Button>
                       </CollapsibleTrigger>
@@ -2715,7 +2731,7 @@ export function IdCardLayoutEditor({
                     {/* Per-Field Font Settings */}
                     <div className="space-y-3 pt-2 border-t">
                       <div className="flex items-center justify-between">
-                        <Label className="font-semibold text-sm">{t('idCards.fieldFontSettings') || 'Field-Specific Font Settings'}</Label>
+                        <Label className="font-semibold text-sm">{t('idCards.fieldFontSettings')}</Label>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -2727,12 +2743,12 @@ export function IdCardLayoutEditor({
                           className="text-xs"
                         >
                           <RotateCcw className="h-3 w-3 mr-1" />
-                          {t('events.reset') || 'Reset'}
+                          {t('events.reset')}
                         </Button>
                       </div>
                       
                       <div className="space-y-2">
-                        <Label className="text-xs">{t('idCards.fontFamily') || 'Font Family'}</Label>
+                        <Label className="text-xs">{t('idCards.fontFamily')}</Label>
                         <Select
                           value={currentConfig.fieldFonts?.[selectedField]?.fontFamily || 'global'}
                           onValueChange={(value) => {
@@ -2744,10 +2760,10 @@ export function IdCardLayoutEditor({
                           }}
                         >
                           <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder={t('idCards.useGlobalFont') || 'Use global font'} />
+                            <SelectValue placeholder={t('idCards.useGlobalFont')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="global">{t('idCards.useGlobalFont') || 'Use Global Font'}</SelectItem>
+                            <SelectItem value="global">{t('idCards.useGlobalFont')}</SelectItem>
                             {AVAILABLE_FONTS.map((font) => (
                               <SelectItem key={font.value} value={font.value}>
                                 {font.label}
@@ -2758,7 +2774,7 @@ export function IdCardLayoutEditor({
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs">{t('idCards.fontSize') || 'Font Size (px)'}</Label>
+                        <Label className="text-xs">{t('idCards.fontSize')}</Label>
                         <div className="flex gap-2">
                           <Input
                             type="number"
@@ -2774,7 +2790,7 @@ export function IdCardLayoutEditor({
                                 }
                               }
                             }}
-                            placeholder={t('idCards.auto') || 'Auto (based on base size)'}
+                            placeholder={t('idCards.auto')}
                             className="h-8 text-xs"
                             min="8"
                             max="72"
@@ -2784,7 +2800,7 @@ export function IdCardLayoutEditor({
                             variant="outline"
                             onClick={() => clearFieldFont(selectedField, 'fontSize')}
                             className="h-8 px-2"
-                            title={t('events.reset') || 'Reset to default'}
+                            title={t('events.reset')}
                           >
                             <RotateCcw className="h-3 w-3" />
                           </Button>
@@ -2793,7 +2809,7 @@ export function IdCardLayoutEditor({
 
                       {/* Per-Field Text Color */}
                       <div className="space-y-2">
-                        <Label className="text-xs">{t('idCards.textColor') || 'Text Color'}</Label>
+                        <Label className="text-xs">{t('idCards.textColor')}</Label>
                         <div className="flex gap-2 items-center">
                           <Input
                             type="color"
@@ -2822,13 +2838,13 @@ export function IdCardLayoutEditor({
                             variant="outline"
                             onClick={() => clearFieldFont(selectedField, 'textColor')}
                             className="h-8 px-2"
-                            title={t('events.resetToDefault') || 'Reset to default'}
+                            title={t('events.resetToDefault')}
                           >
                             <RotateCcw className="h-3 w-3" />
                           </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {t('idCards.fieldColorDescription') || 'Set custom color for this field, or reset to use global color'}
+                          {t('idCards.fieldColorDescription')}
                         </p>
                       </div>
                     </div>
@@ -2839,10 +2855,10 @@ export function IdCardLayoutEditor({
                         {selectedField === 'studentPhoto' ? (
                           <>
                             <div className="space-y-2">
-                              <Label className="text-sm" htmlFor="student-photo-width-input-back">{t('idCards.photoWidth') || 'Photo Width (%)'}</Label>
+                              <Label className="text-sm" htmlFor="student-photo-width-input-back">{t('idCards.photoWidth')}</Label>
                               <Input
                                 id="student-photo-width-input-back"
-                                aria-label={t('idCards.photoWidth') || 'Photo Width (%)'}
+                                aria-label={t('idCards.photoWidth')}
                                 type="number"
                                 value={getImageFieldDimensions('studentPhoto').width}
                                 onChange={(e) => {
@@ -2857,10 +2873,10 @@ export function IdCardLayoutEditor({
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm" htmlFor="student-photo-height-input-back">{t('idCards.photoHeight') || 'Photo Height (%)'}</Label>
+                              <Label className="text-sm" htmlFor="student-photo-height-input-back">{t('idCards.photoHeight')}</Label>
                               <Input
                                 id="student-photo-height-input-back"
-                                aria-label={t('idCards.photoHeight') || 'Photo Height (%)'}
+                                aria-label={t('idCards.photoHeight')}
                                 type="number"
                                 value={getImageFieldDimensions('studentPhoto').height}
                                 onChange={(e) => {
@@ -2874,16 +2890,16 @@ export function IdCardLayoutEditor({
                                 className="h-8 text-xs"
                               />
                               <p className="text-xs text-muted-foreground">
-                                {t('idCards.photoDimensionsDescription') || 'Adjust width and height separately so portrait photos match the printed card layout.'}
+                                {t('idCards.photoDimensionsDescription')}
                               </p>
                             </div>
                           </>
                         ) : (
                           <div className="space-y-2">
-                            <Label className="text-sm" htmlFor="qr-code-size-input-back">{t('idCards.qrCodeSize') || 'QR Code Size (%)'}</Label>
+                            <Label className="text-sm" htmlFor="qr-code-size-input-back">{t('idCards.qrCodeSize')}</Label>
                             <Input
                               id="qr-code-size-input-back"
-                              aria-label={t('idCards.qrCodeSize') || 'QR Code Size (%)'}
+                              aria-label={t('idCards.qrCodeSize')}
                               type="number"
                               value={getImageFieldDimensions('qrCode').width}
                               onChange={(e) => {
@@ -2897,7 +2913,7 @@ export function IdCardLayoutEditor({
                               className="h-8 text-xs"
                             />
                             <p className="text-xs text-muted-foreground">
-                              {t('idCards.sizeDescription') || 'One size control keeps the QR square.'}
+                              {t('idCards.sizeDescription')}
                             </p>
                           </div>
                         )}
@@ -2905,7 +2921,7 @@ export function IdCardLayoutEditor({
                         {/* QR Code Value Source Selector */}
                         {selectedField === 'qrCode' && (
                           <div className="space-y-2 pt-2 border-t">
-                            <Label className="text-sm">{t('idCards.qrCodeValueSource') || 'QR Code Value Source'}</Label>
+                            <Label className="text-sm">{t('idCards.qrCodeValueSource')}</Label>
                             <Select
                               value={currentConfig.qrCodeValueSource || 'student_code'}
                               onValueChange={(value) =>
@@ -2916,18 +2932,18 @@ export function IdCardLayoutEditor({
                               }
                             >
                               <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder={t('idCards.selectQrValueSource') || 'Select QR value source'} />
+                                <SelectValue placeholder={t('idCards.selectQrValueSource')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="student_id">{t('idCards.studentId') || 'Student ID'}</SelectItem>
-                                <SelectItem value="student_code">{t('idCards.studentCode') || 'Student Code'}</SelectItem>
-                                <SelectItem value="admission_number">{t('idCards.admissionNumber') || 'Admission Number'}</SelectItem>
-                                <SelectItem value="card_number">{t('attendanceReports.cardNumber') || 'Card Number'}</SelectItem>
-                                <SelectItem value="roll_number">{t('students.rollNumber') || 'Roll Number'}</SelectItem>
+                                <SelectItem value="student_id">{t('idCards.studentId')}</SelectItem>
+                                <SelectItem value="student_code">{t('idCards.studentCode')}</SelectItem>
+                                <SelectItem value="admission_number">{t('idCards.admissionNumber')}</SelectItem>
+                                <SelectItem value="card_number">{t('attendanceReports.cardNumber')}</SelectItem>
+                                <SelectItem value="roll_number">{t('students.rollNumber')}</SelectItem>
                               </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">
-                              {t('idCards.qrCodeValueSourceDescription') || 'Select what data should be encoded into the QR code.'}
+                              {t('idCards.qrCodeValueSourceDescription')}
                             </p>
                           </div>
                         )}
@@ -2956,11 +2972,11 @@ export function IdCardLayoutEditor({
                                   },
                                 });
                               }}
-                              placeholder={t('idCards.selectExpiryDate') || 'Select expiry date...'}
+                              placeholder={t('idCards.selectExpiryDate')}
                               className="h-8 text-xs"
                             />
                             <p className="text-xs text-muted-foreground">
-                              {t('idCards.expiryDateDescription') || 'Set a fixed expiry date, or leave empty to use dynamic date (1 year from print date)'}
+                              {t('idCards.expiryDateDescription')}
                             </p>
                           </div>
                         ) : (

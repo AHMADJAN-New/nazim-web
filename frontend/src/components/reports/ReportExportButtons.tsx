@@ -12,6 +12,7 @@ import { useSchool } from '@/hooks/useSchools';
 import { useServerReport } from '@/hooks/useServerReport';
 import { useHasFeature } from '@/hooks/useSubscription';
 import type { ReportColumn } from '@/lib/reporting/serverReportTypes';
+import { getReportLocaleOptions } from '@/lib/reporting/reportLocaleOptions';
 import { showToast } from '@/lib/toast';
 
 export async function resolveExportRows<T extends Record<string, any>>(
@@ -105,7 +106,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
   showPdfOnly = false,
   showExcelOnly = false,
 }: ReportExportButtonsProps<T>) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const reportLocale = useMemo(() => getReportLocaleOptions(language), [language]);
   const { data: profile } = useProfile();
   const { selectedSchoolId } = useSchoolContext();
   
@@ -213,6 +215,8 @@ export function ReportExportButtons<T extends Record<string, any>>({
         rows: reportData,
         brandingId: school.id, // School.id IS the branding_id (School = SchoolBranding)
         reportTemplateId: hasReportTemplatesFeature && defaultTemplate ? defaultTemplate.id : null,
+        calendarPreference: reportLocale.calendarPreference,
+        language: reportLocale.language,
         parameters: {
           filters_summary: filtersSummary || undefined,
           ...parameters,

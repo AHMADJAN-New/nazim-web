@@ -2,7 +2,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Pencil, Trash2, Search, GraduationCap, Calendar, Star, RefreshCw, ExternalLink } from 'lucide-react';
 import { useForm, FormProvider } from 'react-hook-form';
 
-import * as z from 'zod';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,27 +55,11 @@ import {
   CLASS_YEAR_BLOCKER_KEYS,
   hasClassYearBlockerLink,
 } from '@/lib/classYearBlockerLinks';
-
-const academicYearSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-  start_date: z.string().min(1, 'Start date is required'),
-  end_date: z.string().min(1, 'End date is required'),
-  description: z.string().max(500, 'Description must be 500 characters or less').optional().nullable(),
-  status: z.enum(['active', 'archived', 'planned']).default('active'),
-  is_current: z.boolean().default(false),
-}).refine((data) => {
-  const startDate = new Date(data.start_date);
-  const endDate = new Date(data.end_date);
-  return endDate > startDate;
-}, {
-  message: 'End date must be after start date',
-  path: ['end_date'],
-});
-
-type AcademicYearFormData = z.infer<typeof academicYearSchema>;
+import { createAcademicYearSchema, type AcademicYearFormData } from '@/lib/validations/academicYear';
 
 export function AcademicYearsManagement() {
   const { t } = useLanguage();
+  const academicYearSchema = useMemo(() => createAcademicYearSchema(t), [t]);
   const { data: profile } = useProfile();
   const hasCreatePermission = useHasPermission('academic_years.create');
   const hasUpdatePermission = useHasPermission('academic_years.update');
@@ -491,6 +474,7 @@ export function AcademicYearsManagement() {
                   id="name"
                   {...register('name')}
                   placeholder={t('academic.academicYears.name')}
+                  maxLength={20}
                 />
                 {errors.name && (
                   <p className="text-sm text-destructive">{errors.name.message}</p>

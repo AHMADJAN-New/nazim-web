@@ -22,7 +22,9 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useStudentAdmissions, type StudentAdmission, type AdmissionStatus } from '@/hooks/useStudentAdmissions';
 import { buildAdmissionsDeepLink } from '@/lib/classYearBlockerLinks';
+import { getAdmissionEnrollmentStatusLabel } from '@/lib/admissions/enrollmentStatus';
 import { cn, formatDate } from '@/lib/utils';
+import { StudentNameWithFather } from '@/components/students/StudentNameWithFather';
 
 interface AdmissionDetailsPanelProps {
   open: boolean;
@@ -54,27 +56,6 @@ const panelStatusVariant = (
       return 'success';
     default:
       return 'secondary';
-  }
-};
-
-const enrollmentLabel = (status: AdmissionStatus, t: ReturnType<typeof useLanguage>['t']) => {
-  switch (status) {
-    case 'pending':
-      return t('admissions.pending');
-    case 'admitted':
-      return t('admissions.admitted');
-    case 'active':
-      return t('events.active');
-    case 'inactive':
-      return t('events.inactive');
-    case 'suspended':
-      return t('students.suspended');
-    case 'withdrawn':
-      return t('admissions.withdrawn');
-    case 'graduated':
-      return t('students.graduated');
-    default:
-      return status;
   }
 };
 
@@ -245,7 +226,7 @@ export function AdmissionDetailsPanel({
                 {t('admissions.admissionDetails')}
               </SheetTitle>
               <Badge variant={panelStatusVariant(admission.enrollmentStatus)} className="shrink-0">
-                {enrollmentLabel(admission.enrollmentStatus, t)}
+                {getAdmissionEnrollmentStatusLabel(admission.enrollmentStatus, t)}
               </Badge>
               {admission.isLatestAdmissionForStudent ? (
                 <Badge variant="outline" className="shrink-0 text-xs">
@@ -278,9 +259,13 @@ export function AdmissionDetailsPanel({
                 )}
               </div>
               <div className="min-w-0 flex-1 space-y-1 text-center sm:text-start">
-                <h3 className="text-lg font-semibold leading-tight">
-                  {admission.student?.fullName || admission.student?.full_name || t('admissions.student')}
-                </h3>
+                <StudentNameWithFather
+                  fullName={admission.student?.fullName || admission.student?.full_name}
+                  fatherName={admission.student?.fatherName || admission.student?.father_name}
+                  fatherLabel={t('students.fatherName') || 'Father'}
+                  nameClassName="text-lg font-semibold leading-tight"
+                  fallbackName={t('admissions.student')}
+                />
                 {admission.student?.admissionNumber || admission.student?.admission_no ? (
                   <p className="font-mono text-sm text-muted-foreground">
                     {t('admissions.admissionNumber')}: {admission.student?.admissionNumber || admission.student?.admission_no}
@@ -378,7 +363,7 @@ export function AdmissionDetailsPanel({
                   label={t('events.status')}
                   value={
                     <Badge variant={panelStatusVariant(admission.enrollmentStatus)}>
-                      {enrollmentLabel(admission.enrollmentStatus, t)}
+                      {getAdmissionEnrollmentStatusLabel(admission.enrollmentStatus, t)}
                     </Badge>
                   }
                 />
@@ -480,7 +465,7 @@ export function AdmissionDetailsPanel({
                             <span className="truncate text-sm text-muted-foreground">{cls}</span>
                           </div>
                           <Badge variant={panelStatusVariant(row.enrollmentStatus)} className="shrink-0 text-xs">
-                            {enrollmentLabel(row.enrollmentStatus, t)}
+                            {getAdmissionEnrollmentStatusLabel(row.enrollmentStatus, t)}
                           </Badge>
                         </div>
                         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

@@ -864,7 +864,7 @@ class StudentManagementTest extends TestCase
     }
 
     /** @test */
-    public function student_list_search_does_not_match_father_name_or_guardian_fields()
+    public function student_list_search_matches_father_name_but_not_guardian_or_phone_fields()
     {
         $user = $this->authenticate();
         $organization = $this->getUserOrganization($user);
@@ -881,11 +881,16 @@ class StudentManagementTest extends TestCase
             'tazkira_number' => 'TazkiraUnique66192xx',
         ]);
 
-        foreach (['UniqueFatherToken73192xx', 'UniqueGuardianToken88291xx', '+999000112233', 'TazkiraUnique66192xx'] as $term) {
+        $byFather = $this->jsonAs($user, 'GET', '/api/students', ['search' => 'UniqueFatherToken73192xx']);
+        $byFather->assertStatus(200);
+        $fatherIds = collect($byFather->json())->pluck('id')->all();
+        $this->assertContains($target->id, $fatherIds, 'Student list search should match father_name');
+
+        foreach (['UniqueGuardianToken88291xx', '+999000112233', 'TazkiraUnique66192xx'] as $term) {
             $response = $this->jsonAs($user, 'GET', '/api/students', ['search' => $term]);
             $response->assertStatus(200);
             $ids = collect($response->json())->pluck('id')->all();
-            $this->assertNotContains($target->id, $ids, "Search term {$term} should not match non-indexed fields");
+            $this->assertNotContains($target->id, $ids, "Search term {$term} should not match non-searchable fields");
         }
     }
 

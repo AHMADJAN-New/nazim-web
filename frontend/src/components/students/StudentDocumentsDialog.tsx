@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, Upload, Trash2, Download, Eye, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 
 import {
   AlertDialog,
@@ -133,7 +133,7 @@ export function StudentDocumentsDialog({
 
       if (!response.ok) {
         if (response.status === 401) {
-          toast.error(t('events.unauthorized') || 'Unauthorized. Please log in again.');
+          showToast.error(t('events.unauthorized'));
           return;
         }
         throw new Error(`Failed to download: ${response.statusText}`);
@@ -151,7 +151,7 @@ export function StudentDocumentsDialog({
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading document:', error);
-      toast.error(t('students.downloadDocumentError') || 'Failed to download document');
+      showToast.error(t('students.downloadDocumentError'));
     }
   };
 
@@ -199,7 +199,7 @@ export function StudentDocumentsDialog({
 
       if (!response.ok) {
         if (response.status === 401) {
-          toast.error(t('events.unauthorized') || 'Unauthorized. Please log in again.');
+          showToast.error(t('events.unauthorized'));
           setIsViewerOpen(false);
           return;
         }
@@ -213,7 +213,7 @@ export function StudentDocumentsDialog({
       setIsViewerOpen(true);
     } catch (error) {
       console.error('Error viewing document:', error);
-      toast.error(t('students.viewDocumentError') || 'Failed to load document');
+      showToast.error(t('students.viewDocumentError'));
       setIsViewerOpen(false);
     } finally {
       setIsLoadingViewer(false);
@@ -229,10 +229,10 @@ export function StudentDocumentsDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              {t('students.studentDocuments') || 'Student Documents'}
+              {t('students.studentDocuments')}
             </DialogTitle>
             <DialogDescription>
-              {t('students.documentsDescription') || 'Manage documents for'} {student.full_name}
+              {t('students.documentsDescription')} {student.full_name}
             </DialogDescription>
           </DialogHeader>
 
@@ -240,7 +240,7 @@ export function StudentDocumentsDialog({
             <div className="flex justify-end">
               <Button onClick={() => setIsUploadDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                {t('students.uploadDocument') || 'Upload Document'}
+                {t('students.uploadDocument')}
               </Button>
             </div>
 
@@ -252,11 +252,11 @@ export function StudentDocumentsDialog({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('students.documentType') || 'Type'}</TableHead>
-                    <TableHead>{t('students.fileName') || 'File Name'}</TableHead>
-                    <TableHead>{t('students.fileSize') || 'Size'}</TableHead>
-                    <TableHead>{t('students.uploadDate') || 'Upload Date'}</TableHead>
-                    <TableHead className="text-right">{t('events.actions') || 'Actions'}</TableHead>
+                    <TableHead>{t('students.documentType')}</TableHead>
+                    <TableHead>{t('students.fileName')}</TableHead>
+                    <TableHead>{t('students.fileSize')}</TableHead>
+                    <TableHead>{t('students.uploadDate')}</TableHead>
+                    <TableHead className="text-right">{t('events.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -285,7 +285,7 @@ export function StudentDocumentsDialog({
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleView(doc)}
-                                title={t('events.view') || 'View'}
+                                title={t('events.view')}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -294,7 +294,7 @@ export function StudentDocumentsDialog({
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDownload(doc)}
-                              title={t('events.download') || 'Download'}
+                              title={t('events.download')}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -305,7 +305,7 @@ export function StudentDocumentsDialog({
                                 setSelectedDocument(doc);
                                 setIsDeleteDialogOpen(true);
                               }}
-                              title={t('events.delete') || 'Delete'}
+                              title={t('events.delete')}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -318,7 +318,7 @@ export function StudentDocumentsDialog({
               </Table>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                {t('students.noDocuments') || 'No documents uploaded yet'}
+                {t('students.noDocuments')}
               </div>
             )}
           </div>
@@ -339,15 +339,15 @@ export function StudentDocumentsDialog({
           <DialogHeader>
             <DialogTitle>
               <Upload className="h-5 w-5 inline mr-2" />
-              {t('students.uploadDocument') || 'Upload Document'}
+              {t('students.uploadDocument')}
             </DialogTitle>
             <DialogDescription>
-              {t('students.uploadDocumentDescription') || 'Upload a document for this student'}
+              {t('students.uploadDocumentDescription')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(handleUpload)} className="space-y-4">
             <div>
-              <Label htmlFor="file">{t('courses.selectFile') || 'Select File'} *</Label>
+              <Label htmlFor="file">{t('courses.selectFile')} *</Label>
               <Controller
                 control={control}
                 name="file"
@@ -369,22 +369,22 @@ export function StudentDocumentsDialog({
               )}
             </div>
             <div>
-              <Label htmlFor="documentType">{t('students.documentType') || 'Document Type'} *</Label>
+              <Label htmlFor="documentType">{t('students.documentType')} *</Label>
               <Input
                 id="documentType"
                 {...register('documentType')}
-                placeholder={t('students.documentTypePlaceholder') || 'e.g., Birth Certificate, Tazkira'}
+                placeholder={t('students.documentTypePlaceholder')}
               />
               {errors.documentType && (
                 <p className="text-sm text-destructive mt-1">{errors.documentType.message}</p>
               )}
             </div>
             <div>
-              <Label htmlFor="description">{t('events.description') || 'Description'}</Label>
+              <Label htmlFor="description">{t('students.description')}</Label>
               <Textarea
                 id="description"
                 {...register('description')}
-                placeholder={t('permissions.descriptionPlaceholder') || 'Optional description'}
+                placeholder={t('permissions.descriptionPlaceholder')}
                 rows={3}
               />
               {errors.description && (
@@ -397,15 +397,15 @@ export function StudentDocumentsDialog({
                 variant="outline" 
                 onClick={() => setIsUploadDialogOpen(false)}
               >
-                {t('events.cancel') || 'Cancel'}
+                {t('events.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={uploadDocument.isPending}
               >
                 {uploadDocument.isPending
-                  ? t('events.uploading') || 'Uploading...'
-                  : t('events.upload') || 'Upload'}
+                  ? t('events.uploading')
+                  : t('events.upload')}
               </Button>
             </DialogFooter>
           </form>
@@ -416,18 +416,18 @@ export function StudentDocumentsDialog({
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('students.deleteDocument') || 'Delete Document'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('students.deleteDocument')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('students.deleteDocumentConfirm') || 'Are you sure you want to delete this document? This action cannot be undone.'}
+              {t('students.deleteDocumentConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('events.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogCancel>{t('events.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('events.delete') || 'Delete'}
+              {t('events.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -448,12 +448,12 @@ export function StudentDocumentsDialog({
               <div>
                 <DialogTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  {viewerDocument?.file_name || t('courses.viewDocument') || 'View Document'}
+                  {viewerDocument?.file_name || t('courses.viewDocument')}
                 </DialogTitle>
                 <DialogDescription>
                   {viewerDocument?.document_type 
-                    ? `${t('students.documentType') || 'Document Type'}: ${viewerDocument.document_type}`
-                    : t('students.viewDocumentDescription') || 'View document details and content'}
+                    ? `${t('students.documentType')}: ${viewerDocument.document_type}`
+                    : t('students.viewDocumentDescription')}
                 </DialogDescription>
                 {viewerDocument?.document_type && (
                   <div className="mt-1">
@@ -487,7 +487,7 @@ export function StudentDocumentsDialog({
                       alt={viewerDocument.file_name}
                       className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
                       onError={() => {
-                        toast.error(t('students.imageLoadError') || 'Failed to load image');
+                        showToast.error(t('students.imageLoadError'));
                         setIsViewerOpen(false);
                       }}
                     />
@@ -499,20 +499,20 @@ export function StudentDocumentsDialog({
                       className="w-full h-full"
                       title={viewerDocument.file_name}
                       onError={() => {
-                        toast.error(t('students.pdfLoadError') || 'Failed to load PDF');
+                        showToast.error(t('students.pdfLoadError'));
                         setIsViewerOpen(false);
                       }}
                     />
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                    {t('students.unsupportedFileType') || 'This file type cannot be previewed. Please download to view.'}
+                    {t('students.unsupportedFileType')}
                   </div>
                 )}
               </>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                {t('students.noDocumentToView') || 'No document to view'}
+                {t('students.noDocumentToView')}
               </div>
             )}
           </div>

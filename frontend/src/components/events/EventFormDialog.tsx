@@ -21,13 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { eventsApi, eventTypesApi, schoolsApi } from '@/lib/api/client';
 import { formatDateForInput } from '@/lib/dateUtils';
 import { showToast } from '@/lib/toast';
 import { createEventSchema, type CreateEventFormData } from '@/lib/validations/events';
 import type { Event, EventStatus } from '@/types/events';
-import { EVENT_STATUS_LABELS } from '@/types/events';
 
 interface EventFormDialogProps {
   open: boolean;
@@ -61,9 +61,17 @@ export function EventFormDialog({
   event,
   schoolId,
 }: EventFormDialogProps) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const isEditing = !!event;
   const hasEventUpdatePermission = useHasPermission('events.update');
+
+  const eventStatusLabels: Record<EventStatus, string> = {
+    draft: t('events.statusDraft'),
+    published: t('events.statusPublished'),
+    completed: t('events.statusCompleted'),
+    cancelled: t('events.statusCancelled'),
+  };
 
   const { data: schools } = useQuery({
     queryKey: ['schools'],
@@ -168,16 +176,16 @@ export function EventFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Event' : 'Create Event'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('events.editEvent') : t('events.createEvent')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title">{t('events.titleLabel')}</Label>
             <Input
               id="title"
               {...register('title')}
-              placeholder="e.g., Annual Graduation Ceremony 2024"
+              placeholder={t('events.titlePlaceholder')}
             />
             {errors.title && (
               <p className="text-sm text-destructive">{errors.title.message}</p>
@@ -186,14 +194,14 @@ export function EventFormDialog({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="school_id">School *</Label>
+              <Label htmlFor="school_id">{t('events.schoolLabel')}</Label>
               <Controller
                 name="school_id"
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a school" />
+                      <SelectValue placeholder={t('events.selectSchoolPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {schools?.map((school: any) => (
@@ -214,7 +222,7 @@ export function EventFormDialog({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="starts_at">Start Date & Time *</Label>
+              <Label htmlFor="starts_at">{t('events.startDateTime')}</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Controller
                   name="starts_date"
@@ -225,7 +233,7 @@ export function EventFormDialog({
                       onDateChange={(date) => {
                         field.onChange(date);
                       }}
-                      placeholder="Select date"
+                      placeholder={t('events.selectDate')}
                     />
                   )}
                 />
@@ -249,7 +257,7 @@ export function EventFormDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ends_at">End Date & Time</Label>
+              <Label htmlFor="ends_at">{t('events.endDateTime')}</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Controller
                   name="ends_date"
@@ -260,7 +268,7 @@ export function EventFormDialog({
                       onDateChange={(date) => {
                         field.onChange(date);
                       }}
-                      placeholder="Select date"
+                      placeholder={t('events.selectDate')}
                       minDate={startsDate}
                     />
                   )}
@@ -286,29 +294,29 @@ export function EventFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="venue">Venue</Label>
+            <Label htmlFor="venue">{t('events.venue')}</Label>
             <Input
               id="venue"
               {...register('venue')}
-              placeholder="e.g., Main Auditorium"
+              placeholder={t('events.venuePlaceholder')}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="capacity">Capacity</Label>
+              <Label htmlFor="capacity">{t('events.capacity')}</Label>
               <Input
                 id="capacity"
                 type="number"
                 {...register('capacity', { valueAsNumber: true })}
-                placeholder="Maximum guests"
+                placeholder={t('events.maximumGuests')}
               />
             </div>
 
             {/* Status field - Only show if user has events.update permission */}
             {hasEventUpdatePermission && (
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('events.status')}</Label>
                 <Controller
                   name="status"
                   control={control}
@@ -318,9 +326,9 @@ export function EventFormDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {(Object.keys(EVENT_STATUS_LABELS) as EventStatus[]).map((status) => (
+                        {(Object.keys(eventStatusLabels) as EventStatus[]).map((status) => (
                           <SelectItem key={status} value={status}>
-                            {EVENT_STATUS_LABELS[status]}
+                            {eventStatusLabels[status]}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -337,10 +345,10 @@ export function EventFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t('events.cancel')}
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Saving...' : isEditing ? 'Update' : 'Create'}
+              {isPending ? t('events.saving') : isEditing ? t('events.update') : t('events.create')}
             </Button>
           </DialogFooter>
         </form>

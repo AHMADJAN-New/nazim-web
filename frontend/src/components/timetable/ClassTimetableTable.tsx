@@ -2,6 +2,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { DayName } from '@/lib/timetableSolver';
 
 export interface ClassTimetableCell {
+	/** Teacher father name only (shown under subject in class view). */
 	teacherName: string;
 	subjectName: string;
 }

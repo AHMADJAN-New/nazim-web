@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 import { 
@@ -23,9 +23,10 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudents, type StudentFilters } from '@/hooks/useStudents';
 import { useProfile } from '@/hooks/useProfiles';
 import { useDataTable } from '@/hooks/use-data-table';
+import { StudentNameWithFather } from '@/components/students/StudentNameWithFather';
 import type { Student } from '@/types/domain/student';
 import { formatDate } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
@@ -39,6 +40,11 @@ export default function StudentHistoryListPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | Student['status']>('all');
 
+  const studentFilters = useMemo<StudentFilters>(() => ({
+    search: searchQuery.trim() || undefined,
+    student_status: statusFilter !== 'all' ? statusFilter : undefined,
+  }), [searchQuery, statusFilter]);
+
   const { 
     data: students, 
     isLoading, 
@@ -48,33 +54,11 @@ export default function StudentHistoryListPage() {
     pageSize,
     setPage,
     setPageSize,
-  } = useStudents(orgIdForQuery, true);
+  } = useStudents(orgIdForQuery, true, studentFilters);
 
-  // Client-side filtering for search and status
-  const filteredStudents = useMemo(() => {
-    const list = students || [];
-    const searchLower = (searchQuery || '').toLowerCase().trim();
-    
-    return list
-      .filter((student) => {
-        // Apply status filter
-        if (statusFilter !== 'all' && student.status !== statusFilter) return false;
-        
-        // Apply search filter
-        if (searchLower) {
-          const matchesName = student.fullName?.toLowerCase().includes(searchLower);
-          const matchesAdmission = student.admissionNumber?.toLowerCase().includes(searchLower);
-          const matchesFather = student.fatherName?.toLowerCase().includes(searchLower);
-          const matchesClass = student.currentClass?.name?.toLowerCase().includes(searchLower);
-          
-          if (!matchesName && !matchesAdmission && !matchesFather && !matchesClass) {
-            return false;
-          }
-        }
-        
-        return true;
-      });
-  }, [students, searchQuery, statusFilter]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, setPage]);
 
   const statusBadgeVariant = (status: Student['status']): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
     switch (status) {
@@ -97,12 +81,12 @@ export default function StudentHistoryListPage() {
 
   const getStatusLabel = (status: Student['status']) => {
     switch (status) {
-      case 'active': return t('events.active') ?? 'Active';
-      case 'admitted': return t('students.admitted') ?? 'Admitted';
-      case 'applied': return t('students.applied') ?? 'Applied';
-      case 'withdrawn': return t('students.withdrawn') ?? 'Withdrawn';
-      case 'inactive': return t('events.inactive') ?? 'Inactive';
-      case 'graduated': return t('students.graduated') ?? 'Graduated';
+      case 'active': return t('students.statusOptions.active') ?? 'Active';
+      case 'admitted': return t('students.statusOptions.admitted') ?? 'Admitted';
+      case 'applied': return t('students.statusOptions.applied') ?? 'Applied';
+      case 'withdrawn': return t('students.statusOptions.withdrawn') ?? 'Withdrawn';
+      case 'inactive': return t('students.statusOptions.inactive') ?? 'Inactive';
+      case 'graduated': return t('students.statusOptions.graduated') ?? 'Graduated';
       default: return status ?? '—';
     }
   };
@@ -126,7 +110,12 @@ export default function StudentHistoryListPage() {
       accessorKey: 'fullName',
       header: t('students.fullName') || 'Full Name',
       cell: ({ row }) => (
-        <div className="font-medium">{row.original.fullName}</div>
+        <StudentNameWithFather
+          fullName={row.original.fullName}
+          fatherName={row.original.fatherName}
+          fatherLabel={t('students.fatherName') || 'Father'}
+          nameClassName="font-medium"
+        />
       ),
     },
     {
@@ -199,7 +188,7 @@ export default function StudentHistoryListPage() {
 
   // Use DataTable hook for pagination
   const { table } = useDataTable({
-    data: filteredStudents,
+    data: students ?? [],
     columns,
     pageCount: pagination?.last_page,
     paginationMeta: pagination ?? null,

@@ -116,6 +116,53 @@ export const useClasses = (organizationId?: string, usePaginated?: boolean) => {
     };
 };
 
+/** Load class academic year instances across all provided academic years (for org-wide dropdowns). */
+export const useAllClassAcademicYears = (academicYearIds: string[], organizationId?: string) => {
+    const { user, profile } = useAuth();
+
+    return useQuery<ClassAcademicYear[]>({
+        queryKey: [
+            'class-academic-years-all',
+            organizationId || profile?.organization_id,
+            profile?.default_school_id ?? null,
+            [...academicYearIds].sort().join(','),
+        ],
+        queryFn: async () => {
+            if (!user || !profile || academicYearIds.length === 0) return [];
+
+            const orgId = organizationId || profile.organization_id;
+            if (!orgId) return [];
+
+            const batches = await Promise.all(
+                academicYearIds.map(async (academicYearId) => {
+                    try {
+                        const apiClassYears = await classesApi.getByAcademicYear(academicYearId, orgId);
+                        return (apiClassYears as ClassApi.ClassAcademicYear[]).map(mapClassAcademicYearApiToDomain);
+                    } catch (error) {
+                        if (import.meta.env.DEV) {
+                            console.error('[useAllClassAcademicYears] Failed for year', academicYearId, error);
+                        }
+                        return [] as ClassAcademicYear[];
+                    }
+                }),
+            );
+
+            return batches.flat().sort((a, b) => {
+                const yearA = a.academicYear?.startDate?.getTime() ?? 0;
+                const yearB = b.academicYear?.startDate?.getTime() ?? 0;
+                if (yearA !== yearB) return yearB - yearA;
+                const classNameCompare = (a.class?.name ?? '').localeCompare(b.class?.name ?? '');
+                if (classNameCompare !== 0) return classNameCompare;
+                return (a.sectionName ?? '').localeCompare(b.sectionName ?? '');
+            });
+        },
+        enabled: !!user && !!profile && !!profile.default_school_id && academicYearIds.length > 0,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+    });
+};
+
 export const useClassAcademicYears = (academicYearId?: string, organizationId?: string) => {
     const { user, profile } = useAuth();
 

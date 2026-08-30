@@ -15,6 +15,7 @@ class AcademicYearController extends Controller
         private ActivityLogService $activityLogService,
         private AcademicYearDeletionService $deletionService
     ) {}
+
     /**
      * Display a listing of academic years
      */
@@ -24,7 +25,7 @@ class AcademicYearController extends Controller
             $user = $request->user();
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
@@ -36,7 +37,7 @@ class AcademicYearController extends Controller
             ]);
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
@@ -44,11 +45,12 @@ class AcademicYearController extends Controller
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.read')) {
+                if (! $user->hasPermissionTo('academic_years.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Permission check failed for academic_years.read: " . $e->getMessage());
+                \Log::warning('Permission check failed for academic_years.read: '.$e->getMessage());
+
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
@@ -58,14 +60,14 @@ class AcademicYearController extends Controller
 
             // If academic_year_id is provided, return that specific year
             // This handles the case where frontend mistakenly uses academic_year_id as a filter
-            if (!empty($validated['academic_year_id'])) {
+            if (! empty($validated['academic_year_id'])) {
                 $academicYear = AcademicYear::whereNull('deleted_at')
                     ->where('organization_id', $profile->organization_id)
                     ->where('school_id', $currentSchoolId)
                     ->where('id', $validated['academic_year_id'])
                     ->first();
 
-                if (!$academicYear) {
+                if (! $academicYear) {
                     return response()->json(['error' => 'Academic year not found'], 404);
                 }
 
@@ -85,18 +87,18 @@ class AcademicYearController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
-                'details' => $e->errors()
+                'details' => $e->errors(),
             ], 400);
         } catch (\Exception $e) {
             // Log the error for debugging
-            \Log::error('AcademicYearController@index error: ' . $e->getMessage(), [
+            \Log::error('AcademicYearController@index error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
+                'request' => $request->all(),
             ]);
 
             return response()->json([
                 'error' => 'An error occurred while fetching academic years',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -110,22 +112,23 @@ class AcademicYearController extends Controller
             $user = $request->user();
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.create')) {
+                if (! $user->hasPermissionTo('academic_years.create')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Permission check failed for academic_years.create: " . $e->getMessage());
+                \Log::warning('Permission check failed for academic_years.create: '.$e->getMessage());
+
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
@@ -133,7 +136,7 @@ class AcademicYearController extends Controller
             $currentSchoolId = $this->getCurrentSchoolId($request);
 
             $validated = $request->validate([
-                'name' => ['required', 'string', 'max:100', Rule::unique('academic_years')->where(function ($query) use ($organizationId, $currentSchoolId) {
+                'name' => ['required', 'string', 'max:20', Rule::unique('academic_years')->where(function ($query) use ($organizationId, $currentSchoolId) {
                     return $query->where('organization_id', $organizationId)->where('school_id', $currentSchoolId)->whereNull('deleted_at');
                 })],
                 'start_date' => 'required|date',
@@ -176,24 +179,24 @@ class AcademicYearController extends Controller
                     request: $request
                 );
             } catch (\Exception $e) {
-                \Log::warning('Failed to log academic year creation: ' . $e->getMessage());
+                \Log::warning('Failed to log academic year creation: '.$e->getMessage());
             }
 
             return response()->json($academicYear, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
-                'details' => $e->errors()
+                'details' => $e->errors(),
             ], 400);
         } catch (\Exception $e) {
-            \Log::error('AcademicYearController@store error: ' . $e->getMessage(), [
+            \Log::error('AcademicYearController@store error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
+                'request' => $request->all(),
             ]);
 
             return response()->json([
                 'error' => 'An error occurred while creating academic year',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -207,28 +210,29 @@ class AcademicYearController extends Controller
             $user = request()->user();
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.read')) {
+                if (! $user->hasPermissionTo('academic_years.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Permission check failed for academic_years.read: " . $e->getMessage());
+                \Log::warning('Permission check failed for academic_years.read: '.$e->getMessage());
+
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
             $academicYear = AcademicYear::whereNull('deleted_at')->find($id);
 
-            if (!$academicYear) {
+            if (! $academicYear) {
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
@@ -239,14 +243,14 @@ class AcademicYearController extends Controller
 
             return response()->json($academicYear);
         } catch (\Exception $e) {
-            \Log::error('AcademicYearController@show error: ' . $e->getMessage(), [
+            \Log::error('AcademicYearController@show error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'id' => $id
+                'id' => $id,
             ]);
 
             return response()->json([
                 'error' => 'An error occurred while fetching academic year',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -260,28 +264,29 @@ class AcademicYearController extends Controller
             $user = $request->user();
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.update')) {
+                if (! $user->hasPermissionTo('academic_years.update')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Permission check failed for academic_years.update: " . $e->getMessage());
+                \Log::warning('Permission check failed for academic_years.update: '.$e->getMessage());
+
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
             $academicYear = AcademicYear::whereNull('deleted_at')->find($id);
 
-            if (!$academicYear) {
+            if (! $academicYear) {
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
@@ -296,7 +301,7 @@ class AcademicYearController extends Controller
             }
 
             $validated = $request->validate([
-                'name' => ['sometimes', 'string', 'max:100', Rule::unique('academic_years')->where(function ($query) use ($academicYear) {
+                'name' => ['sometimes', 'string', 'max:20', Rule::unique('academic_years')->where(function ($query) use ($academicYear) {
                     return $query->where('organization_id', $academicYear->organization_id)->where('school_id', $academicYear->school_id)->whereNull('deleted_at');
                 })->ignore($id)],
                 'start_date' => 'sometimes|date',
@@ -337,25 +342,25 @@ class AcademicYearController extends Controller
                     request: $request
                 );
             } catch (\Exception $e) {
-                \Log::warning('Failed to log academic year update: ' . $e->getMessage());
+                \Log::warning('Failed to log academic year update: '.$e->getMessage());
             }
 
             return response()->json($academicYear);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
-                'details' => $e->errors()
+                'details' => $e->errors(),
             ], 400);
         } catch (\Exception $e) {
-            \Log::error('AcademicYearController@update error: ' . $e->getMessage(), [
+            \Log::error('AcademicYearController@update error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'id' => $id,
-                'request' => $request->all()
+                'request' => $request->all(),
             ]);
 
             return response()->json([
                 'error' => 'An error occurred while updating academic year',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -409,28 +414,29 @@ class AcademicYearController extends Controller
             $user = request()->user();
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
             // Require organization_id for all users
-            if (!$profile->organization_id) {
+            if (! $profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.delete')) {
+                if (! $user->hasPermissionTo('academic_years.delete')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Permission check failed for academic_years.delete: " . $e->getMessage());
+                \Log::warning('Permission check failed for academic_years.delete: '.$e->getMessage());
+
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
             $academicYear = AcademicYear::whereNull('deleted_at')->find($id);
 
-            if (!$academicYear) {
+            if (! $academicYear) {
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
@@ -469,22 +475,20 @@ class AcademicYearController extends Controller
                     request: request()
                 );
             } catch (\Exception $e) {
-                \Log::warning('Failed to log academic year deletion: ' . $e->getMessage());
+                \Log::warning('Failed to log academic year deletion: '.$e->getMessage());
             }
 
             return response()->noContent();
         } catch (\Exception $e) {
-            \Log::error('AcademicYearController@destroy error: ' . $e->getMessage(), [
+            \Log::error('AcademicYearController@destroy error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'id' => $id
+                'id' => $id,
             ]);
 
             return response()->json([
                 'error' => 'An error occurred while deleting academic year',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }
 }
-
-

@@ -139,7 +139,7 @@ export default {
     totalStaff: "إجمالي الموظفين",
     viewAll: "عرض الكل",
     type: "النوع",
-    universityInstitution: "الجامعة/المؤسسة",
+    universityInstitution: "المدرسة",
     updateStaff: "تحديث الموظف",
     updating: "جاري التحديث...",
     village: "القرية"

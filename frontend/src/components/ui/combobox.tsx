@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils"
 export interface ComboboxOption {
   value: string
   label: string
+  /** Secondary line shown under label in the dropdown (and trigger when selected). */
+  description?: string
   disabled?: boolean
   /** Included in cmdk filter value only (not shown). */
   filterKeywords?: string
@@ -60,7 +62,20 @@ export function Combobox({
           className={cn("w-full justify-between", className)}
           disabled={disabled}
         >
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? (
+            selectedOption.description ? (
+              <span className="flex min-w-0 flex-col items-start text-left">
+                <span className="truncate">{selectedOption.label}</span>
+                <span className="truncate text-xs font-normal text-muted-foreground">
+                  {selectedOption.description}
+                </span>
+              </span>
+            ) : (
+              selectedOption.label
+            )
+          ) : (
+            placeholder
+          )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -73,7 +88,7 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={`${option.label} ${option.value}${option.filterKeywords ? ` ${option.filterKeywords}` : ''}`}
+                  value={`${option.label} ${option.description ?? ''} ${option.value}${option.filterKeywords ? ` ${option.filterKeywords}` : ''}`}
                   disabled={option.disabled}
                   onSelect={() => {
                     onValueChange(option.value === value ? "" : option.value)
@@ -86,7 +101,14 @@ export function Combobox({
                       value === option.value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {option.label}
+                  {option.description ? (
+                    <span className="flex min-w-0 flex-col">
+                      <span>{option.label}</span>
+                      <span className="text-xs text-muted-foreground">{option.description}</span>
+                    </span>
+                  ) : (
+                    option.label
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

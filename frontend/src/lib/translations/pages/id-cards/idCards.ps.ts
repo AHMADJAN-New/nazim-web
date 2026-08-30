@@ -185,6 +185,77 @@ export default {
     totalFeeCollected: "راټول شوی فیس",
     useGlobalFont: "عمومي فونټ وکاروئ",
     width: "سور (%)",
-    unprinted: "نا چاپ "
+    unprinted: "نا چاپ ",
+    layoutFields: {
+      studentNameLabel: "لیبل: نوم",
+      studentName: "د زده کوونکي نوم",
+      fatherNameLabel: "لیبل: د پلار نوم",
+      fatherName: "د پلار نوم",
+      classLabel: "لیبل: درجه",
+      roomLabel: "لیبل: اتاق",
+      admissionNumberLabel: "لیبل: داخله نمبر",
+      residencyLabel: "لیبل: استوګنه",
+      studentCodeLabel: "لیبل: ID",
+      studentCode: "د زده کوونکي کوډ",
+      admissionNumber: "داخله نمبر",
+      class: "درجه",
+      room: "اتاق",
+      residency: "استوګنه",
+      schoolName: "د ښوونځي نوم",
+      cardNumberLabel: "لیبل: کارت نمبر",
+      cardNumber: "کارت نمبر",
+      createdDate: "د جوړېدو نیټه",
+      expiryDate: "د پای نیټه",
+      notes: "یادښتونه",
+      studentPhoto: "د زده کوونکي انځور",
+      qrCode: "QR کوډ"
+    },
+    defaultLabels: {
+      studentNameLabel: "نوم:",
+      fatherNameLabel: "د پلار نوم:",
+      classLabel: "درجه:",
+      roomLabel: "اتاق:",
+      admissionNumberLabel: "داخله نمبر:",
+      residencyLabel: "استوګنه:",
+      studentCodeLabel: "ID:",
+      cardNumberLabel: "کارت نمبر:"
+    },
+    layoutSamples: {
+      studentName: "احمد محمد",
+      fatherName: "محمد",
+      class: "درجه ۱۰ - برخه الف",
+      room: "اتاق ۱۲",
+      residency: "لیلیه",
+      schoolName: "اسلامي ښوونځی",
+      studentCode: "STU-2024-001",
+      admissionNumber: "ADM-2024-001",
+      cardNumber: "CARD-2024-001",
+      createdDate: "Apr 13, 2026",
+      expiryDate: "Dec 31, 2025",
+      notes: "اضافي معلومات"
+    },
+    labelPlaceholders: {
+      studentNameLabel: "لکه: نوم",
+      fatherNameLabel: "لکه: د پلار نوم",
+      classLabel: "لکه: درجه",
+      roomLabel: "لکه: اتاق",
+      admissionNumberLabel: "لکه: داخله نمبر",
+      residencyLabel: "لکه: استوګنه",
+      studentCodeLabel: "لکه: ID",
+      cardNumberLabel: "لکه: کارت نمبر"
+    },
+    editableLabels: {
+      nameLabel: "د نوم لیبل",
+      fatherNameLabel: "د پلار نوم لیبل",
+      classLabel: "د درجې لیبل",
+      roomLabel: "د اتاق لیبل",
+      residencyLabel: "د استوګنې لیبل",
+      admissionNumberLabel: "د داخله نمبر لیبل",
+      studentCodeLabel: "د ID لیبل",
+      cardNumberLabel: "د کارت نمبر لیبل"
+    },
+    labelEditableDescription: "دودیز لیبل متن. دا لیبل په خپلواکه توګه حرکت کړئ ترڅو د ډیټابیس ارزښت سره سمون ونیسي.",
+    dayScholar: "ورځنی زده کوونکی",
+    boarding: "لیلیه"
   }
 };

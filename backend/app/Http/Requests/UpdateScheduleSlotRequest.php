@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\DB;
 
 class UpdateScheduleSlotRequest extends FormRequest
 {
@@ -31,11 +30,9 @@ class UpdateScheduleSlotRequest extends FormRequest
             'days_of_week.*' => 'string|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'default_duration_minutes' => 'nullable|integer|min:1|max:480',
             'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
             'description' => 'nullable|string|max:500',
-            'organization_id' => 'sometimes|nullable|uuid|exists:organizations,id',
         ];
     }
 
@@ -56,4 +53,3 @@ class UpdateScheduleSlotRequest extends FormRequest
         }
     }
 }
-

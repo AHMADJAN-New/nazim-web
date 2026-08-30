@@ -94,6 +94,7 @@ describe('StudentAdmissionsDialog', () => {
         student={{
           id: 'student-1',
           fullName: 'Ahmad',
+          fatherName: 'Mohammad',
           admissionNumber: 'ADM-001',
           status: 'active',
           schoolId: 'school-1',
@@ -111,7 +112,9 @@ describe('StudentAdmissionsDialog', () => {
       true
     );
 
-    expect(screen.getByText('events.active')).toBeInTheDocument();
+    expect(screen.getByText('admissions.active')).toBeInTheDocument();
+    expect(screen.getByText(/students\.fatherName/)).toBeInTheDocument();
+    expect(screen.getByText(/Mohammad/)).toBeInTheDocument();
     expect(screen.getByText('Grade 7')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /admissions\.newAdmission/i }));

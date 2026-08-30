@@ -205,13 +205,13 @@ export default function CertificateTemplates() {
         <h1 className="text-2xl font-bold">{t('certificateTemplates.title')}</h1>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="h-4 w-4 mr-2" />
-          {t('certificateTemplates.createTemplate') || t('examPapers.createTemplate')}
+          {t('certificateTemplates.createTemplate')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('certificateTemplates.templates') || 'Templates'}</CardTitle>
+          <CardTitle>{t('certificateTemplates.templates')}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -219,9 +219,9 @@ export default function CertificateTemplates() {
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">{t('certificateTemplates.noTemplatesYet') || 'No templates yet'}</p>
+              <p className="text-muted-foreground">{t('certificateTemplates.noTemplatesYet')}</p>
               <Button className="mt-4" onClick={() => handleOpenDialog()}>
-                {t('certificateTemplates.createFirstTemplate') || 'Create Your First Template'}
+                {t('certificateTemplates.createFirstTemplate')}
               </Button>
             </div>
           ) : (
@@ -230,9 +230,9 @@ export default function CertificateTemplates() {
                 <TableRow>
                   <TableHead>{t('certificateTemplates.templateName')}</TableHead>
                   <TableHead>{t('events.description')}</TableHead>
-                  <TableHead>{t('certificateTemplates.background') || 'Background'}</TableHead>
-                  <TableHead>{t('certificateTemplates.status') || 'Status'}</TableHead>
-                  <TableHead>{t('certificateTemplates.created') || 'Created'}</TableHead>
+                  <TableHead>{t('certificateTemplates.background')}</TableHead>
+                  <TableHead>{t('certificateTemplates.status')}</TableHead>
+                  <TableHead>{t('certificateTemplates.created')}</TableHead>
                   <TableHead className="text-right">{t('events.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -245,7 +245,7 @@ export default function CertificateTemplates() {
                         {template.is_default && (
                           <Badge variant="secondary">
                             <Star className="h-3 w-3 mr-1" />
-                            {t('certificateTemplates.default') || 'Default'}
+                            {t('certificateTemplates.default')}
                           </Badge>
                         )}
                       </div>
@@ -257,15 +257,15 @@ export default function CertificateTemplates() {
                       {template.background_image_path ? (
                         <div className="flex items-center gap-1 text-green-600">
                           <Image className="h-4 w-4" />
-                          <span className="text-sm">{t('certificateTemplates.yes') || 'Yes'}</span>
+                          <span className="text-sm">{t('certificateTemplates.yes')}</span>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">{t('certificateTemplates.none') || 'None'}</span>
+                        <span className="text-muted-foreground">{t('certificateTemplates.none')}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={template.is_active ? 'default' : 'secondary'}>
-                        {template.is_active ? (t('certificateTemplates.active') || 'Active') : (t('certificateTemplates.inactive') || 'Inactive')}
+                        {template.is_active ? (t('certificateTemplates.active')) : (t('certificateTemplates.inactive'))}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -286,7 +286,7 @@ export default function CertificateTemplates() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenLayoutEditor(template)}
-                          title={t('certificateTemplates.editLayout') || 'Edit Layout'}
+                          title={t('certificateTemplates.editLayout')}
                         >
                           <Layout className="h-4 w-4" />
                         </Button>
@@ -322,27 +322,27 @@ export default function CertificateTemplates() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedTemplate ? (t('certificateTemplates.editTemplate') || 'Edit Template') : (t('certificateTemplates.createTemplate') || 'Create Template')}
+              {selectedTemplate ? (t('certificateTemplates.editTemplate')) : (t('certificateTemplates.createTemplate'))}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t('certificateTemplates.templateNameRequired') || 'Template Name *'}</Label>
+                <Label>{t('certificateTemplates.templateNameRequired')}</Label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={t('certificateTemplates.templateNamePlaceholder') || 'e.g., Course Completion Certificate'}
+                  placeholder={t('certificateTemplates.templateNamePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t('certificateTemplates.courseOptional') || 'Course (Optional)'}</Label>
+                <Label>{t('certificateTemplates.courseOptional')}</Label>
                 <Select value={courseId || 'none'} onValueChange={(value) => setCourseId(value === 'none' ? '' : value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('certificateTemplates.selectCourseOptional') || 'Select a course (optional)'} />
+                    <SelectValue placeholder={t('certificateTemplates.selectCourseOptional')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t('certificateTemplates.noneGeneralTemplate') || 'None (General Template)'}</SelectItem>
+                    <SelectItem value="none">{t('certificateTemplates.noneGeneralTemplate')}</SelectItem>
                     {courses.map((course) => (
                       <SelectItem key={course.id} value={course.id}>
                         {course.name}
@@ -351,37 +351,37 @@ export default function CertificateTemplates() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {t('certificateTemplates.assignTemplateToCourse') || 'Assign this template to a specific course. Select "None" for general use.'}
+                  {t('certificateTemplates.assignTemplateToCourse')}
                 </p>
               </div>
             </div>
             <div className="space-y-2">
-              <Label>{t('certificateTemplates.backgroundImage') || 'Background Image'}</Label>
+              <Label>{t('certificateTemplates.backgroundImage')}</Label>
               <Input
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
               />
               {selectedTemplate?.background_image_path && !backgroundImage && (
-                <p className="text-sm text-muted-foreground">{t('certificateTemplates.currentImageKept') || 'Current image will be kept'}</p>
+                <p className="text-sm text-muted-foreground">{t('certificateTemplates.currentImageKept')}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label>{t('certificateTemplates.description') || 'Description'}</Label>
+              <Label>{t('certificateTemplates.description')}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={t('certificateTemplates.descriptionPlaceholder') || 'Description of this template...'}
+                placeholder={t('certificateTemplates.descriptionPlaceholder')}
                 rows={2}
               />
             </div>
 
             <div className="border rounded-lg p-4 space-y-4">
-              <h4 className="font-medium">{t('certificateTemplates.layoutSettings') || 'Layout Settings'}</h4>
+              <h4 className="font-medium">{t('certificateTemplates.layoutSettings')}</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>{t('certificateTemplates.fontSize') || 'Font Size'}</Label>
+                  <Label>{t('certificateTemplates.fontSize')}</Label>
                   <Input
                     type="number"
                     value={layoutConfig.fontSize || 24}
@@ -389,13 +389,13 @@ export default function CertificateTemplates() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('certificateTemplates.fontFamily') || 'Font Family'}</Label>
+                  <Label>{t('certificateTemplates.fontFamily')}</Label>
                   <Select
                     value={layoutConfig.fontFamily || 'Roboto'}
                     onValueChange={(value) => setLayoutConfig({ ...layoutConfig, fontFamily: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('certificateTemplates.selectFontFamily') || 'Select font family'} />
+                      <SelectValue placeholder={t('certificateTemplates.selectFontFamily')} />
                     </SelectTrigger>
                     <SelectContent>
                       {fontFamilyOptions.map((font) => (
@@ -406,11 +406,11 @@ export default function CertificateTemplates() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    {t('certificateTemplates.fontFamilyHint') || 'Select a font family for the certificate text. Bahij Nassim is recommended for RTL languages (Pashto, Arabic, Farsi).'}
+                    {t('certificateTemplates.fontFamilyHint')}
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('certificateTemplates.textColor') || 'Text Color'}</Label>
+                  <Label>{t('certificateTemplates.textColor')}</Label>
                   <Input
                     type="color"
                     value={layoutConfig.textColor || '#000000'}
@@ -423,7 +423,7 @@ export default function CertificateTemplates() {
                   checked={layoutConfig.rtl ?? true}
                   onCheckedChange={(checked) => setLayoutConfig({ ...layoutConfig, rtl: checked })}
                 />
-                <Label>{t('certificateTemplates.rtlForPashtoArabic') || 'Right-to-Left (RTL) for Pashto/Arabic'}</Label>
+                <Label>{t('certificateTemplates.rtlForPashtoArabic')}</Label>
               </div>
             </div>
 
@@ -433,26 +433,26 @@ export default function CertificateTemplates() {
                   checked={isDefault}
                   onCheckedChange={setIsDefault}
                 />
-                <Label>{t('certificateTemplates.setAsDefault') || 'Set as Default'}</Label>
+                <Label>{t('certificateTemplates.setAsDefault')}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
                   checked={isActive}
                   onCheckedChange={setIsActive}
                 />
-                <Label>{t('certificateTemplates.active') || 'Active'}</Label>
+                <Label>{t('certificateTemplates.active')}</Label>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDialog}>
-              {t('certificateTemplates.cancel') || 'Cancel'}
+              {t('certificateTemplates.cancel')}
             </Button>
             <Button
               onClick={handleSave}
               disabled={!name || createTemplate.isPending || updateTemplate.isPending}
             >
-              {createTemplate.isPending || updateTemplate.isPending ? (t('certificateTemplates.saving') || 'Saving...') : (t('certificateTemplates.saveTemplate') || 'Save Template')}
+              {createTemplate.isPending || updateTemplate.isPending ? (t('certificateTemplates.saving')) : (t('certificateTemplates.saveTemplate'))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -463,7 +463,7 @@ export default function CertificateTemplates() {
         <Dialog open={isLayoutEditorOpen} onOpenChange={setIsLayoutEditorOpen}>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{t('certificateTemplates.editLayoutTitle', { name: selectedTemplate.name }) || `Edit Layout: ${selectedTemplate.name}`}</DialogTitle>
+              <DialogTitle>{t('certificateTemplates.editLayoutTitle', { name: selectedTemplate.name })}</DialogTitle>
             </DialogHeader>
             <CertificateLayoutEditor
               templateId={selectedTemplate.id}
@@ -481,14 +481,14 @@ export default function CertificateTemplates() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('certificateTemplates.deleteTemplate') || 'Delete Template'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('certificateTemplates.deleteTemplate')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('certificateTemplates.deleteTemplateConfirm') || 'Are you sure you want to delete this certificate template? This action cannot be undone.'}
+              {t('certificateTemplates.deleteTemplateConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('certificateTemplates.cancel') || 'Cancel'}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>{t('certificateTemplates.delete') || 'Delete'}</AlertDialogAction>
+            <AlertDialogCancel>{t('certificateTemplates.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('certificateTemplates.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

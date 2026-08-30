@@ -185,6 +185,77 @@ export default {
     totalFeeCollected: "Fee Collected",
     useGlobalFont: "Use global font",
     width: "Width (%)",
-    unprinted: "unprinted"
+    unprinted: "unprinted",
+    layoutFields: {
+      studentNameLabel: "Label: Name",
+      studentName: "Student Name",
+      fatherNameLabel: "Label: Father Name",
+      fatherName: "Father Name",
+      classLabel: "Label: Class",
+      roomLabel: "Label: Room",
+      admissionNumberLabel: "Label: Admission Number",
+      residencyLabel: "Label: Residency",
+      studentCodeLabel: "Label: ID",
+      studentCode: "Student Code",
+      admissionNumber: "Admission Number",
+      class: "Class",
+      room: "Room",
+      residency: "Residency",
+      schoolName: "School Name",
+      cardNumberLabel: "Label: Card Number",
+      cardNumber: "Card Number",
+      createdDate: "Created Date",
+      expiryDate: "Expiry Date",
+      notes: "Notes",
+      studentPhoto: "Student Photo",
+      qrCode: "QR Code"
+    },
+    defaultLabels: {
+      studentNameLabel: "Name:",
+      fatherNameLabel: "Father Name:",
+      classLabel: "Class:",
+      roomLabel: "Room:",
+      admissionNumberLabel: "Admission No:",
+      residencyLabel: "Residency:",
+      studentCodeLabel: "ID:",
+      cardNumberLabel: "Card No:"
+    },
+    layoutSamples: {
+      studentName: "Ahmad Mohammad",
+      fatherName: "Mohammad",
+      class: "Grade 10 - Section A",
+      room: "Room 12",
+      residency: "Boarding",
+      schoolName: "Islamic School",
+      studentCode: "STU-2024-001",
+      admissionNumber: "ADM-2024-001",
+      cardNumber: "CARD-2024-001",
+      createdDate: "Apr 13, 2026",
+      expiryDate: "Dec 31, 2025",
+      notes: "Additional information"
+    },
+    labelPlaceholders: {
+      studentNameLabel: "e.g., Name",
+      fatherNameLabel: "e.g., Father Name",
+      classLabel: "e.g., Class",
+      roomLabel: "e.g., Room",
+      admissionNumberLabel: "e.g., Admission No",
+      residencyLabel: "e.g., Residency",
+      studentCodeLabel: "e.g., ID",
+      cardNumberLabel: "e.g., Card No"
+    },
+    editableLabels: {
+      nameLabel: "Name Label",
+      fatherNameLabel: "Father Name Label",
+      classLabel: "Class Label",
+      roomLabel: "Room Label",
+      residencyLabel: "Residency Label",
+      admissionNumberLabel: "Admission Number Label",
+      studentCodeLabel: "ID Label",
+      cardNumberLabel: "Card Number Label"
+    },
+    labelEditableDescription: "Custom label text. Move this label independently to align it with the database value field.",
+    dayScholar: "Day Scholar",
+    boarding: "Boarding"
   }
 };

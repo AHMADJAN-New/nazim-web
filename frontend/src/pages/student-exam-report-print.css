@@ -1,0 +1,317 @@
+/* Student exam report card — print layout (imported only by StudentExamReport.tsx) */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* Hide app chrome when printing from this page */
+  aside,
+  [data-sidebar],
+  header[data-tour="app-header"],
+  [data-tour="sidebar"] {
+    display: none !important;
+  }
+
+  main,
+  .student-exam-report-page {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .student-exam-report-page .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .student-report-card {
+    page-break-inside: avoid;
+    page-break-after: always;
+    border: 2px solid #0b0b56 !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    font-family: "Bahij Nassim", "Bahij Nazanin", "Noto Sans Arabic", Tahoma, sans-serif !important;
+    color: #0b0b56 !important;
+  }
+
+  .student-report-card:last-child {
+    page-break-after: auto;
+  }
+
+  .src-school-banner {
+    display: block !important;
+    background: #0b0b56 !important;
+    color: #fff !important;
+    padding: 14px 16px !important;
+    text-align: center !important;
+    border-bottom: 3px solid #c9a227 !important;
+  }
+
+  .src-school-banner .src-school-name {
+    font-size: 18pt !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    margin: 0 !important;
+    line-height: 1.3 !important;
+  }
+
+  .src-school-banner .src-report-title {
+    font-size: 12pt !important;
+    font-weight: 600 !important;
+    color: #e8e8f5 !important;
+    margin: 4px 0 0 !important;
+  }
+
+  .src-school-banner .src-exam-meta {
+    font-size: 9pt !important;
+    color: #d0d0e8 !important;
+    margin-top: 6px !important;
+  }
+
+  .student-report-card .src-card-section {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  .student-report-card .src-card-section + .src-card-section {
+    border-top: 1px solid #d4d4e8 !important;
+  }
+
+  .student-report-card .src-section-header {
+    background: #f4f4fa !important;
+    border-bottom: 1px solid #d4d4e8 !important;
+    padding: 8px 14px !important;
+  }
+
+  .student-report-card .src-section-title {
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    color: #0b0b56 !important;
+    margin: 0 !important;
+  }
+
+  .student-report-card .src-section-body {
+    padding: 12px 14px !important;
+  }
+
+  .src-student-info-grid {
+    display: grid !important;
+    grid-template-columns: 110px 1fr !important;
+    gap: 16px !important;
+    align-items: start !important;
+  }
+
+  .src-student-photo-wrap {
+    text-align: center !important;
+  }
+
+  .src-student-photo-wrap .src-photo-frame {
+    width: 100px !important;
+    height: 120px !important;
+    border: 2px solid #0b0b56 !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    margin: 0 auto !important;
+    background: #f8f8fc !important;
+  }
+
+  .src-student-photo-wrap .src-photo-label {
+    font-size: 8pt !important;
+    color: #555 !important;
+    margin-top: 4px !important;
+  }
+
+  .src-info-fields {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px 20px !important;
+  }
+
+  .src-info-row {
+    display: flex !important;
+    gap: 8px !important;
+    font-size: 9.5pt !important;
+    line-height: 1.35 !important;
+  }
+
+  .src-info-label {
+    color: #555 !important;
+    min-width: 90px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .src-info-value {
+    font-weight: 600 !important;
+    color: #000 !important;
+  }
+
+  .src-grades-table table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9.5pt !important;
+  }
+
+  .src-grades-table thead th {
+    background: #0b0b56 !important;
+    color: #fff !important;
+    border: 1px solid #0b0b56 !important;
+    padding: 7px 8px !important;
+    font-weight: 600 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .src-grades-table tbody td {
+    border: 1px solid #bbb !important;
+    padding: 6px 8px !important;
+    color: #000 !important;
+    vertical-align: middle !important;
+  }
+
+  .src-grades-table tbody tr:nth-child(even) td {
+    background: #f8f8fc !important;
+  }
+
+  .src-grades-table .src-total-row td {
+    background: #fff8e6 !important;
+    border-top: 2px solid #c9a227 !important;
+    font-weight: 700 !important;
+    font-size: 10pt !important;
+  }
+
+  .src-grades-table .badge {
+    background: transparent !important;
+    border: none !important;
+    color: #000 !important;
+    font-weight: 700 !important;
+    padding: 0 !important;
+    font-size: inherit !important;
+  }
+
+  .src-summary-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0 !important;
+    border-top: 1px solid #d4d4e8 !important;
+  }
+
+  .src-summary-grid .src-card-section {
+    border-top: none !important;
+  }
+
+  .src-summary-grid .src-card-section:first-child {
+    border-right: 1px solid #d4d4e8 !important;
+  }
+
+  .src-result-stat {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 4px 0 !important;
+    font-size: 10pt !important;
+  }
+
+  .src-result-stat .src-result-value {
+    font-size: 14pt !important;
+    font-weight: 700 !important;
+    color: #0b0b56 !important;
+  }
+
+  .src-remarks-box {
+    min-height: 70px !important;
+    border: 1px dashed #999 !important;
+    padding: 8px !important;
+    font-size: 9pt !important;
+    color: #555 !important;
+    background: #fafafa !important;
+  }
+
+  .src-signatures-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 24px !important;
+    padding-top: 20px !important;
+  }
+
+  .src-signature-line {
+    border-bottom: 1px solid #333 !important;
+    height: 40px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .src-signature-label {
+    font-size: 9pt !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    color: #333 !important;
+  }
+
+  .src-date-issued {
+    text-align: center !important;
+    font-size: 8.5pt !important;
+    color: #555 !important;
+    margin-top: 12px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid #e0e0e0 !important;
+  }
+
+  .src-print-hide {
+    display: none !important;
+  }
+
+  /* RTL */
+  [dir="rtl"] .student-report-card {
+    direction: rtl !important;
+    text-align: right !important;
+  }
+
+  [dir="rtl"] .src-info-row {
+    flex-direction: row-reverse !important;
+  }
+
+  [dir="rtl"] .src-info-label {
+    text-align: right !important;
+  }
+
+  [dir="rtl"] .src-grades-table th,
+  [dir="rtl"] .src-grades-table td {
+    text-align: right !important;
+  }
+
+  [dir="rtl"] .src-grades-table th.text-center,
+  [dir="rtl"] .src-grades-table td.text-center {
+    text-align: center !important;
+  }
+
+  [dir="rtl"] .src-summary-grid .src-card-section:first-child {
+    border-right: none !important;
+    border-left: 1px solid #d4d4e8 !important;
+  }
+
+  [dir="rtl"] .src-result-stat {
+    flex-direction: row-reverse !important;
+  }
+}

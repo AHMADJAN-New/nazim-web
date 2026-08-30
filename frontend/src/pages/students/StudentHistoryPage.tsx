@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -31,13 +31,17 @@ import {
   StudentFullDetailsSection
 } from '@/components/students/history';
 import { formatDate } from '@/lib/utils';
+import { getReportLocaleOptions } from '@/lib/reporting/reportLocaleOptions';
+import { getAdmissionEnrollmentStatusLabel } from '@/lib/admissions/enrollmentStatus';
+import type { AdmissionStatus } from '@/hooks/useStudentAdmissions';
 
 type ViewMode = 'timeline' | 'tabs' | 'charts';
 
 export default function StudentHistoryPage() {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const reportLocale = useMemo(() => getReportLocaleOptions(language), [language]);
   const [viewMode, setViewMode] = useState<ViewMode>('tabs');
 
   const { data: history, isLoading, error } = useStudentHistory(studentId);
@@ -54,7 +58,7 @@ export default function StudentHistoryPage() {
       // Reset state before starting
       exportPdf.reset();
       // Start export
-      exportPdf.mutate({ studentId });
+      exportPdf.mutate({ studentId, options: reportLocale });
     }
   };
 
@@ -66,7 +70,7 @@ export default function StudentHistoryPage() {
       // Reset state before starting
       exportExcel.reset();
       // Start export
-      exportExcel.mutate({ studentId });
+      exportExcel.mutate({ studentId, options: reportLocale });
     }
   };
 
@@ -105,6 +109,9 @@ export default function StudentHistoryPage() {
     return 'outline';
   };
 
+  const displayStatus = student.currentEnrollmentStatus || student.status;
+  const statusLabel = getAdmissionEnrollmentStatusLabel(displayStatus as AdmissionStatus, t);
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
           {/* Back Button */}
@@ -137,8 +144,8 @@ export default function StudentHistoryPage() {
             <div className="flex-1 text-center md:text-left">
               <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-2">
                 <h2 className="text-xl md:text-2xl font-bold">{student.fullName}</h2>
-                <Badge variant={getStatusBadgeVariant(student.currentEnrollmentStatus || student.status)}>
-                  {student.currentEnrollmentStatus || student.status}
+                <Badge variant={getStatusBadgeVariant(displayStatus)}>
+                  {statusLabel}
                 </Badge>
               </div>
               

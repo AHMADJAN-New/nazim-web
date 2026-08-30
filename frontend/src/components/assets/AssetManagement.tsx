@@ -32,6 +32,7 @@ import {
   useAssetHistory,
 } from '@/hooks/useAssets';
 import { useBuildings } from '@/hooks/useBuildings';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useRooms } from '@/hooks/useRooms';
 import { useSchools } from '@/hooks/useSchools';
@@ -85,6 +86,7 @@ const maintenanceSchema = z.object({
 type MaintenanceFormValues = z.infer<typeof maintenanceSchema>;
 
 export function AssetManagement() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -252,45 +254,45 @@ export function AssetManagement() {
     () => [
       {
         accessorKey: 'name',
-        header: 'Asset',
+        header: t('assets.assetColumn'),
         cell: ({ row }) => (
           <div>
             <p className="font-semibold">{row.original.name}</p>
-            <p className="text-xs text-muted-foreground">Tag: {row.original.assetTag}</p>
+            <p className="text-xs text-muted-foreground">{t('assets.tagPrefix')}: {row.original.assetTag}</p>
           </div>
         ),
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: t('assets.status'),
         cell: ({ row }) => <Badge>{row.original.status}</Badge>,
       },
       {
         accessorKey: 'purchasePrice',
-        header: 'Value',
+        header: t('assets.valueColumn'),
         cell: ({ row }) => (
           <span className="text-sm font-medium">
-            {row.original.purchasePrice ? `$${row.original.purchasePrice.toFixed(2)}` : 'N/A'}
+            {row.original.purchasePrice ? `$${row.original.purchasePrice.toFixed(2)}` : t('assets.notAvailable')}
           </span>
         ),
       },
       {
         accessorKey: 'location',
-        header: 'Location',
+        header: t('assets.location'),
         cell: ({ row }) => (
           <div className="text-sm text-muted-foreground">
-            {row.original.roomNumber && <div>Room: {row.original.roomNumber}</div>}
-            {!row.original.roomNumber && row.original.buildingName && <div>Building: {row.original.buildingName}</div>}
+            {row.original.roomNumber && <div>{t('assets.roomPrefix')}: {row.original.roomNumber}</div>}
+            {!row.original.roomNumber && row.original.buildingName && <div>{t('assets.buildingPrefix')}: {row.original.buildingName}</div>}
             {!row.original.roomNumber && !row.original.buildingName && row.original.schoolName && (
-              <div>School: {row.original.schoolName}</div>
+              <div>{t('assets.schoolPrefix')}: {row.original.schoolName}</div>
             )}
-            {!row.original.roomNumber && !row.original.buildingName && !row.original.schoolName && <div>Unassigned</div>}
+            {!row.original.roomNumber && !row.original.buildingName && !row.original.schoolName && <div>{t('assets.unspecified')}</div>}
           </div>
         ),
       },
       {
         id: 'actions',
-        header: () => <div className="text-right">Actions</div>,
+        header: () => <div className="text-right">{t('assets.actions')}</div>,
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
             {canUpdate && (
@@ -307,7 +309,7 @@ export function AssetManagement() {
         ),
       },
     ],
-    [canDelete, canUpdate]
+    [canDelete, canUpdate, t]
   );
 
   const { table } = useDataTable({
@@ -331,39 +333,39 @@ export function AssetManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Asset Management</h1>
+          <h1 className="text-2xl font-bold">{t('assets.management')}</h1>
           <p className="text-sm text-muted-foreground">
-            Track assets, assignments, maintenance, and history with organization-aware controls.
+            {t('assets.managementSubtitle')}
           </p>
         </div>
         {canCreate && (
           <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" /> New Asset
+            <Plus className="h-4 w-4" /> {t('assets.newAsset')}
           </Button>
         )}
       </div>
 
       <div className="grid gap-3 md:gap-4 md:grid-cols-4">
         <StatsCard
-          title="Total Assets"
+          title={t('assets.totalAssets')}
           value={stats?.asset_count ?? 0}
           icon={Boxes}
           color="blue"
         />
         <StatsCard
-          title="Purchase Value"
+          title={t('assets.purchaseValue')}
           value={`$${(stats?.total_purchase_value || 0).toLocaleString()}`}
           icon={DollarSign}
           color="green"
         />
         <StatsCard
-          title="Maintenance Spend"
+          title={t('assets.maintenanceSpend')}
           value={`$${(stats?.maintenance_cost_total || 0).toLocaleString()}`}
           icon={Wrench}
           color="amber"
         />
         <StatsCard
-          title="Available"
+          title={t('assets.availableCount')}
           value={stats?.status_counts?.available ?? 0}
           icon={CheckCircle2}
           color="green"
@@ -373,31 +375,31 @@ export function AssetManagement() {
       <div className="flex flex-wrap gap-3 items-center">
         <div className="flex-1 min-w-[240px]">
           <Input
-            placeholder="Search assets by name, tag, or serial"
+            placeholder={t('assets.searchByNameTagSerial')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Select value={statusFilter || 'all'} onValueChange={(value) => setStatusFilter(value === 'all' ? undefined : value)}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder={t('assets.filterByStatus')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="available">Available</SelectItem>
-            <SelectItem value="assigned">Assigned</SelectItem>
-            <SelectItem value="maintenance">Maintenance</SelectItem>
-            <SelectItem value="retired">Retired</SelectItem>
-            <SelectItem value="lost">Lost</SelectItem>
-            <SelectItem value="disposed">Disposed</SelectItem>
+            <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
+            <SelectItem value="available">{t('assets.available')}</SelectItem>
+            <SelectItem value="assigned">{t('assets.assigned')}</SelectItem>
+            <SelectItem value="maintenance">{t('assets.maintenance')}</SelectItem>
+            <SelectItem value="retired">{t('assets.retired')}</SelectItem>
+            <SelectItem value="lost">{t('assets.lost')}</SelectItem>
+            <SelectItem value="disposed">{t('assets.disposed')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Assets</CardTitle>
-          <CardDescription>Multi-tenant filtered list with current assignments and status.</CardDescription>
+          <CardTitle>{t('assets.title')}</CardTitle>
+          <CardDescription>{t('assets.assetsListDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -446,8 +448,8 @@ export function AssetManagement() {
         <div className="grid gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Assignments</CardTitle>
-              <CardDescription>Assign assets to staff, students, rooms, or mark as other.</CardDescription>
+              <CardTitle>{t('assets.assignments')}</CardTitle>
+              <CardDescription>{t('assets.assignmentsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <form
@@ -455,37 +457,37 @@ export function AssetManagement() {
                 onSubmit={assignmentForm.handleSubmit(handleAssign)}
               >
                 <div className="md:col-span-1">
-                  <Label>Type</Label>
+                  <Label>{t('assets.type')}</Label>
                   <Select
                     value={assignmentForm.watch('assignedToType')}
                     onValueChange={(value) => assignmentForm.setValue('assignedToType', value as any)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Type" />
+                      <SelectValue placeholder={t('assets.type')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="room">Room</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="staff">{t('assets.staffAssignee')}</SelectItem>
+                      <SelectItem value="student">{t('assets.studentAssignee')}</SelectItem>
+                      <SelectItem value="room">{t('assets.roomAssignee')}</SelectItem>
+                      <SelectItem value="other">{t('assets.other')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="md:col-span-2">
-                  <Label>Assignee</Label>
+                  <Label>{t('assets.assignee')}</Label>
                   <Select
                     value={assignmentForm.watch('assignedToId') || 'none'}
                     onValueChange={(value) => assignmentForm.setValue('assignedToId', value === 'none' ? null : value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select assignee" />
+                      <SelectValue placeholder={t('assets.selectAssignee')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Unspecified</SelectItem>
+                      <SelectItem value="none">{t('assets.unspecified')}</SelectItem>
                       {assignmentForm.watch('assignedToType') === 'staff' &&
                         staff?.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.fullName || s.profile?.fullName || s.employeeId || 'Unknown Staff'}
+                            {s.fullName || s.profile?.fullName || s.employeeId || t('assets.unknownStaff')}
                           </SelectItem>
                         ))}
                       {assignmentForm.watch('assignedToType') === 'student' &&
@@ -505,7 +507,7 @@ export function AssetManagement() {
                 </div>
                 <div className="md:col-span-1 flex items-end">
                   <Button type="submit" className="w-full" disabled={assignAsset.isPending || !canUpdate}>
-                    <ShieldCheck className="h-4 w-4 mr-2" /> Assign
+                    <ShieldCheck className="h-4 w-4 mr-2" /> {t('assets.assign')}
                   </Button>
                 </div>
               </form>
@@ -517,7 +519,7 @@ export function AssetManagement() {
                       <div key={assignment.id} className="flex items-center justify-between rounded-md border p-2">
                         <div>
                           <p className="font-medium capitalize">{assignment.assigned_to_type}</p>
-                          <p className="text-xs text-muted-foreground">Status: {assignment.status}</p>
+                          <p className="text-xs text-muted-foreground">{t('assets.status')}: {assignment.status}</p>
                         </div>
                         <Badge variant={assignment.status === 'active' ? 'default' : 'secondary'}>
                           {assignment.status}
@@ -526,7 +528,7 @@ export function AssetManagement() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No assignments yet.</p>
+                  <p className="text-sm text-muted-foreground">{t('assets.noAssignmentsYet')}</p>
                 )}
               </ScrollArea>
             </CardContent>
@@ -534,41 +536,41 @@ export function AssetManagement() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Maintenance</CardTitle>
-              <CardDescription>Track maintenance schedules and costs.</CardDescription>
+              <CardTitle>{t('assets.maintenance')}</CardTitle>
+              <CardDescription>{t('assets.maintenancePanelDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <form className="space-y-2" onSubmit={maintenanceForm.handleSubmit(handleLogMaintenance)}>
                 <div>
-                  <Label>Type</Label>
-                  <Input {...maintenanceForm.register('maintenanceType')} placeholder="Inspection, repair, etc." />
+                  <Label>{t('assets.type')}</Label>
+                  <Input {...maintenanceForm.register('maintenanceType')} placeholder={t('assets.maintenanceTypePlaceholder')} />
                 </div>
                 <div>
-                  <Label>Status</Label>
+                  <Label>{t('assets.status')}</Label>
                   <Select
                     value={maintenanceForm.watch('status')}
                     onValueChange={(value) => maintenanceForm.setValue('status', value as any)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Status" />
+                      <SelectValue placeholder={t('assets.status')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="scheduled">{t('assets.scheduled')}</SelectItem>
+                      <SelectItem value="in_progress">{t('assets.inProgress')}</SelectItem>
+                      <SelectItem value="completed">{t('assets.completedMaintenance')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Cost</Label>
+                  <Label>{t('assets.cost')}</Label>
                   <Input type="number" step="0.01" {...maintenanceForm.register('cost')} />
                 </div>
                 <div>
-                  <Label>Notes</Label>
+                  <Label>{t('assets.notes')}</Label>
                   <Textarea rows={3} {...maintenanceForm.register('notes')} />
                 </div>
                 <Button type="submit" className="w-full" disabled={logMaintenance.isPending || !canUpdate}>
-                  <Wrench className="h-4 w-4 mr-2" /> Log Maintenance
+                  <Wrench className="h-4 w-4 mr-2" /> {t('assets.logMaintenanceAction')}
                 </Button>
               </form>
 
@@ -578,17 +580,17 @@ export function AssetManagement() {
                     {maintenance.data.map((m) => (
                       <div key={m.id} className="rounded-md border p-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-medium">{m.maintenance_type || 'General'}</span>
+                          <span className="font-medium">{m.maintenance_type || t('assets.general')}</span>
                           <Badge variant={m.status === 'completed' ? 'default' : 'outline'}>{m.status}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Cost: {m.cost ? `$${Number(m.cost).toFixed(2)}` : 'N/A'}
+                          {t('assets.cost')}: {m.cost ? `$${Number(m.cost).toFixed(2)}` : t('assets.notAvailable')}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No maintenance records yet.</p>
+                  <p className="text-sm text-muted-foreground">{t('assets.noMaintenanceRecords')}</p>
                 )}
               </ScrollArea>
             </CardContent>
@@ -600,9 +602,9 @@ export function AssetManagement() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <History className="h-4 w-4" /> History
+              <History className="h-4 w-4" /> {t('assets.history')}
             </CardTitle>
-            <CardDescription>Audit-friendly history of changes and actions.</CardDescription>
+            <CardDescription>{t('assets.historyDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-64">
@@ -620,7 +622,7 @@ export function AssetManagement() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">No history available.</p>
+                  <p className="text-sm text-muted-foreground">{t('assets.noHistoryAvailable')}</p>
                 )}
               </div>
             </ScrollArea>
@@ -631,69 +633,69 @@ export function AssetManagement() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingAsset ? 'Update Asset' : 'Create Asset'}</DialogTitle>
+            <DialogTitle>{editingAsset ? t('assets.updateAsset') : t('assets.createAsset')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmitAsset)} className="space-y-4">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <Label>Name</Label>
+                <Label>{t('assets.name')}</Label>
                 <Input {...register('name')} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               </div>
               <div>
-                <Label>Asset Tag</Label>
+                <Label>{t('assets.assetTag')}</Label>
                 <Input {...register('assetTag')} />
                 {errors.assetTag && <p className="text-sm text-destructive">{errors.assetTag.message}</p>}
               </div>
               <div>
-                <Label>Status</Label>
+                <Label>{t('assets.status')}</Label>
                 <Select value={watch('status') || 'available'} onValueChange={(value) => setValue('status', value as any)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('assets.status')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="assigned">Assigned</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="retired">Retired</SelectItem>
-                    <SelectItem value="lost">Lost</SelectItem>
-                    <SelectItem value="disposed">Disposed</SelectItem>
+                    <SelectItem value="available">{t('assets.available')}</SelectItem>
+                    <SelectItem value="assigned">{t('assets.assigned')}</SelectItem>
+                    <SelectItem value="maintenance">{t('assets.maintenance')}</SelectItem>
+                    <SelectItem value="retired">{t('assets.retired')}</SelectItem>
+                    <SelectItem value="lost">{t('assets.lost')}</SelectItem>
+                    <SelectItem value="disposed">{t('assets.disposed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Category</Label>
+                <Label>{t('assets.category')}</Label>
                 <Input {...register('category')} />
               </div>
               <div>
-                <Label>Serial Number</Label>
+                <Label>{t('assets.serialNumber')}</Label>
                 <Input {...register('serialNumber')} />
               </div>
               <div>
-                <Label>Purchase Price</Label>
+                <Label>{t('assets.purchasePrice')}</Label>
                 <Input type="number" step="0.01" {...register('purchasePrice')} />
               </div>
               <div>
-                <CalendarFormField control={assignmentForm.control} name="purchaseDate" label="Purchase Date" />
+                <CalendarFormField control={assignmentForm.control} name="purchaseDate" label={t('assets.purchaseDate')} />
               </div>
               <div>
-                <CalendarFormField control={assignmentForm.control} name="warrantyExpiry" label="Warranty Expiry" />
+                <CalendarFormField control={assignmentForm.control} name="warrantyExpiry" label={t('assets.warrantyExpiry')} />
               </div>
               <div>
-                <Label>Vendor</Label>
+                <Label>{t('assets.vendor')}</Label>
                 <Input {...register('vendor')} />
               </div>
               <div>
-                <Label>School</Label>
+                <Label>{t('schools.title')}</Label>
                 <Select
                   value={watch('schoolId') || 'none'}
                   onValueChange={(value) => setValue('schoolId', value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select school" />
+                    <SelectValue placeholder={t('assets.selectSchool')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t('assets.none')}</SelectItem>
                     {schools?.map((school) => (
                       <SelectItem key={school.id} value={school.id}>
                         {school.schoolName}
@@ -703,16 +705,16 @@ export function AssetManagement() {
                 </Select>
               </div>
               <div>
-                <Label>Building</Label>
+                <Label>{t('buildings.title')}</Label>
                 <Select
                   value={watch('buildingId') || 'none'}
                   onValueChange={(value) => setValue('buildingId', value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select building" />
+                    <SelectValue placeholder={t('assets.selectBuilding')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t('assets.none')}</SelectItem>
                     {buildings?.map((building) => (
                       <SelectItem key={building.id} value={building.id}>
                         {building.buildingName}
@@ -722,16 +724,16 @@ export function AssetManagement() {
                 </Select>
               </div>
               <div>
-                <Label>Room</Label>
+                <Label>{t('rooms.title')}</Label>
                 <Select
                   value={watch('roomId') || 'none'}
                   onValueChange={(value) => setValue('roomId', value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select room" />
+                    <SelectValue placeholder={t('assets.selectRoom')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t('assets.none')}</SelectItem>
                     {rooms?.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
                         {room.roomNumber}
@@ -742,12 +744,12 @@ export function AssetManagement() {
               </div>
             </div>
             <div>
-              <Label>Notes</Label>
+              <Label>{t('assets.notes')}</Label>
               <Textarea rows={3} {...register('notes')} />
             </div>
             <DialogFooter>
               <Button type="submit" disabled={(editingAsset ? updateAsset.isPending : createAsset.isPending) || !canUpdate}>
-                {editingAsset ? 'Update' : 'Create'}
+                {editingAsset ? t('assets.update') : t('assets.create')}
               </Button>
             </DialogFooter>
           </form>

@@ -37,6 +37,7 @@ import { useTeacherSubjectAssignments } from '@/hooks/useTeacherSubjectAssignmen
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useTeacherPreferences, useTimetable } from '@/hooks/useTimetables';
 import { TimetableSolver, type Assignment, type DayName, type ScheduleSlot } from '@/lib/timetableSolver';
+import { formatTeacherFatherName, formatTeacherPrimaryLabel } from '@/lib/utils/formatStaffName';
 
 
 import { useSchools } from '@/hooks/useSchools';
@@ -197,12 +198,22 @@ export function TimetableGenerator() {
 		return classAcademicYears.filter((c) => classesWithAssignments.has(c.id));
 	}, [classAcademicYears, showOnlyClassesWithAssignments, classesWithAssignments]);
 
-	const teacherMap = useMemo(() => {
+	const teacherDisplayMap = useMemo(() => {
 		const m = new Map<string, string>();
 		(staff || []).forEach((s) => {
-			// Use camelCase properties from domain model
-			const displayName = s.fullName || s.employeeId || '';
+			const displayName = formatTeacherPrimaryLabel({
+				employeeId: s.employeeId,
+				firstName: s.firstName,
+			}) || s.employeeId || '';
 			m.set(s.id, displayName);
+		});
+		return m;
+	}, [staff]);
+
+	const teacherFatherNameMap = useMemo(() => {
+		const m = new Map<string, string>();
+		(staff || []).forEach((s) => {
+			m.set(s.id, formatTeacherFatherName(s.fatherName));
 		});
 		return m;
 	}, [staff]);
@@ -337,7 +348,7 @@ export function TimetableGenerator() {
 			teacherId: a.teacher_id,
 			classAcademicYearId: a.class_academic_year_id,
 			subjectId: a.subject_id,
-			teacherName: teacherMap.get(a.teacher_id) || '',
+			teacherName: teacherDisplayMap.get(a.teacher_id) || '',
 			className: classMap.get(a.class_academic_year_id) || '',
 			subjectName: a.subject?.name || '',
 		}));
@@ -378,7 +389,7 @@ export function TimetableGenerator() {
 				class_id: e.class_academic_year_id,
 				class_name: classMap.get(e.class_academic_year_id) || '',
 				subject_name: subjectMap.get(e.subject_id) || '',
-				teacher_name: teacherMap.get(e.teacher_id) || '',
+				teacher_name: teacherFatherNameMap.get(e.teacher_id) || '',
 				teacher_id: e.teacher_id,
 				slot_id: e.schedule_slot_id,
 				day: e.day_name,
@@ -695,7 +706,7 @@ export function TimetableGenerator() {
 			class_id: e.classAcademicYearId,
 			class_name: e.classAcademicYear?.class?.name || classMap.get(e.classAcademicYearId) || '',
 			subject_name: e.subject?.name || '',
-			teacher_name: e.teacher?.fullName || e.teacher?.employeeId || teacherMap.get(e.teacherId) || '',
+			teacher_name: e.teacher?.father_name || teacherFatherNameMap.get(e.teacherId) || '',
 			teacher_id: e.teacherId,
 			slot_id: e.scheduleSlotId,
 			day: e.dayName,
@@ -715,7 +726,7 @@ export function TimetableGenerator() {
 		setSaveEntries(saveRows);
 		setUnscheduledCount(0);
 		toast.success(t('timetable.loadedSuccessfully') || 'Timetable loaded successfully');
-	}, [loadedTimetable?.timetable?.id, classMap, teacherMap, selectedAcademicYearId, scheduleSlots]);
+	}, [loadedTimetable?.timetable?.id, classMap, teacherDisplayMap, teacherFatherNameMap, selectedAcademicYearId, scheduleSlots]);
 
 	return (
 		<div className="space-y-6">
@@ -886,7 +897,7 @@ export function TimetableGenerator() {
 												day: dayLabel,
 												period: slot?.name || '',
 												time: slot ? `${slot.start_time} - ${slot.end_time}` : '',
-												teacher: entry.teacher_name || '',
+												teacher: teacherDisplayMap.get(entry.teacher_id) || entry.teacher_name || '',
 												class: entry.class_name || '',
 												subject: entry.subject_name || '',
 											});
@@ -980,7 +991,7 @@ export function TimetableGenerator() {
 													<tbody>
 														{teacherIdsInScope.map((tid) => (
 															<tr key={tid} className="hover:bg-muted/50">
-																<td className="p-2 border font-medium">{teacherMap.get(tid) || tid}</td>
+																<td className="p-2 border font-medium">{teacherDisplayMap.get(tid) || tid}</td>
 																{(allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList)).flatMap((day) =>
 																	headerSlots.map((s) => {
 																		const cell = entries.find((e) => e.teacher_id === tid && e.slot_id === s.id && e.day === day);

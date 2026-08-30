@@ -31,6 +31,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  findStudentBySearchTerm,
+  getInitialLeaveFilterDate,
+  resolveStudentSelectionOnClassChange,
+} from '@/lib/leave/leaveManagementHelpers';
 import { showToast } from '@/lib/toast';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { leaveRequestsApi, studentAdmissionsApi } from '@/lib/api/client';
@@ -65,6 +70,8 @@ export default function LeaveManagement() {
   const [isSearching, setIsSearching] = useState(false);
   const [panelApprovalNote, setPanelApprovalNote] = useState<string>('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const pendingStudentFromScanRef = useRef<string | null>(null);
+  const [scannedStudentOption, setScannedStudentOption] = useState<ComboboxOption | null>(null);
 
   // Get current academic year
   const { data: currentAcademicYear } = useCurrentAcademicYear(profile?.organization_id);
@@ -77,22 +84,7 @@ export default function LeaveManagement() {
 
   // Initialize filter date to first day of current month, constrained to academic year
   const getInitialFilterDate = useCallback((): Date => {
-    const now = new Date();
-    let initialDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    // If academic year is loaded and current month is outside academic year, use start of academic year
-    if (currentAcademicYear) {
-      const academicStart = new Date(currentAcademicYear.startDate);
-      const academicEnd = new Date(currentAcademicYear.endDate);
-      
-      if (initialDate < academicStart) {
-        initialDate = new Date(academicStart.getFullYear(), academicStart.getMonth(), 1);
-      } else if (initialDate > academicEnd) {
-        initialDate = new Date(academicEnd.getFullYear(), academicEnd.getMonth(), 1);
-      }
-    }
-    
-    return initialDate;
+    return getInitialLeaveFilterDate(new Date(), currentAcademicYear ?? null);
   }, [currentAcademicYear]);
 
   const [filterDate, setFilterDate] = useState<Date>(getInitialFilterDate());
@@ -110,11 +102,14 @@ export default function LeaveManagement() {
   const filterYear = useMemo(() => filterDate.getFullYear(), [filterDate]);
 
   const { requests, pagination, page, pageSize, setPage, setPageSize, isLoading } = useLeaveRequests({
-    studentId: selectedStudent || undefined,
-    classId: selectedClass || undefined,
     month: filterMonth,
     year: filterYear,
   });
+
+  // Reset pagination when history month/year filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [filterMonth, filterYear, setPage]);
 
   // Get student admissions with active status and class filter
   const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
@@ -192,41 +187,55 @@ export default function LeaveManagement() {
     });
   }, [filteredStudents]);
   
+  const buildStudentOption = useCallback((student: Student): ComboboxOption => {
+    const name = student.fullName || 'Unknown';
+    const code = student.studentCode || student.admissionNumber || '';
+    const card = student.cardNumber || '';
+
+    let displayLabel = name;
+    if (code) {
+      displayLabel += ` (${code})`;
+    }
+    if (card) {
+      displayLabel += ` [Card: ${card}]`;
+    }
+
+    return {
+      value: student.id,
+      label: displayLabel,
+    };
+  }, []);
+
   // Ensure selected student is always in options (for when student is selected via search)
   const studentOptionsWithSelected = useMemo<ComboboxOption[]>(() => {
-    if (!selectedStudent || !students.length) return studentOptions;
-    
-    // Check if selected student is already in options
-    const hasSelected = studentOptions.some(opt => opt.value === selectedStudent);
-    if (hasSelected) return studentOptions;
-    
-    // If not, find the student and add it
-    const selectedStudentData = students.find(s => s.id === selectedStudent);
-    if (selectedStudentData) {
-      const name = selectedStudentData.fullName || 'Unknown';
-      const code = (selectedStudentData.studentCode ?? selectedStudentData.admissionNumber) || '';
-      const card = selectedStudentData.cardNumber ?? '';
-      
-      let displayLabel = name;
-      if (code) {
-        displayLabel += ` (${code})`;
-      }
-      if (card) {
-        displayLabel += ` [Card: ${card}]`;
-      }
-      
-      return [
-        { value: selectedStudent, label: displayLabel },
-        ...studentOptions,
-      ];
-    }
-    
-    return studentOptions;
-  }, [studentOptions, selectedStudent, students]);
+    const options = [...studentOptions];
 
-  // Reset student when class changes
+    if (scannedStudentOption && !options.some(opt => opt.value === scannedStudentOption.value)) {
+      options.unshift(scannedStudentOption);
+    }
+
+    if (selectedStudent && !options.some(opt => opt.value === selectedStudent)) {
+      const selectedStudentData = students.find(s => s.id === selectedStudent);
+      if (selectedStudentData) {
+        options.unshift(buildStudentOption(selectedStudentData));
+      }
+    }
+
+    return options;
+  }, [studentOptions, selectedStudent, students, scannedStudentOption, buildStudentOption]);
+
+  // Reset student when class changes manually; preserve student when set from card scan
   useEffect(() => {
+    const resolution = resolveStudentSelectionOnClassChange(pendingStudentFromScanRef.current);
+    pendingStudentFromScanRef.current = null;
+
+    if (resolution.action === 'preserve') {
+      setSelectedStudent(resolution.studentId);
+      return;
+    }
+
     setSelectedStudent('');
+    setScannedStudentOption(null);
   }, [selectedClass]);
 
   const handleCreate = async () => {
@@ -613,17 +622,7 @@ export default function LeaveManagement() {
     
     try {
       // Search in all students by card number, student code, or admission number
-      const foundStudent = students.find(student => {
-        const card = (student.cardNumber ?? '').toLowerCase();
-        const code = (student.studentCode ?? '').toLowerCase();
-        const admission = (student.admissionNumber ?? '').toLowerCase();
-        const id = student.id.toLowerCase();
-        
-        return card === trimmedSearch || 
-               code === trimmedSearch || 
-               admission === trimmedSearch ||
-               id === trimmedSearch;
-      });
+      const foundStudent = findStudentBySearchTerm(students, trimmedSearch);
 
       if (!foundStudent) {
         showToast.error('leave.studentNotFound');
@@ -652,14 +651,13 @@ export default function LeaveManagement() {
           const classExists = classOptions.some(opt => opt.value === admission.class_id);
           
           if (classExists) {
-            // Set class and student together
+            pendingStudentFromScanRef.current = foundStudent.id;
+            setScannedStudentOption(buildStudentOption(foundStudent));
             setSelectedClass(admission.class_id);
-            setSelectedStudent(foundStudent.id);
-            setFastSearch(''); // Clear search field
+            setFastSearch('');
             const className = classOptions.find(c => c.value === admission.class_id)?.label || t('events.unknown');
             showToast.success('leave.studentFound', { name: foundStudent.fullName, class: className });
-            
-            // Focus on reason field for quick entry after a brief delay
+
             setTimeout(() => {
               const reasonInput = document.getElementById('reason');
               reasonInput?.focus();
@@ -681,7 +679,7 @@ export default function LeaveManagement() {
     } finally {
       setIsSearching(false);
     }
-  }, [students, currentAcademicYear, profile?.organization_id, classOptions, t]);
+  }, [students, currentAcademicYear, profile?.organization_id, classOptions, t, buildStudentOption]);
 
   // Handle Enter key for immediate search (no auto-search on typing)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

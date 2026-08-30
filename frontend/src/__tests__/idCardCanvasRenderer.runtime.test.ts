@@ -11,6 +11,7 @@ vi.mock('@/lib/api/client', () => ({
 }));
 
 import { idCardTemplatesApi } from '@/lib/api/client';
+import { loadTranslation } from '@/lib/i18n';
 import { renderIdCardToCanvas } from '@/lib/idCards/idCardCanvasRenderer';
 import { deriveExpiryDateFromCreatedDate, formatIdCardDateValue } from '@/lib/idCards/idCardFieldUtils';
 
@@ -26,9 +27,11 @@ type FillTextCall = {
 const fillTextCalls: FillTextCall[] = [];
 
 describe('idCardCanvasRenderer runtime alignment', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     fillTextCalls.length = 0;
     vi.restoreAllMocks();
+    await loadTranslation('ps');
+    document.documentElement.lang = 'ps';
 
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function getContextMock() {
       const canvas = this as HTMLCanvasElement;
@@ -260,7 +263,7 @@ describe('idCardCanvasRenderer runtime alignment', () => {
       paddingPx: 20,
     });
 
-    const roomLabelCall = fillTextCalls.find((call) => call.text.startsWith('اتاق '));
+    const roomLabelCall = fillTextCalls.find((call) => call.text.startsWith('اتاق'));
     const roomValueCall = fillTextCalls.find((call) => call.text === 'B-12');
     expect(roomLabelCall).toBeDefined();
     expect(roomValueCall).toBeDefined();

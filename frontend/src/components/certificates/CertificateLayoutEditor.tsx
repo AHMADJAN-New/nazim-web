@@ -26,24 +26,29 @@ interface FieldConfig {
 }
 
 // FIELDS will be created dynamically based on student data and course name
-const getFields = (studentName: string, fatherName: string, courseName: string): FieldConfig[] => [
-  { id: 'header', label: 'Header', key: 'headerPosition', sampleText: 'Certificate of Completion', defaultFontSize: 36 },
-  { id: 'studentName', label: 'Student Name', key: 'studentNamePosition', sampleText: studentName, defaultFontSize: 28 },
-  { id: 'fatherName', label: 'Father Name', key: 'fatherNamePosition', sampleText: fatherName, defaultFontSize: 16 },
-  { id: 'grandfatherName', label: 'Grandfather Name', key: 'grandfatherNamePosition', sampleText: 'Son of Grandfather', defaultFontSize: 14 },
-  { id: 'motherName', label: 'Mother Name', key: 'motherNamePosition', sampleText: 'Son of Mary', defaultFontSize: 14 },
-  { id: 'courseName', label: 'Course Name', key: 'courseNamePosition', sampleText: courseName, defaultFontSize: 24 },
-  { id: 'certificateNumber', label: 'Certificate Number', key: 'certificateNumberPosition', sampleText: 'CERT-2024-0001', defaultFontSize: 12 },
-  { id: 'date', label: 'Date', key: 'datePosition', sampleText: 'Jan 15, 2024', defaultFontSize: 12 },
-  { id: 'province', label: 'Province', key: 'provincePosition', sampleText: 'Kabul', defaultFontSize: 12 },
-  { id: 'district', label: 'District', key: 'districtPosition', sampleText: 'District 1', defaultFontSize: 12 },
-  { id: 'village', label: 'Village', key: 'villagePosition', sampleText: 'Village Name', defaultFontSize: 12 },
-  { id: 'nationality', label: 'Nationality', key: 'nationalityPosition', sampleText: 'Afghan', defaultFontSize: 12 },
-  { id: 'guardianName', label: 'Guardian Name', key: 'guardianNamePosition', sampleText: 'Guardian Name', defaultFontSize: 14 },
-  { id: 'studentPhoto', label: 'Student Photo', key: 'studentPhotoPosition', sampleText: '📷', isImage: true, defaultWidth: 100, defaultHeight: 100, defaultFontSize: 12 },
-  { id: 'qrCode', label: 'QR Code', key: 'qrCodePosition', sampleText: '🔳', isImage: true, defaultWidth: 120, defaultHeight: 120, defaultFontSize: 12 },
-  { id: 'directorSignature', label: 'Director Signature', key: 'directorSignaturePosition', sampleText: 'Director Signature', defaultFontSize: 10 },
-  { id: 'officialSeal', label: 'Official Seal', key: 'officialSealPosition', sampleText: 'Official Seal', defaultFontSize: 10 },
+const getFields = (
+  t: (key: string) => string,
+  studentName: string,
+  fatherName: string,
+  courseName: string
+): FieldConfig[] => [
+  { id: 'header', label: t('certificateTemplates.layoutFields.header'), key: 'headerPosition', sampleText: t('certificateTemplates.layoutFields.sampleHeader'), defaultFontSize: 36 },
+  { id: 'studentName', label: t('certificateTemplates.layoutFields.studentName'), key: 'studentNamePosition', sampleText: studentName, defaultFontSize: 28 },
+  { id: 'fatherName', label: t('certificateTemplates.layoutFields.fatherName'), key: 'fatherNamePosition', sampleText: fatherName, defaultFontSize: 16 },
+  { id: 'grandfatherName', label: t('certificateTemplates.layoutFields.grandfatherName'), key: 'grandfatherNamePosition', sampleText: t('certificateTemplates.layoutFields.sampleGrandfatherName'), defaultFontSize: 14 },
+  { id: 'motherName', label: t('certificateTemplates.layoutFields.motherName'), key: 'motherNamePosition', sampleText: t('certificateTemplates.layoutFields.sampleMotherName'), defaultFontSize: 14 },
+  { id: 'courseName', label: t('certificateTemplates.layoutFields.courseName'), key: 'courseNamePosition', sampleText: courseName, defaultFontSize: 24 },
+  { id: 'certificateNumber', label: t('certificateTemplates.layoutFields.certificateNumber'), key: 'certificateNumberPosition', sampleText: t('certificateTemplates.layoutFields.sampleCertificateNumber'), defaultFontSize: 12 },
+  { id: 'date', label: t('certificateTemplates.layoutFields.date'), key: 'datePosition', sampleText: t('certificateTemplates.layoutFields.sampleDate'), defaultFontSize: 12 },
+  { id: 'province', label: t('certificateTemplates.layoutFields.province'), key: 'provincePosition', sampleText: t('certificateTemplates.layoutFields.sampleProvince'), defaultFontSize: 12 },
+  { id: 'district', label: t('certificateTemplates.layoutFields.district'), key: 'districtPosition', sampleText: t('certificateTemplates.layoutFields.sampleDistrict'), defaultFontSize: 12 },
+  { id: 'village', label: t('certificateTemplates.layoutFields.village'), key: 'villagePosition', sampleText: t('certificateTemplates.layoutFields.sampleVillage'), defaultFontSize: 12 },
+  { id: 'nationality', label: t('certificateTemplates.layoutFields.nationality'), key: 'nationalityPosition', sampleText: t('certificateTemplates.layoutFields.sampleNationality'), defaultFontSize: 12 },
+  { id: 'guardianName', label: t('certificateTemplates.layoutFields.guardianName'), key: 'guardianNamePosition', sampleText: t('certificateTemplates.layoutFields.sampleGuardianName'), defaultFontSize: 14 },
+  { id: 'studentPhoto', label: t('certificateTemplates.layoutFields.studentPhoto'), key: 'studentPhotoPosition', sampleText: '📷', isImage: true, defaultWidth: 100, defaultHeight: 100, defaultFontSize: 12 },
+  { id: 'qrCode', label: t('certificateTemplates.layoutFields.qrCode'), key: 'qrCodePosition', sampleText: '🔳', isImage: true, defaultWidth: 120, defaultHeight: 120, defaultFontSize: 12 },
+  { id: 'directorSignature', label: t('certificateTemplates.layoutFields.directorSignature'), key: 'directorSignaturePosition', sampleText: t('certificateTemplates.layoutFields.sampleDirectorSignature'), defaultFontSize: 10 },
+  { id: 'officialSeal', label: t('certificateTemplates.layoutFields.officialSeal'), key: 'officialSealPosition', sampleText: t('certificateTemplates.layoutFields.sampleOfficialSeal'), defaultFontSize: 10 },
 ];
 
 interface CertificateLayoutEditorProps {
@@ -121,11 +126,11 @@ export function CertificateLayoutEditor({
   // Fetch course name if courseId is provided
   const { data: courses = [] } = useShortTermCourses();
   const course = courseId ? courses.find((c) => c.id === courseId) : null;
-  const courseName = course?.name || 'Course Name'; // Use actual course name or generic placeholder
+  const courseName = course?.name || t('certificateTemplates.layoutFields.sampleCourseName');
   
   // Fetch students for the course to get real names
   const { data: courseStudents = [] } = useCourseStudents(courseId || undefined, false) as { data: CourseStudent[] | undefined };
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Get preview student (first student, or null if no students)
   const previewStudent: CourseStudent | null = useMemo(() => {
@@ -298,7 +303,10 @@ export function CertificateLayoutEditor({
   }, [courseStudents, language]);
 
   // Get fields with dynamic student names and course name
-  const FIELDS = useMemo(() => getFields(studentName, fatherName, courseName), [studentName, fatherName, courseName]);
+  const FIELDS = useMemo(
+    () => getFields(t, studentName, fatherName, courseName),
+    [t, studentName, fatherName, courseName]
+  );
 
   // Load background image
   useEffect(() => {
@@ -759,18 +767,18 @@ export function CertificateLayoutEditor({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Layout Editor</h3>
+          <h3 className="text-lg font-semibold">{t('certificateTemplates.layoutEditor.title')}</h3>
           <p className="text-sm text-muted-foreground">
-            Drag fields to position them on the certificate. Click to select a field.
+            {t('certificateTemplates.layoutEditor.description')}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {t('certificateTemplates.cancel')}
           </Button>
           <Button onClick={handleSave}>
             <Save className="h-4 w-4 mr-2" />
-            Save Layout
+            {t('certificateTemplates.layoutEditor.saveLayout')}
           </Button>
         </div>
       </div>
@@ -780,7 +788,7 @@ export function CertificateLayoutEditor({
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Certificate Preview</CardTitle>
+              <CardTitle className="text-sm">{t('certificateTemplates.layoutEditor.certificatePreview')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div
@@ -793,14 +801,14 @@ export function CertificateLayoutEditor({
                   <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                     <div className="text-center">
                       <p>Background image not available</p>
-                      <p className="text-sm">Upload a background image to see the preview</p>
+                      <p className="text-sm">{t('certificateTemplates.layoutEditor.uploadBackgroundHint')}</p>
                     </div>
                   </div>
                 ) : (
                   <>
                     {!backgroundImageLoaded && (
                       <div className="absolute inset-0 flex items-center justify-center z-0">
-                        <p className="text-muted-foreground">Loading background image...</p>
+                        <p className="text-muted-foreground">{t('certificateTemplates.layoutEditor.loadingBackground')}</p>
                       </div>
                     )}
                     {imageUrl && (
@@ -883,50 +891,50 @@ export function CertificateLayoutEditor({
                                 className="absolute -top-1 -left-1 w-4 h-4 bg-blue-500 rounded-full cursor-nw-resize border-2 border-white shadow-lg hover:bg-blue-600"
                                 onMouseDown={(e) => handleResizeStart(e, field.id, 'nw')}
                                 style={{ zIndex: 30 }}
-                                title="Resize from top-left"
+                                title={t('certificateTemplates.layoutEditor.resizeFromTopLeft')}
                               />
                               <div
                                 className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full cursor-ne-resize border-2 border-white shadow-lg hover:bg-blue-600"
                                 onMouseDown={(e) => handleResizeStart(e, field.id, 'ne')}
                                 style={{ zIndex: 30 }}
-                                title="Resize from top-right"
+                                title={t('certificateTemplates.layoutEditor.resizeFromTopRight')}
                               />
                               <div
                                 className="absolute -bottom-1 -left-1 w-4 h-4 bg-blue-500 rounded-full cursor-sw-resize border-2 border-white shadow-lg hover:bg-blue-600"
                                 onMouseDown={(e) => handleResizeStart(e, field.id, 'sw')}
                                 style={{ zIndex: 30 }}
-                                title="Resize from bottom-left"
+                                title={t('certificateTemplates.layoutEditor.resizeFromBottomLeft')}
                               />
                               <div
                                 className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full cursor-se-resize border-2 border-white shadow-lg hover:bg-blue-600"
                                 onMouseDown={(e) => handleResizeStart(e, field.id, 'se')}
                                 style={{ zIndex: 30 }}
-                                title="Resize from bottom-right"
+                                title={t('certificateTemplates.layoutEditor.resizeFromBottomRight')}
                               />
                               {/* Edge resize handles */}
                               <div
                                 className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-4 bg-blue-500 rounded cursor-n-resize border-2 border-white shadow-lg hover:bg-blue-600"
                                 onMouseDown={(e) => handleResizeStart(e, field.id, 'n')}
                                 style={{ zIndex: 30 }}
-                                title="Resize from top"
+                                title={t('certificateTemplates.layoutEditor.resizeFromTop')}
                               />
                               <div
                                 className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-4 bg-blue-500 rounded cursor-s-resize border-2 border-white shadow-lg hover:bg-blue-600"
                                 onMouseDown={(e) => handleResizeStart(e, field.id, 's')}
                                 style={{ zIndex: 30 }}
-                                title="Resize from bottom"
+                                title={t('certificateTemplates.layoutEditor.resizeFromBottom')}
                               />
                               <div
                                 className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-4 h-3 bg-blue-500 rounded cursor-w-resize border-2 border-white shadow-lg hover:bg-blue-600"
                                 onMouseDown={(e) => handleResizeStart(e, field.id, 'w')}
                                 style={{ zIndex: 30 }}
-                                title="Resize from left"
+                                title={t('certificateTemplates.layoutEditor.resizeFromLeft')}
                               />
                               <div
                                 className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-4 h-3 bg-blue-500 rounded cursor-e-resize border-2 border-white shadow-lg hover:bg-blue-600"
                                 onMouseDown={(e) => handleResizeStart(e, field.id, 'e')}
                                 style={{ zIndex: 30 }}
-                                title="Resize from right"
+                                title={t('certificateTemplates.layoutEditor.resizeFromRight')}
                               />
                             </>
                           )}
@@ -959,7 +967,7 @@ export function CertificateLayoutEditor({
                           ) : (
                             <>
                               <span className="text-2xl" style={{ pointerEvents: 'none' }}>{field.sampleText}</span>
-                              <span className="text-xs" style={{ pointerEvents: 'none' }}>{field.id === 'qrCode' ? 'QR' : 'Photo'}</span>
+                              <span className="text-xs" style={{ pointerEvents: 'none' }}>{field.id === 'qrCode' ? t('certificateTemplates.layoutEditor.qrShortLabel') : t('certificateTemplates.layoutEditor.photoShortLabel')}</span>
                             </>
                           )}
                           </div>
@@ -984,21 +992,21 @@ export function CertificateLayoutEditor({
                               ? (() => {
                                   const sigText = config.directorSignatureText !== undefined 
                                     ? config.directorSignatureText 
-                                    : 'Director Signature';
+                                    : t('certificateTemplates.layoutFields.sampleDirectorSignature');
                                   return sigText || '___________';
                                 })()
                               : field.id === 'officialSeal'
                               ? (() => {
                                   const sealText = config.officialSealText !== undefined 
                                     ? config.officialSealText 
-                                    : 'Official Seal';
+                                    : t('certificateTemplates.layoutFields.sampleOfficialSeal');
                                   return sealText || '___________';
                                 })()
                               : field.id === 'certificateNumber'
                               ? (() => {
                                   const certPrefix = config.certificateNumberPrefix !== undefined 
                                     ? config.certificateNumberPrefix 
-                                    : 'Certificate No:';
+                                    : t('certificateTemplates.layoutFields.sampleCertificateNumberPrefix');
                                   return certPrefix 
                                     ? `${certPrefix} ${field.sampleText}`
                                     : field.sampleText;
@@ -1019,12 +1027,12 @@ export function CertificateLayoutEditor({
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Field Settings</CardTitle>
+              <CardTitle className="text-sm">{t('certificateTemplates.layoutEditor.fieldSettings')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Global Settings */}
               <div className="space-y-2">
-                <Label>Font Size</Label>
+                <Label>{t('certificateTemplates.fontSize')}</Label>
                 <Input
                   type="number"
                   value={config.fontSize || 24}
@@ -1034,14 +1042,14 @@ export function CertificateLayoutEditor({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Font Family</Label>
+                <Label>{t('certificateTemplates.fontFamily')}</Label>
                 <Input
                   value={config.fontFamily || 'Arial'}
                   onChange={(e) => setConfig({ ...config, fontFamily: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Text Color</Label>
+                <Label>{t('certificateTemplates.textColor')}</Label>
                 <Input
                   type="color"
                   value={config.textColor || '#000000'}
@@ -1052,84 +1060,84 @@ export function CertificateLayoutEditor({
               {/* Editable Text Fields for Header, Course Name, and Date */}
               {selectedField === 'header' && (
                 <div className="space-y-2 pt-2 border-t">
-                  <Label>Header Text</Label>
+                  <Label>{t('certificateTemplates.layoutEditor.headerText')}</Label>
                   <Input
-                    value={config.headerText || 'Certificate of Completion'}
+                    value={config.headerText || t('certificateTemplates.layoutFields.sampleHeader')}
                     onChange={(e) => setConfig({ ...config, headerText: e.target.value })}
-                    placeholder="Certificate of Completion"
+                    placeholder={t('certificateTemplates.layoutEditor.headerTextPlaceholder')}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Custom text for the certificate header
+                    {t('certificateTemplates.layoutEditor.headerTextDescription')}
                   </p>
                 </div>
               )}
 
               {selectedField === 'courseName' && (
                 <div className="space-y-2 pt-2 border-t">
-                  <Label>Course Name Label (Optional)</Label>
+                  <Label>{t('certificateTemplates.layoutEditor.courseNameLabelOptional')}</Label>
                   <Input
                     value={config.courseNameText || ''}
                     onChange={(e) => setConfig({ ...config, courseNameText: e.target.value })}
-                    placeholder="Leave empty to use course name only"
+                    placeholder={t('certificateTemplates.layoutEditor.courseNameLabelPlaceholder')}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Optional prefix/label for course name (e.g., "Course:"). Leave empty to show only the course name.
+                    {t('certificateTemplates.layoutEditor.courseNameLabelDescription')}
                   </p>
                 </div>
               )}
 
               {selectedField === 'date' && (
                 <div className="space-y-2 pt-2 border-t">
-                  <Label>Date Label</Label>
+                  <Label>{t('certificateTemplates.layoutEditor.dateLabelOptional')}</Label>
                   <Input
-                    value={config.dateText || 'Date:'}
+                    value={config.dateText || t('certificateTemplates.layoutEditor.dateLabelPlaceholder')}
                     onChange={(e) => setConfig({ ...config, dateText: e.target.value })}
-                    placeholder="Date:"
+                    placeholder={t('certificateTemplates.layoutEditor.dateLabelPlaceholder')}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Label/prefix for the date field (e.g., "Date:", "Issued on:", etc.)
+                    {t('certificateTemplates.layoutEditor.dateLabelDescription')}
                   </p>
                 </div>
               )}
 
               {selectedField === 'directorSignature' && (
                 <div className="space-y-2 pt-2 border-t">
-                  <Label>Director Signature Text</Label>
+                  <Label>{t('certificateTemplates.layoutEditor.directorSignatureText')}</Label>
                   <Input
-                    value={config.directorSignatureText !== undefined ? config.directorSignatureText : 'Director Signature'}
+                    value={config.directorSignatureText !== undefined ? config.directorSignatureText : t('certificateTemplates.layoutFields.sampleDirectorSignature')}
                     onChange={(e) => setConfig({ ...config, directorSignatureText: e.target.value })}
-                    placeholder="Director Signature"
+                    placeholder={t('certificateTemplates.layoutFields.sampleDirectorSignature')}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Text to display below signature line. Leave empty to hide text (show only line).
+                    {t('certificateTemplates.layoutEditor.directorSignatureTextDescription')}
                   </p>
                 </div>
               )}
 
               {selectedField === 'officialSeal' && (
                 <div className="space-y-2 pt-2 border-t">
-                  <Label>Official Seal Text</Label>
+                  <Label>{t('certificateTemplates.layoutEditor.officialSealText')}</Label>
                   <Input
-                    value={config.officialSealText !== undefined ? config.officialSealText : 'Official Seal'}
+                    value={config.officialSealText !== undefined ? config.officialSealText : t('certificateTemplates.layoutFields.sampleOfficialSeal')}
                     onChange={(e) => setConfig({ ...config, officialSealText: e.target.value })}
-                    placeholder="Official Seal"
+                    placeholder={t('certificateTemplates.layoutFields.sampleOfficialSeal')}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Text to display below seal line. Leave empty to hide text (show only line).
+                    {t('certificateTemplates.layoutEditor.officialSealTextDescription')}
                   </p>
                 </div>
               )}
 
               {selectedField === 'certificateNumber' && (
                 <div className="space-y-2 pt-2 border-t">
-                  <Label>Certificate Number Prefix</Label>
+                  <Label>{t('certificateTemplates.layoutEditor.certificateNumberPrefix')}</Label>
                   <Input
-                    value={config.certificateNumberPrefix !== undefined ? config.certificateNumberPrefix : 'Certificate No:'}
+                    value={config.certificateNumberPrefix !== undefined ? config.certificateNumberPrefix : t('certificateTemplates.layoutFields.sampleCertificateNumberPrefix')}
                     onChange={(e) => setConfig({ ...config, certificateNumberPrefix: e.target.value })}
-                    placeholder="Certificate No:"
+                    placeholder={t('certificateTemplates.layoutFields.sampleCertificateNumberPrefix')}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Prefix for certificate number (e.g., "Certificate No:", "Cert:", "#"). Leave empty to show only the number.
+                    {t('certificateTemplates.layoutEditor.certificateNumberPrefixDescription')}
                   </p>
                 </div>
               )}
@@ -1137,10 +1145,10 @@ export function CertificateLayoutEditor({
               {(selectedField === 'studentPhoto' || selectedField === 'qrCode') && (
                 <div className="space-y-3 pt-2 border-t">
                   <div className="space-y-2">
-                    <Label>{selectedField === 'qrCode' ? 'QR Code Size (% of page)' : 'Photo Size (% of page)'}</Label>
+                    <Label>{selectedField === 'qrCode' ? t('certificateTemplates.layoutEditor.qrCodeSizeLabel') : t('certificateTemplates.layoutEditor.photoSizeLabel')}</Label>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-xs">Width (%)</Label>
+                        <Label className="text-xs">{t('certificateTemplates.layoutEditor.widthLabel')}</Label>
                         <Input
                           type="number"
                           value={
@@ -1159,13 +1167,13 @@ export function CertificateLayoutEditor({
                               setConfig({ ...config, studentPhotoPosition: { ...current, width: val } });
                             }
                           }}
-                          placeholder={selectedField === 'qrCode' ? "12 (default)" : "6 (default - passport size)"}
+                          placeholder={selectedField === 'qrCode' ? t('certificateTemplates.layoutEditor.qrWidthDefaultPlaceholder') : t('certificateTemplates.layoutEditor.photoWidthDefaultPlaceholder')}
                           min="1"
                           max="100"
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Height (%)</Label>
+                        <Label className="text-xs">{t('certificateTemplates.layoutEditor.heightLabel')}</Label>
                         <Input
                           type="number"
                           value={
@@ -1184,20 +1192,20 @@ export function CertificateLayoutEditor({
                               setConfig({ ...config, studentPhotoPosition: { ...current, height: val } });
                             }
                           }}
-                          placeholder={selectedField === 'qrCode' ? "12 (default)" : "10 (default - passport size)"}
+                          placeholder={selectedField === 'qrCode' ? t('certificateTemplates.layoutEditor.qrHeightDefaultPlaceholder') : t('certificateTemplates.layoutEditor.photoHeightDefaultPlaceholder')}
                           min="1"
                           max="100"
                         />
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Leave empty to use default pixel size. Values are percentages of the page.
+                      {t('certificateTemplates.layoutEditor.sizePercentHint')}
                     </p>
                   </div>
 
                   {selectedField === 'qrCode' && (
                     <div className="space-y-2">
-                      <Label>QR Code Value Source</Label>
+                      <Label>{t('certificateTemplates.layoutEditor.qrCodeValueSource')}</Label>
                       <Select
                         value={config.qrCodeValueSource || 'certificate_number'}
                         onValueChange={(value) =>
@@ -1208,17 +1216,17 @@ export function CertificateLayoutEditor({
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select QR value source" />
+                          <SelectValue placeholder={t('certificateTemplates.layoutEditor.selectQrValueSource')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="certificate_number">Certificate Number</SelectItem>
-                          <SelectItem value="admission_no">Admission Number</SelectItem>
-                          <SelectItem value="course_student_id">Course Student ID</SelectItem>
-                          <SelectItem value="student_id">Student ID</SelectItem>
+                          <SelectItem value="certificate_number">{t('certificateTemplates.layoutEditor.qrSourceCertificateNumber')}</SelectItem>
+                          <SelectItem value="admission_no">{t('certificateTemplates.layoutEditor.qrSourceAdmissionNo')}</SelectItem>
+                          <SelectItem value="course_student_id">{t('certificateTemplates.layoutEditor.qrSourceCourseStudentId')}</SelectItem>
+                          <SelectItem value="student_id">{t('certificateTemplates.layoutEditor.qrSourceStudentId')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        Select what data should be encoded into the QR code.
+                        {t('certificateTemplates.layoutEditor.qrCodeValueSourceDescription')}
                       </p>
                     </div>
                   )}
@@ -1229,7 +1237,7 @@ export function CertificateLayoutEditor({
               {selectedField && (
                 <div className="space-y-3 pt-2 border-t">
                   <div className="flex items-center justify-between">
-                    <Label className="font-semibold">Field-Specific Font Settings</Label>
+                    <Label className="font-semibold">{t('certificateTemplates.layoutEditor.fieldSpecificFontSettings')}</Label>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -1239,12 +1247,12 @@ export function CertificateLayoutEditor({
                       }}
                       className="text-xs"
                     >
-                      Reset to Default
+                      {t('certificateTemplates.layoutEditor.resetToDefault')}
                     </Button>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label className="text-xs">Font Family</Label>
+                    <Label className="text-xs">{t('certificateTemplates.fontFamily')}</Label>
                     <Select
                       value={config.fieldFonts?.[selectedField]?.fontFamily || 'global'}
                       onValueChange={(value) => {
@@ -1256,10 +1264,10 @@ export function CertificateLayoutEditor({
                       }}
                     >
                       <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Use global font" />
+                        <SelectValue placeholder={t('certificateTemplates.layoutEditor.useGlobalFont')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="global">Use Global Font</SelectItem>
+                        <SelectItem value="global">{t('certificateTemplates.layoutEditor.useGlobalFontSelect')}</SelectItem>
                         {availableFonts.map((font) => (
                           <SelectItem key={font.value} value={font.value}>
                             {font.label}
@@ -1268,12 +1276,12 @@ export function CertificateLayoutEditor({
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      Select "Use Global Font" to use the global font setting
+                      {t('certificateTemplates.layoutEditor.useGlobalFontHint')}
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs">Font Size (px)</Label>
+                    <Label className="text-xs">{t('certificateTemplates.layoutEditor.fontSizePx')}</Label>
                     <div className="flex gap-2">
                       <Input
                         type="number"
@@ -1289,7 +1297,7 @@ export function CertificateLayoutEditor({
                             }
                           }
                         }}
-                        placeholder="Auto (based on multiplier)"
+                        placeholder={t('certificateTemplates.layoutEditor.autoBasedOnMultiplier')}
                         className="h-8 text-xs"
                         min="8"
                         max="144"
@@ -1299,13 +1307,13 @@ export function CertificateLayoutEditor({
                         variant="outline"
                         onClick={() => clearFieldFont(selectedField, 'fontSize')}
                         className="h-8 px-2"
-                        title="Reset to default"
+                        title={t('certificateTemplates.layoutEditor.resetToDefaultTitle')}
                       >
                         <RotateCcw className="h-3 w-3" />
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Leave empty to use calculated size (global fontSize × multiplier)
+                      {t('certificateTemplates.layoutEditor.calculatedSizeHint')}
                     </p>
                   </div>
                 </div>
@@ -1316,7 +1324,7 @@ export function CertificateLayoutEditor({
           {/* Field List */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Fields</CardTitle>
+              <CardTitle className="text-sm">{t('certificateTemplates.layoutEditor.fieldsTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 max-h-96 overflow-y-auto">
               {FIELDS.map((field) => {
@@ -1357,7 +1365,10 @@ export function CertificateLayoutEditor({
                           <p className="font-medium text-sm">{field.label}</p>
                           {isEnabled && (
                             <p className="text-xs text-muted-foreground">
-                              Position: {position.x.toFixed(1)}%, {position.y.toFixed(1)}%
+                              {t('certificateTemplates.layoutEditor.positionLabel', {
+                                x: position.x.toFixed(1),
+                                y: position.y.toFixed(1),
+                              })}
                             </p>
                           )}
                         </div>

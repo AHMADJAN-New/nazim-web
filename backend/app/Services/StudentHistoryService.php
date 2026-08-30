@@ -2,23 +2,21 @@
 
 namespace App\Services;
 
-use App\Models\Student;
-use App\Models\StudentAdmission;
+use App\Models\AcademicYear;
 use App\Models\AttendanceRecord;
-use App\Models\AttendanceSession;
+use App\Models\CourseStudent;
 use App\Models\ExamStudent;
-use App\Models\ExamResult;
 use App\Models\FeeAssignment;
 use App\Models\FeePayment;
-use App\Models\LibraryLoan;
-use App\Models\StudentIdCard;
-use App\Models\CourseStudent;
 use App\Models\GraduationStudent;
+use App\Models\LibraryLoan;
+use App\Models\Student;
+use App\Models\StudentAdmission;
 use App\Models\StudentHistoryAuditLog;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Collection;
+use App\Models\StudentIdCard;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Service for aggregating student lifetime history data
@@ -27,12 +25,6 @@ class StudentHistoryService
 {
     /**
      * Get complete student history
-     *
-     * @param string $studentId
-     * @param string $organizationId
-     * @param string|null $schoolId
-     * @param array $filters
-     * @return array
      */
     public function getStudentHistory(
         string $studentId,
@@ -42,8 +34,8 @@ class StudentHistoryService
     ): array {
         // Get basic student info
         $student = $this->getStudentBasicInfo($studentId, $organizationId);
-        
-        if (!$student) {
+
+        if (! $student) {
             return ['error' => 'Student not found'];
         }
 
@@ -102,17 +94,18 @@ class StudentHistoryService
             ->with(['school', 'organization'])
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return null;
         }
 
-        // Get current admission
-        $currentAdmission = StudentAdmission::where('student_id', $studentId)
-            ->where('organization_id', $organizationId)
-            ->whereNull('deleted_at')
-            ->with(['class', 'classAcademicYear', 'academicYear'])
-            ->orderBy('admission_date', 'desc')
-            ->first();
+        // Resolve admission for the current academic year (not latest by date globally)
+        $currentAdmission = $this->resolveCurrentAdmission(
+            $studentId,
+            $organizationId,
+            $student->school_id
+        );
+
+        $enrollmentStatus = $currentAdmission?->enrollment_status ?? $student->student_status;
 
         return [
             'id' => $student->id,
@@ -131,7 +124,7 @@ class StudentHistoryService
             'birthDate' => $student->birth_date?->format('Y-m-d'),
             'age' => $student->age,
             'admissionYear' => $student->admission_year,
-            'status' => $student->student_status,
+            'status' => $enrollmentStatus,
             'picturePath' => $student->picture_path,
             'phone' => $student->phone,
             'email' => null,
@@ -244,10 +237,10 @@ class StudentHistoryService
             ->join('attendance_sessions', 'attendance_records.attendance_session_id', '=', 'attendance_sessions.id');
 
         // Apply date filters
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->where('attendance_sessions.session_date', '>=', $filters['date_from']);
         }
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->where('attendance_sessions.session_date', '<=', $filters['date_to']);
         }
 
@@ -537,8 +530,8 @@ class StudentHistoryService
                 'returnRate' => $totalLoans > 0 ? round(($returnedLoans / $totalLoans) * 100, 2) : 0,
             ],
             'loans' => $loans->map(function ($loan) {
-                $isOverdue = $loan->due_date && !$loan->returned_at && Carbon::parse($loan->due_date)->isPast();
-                
+                $isOverdue = $loan->due_date && ! $loan->returned_at && Carbon::parse($loan->due_date)->isPast();
+
                 return [
                     'id' => $loan->id,
                     'book' => $loan->book ? [
@@ -757,11 +750,11 @@ class StudentHistoryService
         // Add admission events
         foreach ($admissions as $admission) {
             $events[] = [
-                'id' => 'admission-' . $admission['id'],
+                'id' => 'admission-'.$admission['id'],
                 'type' => 'admission',
                 'date' => $admission['admissionDate'],
-                'title' => 'Enrolled in ' . ($admission['class']['name'] ?? 'Class'),
-                'description' => 'Academic Year: ' . ($admission['academicYear']['name'] ?? 'N/A'),
+                'title' => 'Enrolled in '.($admission['class']['name'] ?? 'Class'),
+                'description' => 'Academic Year: '.($admission['academicYear']['name'] ?? 'N/A'),
                 'status' => $admission['enrollmentStatus'],
                 'data' => $admission,
             ];
@@ -770,11 +763,11 @@ class StudentHistoryService
         // Add exam events
         foreach ($exams['exams'] ?? [] as $exam) {
             $events[] = [
-                'id' => 'exam-' . $exam['id'],
+                'id' => 'exam-'.$exam['id'],
                 'type' => 'exam',
                 'date' => $exam['examStartDate'],
                 'title' => $exam['examName'] ?? 'Exam',
-                'description' => 'Score: ' . $exam['percentage'] . '%',
+                'description' => 'Score: '.$exam['percentage'].'%',
                 'status' => $exam['examStatus'],
                 'data' => $exam,
             ];
@@ -783,11 +776,11 @@ class StudentHistoryService
         // Add fee payment events
         foreach ($fees['payments'] ?? [] as $payment) {
             $events[] = [
-                'id' => 'payment-' . $payment['id'],
+                'id' => 'payment-'.$payment['id'],
                 'type' => 'fee_payment',
                 'date' => $payment['paymentDate'],
-                'title' => 'Fee Payment: ' . ($payment['feeStructureName'] ?? 'Fee'),
-                'description' => 'Amount: ' . $payment['amount'] . ' ' . ($payment['currency'] ?? ''),
+                'title' => 'Fee Payment: '.($payment['feeStructureName'] ?? 'Fee'),
+                'description' => 'Amount: '.$payment['amount'].' '.($payment['currency'] ?? ''),
                 'status' => 'paid',
                 'data' => $payment,
             ];
@@ -796,11 +789,11 @@ class StudentHistoryService
         // Add library loan events
         foreach ($library['loans'] ?? [] as $loan) {
             $events[] = [
-                'id' => 'loan-' . $loan['id'],
+                'id' => 'loan-'.$loan['id'],
                 'type' => 'library_loan',
                 'date' => $loan['loanDate'],
-                'title' => 'Borrowed: ' . ($loan['book']['title'] ?? 'Book'),
-                'description' => $loan['returnedAt'] ? 'Returned: ' . $loan['returnedAt'] : 'Due: ' . $loan['dueDate'],
+                'title' => 'Borrowed: '.($loan['book']['title'] ?? 'Book'),
+                'description' => $loan['returnedAt'] ? 'Returned: '.$loan['returnedAt'] : 'Due: '.$loan['dueDate'],
                 'status' => $loan['status'],
                 'data' => $loan,
             ];
@@ -809,11 +802,11 @@ class StudentHistoryService
         // Add ID card events
         foreach ($idCards['cards'] ?? [] as $card) {
             $events[] = [
-                'id' => 'idcard-' . $card['id'],
+                'id' => 'idcard-'.$card['id'],
                 'type' => 'id_card',
                 'date' => substr($card['createdAt'], 0, 10),
-                'title' => 'ID Card Issued: ' . ($card['cardNumber'] ?? 'N/A'),
-                'description' => 'Academic Year: ' . ($card['academicYear']['name'] ?? 'N/A'),
+                'title' => 'ID Card Issued: '.($card['cardNumber'] ?? 'N/A'),
+                'description' => 'Academic Year: '.($card['academicYear']['name'] ?? 'N/A'),
                 'status' => $card['isPrinted'] ? 'printed' : 'pending',
                 'data' => $card,
             ];
@@ -822,11 +815,11 @@ class StudentHistoryService
         // Add course events
         foreach ($courses['courses'] ?? [] as $course) {
             $events[] = [
-                'id' => 'course-' . $course['id'],
+                'id' => 'course-'.$course['id'],
                 'type' => 'course',
                 'date' => $course['registrationDate'],
-                'title' => 'Course: ' . ($course['course']['name'] ?? 'Course'),
-                'description' => 'Status: ' . $course['completionStatus'],
+                'title' => 'Course: '.($course['course']['name'] ?? 'Course'),
+                'description' => 'Status: '.$course['completionStatus'],
                 'status' => $course['completionStatus'],
                 'data' => $course,
             ];
@@ -835,11 +828,11 @@ class StudentHistoryService
         // Add graduation events
         foreach ($graduations['graduations'] ?? [] as $graduation) {
             $events[] = [
-                'id' => 'graduation-' . $graduation['id'],
+                'id' => 'graduation-'.$graduation['id'],
                 'type' => 'graduation',
                 'date' => $graduation['batch']['graduationDate'] ?? substr($graduation['createdAt'], 0, 10),
-                'title' => 'Graduation: ' . ($graduation['batch']['name'] ?? 'Batch'),
-                'description' => 'Result: ' . ($graduation['finalResultStatus'] ?? 'N/A'),
+                'title' => 'Graduation: '.($graduation['batch']['name'] ?? 'Batch'),
+                'description' => 'Result: '.($graduation['finalResultStatus'] ?? 'N/A'),
                 'status' => $graduation['finalResultStatus'],
                 'data' => $graduation,
             ];
@@ -899,7 +892,7 @@ class StudentHistoryService
             // Jobs (async report generation) run without an authenticated user.
             // Skip audit logging in that case to avoid DB NOT NULL violation on user_id.
             $userId = Auth::id();
-            if (!$userId) {
+            if (! $userId) {
                 return;
             }
 
@@ -913,7 +906,7 @@ class StudentHistoryService
             ]);
         } catch (\Exception $e) {
             // Log error but don't fail the request
-            \Log::warning('Failed to log student history access: ' . $e->getMessage());
+            \Log::warning('Failed to log student history access: '.$e->getMessage());
         }
     }
 
@@ -935,5 +928,84 @@ class StudentHistoryService
             'graduations' => $this->getGraduationHistory($studentId, $organizationId),
             default => ['error' => 'Unknown section'],
         };
+    }
+
+    /**
+     * Resolve the current academic year for a school (is_current flag, then date-range fallback).
+     */
+    private function resolveCurrentAcademicYear(string $organizationId, ?string $schoolId): ?AcademicYear
+    {
+        if (! $schoolId) {
+            return null;
+        }
+
+        $currentYear = AcademicYear::query()
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->where('is_current', true)
+            ->first();
+
+        if (! $currentYear) {
+            $today = now()->toDateString();
+            $currentYear = AcademicYear::query()
+                ->where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->whereDate('start_date', '<=', $today)
+                ->whereDate('end_date', '>=', $today)
+                ->orderByDesc('start_date')
+                ->first();
+        }
+
+        return $currentYear;
+    }
+
+    /**
+     * Prefer the student's admission in the current academic year over the latest admission by date.
+     */
+    private function resolveCurrentAdmission(
+        string $studentId,
+        string $organizationId,
+        ?string $schoolId
+    ): ?StudentAdmission {
+        $currentYear = $this->resolveCurrentAcademicYear($organizationId, $schoolId);
+
+        if ($currentYear) {
+            $currentYearQuery = StudentAdmission::query()
+                ->where('student_id', $studentId)
+                ->where('organization_id', $organizationId)
+                ->whereNull('deleted_at')
+                ->where('academic_year_id', $currentYear->id)
+                ->with(['class', 'classAcademicYear', 'academicYear']);
+
+            if ($schoolId) {
+                $currentYearQuery->where('school_id', $schoolId);
+            }
+
+            $currentYearAdmission = $currentYearQuery
+                ->orderByDesc('admission_date')
+                ->orderByDesc('created_at')
+                ->first();
+
+            if ($currentYearAdmission) {
+                return $currentYearAdmission;
+            }
+        }
+
+        $fallbackQuery = StudentAdmission::query()
+            ->where('student_id', $studentId)
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->with(['class', 'classAcademicYear', 'academicYear']);
+
+        if ($schoolId) {
+            $fallbackQuery->where('school_id', $schoolId);
+        }
+
+        return $fallbackQuery
+            ->orderByDesc('admission_date')
+            ->orderByDesc('created_at')
+            ->first();
     }
 }

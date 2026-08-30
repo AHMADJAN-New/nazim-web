@@ -48,6 +48,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AdmissionFormDialog } from '@/components/admissions/AdmissionFormDialog';
 import { AdmissionDetailsPanel } from '@/components/admissions/AdmissionDetailsPanel';
+import { StudentNameWithFather } from '@/components/students/StudentNameWithFather';
+import { getAdmissionEnrollmentStatusLabel } from '@/lib/admissions/enrollmentStatus';
 import {
   Dialog,
   DialogContent,
@@ -271,26 +273,8 @@ export function StudentAdmissions() {
     return Array.from(options).sort((a, b) => a.localeCompare(b));
   }, [studentAutocomplete?.origProvinces, students]);
 
-  const getAdmissionStatusLabel = (status: AdmissionStatus) => {
-    switch (status) {
-      case 'pending':
-        return t('admissions.pending') || 'Pending';
-      case 'admitted':
-        return t('admissions.admitted') || 'Admitted';
-      case 'active':
-        return t('events.active') || 'Active';
-      case 'inactive':
-        return t('events.inactive') || 'Inactive';
-      case 'suspended':
-        return t('students.suspended') || 'Suspended';
-      case 'withdrawn':
-        return t('admissions.withdrawn') || 'Withdrawn';
-      case 'graduated':
-        return t('students.graduated') || 'Graduated';
-      default:
-        return status;
-    }
-  };
+  const getAdmissionStatusLabel = (status: AdmissionStatus) =>
+    getAdmissionEnrollmentStatusLabel(status, t);
 
   // Component for displaying student picture in admission table cell
   // Uses centralized PictureCell component with image caching
@@ -384,8 +368,15 @@ export function StudentAdmissions() {
         const admission = row.original;
         return (
           <div className="space-y-1 min-w-0 sm:min-w-[200px]">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold break-words min-w-0">{admission.student?.fullName || t('hostel.unassigned')}</span>
+            <div className="flex items-start gap-2 flex-wrap">
+              <StudentNameWithFather
+                fullName={admission.student?.fullName}
+                fatherName={admission.student?.fatherName}
+                fatherLabel={t('students.fatherName') || 'Father'}
+                fallbackName={t('hostel.unassigned')}
+                nameClassName="font-semibold"
+                className="min-w-0 flex-1"
+              />
               {admission.enrollmentStatus && (
                 <Badge variant={statusVariant(admission.enrollmentStatus)} className="shrink-0 text-xs">
                   {getAdmissionStatusLabel(admission.enrollmentStatus)}
@@ -856,8 +847,8 @@ export function StudentAdmissions() {
               <SelectItem value="all">{t('userManagement.allStatus') || 'All Status'}</SelectItem>
               <SelectItem value="pending">{t('admissions.pending') || 'Pending'}</SelectItem>
               <SelectItem value="admitted">{t('admissions.admitted') || 'Admitted'}</SelectItem>
-              <SelectItem value="active">{t('events.active') || 'Active'}</SelectItem>
-              <SelectItem value="inactive">{t('events.inactive') || 'Inactive'}</SelectItem>
+              <SelectItem value="active">{t('admissions.active') || 'Active'}</SelectItem>
+              <SelectItem value="inactive">{t('admissions.inactive') || 'Inactive'}</SelectItem>
               <SelectItem value="suspended">{t('students.suspended') || 'Suspended'}</SelectItem>
               <SelectItem value="withdrawn">{t('admissions.withdrawn') || 'Withdrawn'}</SelectItem>
               <SelectItem value="graduated">{t('students.graduated') || 'Graduated'}</SelectItem>
