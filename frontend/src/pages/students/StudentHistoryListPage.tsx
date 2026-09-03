@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 import { 
@@ -26,6 +26,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents, type StudentFilters } from '@/hooks/useStudents';
 import { useProfile } from '@/hooks/useProfiles';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useDebounce } from '@/hooks/useDebounce';
 import { StudentNameWithFather } from '@/components/students/StudentNameWithFather';
 import type { Student } from '@/types/domain/student';
 import { formatDate } from '@/lib/utils';
@@ -39,15 +40,17 @@ export default function StudentHistoryListPage() {
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | Student['status']>('all');
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   const studentFilters = useMemo<StudentFilters>(() => ({
-    search: searchQuery.trim() || undefined,
+    search: debouncedSearch.trim() || undefined,
     student_status: statusFilter !== 'all' ? statusFilter : undefined,
-  }), [searchQuery, statusFilter]);
+  }), [debouncedSearch, statusFilter]);
 
   const { 
     data: students, 
-    isLoading, 
+    isLoading,
+    isFetching,
     error,
     pagination,
     page,
@@ -56,9 +59,15 @@ export default function StudentHistoryListPage() {
     setPageSize,
   } = useStudents(orgIdForQuery, true, studentFilters);
 
-  useEffect(() => {
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
     setPage(1);
-  }, [searchQuery, statusFilter, setPage]);
+  };
+
+  const handleStatusChange = (value: 'all' | Student['status']) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
 
   const statusBadgeVariant = (status: Student['status']): 'success' | 'info' | 'warning' | 'outline' | 'destructive' | 'secondary' => {
     switch (status) {
@@ -204,7 +213,7 @@ export default function StudentHistoryListPage() {
     },
   });
 
-  if (isLoading) {
+  if (isLoading && !pagination) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -246,7 +255,7 @@ export default function StudentHistoryListPage() {
                 <Input
                   placeholder={t('students.searchPlaceholder') || 'Search by name, admission number...'}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -254,7 +263,7 @@ export default function StudentHistoryListPage() {
             <div className="w-full sm:w-48">
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | Student['status'])}
+                onChange={(e) => handleStatusChange(e.target.value as 'all' | Student['status'])}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="all">{t('common.allStatuses') || 'All Statuses'}</option>
@@ -271,13 +280,19 @@ export default function StudentHistoryListPage() {
       {/* Students Table */}
       <Card>
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="flex items-center gap-2">
             {t('students.title') || 'Students'} 
             {pagination && ` (${pagination.total} ${t('common.total') || 'total'})`}
+            {isFetching && !isLoading && (
+              <span
+                className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent"
+                aria-hidden
+              />
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className={`overflow-x-auto ${isFetching && !isLoading ? 'opacity-60 transition-opacity' : ''}`}>
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (

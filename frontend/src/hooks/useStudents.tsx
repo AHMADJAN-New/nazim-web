@@ -57,7 +57,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
   });
   const filterKey = filters ? JSON.stringify(filters) : undefined;
 
-  const { data, isLoading, error } = useQuery<Student[] | PaginatedResponse<StudentApi.Student>>({
+  const { data, isLoading, isFetching, error } = useQuery<Student[] | PaginatedResponse<StudentApi.Student>>({
     queryKey: [
       'students',
       organizationId ?? profile?.organization_id ?? null,
@@ -157,6 +157,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
     enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnReconnect: false,
+    placeholderData: (previousData) => previousData,
   });
 
   // Update pagination state from API response
@@ -172,6 +173,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
     return {
       data: paginatedData?.data || [],
       isLoading,
+      isFetching,
       error,
       pagination: paginatedData?.meta ?? null,
       paginationState,
@@ -185,6 +187,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean, fil
   return {
     data: data as Student[] | undefined,
     isLoading,
+    isFetching,
     error,
   };
 };
