@@ -642,6 +642,72 @@ export const platformApi = {
     },
   },
 
+  // Client error reports (platform admin)
+  errorReports: {
+    list: async (params?: {
+      status?: string;
+      user_reported?: string;
+      organization_id?: string;
+      search?: string;
+      start_date?: string;
+      end_date?: string;
+      page?: number;
+      per_page?: number;
+    }) => {
+      return apiClient.get<{
+        data: Array<{
+          id: string;
+          client_error_id?: string | null;
+          message: string;
+          stack?: string | null;
+          component_stack?: string | null;
+          url?: string | null;
+          user_agent?: string | null;
+          level: string;
+          user_id?: string | null;
+          organization_id?: string | null;
+          school_id?: string | null;
+          user_reported: boolean;
+          user_note?: string | null;
+          status: 'new' | 'read' | 'resolved' | 'ignored';
+          admin_notes?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          ip_address?: string | null;
+          created_at: string;
+          updated_at: string;
+        }>;
+        current_page: number;
+        last_page: number;
+        total: number;
+        per_page: number;
+      }>('/platform/error-reports', params);
+    },
+    get: async (id: string) => {
+      return apiClient.get<{ data: any }>(`/platform/error-reports/${id}`);
+    },
+    update: async (id: string, data: Partial<{
+      status?: 'new' | 'read' | 'resolved' | 'ignored';
+      admin_notes?: string;
+    }>) => {
+      return apiClient.put<{ data: any }>(`/platform/error-reports/${id}`, data);
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/platform/error-reports/${id}`);
+    },
+    stats: async () => {
+      return apiClient.get<{ data: {
+        total: number;
+        new: number;
+        read: number;
+        resolved: number;
+        ignored: number;
+        user_reported: number;
+        today: number;
+      } }>('/platform/error-reports/stats');
+    },
+  },
+
   // Login Audit (platform admin)
   loginAudit: {
     list: async (params?: LoginAuditApi.LoginAttemptFilters) => {

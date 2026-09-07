@@ -40,6 +40,22 @@ const SidebarContext = React.createContext<SidebarContext | null>(null)
 function useSidebar() {
   const context = React.useContext(SidebarContext)
   if (!context) {
+    // Vite HMR can briefly remount with a mismatched Context identity and crash the app.
+    // Fall back in development so ErrorBoundary is not triggered; still throw in production.
+    if (import.meta.env.DEV) {
+      console.warn(
+        "useSidebar used outside SidebarProvider (often Vite HMR). Using a temporary fallback."
+      )
+      return {
+        state: "expanded" as const,
+        open: true,
+        setOpen: () => {},
+        openMobile: false,
+        setOpenMobile: () => {},
+        isMobile: false,
+        toggleSidebar: () => {},
+      }
+    }
     throw new Error("useSidebar must be used within a SidebarProvider.")
   }
 

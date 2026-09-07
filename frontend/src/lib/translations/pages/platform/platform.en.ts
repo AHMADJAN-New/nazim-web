@@ -96,6 +96,11 @@ export default {
         high: 'High risk',
       },
     },
+    errorReports: {
+      title: 'Error reports',
+      openInbox: 'Open inbox',
+      dashboardDescription: '{today} today · {reported} user-reported',
+    },
     restoreType: {
       label: "Restore Type",
       databaseOnly: "Database Only (Preserve Current Files)",

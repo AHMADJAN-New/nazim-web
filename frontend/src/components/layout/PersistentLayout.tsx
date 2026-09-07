@@ -6,6 +6,7 @@ import { AppHeader } from "./AppHeader";
 import { SmartSidebar } from "@/components/navigation/SmartSidebar";
 import { SubscriptionStatusBanner } from "@/components/subscription/SubscriptionStatusBanner";
 import { LoadingSpinner } from "@/components/ui/loading";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useUserPermissions } from "@/hooks/usePermissions";
@@ -60,42 +61,44 @@ export function PersistentLayout() {
   }, []);
 
   return (
-    <div className="h-screen overflow-hidden flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <aside className="relative z-50 flex-shrink-0 isolate bg-sidebar flex h-full self-stretch" style={{ contain: 'layout style paint' }} aria-label="Sidebar">
-        <SmartSidebar />
-      </aside>
-      
-      <div className="flex-1 min-w-0 min-h-0 flex flex-col relative z-10 overflow-hidden">
-        <AppHeader 
-          title={pageTitle}
-          showBreadcrumb={false}
-          breadcrumbItems={[]}
-        />
+    <SidebarProvider>
+      <div className="h-screen overflow-hidden flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
+        <aside className="relative z-50 flex-shrink-0 isolate bg-sidebar flex h-full self-stretch" style={{ contain: 'layout style paint' }} aria-label="Sidebar">
+          <SmartSidebar />
+        </aside>
         
-        {/* Spacer to account for fixed header height on mobile only */}
-        <div className="h-14 sm:h-16 md:hidden flex-shrink-0" aria-hidden="true" />
-        
-        {/* Subscription status banner - shows for trial, grace, readonly, blocked */}
-        {showBanner && permissionsReady && (
-          <div className="px-4 py-2 border-b bg-background flex-shrink-0">
-            <SubscriptionStatusBanner 
-              compact={true}
-              onDismiss={handleDismissBanner}
-              showUsageWarnings={true}
-            />
-          </div>
-        )}
-        
-        <div className={`flex-1 min-h-0 custom-scrollbar min-w-0 relative ${showLoading ? 'overflow-clip' : 'overflow-y-auto overflow-x-hidden'}`} style={{ contain: 'layout style' }}>
-          {showLoading ? (
-            <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center justify-center bg-background z-10" style={{ contain: 'strict', clipPath: 'inset(0)' }}>
-              <LoadingSpinner size="lg" />
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col relative z-10 overflow-hidden">
+          <AppHeader 
+            title={pageTitle}
+            showBreadcrumb={false}
+            breadcrumbItems={[]}
+          />
+          
+          {/* Spacer to account for fixed header height on mobile only */}
+          <div className="h-14 sm:h-16 md:hidden flex-shrink-0" aria-hidden="true" />
+          
+          {/* Subscription status banner - shows for trial, grace, readonly, blocked */}
+          {showBanner && permissionsReady && (
+            <div className="px-4 py-2 border-b bg-background flex-shrink-0">
+              <SubscriptionStatusBanner 
+                compact={true}
+                onDismiss={handleDismissBanner}
+                showUsageWarnings={true}
+              />
             </div>
-          ) : (
-            <Outlet />
           )}
+          
+          <div className={`flex-1 min-h-0 custom-scrollbar min-w-0 relative ${showLoading ? 'overflow-clip' : 'overflow-y-auto overflow-x-hidden'}`} style={{ contain: 'layout style' }}>
+            {showLoading ? (
+              <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center justify-center bg-background z-10" style={{ contain: 'strict', clipPath: 'inset(0)' }}>
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : (
+              <Outlet />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

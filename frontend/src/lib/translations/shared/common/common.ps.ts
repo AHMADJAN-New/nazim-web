@@ -112,6 +112,8 @@ export default {
     unauthorized: "غیر مجاز",
     unknown: "نامعلوم",
     unread: "ندی لوستل شوی",
+    createdAt: "جوړ شوی په",
+    updatedAt: "تازه شوی په",
     update: "تازه کړئ",
     updating: "د تازه کولو په حال کې...",
     upload: "پورته کول",

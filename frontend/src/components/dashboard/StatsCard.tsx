@@ -42,8 +42,9 @@ export function StatsCard({
     secondary: {
       circle: "bg-secondary/10",
       iconBg: "bg-secondary/10",
-      icon: "text-secondary dark:text-secondary",
-      value: "text-secondary"
+      icon: "text-secondary-foreground dark:text-secondary-foreground",
+      // Use foreground (not --secondary bg) so the count stays readable on the card
+      value: "text-foreground"
     },
     success: {
       circle: "bg-green-500/10",

@@ -112,6 +112,8 @@ export default {
     unauthorized: "Unauthorized",
     unknown: "Unknown",
     unread: "Unread",
+    createdAt: "Created At",
+    updatedAt: "Updated At",
     update: "Update",
     updating: "Updating...",
     upload: "Upload",

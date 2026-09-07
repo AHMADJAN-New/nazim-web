@@ -96,6 +96,11 @@ export default {
         high: 'خطر مرتفع',
       },
     },
+    errorReports: {
+      title: 'تقارير الأخطاء',
+      openInbox: 'فتح صندوق الوارد',
+      dashboardDescription: '{today} اليوم · {reported} أبلغ عنها المستخدم',
+    },
     restoreType: {
       label: "نوع الاستعادة",
       databaseOnly: "قاعدة البيانات فقط (الحفاظ على الملفات الحالية)",

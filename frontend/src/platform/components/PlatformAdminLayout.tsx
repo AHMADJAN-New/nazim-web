@@ -21,6 +21,7 @@ import {
   Lock,
   Mail,
   MessageSquare,
+  Bug,
   Key,
   AlertCircle,
   Globe,
@@ -136,6 +137,24 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
     refetchOnWindowFocus: false,
   });
 
+  const { data: errorReportsStats } = useQuery({
+    queryKey: ['platform-error-reports-stats'],
+    queryFn: async () => {
+      const response = await platformApi.errorReports.stats();
+      const raw = (response as { data?: Record<string, unknown> })?.data ?? (response as Record<string, unknown>);
+      return {
+        total: Number(raw?.total ?? 0),
+        new: Number(raw?.new ?? 0),
+        user_reported: Number(raw?.user_reported ?? 0),
+        today: Number(raw?.today ?? 0),
+      };
+    },
+    staleTime: 30 * 1000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+
   // Fetch plan requests count
   const { data: planRequestsData } = useQuery({
     queryKey: ['platform-plan-requests-count'],
@@ -150,6 +169,7 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
   // Calculate counts
   const pendingActionsCount = (dashboardData?.pendingPayments || 0) + (dashboardData?.pendingRenewals || 0);
   const contactMessagesCount = contactMessagesStats?.new || 0;
+  const errorReportsCount = errorReportsStats?.new || 0;
   const planRequestsCount = planRequestsData?.pagination?.total || 0;
   const expiringSoonCount = dashboardData?.expiringSoon || 0;
   const recentlyExpiredCount = dashboardData?.recentlyExpired || 0;
@@ -310,6 +330,16 @@ export function PlatformAdminLayout({ children }: PlatformAdminLayoutProps) {
       description: 'Manage contact form submissions from landing page',
       badge: contactMessagesCount > 0 ? contactMessagesCount : null,
       badgeVariant: 'default' as const,
+    },
+    { 
+      name: 'Error Reports', 
+      href: '/platform/error-reports', 
+      icon: Bug,
+      iconColor: 'text-red-600',
+      iconBg: 'bg-red-600/10',
+      description: 'Client crashes and user-submitted bug reports',
+      badge: errorReportsCount > 0 ? errorReportsCount : null,
+      badgeVariant: 'destructive' as const,
     },
     { 
       name: 'Login Audit', 

@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Bug,
   Building2,
   CheckCircle,
   Clock,
@@ -27,10 +28,12 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { usePlatformDashboard, usePlatformPendingPayments, usePlatformPendingRenewals, usePlatformSubscriptions, usePlatformOrganizations, usePlatformOrganizationAdmins } from '../hooks/usePlatformAdmin';
 import { useLoginAlerts, useLockedAccounts } from '@/platform/hooks/useLoginAudit';
+import { platformApi } from '@/platform/lib/platformApi';
 
 import { OrganizationAdminsManagement } from '@/components/settings/OrganizationAdminsManagement';
 import { OrganizationsManagement } from '@/components/settings/OrganizationsManagement';
@@ -70,7 +73,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { TrendingUp as TrendingUpIcon } from 'lucide-react';
 
 export function PlatformAdminDashboard() {
-  const { t } = useLanguage();
+  const { t, tUnsafe } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -98,6 +101,23 @@ export function PlatformAdminDashboard() {
   const { data: organizationAdmins } = usePlatformOrganizationAdmins();
   const { data: loginAlertsData } = useLoginAlerts();
   const { data: lockedAccountsData } = useLockedAccounts();
+  const { data: errorReportsStats } = useQuery({
+    queryKey: ['platform-error-reports-stats'],
+    queryFn: async () => {
+      const response = await platformApi.errorReports.stats();
+      const raw = (response as { data?: Record<string, unknown> })?.data ?? (response as Record<string, unknown>);
+      return {
+        total: Number(raw?.total ?? 0),
+        new: Number(raw?.new ?? 0),
+        user_reported: Number(raw?.user_reported ?? 0),
+        today: Number(raw?.today ?? 0),
+      };
+    },
+    staleTime: 30 * 1000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
 
   if (isDashboardLoading) {
     return (
@@ -127,6 +147,9 @@ export function PlatformAdminDashboard() {
   const emailAlerts = loginAlertsData?.email_alerts ?? [];
   const alertsCount = ipAlerts.length + emailAlerts.length;
   const lockedCount = lockedAccountsData?.data?.length ?? 0;
+  const errorReportsNewCount = errorReportsStats?.new ?? 0;
+  const errorReportsTodayCount = errorReportsStats?.today ?? 0;
+  const errorReportsUserReportedCount = errorReportsStats?.user_reported ?? 0;
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden">
@@ -169,14 +192,14 @@ export function PlatformAdminDashboard() {
         />
       </div>
 
-      {/* Login Audit summary cards */}
-      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 max-w-2xl">
+      {/* Login Audit + Error Reports summary cards */}
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <StatsCard
           title={t('platform.loginAudit.alerts') ?? 'Brute-force alerts'}
           value={alertsCount}
           icon={Shield}
           description={t('platform.loginAudit.alertsLastHour') ?? 'IP/email in last hour'}
-          color={alertsCount > 0 ? 'destructive' : 'secondary'}
+          color={alertsCount > 0 ? 'destructive' : 'blue'}
           showButton
           buttonText={t('common.view') ?? 'View'}
           onClick={() => navigate('/platform/login-audit')}
@@ -186,10 +209,26 @@ export function PlatformAdminDashboard() {
           value={lockedCount}
           icon={Lock}
           description={t('platform.loginAudit.lockedAccountsDescription') ?? 'Due to failed attempts'}
-          color={lockedCount > 0 ? 'amber' : 'secondary'}
+          color={lockedCount > 0 ? 'amber' : 'blue'}
           showButton
           buttonText={t('common.view') ?? 'View'}
           onClick={() => navigate('/platform/login-audit')}
+        />
+        <StatsCard
+          title={tUnsafe('platform.errorReports.title') || 'Error reports'}
+          value={errorReportsNewCount}
+          icon={Bug}
+          description={
+            tUnsafe('platform.errorReports.dashboardDescription', {
+              today: errorReportsTodayCount,
+              reported: errorReportsUserReportedCount,
+            }) ||
+            `${errorReportsTodayCount} today · ${errorReportsUserReportedCount} user-reported`
+          }
+          color={errorReportsNewCount > 0 ? 'destructive' : 'blue'}
+          showButton
+          buttonText={tUnsafe('platform.errorReports.openInbox') || 'Open inbox'}
+          onClick={() => navigate('/platform/error-reports')}
         />
       </div>
 

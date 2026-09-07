@@ -100,6 +100,8 @@ export default {
     unauthorized: "غير مصرح",
     unknown: "غير معروف",
     unread: "Unread",
+    createdAt: "تاريخ الإنشاء",
+    updatedAt: "تاريخ التحديث",
     update: "تحديث",
     updating: "Updating...",
     upload: "رفع",

@@ -111,6 +111,8 @@ export default {
     unauthorized: "غیرمجاز",
     unknown: "نامشخص",
     unread: "خوانده نشده",
+    createdAt: "ایجاد شده در",
+    updatedAt: "به‌روزرسانی شده در",
     update: "به‌روزرسانی",
     updating: "در حال به‌روزرسانی...",
     upload: "آپلود",

@@ -1801,6 +1801,7 @@ Route::get('/reports/preview/template', [\App\Http\Controllers\ReportGenerationC
 // SUBSCRIPTION / SAAS ROUTES
 // =====================================================
 
+use App\Http\Controllers\ClientErrorReportController;
 use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\PlatformFilesController;
 use App\Http\Controllers\PlatformOrganizationOrderFormController;
@@ -1817,6 +1818,12 @@ Route::get('/testimonials', [TestimonialController::class, 'index']);
 
 // Public contact message route (for landing page)
 Route::post('/contact', [ContactMessageController::class, 'store']);
+
+// Client error reports from ErrorBoundary (optional auth via Sanctum bearer token)
+Route::middleware('throttle:60,1')->group(function () {
+    Route::post('/client-error-reports', [ClientErrorReportController::class, 'store']);
+    Route::patch('/client-error-reports/{id}/report', [ClientErrorReportController::class, 'report']);
+});
 
 // Authenticated subscription routes (require organization context)
 Route::middleware(['auth:sanctum', 'organization'])->prefix('subscription')->group(function () {
@@ -2025,6 +2032,13 @@ Route::middleware(['auth:sanctum', 'platform.admin'])->prefix('platform')->group
     Route::get('/contact-messages/{id}', [ContactMessageController::class, 'show']);
     Route::put('/contact-messages/{id}', [ContactMessageController::class, 'update']);
     Route::delete('/contact-messages/{id}', [ContactMessageController::class, 'destroy']);
+
+    // Client error reports (platform admin inbox)
+    Route::get('/error-reports', [ClientErrorReportController::class, 'index']);
+    Route::get('/error-reports/stats', [ClientErrorReportController::class, 'stats']);
+    Route::get('/error-reports/{id}', [ClientErrorReportController::class, 'show']);
+    Route::put('/error-reports/{id}', [ClientErrorReportController::class, 'update']);
+    Route::delete('/error-reports/{id}', [ClientErrorReportController::class, 'destroy']);
 
     // Login audit (platform admin)
     Route::prefix('login-audit')->group(function () {

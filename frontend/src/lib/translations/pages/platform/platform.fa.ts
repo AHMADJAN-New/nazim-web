@@ -96,6 +96,11 @@ export default {
         high: 'ریسک بالا',
       },
     },
+    errorReports: {
+      title: 'گزارش‌های خطا',
+      openInbox: 'باز کردن صندوق',
+      dashboardDescription: '{today} امروز · {reported} گزارش‌شده توسط کاربر',
+    },
     restoreType: {
       label: "نوع بازیابی",
       databaseOnly: "فقط پایگاه داده (حفظ فایل‌های فعلی)",

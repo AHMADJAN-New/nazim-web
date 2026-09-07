@@ -96,6 +96,11 @@ export default {
         high: 'لوړ خطر',
       },
     },
+    errorReports: {
+      title: 'د تېروتنې راپورونه',
+      openInbox: 'صندوق پرانیستل',
+      dashboardDescription: '{today} نن · {reported} د کارن لخوا راپور شوي',
+    },
     restoreType: {
       label: "د بېرته راګرځولو ډول",
       databaseOnly: "یوازې ډیټابیس (اوسنۍ فایلونه وساتل)",

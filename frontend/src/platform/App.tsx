@@ -21,6 +21,7 @@ import DesktopLicenseGeneration from './pages/admin/DesktopLicenseGeneration';
 import DesktopReleasesManagement from './pages/admin/DesktopReleasesManagement';
 import PlatformFilesManagement from './pages/admin/PlatformFilesManagement';
 import ContactMessagesManagement from './pages/admin/ContactMessagesManagement';
+import ErrorReportsManagement from './pages/admin/ErrorReportsManagement';
 import LoginAuditPage from './pages/admin/LoginAuditPage';
 import WebsiteManagementPage from './pages/admin/WebsiteManagementPage';
 import LandingOffersPage from './pages/admin/LandingOffersPage';
@@ -196,6 +197,7 @@ export function PlatformAdminApp() {
               } />
               <Route path="permission-groups" element={<PlatformPermissionGroupsManagement />} />
               <Route path="contact-messages" element={<ContactMessagesManagement />} />
+              <Route path="error-reports" element={<ErrorReportsManagement />} />
               <Route path="login-audit" element={<LoginAuditPage />} />
               {/* CRITICAL: More specific routes must come before less specific ones */}
               <Route path="settings/translations" element={

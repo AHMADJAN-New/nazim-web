@@ -193,6 +193,7 @@ export default {
     period: "دوره",
     personalInfo: "شخصي معلومات",
     phone: "ټیلیفون",
+    photo: "عکس",
     picture: "انځور",
     potentialDuplicate: "احتمالي تکرار وموندل شو",
     preferredLanguage: "غوره ژبه",

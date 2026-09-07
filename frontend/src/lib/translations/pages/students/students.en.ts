@@ -193,6 +193,7 @@ export default {
     period: "Period",
     personalInfo: "Personal Information",
     phone: "Phone",
+    photo: "Photo",
     picture: "Picture",
     potentialDuplicate: "Potential duplicate found",
     preferredLanguage: "Preferred Language",

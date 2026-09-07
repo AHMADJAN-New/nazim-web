@@ -219,6 +219,7 @@ import {
   OrganizationLimitsOverview,
   PlanRequestsPage,
   ContactMessagesManagement,
+  ErrorReportsManagement,
   LoginAuditPage,
   LandingOffersPage,
   PlatformSettings,
@@ -239,7 +240,6 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { HostelPermissionGuard } from "@/components/HostelPermissionGuard";
 import { PersistentLayout } from "@/components/layout/PersistentLayout";
 import { MaintenanceModeHandler } from "@/components/MaintenanceModeHandler";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -672,6 +672,11 @@ const App = () => (
                         <ContactMessagesManagement />
                       </Suspense>
                     } />
+                    <Route path="error-reports" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <ErrorReportsManagement />
+                      </Suspense>
+                    } />
                     <Route path="login-audit" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <LoginAuditPage />
@@ -857,9 +862,7 @@ const App = () => (
                   <Route element={
                     <ProtectedRoute>
                       <TourProviderWrapper tours={[appCoreTour, schoolSetupTour]} autoStart={false}>
-                        <SidebarProvider>
-                          <PersistentLayout />
-                        </SidebarProvider>
+                        <PersistentLayout />
                       </TourProviderWrapper>
                     </ProtectedRoute>
                   }>

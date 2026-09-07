@@ -193,6 +193,7 @@ export default {
     period: "دوره",
     personalInfo: "اطلاعات شخصی",
     phone: "تلفون",
+    photo: "عکس",
     picture: "تصویر",
     potentialDuplicate: "تکراری احتمالی یافت شد",
     preferredLanguage: "زبان ترجیحی",
