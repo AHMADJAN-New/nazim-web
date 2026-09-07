@@ -59,13 +59,14 @@ export function getAccountCurrencyCode(
 /**
  * Format a date for display
  * Now uses the calendar adapter to respect user's calendar preference
+ * and the current UI language for month names (unless locale is passed).
  * @param date The date to format (Date object or string)
- * @param locale The locale to use for formatting (default: 'en-US')
+ * @param locale Optional locale/language override (e.g. 'ps', 'fa', 'en-US')
  * @returns Formatted date string
  */
 export function formatDate(
   date: Date | string,
-  locale: string = 'en-US'
+  locale?: string
 ): string {
   // Delegate to calendar adapter which handles calendar conversion
   return adapterFormatDate(date, locale);
@@ -74,13 +75,14 @@ export function formatDate(
 /**
  * Format a date and time for display
  * Now uses the calendar adapter to respect user's calendar preference
+ * and the current UI language for month names (unless locale is passed).
  * @param date The date to format (Date object or string)
- * @param locale The locale to use for formatting (default: 'en-US')
+ * @param locale Optional locale/language override (e.g. 'ps', 'fa', 'en-US')
  * @returns Formatted date and time string
  */
 export function formatDateTime(
   date: Date | string,
-  locale: string = 'en-US'
+  locale?: string
 ): string {
   // Delegate to calendar adapter which handles calendar conversion
   return adapterFormatDateTime(date, locale);

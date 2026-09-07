@@ -49,6 +49,28 @@ function getStatusBadgeVariant(status: AttendanceStatus): 'default' | 'secondary
   }
 }
 
+function getStatusLabel(
+  status: AttendanceStatus,
+  t: (key: string) => string
+): string {
+  switch (status) {
+    case 'present':
+      return t('studentHistory.present') || 'Present';
+    case 'absent':
+      return t('studentHistory.absent') || 'Absent';
+    case 'late':
+      return t('studentHistory.late') || 'Late';
+    case 'excused':
+      return t('studentHistory.excused') || 'Excused';
+    case 'sick':
+      return t('studentHistory.sick') || 'Sick';
+    case 'leave':
+      return t('studentHistory.leave') || 'Leave';
+    default:
+      return status;
+  }
+}
+
 export function AttendanceSection({ attendance }: AttendanceSectionProps) {
   const { t } = useLanguage();
   const { summary, monthlyBreakdown, recentRecords } = attendance;
@@ -154,7 +176,7 @@ export function AttendanceSection({ attendance }: AttendanceSectionProps) {
                         <div className="flex items-center gap-2">
                           {getStatusIcon(record.status)}
                           <Badge variant={getStatusBadgeVariant(record.status)}>
-                            {record.status}
+                            {getStatusLabel(record.status, t)}
                           </Badge>
                         </div>
                       </TableCell>

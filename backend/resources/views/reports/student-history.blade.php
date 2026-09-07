@@ -1,7 +1,31 @@
 @extends('reports.base')
 
 @section('content')
-{{-- Watermark --}}
+@php
+    $labels = $labels ?? [];
+    $L = fn (string $key, string $fallback = '') => $labels[$key] ?? $fallback;
+    $dash = '—';
+    $primary = $PRIMARY_COLOR ?? '#0b0b56';
+    $secondary = $SECONDARY_COLOR ?? '#0056b3';
+
+    $rawGeneratedAt = $generatedAt ?? null;
+    $generatedAtDisplay = $rawGeneratedAt
+        ? \Carbon\Carbon::parse($rawGeneratedAt)->format('Y-m-d H:i')
+        : now()->format('Y-m-d H:i');
+
+    $rawCreatedAt = $student['created_at'] ?? ($student['createdAt'] ?? null);
+    $createdAtDisplay = $rawCreatedAt ? \Carbon\Carbon::parse($rawCreatedAt)->format('Y-m-d H:i') : $dash;
+
+    $phoneDisplay = $student['guardian_phone'] ?? ($student['phone'] ?? $dash);
+    $isOrphan = (bool) ($student['is_orphan'] ?? ($student['isOrphan'] ?? false));
+    $statusRaw = strtolower((string) ($student['status'] ?? 'unknown'));
+    $classLine = trim(implode(' ', array_filter([
+        $student['current_class'] ?? null,
+        !empty($student['current_section']) ? '(' . $student['current_section'] . ')' : null,
+        !empty($student['current_academic_year']) ? '- ' . $student['current_academic_year'] : null,
+    ]))) ?: $dash;
+@endphp
+
 @if(!empty($WATERMARK))
 <div class="watermark">
     @if(!empty($WATERMARK['text']))
@@ -12,7 +36,7 @@
 </div>
 @endif
 
-{{-- Header Section --}}
+{{-- Branding header --}}
 <div class="report-header">
     <div class="header-left">
         @if(!empty($PRIMARY_LOGO))
@@ -20,8 +44,8 @@
         @endif
     </div>
     <div class="header-center">
-        <div class="school-name">{{ $SCHOOL_NAME ?? 'School Name' }}</div>
-        <div class="report-title">{{ $TABLE_TITLE ?? 'Student Lifetime History Report' }}</div>
+        <div class="school-name">{{ $SCHOOL_NAME ?? '' }}</div>
+        <div class="report-title">{{ $TABLE_TITLE ?? $L('reportTitle', 'Student Lifetime History') }}</div>
         @if(!empty($HEADER_TEXT))
             <div class="header-text">{!! $HEADER_TEXT !!}</div>
         @endif
@@ -33,7 +57,6 @@
     </div>
 </div>
 
-{{-- Header Notes --}}
 @if(!empty($header_notes))
 <div class="notes-section header-notes">
     @foreach($header_notes as $note)
@@ -42,418 +65,176 @@
 </div>
 @endif
 
-{{-- Student Information Card --}}
-<div class="student-info-card">
-    @php
-        // Fix RTL number reversal: wrap numeric-ish content in <span class="ltr">...</span>
-        $rawGeneratedAt = $generatedAt ?? null;
-        $generatedAtDisplay = $rawGeneratedAt ? \Carbon\Carbon::parse($rawGeneratedAt)->format('Y-m-d H:i') : now()->format('Y-m-d H:i');
-
-        $rawCreatedAt = $student['created_at'] ?? ($student['createdAt'] ?? null);
-        $createdAtDisplay = $rawCreatedAt ? \Carbon\Carbon::parse($rawCreatedAt)->format('Y-m-d H:i') : '—';
-
-        $phoneDisplay = $student['guardian_phone'] ?? ($student['phone'] ?? '—');
-    @endphp
-    
-    {{-- Photo (top-right) with text wrapping around --}}
-    <div class="student-photo-wrap">
-        @if(!empty($student['picture_path']))
-            <img src="{{ $student['picture_path'] }}" alt="Student Photo" class="student-photo">
-        @else
-            <div class="no-photo">
-                <span>{{ mb_substr($student['full_name'] ?? 'S', 0, 1) }}</span>
+{{-- Hero profile card --}}
+<div class="sh-card sh-hero">
+    <div class="sh-hero-accent"></div>
+    <div class="sh-hero-body">
+        <div class="sh-photo-wrap">
+            @if(!empty($student['picture_path']))
+                <img src="{{ $student['picture_path'] }}" alt="Student Photo" class="sh-photo">
+            @else
+                <div class="sh-photo sh-photo-fallback">
+                    <span>{{ mb_substr($student['full_name'] ?? 'S', 0, 1) }}</span>
+                </div>
+            @endif
+        </div>
+        <div class="sh-hero-main">
+            <div class="sh-hero-name">{{ $student['full_name'] ?? $dash }}</div>
+            <div class="sh-hero-meta">
+                <span>{{ $L('admissionNo', 'Admission No') }}: <strong class="ltr">{{ $student['admission_no'] ?? $dash }}</strong></span>
+                <span>{{ $L('currentClass', 'Current Class') }}: <strong>{{ $classLine }}</strong></span>
+                <span>{{ $L('generatedAt', 'Generated At') }}: <strong class="ltr">{{ $generatedAtDisplay }}</strong></span>
             </div>
-        @endif
+            <div class="sh-hero-badges">
+                <span class="sh-badge status-{{ $statusRaw }}">{{ $student['status'] ?? $dash }}</span>
+                @if($isOrphan)
+                    <span class="sh-badge sh-badge-orphan">{{ $L('isOrphan', 'Orphan') }}</span>
+                @endif
+            </div>
+        </div>
     </div>
-
-    <table class="info-table">
-        <tr>
-            <td class="info-label">{{ $labels['fullName'] ?? 'Full Name' }}:</td>
-            <td class="info-value"><strong>{{ $student['full_name'] ?? '—' }}</strong></td>
-            <td class="info-label">{{ $labels['admissionNo'] ?? 'Admission No' }}:</td>
-            <td class="info-value">{{ $student['admission_no'] ?? '—' }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['fatherName'] ?? 'Father Name' }}:</td>
-            <td class="info-value">{{ $student['father_name'] ?? '—' }}</td>
-            <td class="info-label">{{ $labels['currentClass'] ?? 'Current Class' }}:</td>
-            <td class="info-value">
-                {{ $student['current_class'] ?? '—' }}
-                @if(!empty($student['current_section']))
-                    ({{ $student['current_section'] }})
-                @endif
-                @if(!empty($student['current_academic_year']))
-                    - {{ $student['current_academic_year'] }}
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['dob'] ?? 'Date of Birth' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $student['birth_date'] ?? '—' }}</span></td>
-            <td class="info-label">{{ $labels['status'] ?? 'Status' }}:</td>
-            <td class="info-value">
-                <span class="status-badge {{ strtolower($student['status'] ?? 'unknown') }}">
-                    {{ $student['status'] ?? '—' }}
-                </span>
-            </td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['phone'] ?? 'Phone' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $phoneDisplay }}</span></td>
-            <td class="info-label">{{ $labels['generatedAt'] ?? 'Generated At' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $generatedAtDisplay }}</span></td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['studentCode'] ?? 'Student Code' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $student['student_code'] ?? ($student['studentCode'] ?? '—') }}</span></td>
-            <td class="info-label">{{ $labels['cardNumber'] ?? 'Card Number' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $student['card_number'] ?? ($student['cardNumber'] ?? '—') }}</span></td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['firstName'] ?? 'First Name' }}:</td>
-            <td class="info-value">{{ $student['first_name'] ?? ($student['firstName'] ?? '—') }}</td>
-            <td class="info-label">{{ $labels['lastName'] ?? 'Last Name' }}:</td>
-            <td class="info-value">{{ $student['last_name'] ?? ($student['lastName'] ?? '—') }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['grandfatherName'] ?? 'Grandfather Name' }}:</td>
-            <td class="info-value">{{ $student['grandfather_name'] ?? ($student['grandfatherName'] ?? '—') }}</td>
-            <td class="info-label">{{ $labels['motherName'] ?? 'Mother Name' }}:</td>
-            <td class="info-value">{{ $student['mother_name'] ?? ($student['motherName'] ?? '—') }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['birthYear'] ?? 'Birth Year' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $student['birth_year'] ?? ($student['birthYear'] ?? '—') }}</span></td>
-            <td class="info-label">{{ $labels['age'] ?? 'Age' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $student['age'] ?? '—' }}</span></td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['isOrphan'] ?? 'Is Orphan' }}:</td>
-            <td class="info-value">{{ ($student['is_orphan'] ?? ($student['isOrphan'] ?? false)) ? ($labels['yes'] ?? 'Yes') : ($labels['no'] ?? 'No') }}</td>
-            <td class="info-label">{{ $labels['nationality'] ?? 'Nationality' }}:</td>
-            <td class="info-value">{{ $student['nationality'] ?? '—' }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['preferredLanguage'] ?? 'Preferred Language' }}:</td>
-            <td class="info-value">{{ $student['preferred_language'] ?? ($student['preferredLanguage'] ?? '—') }}</td>
-            <td class="info-label">{{ $labels['address'] ?? 'Address' }}:</td>
-            <td class="info-value">{{ $student['home_address'] ?? ($student['homeAddress'] ?? '—') }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['guardianName'] ?? 'Guardian' }}:</td>
-            <td class="info-value">
-                {{ $student['guardian_name'] ?? ($student['guardianName'] ?? '—') }}
-                @if(!empty($student['guardian_relation'] ?? ($student['guardianRelation'] ?? null)))
-                    ({{ $student['guardian_relation'] ?? $student['guardianRelation'] }})
-                @endif
-            </td>
-            <td class="info-label">{{ $labels['emergencyContact'] ?? 'Emergency Contact' }}:</td>
-            <td class="info-value">
-                {{ $student['emergency_contact_name'] ?? ($student['emergencyContactName'] ?? '—') }}
-                @if(!empty($student['emergency_contact_phone'] ?? ($student['emergencyContactPhone'] ?? null)))
-                    - <span class="ltr">{{ $student['emergency_contact_phone'] ?? $student['emergencyContactPhone'] }}</span>
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['guardianTazkira'] ?? 'Guardian Tazkira' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $student['guardian_tazkira'] ?? ($student['guardianTazkira'] ?? '—') }}</span></td>
-            <td class="info-label">{{ $labels['previousSchool'] ?? 'Previous School' }}:</td>
-            <td class="info-value">{{ $student['previous_school'] ?? ($student['previousSchool'] ?? '—') }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['admissionYear'] ?? 'Admission Year' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $student['admission_year'] ?? ($student['admissionYear'] ?? '—') }}</span></td>
-            <td class="info-label">{{ $labels['applyingGrade'] ?? 'Applying Grade' }}:</td>
-            <td class="info-value">{{ $student['applying_grade'] ?? ($student['applyingGrade'] ?? '—') }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['admissionFeeStatus'] ?? 'Admission Fee Status' }}:</td>
-            <td class="info-value">{{ $student['admission_fee_status'] ?? ($student['admissionFeeStatus'] ?? '—') }}</td>
-            <td class="info-label">{{ $labels['familyIncome'] ?? 'Family Income' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $student['family_income'] ?? ($student['familyIncome'] ?? '—') }}</span></td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['createdAt'] ?? 'Created At' }}:</td>
-            <td class="info-value"><span class="ltr">{{ $createdAtDisplay }}</span></td>
-            <td class="info-label">{{ $labels['organization'] ?? 'Organization' }}:</td>
-            <td class="info-value">{{ $student['organization_name'] ?? ($student['organizationName'] ?? '—') }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">{{ $labels['school'] ?? 'School' }}:</td>
-            <td class="info-value">{{ $student['school_name'] ?? ($student['schoolName'] ?? '—') }}</td>
-            <td class="info-label"></td>
-            <td class="info-value"></td>
-        </tr>
-    </table>
-    <div class="clearfix"></div>
 </div>
 
-{{-- Detailed Student Information Sections --}}
-{{-- NOTE: Disabled because you requested ALL student info inside the main card --}}
-@if(false)
-{{-- Personal Information Section --}}
-<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
-    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['personalInfo'] ?? 'Personal Information' }}</h4>
-    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
-        <tbody style="display: table-row-group !important;">
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['fullName'] ?? 'Full Name' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['full_name'] ?? ($student['fullName'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['firstName'] ?? 'First Name' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['first_name'] ?? ($student['firstName'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['lastName'] ?? 'Last Name' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['last_name'] ?? ($student['lastName'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['fatherName'] ?? 'Father Name' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['father_name'] ?? ($student['fatherName'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['grandfatherName'] ?? 'Grandfather Name' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['grandfather_name'] ?? ($student['grandfatherName'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['motherName'] ?? 'Mother Name' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['mother_name'] ?? ($student['motherName'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['gender'] ?? 'Gender' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['gender'] ?? '—' }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['dob'] ?? 'Date of Birth' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['birth_date'] ?? ($student['birthDate'] ?? ($student['dateOfBirth'] ?? '—')) }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['birthYear'] ?? 'Birth Year' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['birth_year'] ?? ($student['birthYear'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['age'] ?? 'Age' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['age'] ?? '—' }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['nationality'] ?? 'Nationality' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['nationality'] ?? '—' }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['preferredLanguage'] ?? 'Preferred Language' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['preferred_language'] ?? ($student['preferredLanguage'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['isOrphan'] ?? 'Is Orphan' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ ($student['is_orphan'] ?? ($student['isOrphan'] ?? false)) ? ($labels['yes'] ?? 'Yes') : ($labels['no'] ?? 'No') }}</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-{{-- Contact Information Section --}}
-<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
-    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['contactInfo'] ?? 'Contact Information' }}</h4>
-    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
-        <tbody style="display: table-row-group !important;">
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['phone'] ?? 'Phone' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['phone'] ?? '—' }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['address'] ?? 'Home Address' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['home_address'] ?? ($student['homeAddress'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['emergencyContactName'] ?? 'Emergency Contact Name' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['emergency_contact_name'] ?? ($student['emergencyContactName'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['emergencyContactPhone'] ?? 'Emergency Contact Phone' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['emergency_contact_phone'] ?? ($student['emergencyContactPhone'] ?? '—') }}</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-{{-- Location Information Section --}}
-<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
-    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['locationInfo'] ?? 'Location Information' }}</h4>
-    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
-        <tbody style="display: table-row-group !important;">
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td colspan="4" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-weight: bold !important; padding-bottom: 5px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['originLocation'] ?? 'Origin Location' }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['province'] ?? 'Province' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['orig_province'] ?? ($student['origProvince'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['district'] ?? 'District' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['orig_district'] ?? ($student['origDistrict'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['village'] ?? 'Village' }}:</td>
-            <td class="info-value" colspan="3" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['orig_village'] ?? ($student['origVillage'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td colspan="4" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-weight: bold !important; padding-top: 10px !important; padding-bottom: 5px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['currentLocation'] ?? 'Current Location' }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['province'] ?? 'Province' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['curr_province'] ?? ($student['currProvince'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['district'] ?? 'District' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['curr_district'] ?? ($student['currDistrict'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['village'] ?? 'Village' }}:</td>
-            <td class="info-value" colspan="3" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['curr_village'] ?? ($student['currVillage'] ?? '—') }}</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-{{-- Guardian Information Section --}}
-<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
-    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['guardianInfo'] ?? 'Guardian Information' }}</h4>
-    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
-        <tbody style="display: table-row-group !important;">
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guardianName'] ?? 'Guardian Name' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['guardian_name'] ?? ($student['guardianName'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guardianRelation'] ?? 'Relation' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['guardian_relation'] ?? ($student['guardianRelation'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guardianPhone'] ?? 'Guardian Phone' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['guardian_phone'] ?? ($student['guardianPhone'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guardianTazkira'] ?? 'Guardian Tazkira' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['guardian_tazkira'] ?? ($student['guardianTazkira'] ?? '—') }}</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-{{-- Guarantor (Zamin) Information Section --}}
-<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
-    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['guarantorInfo'] ?? 'Guarantor Information' }}</h4>
-    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
-        <tbody style="display: table-row-group !important;">
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guarantorName'] ?? 'Guarantor Name' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['zamin_name'] ?? ($student['zaminName'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guarantorPhone'] ?? 'Guarantor Phone' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['zamin_phone'] ?? ($student['zaminPhone'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guarantorTazkira'] ?? 'Guarantor Tazkira' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['zamin_tazkira'] ?? ($student['zaminTazkira'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['guarantorAddress'] ?? 'Guarantor Address' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['zamin_address'] ?? ($student['zaminAddress'] ?? '—') }}</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-{{-- Academic Information Section --}}
-<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
-    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['academicInfo'] ?? 'Academic Information' }}</h4>
-    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
-        <tbody style="display: table-row-group !important;">
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['admissionYear'] ?? 'Admission Year' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['admission_year'] ?? ($student['admissionYear'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['applyingGrade'] ?? 'Applying Grade' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['applying_grade'] ?? ($student['applyingGrade'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['admissionFeeStatus'] ?? 'Admission Fee Status' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['admission_fee_status'] ?? ($student['admissionFeeStatus'] ?? '—') }}</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-{{-- Financial Information Section --}}
-<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
-    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['financialInfo'] ?? 'Financial Information' }}</h4>
-    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
-        <tbody style="display: table-row-group !important;">
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['familyIncome'] ?? 'Family Income / Support' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['family_income'] ?? ($student['familyIncome'] ?? '—') }}</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-{{-- System Information Section --}}
-<div class="info-section" style="display: block !important; visibility: visible !important; opacity: 1 !important; page-break-inside: avoid; margin-top: 20px !important; margin-bottom: 20px !important;">
-    <h4 style="display: block !important; visibility: visible !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-weight: 700 !important; font-size: 12px !important; margin: 0 0 10px 0 !important; padding-bottom: 5px !important; border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important; color: {{ $PRIMARY_COLOR ?? '#0b0b56' }} !important;">{{ $labels['systemInfo'] ?? 'System Information' }}</h4>
-    <table class="info-table" style="display: table !important; visibility: visible !important; width: 100% !important; border-collapse: collapse !important;">
-        <tbody style="display: table-row-group !important;">
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['status'] ?? 'Status' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">
-                <span class="status-badge {{ strtolower($student['status'] ?? 'unknown') }}" style="font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important;">
-                    {{ $student['status'] ?? '—' }}
-                </span>
-            </td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['createdAt'] ?? 'Created At' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['created_at'] ?? ($student['createdAt'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['studentCode'] ?? 'Student Code' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['student_code'] ?? ($student['studentCode'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['cardNumber'] ?? 'Card Number' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['card_number'] ?? ($student['cardNumber'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['school'] ?? 'School' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['school_name'] ?? ($student['schoolName'] ?? '—') }}</td>
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['organization'] ?? 'Organization' }}:</td>
-            <td class="info-value" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['organization_name'] ?? ($student['organizationName'] ?? '—') }}</td>
-        </tr>
-        <tr style="display: table-row !important; visibility: visible !important;">
-            <td class="info-label" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $labels['previousSchool'] ?? 'Previous School' }}:</td>
-            <td class="info-value" colspan="3" style="display: table-cell !important; visibility: visible !important; padding: 6px 10px !important; font-family: 'BahijNassim', 'DejaVu Sans', Arial, sans-serif !important; font-size: 11px !important;">{{ $student['previous_school'] ?? ($student['previousSchool'] ?? '—') }}</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-@endif
-
-{{-- Summary Cards --}}
+{{-- Summary metrics --}}
 @if(!empty($summary))
-<div class="summary-section">
-    <h3 class="section-title">{{ $labels['summary'] ?? 'Summary' }}</h3>
-    <div class="summary-cards">
-        @if(isset($summary['academic_years']))
-        <div class="summary-card">
-            <div class="summary-value">{{ $summary['academic_years'] }}</div>
-            <div class="summary-label">{{ $labels['academicYears'] ?? 'Academic Years' }}</div>
+<div class="sh-card">
+    <div class="sh-card-title">{{ $L('summary', 'Summary') }}</div>
+    <div class="sh-metrics">
+        <div class="sh-metric">
+            <div class="sh-metric-value ltr">{{ $summary['academic_years'] ?? 0 }}</div>
+            <div class="sh-metric-label">{{ $L('academicYears', 'Academic Years') }}</div>
         </div>
-        @endif
-        @if(isset($summary['attendance_rate']))
-        <div class="summary-card">
-            <div class="summary-value">{{ $summary['attendance_rate'] }}%</div>
-            <div class="summary-label">{{ $labels['attendanceRate'] ?? 'Attendance Rate' }}</div>
+        <div class="sh-metric">
+            <div class="sh-metric-value ltr">{{ $summary['attendance_rate'] ?? 0 }}%</div>
+            <div class="sh-metric-label">{{ $L('attendanceRate', 'Attendance Rate') }}</div>
         </div>
-        @endif
-        @if(isset($summary['exam_average']))
-        <div class="summary-card">
-            <div class="summary-value">{{ $summary['exam_average'] }}%</div>
-            <div class="summary-label">{{ $labels['examAverage'] ?? 'Exam Average' }}</div>
+        <div class="sh-metric">
+            <div class="sh-metric-value ltr">{{ $summary['exam_average'] ?? 0 }}%</div>
+            <div class="sh-metric-label">{{ $L('examAverage', 'Exam Average') }}</div>
         </div>
-        @endif
-        @if(isset($summary['total_fees_paid']))
-        <div class="summary-card">
-            <div class="summary-value">{{ number_format($summary['total_fees_paid'], 0) }}</div>
-            <div class="summary-label">{{ $labels['totalFeesPaid'] ?? 'Total Fees Paid' }}</div>
+        <div class="sh-metric">
+            <div class="sh-metric-value ltr">{{ number_format($summary['total_fees_paid'] ?? 0, 0) }}</div>
+            <div class="sh-metric-label">{{ $L('totalFeesPaid', 'Fees Paid') }}</div>
         </div>
-        @endif
-        @if(isset($summary['library_loans']))
-        <div class="summary-card">
-            <div class="summary-value">{{ $summary['library_loans'] }}</div>
-            <div class="summary-label">{{ $labels['libraryLoans'] ?? 'Library Loans' }}</div>
+        <div class="sh-metric">
+            <div class="sh-metric-value ltr">{{ $summary['library_loans'] ?? 0 }}</div>
+            <div class="sh-metric-label">{{ $L('libraryLoans', 'Library Loans') }}</div>
         </div>
-        @endif
-        @if(isset($summary['courses_completed']))
-        <div class="summary-card">
-            <div class="summary-value">{{ $summary['courses_completed'] }}</div>
-            <div class="summary-label">{{ $labels['coursesCompleted'] ?? 'Courses Completed' }}</div>
+        <div class="sh-metric">
+            <div class="sh-metric-value ltr">{{ $summary['courses_completed'] ?? 0 }}</div>
+            <div class="sh-metric-label">{{ $L('coursesCompleted', 'Courses Completed') }}</div>
         </div>
-        @endif
     </div>
 </div>
 @endif
 
-{{-- Body Notes --}}
+@php
+    $fieldPairs = function (array $pairs) use ($dash) {
+        $rows = [];
+        for ($i = 0; $i < count($pairs); $i += 2) {
+            $rows[] = [$pairs[$i], $pairs[$i + 1] ?? [null, null]];
+        }
+        return $rows;
+    };
+
+    $personalPairs = $fieldPairs([
+        [$L('fullName', 'Full Name'), $student['full_name'] ?? $dash],
+        [$L('admissionNo', 'Admission No'), $student['admission_no'] ?? $dash],
+        [$L('firstName', 'First Name'), $student['first_name'] ?? $dash],
+        [$L('lastName', 'Last Name'), $student['last_name'] ?? $dash],
+        [$L('fatherName', 'Father Name'), $student['father_name'] ?? $dash],
+        [$L('grandfatherName', 'Grandfather Name'), $student['grandfather_name'] ?? $dash],
+        [$L('motherName', 'Mother Name'), $student['mother_name'] ?? $dash],
+        [$L('gender', 'Gender'), $student['gender'] ?? $dash],
+        [$L('dob', 'Date of Birth'), $student['birth_date'] ?? $dash],
+        [$L('birthYear', 'Birth Year'), $student['birth_year'] ?? $dash],
+        [$L('age', 'Age'), $student['age'] ?? $dash],
+        [$L('isOrphan', 'Is Orphan'), $isOrphan ? $L('yes', 'Yes') : $L('no', 'No')],
+        [$L('nationality', 'Nationality'), $student['nationality'] ?? $dash],
+        [$L('preferredLanguage', 'Preferred Language'), $student['preferred_language'] ?? $dash],
+    ]);
+
+    $contactPairs = $fieldPairs([
+        [$L('phone', 'Phone'), $student['phone'] ?? $dash],
+        [$L('homeAddress', 'Home Address'), $student['home_address'] ?? $dash],
+        [$L('emergencyContactName', 'Emergency Contact Name'), $student['emergency_contact_name'] ?? $dash],
+        [$L('emergencyContactPhone', 'Emergency Contact Phone'), $student['emergency_contact_phone'] ?? $dash],
+    ]);
+
+    $locationPairs = $fieldPairs([
+        [$L('originProvince', 'Origin Province'), $student['orig_province'] ?? $dash],
+        [$L('originDistrict', 'Origin District'), $student['orig_district'] ?? $dash],
+        [$L('originVillage', 'Origin Village'), $student['orig_village'] ?? $dash],
+        [$L('currentProvince', 'Current Province'), $student['curr_province'] ?? $dash],
+        [$L('currentDistrict', 'Current District'), $student['curr_district'] ?? $dash],
+        [$L('currentVillage', 'Current Village'), $student['curr_village'] ?? $dash],
+    ]);
+
+    $guardianPairs = $fieldPairs([
+        [$L('guardianName', 'Guardian'), $student['guardian_name'] ?? $dash],
+        [$L('guardianRelation', 'Relation'), $student['guardian_relation'] ?? $dash],
+        [$L('guardianPhone', 'Guardian Phone'), $student['guardian_phone'] ?? $dash],
+        [$L('guardianTazkira', 'Guardian Tazkira'), $student['guardian_tazkira'] ?? $dash],
+    ]);
+
+    $guarantorPairs = $fieldPairs([
+        [$L('guarantorName', 'Guarantor Name'), $student['zamin_name'] ?? $dash],
+        [$L('guarantorPhone', 'Guarantor Phone'), $student['zamin_phone'] ?? $dash],
+        [$L('guarantorTazkira', 'Guarantor Tazkira'), $student['zamin_tazkira'] ?? $dash],
+        [$L('guarantorAddress', 'Guarantor Address'), $student['zamin_address'] ?? $dash],
+    ]);
+
+    $academicPairs = $fieldPairs([
+        [$L('currentClass', 'Current Class'), $classLine],
+        [$L('currentAcademicYear', 'Academic Year'), $student['current_academic_year'] ?? $dash],
+        [$L('admissionYear', 'Admission Year'), $student['admission_year'] ?? $dash],
+        [$L('applyingGrade', 'Applying Grade'), $student['applying_grade'] ?? $dash],
+        [$L('previousSchool', 'Previous School'), $student['previous_school'] ?? $dash],
+        [$L('studentCode', 'Student Code'), $student['student_code'] ?? $dash],
+    ]);
+
+    $financialPairs = $fieldPairs([
+        [$L('admissionFeeStatus', 'Admission Fee Status'), $student['admission_fee_status'] ?? $dash],
+        [$L('familyIncome', 'Family Income'), $student['family_income'] ?? $dash],
+        [$L('cardNumber', 'Card Number'), $student['card_number'] ?? $dash],
+        [$L('status', 'Status'), $student['status'] ?? $dash],
+    ]);
+
+    $systemPairs = $fieldPairs([
+        [$L('school', 'School'), $student['school_name'] ?? $dash],
+        [$L('organization', 'Organization'), $student['organization_name'] ?? $dash],
+        [$L('createdAt', 'Created At'), $createdAtDisplay],
+        [$L('generatedAt', 'Generated At'), $generatedAtDisplay],
+    ]);
+@endphp
+
+@foreach([
+    ['title' => $L('personalInfo', 'Personal Information'), 'rows' => $personalPairs],
+    ['title' => $L('contactInfo', 'Contact Information'), 'rows' => $contactPairs],
+    ['title' => $L('locationInfo', 'Location Information'), 'rows' => $locationPairs],
+    ['title' => $L('guardianInfo', 'Guardian Information'), 'rows' => $guardianPairs],
+    ['title' => $L('guarantorInfo', 'Guarantor Information'), 'rows' => $guarantorPairs],
+    ['title' => $L('academicInfo', 'Academic Information'), 'rows' => $academicPairs],
+    ['title' => $L('financialInfo', 'Financial Information'), 'rows' => $financialPairs],
+    ['title' => $L('systemInfo', 'System Information'), 'rows' => $systemPairs],
+] as $sectionCard)
+<div class="sh-card">
+    <div class="sh-card-title">{{ $sectionCard['title'] }}</div>
+    <table class="sh-fields">
+        @foreach($sectionCard['rows'] as $row)
+            <tr>
+                @foreach($row as $cell)
+                    @if($cell)
+                        <td class="sh-field-label">{{ $cell[0] }}</td>
+                        <td class="sh-field-value">{{ $cell[1] !== null && $cell[1] !== '' ? $cell[1] : $dash }}</td>
+                    @endif
+                @endforeach
+            </tr>
+        @endforeach
+    </table>
+</div>
+@endforeach
+
 @if(!empty($body_notes))
 <div class="notes-section body-notes">
     @foreach($body_notes as $note)
@@ -462,489 +243,369 @@
 </div>
 @endif
 
-{{-- Admissions Section --}}
+{{-- Admissions --}}
 @if(!empty($sections['admissions']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['admissionsTitle'] ?? 'Admissions History' }}</h3>
+<div class="sh-card">
+    <div class="sh-card-title">{{ $L('admissionsTitle', 'Admissions History') }}</div>
     <table class="data-table">
         <thead>
             <tr>
                 <th>#</th>
-                <th>{{ $labels['academicYear'] ?? 'Academic Year' }}</th>
-                <th>{{ $labels['class'] ?? 'Class' }}</th>
-                <th>{{ $labels['admissionDate'] ?? 'Admission Date' }}</th>
-                <th>{{ $labels['enrollmentStatus'] ?? 'Status' }}</th>
-                <th>{{ $labels['enrollmentType'] ?? 'Type' }}</th>
-                <th>{{ $labels['residencyType'] ?? 'Residency' }}</th>
+                <th>{{ $L('academicYear', 'Academic Year') }}</th>
+                <th>{{ $L('class', 'Class') }}</th>
+                <th>{{ $L('admissionDate', 'Admission Date') }}</th>
+                <th>{{ $L('enrollmentStatus', 'Status') }}</th>
+                <th>{{ $L('enrollmentType', 'Type') }}</th>
+                <th>{{ $L('residencyType', 'Residency') }}</th>
             </tr>
         </thead>
         <tbody>
             @forelse($sections['admissions'] as $index => $admission)
             <tr>
                 <td class="row-number">{{ (int)$index + 1 }}</td>
-                <td>{{ $admission['academic_year'] ?? '—' }}</td>
-                <td>{{ $admission['class'] ?? '—' }}</td>
-                <td>{{ $admission['admission_date'] ?? '—' }}</td>
-                <td>{{ $admission['enrollment_status'] ?? '—' }}</td>
-                <td>{{ $admission['enrollment_type'] ?? '—' }}</td>
-                <td>{{ $admission['residency_type'] ?? '—' }}</td>
+                <td>{{ $admission['academic_year'] ?? $dash }}</td>
+                <td>{{ $admission['class'] ?? $dash }}</td>
+                <td class="ltr">{{ $admission['admission_date'] ?? $dash }}</td>
+                <td>{{ $admission['enrollment_status'] ?? $dash }}</td>
+                <td>{{ $admission['enrollment_type'] ?? $dash }}</td>
+                <td>{{ $admission['residency_type'] ?? $dash }}</td>
             </tr>
             @empty
-            <tr>
-                <td colspan="7" class="empty-row">{{ $labels['noAdmissions'] ?? 'No admission records found' }}</td>
-            </tr>
+            <tr><td colspan="7" class="empty-row">{{ $L('noAdmissions', 'No admission records found') }}</td></tr>
             @endforelse
         </tbody>
     </table>
 </div>
 @endif
 
-{{-- Attendance Section --}}
+{{-- Attendance --}}
 @if(!empty($sections['attendance']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['attendanceTitle'] ?? 'Attendance Summary' }}</h3>
-    @php
-        $attendanceSummary = $sections['attendance']['summary'] ?? [];
-        $attendanceMonthly = $sections['attendance']['monthly_breakdown'] ?? [];
-    @endphp
-
-    {{-- Summary --}}
-    <table class="data-table">
+@php
+    $attSummary = $sections['attendance']['summary'] ?? [];
+    $attMonths = $sections['attendance']['monthly_breakdown'] ?? [];
+@endphp
+<div class="sh-card">
+    <div class="sh-card-title">{{ $L('attendanceTitle', 'Attendance') }}</div>
+    <table class="data-table" style="margin-bottom: 8px;">
         <thead>
             <tr>
-                <th>{{ $labels['totalDays'] ?? 'Total Days' }}</th>
-                <th>{{ $labels['present'] ?? 'Present' }}</th>
-                <th>{{ $labels['absent'] ?? 'Absent' }}</th>
-                <th>{{ $labels['late'] ?? 'Late' }}</th>
-                <th>{{ $labels['attendanceRate'] ?? 'Rate' }}</th>
+                <th>{{ $L('totalDays', 'Total Days') }}</th>
+                <th>{{ $L('present', 'Present') }}</th>
+                <th>{{ $L('absent', 'Absent') }}</th>
+                <th>{{ $L('late', 'Late') }}</th>
+                <th>{{ $L('rate', 'Rate (%)') }}</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>{{ $attendanceSummary['total_days'] ?? 0 }}</td>
-                <td class="present-cell">{{ $attendanceSummary['present'] ?? 0 }}</td>
-                <td class="absent-cell">{{ $attendanceSummary['absent'] ?? 0 }}</td>
-                <td class="late-cell">{{ $attendanceSummary['late'] ?? 0 }}</td>
-                <td>{{ $attendanceSummary['rate'] ?? 0 }}%</td>
+                <td class="ltr">{{ $attSummary['total_days'] ?? 0 }}</td>
+                <td class="present-cell ltr">{{ $attSummary['present'] ?? 0 }}</td>
+                <td class="absent-cell ltr">{{ $attSummary['absent'] ?? 0 }}</td>
+                <td class="late-cell ltr">{{ $attSummary['late'] ?? 0 }}</td>
+                <td class="ltr">{{ $attSummary['rate'] ?? 0 }}%</td>
             </tr>
         </tbody>
     </table>
-
-    {{-- Monthly breakdown --}}
-    @if(!empty($attendanceMonthly))
-        <div style="height: 8px;"></div>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>{{ $labels['month'] ?? 'Month' }}</th>
-                    <th>{{ $labels['present'] ?? 'Present' }}</th>
-                    <th>{{ $labels['absent'] ?? 'Absent' }}</th>
-                    <th>{{ $labels['late'] ?? 'Late' }}</th>
-                    <th>{{ $labels['attendanceRate'] ?? 'Rate' }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($attendanceMonthly as $m)
-                    <tr>
-                        <td>{{ $m['month'] ?? '—' }}</td>
-                        <td class="present-cell">{{ $m['present'] ?? 0 }}</td>
-                        <td class="absent-cell">{{ $m['absent'] ?? 0 }}</td>
-                        <td class="late-cell">{{ $m['late'] ?? 0 }}</td>
-                        <td>{{ $m['rate'] ?? 0 }}%</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+    @if(!empty($attMonths))
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>{{ $L('month', 'Month') }}</th>
+                <th>{{ $L('present', 'Present') }}</th>
+                <th>{{ $L('absent', 'Absent') }}</th>
+                <th>{{ $L('late', 'Late') }}</th>
+                <th>{{ $L('rate', 'Rate (%)') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($attMonths as $m)
+            <tr>
+                <td>{{ $m['month'] ?? $dash }}</td>
+                <td class="present-cell ltr">{{ $m['present'] ?? 0 }}</td>
+                <td class="absent-cell ltr">{{ $m['absent'] ?? 0 }}</td>
+                <td class="late-cell ltr">{{ $m['late'] ?? 0 }}</td>
+                <td class="ltr">{{ $m['rate'] ?? 0 }}%</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+    @else
+        <div class="empty-row">{{ $L('noAttendance', 'No attendance records found') }}</div>
     @endif
 </div>
 @endif
 
-{{-- Exams Section --}}
+{{-- Exams --}}
 @if(!empty($sections['exams']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['examsTitle'] ?? 'Exam History' }}</h3>
-    @php
-        $examsSummary = $sections['exams']['summary'] ?? [];
-        $examRows = $sections['exams']['exams'] ?? [];
-    @endphp
-
-    {{-- Summary --}}
-    <table class="data-table">
+@php
+    $examsSummary = $sections['exams']['summary'] ?? [];
+    $examRows = $sections['exams']['exams'] ?? [];
+@endphp
+<div class="sh-card">
+    <div class="sh-card-title">{{ $L('examsTitle', 'Exam History') }}</div>
+    <table class="data-table" style="margin-bottom: 8px;">
         <thead>
             <tr>
-                <th>{{ $labels['totalExams'] ?? 'Total Exams' }}</th>
-                <th>{{ $labels['averagePercentage'] ?? 'Average %' }}</th>
+                <th>{{ $L('totalExams', 'Total Exams') }}</th>
+                <th>{{ $L('averagePercentage', 'Average %') }}</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>{{ $examsSummary['total_exams'] ?? 0 }}</td>
-                <td>{{ $examsSummary['average_percentage'] ?? 0 }}%</td>
+                <td class="ltr">{{ $examsSummary['total_exams'] ?? 0 }}</td>
+                <td class="ltr">{{ $examsSummary['average_percentage'] ?? 0 }}%</td>
             </tr>
         </tbody>
     </table>
-
-    {{-- Exams --}}
-    @if(!empty($examRows))
-        <div style="height: 8px;"></div>
-        @foreach($examRows as $idx => $exam)
-            <div class="history-subsection" style="margin-top: 6px;">
-                <div style="font-weight: 700; margin-bottom: 4px;">
-                    {{ ((int)$idx + 1) }}. {{ $exam['exam_name'] ?? '—' }} — {{ $exam['class_name'] ?? '' }} @if(!empty($exam['exam_date'])) ({{ $exam['exam_date'] }}) @endif
-                </div>
-
-                <table class="data-table" style="margin-bottom: 6px;">
-                    <thead>
-                        <tr>
-                            <th>{{ $labels['totalMarks'] ?? 'Total' }}</th>
-                            <th>{{ $labels['maxMarks'] ?? 'Max' }}</th>
-                            <th>{{ $labels['percentage'] ?? '%' }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ $exam['total_marks'] ?? 0 }}</td>
-                            <td>{{ $exam['max_marks'] ?? 0 }}</td>
-                            <td>{{ $exam['percentage'] ?? 0 }}%</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                @if(!empty($exam['subject_results']))
-                    <table class="data-table" style="font-size: 11px;">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>{{ $labels['subject'] ?? 'Subject' }}</th>
-                                <th>{{ $labels['obtainedMarks'] ?? 'Obtained' }}</th>
-                                <th>{{ $labels['maxMarks'] ?? 'Max' }}</th>
-                                <th>{{ $labels['percentage'] ?? '%' }}</th>
-                                <th>{{ $labels['absent'] ?? 'Absent' }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($exam['subject_results'] as $sIdx => $sr)
-                                <tr>
-                                    <td class="row-number">{{ (int)$sIdx + 1 }}</td>
-                                    <td>{{ $sr['subject_name'] ?? '—' }}</td>
-                                    <td>{{ $sr['marks_obtained'] ?? 0 }}</td>
-                                    <td>{{ $sr['max_marks'] ?? 0 }}</td>
-                                    <td>{{ $sr['percentage'] ?? 0 }}%</td>
-                                    <td>{{ !empty($sr['is_absent']) ? '✓' : '—' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @endif
+    @forelse($examRows as $idx => $exam)
+        <div class="sh-subcard">
+            <div class="sh-subcard-title">
+                {{ ((int)$idx + 1) }}. {{ $exam['exam_name'] ?? $dash }}
+                @if(!empty($exam['class_name'])) — {{ $exam['class_name'] }} @endif
+                @if(!empty($exam['exam_date'])) <span class="ltr">({{ $exam['exam_date'] }})</span> @endif
             </div>
-        @endforeach
-    @else
-        <div class="empty-row">{{ $labels['noExams'] ?? 'No exam records found' }}</div>
-    @endif
+            <table class="data-table" style="margin-bottom: 6px;">
+                <thead>
+                    <tr>
+                        <th>{{ $L('totalMarks', 'Total') }}</th>
+                        <th>{{ $L('maxMarks', 'Max') }}</th>
+                        <th>{{ $L('percentage', '%') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="ltr">{{ $exam['total_marks'] ?? 0 }}</td>
+                        <td class="ltr">{{ $exam['max_marks'] ?? 0 }}</td>
+                        <td class="ltr">{{ $exam['percentage'] ?? 0 }}%</td>
+                    </tr>
+                </tbody>
+            </table>
+            @if(!empty($exam['subject_results']))
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{{ $L('subject', 'Subject') }}</th>
+                        <th>{{ $L('obtainedMarks', 'Obtained') }}</th>
+                        <th>{{ $L('maxMarks', 'Max') }}</th>
+                        <th>{{ $L('percentage', '%') }}</th>
+                        <th>{{ $L('absent', 'Absent') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($exam['subject_results'] as $sIdx => $sr)
+                    <tr>
+                        <td class="row-number">{{ (int)$sIdx + 1 }}</td>
+                        <td>{{ $sr['subject_name'] ?? $dash }}</td>
+                        <td class="ltr">{{ $sr['marks_obtained'] ?? 0 }}</td>
+                        <td class="ltr">{{ $sr['max_marks'] ?? 0 }}</td>
+                        <td class="ltr">{{ $sr['percentage'] ?? 0 }}%</td>
+                        <td>{{ !empty($sr['is_absent']) ? '✓' : $dash }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            @endif
+        </div>
+    @empty
+        <div class="empty-row">{{ $L('noExams', 'No exam records found') }}</div>
+    @endforelse
 </div>
 @endif
 
-{{-- Fees Section --}}
+{{-- Fees --}}
 @if(!empty($sections['fees']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['feesTitle'] ?? 'Fee History' }}</h3>
-    @php
-        $feesSummary = $sections['fees']['summary'] ?? [];
-        $feeAssignments = $sections['fees']['assignments'] ?? [];
-    @endphp
-
-    {{-- Summary --}}
-    <table class="data-table">
+@php
+    $feesSummary = $sections['fees']['summary'] ?? [];
+    $feeAssignments = $sections['fees']['assignments'] ?? [];
+@endphp
+<div class="sh-card">
+    <div class="sh-card-title">{{ $L('feesTitle', 'Fee History') }}</div>
+    <table class="data-table" style="margin-bottom: 8px;">
         <thead>
             <tr>
-                <th>{{ $labels['totalAssigned'] ?? 'Total Assigned' }}</th>
-                <th>{{ $labels['totalPaid'] ?? 'Total Paid' }}</th>
-                <th>{{ $labels['totalOutstanding'] ?? 'Outstanding' }}</th>
+                <th>{{ $L('totalAssigned', 'Total Assigned') }}</th>
+                <th>{{ $L('totalPaid', 'Total Paid') }}</th>
+                <th>{{ $L('totalOutstanding', 'Outstanding') }}</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>{{ number_format($feesSummary['total_assigned'] ?? 0, 0) }}</td>
-                <td class="paid-cell">{{ number_format($feesSummary['total_paid'] ?? 0, 0) }}</td>
-                <td class="balance-cell">{{ number_format($feesSummary['total_remaining'] ?? 0, 0) }}</td>
+                <td class="ltr">{{ number_format($feesSummary['total_assigned'] ?? 0, 0) }}</td>
+                <td class="paid-cell ltr">{{ number_format($feesSummary['total_paid'] ?? 0, 0) }}</td>
+                <td class="balance-cell ltr">{{ number_format($feesSummary['total_remaining'] ?? 0, 0) }}</td>
             </tr>
         </tbody>
     </table>
-
-    {{-- Assignments --}}
-    @if(!empty($feeAssignments))
-        <div style="height: 8px;"></div>
-        @foreach($feeAssignments as $idx => $fa)
-            <div class="history-subsection" style="margin-top: 6px;">
-                <div style="font-weight: 700; margin-bottom: 4px;">
-                    {{ ((int)$idx + 1) }}. {{ $fa['fee_structure'] ?? '—' }} — {{ $fa['academic_year'] ?? '' }}
-                    @if(!empty($fa['status'])) ({{ $fa['status'] }}) @endif
-                </div>
-
-                <table class="data-table" style="margin-bottom: 6px;">
-                    <thead>
-                        <tr>
-                            <th>{{ $labels['assignedAmount'] ?? 'Assigned' }}</th>
-                            <th>{{ $labels['paidAmount'] ?? 'Paid' }}</th>
-                            <th>{{ $labels['balance'] ?? 'Balance' }}</th>
-                            <th>{{ $labels['dueDate'] ?? 'Due Date' }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ number_format($fa['assigned_amount'] ?? 0, 0) }}</td>
-                            <td class="paid-cell">{{ number_format($fa['paid_amount'] ?? 0, 0) }}</td>
-                            <td class="balance-cell">{{ number_format($fa['remaining_amount'] ?? 0, 0) }}</td>
-                            <td>{{ $fa['due_date'] ?? '—' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                @if(!empty($fa['payments']))
-                    <table class="data-table" style="font-size: 11px;">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>{{ $labels['paymentDate'] ?? 'Payment Date' }}</th>
-                                <th>{{ $labels['amount'] ?? 'Amount' }}</th>
-                                <th>{{ $labels['paymentMethod'] ?? 'Method' }}</th>
-                                <th>{{ $labels['referenceNo'] ?? 'Reference' }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($fa['payments'] as $pIdx => $p)
-                                <tr>
-                                    <td class="row-number">{{ (int)$pIdx + 1 }}</td>
-                                    <td>{{ $p['payment_date'] ?? '—' }}</td>
-                                    <td>{{ number_format($p['amount'] ?? 0, 0) }}</td>
-                                    <td>{{ $p['payment_method'] ?? '—' }}</td>
-                                    <td>{{ $p['reference_no'] ?? '—' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @endif
-            </div>
-        @endforeach
-    @else
-        <div class="empty-row">{{ $labels['noFees'] ?? 'No fee records found' }}</div>
-    @endif
-</div>
-@endif
-
-{{-- Library Section --}}
-@if(!empty($sections['library']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['libraryTitle'] ?? 'Library History' }}</h3>
     <table class="data-table">
         <thead>
             <tr>
                 <th>#</th>
-                <th>{{ $labels['bookTitle'] ?? 'Book Title' }}</th>
-                <th>{{ $labels['author'] ?? 'Author' }}</th>
-                <th>{{ $labels['loanDate'] ?? 'Loan Date' }}</th>
-                <th>{{ $labels['dueDate'] ?? 'Due Date' }}</th>
-                <th>{{ $labels['returnDate'] ?? 'Return Date' }}</th>
-                <th>{{ $labels['status'] ?? 'Status' }}</th>
+                <th>{{ $L('feeStructure', 'Fee Structure') }}</th>
+                <th>{{ $L('academicYear', 'Academic Year') }}</th>
+                <th>{{ $L('assigned', 'Assigned') }}</th>
+                <th>{{ $L('paid', 'Paid') }}</th>
+                <th>{{ $L('remaining', 'Remaining') }}</th>
+                <th>{{ $L('status', 'Status') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($feeAssignments as $index => $assignment)
+            <tr>
+                <td class="row-number">{{ (int)$index + 1 }}</td>
+                <td>{{ $assignment['fee_structure'] ?? $dash }}</td>
+                <td>{{ $assignment['academic_year'] ?? $dash }}</td>
+                <td class="ltr">{{ number_format($assignment['assigned_amount'] ?? 0, 0) }}</td>
+                <td class="paid-cell ltr">{{ number_format($assignment['paid_amount'] ?? 0, 0) }}</td>
+                <td class="balance-cell ltr">{{ number_format($assignment['remaining_amount'] ?? 0, 0) }}</td>
+                <td>{{ $assignment['status'] ?? $dash }}</td>
+            </tr>
+            @empty
+            <tr><td colspan="7" class="empty-row">{{ $L('noFees', 'No fee records found') }}</td></tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
+@endif
+
+{{-- Library --}}
+@if(!empty($sections['library']))
+<div class="sh-card">
+    <div class="sh-card-title">{{ $L('libraryTitle', 'Library Loans') }}</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>{{ $L('bookTitle', 'Book Title') }}</th>
+                <th>{{ $L('author', 'Author') }}</th>
+                <th>{{ $L('loanDate', 'Loan Date') }}</th>
+                <th>{{ $L('dueDate', 'Due Date') }}</th>
+                <th>{{ $L('returned', 'Returned') }}</th>
+                <th>{{ $L('status', 'Status') }}</th>
             </tr>
         </thead>
         <tbody>
             @forelse($sections['library'] as $index => $loan)
             <tr>
                 <td class="row-number">{{ (int)$index + 1 }}</td>
-                <td>{{ $loan['book_title'] ?? '—' }}</td>
-                <td>{{ $loan['author'] ?? '—' }}</td>
-                <td>{{ $loan['loan_date'] ?? '—' }}</td>
-                <td>{{ $loan['due_date'] ?? '—' }}</td>
-                <td>{{ $loan['return_date'] ?? '—' }}</td>
-                <td>{{ $loan['status'] ?? '—' }}</td>
+                <td>{{ $loan['book_title'] ?? $dash }}</td>
+                <td>{{ $loan['author'] ?? $dash }}</td>
+                <td class="ltr">{{ $loan['loan_date'] ?? $dash }}</td>
+                <td class="ltr">{{ $loan['due_date'] ?? $dash }}</td>
+                <td class="ltr">{{ $loan['return_date'] ?? $dash }}</td>
+                <td>{{ $loan['status'] ?? $dash }}</td>
             </tr>
             @empty
-            <tr>
-                <td colspan="7" class="empty-row">{{ $labels['noLibrary'] ?? 'No library records found' }}</td>
-            </tr>
+            <tr><td colspan="7" class="empty-row">{{ $L('noLibrary', 'No library records found') }}</td></tr>
             @endforelse
         </tbody>
     </table>
 </div>
 @endif
 
-{{-- ID Cards Section --}}
+{{-- ID Cards --}}
 @if(!empty($sections['id_cards']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['idCardsTitle'] ?? 'ID Card History' }}</h3>
+<div class="sh-card">
+    <div class="sh-card-title">{{ $L('idCardsTitle', 'ID Card History') }}</div>
     <table class="data-table">
         <thead>
             <tr>
                 <th>#</th>
-                <th>{{ $labels['cardNumber'] ?? 'Card Number' }}</th>
-                <th>{{ $labels['template'] ?? 'Template' }}</th>
-                <th>{{ $labels['academicYear'] ?? 'Year' }}</th>
-                <th>{{ $labels['class'] ?? 'Class' }}</th>
-                <th>{{ $labels['issueDate'] ?? 'Issue Date' }}</th>
-                <th>{{ $labels['printed'] ?? 'Printed' }}</th>
+                <th>{{ $L('cardNumber', 'Card Number') }}</th>
+                <th>{{ $L('template', 'Template') }}</th>
+                <th>{{ $L('academicYear', 'Academic Year') }}</th>
+                <th>{{ $L('class', 'Class') }}</th>
+                <th>{{ $L('issueDate', 'Issue Date') }}</th>
+                <th>{{ $L('printed', 'Printed') }}</th>
+                <th>{{ $L('feePaid', 'Fee Paid') }}</th>
             </tr>
         </thead>
         <tbody>
             @forelse($sections['id_cards'] as $index => $card)
             <tr>
                 <td class="row-number">{{ (int)$index + 1 }}</td>
-                <td>{{ $card['card_number'] ?? '—' }}</td>
-                <td>{{ $card['template'] ?? '—' }}</td>
-                <td>{{ $card['academic_year'] ?? '—' }}</td>
-                <td>{{ $card['class'] ?? '—' }}</td>
-                <td>{{ $card['issued_at'] ?? '—' }}</td>
-                <td>{{ !empty($card['is_printed']) ? '✓' : '✗' }}</td>
+                <td class="ltr">{{ $card['card_number'] ?? $dash }}</td>
+                <td>{{ $card['template'] ?? $dash }}</td>
+                <td>{{ $card['academic_year'] ?? $dash }}</td>
+                <td>{{ $card['class'] ?? $dash }}</td>
+                <td class="ltr">{{ $card['issued_at'] ?? ($card['issue_date'] ?? ($card['created_at'] ?? $dash)) }}</td>
+                <td>{{ !empty($card['is_printed']) ? $L('yes', 'Yes') : $L('no', 'No') }}</td>
+                <td>{{ !empty($card['fee_paid']) || !empty($card['card_fee_paid']) ? $L('yes', 'Yes') : $L('no', 'No') }}</td>
             </tr>
             @empty
-            <tr>
-                <td colspan="7" class="empty-row">{{ $labels['noIdCards'] ?? 'No ID card records found' }}</td>
-            </tr>
+            <tr><td colspan="8" class="empty-row">{{ $L('noIdCards', 'No ID card records found') }}</td></tr>
             @endforelse
         </tbody>
     </table>
 </div>
 @endif
 
-{{-- Short-Term Courses Section --}}
+{{-- Courses --}}
 @if(!empty($sections['courses']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['coursesTitle'] ?? 'Short-Term Courses' }}</h3>
+<div class="sh-card">
+    <div class="sh-card-title">{{ $L('coursesTitle', 'Courses') }}</div>
     <table class="data-table">
         <thead>
             <tr>
                 <th>#</th>
-                <th>{{ $labels['courseName'] ?? 'Course Name' }}</th>
-                <th>{{ $labels['registrationDate'] ?? 'Registration' }}</th>
-                <th>{{ $labels['completionDate'] ?? 'Completion' }}</th>
-                <th>{{ $labels['status'] ?? 'Status' }}</th>
-                <th>{{ $labels['grade'] ?? 'Grade' }}</th>
-                <th>{{ $labels['certificateIssued'] ?? 'Certificate' }}</th>
+                <th>{{ $L('courseName', 'Course Name') }}</th>
+                <th>{{ $L('registrationDate', 'Registration Date') }}</th>
+                <th>{{ $L('completionDate', 'Completion Date') }}</th>
+                <th>{{ $L('status', 'Status') }}</th>
+                <th>{{ $L('grade', 'Grade') }}</th>
+                <th>{{ $L('certificateIssued', 'Certificate Issued') }}</th>
             </tr>
         </thead>
         <tbody>
             @forelse($sections['courses'] as $index => $course)
             <tr>
                 <td class="row-number">{{ (int)$index + 1 }}</td>
-                <td>{{ $course['course_name'] ?? '—' }}</td>
-                <td>{{ $course['registration_date'] ?? '—' }}</td>
-                <td>{{ $course['completion_date'] ?? '—' }}</td>
-                <td>{{ $course['status'] ?? '—' }}</td>
-                <td>{{ $course['grade'] ?? '—' }}</td>
-                <td>{{ ($course['certificate_issued'] ?? false) ? '✓' : '✗' }}</td>
+                <td>{{ $course['course_name'] ?? ($course['name'] ?? $dash) }}</td>
+                <td class="ltr">{{ $course['registration_date'] ?? $dash }}</td>
+                <td class="ltr">{{ $course['completion_date'] ?? $dash }}</td>
+                <td>{{ $course['completion_status'] ?? ($course['status'] ?? $dash) }}</td>
+                <td>{{ $course['grade'] ?? $dash }}</td>
+                <td>{{ !empty($course['certificate_issued']) ? $L('yes', 'Yes') : $L('no', 'No') }}</td>
             </tr>
             @empty
-            <tr>
-                <td colspan="7" class="empty-row">{{ $labels['noCourses'] ?? 'No course records found' }}</td>
-            </tr>
+            <tr><td colspan="7" class="empty-row">{{ $L('noCourses', 'No course records found') }}</td></tr>
             @endforelse
         </tbody>
     </table>
 </div>
 @endif
 
-{{-- Graduations Section --}}
+{{-- Graduations --}}
 @if(!empty($sections['graduations']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['graduationsTitle'] ?? 'Graduation Records' }}</h3>
+<div class="sh-card">
+    <div class="sh-card-title">{{ $L('graduationsTitle', 'Graduations') }}</div>
     <table class="data-table">
         <thead>
             <tr>
                 <th>#</th>
-                <th>{{ $labels['batchName'] ?? 'Batch' }}</th>
-                <th>{{ $labels['graduationDate'] ?? 'Date' }}</th>
-                <th>{{ $labels['finalResult'] ?? 'Result' }}</th>
-                <th>{{ $labels['certificateNumber'] ?? 'Certificate #' }}</th>
+                <th>{{ $L('batchName', 'Batch Name') }}</th>
+                <th>{{ $L('graduationDate', 'Graduation Date') }}</th>
+                <th>{{ $L('finalResult', 'Final Result') }}</th>
+                <th>{{ $L('certificateNumber', 'Certificate #') }}</th>
             </tr>
         </thead>
         <tbody>
             @forelse($sections['graduations'] as $index => $graduation)
             <tr>
                 <td class="row-number">{{ (int)$index + 1 }}</td>
-                <td>{{ $graduation['batch_name'] ?? '—' }}</td>
-                <td>{{ $graduation['graduation_date'] ?? '—' }}</td>
-                <td>{{ $graduation['final_result'] ?? '—' }}</td>
-                <td>{{ $graduation['certificate_number'] ?? '—' }}</td>
+                <td>{{ $graduation['batch_name'] ?? ($graduation['batch'] ?? $dash) }}</td>
+                <td class="ltr">{{ $graduation['graduation_date'] ?? ($graduation['created_at'] ?? $dash) }}</td>
+                <td>{{ $graduation['final_result'] ?? ($graduation['final_result_status'] ?? $dash) }}</td>
+                <td class="ltr">{{ $graduation['certificate_number'] ?? $dash }}</td>
             </tr>
             @empty
-            <tr>
-                <td colspan="5" class="empty-row">{{ $labels['noGraduations'] ?? 'No graduation records found' }}</td>
-            </tr>
+            <tr><td colspan="5" class="empty-row">{{ $L('noGraduations', 'No graduation records found') }}</td></tr>
             @endforelse
         </tbody>
     </table>
 </div>
 @endif
 
-{{-- Educational History Section --}}
-@if(!empty($sections['educational_history']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['educationalHistoryTitle'] ?? 'Educational History' }}</h3>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>{{ $labels['institution'] ?? 'Institution' }}</th>
-                <th>{{ $labels['gradeLevel'] ?? 'Grade Level' }}</th>
-                <th>{{ $labels['period'] ?? 'Period' }}</th>
-                <th>{{ $labels['achievements'] ?? 'Achievements' }}</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($sections['educational_history'] as $index => $history)
-            <tr>
-                <td class="row-number">{{ (int)$index + 1 }}</td>
-                <td>{{ $history['institution'] ?? '—' }}</td>
-                <td>{{ $history['grade_level'] ?? '—' }}</td>
-                <td>{{ $history['period'] ?? '—' }}</td>
-                <td>{{ $history['achievements'] ?? '—' }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="5" class="empty-row">{{ $labels['noEducationalHistory'] ?? 'No educational history records found' }}</td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
-@endif
-
-{{-- Discipline Records Section --}}
-@if(!empty($sections['discipline']))
-<div class="history-section">
-    <h3 class="section-title">{{ $labels['disciplineTitle'] ?? 'Discipline Records' }}</h3>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>{{ $labels['incidentDate'] ?? 'Date' }}</th>
-                <th>{{ $labels['incidentType'] ?? 'Type' }}</th>
-                <th>{{ $labels['severity'] ?? 'Severity' }}</th>
-                <th>{{ $labels['actionTaken'] ?? 'Action' }}</th>
-                <th>{{ $labels['status'] ?? 'Status' }}</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($sections['discipline'] as $index => $record)
-            <tr>
-                <td class="row-number">{{ (int)$index + 1 }}</td>
-                <td>{{ $record['incident_date'] ?? '—' }}</td>
-                <td>{{ $record['incident_type'] ?? '—' }}</td>
-                <td class="severity-{{ strtolower($record['severity'] ?? 'minor') }}">{{ $record['severity'] ?? '—' }}</td>
-                <td>{{ $record['action_taken'] ?? '—' }}</td>
-                <td>{{ $record['status'] ?? '—' }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="6" class="empty-row">{{ $labels['noDiscipline'] ?? 'No discipline records found' }}</td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
-@endif
-
-{{-- Footer Notes --}}
 @if(!empty($footer_notes))
 <div class="notes-section footer-notes">
     @foreach($footer_notes as $note)
@@ -953,312 +614,182 @@
 </div>
 @endif
 
-{{-- Footer Section --}}
-<div class="report-footer">
-    @if(!empty($FOOTER_TEXT))
-    <div class="footer-text">{!! $FOOTER_TEXT !!}</div>
-    @endif
-    
-    <div class="footer-row">
-        <div class="footer-left">
-            {{ $labels['generatedAt'] ?? 'Generated' }}: {{ $generatedAt ?? now()->format('Y-m-d H:i') }}
-        </div>
-        <div class="footer-center">
-            @if($show_page_numbers ?? true)
-            {{ $labels['page'] ?? 'Page' }} <span class="page-number"></span>
-            @endif
-        </div>
-        <div class="footer-right">
-            {{ $labels['totalRecords'] ?? 'Total Records' }}: {{ $totalRecords ?? 0 }}
-        </div>
-    </div>
-    
-    <div class="system-note">
-        {{ $labels['systemNote'] ?? 'This report was generated by Nazim School Management System' }}
-    </div>
-</div>
-
 <style>
-    /* CRITICAL: Apply Bahij Nassim font to all elements */
-    .student-info-card,
-    .info-table,
-    .info-table td,
-    .info-table th,
-    .info-label,
-    .info-value,
-    .section-title,
-    h4 {
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-    }
-    
-    /* Student Info Card Styles */
-    .student-info-card {
-        margin: 15px 0;
-        padding: 15px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
-        page-break-inside: avoid;
-        overflow: hidden; /* contain float */
-    }
-    
-    .info-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-        table-layout: fixed;
-    }
-    
-    .info-table td {
-        padding: 6px 10px;
-        vertical-align: middle;
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-        font-size: 11px !important;
-        word-break: break-word;
-    }
-
-    /* Photo floats so table wraps around it (RTL: right) */
-    .student-photo-wrap {
-        float: right;
-        width: 96px;
-        margin: 0 0 10px 12px; /* space between photo and text */
-        text-align: center;
-    }
-    
-    .student-photo {
-        width: 96px;
-        height: 120px;
-        object-fit: cover;
-        border-radius: 4px;
-        border: 2px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }};
+    .sh-card {
         background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin: 12px 0;
+        page-break-inside: avoid;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
-    
-    .no-photo {
-        width: 96px;
-        height: 120px;
-        background: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
-        border-radius: 4px;
+    .sh-card-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: {{ $primary }};
+        margin: 0 0 10px 0;
+        padding: 6px 10px;
+        border-radius: 6px;
+        background: rgba(11, 11, 86, 0.08);
+        border-inline-start: 4px solid {{ $primary }};
+        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+    }
+    .sh-hero {
+        padding: 0;
+        overflow: hidden;
+    }
+    .sh-hero-accent {
+        height: 6px;
+        background: linear-gradient(90deg, {{ $primary }}, {{ $secondary }});
+    }
+    .sh-hero-body {
+        display: flex;
+        gap: 14px;
+        padding: 14px;
+        align-items: flex-start;
+    }
+    .sh-photo-wrap { flex-shrink: 0; }
+    .sh-photo {
+        width: 78px;
+        height: 95px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        background: #f3f4f6;
+    }
+    .sh-photo-fallback {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
-        font-size: 36px;
-        font-weight: bold;
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+        font-size: 28px;
+        font-weight: 700;
+        color: {{ $primary }};
     }
-    
-    .info-label {
-        color: #6c757d;
-        font-size: 11px !important;
-        width: 140px;
-        font-weight: 600;
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-        white-space: nowrap;
+    .sh-hero-main { flex: 1; min-width: 0; }
+    .sh-hero-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 6px;
     }
-    
-    .info-value {
-        font-size: 11px !important;
-        min-width: 120px;
-        color: #333;
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-    }
-
-    .clearfix { clear: both; }
-
-    /* CRITICAL: Fix RTL number reversal for phone numbers, codes, and timestamps */
-    .ltr {
-        direction: ltr !important;
-        unicode-bidi: isolate !important;
-        text-align: left !important;
-        display: inline-block !important;
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-    }
-    
-    /* Section Headers */
-    h4 {
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-        font-weight: 700 !important;
-        font-size: 12px !important;
-        margin: 0 0 10px 0;
-        color: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
-    }
-    
-    .status-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-    }
-    
-    .status-badge.active, .status-badge.admitted {
-        background: #d4edda;
-        color: #155724;
-    }
-    
-    .status-badge.inactive, .status-badge.withdrawn {
-        background: #f8d7da;
-        color: #721c24;
-    }
-    
-    .status-badge.pending {
-        background: #fff3cd;
-        color: #856404;
-    }
-    
-    /* Summary Section Styles */
-    .summary-section {
-        margin: 20px 0;
-        page-break-inside: avoid;
-    }
-    
-    .summary-cards {
+    .sh-hero-meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 15px;
-        margin-top: 10px;
+        gap: 8px 14px;
+        font-size: 11px;
+        color: #4b5563;
+        margin-bottom: 8px;
     }
-    
-    .summary-card {
-        flex: 1;
-        min-width: 100px;
-        max-width: 150px;
-        padding: 12px;
-        background: #fff;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        text-align: center;
-        border-left: 4px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }};
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-    }
-    
-    .summary-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-    }
-    
-    .summary-label {
+    .sh-hero-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sh-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
         font-size: 10px;
-        color: #6c757d;
+        font-weight: 600;
+        background: #eef2ff;
+        color: {{ $primary }};
+    }
+    .sh-badge-orphan { background: #fef3c7; color: #92400e; }
+    .status-active, .status-admitted { background: #dcfce7; color: #166534; }
+    .status-withdrawn, .status-inactive { background: #fee2e2; color: #991b1b; }
+    .status-pending, .status-applied, .status-suspended { background: #fef3c7; color: #92400e; }
+
+    .sh-metrics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .sh-metric {
+        flex: 1 1 90px;
+        min-width: 90px;
+        text-align: center;
+        padding: 10px 6px;
+        border-radius: 8px;
+        background: #f3f4f8;
+        border: 1px solid #d8dbe7;
+    }
+    .sh-metric-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: {{ $primary }};
+        line-height: 1.2;
+    }
+    .sh-metric-label {
+        font-size: 9px;
+        color: #6b7280;
         margin-top: 4px;
+    }
+
+    .sh-fields {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+    }
+    .sh-fields td {
+        padding: 5px 8px;
+        vertical-align: top;
+        border-bottom: 1px solid #f3f4f6;
         font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
-    
-    /* Section Styles */
-    .history-section {
-        margin: 20px 0;
-        page-break-inside: avoid;
+    .sh-field-label {
+        width: 18%;
+        color: #6b7280;
+        font-weight: 600;
     }
-    
-    .section-title {
-        font-size: 14px;
-        font-weight: bold;
-        color: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
-        margin-bottom: 10px;
-        padding-bottom: 5px;
-        border-bottom: 2px solid {{ $SECONDARY_COLOR ?? '#0056b3' }};
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+    .sh-field-value {
+        width: 32%;
+        color: #111827;
+        font-weight: 500;
     }
-    
-    /* Table Cell Styles */
+
+    .sh-subcard {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px;
+        margin-top: 8px;
+        background: #fafafa;
+    }
+    .sh-subcard-title {
+        font-weight: 700;
+        font-size: 11px;
+        margin-bottom: 6px;
+        color: {{ $primary }};
+    }
+
     .empty-row {
         text-align: center;
-        color: #6c757d;
+        color: #6b7280;
         font-style: italic;
-        padding: 20px !important;
+        padding: 14px !important;
+    }
+    .present-cell { color: #16a34a; font-weight: 600; }
+    .absent-cell { color: #dc2626; font-weight: 600; }
+    .late-cell { color: #d97706; font-weight: 600; }
+    .paid-cell { color: #16a34a; }
+    .balance-cell { color: #dc2626; font-weight: 600; }
+    .ltr { direction: ltr; unicode-bidi: embed; display: inline-block; }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
         font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
-    
-    .present-cell { color: #28a745; font-weight: 600; }
-    .absent-cell { color: #dc3545; font-weight: 600; }
-    .late-cell { color: #ffc107; font-weight: 600; }
-    .pass-cell { color: #28a745; font-weight: 600; }
-    .fail-cell { color: #dc3545; font-weight: 600; }
-    .paid-cell { color: #28a745; }
-    .balance-cell { color: #dc3545; font-weight: 600; }
-    
-    .severity-minor { color: #17a2b8; }
-    .severity-moderate { color: #ffc107; }
-    .severity-major { color: #fd7e14; }
-    .severity-severe { color: #dc3545; font-weight: 600; }
-    
-    /* Totals Row */
-    .totals-row {
-        margin-top: 10px;
-        padding: 10px;
-        background: #f8f9fa;
-        border-radius: 4px;
-        display: flex;
-        justify-content: space-around;
-        font-size: 12px;
+    .data-table th,
+    .data-table td {
+        border: 1px solid #e5e7eb;
+        padding: 5px 6px;
+        text-align: start;
         font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
-    
-    /* Ensure information sections are visible and properly styled */
-    .info-section {
-        margin-top: 15px;
-        margin-bottom: 15px;
-        padding: 12px;
-        background: #f0f0f0;
-        border-radius: 4px;
-        border: 1px solid #ddd;
-        page-break-inside: avoid;
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        width: 100% !important;
-        overflow: visible !important;
+    .data-table th {
+        background: #eef0f7;
+        color: {{ $primary }};
+        font-weight: 700;
     }
-    
-    .info-section h4 {
-        font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
-        font-weight: 700 !important;
-        font-size: 12px !important;
-        margin: 0 0 10px 0;
-        padding-bottom: 5px;
-        border-bottom: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }};
-        color: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
-        display: block !important;
-        visibility: visible !important;
-    }
-    
-    /* Ensure all info sections are always visible */
-    .info-section table {
-        width: 100% !important;
-        display: table !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        border-collapse: collapse !important;
-        margin: 0 !important;
-    }
-    
-    .info-section table tr {
-        display: table-row !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    
-    .info-section table td {
-        display: table-cell !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        padding: 6px 10px !important;
-        vertical-align: middle !important;
-    }
-    
-    /* Force visibility for all info sections - no hiding */
-    div.info-section {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        height: auto !important;
-        min-height: 50px !important;
-    }
+    .row-number { width: 28px; text-align: center; color: #6b7280; }
 </style>
 @endsection
-

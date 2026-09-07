@@ -21,16 +21,19 @@ function formatCurrentClass(currentClass: CurrentClass | null): string {
   return parts.join(' ');
 }
 
-function getAttendanceStatus(rate: number): { label: string; color: string } {
-  if (rate >= 95) return { label: 'Excellent', color: 'text-green-600' };
-  if (rate >= 85) return { label: 'Good', color: 'text-blue-600' };
-  if (rate >= 75) return { label: 'Fair', color: 'text-yellow-600' };
-  return { label: 'Poor', color: 'text-red-600' };
+function getAttendanceStatus(
+  rate: number,
+  t: (key: string) => string
+): { label: string; color: string } {
+  if (rate >= 95) return { label: t('studentHistory.attendanceExcellent') || 'Excellent', color: 'text-green-600' };
+  if (rate >= 85) return { label: t('studentHistory.attendanceGood') || 'Good', color: 'text-blue-600' };
+  if (rate >= 75) return { label: t('studentHistory.attendanceFair') || 'Fair', color: 'text-yellow-600' };
+  return { label: t('studentHistory.attendancePoor') || 'Poor', color: 'text-red-600' };
 }
 
 export function HistorySummaryCards({ summary }: HistorySummaryCardsProps) {
   const { t, isRTL } = useLanguage();
-  const attendanceStatus = getAttendanceStatus(summary.attendanceRate);
+  const attendanceStatus = getAttendanceStatus(summary.attendanceRate, t);
 
   return (
     <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">

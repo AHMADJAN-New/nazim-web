@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\StudentHistoryService;
-use App\Services\Reports\ReportService;
 use App\Services\Reports\ReportConfig;
-use Illuminate\Http\Request;
+use App\Services\Reports\ReportService;
+use App\Services\Reports\StudentHistoryExcelSheets;
+use App\Services\Reports\StudentHistoryReportLabels;
+use App\Services\StudentHistoryService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -25,21 +27,22 @@ class StudentHistoryController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('students.read')) {
+            if (! $user->hasPermissionTo('students.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.read: " . $e->getMessage());
+            Log::warning('Permission check failed for students.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -53,7 +56,7 @@ class StudentHistoryController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
@@ -73,7 +76,8 @@ class StudentHistoryController extends Controller
 
             return response()->json($history);
         } catch (\Exception $e) {
-            Log::error("Error fetching student history: " . $e->getMessage());
+            Log::error('Error fetching student history: '.$e->getMessage());
+
             return response()->json(['error' => 'Failed to fetch student history'], 500);
         }
     }
@@ -86,21 +90,22 @@ class StudentHistoryController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('students.read')) {
+            if (! $user->hasPermissionTo('students.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.read: " . $e->getMessage());
+            Log::warning('Permission check failed for students.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -111,13 +116,13 @@ class StudentHistoryController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
         // Validate section name
         $validSections = ['admissions', 'attendance', 'exams', 'fees', 'library', 'idCards', 'courses', 'graduations'];
-        if (!in_array($section, $validSections)) {
+        if (! in_array($section, $validSections)) {
             return response()->json(['error' => 'Invalid section'], 400);
         }
 
@@ -137,7 +142,8 @@ class StudentHistoryController extends Controller
 
             return response()->json($sectionData);
         } catch (\Exception $e) {
-            Log::error("Error fetching student history section: " . $e->getMessage());
+            Log::error('Error fetching student history section: '.$e->getMessage());
+
             return response()->json(['error' => 'Failed to fetch section data'], 500);
         }
     }
@@ -150,21 +156,22 @@ class StudentHistoryController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('students.read')) {
+            if (! $user->hasPermissionTo('students.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.read: " . $e->getMessage());
+            Log::warning('Permission check failed for students.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -178,7 +185,7 @@ class StudentHistoryController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
@@ -193,21 +200,25 @@ class StudentHistoryController extends Controller
             // Log the export action
             $this->historyService->logAccess($studentId, 'export_pdf', 'all');
 
+            $language = (string) $request->get('language', 'ps');
+
             // Build report data
-            $reportData = $this->buildPdfReportData($history);
+            $reportData = $this->buildPdfReportData($history, $language);
 
             // Debug: Log data structure to verify sections are included
             if (config('app.debug')) {
-                \Log::debug("Student History PDF Report Data", [
-                    'has_student' => !empty($reportData['student']),
-                    'has_summary' => !empty($reportData['summary']),
-                    'has_sections' => !empty($reportData['sections']),
+                \Log::debug('Student History PDF Report Data', [
+                    'has_student' => ! empty($reportData['student']),
+                    'has_summary' => ! empty($reportData['summary']),
+                    'has_sections' => ! empty($reportData['sections']),
                     'sections_keys' => array_keys($reportData['sections'] ?? []),
                     'admissions_count' => count($reportData['sections']['admissions'] ?? []),
-                    'attendance_has_data' => !empty($reportData['sections']['attendance']),
-                    'exams_has_data' => !empty($reportData['sections']['exams']),
-                    'fees_has_data' => !empty($reportData['sections']['fees']),
+                    'attendance_has_data' => ! empty($reportData['sections']['attendance']),
+                    'exams_has_data' => ! empty($reportData['sections']['exams']),
+                    'fees_has_data' => ! empty($reportData['sections']['fees']),
                     'library_count' => count($reportData['sections']['library'] ?? []),
+                    'language' => $language,
+                    'labels_count' => count($reportData['labels'] ?? []),
                 ]);
             }
 
@@ -219,9 +230,9 @@ class StudentHistoryController extends Controller
                 'report_key' => 'student_lifetime_history',
                 'report_type' => 'pdf',
                 'branding_id' => $request->get('branding_id', $currentSchoolId),
-                'title' => 'Student Lifetime History - ' . ($history['student']['fullName'] ?? 'Unknown'),
+                'title' => StudentHistoryReportLabels::reportTitle($language, $history['student']['fullName'] ?? null),
                 'calendar_preference' => $request->get('calendar_preference', 'jalali'),
-                'language' => $request->get('language', 'ps'),
+                'language' => $language,
                 'template_name' => 'student-history', // Must match student-history.blade.php file name
                 'parameters' => [
                     'student_id' => $studentId, // CRITICAL: Pass student_id so ReportService can fetch data if needed
@@ -242,7 +253,8 @@ class StudentHistoryController extends Controller
             ], 202);
 
         } catch (\Exception $e) {
-            Log::error("Error exporting student history PDF: " . $e->getMessage());
+            Log::error('Error exporting student history PDF: '.$e->getMessage());
+
             return response()->json(['error' => 'Failed to generate PDF report'], 500);
         }
     }
@@ -255,21 +267,22 @@ class StudentHistoryController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission
         try {
-            if (!$user->hasPermissionTo('students.read')) {
+            if (! $user->hasPermissionTo('students.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.read: " . $e->getMessage());
+            Log::warning('Permission check failed for students.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -283,7 +296,7 @@ class StudentHistoryController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
@@ -298,17 +311,19 @@ class StudentHistoryController extends Controller
             // Log the export action
             $this->historyService->logAccess($studentId, 'export_excel', 'all');
 
+            $language = (string) $request->get('language', 'ps');
+
             // Build report data
-            $reportData = $this->buildExcelReportData($history);
+            $reportData = $this->buildExcelReportData($history, $language);
 
             // Create report config
             $config = ReportConfig::fromArray([
                 'report_key' => 'student_lifetime_history',
                 'report_type' => 'excel',
                 'branding_id' => $request->get('branding_id', $currentSchoolId),
-                'title' => 'Student Lifetime History - ' . ($history['student']['fullName'] ?? 'Unknown'),
+                'title' => StudentHistoryReportLabels::reportTitle($language, $history['student']['fullName'] ?? null),
                 'calendar_preference' => $request->get('calendar_preference', 'jalali'),
-                'language' => $request->get('language', 'ps'),
+                'language' => $language,
             ]);
 
             // Generate report
@@ -325,7 +340,8 @@ class StudentHistoryController extends Controller
             ], 202);
 
         } catch (\Exception $e) {
-            Log::error("Error exporting student history Excel: " . $e->getMessage());
+            Log::error('Error exporting student history Excel: '.$e->getMessage());
+
             return response()->json(['error' => 'Failed to generate Excel report'], 500);
         }
     }
@@ -335,12 +351,13 @@ class StudentHistoryController extends Controller
      * CRITICAL: This method prepares data for the student-history.blade.php template
      * The template expects specific structure: student, summary, sections, labels, etc.
      */
-    private function buildPdfReportData(array $history): array
+    private function buildPdfReportData(array $history, string $language = 'ps'): array
     {
         $student = $history['student'] ?? [];
         $summary = $history['summary'] ?? [];
         $sections = $history['sections'] ?? [];
         $metadata = $history['metadata'] ?? [];
+        $labels = StudentHistoryReportLabels::forLanguage($language);
 
         // Format student data for template (snake_case for Blade template)
         // CRITICAL: Include ALL fields from student history to match UI display
@@ -360,13 +377,13 @@ class StudentHistoryController extends Controller
             'nationality' => $student['nationality'] ?? '',
             'preferred_language' => $student['preferredLanguage'] ?? '',
             'is_orphan' => $student['isOrphan'] ?? false,
-            
+
             // Contact Information
             'phone' => $student['phone'] ?? '',
             'home_address' => $student['homeAddress'] ?? '',
             'emergency_contact_name' => $student['emergencyContactName'] ?? '',
             'emergency_contact_phone' => $student['emergencyContactPhone'] ?? '',
-            
+
             // Location Information
             'orig_province' => $student['origProvince'] ?? '',
             'orig_district' => $student['origDistrict'] ?? '',
@@ -374,19 +391,19 @@ class StudentHistoryController extends Controller
             'curr_province' => $student['currProvince'] ?? '',
             'curr_district' => $student['currDistrict'] ?? '',
             'curr_village' => $student['currVillage'] ?? '',
-            
+
             // Guardian Information
             'guardian_name' => $student['guardianName'] ?? '',
             'guardian_relation' => $student['guardianRelation'] ?? '',
             'guardian_phone' => $student['guardianPhone'] ?? '',
             'guardian_tazkira' => $student['guardianTazkira'] ?? '',
-            
+
             // Guarantor (Zamin) Information
             'zamin_name' => $student['zaminName'] ?? '',
             'zamin_phone' => $student['zaminPhone'] ?? '',
             'zamin_tazkira' => $student['zaminTazkira'] ?? '',
             'zamin_address' => $student['zaminAddress'] ?? '',
-            
+
             // Academic Information
             'current_class' => $student['currentClass']['name'] ?? '',
             'current_section' => $student['currentClass']['section'] ?? '',
@@ -394,10 +411,10 @@ class StudentHistoryController extends Controller
             'admission_year' => $student['admissionYear'] ?? '',
             'applying_grade' => $student['applyingGrade'] ?? '',
             'admission_fee_status' => $student['admissionFeeStatus'] ?? '',
-            
+
             // Financial Information
             'family_income' => $student['familyIncome'] ?? '',
-            
+
             // System Information
             'status' => $student['status'] ?? '',
             'student_code' => $student['studentCode'] ?? '',
@@ -469,7 +486,7 @@ class StudentHistoryController extends Controller
                         'is_absent' => $result['isAbsent'] ?? false,
                     ];
                 }, $exam['subjectResults'] ?? []);
-                
+
                 return [
                     'exam_name' => $exam['examName'] ?? '',
                     'class_name' => $exam['className'] ?? '',
@@ -499,7 +516,7 @@ class StudentHistoryController extends Controller
                         'reference_no' => $payment['referenceNo'] ?? '',
                     ];
                 }, $assignment['feePayments'] ?? []);
-                
+
                 return [
                     'fee_structure' => $assignment['feeStructure']['name'] ?? '',
                     'academic_year' => $assignment['academicYear']['name'] ?? '',
@@ -584,283 +601,36 @@ class StudentHistoryController extends Controller
                 ['section' => 'Student', 'value' => $studentData['full_name']],
                 ['section' => 'Admission No', 'value' => $studentData['admission_no']],
             ],
-            
+
             // For student-history.blade.php template (custom data)
             'student' => $studentData,
             'summary' => $summaryData,
             'sections' => $sectionsData,
             'metadata' => $metadata,
             'generatedAt' => $metadata['generatedAt'] ?? now()->toISOString(),
-            
-            // Labels for translations (will be set by ReportService based on language)
-            'labels' => [], // Will be populated by template based on language context
+
+            'labels' => $labels,
         ];
     }
 
     /**
      * Build Excel report data from history
      */
-    private function buildExcelReportData(array $history): array
+    private function buildExcelReportData(array $history, string $language = 'ps'): array
     {
         $student = $history['student'] ?? [];
         $summary = $history['summary'] ?? [];
         $sections = $history['sections'] ?? [];
+        $labels = StudentHistoryReportLabels::forLanguage($language);
 
-        // For Excel, we'll create multiple sheets worth of data
-        // CRITICAL: ExcelReportService expects sheets under parameters.sheets
-        // CRITICAL: Also include top-level columns and rows (empty arrays) for validation
-        // The actual data is in parameters.sheets, which ExcelReportService will use
         return [
-            // Top-level columns and rows (required for validation, but empty since we use sheets)
             'columns' => [],
             'rows' => [],
             'student' => $student,
             'summary' => $summary,
+            'labels' => $labels,
             'parameters' => [
-                'sheets' => [
-                'overview' => [
-                    'sheet_name' => 'Overview',
-                    'title' => 'Student Overview',
-                    'columns' => [
-                        ['key' => 'field', 'label' => 'Field'],
-                        ['key' => 'value', 'label' => 'Value'],
-                    ],
-                    'rows' => [
-                        // Personal Information
-                        ['field' => 'Full Name', 'value' => $student['fullName'] ?? ''],
-                        ['field' => 'First Name', 'value' => $student['firstName'] ?? ''],
-                        ['field' => 'Last Name', 'value' => $student['lastName'] ?? ''],
-                        ['field' => 'Father Name', 'value' => $student['fatherName'] ?? ''],
-                        ['field' => 'Grandfather Name', 'value' => $student['grandfatherName'] ?? ''],
-                        ['field' => 'Mother Name', 'value' => $student['motherName'] ?? ''],
-                        ['field' => 'Gender', 'value' => $student['gender'] ?? ''],
-                        ['field' => 'Date of Birth', 'value' => $student['dateOfBirth'] ?? ''],
-                        ['field' => 'Birth Year', 'value' => (string) ($student['birthYear'] ?? '')],
-                        ['field' => 'Age', 'value' => (string) ($student['age'] ?? '')],
-                        ['field' => 'Nationality', 'value' => $student['nationality'] ?? ''],
-                        ['field' => 'Preferred Language', 'value' => $student['preferredLanguage'] ?? ''],
-                        ['field' => 'Is Orphan', 'value' => ($student['isOrphan'] ?? false) ? 'Yes' : 'No'],
-                        
-                        // Contact Information
-                        ['field' => 'Phone', 'value' => $student['phone'] ?? ''],
-                        ['field' => 'Home Address', 'value' => $student['homeAddress'] ?? ''],
-                        ['field' => 'Emergency Contact Name', 'value' => $student['emergencyContactName'] ?? ''],
-                        ['field' => 'Emergency Contact Phone', 'value' => $student['emergencyContactPhone'] ?? ''],
-                        
-                        // Location Information
-                        ['field' => 'Origin Province', 'value' => $student['origProvince'] ?? ''],
-                        ['field' => 'Origin District', 'value' => $student['origDistrict'] ?? ''],
-                        ['field' => 'Origin Village', 'value' => $student['origVillage'] ?? ''],
-                        ['field' => 'Current Province', 'value' => $student['currProvince'] ?? ''],
-                        ['field' => 'Current District', 'value' => $student['currDistrict'] ?? ''],
-                        ['field' => 'Current Village', 'value' => $student['currVillage'] ?? ''],
-                        
-                        // Guardian Information
-                        ['field' => 'Guardian Name', 'value' => $student['guardianName'] ?? ''],
-                        ['field' => 'Guardian Relation', 'value' => $student['guardianRelation'] ?? ''],
-                        ['field' => 'Guardian Phone', 'value' => $student['guardianPhone'] ?? ''],
-                        ['field' => 'Guardian Tazkira', 'value' => $student['guardianTazkira'] ?? ''],
-                        
-                        // Guarantor Information
-                        ['field' => 'Guarantor Name', 'value' => $student['zaminName'] ?? ''],
-                        ['field' => 'Guarantor Phone', 'value' => $student['zaminPhone'] ?? ''],
-                        ['field' => 'Guarantor Tazkira', 'value' => $student['zaminTazkira'] ?? ''],
-                        ['field' => 'Guarantor Address', 'value' => $student['zaminAddress'] ?? ''],
-                        
-                        // Academic Information
-                        ['field' => 'Admission Number', 'value' => $student['admissionNumber'] ?? ''],
-                        ['field' => 'Admission Year', 'value' => (string) ($student['admissionYear'] ?? '')],
-                        ['field' => 'Applying Grade', 'value' => $student['applyingGrade'] ?? ''],
-                        ['field' => 'Admission Fee Status', 'value' => $student['admissionFeeStatus'] ?? ''],
-                        
-                        // Financial Information
-                        ['field' => 'Family Income / Support', 'value' => (string) ($student['familyIncome'] ?? '')],
-                        
-                        // System Information
-                        ['field' => 'Status', 'value' => $student['status'] ?? ''],
-                        ['field' => 'Student Code', 'value' => $student['studentCode'] ?? ''],
-                        ['field' => 'Card Number', 'value' => $student['cardNumber'] ?? ''],
-                        ['field' => 'School Name', 'value' => $student['schoolName'] ?? ''],
-                        ['field' => 'Organization Name', 'value' => $student['organizationName'] ?? ''],
-                        ['field' => 'Previous School', 'value' => $student['previousSchool'] ?? ''],
-                        ['field' => 'Created At', 'value' => $student['createdAt'] ?? ''],
-                        
-                        // Summary Statistics
-                        ['field' => 'Total Academic Years', 'value' => (string) ($summary['totalAcademicYears'] ?? 0)],
-                        ['field' => 'Attendance Rate', 'value' => ($summary['attendanceRate'] ?? 0) . '%'],
-                        ['field' => 'Average Exam Score', 'value' => ($summary['averageExamScore'] ?? 0) . '%'],
-                        ['field' => 'Outstanding Fees', 'value' => (string) ($summary['outstandingFees'] ?? 0)],
-                    ],
-                ],
-                'admissions' => [
-                    'sheet_name' => 'Admissions',
-                    'title' => 'Admission History',
-                    'columns' => [
-                        ['key' => 'admissionDate', 'label' => 'Admission Date'],
-                        ['key' => 'class', 'label' => 'Class'],
-                        ['key' => 'academicYear', 'label' => 'Academic Year'],
-                        ['key' => 'status', 'label' => 'Status'],
-                    ],
-                    'rows' => array_map(function ($admission) {
-                        return [
-                            'admissionDate' => isset($admission['admissionDate']) && $admission['admissionDate'] ? \Carbon\Carbon::parse($admission['admissionDate'])->format('Y-m-d') : '',
-                            'class' => $admission['class']['name'] ?? '',
-                            'academicYear' => $admission['academicYear']['name'] ?? '',
-                            'status' => $admission['enrollmentStatus'] ?? '',
-                        ];
-                    }, $sections['admissions'] ?? []),
-                ],
-                'exams' => [
-                    'sheet_name' => 'Exams',
-                    'title' => 'Exam Results',
-                    'columns' => [
-                        ['key' => 'examName', 'label' => 'Exam Name'],
-                        ['key' => 'className', 'label' => 'Class'],
-                        ['key' => 'totalMarks', 'label' => 'Marks Obtained'],
-                        ['key' => 'maxMarks', 'label' => 'Max Marks'],
-                        ['key' => 'percentage', 'label' => 'Percentage'],
-                    ],
-                    'rows' => array_map(function ($exam) {
-                        return [
-                            'examName' => $exam['examName'] ?? '',
-                            'className' => $exam['className'] ?? '',
-                            'totalMarks' => (string) ($exam['totalMarks'] ?? 0),
-                            'maxMarks' => (string) ($exam['maxMarks'] ?? 0),
-                            'percentage' => ($exam['percentage'] ?? 0) . '%',
-                        ];
-                    }, $sections['exams']['exams'] ?? []),
-                ],
-                'fees' => [
-                    'sheet_name' => 'Fees',
-                    'title' => 'Fee History',
-                    'columns' => [
-                        ['key' => 'feeStructure', 'label' => 'Fee Structure'],
-                        ['key' => 'academicYear', 'label' => 'Academic Year'],
-                        ['key' => 'assignedAmount', 'label' => 'Assigned'],
-                        ['key' => 'paidAmount', 'label' => 'Paid'],
-                        ['key' => 'remainingAmount', 'label' => 'Remaining'],
-                        ['key' => 'status', 'label' => 'Status'],
-                    ],
-                    'rows' => array_map(function ($assignment) {
-                        return [
-                            'feeStructure' => $assignment['feeStructure']['name'] ?? '',
-                            'academicYear' => $assignment['academicYear']['name'] ?? '',
-                            'assignedAmount' => (string) ($assignment['assignedAmount'] ?? 0),
-                            'paidAmount' => (string) ($assignment['paidAmount'] ?? 0),
-                            'remainingAmount' => (string) ($assignment['remainingAmount'] ?? 0),
-                            'status' => $assignment['status'] ?? '',
-                        ];
-                    }, $sections['fees']['assignments'] ?? []),
-                ],
-                'library' => [
-                    'sheet_name' => 'Library',
-                    'title' => 'Library Loans',
-                    'columns' => [
-                        ['key' => 'bookTitle', 'label' => 'Book Title'],
-                        ['key' => 'author', 'label' => 'Author'],
-                        ['key' => 'accessionNumber', 'label' => 'Accession #'],
-                        ['key' => 'loanDate', 'label' => 'Loan Date'],
-                        ['key' => 'dueDate', 'label' => 'Due Date'],
-                        ['key' => 'returnedAt', 'label' => 'Returned'],
-                        ['key' => 'status', 'label' => 'Status'],
-                    ],
-                    'rows' => array_map(function ($loan) {
-                        return [
-                            'bookTitle' => $loan['book']['title'] ?? '',
-                            'author' => $loan['book']['author'] ?? '',
-                            'accessionNumber' => $loan['book']['accessionNumber'] ?? '',
-                            'loanDate' => isset($loan['loanDate']) && $loan['loanDate'] ? \Carbon\Carbon::parse($loan['loanDate'])->format('Y-m-d') : '',
-                            'dueDate' => isset($loan['dueDate']) && $loan['dueDate'] ? \Carbon\Carbon::parse($loan['dueDate'])->format('Y-m-d') : '',
-                            'returnedAt' => isset($loan['returnedAt']) && $loan['returnedAt'] ? \Carbon\Carbon::parse($loan['returnedAt'])->format('Y-m-d') : '',
-                            'status' => $loan['status'] ?? '',
-                        ];
-                    }, $sections['library']['loans'] ?? []),
-                ],
-                'attendance' => [
-                    'sheet_name' => 'Attendance',
-                    'title' => 'Attendance Summary',
-                    'columns' => [
-                        ['key' => 'month', 'label' => 'Month'],
-                        ['key' => 'present', 'label' => 'Present'],
-                        ['key' => 'absent', 'label' => 'Absent'],
-                        ['key' => 'late', 'label' => 'Late'],
-                        ['key' => 'rate', 'label' => 'Rate (%)'],
-                    ],
-                    'rows' => array_map(function ($item) {
-                        return [
-                            'month' => $item['month'] ?? '',
-                            'present' => (string) ($item['present'] ?? 0),
-                            'absent' => (string) ($item['absent'] ?? 0),
-                            'late' => (string) ($item['late'] ?? 0),
-                            'rate' => round($item['rate'] ?? 0, 2) . '%',
-                        ];
-                    }, $sections['attendance']['monthlyBreakdown'] ?? []),
-                ],
-                'id_cards' => [
-                    'sheet_name' => 'ID Cards',
-                    'title' => 'ID Card History',
-                    'columns' => [
-                        ['key' => 'cardNumber', 'label' => 'Card Number'],
-                        ['key' => 'template', 'label' => 'Template'],
-                        ['key' => 'academicYear', 'label' => 'Academic Year'],
-                        ['key' => 'class', 'label' => 'Class'],
-                        ['key' => 'issueDate', 'label' => 'Issue Date'],
-                        ['key' => 'isPrinted', 'label' => 'Printed'],
-                        ['key' => 'feePaid', 'label' => 'Fee Paid'],
-                    ],
-                    'rows' => array_map(function ($card) {
-                        return [
-                            'cardNumber' => $card['cardNumber'] ?? '',
-                            'template' => $card['template']['name'] ?? '',
-                            'academicYear' => $card['academicYear']['name'] ?? '',
-                            'class' => $card['class']['name'] ?? '',
-                            'issueDate' => isset($card['createdAt']) && $card['createdAt'] ? \Carbon\Carbon::parse($card['createdAt'])->format('Y-m-d') : '',
-                            'isPrinted' => ($card['isPrinted'] ?? false) ? 'Yes' : 'No',
-                            'feePaid' => ($card['cardFeePaid'] ?? false) ? 'Yes' : 'No',
-                        ];
-                    }, $sections['idCards']['cards'] ?? []),
-                ],
-                'courses' => [
-                    'sheet_name' => 'Courses',
-                    'title' => 'Short-Term Courses',
-                    'columns' => [
-                        ['key' => 'courseName', 'label' => 'Course Name'],
-                        ['key' => 'registrationDate', 'label' => 'Registration Date'],
-                        ['key' => 'completionDate', 'label' => 'Completion Date'],
-                        ['key' => 'completionStatus', 'label' => 'Status'],
-                        ['key' => 'grade', 'label' => 'Grade'],
-                        ['key' => 'certificateIssued', 'label' => 'Certificate Issued'],
-                    ],
-                    'rows' => array_map(function ($course) {
-                        return [
-                            'courseName' => $course['course']['name'] ?? '',
-                            'registrationDate' => isset($course['registrationDate']) && $course['registrationDate'] ? \Carbon\Carbon::parse($course['registrationDate'])->format('Y-m-d') : '',
-                            'completionDate' => isset($course['completionDate']) && $course['completionDate'] ? \Carbon\Carbon::parse($course['completionDate'])->format('Y-m-d') : '',
-                            'completionStatus' => $course['completionStatus'] ?? '',
-                            'grade' => $course['grade'] ?? '',
-                            'certificateIssued' => $course['certificateIssued'] ? 'Yes' : 'No',
-                        ];
-                    }, $sections['courses'] ?? []),
-                ],
-                'graduations' => [
-                    'sheet_name' => 'Graduations',
-                    'title' => 'Graduation Records',
-                    'columns' => [
-                        ['key' => 'batchName', 'label' => 'Batch Name'],
-                        ['key' => 'graduationDate', 'label' => 'Graduation Date'],
-                        ['key' => 'finalResult', 'label' => 'Final Result'],
-                        ['key' => 'certificateNumber', 'label' => 'Certificate #'],
-                    ],
-                    'rows' => array_map(function ($graduation) {
-                        return [
-                            'batchName' => $graduation['batch']['name'] ?? '',
-                            'graduationDate' => isset($graduation['createdAt']) && $graduation['createdAt'] ? \Carbon\Carbon::parse($graduation['createdAt'])->format('Y-m-d') : '',
-                            'finalResult' => $graduation['finalResultStatus'] ?? '',
-                            'certificateNumber' => $graduation['certificateNumber'] ?? '',
-                        ];
-                    }, $sections['graduations'] ?? []),
-                ],
-                ],
+                'sheets' => StudentHistoryExcelSheets::build($student, $summary, $sections, $labels),
             ],
             'metadata' => $history['metadata'] ?? [],
         ];
@@ -869,7 +639,7 @@ class StudentHistoryController extends Controller
     /**
      * Preview the student history report template (for testing/development)
      * This route renders the template directly in the browser with sample data
-     * 
+     *
      * Supports authentication via:
      * - Bearer token in Authorization header (standard)
      * - token query parameter (for easy browser testing in dev mode only)
@@ -877,7 +647,7 @@ class StudentHistoryController extends Controller
     public function previewTemplate(Request $request): \Illuminate\View\View
     {
         // Only allow in development mode
-        if (!config('app.debug')) {
+        if (! config('app.debug')) {
             abort(404);
         }
 
@@ -886,7 +656,7 @@ class StudentHistoryController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             abort(403, 'User must be assigned to an organization');
         }
 
@@ -894,13 +664,13 @@ class StudentHistoryController extends Controller
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // If no student_id provided, get first student
-        if (!$studentId) {
+        if (! $studentId) {
             $student = DB::table('students')
                 ->where('organization_id', $profile->organization_id)
                 ->whereNull('deleted_at')
                 ->first();
-            
-            if (!$student) {
+
+            if (! $student) {
                 abort(404, 'No students found. Please provide a student_id parameter.');
             }
             $studentId = $student->id;
@@ -914,11 +684,12 @@ class StudentHistoryController extends Controller
                 $currentSchoolId
             );
         } catch (\Exception $e) {
-            abort(500, 'Failed to fetch student history: ' . $e->getMessage());
+            abort(500, 'Failed to fetch student history: '.$e->getMessage());
         }
 
-        // Build report data
-        $reportData = $this->buildPdfReportData($history);
+        $language = (string) $request->get('language', 'ps');
+        $reportData = $this->buildPdfReportData($history, $language);
+        $labels = $reportData['labels'] ?? StudentHistoryReportLabels::forLanguage($language);
 
         // Build context for template (similar to PdfReportService)
         $context = [
@@ -928,20 +699,19 @@ class StudentHistoryController extends Controller
             'metadata' => $reportData['metadata'] ?? [],
             'generatedAt' => now()->format('Y-m-d H:i'),
             'totalRecords' => $reportData['metadata']['totalRecords'] ?? 0,
-            'labels' => [], // Will be populated by template based on language
-            'TABLE_TITLE' => 'Student Lifetime History - Preview',
+            'labels' => $labels,
+            'TABLE_TITLE' => StudentHistoryReportLabels::reportTitle($language, $history['student']['fullName'] ?? null),
             'SCHOOL_NAME' => 'Test School',
             'PRIMARY_COLOR' => '#0b0b56',
             'SECONDARY_COLOR' => '#0056b3',
-            'FONT_FAMILY' => 'Inter',
+            'FONT_FAMILY' => 'Bahij Nassim',
             'FONT_SIZE' => '12px',
-            'rtl' => false,
+            'rtl' => StudentHistoryReportLabels::isRtl($language),
+            'language' => $language,
             'show_page_numbers' => true,
         ];
 
         // Render the template directly
         return view('reports.student-history', $context);
     }
-
 }
-

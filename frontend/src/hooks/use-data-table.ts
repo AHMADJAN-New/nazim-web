@@ -57,14 +57,16 @@ export function useDataTable<TData>({
     return initialState?.pagination ?? { pageIndex: 0, pageSize: 25 };
   });
 
-  // Update pagination when meta changes
+  // Sync from server meta, but don't overwrite a pending pageSize change with stale placeholder meta
   useEffect(() => {
-    if (paginationMeta) {
-      setPagination({
-        pageIndex: paginationMeta.current_page - 1,
-        pageSize: paginationMeta.per_page,
-      });
-    }
+    if (!paginationMeta) return;
+    setPagination((prev) => ({
+      pageIndex: paginationMeta.current_page - 1,
+      pageSize:
+        paginationMeta.per_page === prev.pageSize
+          ? paginationMeta.per_page
+          : prev.pageSize,
+    }));
   }, [paginationMeta]);
 
   // Memoize data to ensure stable reference

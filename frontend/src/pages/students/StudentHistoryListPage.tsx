@@ -29,7 +29,6 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { useDebounce } from '@/hooks/useDebounce';
 import { StudentNameWithFather } from '@/components/students/StudentNameWithFather';
 import type { Student } from '@/types/domain/student';
-import { formatDate } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 export default function StudentHistoryListPage() {
@@ -157,11 +156,11 @@ export default function StudentHistoryListPage() {
       },
     },
     {
-      accessorKey: 'dateOfBirth',
-      header: t('students.dateOfBirth') || 'Date of Birth',
+      accessorKey: 'phone',
+      header: t('students.phone') || 'Phone',
       cell: ({ row }) => (
-        <div className="text-sm">
-          {row.original.dateOfBirth ? formatDate(row.original.dateOfBirth) : '-'}
+        <div className="text-sm text-muted-foreground dir-ltr">
+          {row.original.phone || row.original.guardianPhone || '—'}
         </div>
       ),
     },
@@ -195,7 +194,7 @@ export default function StudentHistoryListPage() {
     },
   ];
 
-  // Use DataTable hook for pagination
+  // Use DataTable hook for pagination (server-side via useStudents)
   const { table } = useDataTable({
     data: students ?? [],
     columns,
@@ -208,8 +207,12 @@ export default function StudentHistoryListPage() {
       },
     },
     onPaginationChange: (newPagination) => {
+      if (newPagination.pageSize !== pageSize) {
+        setPageSize(newPagination.pageSize);
+        setPage(1);
+        return;
+      }
       setPage(newPagination.pageIndex + 1);
-      setPageSize(newPagination.pageSize);
     },
   });
 
@@ -339,7 +342,32 @@ export default function StudentHistoryListPage() {
           </div>
           {pagination && (
             <div className="mt-4">
-              <DataTablePagination table={table} />
+              <DataTablePagination
+                table={{
+                  getState: () => ({
+                    pagination: { pageIndex: page - 1, pageSize },
+                  }),
+                  setPageIndex: (index: number) => {
+                    setPage(index + 1);
+                  },
+                  setPageSize: (size: number) => {
+                    setPageSize(size);
+                    setPage(1);
+                  },
+                  getPageCount: () => pagination.last_page,
+                  getRowCount: () => pagination.total,
+                  getRowModel: () => ({ rows: [] }),
+                  options: { data: students ?? [] },
+                } as never}
+                paginationMeta={pagination}
+                onPageChange={setPage}
+                onPageSizeChange={(newPageSize) => {
+                  setPageSize(newPageSize);
+                  setPage(1);
+                }}
+                showPageSizeSelector={true}
+                showTotalCount={true}
+              />
             </div>
           )}
         </CardContent>
