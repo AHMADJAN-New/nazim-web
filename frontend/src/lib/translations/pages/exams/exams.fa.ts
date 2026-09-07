@@ -882,8 +882,6 @@ export default {
     restDays: "روزهای استراحت (بدون امتحان)",
     addRestDay: "افزودن روز استراحت",
     defaultTime: "وقت پیش‌فرض امتحان",
-    startTime: "وقت شروع",
-    endTime: "وقت پایان",
     assignRooms: "تخصیص اتاق‌ها",
     assignInvigilators: "تخصیص ناظرین",
     generate: "ایجاد",

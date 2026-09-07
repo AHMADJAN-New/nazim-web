@@ -55,6 +55,7 @@ import {
 } from '@/hooks/useIdCardTemplates';
 import { useLanguage } from '@/hooks/useLanguage';
 import { getDefaultIdCardLabelTexts } from '@/lib/idCards/idCardFieldUtils';
+import { formatDate } from '@/lib/utils';
 
 const DEFAULT_LABEL_FIELD_VALUES = getDefaultIdCardLabelTexts('en');
 

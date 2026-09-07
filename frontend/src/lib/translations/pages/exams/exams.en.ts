@@ -882,8 +882,6 @@ export default {
     restDays: "Rest days (no exams)",
     addRestDay: "Add rest day",
     defaultTime: "Default exam time",
-    startTime: "Start time",
-    endTime: "End time",
     assignRooms: "Assign rooms",
     assignInvigilators: "Assign invigilators",
     generate: "Generate",

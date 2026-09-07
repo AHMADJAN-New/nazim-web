@@ -844,8 +844,6 @@ export default {
     unlock: "خلاصول",
     lock: "بندول",
     addTimeSlotDescription: "د ازموینې نوې جلسه مهالویش کړئ",
-    startTime: "د پیل وخت",
-    endTime: "د پای وخت",
     selectRoom: "اتاق غوره کړئ",
     selectInvigilator: "څارونکی غوره کړئ",
     notesPlaceholder: "اختیاري یادښتونه...",
