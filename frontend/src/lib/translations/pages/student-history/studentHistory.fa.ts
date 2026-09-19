@@ -155,6 +155,15 @@ export default {
     attendanceGood: "خوب",
     attendanceFair: "متوسط",
     attendancePoor: "ضعیف",
-    absenceRate: "فیصدي غیابت"
+    absenceRate: "فیصدي غیابت",
+    afghan: "افغان",
+    pashto: "پشتو",
+    dari: "دری",
+    farsi: "فارسی",
+    arabic: "عربی",
+    english: "انگلیسی",
+    mother: "مادر",
+    partial: "جزئی",
+    borrowed: "امانت‌گرفته"
   }
 };

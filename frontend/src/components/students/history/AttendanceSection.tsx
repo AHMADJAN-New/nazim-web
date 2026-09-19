@@ -123,22 +123,22 @@ export function AttendanceSection({ attendance }: AttendanceSectionProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('studentHistory.month') || 'Month'}</TableHead>
-                    <TableHead className="text-right">{t('studentHistory.total') || 'Total'}</TableHead>
-                    <TableHead className="text-right">{t('studentHistory.present') || 'Present'}</TableHead>
-                    <TableHead className="text-right">{t('studentHistory.absent') || 'Absent'}</TableHead>
-                    <TableHead className="text-right">{t('studentHistory.late') || 'Late'}</TableHead>
-                    <TableHead className="text-right">{t('studentHistory.rate') || 'Rate'}</TableHead>
+                    <TableHead className="text-end">{t('studentHistory.total') || 'Total'}</TableHead>
+                    <TableHead className="text-end">{t('studentHistory.present') || 'Present'}</TableHead>
+                    <TableHead className="text-end">{t('studentHistory.absent') || 'Absent'}</TableHead>
+                    <TableHead className="text-end">{t('studentHistory.late') || 'Late'}</TableHead>
+                    <TableHead className="text-end">{t('studentHistory.rate') || 'Rate'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {monthlyBreakdown.slice(0, 12).map((month) => (
                     <TableRow key={month.month}>
                       <TableCell className="font-medium">{month.month}</TableCell>
-                      <TableCell className="text-right">{month.total}</TableCell>
-                      <TableCell className="text-right text-green-600">{month.present}</TableCell>
-                      <TableCell className="text-right text-red-600">{month.absent}</TableCell>
-                      <TableCell className="text-right text-yellow-600">{month.late}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">{month.total}</TableCell>
+                      <TableCell className="text-end text-green-600">{month.present}</TableCell>
+                      <TableCell className="text-end text-red-600">{month.absent}</TableCell>
+                      <TableCell className="text-end text-yellow-600">{month.late}</TableCell>
+                      <TableCell className="text-end">
                         <Badge variant={month.rate >= 85 ? 'default' : month.rate >= 75 ? 'secondary' : 'destructive'}>
                           {month.rate}%
                         </Badge>

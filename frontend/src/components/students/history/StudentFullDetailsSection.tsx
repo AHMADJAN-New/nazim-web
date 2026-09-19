@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, User, MapPin, Phone, Mail, Users, FileText, Building2, Heart, DollarSign } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { translateStudentHistoryValue } from '@/lib/studentHistoryValueLabels';
 import type { StudentBasicInfo } from '@/types/domain/studentHistory';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -83,12 +84,12 @@ export function StudentFullDetailsSection({ student }: StudentFullDetailsSection
                 {renderField(t('students.fatherName') || 'Father Name', student.fatherName)}
                 {renderField(t('students.grandfatherName') || 'Grandfather Name', student.grandfatherName)}
                 {renderField(t('students.motherName') || 'Mother Name', student.motherName)}
-                {renderField(t('students.gender') || 'Gender', student.gender)}
+                {renderField(t('students.gender') || 'Gender', translateStudentHistoryValue(student.gender, t, ''))}
                 {renderField(t('students.dateOfBirth') || 'Date of Birth', student.dateOfBirth ? formatDate(student.dateOfBirth) : null)}
                 {renderField(t('students.birthYear') || 'Birth Year', student.birthYear)}
                 {renderField(t('students.age') || 'Age', student.age ? `${student.age} ${t('common.years') || 'years'}` : null)}
-                {renderField(t('students.nationality') || 'Nationality', student.nationality)}
-                {renderField(t('students.preferredLanguage') || 'Preferred Language', student.preferredLanguage)}
+                {renderField(t('students.nationality') || 'Nationality', translateStudentHistoryValue(student.nationality, t, ''))}
+                {renderField(t('students.preferredLanguage') || 'Preferred Language', translateStudentHistoryValue(student.preferredLanguage, t, ''))}
                 {renderField(t('students.isOrphan') || 'Is Orphan', student.isOrphan)}
                 {renderField(t('students.disabilityStatus') || 'Disability Status', student.disabilityStatus)}
               </div>
@@ -153,7 +154,7 @@ export function StudentFullDetailsSection({ student }: StudentFullDetailsSection
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {renderField(t('students.guardianName') || 'Guardian Name', student.guardianName)}
-                {renderField(t('students.guardianRelation') || 'Relation', student.guardianRelation)}
+                {renderField(t('students.guardianRelation') || 'Relation', translateStudentHistoryValue(student.guardianRelation, t, ''))}
                 {renderField(t('students.guardianPhone') || 'Guardian Phone', student.guardianPhone, <Phone className="h-4 w-4" />)}
                 {renderField(t('students.guardianTazkira') || 'Guardian Tazkira', student.guardianTazkira)}
               </div>
@@ -190,7 +191,7 @@ export function StudentFullDetailsSection({ student }: StudentFullDetailsSection
                 {renderField(t('students.admissionYear') || 'Admission Year', student.admissionYear)}
                 {renderField(t('students.applyingGrade') || 'Applying Grade', student.applyingGrade)}
                 {renderField(t('students.previousSchool') || 'Previous School', student.previousSchool)}
-                {renderField(t('students.admissionFeeStatus') || 'Admission Fee Status', student.admissionFeeStatus)}
+                {renderField(t('students.admissionFeeStatus') || 'Admission Fee Status', translateStudentHistoryValue(student.admissionFeeStatus, t, ''))}
               </div>
             </div>
 
@@ -220,7 +221,7 @@ export function StudentFullDetailsSection({ student }: StudentFullDetailsSection
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {renderField(t('students.studentCode') || 'Student Code', student.studentCode)}
                 {renderField(t('students.cardNumber') || 'Card Number', student.cardNumber)}
-                {renderField(t('students.status') ?? 'Status', student.status)}
+                {renderField(t('students.status') ?? 'Status', translateStudentHistoryValue(student.status, t, ''))}
                 {renderField(t('common.createdAt') || 'Created At', student.createdAt ? formatDate(student.createdAt) : null)}
               </div>
             </div>

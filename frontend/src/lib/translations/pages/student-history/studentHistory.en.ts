@@ -154,6 +154,15 @@ export default {
     attendanceGood: "Good",
     attendanceFair: "Fair",
     attendancePoor: "Poor",
-    absenceRate: "Absence Percentage"
+    absenceRate: "Absence Percentage",
+    afghan: "Afghan",
+    pashto: "Pashto",
+    dari: "Dari",
+    farsi: "Farsi",
+    arabic: "Arabic",
+    english: "English",
+    mother: "Mother",
+    partial: "Partial",
+    borrowed: "Borrowed"
   }
 };

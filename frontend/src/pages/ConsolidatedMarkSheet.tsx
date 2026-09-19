@@ -50,8 +50,9 @@ type ReportData = {
     passing_marks?: number;
   }>;
   students?: Array<{
-    roll_number: string;
+    roll_number: string | null;
     student_name: string;
+    father_name?: string | null;
     admission_no?: string;
     subjects: Array<{
       subject_id: string;
@@ -297,6 +298,11 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
         cell: ({ row }) => row.original.student_name,
       },
       {
+        accessorKey: 'father_name',
+        header: t('examReports.fatherName') || 'Father Name',
+        cell: ({ row }) => row.original.father_name || '-',
+      },
+      {
         accessorKey: 'roll_number',
         header: t('students.rollNumber'),
         cell: ({ row }) => row.original.roll_number || '-',
@@ -512,6 +518,7 @@ function transformClassReportData(report: ReportData, t: (key: string) => string
       rank: index + 1,
       rollNumber: student.roll_number || '-',
       studentName: student.student_name || '-',
+      fatherName: student.father_name || '-',
     };
     
     // Add subject marks
@@ -551,6 +558,7 @@ function getExportColumns(report: ReportData, t: (key: string) => string): Array
     { key: 'rank', label: t('examReports.rank') || 'Rank' },
     { key: 'rollNumber', label: t('students.rollNumber') || 'Roll Number' },
     { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
+    { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
     ...(report.subjects || []).map((subject: any) => ({
       key: `subject_${subject.id || subject.subject_id}`,
       label: subject.name || 'Subject',
@@ -793,6 +801,7 @@ export default function ConsolidatedMarkSheet() {
                     { key: 'rank', label: t('examReports.rank') || 'Rank' },
                     { key: 'rollNumber', label: t('students.rollNumber') || 'Roll Number' },
                     { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
+                    { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
                     ...(report.subjects || []).map((subject: any) => ({
                       key: `subject_${subject.id || subject.subject_id}`,
                       label: subject.name || 'Subject',
@@ -812,6 +821,7 @@ export default function ConsolidatedMarkSheet() {
                         rank: index + 1,
                         rollNumber: student.roll_number || '-',
                         studentName: student.student_name || '-',
+                        fatherName: student.father_name || '-',
                       };
                       // Add subject marks
                       (report.subjects || []).forEach((subject: any) => {

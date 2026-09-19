@@ -831,8 +831,6 @@ class ExamReportController extends Controller
             $totalObtained = 0;
             $totalMax = 0;
             $hasIncompleteMarks = false;
-            $isAbsentInAny = false;
-            $failedInAny = false;
 
             foreach ($examSubjects as $examSubject) {
                 $result = $studentResults->firstWhere('exam_subject_id', $examSubject->id);
@@ -842,12 +840,8 @@ class ExamReportController extends Controller
                 $isPass = null;
                 if (! $isAbsent && $marks !== null && $examSubject->passing_marks !== null) {
                     $isPass = $marks >= $examSubject->passing_marks;
-                    if (! $isPass) {
-                        $failedInAny = true;
-                    }
                 } elseif ($isAbsent) {
                     $isPass = false;
-                    $failedInAny = true;
                 }
 
                 $subjects[] = [
@@ -870,9 +864,6 @@ class ExamReportController extends Controller
                     $totalMax += $examSubject->total_marks;
                 }
 
-                if ($isAbsent) {
-                    $isAbsentInAny = true;
-                }
             }
 
             $percentage = $totalMax > 0 ? round(($totalObtained / $totalMax) * 100, 2) : 0;
@@ -880,18 +871,16 @@ class ExamReportController extends Controller
             // Calculate grade using GradeCalculator
             $gradeDetails = GradeCalculator::getGradeDetails($percentage, $profile->organization_id);
 
-            // Determine overall result
-            $result = 'Fail';
-            if (! $hasIncompleteMarks && ! $isAbsentInAny && ! $failedInAny) {
-                $result = 'Pass';
-            } elseif ($hasIncompleteMarks) {
-                $result = 'Incomplete';
-            }
+            // Subject results use subject passing marks above. The combined
+            // result follows the configured grade for the total percentage.
+            $result = GradeCalculator::determineOverallResult($hasIncompleteMarks, $gradeDetails);
 
             return [
                 'id' => $examStudent->studentAdmission?->student?->id,
-                'roll_number' => $examStudent->roll_number,
+                'roll_number' => $examStudent->exam_roll_number
+                    ?? $examStudent->studentAdmission?->roll_number,
                 'student_name' => $examStudent->studentAdmission?->student?->full_name ?? 'Unknown',
+                'father_name' => $examStudent->studentAdmission?->student?->father_name,
                 'admission_no' => $examStudent->studentAdmission?->admission_no,
                 'picture_path' => $examStudent->studentAdmission?->student?->picture_path,
                 'subjects' => $subjects,

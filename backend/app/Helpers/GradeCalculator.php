@@ -131,4 +131,22 @@ class GradeCalculator
             'is_pass' => $grade->is_pass,
         ];
     }
+
+    /**
+     * Determine the overall result for a completed set of marks.
+     *
+     * Subject-level pass/fail is intentionally handled separately using each
+     * exam subject's passing marks. The combined result must follow the grade
+     * range configured for the student's total percentage.
+     *
+     * @param  array{is_pass?: bool}|null  $gradeDetails
+     */
+    public static function determineOverallResult(bool $hasIncompleteMarks, ?array $gradeDetails): string
+    {
+        if ($hasIncompleteMarks) {
+            return 'Incomplete';
+        }
+
+        return ($gradeDetails['is_pass'] ?? false) ? 'Pass' : 'Fail';
+    }
 }

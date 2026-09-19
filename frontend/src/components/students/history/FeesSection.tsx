@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { translateStudentHistoryValue } from '@/lib/studentHistoryValueLabels';
 import type { FeeHistory, FeeStatus } from '@/types/domain/studentHistory';
 
 interface FeesSectionProps {
@@ -136,9 +137,9 @@ export function FeesSection({ fees }: FeesSectionProps) {
                   <TableRow>
                     <TableHead>{t('studentHistory.feeStructure') || 'Fee Structure'}</TableHead>
                     <TableHead>{t('studentHistory.academicYear') || 'Academic Year'}</TableHead>
-                    <TableHead className="text-right">{t('studentHistory.assigned') || 'Assigned'}</TableHead>
-                    <TableHead className="text-right">{t('studentHistory.paid') || 'Paid'}</TableHead>
-                    <TableHead className="text-right">{t('studentHistory.remaining') || 'Remaining'}</TableHead>
+                    <TableHead className="text-end">{t('studentHistory.assigned') || 'Assigned'}</TableHead>
+                    <TableHead className="text-end">{t('studentHistory.paid') || 'Paid'}</TableHead>
+                    <TableHead className="text-end">{t('studentHistory.remaining') || 'Remaining'}</TableHead>
                     <TableHead>{t('studentHistory.dueDate') || 'Due Date'}</TableHead>
                     <TableHead>{t('studentHistory.status') || 'Status'}</TableHead>
                   </TableRow>
@@ -150,9 +151,9 @@ export function FeesSection({ fees }: FeesSectionProps) {
                         {assignment.feeStructure?.name || '-'}
                       </TableCell>
                       <TableCell>{assignment.academicYear?.name || '-'}</TableCell>
-                      <TableCell className="text-right">{assignment.assignedAmount.toLocaleString()}</TableCell>
-                      <TableCell className="text-right text-green-600">{assignment.paidAmount.toLocaleString()}</TableCell>
-                      <TableCell className={`text-right ${assignment.remainingAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                      <TableCell className="text-end">{assignment.assignedAmount.toLocaleString()}</TableCell>
+                      <TableCell className="text-end text-green-600">{assignment.paidAmount.toLocaleString()}</TableCell>
+                      <TableCell className={`text-end ${assignment.remainingAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                         {assignment.remainingAmount.toLocaleString()}
                       </TableCell>
                       <TableCell>{assignment.dueDate ? formatDate(assignment.dueDate) : '-'}</TableCell>
@@ -160,7 +161,7 @@ export function FeesSection({ fees }: FeesSectionProps) {
                         <div className="flex items-center gap-2">
                           {getStatusIcon(assignment.status)}
                           <Badge variant={getStatusBadgeVariant(assignment.status)}>
-                            {assignment.status || 'pending'}
+                            {translateStudentHistoryValue(assignment.status || 'pending', t)}
                           </Badge>
                         </div>
                       </TableCell>
@@ -186,7 +187,7 @@ export function FeesSection({ fees }: FeesSectionProps) {
                   <TableRow>
                     <TableHead>{t('studentHistory.date') || 'Date'}</TableHead>
                     <TableHead>{t('studentHistory.feeType') || 'Fee Type'}</TableHead>
-                    <TableHead className="text-right">{t('studentHistory.amount') || 'Amount'}</TableHead>
+                    <TableHead className="text-end">{t('studentHistory.amount') || 'Amount'}</TableHead>
                     <TableHead>{t('studentHistory.method') || 'Method'}</TableHead>
                     <TableHead>{t('studentHistory.reference') || 'Reference'}</TableHead>
                     <TableHead>{t('studentHistory.receivedBy') || 'Received By'}</TableHead>
@@ -197,7 +198,7 @@ export function FeesSection({ fees }: FeesSectionProps) {
                     <TableRow key={payment.id}>
                       <TableCell>{payment.paymentDate ? formatDate(payment.paymentDate) : '-'}</TableCell>
                       <TableCell className="font-medium">{payment.feeStructureName || '-'}</TableCell>
-                      <TableCell className="text-right text-green-600 font-medium">
+                      <TableCell className="text-end text-green-600 font-medium">
                         {payment.amount.toLocaleString()} {payment.currency || ''}
                       </TableCell>
                       <TableCell>

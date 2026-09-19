@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { translateStudentHistoryValue } from '@/lib/studentHistoryValueLabels';
 import type { CourseHistory, CourseCompletionStatus } from '@/types/domain/studentHistory';
 
 interface CoursesSectionProps {
@@ -148,7 +149,7 @@ export function CoursesSection({ courses }: CoursesSectionProps) {
                         <div className="flex items-center gap-2">
                           {getStatusIcon(course.completionStatus)}
                           <Badge variant={getStatusBadgeVariant(course.completionStatus)}>
-                            {course.completionStatus}
+                            {translateStudentHistoryValue(course.completionStatus, t)}
                           </Badge>
                         </div>
                       </TableCell>

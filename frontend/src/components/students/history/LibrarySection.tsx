@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { translateStudentHistoryValue } from '@/lib/studentHistoryValueLabels';
 import type { LibraryHistory, LibraryLoanStatus } from '@/types/domain/studentHistory';
 
 interface LibrarySectionProps {
@@ -161,7 +162,7 @@ export function LibrarySection({ library }: LibrarySectionProps) {
                         <div className="flex items-center gap-2">
                           {getStatusIcon(loan.status)}
                           <Badge variant={getStatusBadgeVariant(loan.status)}>
-                            {loan.status}
+                            {translateStudentHistoryValue(loan.status, t)}
                           </Badge>
                         </div>
                       </TableCell>

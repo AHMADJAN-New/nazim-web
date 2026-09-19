@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/table';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { translateStudentHistoryValue } from '@/lib/studentHistoryValueLabels';
 import type { ExamHistory, ExamRecord } from '@/types/domain/studentHistory';
 
 interface ExamsSectionProps {
@@ -69,7 +70,7 @@ function ExamCard({ exam }: ExamCardProps) {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="text-right">
+                <div className="text-end">
                   <p className="text-lg font-bold">{exam.percentage}%</p>
                   <p className="text-xs text-muted-foreground">
                     {exam.totalMarks}/{exam.maxMarks}
@@ -106,7 +107,7 @@ function ExamCard({ exam }: ExamCardProps) {
               {exam.examStatus && (
                 <div>
                   <p className="text-xs text-muted-foreground">{t('studentHistory.status') || 'Status'}</p>
-                  <Badge variant="outline">{exam.examStatus}</Badge>
+                  <Badge variant="outline">{translateStudentHistoryValue(exam.examStatus, t)}</Badge>
                 </div>
               )}
             </div>
@@ -118,9 +119,9 @@ function ExamCard({ exam }: ExamCardProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('studentHistory.subject') || 'Subject'}</TableHead>
-                      <TableHead className="text-right">{t('studentHistory.obtained') || 'Obtained'}</TableHead>
-                      <TableHead className="text-right">{t('studentHistory.maxMarks') || 'Max'}</TableHead>
-                      <TableHead className="text-right">{t('studentHistory.percentage') || '%'}</TableHead>
+                      <TableHead className="text-end">{t('studentHistory.obtained') || 'Obtained'}</TableHead>
+                      <TableHead className="text-end">{t('studentHistory.maxMarks') || 'Max'}</TableHead>
+                      <TableHead className="text-end">{t('studentHistory.percentage') || '%'}</TableHead>
                       <TableHead>{t('studentHistory.remarks') || 'Remarks'}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -128,15 +129,15 @@ function ExamCard({ exam }: ExamCardProps) {
                     {exam.subjectResults.map((result) => (
                       <TableRow key={result.id}>
                         <TableCell className="font-medium">{result.subjectName}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           {result.isAbsent ? (
-                            <Badge variant="destructive" className="text-xs">Absent</Badge>
+                            <Badge variant="destructive" className="text-xs">{t('studentHistory.absent')}</Badge>
                           ) : (
                             result.marksObtained ?? '-'
                           )}
                         </TableCell>
-                        <TableCell className="text-right">{result.maxMarks}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">{result.maxMarks}</TableCell>
+                        <TableCell className="text-end">
                           {!result.isAbsent && (
                             <Badge variant={getGradeBadgeVariant(result.percentage)}>
                               {result.percentage}%

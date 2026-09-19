@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
 use App\Services\Reports\StudentHistoryExcelSheets;
+use App\Services\Reports\StudentHistoryPdfPayload;
 use App\Services\Reports\StudentHistoryReportLabels;
 use App\Services\StudentHistoryService;
 use Illuminate\Http\JsonResponse;
@@ -451,13 +452,7 @@ class StudentHistoryController extends Controller
         // Format attendance section
         $attendanceSummary = $sections['attendance']['summary'] ?? [];
         $attendanceData = [
-            'summary' => [
-                'total_days' => $attendanceSummary['totalDays'] ?? 0,
-                'present' => $attendanceSummary['present'] ?? 0,
-                'absent' => $attendanceSummary['absent'] ?? 0,
-                'late' => $attendanceSummary['late'] ?? 0,
-                'rate' => round($attendanceSummary['rate'] ?? 0, 2),
-            ],
+            'summary' => StudentHistoryPdfPayload::mapAttendanceSummary($attendanceSummary),
             'monthly_breakdown' => array_map(function ($item) {
                 return [
                     'month' => $item['month'] ?? '',

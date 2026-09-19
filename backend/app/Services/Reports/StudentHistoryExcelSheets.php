@@ -18,6 +18,7 @@ class StudentHistoryExcelSheets
     {
         $yes = $labels['yes'] ?? 'Yes';
         $no = $labels['no'] ?? 'No';
+        $V = fn (mixed $value): string => StudentHistoryReportLabels::translateValue($labels, $value, '');
 
         return [
             'overview' => [
@@ -34,12 +35,12 @@ class StudentHistoryExcelSheets
                     ['field' => $labels['fatherName'] ?? 'Father Name', 'value' => $student['fatherName'] ?? ''],
                     ['field' => $labels['grandfatherName'] ?? 'Grandfather Name', 'value' => $student['grandfatherName'] ?? ''],
                     ['field' => $labels['motherName'] ?? 'Mother Name', 'value' => $student['motherName'] ?? ''],
-                    ['field' => $labels['gender'] ?? 'Gender', 'value' => $student['gender'] ?? ''],
+                    ['field' => $labels['gender'] ?? 'Gender', 'value' => $V($student['gender'] ?? '')],
                     ['field' => $labels['dob'] ?? 'Date of Birth', 'value' => $student['dateOfBirth'] ?? ''],
                     ['field' => $labels['birthYear'] ?? 'Birth Year', 'value' => (string) ($student['birthYear'] ?? '')],
                     ['field' => $labels['age'] ?? 'Age', 'value' => (string) ($student['age'] ?? '')],
-                    ['field' => $labels['nationality'] ?? 'Nationality', 'value' => $student['nationality'] ?? ''],
-                    ['field' => $labels['preferredLanguage'] ?? 'Preferred Language', 'value' => $student['preferredLanguage'] ?? ''],
+                    ['field' => $labels['nationality'] ?? 'Nationality', 'value' => $V($student['nationality'] ?? '')],
+                    ['field' => $labels['preferredLanguage'] ?? 'Preferred Language', 'value' => $V($student['preferredLanguage'] ?? '')],
                     ['field' => $labels['isOrphan'] ?? 'Is Orphan', 'value' => ($student['isOrphan'] ?? false) ? $yes : $no],
                     ['field' => $labels['phone'] ?? 'Phone', 'value' => $student['phone'] ?? ''],
                     ['field' => $labels['homeAddress'] ?? 'Home Address', 'value' => $student['homeAddress'] ?? ''],
@@ -52,7 +53,7 @@ class StudentHistoryExcelSheets
                     ['field' => $labels['currentDistrict'] ?? 'Current District', 'value' => $student['currDistrict'] ?? ''],
                     ['field' => $labels['currentVillage'] ?? 'Current Village', 'value' => $student['currVillage'] ?? ''],
                     ['field' => $labels['guardianName'] ?? 'Guardian Name', 'value' => $student['guardianName'] ?? ''],
-                    ['field' => $labels['guardianRelation'] ?? 'Relation', 'value' => $student['guardianRelation'] ?? ''],
+                    ['field' => $labels['guardianRelation'] ?? 'Relation', 'value' => $V($student['guardianRelation'] ?? '')],
                     ['field' => $labels['guardianPhone'] ?? 'Guardian Phone', 'value' => $student['guardianPhone'] ?? ''],
                     ['field' => $labels['guardianTazkira'] ?? 'Guardian Tazkira', 'value' => $student['guardianTazkira'] ?? ''],
                     ['field' => $labels['guarantorName'] ?? 'Guarantor Name', 'value' => $student['zaminName'] ?? ''],
@@ -62,9 +63,9 @@ class StudentHistoryExcelSheets
                     ['field' => $labels['admissionNo'] ?? 'Admission Number', 'value' => $student['admissionNumber'] ?? ''],
                     ['field' => $labels['admissionYear'] ?? 'Admission Year', 'value' => (string) ($student['admissionYear'] ?? '')],
                     ['field' => $labels['applyingGrade'] ?? 'Applying Grade', 'value' => $student['applyingGrade'] ?? ''],
-                    ['field' => $labels['admissionFeeStatus'] ?? 'Admission Fee Status', 'value' => $student['admissionFeeStatus'] ?? ''],
+                    ['field' => $labels['admissionFeeStatus'] ?? 'Admission Fee Status', 'value' => $V($student['admissionFeeStatus'] ?? '')],
                     ['field' => $labels['familyIncome'] ?? 'Family Income', 'value' => (string) ($student['familyIncome'] ?? '')],
-                    ['field' => $labels['status'] ?? 'Status', 'value' => $student['status'] ?? ''],
+                    ['field' => $labels['status'] ?? 'Status', 'value' => $V($student['status'] ?? '')],
                     ['field' => $labels['studentCode'] ?? 'Student Code', 'value' => $student['studentCode'] ?? ''],
                     ['field' => $labels['cardNumber'] ?? 'Card Number', 'value' => $student['cardNumber'] ?? ''],
                     ['field' => $labels['schoolName'] ?? 'School Name', 'value' => $student['schoolName'] ?? ''],
@@ -86,12 +87,12 @@ class StudentHistoryExcelSheets
                     ['key' => 'academicYear', 'label' => $labels['academicYear'] ?? 'Academic Year'],
                     ['key' => 'status', 'label' => $labels['status'] ?? 'Status'],
                 ],
-                'rows' => array_map(function ($admission) {
+                'rows' => array_map(function ($admission) use ($V) {
                     return [
                         'admissionDate' => isset($admission['admissionDate']) && $admission['admissionDate'] ? \Carbon\Carbon::parse($admission['admissionDate'])->format('Y-m-d') : '',
                         'class' => $admission['class']['name'] ?? '',
                         'academicYear' => $admission['academicYear']['name'] ?? '',
-                        'status' => $admission['enrollmentStatus'] ?? '',
+                        'status' => $V($admission['enrollmentStatus'] ?? ''),
                     ];
                 }, $sections['admissions'] ?? []),
             ],
@@ -126,14 +127,14 @@ class StudentHistoryExcelSheets
                     ['key' => 'remainingAmount', 'label' => $labels['remaining'] ?? 'Remaining'],
                     ['key' => 'status', 'label' => $labels['status'] ?? 'Status'],
                 ],
-                'rows' => array_map(function ($assignment) {
+                'rows' => array_map(function ($assignment) use ($V) {
                     return [
                         'feeStructure' => $assignment['feeStructure']['name'] ?? '',
                         'academicYear' => $assignment['academicYear']['name'] ?? '',
                         'assignedAmount' => (string) ($assignment['assignedAmount'] ?? 0),
                         'paidAmount' => (string) ($assignment['paidAmount'] ?? 0),
                         'remainingAmount' => (string) ($assignment['remainingAmount'] ?? 0),
-                        'status' => $assignment['status'] ?? '',
+                        'status' => $V($assignment['status'] ?? ''),
                     ];
                 }, $sections['fees']['assignments'] ?? []),
             ],
@@ -149,7 +150,7 @@ class StudentHistoryExcelSheets
                     ['key' => 'returnedAt', 'label' => $labels['returned'] ?? 'Returned'],
                     ['key' => 'status', 'label' => $labels['status'] ?? 'Status'],
                 ],
-                'rows' => array_map(function ($loan) {
+                'rows' => array_map(function ($loan) use ($V) {
                     return [
                         'bookTitle' => $loan['book']['title'] ?? '',
                         'author' => $loan['book']['author'] ?? '',
@@ -157,7 +158,7 @@ class StudentHistoryExcelSheets
                         'loanDate' => isset($loan['loanDate']) && $loan['loanDate'] ? \Carbon\Carbon::parse($loan['loanDate'])->format('Y-m-d') : '',
                         'dueDate' => isset($loan['dueDate']) && $loan['dueDate'] ? \Carbon\Carbon::parse($loan['dueDate'])->format('Y-m-d') : '',
                         'returnedAt' => isset($loan['returnedAt']) && $loan['returnedAt'] ? \Carbon\Carbon::parse($loan['returnedAt'])->format('Y-m-d') : '',
-                        'status' => $loan['status'] ?? '',
+                        'status' => $V($loan['status'] ?? ''),
                     ];
                 }, $sections['library']['loans'] ?? []),
             ],
@@ -216,12 +217,12 @@ class StudentHistoryExcelSheets
                     ['key' => 'grade', 'label' => $labels['grade'] ?? 'Grade'],
                     ['key' => 'certificateIssued', 'label' => $labels['certificateIssued'] ?? 'Certificate Issued'],
                 ],
-                'rows' => array_map(function ($course) use ($yes, $no) {
+                'rows' => array_map(function ($course) use ($yes, $no, $V) {
                     return [
                         'courseName' => $course['course']['name'] ?? '',
                         'registrationDate' => isset($course['registrationDate']) && $course['registrationDate'] ? \Carbon\Carbon::parse($course['registrationDate'])->format('Y-m-d') : '',
                         'completionDate' => isset($course['completionDate']) && $course['completionDate'] ? \Carbon\Carbon::parse($course['completionDate'])->format('Y-m-d') : '',
-                        'completionStatus' => $course['completionStatus'] ?? '',
+                        'completionStatus' => $V($course['completionStatus'] ?? ''),
                         'grade' => $course['grade'] ?? '',
                         'certificateIssued' => ! empty($course['certificateIssued']) ? $yes : $no,
                     ];
@@ -236,11 +237,11 @@ class StudentHistoryExcelSheets
                     ['key' => 'finalResult', 'label' => $labels['finalResult'] ?? 'Final Result'],
                     ['key' => 'certificateNumber', 'label' => $labels['certificateNumber'] ?? 'Certificate #'],
                 ],
-                'rows' => array_map(function ($graduation) {
+                'rows' => array_map(function ($graduation) use ($V) {
                     return [
                         'batchName' => $graduation['batch']['name'] ?? '',
                         'graduationDate' => isset($graduation['createdAt']) && $graduation['createdAt'] ? \Carbon\Carbon::parse($graduation['createdAt'])->format('Y-m-d') : '',
-                        'finalResult' => $graduation['finalResultStatus'] ?? '',
+                        'finalResult' => $V($graduation['finalResultStatus'] ?? ''),
                         'certificateNumber' => $graduation['certificateNumber'] ?? '',
                     ];
                 }, $sections['graduations'] ?? []),

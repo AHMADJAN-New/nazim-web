@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/collapsible';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { translateStudentHistoryValue } from '@/lib/studentHistoryValueLabels';
 import type { HistoryEvent, HistoryEventType } from '@/types/domain/studentHistory';
 
 interface StudentHistoryTimelineProps {
@@ -120,7 +121,7 @@ function TimelineEventCard({ event }: TimelineEventCardProps) {
               </div>
               {event.status && (
                 <Badge variant={getStatusBadgeVariant(event.status)} className="shrink-0 text-xs">
-                  {event.status}
+                  {translateStudentHistoryValue(event.status, t)}
                 </Badge>
               )}
             </div>

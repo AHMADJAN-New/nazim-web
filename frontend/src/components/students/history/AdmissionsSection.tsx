@@ -3,7 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { getAdmissionEnrollmentStatusLabel } from '@/lib/admissions/enrollmentStatus';
+import { translateStudentHistoryValue } from '@/lib/studentHistoryValueLabels';
 import type { AdmissionRecord } from '@/types/domain/studentHistory';
+import type { AdmissionStatus } from '@/types/domain/studentAdmission';
 
 interface AdmissionsSectionProps {
   admissions: AdmissionRecord[];
@@ -54,7 +57,7 @@ export function AdmissionsSection({ admissions }: AdmissionsSectionProps) {
                   </Badge>
                 )}
                 <Badge variant={getStatusBadgeVariant(admission.enrollmentStatus)}>
-                  {admission.enrollmentStatus}
+                  {getAdmissionEnrollmentStatusLabel(admission.enrollmentStatus as AdmissionStatus, t)}
                 </Badge>
               </div>
             </div>
@@ -107,7 +110,7 @@ export function AdmissionsSection({ admissions }: AdmissionsSectionProps) {
                 )}
                 {admission.enrollmentType && (
                   <Badge variant="outline" className="text-xs">
-                    {admission.enrollmentType}
+                    {translateStudentHistoryValue(admission.enrollmentType, t)}
                   </Badge>
                 )}
                 {admission.isBoarder && (

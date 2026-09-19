@@ -43,6 +43,85 @@ class StudentHistoryReportLabels
     }
 
     /**
+     * Translate stored enum-like values (status, gender, nationality, language).
+     * Free-text names and addresses are returned unchanged.
+     *
+     * @param  array<string, string>  $labels
+     */
+    public static function translateValue(array $labels, mixed $value, string $empty = '—'): string
+    {
+        if ($value === null) {
+            return $empty;
+        }
+
+        if (is_bool($value)) {
+            return $value ? ($labels['yes'] ?? 'Yes') : ($labels['no'] ?? 'No');
+        }
+
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return $empty;
+        }
+
+        $normalized = strtolower(str_replace(['-', ' '], '_', $raw));
+        $aliases = [
+            'active' => 'valueActive',
+            'pending' => 'valuePending',
+            'admitted' => 'valueAdmitted',
+            'inactive' => 'valueInactive',
+            'withdrawn' => 'valueWithdrawn',
+            'suspended' => 'valueSuspended',
+            'graduated' => 'valueGraduated',
+            'male' => 'valueMale',
+            'female' => 'valueFemale',
+            'afghan' => 'valueAfghan',
+            'pashto' => 'valuePashto',
+            'ps' => 'valuePashto',
+            'dari' => 'valueDari',
+            'fa' => 'valueDari',
+            'farsi' => 'valueFarsi',
+            'persian' => 'valueFarsi',
+            'arabic' => 'valueArabic',
+            'ar' => 'valueArabic',
+            'english' => 'valueEnglish',
+            'en' => 'valueEnglish',
+            'guardian' => 'valueGuardian',
+            'father' => 'valueFather',
+            'mother' => 'valueMother',
+            'paid' => 'valuePaid',
+            'unpaid' => 'valueUnpaid',
+            'partial' => 'valuePartial',
+            'overdue' => 'valueOverdue',
+            'returned' => 'valueReturned',
+            'borrowed' => 'valueBorrowed',
+            'lost' => 'valueLost',
+            'completed' => 'valueCompleted',
+            'enrolled' => 'valueEnrolled',
+            'dropped' => 'valueDropped',
+            'failed' => 'valueFailed',
+            'fail' => 'valueFailed',
+            'passed' => 'valuePassed',
+            'pass' => 'valuePassed',
+            'conditional' => 'valueConditional',
+            'boarder' => 'valueBoarder',
+            'day_scholar' => 'valueDayScholar',
+            'dayscholar' => 'valueDayScholar',
+            'new' => 'valueNew',
+            'transfer' => 'valueTransfer',
+            're_admission' => 'valueReAdmission',
+            'readmission' => 'valueReAdmission',
+            'unknown' => 'valueUnknown',
+        ];
+
+        $labelKey = $aliases[$normalized] ?? null;
+        if ($labelKey !== null && isset($labels[$labelKey]) && $labels[$labelKey] !== '') {
+            return $labels[$labelKey];
+        }
+
+        return $raw;
+    }
+
+    /**
      * @return array<string, array<string, string>>
      */
     private static function maps(): array
@@ -202,6 +281,43 @@ class StudentHistoryReportLabels
             'organizationName' => 'Organization Name',
             'totalAcademicYears' => 'Total Academic Years',
             'averageExamScore' => 'Average Exam Score',
+            'valueActive' => 'Active',
+            'valuePending' => 'Pending',
+            'valueAdmitted' => 'Admitted',
+            'valueInactive' => 'Inactive',
+            'valueWithdrawn' => 'Withdrawn',
+            'valueSuspended' => 'Suspended',
+            'valueGraduated' => 'Graduated',
+            'valueMale' => 'Male',
+            'valueFemale' => 'Female',
+            'valueAfghan' => 'Afghan',
+            'valuePashto' => 'Pashto',
+            'valueDari' => 'Dari',
+            'valueFarsi' => 'Farsi',
+            'valueArabic' => 'Arabic',
+            'valueEnglish' => 'English',
+            'valueGuardian' => 'Guardian',
+            'valueFather' => 'Father',
+            'valueMother' => 'Mother',
+            'valuePaid' => 'Paid',
+            'valueUnpaid' => 'Unpaid',
+            'valuePartial' => 'Partial',
+            'valueOverdue' => 'Overdue',
+            'valueReturned' => 'Returned',
+            'valueBorrowed' => 'Borrowed',
+            'valueLost' => 'Lost',
+            'valueCompleted' => 'Completed',
+            'valueEnrolled' => 'Enrolled',
+            'valueDropped' => 'Dropped',
+            'valueFailed' => 'Failed',
+            'valuePassed' => 'Passed',
+            'valueConditional' => 'Conditional',
+            'valueBoarder' => 'Boarder',
+            'valueDayScholar' => 'Day Scholar',
+            'valueNew' => 'New',
+            'valueTransfer' => 'Transfer',
+            'valueReAdmission' => 'Re-admission',
+            'valueUnknown' => 'Unknown',
         ];
 
         $ps = array_merge($en, [
@@ -359,6 +475,43 @@ class StudentHistoryReportLabels
             'organizationName' => 'د سازمان نوم',
             'totalAcademicYears' => 'ټول تعلیمي کلونه',
             'averageExamScore' => 'د ازموینې منځنۍ نمره',
+            'valueActive' => 'فعال',
+            'valuePending' => 'معطل',
+            'valueAdmitted' => 'داخل شوی',
+            'valueInactive' => 'غیر فعال',
+            'valueWithdrawn' => 'وتلی',
+            'valueSuspended' => 'ځنډول شوی',
+            'valueGraduated' => 'فارغ شوی',
+            'valueMale' => 'نارینه',
+            'valueFemale' => 'ښځینه',
+            'valueAfghan' => 'افغان',
+            'valuePashto' => 'پښتو',
+            'valueDari' => 'دري',
+            'valueFarsi' => 'فارسي',
+            'valueArabic' => 'عربي',
+            'valueEnglish' => 'انګلیسي',
+            'valueGuardian' => 'سرپرست',
+            'valueFather' => 'پلار',
+            'valueMother' => 'مور',
+            'valuePaid' => 'تادیه شوی',
+            'valueUnpaid' => 'نادی شوی',
+            'valuePartial' => 'جزوي',
+            'valueOverdue' => 'ناوخته',
+            'valueReturned' => 'بېرته راغلی',
+            'valueBorrowed' => 'امانت شوی',
+            'valueLost' => 'ورک شوی',
+            'valueCompleted' => 'بشپړ شوی',
+            'valueEnrolled' => 'شامل شوی',
+            'valueDropped' => 'پریښودل شوی',
+            'valueFailed' => 'ناکام',
+            'valuePassed' => 'بریالی',
+            'valueConditional' => 'مشروط',
+            'valueBoarder' => 'لیلیه',
+            'valueDayScholar' => 'خارجي',
+            'valueNew' => 'نوی',
+            'valueTransfer' => 'انتقال',
+            'valueReAdmission' => 'بیا شمولیت',
+            'valueUnknown' => 'نامعلوم',
         ]);
 
         $fa = array_merge($en, [
@@ -516,6 +669,43 @@ class StudentHistoryReportLabels
             'organizationName' => 'نام سازمان',
             'totalAcademicYears' => 'مجموع سال‌های تعلیمی',
             'averageExamScore' => 'اوسط نمره امتحان',
+            'valueActive' => 'فعال',
+            'valuePending' => 'در انتظار',
+            'valueAdmitted' => 'شامل شده',
+            'valueInactive' => 'غیرفعال',
+            'valueWithdrawn' => 'خارج شده',
+            'valueSuspended' => 'تعلیق شده',
+            'valueGraduated' => 'فارغ شده',
+            'valueMale' => 'مرد',
+            'valueFemale' => 'زن',
+            'valueAfghan' => 'افغان',
+            'valuePashto' => 'پشتو',
+            'valueDari' => 'دری',
+            'valueFarsi' => 'فارسی',
+            'valueArabic' => 'عربی',
+            'valueEnglish' => 'انگلیسی',
+            'valueGuardian' => 'سرپرست',
+            'valueFather' => 'پدر',
+            'valueMother' => 'مادر',
+            'valuePaid' => 'پرداخت‌شده',
+            'valueUnpaid' => 'پرداخت‌نشده',
+            'valuePartial' => 'جزئی',
+            'valueOverdue' => 'تأخیر',
+            'valueReturned' => 'برگشت',
+            'valueBorrowed' => 'امانت‌گرفته',
+            'valueLost' => 'گم‌شده',
+            'valueCompleted' => 'تکمیل‌شده',
+            'valueEnrolled' => 'ثبت‌نام‌شده',
+            'valueDropped' => 'انصراف',
+            'valueFailed' => 'ناکام',
+            'valuePassed' => 'موفق',
+            'valueConditional' => 'مشروط',
+            'valueBoarder' => 'لیلیه',
+            'valueDayScholar' => 'روزانه',
+            'valueNew' => 'جدید',
+            'valueTransfer' => 'انتقال',
+            'valueReAdmission' => 'شمولیت مجدد',
+            'valueUnknown' => 'نامعلوم',
         ]);
 
         $ar = array_merge($en, [
@@ -673,6 +863,43 @@ class StudentHistoryReportLabels
             'organizationName' => 'اسم المنظمة',
             'totalAcademicYears' => 'إجمالي السنوات الدراسية',
             'averageExamScore' => 'متوسط درجة الامتحان',
+            'valueActive' => 'نشط',
+            'valuePending' => 'قيد الانتظار',
+            'valueAdmitted' => 'مقبول',
+            'valueInactive' => 'غير نشط',
+            'valueWithdrawn' => 'منسحب',
+            'valueSuspended' => 'موقوف',
+            'valueGraduated' => 'متخرج',
+            'valueMale' => 'ذكر',
+            'valueFemale' => 'أنثى',
+            'valueAfghan' => 'أفغاني',
+            'valuePashto' => 'البشتوية',
+            'valueDari' => 'الدرية',
+            'valueFarsi' => 'الفارسية',
+            'valueArabic' => 'العربية',
+            'valueEnglish' => 'الإنجليزية',
+            'valueGuardian' => 'الوصي',
+            'valueFather' => 'الأب',
+            'valueMother' => 'الأم',
+            'valuePaid' => 'مدفوع',
+            'valueUnpaid' => 'غير مدفوع',
+            'valuePartial' => 'جزئي',
+            'valueOverdue' => 'متأخر',
+            'valueReturned' => 'تم الإرجاع',
+            'valueBorrowed' => 'مُعار',
+            'valueLost' => 'مفقود',
+            'valueCompleted' => 'مكتمل',
+            'valueEnrolled' => 'مسجل',
+            'valueDropped' => 'منسحب',
+            'valueFailed' => 'راسب',
+            'valuePassed' => 'ناجح',
+            'valueConditional' => 'مشروط',
+            'valueBoarder' => 'داخلي',
+            'valueDayScholar' => 'خارجي',
+            'valueNew' => 'جديد',
+            'valueTransfer' => 'تحويل',
+            'valueReAdmission' => 'إعادة قبول',
+            'valueUnknown' => 'غير معروف',
         ]);
 
         return [

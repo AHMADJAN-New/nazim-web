@@ -5,6 +5,7 @@
     $labels = $labels ?? [];
     $L = fn (string $key, string $fallback = '') => $labels[$key] ?? $fallback;
     $dash = '—';
+    $V = fn (mixed $value) => \App\Services\Reports\StudentHistoryReportLabels::translateValue($labels, $value, $dash);
     $primary = $PRIMARY_COLOR ?? '#0b0b56';
     $secondary = $SECONDARY_COLOR ?? '#0056b3';
 
@@ -12,6 +13,8 @@
     $generatedAtDisplay = $rawGeneratedAt
         ? \Carbon\Carbon::parse($rawGeneratedAt)->format('Y-m-d H:i')
         : now()->format('Y-m-d H:i');
+
+    $numColgroup = '<colgroup><col class="col-num"></colgroup>';
 
     $rawCreatedAt = $student['created_at'] ?? ($student['createdAt'] ?? null);
     $createdAtDisplay = $rawCreatedAt ? \Carbon\Carbon::parse($rawCreatedAt)->format('Y-m-d H:i') : $dash;
@@ -71,7 +74,7 @@
     <div class="sh-hero-body">
         <div class="sh-photo-wrap">
             @if(!empty($student['picture_path']))
-                <img src="{{ $student['picture_path'] }}" alt="Student Photo" class="sh-photo">
+                <img src="{{ $student['picture_path'] }}" alt="{{ $student['full_name'] ?? '' }}" class="sh-photo">
             @else
                 <div class="sh-photo sh-photo-fallback">
                     <span>{{ mb_substr($student['full_name'] ?? 'S', 0, 1) }}</span>
@@ -86,7 +89,7 @@
                 <span>{{ $L('generatedAt', 'Generated At') }}: <strong class="ltr">{{ $generatedAtDisplay }}</strong></span>
             </div>
             <div class="sh-hero-badges">
-                <span class="sh-badge status-{{ $statusRaw }}">{{ $student['status'] ?? $dash }}</span>
+                <span class="sh-badge status-{{ $statusRaw }}">{{ $V($student['status'] ?? null) }}</span>
                 @if($isOrphan)
                     <span class="sh-badge sh-badge-orphan">{{ $L('isOrphan', 'Orphan') }}</span>
                 @endif
@@ -145,13 +148,13 @@
         [$L('fatherName', 'Father Name'), $student['father_name'] ?? $dash],
         [$L('grandfatherName', 'Grandfather Name'), $student['grandfather_name'] ?? $dash],
         [$L('motherName', 'Mother Name'), $student['mother_name'] ?? $dash],
-        [$L('gender', 'Gender'), $student['gender'] ?? $dash],
+        [$L('gender', 'Gender'), $V($student['gender'] ?? null)],
         [$L('dob', 'Date of Birth'), $student['birth_date'] ?? $dash],
         [$L('birthYear', 'Birth Year'), $student['birth_year'] ?? $dash],
         [$L('age', 'Age'), $student['age'] ?? $dash],
         [$L('isOrphan', 'Is Orphan'), $isOrphan ? $L('yes', 'Yes') : $L('no', 'No')],
-        [$L('nationality', 'Nationality'), $student['nationality'] ?? $dash],
-        [$L('preferredLanguage', 'Preferred Language'), $student['preferred_language'] ?? $dash],
+        [$L('nationality', 'Nationality'), $V($student['nationality'] ?? null)],
+        [$L('preferredLanguage', 'Preferred Language'), $V($student['preferred_language'] ?? null)],
     ]);
 
     $contactPairs = $fieldPairs([
@@ -172,7 +175,7 @@
 
     $guardianPairs = $fieldPairs([
         [$L('guardianName', 'Guardian'), $student['guardian_name'] ?? $dash],
-        [$L('guardianRelation', 'Relation'), $student['guardian_relation'] ?? $dash],
+        [$L('guardianRelation', 'Relation'), $V($student['guardian_relation'] ?? null)],
         [$L('guardianPhone', 'Guardian Phone'), $student['guardian_phone'] ?? $dash],
         [$L('guardianTazkira', 'Guardian Tazkira'), $student['guardian_tazkira'] ?? $dash],
     ]);
@@ -194,10 +197,10 @@
     ]);
 
     $financialPairs = $fieldPairs([
-        [$L('admissionFeeStatus', 'Admission Fee Status'), $student['admission_fee_status'] ?? $dash],
+        [$L('admissionFeeStatus', 'Admission Fee Status'), $V($student['admission_fee_status'] ?? null)],
         [$L('familyIncome', 'Family Income'), $student['family_income'] ?? $dash],
         [$L('cardNumber', 'Card Number'), $student['card_number'] ?? $dash],
-        [$L('status', 'Status'), $student['status'] ?? $dash],
+        [$L('status', 'Status'), $V($student['status'] ?? null)],
     ]);
 
     $systemPairs = $fieldPairs([
@@ -248,9 +251,10 @@
 <div class="sh-card">
     <div class="sh-card-title">{{ $L('admissionsTitle', 'Admissions History') }}</div>
     <table class="data-table">
+        {!! $numColgroup !!}
         <thead>
             <tr>
-                <th>#</th>
+                <th class="row-number">#</th>
                 <th>{{ $L('academicYear', 'Academic Year') }}</th>
                 <th>{{ $L('class', 'Class') }}</th>
                 <th>{{ $L('admissionDate', 'Admission Date') }}</th>
@@ -266,9 +270,9 @@
                 <td>{{ $admission['academic_year'] ?? $dash }}</td>
                 <td>{{ $admission['class'] ?? $dash }}</td>
                 <td class="ltr">{{ $admission['admission_date'] ?? $dash }}</td>
-                <td>{{ $admission['enrollment_status'] ?? $dash }}</td>
-                <td>{{ $admission['enrollment_type'] ?? $dash }}</td>
-                <td>{{ $admission['residency_type'] ?? $dash }}</td>
+                <td>{{ $V($admission['enrollment_status'] ?? null) }}</td>
+                <td>{{ $V($admission['enrollment_type'] ?? null) }}</td>
+                <td>{{ $V($admission['residency_type'] ?? null) }}</td>
             </tr>
             @empty
             <tr><td colspan="7" class="empty-row">{{ $L('noAdmissions', 'No admission records found') }}</td></tr>
@@ -287,8 +291,10 @@
 <div class="sh-card">
     <div class="sh-card-title">{{ $L('attendanceTitle', 'Attendance') }}</div>
     <table class="data-table" style="margin-bottom: 8px;">
+        {!! $numColgroup !!}
         <thead>
             <tr>
+                <th class="row-number">#</th>
                 <th>{{ $L('totalDays', 'Total Days') }}</th>
                 <th>{{ $L('present', 'Present') }}</th>
                 <th>{{ $L('absent', 'Absent') }}</th>
@@ -298,6 +304,7 @@
         </thead>
         <tbody>
             <tr>
+                <td class="row-number">1</td>
                 <td class="ltr">{{ $attSummary['total_days'] ?? 0 }}</td>
                 <td class="present-cell ltr">{{ $attSummary['present'] ?? 0 }}</td>
                 <td class="absent-cell ltr">{{ $attSummary['absent'] ?? 0 }}</td>
@@ -308,8 +315,10 @@
     </table>
     @if(!empty($attMonths))
     <table class="data-table">
+        {!! $numColgroup !!}
         <thead>
             <tr>
+                <th class="row-number">#</th>
                 <th>{{ $L('month', 'Month') }}</th>
                 <th>{{ $L('present', 'Present') }}</th>
                 <th>{{ $L('absent', 'Absent') }}</th>
@@ -318,8 +327,9 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($attMonths as $m)
+            @foreach($attMonths as $mIdx => $m)
             <tr>
+                <td class="row-number">{{ (int)$mIdx + 1 }}</td>
                 <td>{{ $m['month'] ?? $dash }}</td>
                 <td class="present-cell ltr">{{ $m['present'] ?? 0 }}</td>
                 <td class="absent-cell ltr">{{ $m['absent'] ?? 0 }}</td>
@@ -344,14 +354,17 @@
 <div class="sh-card">
     <div class="sh-card-title">{{ $L('examsTitle', 'Exam History') }}</div>
     <table class="data-table" style="margin-bottom: 8px;">
+        {!! $numColgroup !!}
         <thead>
             <tr>
+                <th class="row-number">#</th>
                 <th>{{ $L('totalExams', 'Total Exams') }}</th>
                 <th>{{ $L('averagePercentage', 'Average %') }}</th>
             </tr>
         </thead>
         <tbody>
             <tr>
+                <td class="row-number">1</td>
                 <td class="ltr">{{ $examsSummary['total_exams'] ?? 0 }}</td>
                 <td class="ltr">{{ $examsSummary['average_percentage'] ?? 0 }}%</td>
             </tr>
@@ -365,8 +378,10 @@
                 @if(!empty($exam['exam_date'])) <span class="ltr">({{ $exam['exam_date'] }})</span> @endif
             </div>
             <table class="data-table" style="margin-bottom: 6px;">
+                {!! $numColgroup !!}
                 <thead>
                     <tr>
+                        <th class="row-number">#</th>
                         <th>{{ $L('totalMarks', 'Total') }}</th>
                         <th>{{ $L('maxMarks', 'Max') }}</th>
                         <th>{{ $L('percentage', '%') }}</th>
@@ -374,6 +389,7 @@
                 </thead>
                 <tbody>
                     <tr>
+                        <td class="row-number">1</td>
                         <td class="ltr">{{ $exam['total_marks'] ?? 0 }}</td>
                         <td class="ltr">{{ $exam['max_marks'] ?? 0 }}</td>
                         <td class="ltr">{{ $exam['percentage'] ?? 0 }}%</td>
@@ -382,9 +398,10 @@
             </table>
             @if(!empty($exam['subject_results']))
             <table class="data-table">
+                {!! $numColgroup !!}
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th class="row-number">#</th>
                         <th>{{ $L('subject', 'Subject') }}</th>
                         <th>{{ $L('obtainedMarks', 'Obtained') }}</th>
                         <th>{{ $L('maxMarks', 'Max') }}</th>
@@ -422,8 +439,10 @@
 <div class="sh-card">
     <div class="sh-card-title">{{ $L('feesTitle', 'Fee History') }}</div>
     <table class="data-table" style="margin-bottom: 8px;">
+        {!! $numColgroup !!}
         <thead>
             <tr>
+                <th class="row-number">#</th>
                 <th>{{ $L('totalAssigned', 'Total Assigned') }}</th>
                 <th>{{ $L('totalPaid', 'Total Paid') }}</th>
                 <th>{{ $L('totalOutstanding', 'Outstanding') }}</th>
@@ -431,6 +450,7 @@
         </thead>
         <tbody>
             <tr>
+                <td class="row-number">1</td>
                 <td class="ltr">{{ number_format($feesSummary['total_assigned'] ?? 0, 0) }}</td>
                 <td class="paid-cell ltr">{{ number_format($feesSummary['total_paid'] ?? 0, 0) }}</td>
                 <td class="balance-cell ltr">{{ number_format($feesSummary['total_remaining'] ?? 0, 0) }}</td>
@@ -438,9 +458,10 @@
         </tbody>
     </table>
     <table class="data-table">
+        {!! $numColgroup !!}
         <thead>
             <tr>
-                <th>#</th>
+                <th class="row-number">#</th>
                 <th>{{ $L('feeStructure', 'Fee Structure') }}</th>
                 <th>{{ $L('academicYear', 'Academic Year') }}</th>
                 <th>{{ $L('assigned', 'Assigned') }}</th>
@@ -458,7 +479,7 @@
                 <td class="ltr">{{ number_format($assignment['assigned_amount'] ?? 0, 0) }}</td>
                 <td class="paid-cell ltr">{{ number_format($assignment['paid_amount'] ?? 0, 0) }}</td>
                 <td class="balance-cell ltr">{{ number_format($assignment['remaining_amount'] ?? 0, 0) }}</td>
-                <td>{{ $assignment['status'] ?? $dash }}</td>
+                <td>{{ $V($assignment['status'] ?? null) }}</td>
             </tr>
             @empty
             <tr><td colspan="7" class="empty-row">{{ $L('noFees', 'No fee records found') }}</td></tr>
@@ -473,9 +494,10 @@
 <div class="sh-card">
     <div class="sh-card-title">{{ $L('libraryTitle', 'Library Loans') }}</div>
     <table class="data-table">
+        {!! $numColgroup !!}
         <thead>
             <tr>
-                <th>#</th>
+                <th class="row-number">#</th>
                 <th>{{ $L('bookTitle', 'Book Title') }}</th>
                 <th>{{ $L('author', 'Author') }}</th>
                 <th>{{ $L('loanDate', 'Loan Date') }}</th>
@@ -493,7 +515,7 @@
                 <td class="ltr">{{ $loan['loan_date'] ?? $dash }}</td>
                 <td class="ltr">{{ $loan['due_date'] ?? $dash }}</td>
                 <td class="ltr">{{ $loan['return_date'] ?? $dash }}</td>
-                <td>{{ $loan['status'] ?? $dash }}</td>
+                <td>{{ $V($loan['status'] ?? null) }}</td>
             </tr>
             @empty
             <tr><td colspan="7" class="empty-row">{{ $L('noLibrary', 'No library records found') }}</td></tr>
@@ -508,9 +530,10 @@
 <div class="sh-card">
     <div class="sh-card-title">{{ $L('idCardsTitle', 'ID Card History') }}</div>
     <table class="data-table">
+        {!! $numColgroup !!}
         <thead>
             <tr>
-                <th>#</th>
+                <th class="row-number">#</th>
                 <th>{{ $L('cardNumber', 'Card Number') }}</th>
                 <th>{{ $L('template', 'Template') }}</th>
                 <th>{{ $L('academicYear', 'Academic Year') }}</th>
@@ -545,9 +568,10 @@
 <div class="sh-card">
     <div class="sh-card-title">{{ $L('coursesTitle', 'Courses') }}</div>
     <table class="data-table">
+        {!! $numColgroup !!}
         <thead>
             <tr>
-                <th>#</th>
+                <th class="row-number">#</th>
                 <th>{{ $L('courseName', 'Course Name') }}</th>
                 <th>{{ $L('registrationDate', 'Registration Date') }}</th>
                 <th>{{ $L('completionDate', 'Completion Date') }}</th>
@@ -563,7 +587,7 @@
                 <td>{{ $course['course_name'] ?? ($course['name'] ?? $dash) }}</td>
                 <td class="ltr">{{ $course['registration_date'] ?? $dash }}</td>
                 <td class="ltr">{{ $course['completion_date'] ?? $dash }}</td>
-                <td>{{ $course['completion_status'] ?? ($course['status'] ?? $dash) }}</td>
+                <td>{{ $V($course['completion_status'] ?? ($course['status'] ?? null)) }}</td>
                 <td>{{ $course['grade'] ?? $dash }}</td>
                 <td>{{ !empty($course['certificate_issued']) ? $L('yes', 'Yes') : $L('no', 'No') }}</td>
             </tr>
@@ -580,9 +604,10 @@
 <div class="sh-card">
     <div class="sh-card-title">{{ $L('graduationsTitle', 'Graduations') }}</div>
     <table class="data-table">
+        {!! $numColgroup !!}
         <thead>
             <tr>
-                <th>#</th>
+                <th class="row-number">#</th>
                 <th>{{ $L('batchName', 'Batch Name') }}</th>
                 <th>{{ $L('graduationDate', 'Graduation Date') }}</th>
                 <th>{{ $L('finalResult', 'Final Result') }}</th>
@@ -595,7 +620,7 @@
                 <td class="row-number">{{ (int)$index + 1 }}</td>
                 <td>{{ $graduation['batch_name'] ?? ($graduation['batch'] ?? $dash) }}</td>
                 <td class="ltr">{{ $graduation['graduation_date'] ?? ($graduation['created_at'] ?? $dash) }}</td>
-                <td>{{ $graduation['final_result'] ?? ($graduation['final_result_status'] ?? $dash) }}</td>
+                <td>{{ $V($graduation['final_result'] ?? ($graduation['final_result_status'] ?? null)) }}</td>
                 <td class="ltr">{{ $graduation['certificate_number'] ?? $dash }}</td>
             </tr>
             @empty
@@ -621,7 +646,7 @@
         border-radius: 10px;
         padding: 12px 14px;
         margin: 12px 0;
-        page-break-inside: avoid;
+        page-break-inside: auto;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
@@ -639,6 +664,7 @@
     .sh-hero {
         padding: 0;
         overflow: hidden;
+        page-break-inside: avoid;
     }
     .sh-hero-accent {
         height: 6px;
@@ -770,16 +796,24 @@
     .late-cell { color: #d97706; font-weight: 600; }
     .paid-cell { color: #16a34a; }
     .balance-cell { color: #dc2626; font-weight: 600; }
-    .ltr { direction: ltr; unicode-bidi: embed; display: inline-block; }
+    .ltr { direction: ltr; unicode-bidi: isolate; }
+    td.ltr, th.ltr {
+        display: table-cell;
+        direction: ltr;
+        unicode-bidi: isolate;
+    }
 
     .data-table {
         width: 100%;
+        table-layout: fixed;
         border-collapse: collapse;
         font-size: 10px;
         font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
     }
     .data-table th,
     .data-table td {
+        display: table-cell;
+        box-sizing: border-box;
         border: 1px solid #e5e7eb;
         padding: 5px 6px;
         text-align: start;
@@ -790,6 +824,15 @@
         color: {{ $primary }};
         font-weight: 700;
     }
-    .row-number { width: 28px; text-align: center; color: #6b7280; }
+    .data-table col.col-num {
+        width: 42px;
+    }
+    .data-table th.row-number,
+    .data-table td.row-number {
+        width: 42px;
+        text-align: center;
+        white-space: nowrap;
+        color: #6b7280;
+    }
 </style>
 @endsection

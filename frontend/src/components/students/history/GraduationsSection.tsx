@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/useLanguage';
 import { formatDate } from '@/lib/utils';
+import { translateStudentHistoryValue } from '@/lib/studentHistoryValueLabels';
 import type { GraduationHistory, GraduationResultStatus } from '@/types/domain/studentHistory';
 
 interface GraduationsSectionProps {
@@ -116,7 +117,7 @@ export function GraduationsSection({ graduations }: GraduationsSectionProps) {
                   <div className="flex items-center gap-2">
                     {getResultIcon(graduation.finalResultStatus)}
                     <Badge variant={getResultBadgeVariant(graduation.finalResultStatus)} className="text-sm">
-                      {graduation.finalResultStatus || t('studentHistory.pending') || 'Pending'}
+                      {translateStudentHistoryValue(graduation.finalResultStatus || 'pending', t)}
                     </Badge>
                   </div>
                 </div>
