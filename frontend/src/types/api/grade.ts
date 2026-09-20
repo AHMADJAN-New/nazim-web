@@ -3,6 +3,7 @@
 export interface Grade {
     id: string;
     organization_id: string;
+    school_id: string;
     name_en: string;
     name_ar: string;
     name_ps: string;
@@ -16,8 +17,8 @@ export interface Grade {
     deleted_at: string | null;
 }
 
-export type GradeInsert = Omit<Grade, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'organization_id'>;
-export type GradeUpdate = Partial<Omit<Grade, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'organization_id'>>;
+export type GradeInsert = Omit<Grade, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'organization_id' | 'school_id'>;
+export type GradeUpdate = Partial<Omit<Grade, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'organization_id' | 'school_id'>>;
 
 // Grade details returned by GradeCalculator
 export interface GradeDetails {

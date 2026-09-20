@@ -10,6 +10,7 @@ export function mapGradeApiToDomain(api: GradeApi.Grade): Grade {
     return {
         id: api.id,
         organizationId: api.organization_id,
+        schoolId: api.school_id,
         nameEn: api.name_en,
         nameAr: api.name_ar,
         namePs: api.name_ps,

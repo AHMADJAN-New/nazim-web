@@ -14,6 +14,11 @@ interface DataTableProps<TData> {
   onRowClick?: (row: TData) => void;
 }
 
+type DataTableColumnMeta = {
+  headerClassName?: string;
+  cellClassName?: string;
+};
+
 export function DataTable<TData>({ table, actionBar, children, className, onRowClick }: DataTableProps<TData>) {
   return (
     <div className={cn('space-y-3', className)}>
@@ -26,7 +31,10 @@ export function DataTable<TData>({ table, actionBar, children, className, onRowC
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      className={(header.column.columnDef.meta as DataTableColumnMeta | undefined)?.headerClassName}
+                    >
                       {header.isPlaceholder ? null : header.column.columnDef.header instanceof Function
                         ? header.column.columnDef.header({ column: header.column })
                         : header.column.columnDef.header}
@@ -45,7 +53,12 @@ export function DataTable<TData>({ table, actionBar, children, className, onRowC
                     className={onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>{cell.column.columnDef.cell?.({ row })}</TableCell>
+                      <TableCell
+                        key={cell.id}
+                        className={(cell.column.columnDef.meta as DataTableColumnMeta | undefined)?.cellClassName}
+                      >
+                        {cell.column.columnDef.cell?.({ row })}
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))

@@ -3,6 +3,7 @@
 export interface Grade {
     id: string;
     organizationId: string;
+    schoolId: string;
     nameEn: string;
     nameAr: string;
     namePs: string;

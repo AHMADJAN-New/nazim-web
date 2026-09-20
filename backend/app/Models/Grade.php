@@ -21,6 +21,7 @@ class Grade extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'name_en',
         'name_ar',
         'name_ps',
@@ -64,11 +65,27 @@ class Grade extends Model
     }
 
     /**
+     * Get the school that owns the grade.
+     */
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
      * Scope to filter by organization
      */
     public function scopeForOrganization($query, $organizationId)
     {
         return $query->where('organization_id', $organizationId);
+    }
+
+    /**
+     * Scope to filter by school.
+     */
+    public function scopeForSchool($query, $schoolId)
+    {
+        return $query->where('school_id', $schoolId);
     }
 
     /**

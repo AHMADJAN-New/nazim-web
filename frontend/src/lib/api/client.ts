@@ -4152,7 +4152,7 @@ export const examAttendanceApi = {
 
 // Grades API
 export const gradesApi = {
-  list: async (params?: { organization_id?: string }) => {
+  list: async (params?: { organization_id?: string; school_id?: string }) => {
     return apiClient.get('/grades', params);
   },
 

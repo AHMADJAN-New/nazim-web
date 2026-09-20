@@ -1,5 +1,5 @@
 import { Trash2, Plus, Pencil, CheckCircle, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import {
@@ -24,15 +24,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import type { GradeFormData } from '@/types/domain/grade';
 import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useLanguage } from '@/hooks/useLanguage';
 import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useGrades, useCreateGrade, useUpdateGrade, useDeleteGrade } from '@/hooks/useGrades';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
+import type { GradeFormData } from '@/types/domain/grade';
 
 interface GradeDialogProps {
   open: boolean;
@@ -53,12 +53,27 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
     nameFa: grade?.nameFa || '',
     minPercentage: grade?.minPercentage || 0,
     maxPercentage: grade?.maxPercentage || 0,
-    order: grade?.order || 0,
+    order: grade?.order || 1,
     isPass: grade?.isPass ?? true,
   }));
 
   const createGrade = useCreateGrade();
   const updateGrade = useUpdateGrade();
+
+  useEffect(() => {
+    if (!open) return;
+
+    setFormData({
+      nameEn: grade?.nameEn || '',
+      nameAr: grade?.nameAr || '',
+      namePs: grade?.namePs || '',
+      nameFa: grade?.nameFa || '',
+      minPercentage: grade?.minPercentage || 0,
+      maxPercentage: grade?.maxPercentage || 0,
+      order: grade?.order || 1,
+      isPass: grade?.isPass ?? true,
+    });
+  }, [grade, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,14 +83,18 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
       return;
     }
 
-    if (isEdit && gradeId) {
-      await updateGrade.mutateAsync({ id: gradeId, data: formData });
-    } else {
-      await createGrade.mutateAsync(formData);
-    }
+    try {
+      if (isEdit && gradeId) {
+        await updateGrade.mutateAsync({ id: gradeId, data: formData });
+      } else {
+        await createGrade.mutateAsync(formData);
+      }
 
-    onOpenChange(false);
-    resetForm();
+      onOpenChange(false);
+      resetForm();
+    } catch {
+      // Mutation hooks display the API error and the dialog stays open for correction.
+    }
   };
 
   const resetForm = () => {
@@ -86,7 +105,7 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
       nameFa: '',
       minPercentage: 0,
       maxPercentage: 0,
-      order: 0,
+      order: 1,
       isPass: true,
     });
   };
@@ -196,9 +215,9 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
                 <Input
                   id="order"
                   type="number"
-                  min="0"
+                  min="1"
                   value={formData.order}
-                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value, 10) || 1 })}
                   placeholder={t('grades.orderPlaceholder')}
                   required
                 />

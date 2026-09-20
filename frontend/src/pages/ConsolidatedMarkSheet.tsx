@@ -26,6 +26,7 @@ import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { MultiSectionReportExportButtons } from '@/components/reports/MultiSectionReportExportButtons';
 import type { MultiSectionReportSection } from '@/components/reports/MultiSectionReportExportButtons';
 import { fetchAllConsolidatedMarkSheetRows } from '@/lib/reporting/consolidatedMarkSheetExport';
+import { formatMark, formatPercentage } from '@/lib/reporting/markFormat';
 
 // Report data type
 type ReportData = {
@@ -263,6 +264,10 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
     const baseColumns: ColumnDef<any>[] = [
       {
         id: 'rank',
+        meta: {
+          headerClassName: 'lg:sticky lg:right-0 lg:z-30 lg:w-12 lg:min-w-12 lg:max-w-12 lg:bg-background',
+          cellClassName: 'lg:sticky lg:right-0 lg:z-20 lg:w-12 lg:min-w-12 lg:max-w-12 lg:bg-background',
+        },
         header: () => <div className="w-12">{t('examReports.rank')}</div>,
         cell: ({ row }) => {
           const globalIndex = sortedStudents.findIndex(s => 
@@ -280,6 +285,10 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
       },
       {
         id: 'picture',
+        meta: {
+          headerClassName: 'lg:sticky lg:right-12 lg:z-30 lg:w-16 lg:min-w-16 lg:max-w-16 lg:bg-background',
+          cellClassName: 'lg:sticky lg:right-12 lg:z-20 lg:w-16 lg:min-w-16 lg:max-w-16 lg:bg-background',
+        },
         header: () => <div className="w-12">{t('students.picture') || 'Picture'}</div>,
         cell: ({ row }) => {
           const student = row.original;
@@ -294,18 +303,42 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
       },
       {
         accessorKey: 'student_name',
-        header: t('examReports.studentName'),
-        cell: ({ row }) => row.original.student_name,
+        meta: {
+          headerClassName: 'lg:sticky lg:right-28 lg:z-30 lg:w-36 lg:min-w-36 lg:max-w-36 lg:bg-background',
+          cellClassName: 'lg:sticky lg:right-28 lg:z-20 lg:w-36 lg:min-w-36 lg:max-w-36 lg:bg-background',
+        },
+        header: () => (
+          <div className="min-w-[8rem] whitespace-nowrap text-start">
+            {t('examReports.studentName')}
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="min-w-[8rem] whitespace-nowrap text-start font-medium">
+            {row.original.student_name}
+          </div>
+        ),
       },
       {
         accessorKey: 'father_name',
-        header: t('examReports.fatherName') || 'Father Name',
-        cell: ({ row }) => row.original.father_name || '-',
+        meta: {
+          headerClassName: 'lg:sticky lg:right-64 lg:z-30 lg:w-36 lg:min-w-36 lg:max-w-36 lg:border-l lg:bg-background',
+          cellClassName: 'lg:sticky lg:right-64 lg:z-20 lg:w-36 lg:min-w-36 lg:max-w-36 lg:border-l lg:bg-background',
+        },
+        header: () => (
+          <div className="min-w-[8rem] whitespace-nowrap text-start">
+            {t('examReports.fatherName') || 'Father Name'}
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="min-w-[8rem] whitespace-nowrap text-start">
+            {row.original.father_name || '-'}
+          </div>
+        ),
       },
       {
         accessorKey: 'roll_number',
-        header: t('students.rollNumber'),
-        cell: ({ row }) => row.original.roll_number || '-',
+        header: () => <div className="min-w-[4rem] whitespace-nowrap">{t('students.rollNumber')}</div>,
+        cell: ({ row }) => <div className="min-w-[4rem] whitespace-nowrap">{row.original.roll_number || '-'}</div>,
       },
     ];
 
@@ -314,14 +347,23 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
       report.subjects.forEach((subject: any, subjectIndex: number) => {
         baseColumns.push({
           id: `subject-${subject.id || subject.subject_id || subjectIndex}`,
-          header: () => <div className="text-center">{subject.name}</div>,
+          header: () => (
+            <div className="min-w-[6rem] text-center">
+              <div>{subject.name}</div>
+              {subject.total_marks !== null && subject.total_marks !== undefined && (
+                <div className="mt-0.5 whitespace-nowrap text-xs font-normal text-muted-foreground">
+                  {t('studentReportCard.maxMarks') || 'Max Marks'}: {formatMark(subject.total_marks)}
+                </div>
+              )}
+            </div>
+          ),
           cell: ({ row }) => {
             const student = row.original;
             const subjectMark = student.subjects?.find((s: any) => 
               s.subject_id === subject.subject_id || s.subject_id === subject.id
             );
             return (
-              <div className="text-center">
+              <div className="min-w-[6rem] text-center">
                 {subjectMark ? (
                   subjectMark.is_absent ? (
                     <Badge variant="outline" className="text-muted-foreground">
@@ -332,7 +374,7 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
                       variant={subjectMark.is_pass ? 'default' : 'destructive'}
                       className="font-semibold"
                     >
-                      {subjectMark.marks_obtained}/{subjectMark.total_marks}
+                      {formatMark(subjectMark.marks_obtained)}
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground">-</span>
@@ -351,30 +393,42 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
     baseColumns.push(
       {
         id: 'total_marks',
+        meta: {
+          headerClassName: 'lg:sticky lg:left-72 lg:z-30 lg:w-28 lg:min-w-28 lg:max-w-28 lg:border-r lg:bg-background',
+          cellClassName: 'lg:sticky lg:left-72 lg:z-20 lg:w-28 lg:min-w-28 lg:max-w-28 lg:border-r lg:bg-background',
+        },
         header: () => <div className="text-center">{t('examReports.totalMarks')}</div>,
         cell: ({ row }) => {
           const student = row.original;
           return (
             <div className="text-center font-medium">
-              {student.total_obtained}/{student.total_maximum}
+              {formatMark(student.total_obtained)}/{formatMark(student.total_maximum)}
             </div>
           );
         },
       },
       {
         id: 'percentage',
+        meta: {
+          headerClassName: 'lg:sticky lg:left-48 lg:z-30 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
+          cellClassName: 'lg:sticky lg:left-48 lg:z-20 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
+        },
         header: () => <div className="text-center">{t('examReports.percentage')}</div>,
         cell: ({ row }) => {
           const student = row.original;
           return (
             <div className="text-center font-semibold">
-              {student.percentage?.toFixed(2)}%
+              {formatPercentage(student.percentage)}
             </div>
           );
         },
       },
       {
         id: 'grade',
+        meta: {
+          headerClassName: 'lg:sticky lg:left-24 lg:z-30 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
+          cellClassName: 'lg:sticky lg:left-24 lg:z-20 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
+        },
         header: () => <div className="text-center">{t('studentReportCard.grade')}</div>,
         cell: ({ row }) => {
           const student = row.original;
@@ -393,6 +447,10 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
       },
       {
         id: 'result',
+        meta: {
+          headerClassName: 'lg:sticky lg:left-0 lg:z-30 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
+          cellClassName: 'lg:sticky lg:left-0 lg:z-20 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
+        },
         header: () => <div className="text-center">{t('examReports.result')}</div>,
         cell: ({ row }) => {
           const student = row.original;
@@ -495,10 +553,11 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
 
       {/* Student Results Table */}
       <Card className="print:shadow-none">
-        <CardContent className="p-0">
+        <CardContent className="max-w-full overflow-hidden p-0">
           <DataTable 
             table={table}
-            actionBar={<DataTablePagination table={table} />}
+            actionBar={<DataTablePagination table={table} paginationMeta={paginationMeta} />}
+            className="max-w-full [&_table]:mx-auto [&_table]:w-max [&_table]:min-w-max [&_th]:h-10 [&_th]:px-2 [&_td]:px-2 [&_td]:py-3"
           />
         </CardContent>
       </Card>
@@ -530,17 +589,15 @@ function transformClassReportData(report: ReportData, t: (key: string) => string
         row[`subject_${subject.id || subject.subject_id}`] = subjectMark.is_absent
           ? (t('examReports.absent') || 'Absent')
           : subjectMark.marks_obtained !== null
-            ? `${subjectMark.marks_obtained}/${subjectMark.total_marks}`
+            ? formatMark(subjectMark.marks_obtained)
             : '-';
       } else {
         row[`subject_${subject.id || subject.subject_id}`] = '-';
       }
     });
     
-    row.totalMarks = `${student.total_obtained || 0}/${student.total_maximum || 0}`;
-    row.percentage = student.percentage !== null && student.percentage !== undefined
-      ? `${student.percentage.toFixed(2)}%`
-      : '-';
+    row.totalMarks = `${formatMark(student.total_obtained)}/${formatMark(student.total_maximum)}`;
+    row.percentage = formatPercentage(student.percentage);
     row.grade = student.grade || '-';
     row.result = student.result === 'Pass'
       ? (t('events.pass') || 'Pass')
@@ -561,7 +618,9 @@ function getExportColumns(report: ReportData, t: (key: string) => string): Array
     { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
     ...(report.subjects || []).map((subject: any) => ({
       key: `subject_${subject.id || subject.subject_id}`,
-      label: subject.name || 'Subject',
+      label: subject.total_marks !== null && subject.total_marks !== undefined
+        ? `${subject.name || 'Subject'} (${t('studentReportCard.maxMarks') || 'Max Marks'}: ${formatMark(subject.total_marks)})`
+        : subject.name || 'Subject',
     })),
     { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
     { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
@@ -797,20 +856,7 @@ export default function ConsolidatedMarkSheet() {
                 <ReportExportButtons
                   data={report.students}
                   getExportData={getAllStudentsForCurrentClassExport}
-                  columns={[
-                    { key: 'rank', label: t('examReports.rank') || 'Rank' },
-                    { key: 'rollNumber', label: t('students.rollNumber') || 'Roll Number' },
-                    { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
-                    { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
-                    ...(report.subjects || []).map((subject: any) => ({
-                      key: `subject_${subject.id || subject.subject_id}`,
-                      label: subject.name || 'Subject',
-                    })),
-                    { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
-                    { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
-                    { key: 'grade', label: t('studentReportCard.grade') || 'Grade' },
-                    { key: 'result', label: t('examReports.result') || 'Result' },
-                  ]}
+                  columns={getExportColumns(report, t)}
                   reportKey="consolidated_mark_sheet"
                   title={`${t('examReports.consolidatedMarkSheet') || 'Consolidated Mark Sheet'} - ${report.exam?.name || selectedExam?.name || ''} - ${report.class?.name || classLabel || ''}`}
                   transformData={(data) => {
@@ -832,16 +878,14 @@ export default function ConsolidatedMarkSheet() {
                           row[`subject_${subject.id || subject.subject_id}`] = subjectMark.is_absent
                             ? (t('examReports.absent') || 'Absent')
                             : subjectMark.marks_obtained !== null
-                              ? `${subjectMark.marks_obtained}/${subjectMark.total_marks}`
+                              ? formatMark(subjectMark.marks_obtained)
                               : '-';
                         } else {
                           row[`subject_${subject.id || subject.subject_id}`] = '-';
                         }
                       });
-                      row.totalMarks = `${student.total_obtained || 0}/${student.total_maximum || 0}`;
-                      row.percentage = student.percentage !== null && student.percentage !== undefined
-                        ? `${student.percentage.toFixed(2)}%`
-                        : '-';
+                      row.totalMarks = `${formatMark(student.total_obtained)}/${formatMark(student.total_maximum)}`;
+                      row.percentage = formatPercentage(student.percentage);
                       row.grade = student.grade || '-';
                       row.result = student.result === 'Pass'
                         ? (t('events.pass') || 'Pass')
