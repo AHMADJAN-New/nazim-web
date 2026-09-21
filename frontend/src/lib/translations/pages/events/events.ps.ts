@@ -137,7 +137,7 @@ export default {
     refresh: "تازه کول",
     pass: "کامیاب",
     fail: "ناکام",
-    topPerformers: "غوره کوونکي",
+    topPerformers: "غوره زده کوونکي",
     scanCardNumber: "د کارت شمیره سکین کړئ",
     filter: "فلټر",
     more: "نور",

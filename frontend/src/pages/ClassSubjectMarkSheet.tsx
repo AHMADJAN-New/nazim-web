@@ -8,7 +8,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { SplitDataTable } from '@/components/data-table/split-data-table';
 import { ColumnDef } from '@tanstack/react-table';
-import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown, Trophy, UserRound } from 'lucide-react';
+import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown, Trophy } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useSchoolContext } from '@/contexts/SchoolContext';
@@ -88,109 +88,6 @@ type ClassSubjectReportData = {
 };
 
 const EXPORT_PAGE_SIZE = 200;
-
-// Component for displaying student picture in mark sheet table cell
-function MarkSheetPictureCell({ studentId, picturePath, studentName }: { studentId?: string; picturePath?: string | null; studentName?: string }) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    // Only fetch if we have studentId (we'll try to fetch even if picturePath is not provided)
-    const hasPicture = studentId;
-    
-    if (hasPicture) {
-      let currentBlobUrl: string | null = null;
-
-      const fetchImage = async () => {
-        try {
-          const { apiClient } = await import('@/lib/api/client');
-          const token = apiClient.getToken();
-          const url = `/api/students/${studentId}/picture`;
-          
-          // Use AbortController to prevent browser from logging errors for expected failures
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-          
-          try {
-            const response = await fetch(url, {
-              method: 'GET',
-              headers: {
-                'Accept': 'image/*',
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-              },
-              credentials: 'include',
-              signal: controller.signal,
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) {
-              // 404 and 500 are both expected (no picture or server error) - just show placeholder
-              // Don't throw to avoid browser console errors
-              if (response.status === 404 || response.status === 500) {
-                setImageError(true);
-                return;
-              }
-              // Only throw for other errors
-              throw new Error(`Failed to fetch image: ${response.status}`);
-            }
-            
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            currentBlobUrl = blobUrl;
-            setImageUrl(blobUrl);
-            setImageError(false);
-          } catch (fetchError: any) {
-            clearTimeout(timeoutId);
-            // Handle abort (timeout) and network errors silently
-            if (fetchError.name === 'AbortError' || fetchError.message?.includes('Failed to fetch')) {
-              setImageError(true);
-              return;
-            }
-            // Re-throw only unexpected errors
-            throw fetchError;
-          }
-        } catch (error) {
-          // Silently handle errors - 404 and 500 are expected when picture doesn't exist
-          // Only log unexpected errors in development
-          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404') && !error.message.includes('500')) {
-            console.error('Failed to fetch student picture:', error);
-          }
-          setImageError(true);
-        }
-      };
-      
-      fetchImage();
-      
-      return () => {
-        if (currentBlobUrl) {
-          URL.revokeObjectURL(currentBlobUrl);
-        }
-      };
-    } else {
-      // No student ID or picture path, show placeholder immediately
-      setImageUrl(null);
-      setImageError(true);
-    }
-  }, [studentId, picturePath]);
-
-  return (
-    <div className="flex items-center justify-center w-10 h-10">
-      {imageUrl && !imageError ? (
-        <img
-          src={imageUrl}
-          alt={studentName || 'Student'}
-          className="w-10 h-10 rounded-full object-cover border-2 border-border"
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-border">
-          <UserRound className="h-5 w-5 text-muted-foreground" />
-        </div>
-      )}
-    </div>
-  );
-}
 
 // Helper function to transform subject report data for export
 function transformSubjectReportData(report: ClassSubjectReportData, t: (key: string) => string): Record<string, any>[] {
@@ -381,20 +278,6 @@ function SubjectMarkSheetTable({
             {rank === 3 && <Trophy className="h-4 w-4 text-orange-600 inline mr-1" />}
             {rank || '-'}
           </div>
-        );
-      },
-    },
-    {
-      id: 'picture',
-      header: () => <div className="whitespace-nowrap">{t('students.picture') || 'Picture'}</div>,
-      cell: ({ row }) => {
-        const student = row.original;
-        return (
-          <MarkSheetPictureCell 
-            studentId={student.id} 
-            picturePath={student.picture_path || student.picturePath}
-            studentName={student.name || student.student_name}
-          />
         );
       },
     },
@@ -629,7 +512,7 @@ function SubjectMarkSheetTable({
                 {t('events.topPerformers') || 'Top Performers'}
               </CardTitle>
               <CardDescription className="mt-1">
-                Top three positions, including every student tied at the cutoff.
+                {t('examReports.topThreePositionsDescription') || 'Top three positions, including every student tied at the cutoff.'}
               </CardDescription>
             </div>
             {onViewAllTopStudents && (
@@ -687,7 +570,7 @@ function SubjectMarkSheetTable({
           <SplitDataTable
             table={table}
             actionBar={<DataTablePagination table={table} paginationMeta={paginationMeta} />}
-            identityColumnIds={['rank', 'picture', 'name', 'father_name', 'roll_number', 'admission_no']}
+            identityColumnIds={['rank', 'name', 'father_name', 'roll_number', 'admission_no']}
             summaryColumnIds={['percentage', 'grade', 'result']}
           />
         </CardContent>

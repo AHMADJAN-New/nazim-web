@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
-import { Printer, Search, Award, TrendingUp, TrendingDown, Trophy, UserRound } from 'lucide-react';
+import { Printer, Search, Award, TrendingUp, TrendingDown, Trophy } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -26,7 +26,11 @@ import { useProfile } from '@/hooks/useProfiles';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { MultiSectionReportExportButtons } from '@/components/reports/MultiSectionReportExportButtons';
 import type { MultiSectionReportSection } from '@/components/reports/MultiSectionReportExportButtons';
-import { fetchAllConsolidatedMarkSheetRows } from '@/lib/reporting/consolidatedMarkSheetExport';
+import {
+  fetchAllConsolidatedMarkSheetRows,
+  getConsolidatedExportIdentityColumns,
+  mapConsolidatedIdentityFields,
+} from '@/lib/reporting/consolidatedMarkSheetExport';
 import { formatMark, formatPercentage } from '@/lib/reporting/markFormat';
 import { getTopStudentsWithTies } from '@/lib/reporting/studentRanking';
 
@@ -153,86 +157,6 @@ function ClassReportTab({ examClass, examId, academicYear, selectedExam }: { exa
   );
 }
 
-// Component for displaying student picture in mark sheet table cell
-function MarkSheetPictureCell({ studentId, picturePath, studentName }: { studentId?: string; picturePath?: string | null; studentName?: string }) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    // Only fetch if we have studentId (we'll try to fetch even if picturePath is not provided)
-    const hasPicture = studentId;
-    
-    if (hasPicture) {
-      let currentBlobUrl: string | null = null;
-
-      const fetchImage = async () => {
-        try {
-          const { apiClient } = await import('@/lib/api/client');
-          const token = apiClient.getToken();
-          const url = `/api/students/${studentId}/picture`;
-          
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Accept': 'image/*',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            },
-            credentials: 'include',
-          });
-          
-          if (!response.ok) {
-            if (response.status === 404) {
-              setImageError(true);
-              return;
-            }
-            throw new Error(`Failed to fetch image: ${response.status}`);
-          }
-          
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          currentBlobUrl = blobUrl;
-          setImageUrl(blobUrl);
-          setImageError(false);
-        } catch (error) {
-          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
-            console.error('Failed to fetch student picture:', error);
-          }
-          setImageError(true);
-        }
-      };
-      
-      fetchImage();
-      
-      return () => {
-        if (currentBlobUrl) {
-          URL.revokeObjectURL(currentBlobUrl);
-        }
-      };
-    } else {
-      // No student ID or picture path, show placeholder immediately
-      setImageUrl(null);
-      setImageError(true);
-    }
-  }, [studentId, picturePath]);
-
-  return (
-    <div className="flex items-center justify-center w-10 h-10">
-      {imageUrl && !imageError ? (
-        <img
-          src={imageUrl}
-          alt={studentName || 'Student'}
-          className="w-10 h-10 rounded-full object-cover border-2 border-border"
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-border">
-          <UserRound className="h-5 w-5 text-muted-foreground" />
-        </div>
-      )}
-    </div>
-  );
-}
-
 // Reusable Mark Sheet Component
 function MarkSheetTable({
   report,
@@ -321,20 +245,6 @@ function MarkSheetTable({
         },
       },
       {
-        id: 'picture',
-        header: () => <div className="whitespace-nowrap">{t('students.picture') || 'Picture'}</div>,
-        cell: ({ row }) => {
-          const student = row.original;
-          return (
-            <MarkSheetPictureCell 
-              studentId={(student as any).id || (student as any).student_id}
-              picturePath={(student as any).picture_path || (student as any).picturePath}
-              studentName={student.student_name}
-            />
-          );
-        },
-      },
-      {
         accessorKey: 'student_name',
         header: () => (
           <div className="whitespace-nowrap text-start">
@@ -364,6 +274,11 @@ function MarkSheetTable({
         accessorKey: 'roll_number',
         header: () => <div className="whitespace-nowrap">{t('students.rollNumber')}</div>,
         cell: ({ row }) => <div className="whitespace-nowrap">{row.original.roll_number || '-'}</div>,
+      },
+      {
+        id: 'admission_no',
+        header: () => <div className="whitespace-nowrap">{t('examReports.admissionNo') || 'Admission No'}</div>,
+        cell: ({ row }) => <div className="whitespace-nowrap">{row.original.admission_no || '-'}</div>,
       },
     ];
 
@@ -569,7 +484,7 @@ function MarkSheetTable({
                 {t('events.topPerformers') || 'Top Performers'}
               </CardTitle>
               <CardDescription className="mt-1">
-                Top three overall positions, including every student tied at the cutoff.
+                {t('examReports.topThreeOverallPositionsDescription') || 'Top three overall positions, including every student tied at the cutoff.'}
               </CardDescription>
             </div>
             {onViewAllTopStudents && (
@@ -617,7 +532,7 @@ function MarkSheetTable({
           <SplitDataTable
             table={table}
             actionBar={<DataTablePagination table={table} paginationMeta={paginationMeta} />}
-            identityColumnIds={['rank', 'picture', 'student_name', 'father_name', 'roll_number']}
+            identityColumnIds={['rank', 'student_name', 'father_name', 'roll_number', 'admission_no']}
             summaryColumnIds={['total_marks', 'percentage', 'grade', 'result']}
           />
         </CardContent>
@@ -636,9 +551,7 @@ function transformClassReportData(report: ReportData, t: (key: string) => string
   return sortedStudents.map((student: any, index: number) => {
     const row: Record<string, any> = {
       rank: index + 1,
-      rollNumber: student.roll_number || '-',
-      studentName: student.student_name || '-',
-      fatherName: student.father_name || '-',
+      ...mapConsolidatedIdentityFields(student),
     };
     
     // Add subject marks
@@ -673,10 +586,7 @@ function transformClassReportData(report: ReportData, t: (key: string) => string
 // Helper function to get columns for export
 function getExportColumns(report: ReportData, t: (key: string) => string): Array<{ key: string; label: string }> {
   return [
-    { key: 'rank', label: t('examReports.rank') || 'Rank' },
-    { key: 'rollNumber', label: t('students.rollNumber') || 'Roll Number' },
-    { key: 'studentName', label: t('examReports.studentName') || 'Student Name' },
-    { key: 'fatherName', label: t('examReports.fatherName') || 'Father Name' },
+    ...getConsolidatedExportIdentityColumns(t),
     ...(report.subjects || []).map((subject: any) => ({
       key: `subject_${subject.id || subject.subject_id}`,
       label: subject.total_marks !== null && subject.total_marks !== undefined
@@ -979,9 +889,7 @@ export default function ConsolidatedMarkSheet() {
                     return sortedData.map((student: any, index: number) => {
                       const row: Record<string, any> = {
                         rank: index + 1,
-                        rollNumber: student.roll_number || '-',
-                        studentName: student.student_name || '-',
-                        fatherName: student.father_name || '-',
+                        ...mapConsolidatedIdentityFields(student),
                       };
                       // Add subject marks
                       (report.subjects || []).forEach((subject: any) => {
