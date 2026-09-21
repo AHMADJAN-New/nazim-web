@@ -5,8 +5,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useDataTable } from '@/hooks/use-data-table';
-import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { SplitDataTable } from '@/components/data-table/split-data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown, Trophy, UserRound } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -15,6 +15,7 @@ import { useSchoolContext } from '@/contexts/SchoolContext';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { MultiSectionReportExportButtons, type MultiSectionReportSection } from '@/components/reports/MultiSectionReportExportButtons';
+import { TopStudentsDialog, type TopStudentReportRow } from '@/components/reports/TopStudentsDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -28,6 +29,7 @@ import { useServerReport } from '@/hooks/useServerReport';
 import { examsApi } from '@/lib/api/client';
 import { fetchAllClassSubjectMarkSheetRows } from '@/lib/reporting/classSubjectMarkSheetExport';
 import { formatMark, formatPercentage } from '@/lib/reporting/markFormat';
+import { getTopStudentsWithTies } from '@/lib/reporting/studentRanking';
 import { showToast } from '@/lib/toast';
 
 // Report data type
@@ -258,7 +260,17 @@ function getExportColumns(report: ClassSubjectReportData, t: (key: string) => st
 }
 
 // Reusable Subject Mark Sheet Component
-function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report: ClassSubjectReportData; academicYear?: any; selectedExam?: any }) {
+function SubjectMarkSheetTable({
+  report,
+  academicYear,
+  selectedExam,
+  onViewAllTopStudents,
+}: {
+  report: ClassSubjectReportData;
+  academicYear?: any;
+  selectedExam?: any;
+  onViewAllTopStudents?: () => void;
+}) {
   const { t, language } = useLanguage();
   const { data: profile } = useProfile();
   const { data: grades } = useGrades(profile?.organization_id);
@@ -327,6 +339,8 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     });
   }, [report.students, grades, language]);
 
+  const topStudents = useMemo(() => getTopStudentsWithTies(sortedStudents), [sortedStudents]);
+
   // Paginate students
   const paginatedStudents = useMemo(() => {
     const startIndex = (page - 1) * pageSize;
@@ -352,11 +366,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
   const columns: ColumnDef<any>[] = useMemo(() => [
     {
       id: 'rank',
-      meta: {
-        headerClassName: 'lg:sticky lg:right-0 lg:z-30 lg:w-12 lg:min-w-12 lg:max-w-12 lg:bg-background',
-        cellClassName: 'lg:sticky lg:right-0 lg:z-20 lg:w-12 lg:min-w-12 lg:max-w-12 lg:bg-background',
-      },
-      header: () => <div className="w-12">{t('examReports.rank')}</div>,
+      header: () => <div className="whitespace-nowrap">{t('examReports.rank')}</div>,
       cell: ({ row, table }) => {
         const student = row.original;
         const globalIndex = sortedStudents.findIndex(s => 
@@ -365,7 +375,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
         );
         const rank = student.rank ?? (globalIndex >= 0 ? globalIndex + 1 : row.index + 1 + (page - 1) * pageSize);
         return (
-          <div className="font-medium w-12">
+          <div className="whitespace-nowrap font-medium">
             {rank === 1 && <Trophy className="h-4 w-4 text-yellow-500 inline mr-1" />}
             {rank === 2 && <Trophy className="h-4 w-4 text-gray-400 inline mr-1" />}
             {rank === 3 && <Trophy className="h-4 w-4 text-orange-600 inline mr-1" />}
@@ -376,11 +386,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     },
     {
       id: 'picture',
-      meta: {
-        headerClassName: 'lg:sticky lg:right-12 lg:z-30 lg:w-16 lg:min-w-16 lg:max-w-16 lg:bg-background',
-        cellClassName: 'lg:sticky lg:right-12 lg:z-20 lg:w-16 lg:min-w-16 lg:max-w-16 lg:bg-background',
-      },
-      header: () => <div className="w-12">{t('students.picture') || 'Picture'}</div>,
+      header: () => <div className="whitespace-nowrap">{t('students.picture') || 'Picture'}</div>,
       cell: ({ row }) => {
         const student = row.original;
         return (
@@ -394,19 +400,15 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     },
     {
       accessorKey: 'name',
-      meta: {
-        headerClassName: 'lg:sticky lg:right-28 lg:z-30 lg:w-36 lg:min-w-36 lg:max-w-36 lg:bg-background',
-        cellClassName: 'lg:sticky lg:right-28 lg:z-20 lg:w-36 lg:min-w-36 lg:max-w-36 lg:bg-background',
-      },
       header: () => (
-        <div className="min-w-[8rem] whitespace-nowrap text-start">
+        <div className="whitespace-nowrap text-start">
           {t('examReports.studentName')}
         </div>
       ),
       cell: ({ row }) => {
         const student = row.original;
         return (
-          <div className="min-w-[8rem] whitespace-nowrap text-start font-medium">
+          <div className="whitespace-nowrap text-start font-medium">
             {student.name || student.student_name || 'Unknown'}
           </div>
         );
@@ -414,34 +416,30 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     },
     {
       id: 'father_name',
-      meta: {
-        headerClassName: 'lg:sticky lg:right-64 lg:z-30 lg:w-36 lg:min-w-36 lg:max-w-36 lg:border-l lg:bg-background',
-        cellClassName: 'lg:sticky lg:right-64 lg:z-20 lg:w-36 lg:min-w-36 lg:max-w-36 lg:border-l lg:bg-background',
-      },
       header: () => (
-        <div className="min-w-[8rem] whitespace-nowrap text-start">
+        <div className="whitespace-nowrap text-start">
           {t('examReports.fatherName') || 'Father Name'}
         </div>
       ),
       cell: ({ row }) => (
-        <div className="min-w-[8rem] whitespace-nowrap text-start">
+        <div className="whitespace-nowrap text-start">
           {row.original.father_name || '-'}
         </div>
       ),
     },
     {
       accessorKey: 'roll_number',
-      header: () => <div className="min-w-[4rem] whitespace-nowrap">{t('students.rollNumber')}</div>,
-      cell: ({ row }) => <div className="min-w-[4rem] whitespace-nowrap">{row.original.roll_number || '-'}</div>,
+      header: () => <div className="whitespace-nowrap">{t('students.rollNumber')}</div>,
+      cell: ({ row }) => <div className="whitespace-nowrap">{row.original.roll_number || '-'}</div>,
     },
     {
       id: 'admission_no',
-      header: () => <div className="min-w-[6rem] whitespace-nowrap">{t('examReports.admissionNo') || 'Admission No'}</div>,
-      cell: ({ row }) => <div className="min-w-[6rem] whitespace-nowrap">{row.original.admission_no || '-'}</div>,
+      header: () => <div className="whitespace-nowrap">{t('examReports.admissionNo') || 'Admission No'}</div>,
+      cell: ({ row }) => <div className="whitespace-nowrap">{row.original.admission_no || '-'}</div>,
     },
     {
       id: 'marks_obtained',
-      header: () => <div className="min-w-[6rem] whitespace-nowrap text-center">{t('examReports.obtainedMarks')}</div>,
+      header: () => <div className="whitespace-nowrap text-center">{t('examReports.obtainedMarks')}</div>,
       cell: ({ row }) => {
         const student = row.original;
         return (
@@ -466,11 +464,7 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     },
     {
       id: 'percentage',
-      meta: {
-        headerClassName: 'lg:sticky lg:left-48 lg:z-30 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
-        cellClassName: 'lg:sticky lg:left-48 lg:z-20 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
-      },
-      header: () => <div className="min-w-[5rem] whitespace-nowrap text-center">{t('examReports.percentage')}</div>,
+      header: () => <div className="whitespace-nowrap text-center">{t('examReports.percentage')}</div>,
       cell: ({ row }) => {
         const student = row.original;
         return (
@@ -482,10 +476,6 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     },
     {
       id: 'grade',
-      meta: {
-        headerClassName: 'lg:sticky lg:left-24 lg:z-30 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
-        cellClassName: 'lg:sticky lg:left-24 lg:z-20 lg:w-24 lg:min-w-24 lg:max-w-24 lg:bg-background',
-      },
       header: () => <div className="text-center">{t('studentReportCard.grade')}</div>,
       cell: ({ row }) => {
         const student = row.original;
@@ -504,10 +494,6 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
     },
     {
       id: 'result',
-      meta: {
-        headerClassName: 'lg:sticky lg:left-0 lg:z-30 lg:w-24 lg:min-w-24 lg:max-w-24 lg:border-r lg:bg-background',
-        cellClassName: 'lg:sticky lg:left-0 lg:z-20 lg:w-24 lg:min-w-24 lg:max-w-24 lg:border-r lg:bg-background',
-      },
       header: () => <div className="text-center">{t('examReports.result')}</div>,
       cell: ({ row }) => {
         const student = row.original;
@@ -634,28 +620,41 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
       </Card>
 
       {/* Top Performers */}
-      {sortedStudents.length > 0 && (
+      {topStudents.length > 0 && (
         <Card className="print:shadow-none">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-yellow-500" />
-              {t('events.topPerformers') || 'Top Performers'}
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-yellow-500" />
+                {t('events.topPerformers') || 'Top Performers'}
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Top three positions, including every student tied at the cutoff.
+              </CardDescription>
+            </div>
+            {onViewAllTopStudents && (
+              <Button type="button" variant="outline" size="sm" onClick={onViewAllTopStudents}>
+                {t('events.viewAll') || 'View all top students'}
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              {sortedStudents.slice(0, 3).map((student: any, index: number) => (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {topStudents.map((student: any, index: number) => (
                 <div
                   key={student.id || student.admission_no || student.roll_number || `top-${index}`}
                   className="flex items-center gap-3 p-4 border rounded-lg bg-muted/20"
                 >
                   <div className="flex-shrink-0">
-                    {index === 0 && <Trophy className="h-8 w-8 text-yellow-500" />}
-                    {index === 1 && <Trophy className="h-8 w-8 text-gray-400" />}
-                    {index === 2 && <Trophy className="h-8 w-8 text-orange-600" />}
+                    {student.computedRank === 1 && <Trophy className="h-8 w-8 text-yellow-500" />}
+                    {student.computedRank === 2 && <Trophy className="h-8 w-8 text-gray-400" />}
+                    {student.computedRank === 3 && <Trophy className="h-8 w-8 text-orange-600" />}
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold">{student.name || student.student_name || 'Unknown'}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold">{student.name || student.student_name || 'Unknown'}</p>
+                      <Badge variant="outline">#{student.computedRank}</Badge>
+                    </div>
                     {student.father_name && (
                       <p className="text-xs text-muted-foreground">
                         {t('examReports.fatherName') || 'Father Name'}: {student.father_name}
@@ -685,10 +684,11 @@ function SubjectMarkSheetTable({ report, academicYear, selectedExam }: { report:
           <CardTitle>{t('examReports.studentStatistics')}</CardTitle>
         </CardHeader>
         <CardContent className="max-w-full overflow-hidden p-0">
-          <DataTable 
+          <SplitDataTable
             table={table}
             actionBar={<DataTablePagination table={table} paginationMeta={paginationMeta} />}
-            className="max-w-full [&_table]:mx-auto [&_table]:w-max [&_table]:min-w-max [&_th]:h-10 [&_th]:px-2 [&_td]:px-2 [&_td]:py-3"
+            identityColumnIds={['rank', 'picture', 'name', 'father_name', 'roll_number', 'admission_no']}
+            summaryColumnIds={['percentage', 'grade', 'result']}
           />
         </CardContent>
       </Card>
@@ -770,6 +770,7 @@ export default function ClassSubjectMarkSheet() {
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'single' | 'multiple'>('single');
+  const [topStudentsOpen, setTopStudentsOpen] = useState(false);
 
   const { data: exams, isLoading: examsLoading } = useExams(organizationId);
   const latestExam = useLatestExamFromCurrentYear(organizationId);
@@ -845,6 +846,56 @@ export default function ClassSubjectMarkSheet() {
     value: subj.id,
     label: subj.subject?.name ?? subj.classSubject?.subject?.name ?? t('subjects.subject') ?? 'Subject',
   }));
+
+  const topStudentClassOptions = useMemo(
+    () => (allExamClasses || []).map((examClass) => {
+      const className = examClass.classAcademicYear?.class?.name ?? t('search.class') ?? 'Class';
+      const section = examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : '';
+      return { id: examClass.id, label: `${className}${section}` };
+    }),
+    [allExamClasses, t]
+  );
+
+  const loadTopStudentRows = useCallback(async (classIds: string[]): Promise<TopStudentReportRow[]> => {
+    if (!selectedExamId) return [];
+
+    const baseSubjectId = report?.subject?.subject_id || selectedSubject?.subjectId;
+    if (!baseSubjectId) return [];
+
+    const rowsByClass = await Promise.all(classIds.map(async (classId) => {
+      const examClass = allExamClasses?.find((item) => item.id === classId);
+      const examSubject = allSubjects?.find(
+        (item) => item.examClassId === classId && item.subjectId === baseSubjectId
+      );
+
+      if (!examClass || !examSubject) return [];
+
+      const fullReport = (await fetchAllClassSubjectMarkSheetRows(async (requestedPage) =>
+        examsApi.classSubjectMarkSheet(selectedExamId, classId, examSubject.id, {
+          page: requestedPage,
+          per_page: EXPORT_PAGE_SIZE,
+        })
+      )) as ClassSubjectReportData;
+
+      const className = `${examClass.classAcademicYear?.class?.name ?? t('search.class') ?? 'Class'}${
+        examClass.classAcademicYear?.sectionName ? ` - ${examClass.classAcademicYear.sectionName}` : ''
+      }`;
+
+      return getTopStudentsWithTies(fullReport.students || []).map((student) => ({
+        classId,
+        className,
+        rank: student.computedRank,
+        rollNumber: student.roll_number || '-',
+        studentName: student.student_name || student.name || '-',
+        fatherName: student.father_name || '-',
+        marksObtained: student.marks_obtained ?? '-',
+        percentage: student.percentage ?? 0,
+        result: student.is_pass ? (t('events.pass') || 'Pass') : (t('events.fail') || 'Fail'),
+      }));
+    }));
+
+    return rowsByClass.flat();
+  }, [allExamClasses, allSubjects, report?.subject?.subject_id, selectedExamId, selectedSubject?.subjectId, t]);
 
   // Build sections for multiple subjects export (each subject of each class = one sheet)
   const buildMultiSubjectSections = useCallback(async (): Promise<MultiSectionReportSection[]> => {
@@ -1141,7 +1192,12 @@ export default function ClassSubjectMarkSheet() {
                     </CardContent>
                   </Card>
                 ) : report ? (
-                  <SubjectMarkSheetTable report={report} academicYear={academicYear} selectedExam={selectedExam} />
+                  <SubjectMarkSheetTable
+                    report={report}
+                    academicYear={academicYear}
+                    selectedExam={selectedExam}
+                    onViewAllTopStudents={() => setTopStudentsOpen(true)}
+                  />
                 ) : (
                   <Card>
                     <CardContent className="flex items-center justify-center py-12">
@@ -1219,6 +1275,17 @@ export default function ClassSubjectMarkSheet() {
           </CardContent>
         </Card>
       )}
+
+      <TopStudentsDialog
+        open={topStudentsOpen}
+        onOpenChange={setTopStudentsOpen}
+        currentClassId={selectedClassId}
+        classes={topStudentClassOptions}
+        examName={selectedExam?.name}
+        subjectName={report?.subject?.name || selectedSubject?.subject?.name || selectedSubject?.classSubject?.subject?.name}
+        schoolId={selectedSchoolId || profile?.default_school_id}
+        loadRows={loadTopStudentRows}
+      />
     </div>
   );
 }

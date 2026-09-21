@@ -19,8 +19,9 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { usePagination } from '@/hooks/usePagination';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { usePhoneBook } from '@/hooks/usePhoneBook';
+import { useProfile } from '@/hooks/useProfiles';
 import { phoneBookApi } from '@/lib/api/client';
-import { fetchAllPhoneBookEntriesForExport } from '@/lib/reporting/phoneBookExport';
+import { getPhoneBookExportRows } from '@/lib/reporting/phoneBookExport';
 import type { PhoneBookEntry } from '@/types/domain/phoneBook';
 
 type PhoneBookCategory = 'all' | 'students' | 'staff' | 'donors' | 'guests' | 'others';
@@ -28,6 +29,7 @@ type PhoneBookCategory = 'all' | 'students' | 'staff' | 'donors' | 'guests' | 'o
 export function PhoneBook() {
   const { t, isRTL } = useLanguage();
   const { selectedSchoolId } = useSchoolContext();
+  const { data: profile } = useProfile();
   const [activeTab, setActiveTab] = useState<PhoneBookCategory>('all');
   const [search, setSearch] = useState('');
   const { page, pageSize, setPage, setPageSize, paginationState } = usePagination();
@@ -297,11 +299,7 @@ export function PhoneBook() {
   };
 
   const getExportData = async (): Promise<PhoneBookEntry[]> => {
-    if (!profile?.organization_id || !profile.default_school_id) {
-      return [];
-    }
-
-    return fetchAllPhoneBookEntriesForExport(async (requestedPage) => {
+    return getPhoneBookExportRows(profile, async (requestedPage) => {
       return (await phoneBookApi.list({
         category: effectiveActiveTab,
         search: search.trim() || undefined,

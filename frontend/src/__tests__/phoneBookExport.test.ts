@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { fetchAllPhoneBookEntriesForExport } from '@/lib/reporting/phoneBookExport';
+import { fetchAllPhoneBookEntriesForExport, getPhoneBookExportRows } from '@/lib/reporting/phoneBookExport';
 import type { PhoneBookEntry } from '@/types/domain/phoneBook';
 
 const makeEntry = (id: string): PhoneBookEntry => ({
@@ -54,5 +54,32 @@ describe('fetchAllPhoneBookEntriesForExport', () => {
 
     expect(fetchPage).toHaveBeenCalledTimes(1);
     expect(result).toEqual([]);
+  });
+});
+
+describe('getPhoneBookExportRows', () => {
+  it('returns an empty array when profile is missing without fetching', async () => {
+    const fetchPage = vi.fn();
+
+    const result = await getPhoneBookExportRows(undefined, fetchPage);
+
+    expect(result).toEqual([]);
+    expect(fetchPage).not.toHaveBeenCalled();
+  });
+
+  it('fetches pages when organization and school are present', async () => {
+    const fetchPage = vi.fn().mockResolvedValue({
+      data: [makeEntry('1')],
+      current_page: 1,
+      last_page: 1,
+    });
+
+    const result = await getPhoneBookExportRows(
+      { organization_id: 'org-1', default_school_id: 'school-1' },
+      fetchPage
+    );
+
+    expect(fetchPage).toHaveBeenCalledTimes(1);
+    expect(result.map((entry) => entry.id)).toEqual(['1']);
   });
 });

@@ -21,3 +21,19 @@ export async function fetchAllPhoneBookEntriesForExport(
     };
   });
 }
+
+export interface PhoneBookExportProfile {
+  organization_id?: string | null;
+  default_school_id?: string | null;
+}
+
+export async function getPhoneBookExportRows(
+  profile: PhoneBookExportProfile | null | undefined,
+  fetchPage: (page: number) => Promise<PhoneBookExportPage>
+): Promise<PhoneBookEntry[]> {
+  if (!profile?.organization_id || !profile.default_school_id) {
+    return [];
+  }
+
+  return fetchAllPhoneBookEntriesForExport(fetchPage);
+}
