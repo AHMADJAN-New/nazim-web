@@ -19,6 +19,7 @@ use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CourseStudentController;
 use App\Http\Controllers\CourseStudentDisciplineRecordController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExamAbsencePenaltyController;
 use App\Http\Controllers\ExamAttendanceController;
 use App\Http\Controllers\ExamClassController;
 use App\Http\Controllers\ExamController;
@@ -929,6 +930,14 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
             Route::get('/exams/{exam}/reports/classes/{class}/consolidated', [ExamReportController::class, 'consolidatedClassReport']);
             Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
+
+            // Optional absence → mark penalty (school-scoped; off by default)
+            Route::get('/exam-absence-penalty/settings', [ExamAbsencePenaltyController::class, 'showSettings']);
+            Route::get('/exam-absence-penalty/absences', [ExamAbsencePenaltyController::class, 'listAbsences']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::put('/exam-absence-penalty/settings', [ExamAbsencePenaltyController::class, 'updateSettings']);
+                Route::put('/exam-absence-penalty/absences', [ExamAbsencePenaltyController::class, 'upsertAbsences']);
+            });
         });
 
         // Exam Documents (requires exams full)

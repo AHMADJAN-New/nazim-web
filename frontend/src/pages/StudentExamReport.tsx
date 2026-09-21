@@ -70,9 +70,12 @@ type StudentReportData = {
     failed_subjects?: number;
     absent_subjects?: number;
     total_marks_obtained?: number;
+    total_marks_obtained_raw?: number;
     total_maximum_marks?: number;
     overall_percentage?: number;
     overall_result?: 'Pass' | 'Fail';
+    marks_cut?: number;
+    absence_count?: number;
   };
 };
 
@@ -400,6 +403,26 @@ function GradeCard({
           </CardHeader>
           <CardContent className="src-section-body pt-6 print:pt-0">
             <div className="space-y-4">
+              {reportData.summary?.marks_cut !== undefined && (
+                <>
+                  <div className="src-result-stat flex justify-between items-center">
+                    <span className="text-muted-foreground">{t('examAbsencePenalty.absenceCount') || 'Absences'}:</span>
+                    <span className="font-semibold">{reportData.summary.absence_count ?? 0}</span>
+                  </div>
+                  <div className="src-result-stat flex justify-between items-center">
+                    <span className="text-muted-foreground">{t('examAbsencePenalty.marksCut') || 'Marks cut'}:</span>
+                    <span className="font-semibold">{reportData.summary.marks_cut}</span>
+                  </div>
+                  {reportData.summary.total_marks_obtained_raw !== undefined && (
+                    <div className="src-result-stat flex justify-between items-center">
+                      <span className="text-muted-foreground">{t('examAbsencePenalty.totalRaw') || 'Raw total'}:</span>
+                      <span className="font-semibold">
+                        {reportData.summary.total_marks_obtained_raw}/{reportData.summary.total_maximum_marks ?? '-'}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
               <div className="src-result-stat flex justify-between items-center">
                 <span className="text-muted-foreground">{t('studentReportCard.overallPercentage')}:</span>
                 <span className="src-result-value text-2xl font-bold text-primary">
@@ -774,6 +797,8 @@ export default function StudentExamReport() {
                     { key: 'rollNumber', label: t('students.rollNo') || 'Roll Number' },
                     { key: 'className', label: t('search.class') || 'Class' },
                     { key: 'subjects', label: t('events.subjects') || 'Subjects' },
+                    { key: 'absenceCount', label: t('examAbsencePenalty.absenceCount') || 'Absences' },
+                    { key: 'marksCut', label: t('examAbsencePenalty.marksCut') || 'Marks cut' },
                     { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
                     { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
                     { key: 'grade', label: t('studentReportCard.grade') || 'Grade' },
@@ -803,6 +828,8 @@ export default function StudentExamReport() {
                         ? `${report.student.class}${report.student.section ? ` - ${report.student.section}` : ''}`
                         : '-',
                       subjects: subjectsList,
+                      absenceCount: report.summary?.absence_count ?? '-',
+                      marksCut: report.summary?.marks_cut ?? '-',
                       totalMarks: `${report.summary?.total_marks_obtained || 0}/${report.summary?.total_maximum_marks || 0}`,
                       percentage: report.summary?.overall_percentage !== null && report.summary?.overall_percentage !== undefined
                         ? `${report.summary.overall_percentage.toFixed(2)}%`

@@ -178,6 +178,10 @@ export default {
     "academic.residencyTypes.title": "أنواع الإقامة",
     "academic.academicYears.title": "السنوات الأكاديمية",
     examTypes: "أنواع الامتحانات",
+    examAbsencePenalty: {
+      absencesNav: "الغيابات السنوية",
+      settingsNav: "خصم درجات الغياب"
+    },
     "grades.management": "إدارة الدرجات",
     examPapers: "أوراق الامتحان",
     examPaperPrintTracking: "تتبع الطباعة",

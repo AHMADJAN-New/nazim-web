@@ -8,11 +8,15 @@ use App\Models\Exam;
 use App\Models\ExamResult;
 use App\Models\ExamStudent;
 use App\Models\Student;
+use App\Services\Exams\AbsenceMarkPenaltyCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PublicExamResultController extends Controller
 {
+    public function __construct(
+        private AbsenceMarkPenaltyCalculator $absenceMarkPenaltyCalculator
+    ) {}
     public function options(Request $request)
     {
         $schoolId = $request->attributes->get('school_id');
@@ -50,6 +54,16 @@ class PublicExamResultController extends Controller
 
         $examId = $request->exam_id;
         $searchTerm = strtolower(trim($request->search_term));
+
+        $exam = Exam::query()
+            ->where('id', $examId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
 
         // 1. Find the student in this school matching the search term
         // We search by name, code, admission number
@@ -145,7 +159,15 @@ class PublicExamResultController extends Controller
             $totalObtained = $examResults->sum(function ($result) {
                 return $result->is_absent ? 0 : ($result->marks_obtained ?? 0);
             });
-            $percentage = $totalMaxMarks > 0 ? ($totalObtained / $totalMaxMarks) * 100 : 0;
+
+            $penalty = $this->absenceMarkPenaltyCalculator->applyForAdmission(
+                organizationId: (string) $exam->organization_id,
+                schoolId: (string) $schoolId,
+                academicYearId: (string) $exam->academic_year_id,
+                studentAdmissionId: $examStudent->student_admission_id,
+                rawTotal: (float) $totalObtained,
+                totalMaximum: (float) $totalMaxMarks,
+            );
 
             $isPass = $examResults->every(function ($result) {
                 if ($result->is_absent) {
@@ -156,6 +178,19 @@ class PublicExamResultController extends Controller
                 return $obtained >= $passMarks;
             });
 
+            $summary = [
+                'total_max' => $totalMaxMarks,
+                'total_obtained' => $penalty['total_adjusted'],
+                'percentage' => $penalty['percentage_adjusted'],
+                'result_status' => $isPass ? 'PASS' : 'FAIL',
+            ];
+
+            if ($penalty['enabled']) {
+                $summary['total_obtained_raw'] = $penalty['total_raw'];
+                $summary['marks_cut'] = $penalty['marks_cut'];
+                $summary['absence_count'] = $penalty['absence_count'];
+            }
+
             $results[] = [
                 'student' => [
                     'id' => $student->id,
@@ -165,12 +200,7 @@ class PublicExamResultController extends Controller
                     'photo_path' => $student->picture_path,
                 ],
                 'results' => $examResults,
-                'summary' => [
-                    'total_max' => $totalMaxMarks,
-                    'total_obtained' => $totalObtained,
-                    'percentage' => round($percentage, 2),
-                    'result_status' => $isPass ? 'PASS' : 'FAIL',
-                ]
+                'summary' => $summary,
             ];
         }
 

@@ -14,6 +14,7 @@ use App\Models\Student;
 use App\Models\StudentAdmission;
 use App\Models\StudentHistoryAuditLog;
 use App\Models\StudentIdCard;
+use App\Services\Exams\AbsenceMarkPenaltyCalculator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,9 @@ use Illuminate\Support\Facades\DB;
  */
 class StudentHistoryService
 {
+    public function __construct(
+        private AbsenceMarkPenaltyCalculator $absenceMarkPenaltyCalculator
+    ) {}
     /**
      * Get complete student history
      */
@@ -367,7 +371,7 @@ class StudentHistoryService
         $totalMaxMarks = 0;
         $examCount = 0;
 
-        $examsData = $examStudents->map(function ($examStudent) use (&$totalMarks, &$totalMaxMarks, &$examCount) {
+        $examsData = $examStudents->map(function ($examStudent) use (&$totalMarks, &$totalMaxMarks, &$examCount, $organizationId) {
             $results = $examStudent->examResults;
             $examMarks = 0;
             $examMaxMarks = 0;
@@ -388,13 +392,41 @@ class StudentHistoryService
                 ];
             })->toArray();
 
+            $schoolId = (string) ($examStudent->school_id ?? $examStudent->exam?->school_id ?? '');
+            $academicYearId = (string) ($examStudent->exam?->academic_year_id ?? '');
+
+            if ($schoolId === '' || $academicYearId === '') {
+                $penalty = [
+                    'enabled' => false,
+                    'absence_count' => 0,
+                    'marks_cut' => 0.0,
+                    'total_raw' => (float) $examMarks,
+                    'total_adjusted' => (float) $examMarks,
+                    'percentage_adjusted' => $examMaxMarks > 0
+                        ? round(($examMarks / $examMaxMarks) * 100, 2)
+                        : 0.0,
+                ];
+            } else {
+                $penalty = $this->absenceMarkPenaltyCalculator->applyForAdmission(
+                    organizationId: $organizationId,
+                    schoolId: $schoolId,
+                    academicYearId: $academicYearId,
+                    studentAdmissionId: $examStudent->student_admission_id,
+                    rawTotal: (float) $examMarks,
+                    totalMaximum: (float) $examMaxMarks,
+                );
+            }
+
+            $adjustedMarks = $penalty['total_adjusted'];
+            $adjustedPercentage = $penalty['percentage_adjusted'];
+
             if ($examMaxMarks > 0) {
-                $totalMarks += $examMarks;
+                $totalMarks += $adjustedMarks;
                 $totalMaxMarks += $examMaxMarks;
                 $examCount++;
             }
 
-            return [
+            $examRow = [
                 'id' => $examStudent->id,
                 'examId' => $examStudent->exam_id,
                 'examName' => $examStudent->exam?->name,
@@ -404,11 +436,19 @@ class StudentHistoryService
                 'examStatus' => $examStudent->exam?->status,
                 'examStartDate' => $examStudent->exam?->start_date?->toDateString(),
                 'examEndDate' => $examStudent->exam?->end_date?->toDateString(),
-                'totalMarks' => $examMarks,
+                'totalMarks' => $adjustedMarks,
                 'maxMarks' => $examMaxMarks,
-                'percentage' => $examMaxMarks > 0 ? round(($examMarks / $examMaxMarks) * 100, 2) : 0,
+                'percentage' => $adjustedPercentage,
                 'subjectResults' => $subjectResults,
             ];
+
+            if ($penalty['enabled']) {
+                $examRow['totalMarksRaw'] = $penalty['total_raw'];
+                $examRow['marksCut'] = $penalty['marks_cut'];
+                $examRow['absenceCount'] = $penalty['absence_count'];
+            }
+
+            return $examRow;
         })->toArray();
 
         $averagePercentage = $totalMaxMarks > 0 ? round(($totalMarks / $totalMaxMarks) * 100, 2) : 0;

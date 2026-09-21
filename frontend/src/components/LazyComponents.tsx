@@ -25,6 +25,8 @@ export const AttendanceRoundNamesManagement = lazy(() => import('@/components/se
 export const AcademicYearsManagement = lazy(() => import('@/components/settings/AcademicYearsManagement').then(module => ({ default: module.AcademicYearsManagement })));
 export const ActivityLogsPage = lazy(() => import('@/pages/settings/ActivityLogsPage').then(module => ({ default: module.default })));
 export const ExamTypesPage = lazy(() => import('@/pages/settings/ExamTypesPage').then(module => ({ default: module.ExamTypesPage })));
+export const ExamAbsencePenaltySettingsPage = lazy(() => import('@/pages/settings/ExamAbsencePenaltySettingsPage').then(module => ({ default: module.ExamAbsencePenaltySettingsPage })));
+export const ExamAbsenceEntryPage = lazy(() => import('@/pages/exams/ExamAbsenceEntryPage').then(module => ({ default: module.ExamAbsenceEntryPage })));
 export const ClassesManagement = lazy(() => import('@/components/settings/ClassesManagement').then(module => ({ default: module.ClassesManagement })));
 export const SubjectsManagement = lazy(() => import('@/components/settings/SubjectsManagement').then(module => ({ default: module.SubjectsManagement })));
 export const SubjectsImport = lazy(() => import('@/pages/SubjectsImport'));

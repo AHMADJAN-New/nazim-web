@@ -203,6 +203,10 @@ export default {
     "academic.residencyTypes.title": "انواع اقامت",
     "academic.academicYears.title": "سال‌های تعلیمی",
     examTypes: "انواع امتحان",
+    examAbsencePenalty: {
+      absencesNav: "غیابت‌های سالانه",
+      settingsNav: "کسر نمره غیابت"
+    },
     "grades.management": "مدیریت درجات",
     examPapers: "اوراق امتحان",
     examPaperPrintTracking: "ردیابی چاپ",

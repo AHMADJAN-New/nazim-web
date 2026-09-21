@@ -204,6 +204,10 @@ export default {
     "academic.residencyTypes.title": "Residency Types",
     "academic.academicYears.title": "Academic Years",
     examTypes: "Exam Types",
+    examAbsencePenalty: {
+      absencesNav: "Yearly Absences",
+      settingsNav: "Absence Mark Penalty"
+    },
     "grades.management": "Grades Management",
     examPapers: "Exam Papers",
     examPaperPrintTracking: "Print Tracking",

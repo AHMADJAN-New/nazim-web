@@ -10,6 +10,7 @@ use App\Models\ExamStudent;
 use App\Models\ExamSubject;
 use App\Models\StudentAdmission;
 use App\Services\ExamSubjectScheduleService;
+use App\Services\Exams\AbsenceMarkPenaltyCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +18,8 @@ use Illuminate\Support\Facades\Log;
 class ExamReportController extends Controller
 {
     public function __construct(
-        private ExamSubjectScheduleService $examSubjectScheduleService
+        private ExamSubjectScheduleService $examSubjectScheduleService,
+        private AbsenceMarkPenaltyCalculator $absenceMarkPenaltyCalculator
     ) {}
 
     /**
@@ -495,8 +497,21 @@ class ExamReportController extends Controller
             ->get()
             ->groupBy('exam_student_id');
 
+        $penaltyContext = $this->absenceMarkPenaltyCalculator->loadContext(
+            $profile->organization_id,
+            $currentSchoolId,
+            (string) $exam->academic_year_id,
+            $examStudents->pluck('student_admission_id')->all()
+        );
+
+        $bandPayload = $penaltyContext['bands']->map(fn ($band) => [
+            'min_absences' => (int) $band->min_absences,
+            'max_absences' => $band->max_absences === null ? null : (int) $band->max_absences,
+            'marks_per_absence' => (float) $band->marks_per_absence,
+        ])->all();
+
         // Build mark sheet
-        $markSheet = $examStudents->map(function ($examStudent) use ($examSubjects, $results) {
+        $markSheet = $examStudents->map(function ($examStudent) use ($examSubjects, $results, $penaltyContext, $bandPayload) {
             $studentResults = $results->get($examStudent->id, collect());
             $subjectMarks = [];
             $totalObtained = 0;
@@ -531,7 +546,26 @@ class ExamReportController extends Controller
                 }
             }
 
-            $percentage = $totalMax > 0 ? round(($totalObtained / $totalMax) * 100, 2) : 0;
+            $admissionId = $examStudent->student_admission_id;
+            $penalty = $this->absenceMarkPenaltyCalculator->calculate(
+                enabled: $penaltyContext['enabled'],
+                bands: $bandPayload,
+                absenceCount: (int) ($penaltyContext['absences_by_admission'][$admissionId] ?? 0),
+                rawTotal: (float) $totalObtained,
+                totalMaximum: (float) $totalMax,
+            );
+
+            $totals = [
+                'obtained' => $penalty['total_adjusted'],
+                'maximum' => $totalMax,
+                'percentage' => $penalty['percentage_adjusted'],
+            ];
+
+            if ($penalty['enabled']) {
+                $totals['obtained_raw'] = $penalty['total_raw'];
+                $totals['marks_cut'] = $penalty['marks_cut'];
+                $totals['absence_count'] = $penalty['absence_count'];
+            }
 
             return [
                 'exam_student_id' => $examStudent->id,
@@ -542,11 +576,7 @@ class ExamReportController extends Controller
                     'roll_number' => $examStudent->studentAdmission?->roll_number,
                 ],
                 'subjects' => $subjectMarks,
-                'totals' => [
-                    'obtained' => $totalObtained,
-                    'maximum' => $totalMax,
-                    'percentage' => $percentage,
-                ],
+                'totals' => $totals,
                 'is_absent_in_any' => $isAbsentInAny,
             ];
         })->sortBy('student.roll_number')->values();
@@ -713,6 +743,32 @@ class ExamReportController extends Controller
         $overallPercentage = $totalMax > 0 ? round(($totalObtained / $totalMax) * 100, 2) : 0;
         $overallResult = $failedSubjects === 0 && $absentSubjects === 0 && $passedSubjects > 0 ? 'Pass' : 'Fail';
 
+        $penalty = $this->absenceMarkPenaltyCalculator->applyForAdmission(
+            organizationId: $profile->organization_id,
+            schoolId: $currentSchoolId,
+            academicYearId: (string) $exam->academic_year_id,
+            studentAdmissionId: $examStudent->student_admission_id,
+            rawTotal: (float) $totalObtained,
+            totalMaximum: (float) $totalMax,
+        );
+
+        $summary = [
+            'total_subjects' => $examSubjects->count(),
+            'passed_subjects' => $passedSubjects,
+            'failed_subjects' => $failedSubjects,
+            'absent_subjects' => $absentSubjects,
+            'total_marks_obtained' => $penalty['total_adjusted'],
+            'total_maximum_marks' => $totalMax,
+            'overall_percentage' => $penalty['percentage_adjusted'],
+            'overall_result' => $overallResult,
+        ];
+
+        if ($penalty['enabled']) {
+            $summary['total_marks_obtained_raw'] = $penalty['total_raw'];
+            $summary['marks_cut'] = $penalty['marks_cut'];
+            $summary['absence_count'] = $penalty['absence_count'];
+        }
+
         return response()->json([
             'exam' => [
                 'id' => $exam->id,
@@ -731,16 +787,7 @@ class ExamReportController extends Controller
                 'section' => $examStudent->examClass?->classAcademicYear?->section_name,
             ],
             'subjects' => $subjectResults,
-            'summary' => [
-                'total_subjects' => $examSubjects->count(),
-                'passed_subjects' => $passedSubjects,
-                'failed_subjects' => $failedSubjects,
-                'absent_subjects' => $absentSubjects,
-                'total_marks_obtained' => $totalObtained,
-                'total_maximum_marks' => $totalMax,
-                'overall_percentage' => $overallPercentage,
-                'overall_result' => $overallResult,
-            ],
+            'summary' => $summary,
         ]);
     }
 
@@ -824,8 +871,21 @@ class ExamReportController extends Controller
             ->get()
             ->groupBy('exam_student_id');
 
+        $penaltyContext = $this->absenceMarkPenaltyCalculator->loadContext(
+            $profile->organization_id,
+            $currentSchoolId,
+            (string) $exam->academic_year_id,
+            $examStudents->pluck('student_admission_id')->all()
+        );
+
+        $bandPayload = $penaltyContext['bands']->map(fn ($band) => [
+            'min_absences' => (int) $band->min_absences,
+            'max_absences' => $band->max_absences === null ? null : (int) $band->max_absences,
+            'marks_per_absence' => (float) $band->marks_per_absence,
+        ])->all();
+
         // Build consolidated mark sheet with grades
-        $markSheet = $examStudents->map(function ($examStudent) use ($examSubjects, $results, $profile) {
+        $markSheet = $examStudents->map(function ($examStudent) use ($examSubjects, $results, $profile, $penaltyContext, $bandPayload) {
             $studentResults = $results->get($examStudent->id, collect());
             $subjects = [];
             $totalObtained = 0;
@@ -866,7 +926,16 @@ class ExamReportController extends Controller
 
             }
 
-            $percentage = $totalMax > 0 ? round(($totalObtained / $totalMax) * 100, 2) : 0;
+            $admissionId = $examStudent->student_admission_id;
+            $penalty = $this->absenceMarkPenaltyCalculator->calculate(
+                enabled: $penaltyContext['enabled'],
+                bands: $bandPayload,
+                absenceCount: (int) ($penaltyContext['absences_by_admission'][$admissionId] ?? 0),
+                rawTotal: (float) $totalObtained,
+                totalMaximum: (float) $totalMax,
+            );
+
+            $percentage = $penalty['percentage_adjusted'];
 
             // Calculate grade using GradeCalculator
             $gradeDetails = GradeCalculator::getGradeDetails($percentage, $profile->organization_id);
@@ -875,8 +944,9 @@ class ExamReportController extends Controller
             // result follows the configured grade for the total percentage.
             $result = GradeCalculator::determineOverallResult($hasIncompleteMarks, $gradeDetails);
 
-            return [
+            $row = [
                 'id' => $examStudent->studentAdmission?->student?->id,
+                'student_admission_id' => $admissionId,
                 'roll_number' => $examStudent->exam_roll_number
                     ?? $examStudent->studentAdmission?->roll_number,
                 'student_name' => $examStudent->studentAdmission?->student?->full_name ?? 'Unknown',
@@ -884,7 +954,7 @@ class ExamReportController extends Controller
                 'admission_no' => $examStudent->studentAdmission?->student?->admission_no,
                 'picture_path' => $examStudent->studentAdmission?->student?->picture_path,
                 'subjects' => $subjects,
-                'total_obtained' => $totalObtained,
+                'total_obtained' => $penalty['total_adjusted'],
                 'total_maximum' => $totalMax,
                 'percentage' => $percentage,
                 'grade' => $gradeDetails ? $gradeDetails['name'] : null,
@@ -892,6 +962,14 @@ class ExamReportController extends Controller
                 'result' => $result,
                 'has_incomplete_marks' => $hasIncompleteMarks,
             ];
+
+            if ($penalty['enabled']) {
+                $row['total_obtained_raw'] = $penalty['total_raw'];
+                $row['marks_cut'] = $penalty['marks_cut'];
+                $row['absence_count'] = $penalty['absence_count'];
+            }
+
+            return $row;
         })->sortBy('roll_number')->values();
 
         return response()->json([
@@ -916,6 +994,7 @@ class ExamReportController extends Controller
                 'passing_marks' => $s->passing_marks,
             ]),
             'students' => $markSheet,
+            'absence_penalty_enabled' => (bool) $penaltyContext['enabled'],
             'summary' => [
                 'total_students' => $examStudents->count(),
                 'subjects_count' => $examSubjects->count(),

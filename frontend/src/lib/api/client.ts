@@ -3720,6 +3720,62 @@ export const examsApi = {
   },
 };
 
+// Exam absence → mark penalty (optional school setting)
+export const examAbsencePenaltyApi = {
+  getSettings: async () => {
+    return apiClient.get<{
+      id: string;
+      organization_id: string;
+      school_id: string;
+      is_enabled: boolean;
+      bands: Array<{
+        id: string;
+        min_absences: number;
+        max_absences: number | null;
+        marks_per_absence: number;
+        sort_order: number;
+      }>;
+    }>('/exam-absence-penalty/settings');
+  },
+
+  updateSettings: async (data: {
+    is_enabled: boolean;
+    bands: Array<{
+      min_absences: number;
+      max_absences: number | null;
+      marks_per_absence: number;
+    }>;
+  }) => {
+    return apiClient.put('/exam-absence-penalty/settings', data);
+  },
+
+  listAbsences: async (params: {
+    academic_year_id: string;
+    class_academic_year_id?: string;
+  }) => {
+    return apiClient.get<{
+      academic_year_id: string;
+      class_academic_year_id: string | null;
+      rows: Array<{
+        student_admission_id: string;
+        student_id: string;
+        student_name: string | null;
+        father_name: string | null;
+        admission_no: string | null;
+        class_academic_year_id: string | null;
+        absence_count: number;
+      }>;
+    }>('/exam-absence-penalty/absences', params);
+  },
+
+  upsertAbsences: async (data: {
+    academic_year_id: string;
+    rows: Array<{ student_admission_id: string; absence_count: number }>;
+  }) => {
+    return apiClient.put('/exam-absence-penalty/absences', data);
+  },
+};
+
 // Exam Seating Maps API
 export const examSeatingApi = {
   list: async (examId: string) => {

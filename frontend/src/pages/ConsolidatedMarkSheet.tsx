@@ -73,6 +73,9 @@ type ReportData = {
     total_obtained: number;
     total_maximum: number;
     percentage: number;
+    total_obtained_raw?: number;
+    marks_cut?: number;
+    absence_count?: number;
     grade: string | null;
     grade_details?: {
       name: string;
@@ -87,6 +90,7 @@ type ReportData = {
     result: 'Pass' | 'Fail' | 'Incomplete';
     has_incomplete_marks: boolean;
   }>;
+  absence_penalty_enabled?: boolean;
   summary?: {
     total_students: number;
     subjects_count: number;
@@ -95,6 +99,13 @@ type ReportData = {
     incomplete_count: number;
   };
 };
+
+function isAbsencePenaltyActive(report: ReportData): boolean {
+  if (report.absence_penalty_enabled) return true;
+  return (report.students || []).some(
+    (student) => student.marks_cut !== undefined || student.absence_count !== undefined,
+  );
+}
 
 type ConsolidatedStudent = NonNullable<ReportData['students']>[number];
 
@@ -329,7 +340,32 @@ function MarkSheetTable({
       });
     }
 
-    // Add total, percentage, grade, and result columns
+    const showAbsencePenalty = isAbsencePenaltyActive(report);
+
+    // Add total, percentage, grade, and result columns (plus absence cut when enabled)
+    if (showAbsencePenalty) {
+      baseColumns.push(
+        {
+          id: 'absence_count',
+          header: () => (
+            <div className="text-center">{t('examAbsencePenalty.absenceCount') || 'Absences'}</div>
+          ),
+          cell: ({ row }) => (
+            <div className="text-center">{row.original.absence_count ?? 0}</div>
+          ),
+        },
+        {
+          id: 'marks_cut',
+          header: () => (
+            <div className="text-center">{t('examAbsencePenalty.marksCut') || 'Marks cut'}</div>
+          ),
+          cell: ({ row }) => (
+            <div className="text-center">{formatMark(row.original.marks_cut ?? 0)}</div>
+          ),
+        },
+      );
+    }
+
     baseColumns.push(
       {
         id: 'total_marks',
@@ -400,7 +436,7 @@ function MarkSheetTable({
     );
 
     return baseColumns;
-  }, [t, report.subjects, sortedStudents, page, pageSize]);
+  }, [t, report.subjects, report.students, report.absence_penalty_enabled, sortedStudents, page, pageSize]);
 
   // Use DataTable hook for pagination integration
   const { table } = useDataTable({
@@ -533,7 +569,13 @@ function MarkSheetTable({
             table={table}
             actionBar={<DataTablePagination table={table} paginationMeta={paginationMeta} />}
             identityColumnIds={['rank', 'student_name', 'father_name', 'roll_number', 'admission_no']}
-            summaryColumnIds={['total_marks', 'percentage', 'grade', 'result']}
+            summaryColumnIds={[
+              ...(isAbsencePenaltyActive(report) ? ['absence_count', 'marks_cut'] : []),
+              'total_marks',
+              'percentage',
+              'grade',
+              'result',
+            ]}
           />
         </CardContent>
       </Card>
@@ -570,6 +612,11 @@ function transformClassReportData(report: ReportData, t: (key: string) => string
       }
     });
     
+    if (isAbsencePenaltyActive(report)) {
+      row.absenceCount = student.absence_count ?? 0;
+      row.marksCut = formatMark(student.marks_cut ?? 0);
+    }
+
     row.totalMarks = `${formatMark(student.total_obtained)}/${formatMark(student.total_maximum)}`;
     row.percentage = formatPercentage(student.percentage);
     row.grade = student.grade || '-';
@@ -585,6 +632,13 @@ function transformClassReportData(report: ReportData, t: (key: string) => string
 
 // Helper function to get columns for export
 function getExportColumns(report: ReportData, t: (key: string) => string): Array<{ key: string; label: string }> {
+  const absenceColumns = isAbsencePenaltyActive(report)
+    ? [
+        { key: 'absenceCount', label: t('examAbsencePenalty.absenceCount') || 'Absences' },
+        { key: 'marksCut', label: t('examAbsencePenalty.marksCut') || 'Marks cut' },
+      ]
+    : [];
+
   return [
     ...getConsolidatedExportIdentityColumns(t),
     ...(report.subjects || []).map((subject: any) => ({
@@ -593,6 +647,7 @@ function getExportColumns(report: ReportData, t: (key: string) => string): Array
         ? `${subject.name || 'Subject'} (${t('studentReportCard.maxMarks') || 'Max Marks'}: ${formatMark(subject.total_marks)})`
         : subject.name || 'Subject',
     })),
+    ...absenceColumns,
     { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
     { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
     { key: 'grade', label: t('studentReportCard.grade') || 'Grade' },
@@ -906,6 +961,10 @@ export default function ConsolidatedMarkSheet() {
                           row[`subject_${subject.id || subject.subject_id}`] = '-';
                         }
                       });
+                      if (isAbsencePenaltyActive(report)) {
+                        row.absenceCount = student.absence_count ?? 0;
+                        row.marksCut = formatMark(student.marks_cut ?? 0);
+                      }
                       row.totalMarks = `${formatMark(student.total_obtained)}/${formatMark(student.total_maximum)}`;
                       row.percentage = formatPercentage(student.percentage);
                       row.grade = student.grade || '-';

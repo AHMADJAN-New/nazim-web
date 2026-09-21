@@ -204,6 +204,10 @@ export default {
     "academic.residencyTypes.title": "د استوګنې ډولونه",
     "academic.academicYears.title": "تعلیمي کالونه",
     examTypes: "د ازموینو ډولونه",
+    examAbsencePenalty: {
+      absencesNav: "کلنی غیرحاضري",
+      settingsNav: "د غیرحاضري نمرو کمښت"
+    },
     "grades.management": "د نمرو  مدیریت",
     examPapers: "د ازموینې پارچې",
     examPaperPrintTracking: "د چاپ تعقیب",

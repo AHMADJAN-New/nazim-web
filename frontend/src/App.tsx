@@ -72,6 +72,8 @@ import {
   AttendanceRoundNamesManagement,
   AcademicYearsManagement,
   ExamTypesPage,
+  ExamAbsencePenaltySettingsPage,
+  ExamAbsenceEntryPage,
   ClassesManagement,
   SubjectsManagement,
   SubjectsImport,
@@ -1226,6 +1228,20 @@ const App = () => (
                       <PermissionRoute permission="exam_types.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamTypesPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/settings/exam-absence-penalty" element={
+                      <PermissionRoute permission="exams.update">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamAbsencePenaltySettingsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/absence-totals" element={
+                      <PermissionRoute permission="exams.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamAbsenceEntryPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

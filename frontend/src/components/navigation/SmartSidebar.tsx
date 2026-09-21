@@ -342,6 +342,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasTeacherSubjectAssignmentsPermission = useHasPermissionAndFeature('teacher_subject_assignments.read');
   const hasTimetablesPermission = useHasPermissionAndFeature('timetables.read');
   const hasExamsPermission = useHasPermissionAndFeature('exams.read');
+  const hasExamsUpdateSettingsPermission = useHasPermissionAndFeature('exams.update');
   const hasExamsManagePermission = useHasPermissionAndFeature('exams.manage');
   const hasExamsAssignSubjectsPermission = useHasPermissionAndFeature('exams.assign');
   const hasExamsTimetablePermission = useHasPermissionAndFeature('exams.manage_timetable');
@@ -1084,6 +1085,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/exams",
             icon: Medal,
           }] : []),
+          ...(hasExamsPermission ? [{
+            title: "Yearly Absences",
+            titleKey: "examAbsencePenalty.absencesNav",
+            url: "/exams/absence-totals",
+            icon: ListChecks,
+          }] : []),
           ...(hasExamsMarksPermission ? [{
             title: "Exam Marks",
             titleKey: "examMarks",
@@ -1735,6 +1742,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Exam Types",
             titleKey: "examTypes",
             url: "/settings/exam-types",
+            icon: ClipboardList,
+          }] : []),
+          ...(hasExamsUpdateSettingsPermission ? [{
+            title: "Absence Mark Penalty",
+            titleKey: "examAbsencePenalty.settingsNav",
+            url: "/settings/exam-absence-penalty",
             icon: ClipboardList,
           }] : []),
           ...(hasStaffTypesPermission ? [{
