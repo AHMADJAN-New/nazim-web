@@ -954,6 +954,8 @@ export default {
     filters: "عوامل التصفية",
     filtersHint: "اختر امتحاناً واختيارياً صفّ الامتحان.",
     students: "الطلاب",
+    searchStudentsPlaceholder: "البحث بالاسم أو رقم القبول...",
+    noSearchResults: "لا يوجد طلاب مطابقون لبحثك",
     absenceCount: "الغيابات",
     absencesSaved: "تم حفظ الغيابات",
     absencesSaveFailed: "فشل حفظ الغيابات",

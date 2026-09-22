@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from 'lucide-react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,9 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 
+type SortField = 'admissionNo' | 'studentName' | 'fatherName' | 'absenceCount';
+type SortDirection = 'asc' | 'desc';
+
 function examClassLabel(examClass: {
   id: string;
   classAcademicYear?: { sectionName?: string | null; class?: { name?: string | null } | null } | null;
@@ -39,6 +43,18 @@ function examClassLabel(examClass: {
   return String(className);
 }
 
+function compareText(a: string | null | undefined, b: string | null | undefined): number {
+  const left = (a ?? '').trim();
+  const right = (b ?? '').trim();
+  if (!left && !right) return 0;
+  if (!left) return 1;
+  if (!right) return -1;
+  if (/^\d+$/.test(left) && /^\d+$/.test(right)) {
+    return Number(left) - Number(right);
+  }
+  return left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' });
+}
+
 export function ExamAbsenceEntryPage() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
@@ -51,6 +67,9 @@ export function ExamAbsenceEntryPage() {
   const [examId, setExamId] = useState('');
   const [examClassId, setExamClassId] = useState<string>('all');
   const [draftCounts, setDraftCounts] = useState<Record<string, number>>({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<SortField>('studentName');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const { data: settings } = useExamAbsencePenaltySettings(examId || undefined);
   const { data: examClasses = [] } = useExamClasses(examId || undefined);
@@ -83,6 +102,80 @@ export function ExamAbsenceEntryPage() {
     [examClasses],
   );
 
+  const handleSort = useCallback(
+    (field: SortField) => {
+      if (sortField === field) {
+        setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortField(field);
+        setSortDirection('asc');
+      }
+    },
+    [sortField],
+  );
+
+  const filteredRows = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = term
+      ? rows.filter((row) => {
+          const name = (row.studentName ?? '').toLowerCase();
+          const admissionNo = (row.admissionNo ?? '').toLowerCase();
+          return name.includes(term) || admissionNo.includes(term);
+        })
+      : [...rows];
+
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    filtered.sort((a, b) => {
+      let primary = 0;
+      if (sortField === 'admissionNo') {
+        primary = compareText(a.admissionNo, b.admissionNo);
+      } else if (sortField === 'studentName') {
+        primary = compareText(a.studentName, b.studentName);
+      } else if (sortField === 'fatherName') {
+        primary = compareText(a.fatherName, b.fatherName);
+      } else {
+        const aCount = draftCounts[a.studentAdmissionId] ?? a.absenceCount ?? 0;
+        const bCount = draftCounts[b.studentAdmissionId] ?? b.absenceCount ?? 0;
+        primary = aCount - bCount;
+      }
+      if (primary !== 0) return primary * direction;
+      return compareText(a.studentName, b.studentName);
+    });
+
+    return filtered;
+  }, [rows, searchTerm, sortField, sortDirection, draftCounts]);
+
+  const SortHeaderButton = ({
+    field,
+    children,
+  }: {
+    field: SortField;
+    children: ReactNode;
+  }) => {
+    const isActive = sortField === field;
+    const direction = isActive ? sortDirection : null;
+
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-8 -ms-2 px-2 font-medium"
+        onClick={() => handleSort(field)}
+        aria-label={t('common.sort') || 'Sort'}
+      >
+        {children}
+        {direction === 'asc' ? (
+          <ArrowUp className="ms-1 h-3 w-3" />
+        ) : direction === 'desc' ? (
+          <ArrowDown className="ms-1 h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="ms-1 h-3 w-3 opacity-50" />
+        )}
+      </Button>
+    );
+  };
+
   if (!canRead) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -104,7 +197,7 @@ export function ExamAbsenceEntryPage() {
         title={t('examAbsencePenalty.absencesTitle') || 'Exam Absences'}
         description={
           t('examAbsencePenalty.absencesDescription') ||
-          'Enter absence totals for this exam\'s period. Used when absence mark penalty is enabled for the exam.'
+          "Enter absence totals for this exam's period. Used when absence mark penalty is enabled for the exam."
         }
       />
 
@@ -133,6 +226,7 @@ export function ExamAbsenceEntryPage() {
               onValueChange={(value) => {
                 setExamId(value);
                 setExamClassId('all');
+                setSearchTerm('');
               }}
             >
               <SelectTrigger>
@@ -167,13 +261,15 @@ export function ExamAbsenceEntryPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle>{t('examAbsencePenalty.students') || 'Students'}</CardTitle>
             <CardDescription>
               {isLoading
                 ? t('common.loading') || 'Loading...'
-                : `${rows.length} ${t('common.students') || 'students'}`}
+                : searchTerm.trim()
+                  ? `${filteredRows.length} / ${rows.length} ${t('common.students') || 'students'}`
+                  : `${rows.length} ${t('common.students') || 'students'}`}
             </CardDescription>
           </div>
           {canUpdate && (
@@ -185,21 +281,50 @@ export function ExamAbsenceEntryPage() {
             </Button>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="relative max-w-md">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              disabled={!examId}
+              placeholder={
+                t('examAbsencePenalty.searchStudentsPlaceholder') ||
+                'Search by name or admission number...'
+              }
+              className="ps-9"
+              aria-label={t('common.search') || 'Search'}
+            />
+          </div>
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('common.admissionNo') || 'Admission No'}</TableHead>
-                  <TableHead>{t('common.studentName') || 'Student'}</TableHead>
-                  <TableHead>{t('common.fatherName') || 'Father'}</TableHead>
+                  <TableHead>
+                    <SortHeaderButton field="admissionNo">
+                      {t('common.admissionNo') || 'Admission No'}
+                    </SortHeaderButton>
+                  </TableHead>
+                  <TableHead>
+                    <SortHeaderButton field="studentName">
+                      {t('common.studentName') || 'Student'}
+                    </SortHeaderButton>
+                  </TableHead>
+                  <TableHead>
+                    <SortHeaderButton field="fatherName">
+                      {t('common.fatherName') || 'Father'}
+                    </SortHeaderButton>
+                  </TableHead>
                   <TableHead className="w-40">
-                    {t('examAbsencePenalty.absenceCount') || 'Absences'}
+                    <SortHeaderButton field="absenceCount">
+                      {t('examAbsencePenalty.absenceCount') || 'Absences'}
+                    </SortHeaderButton>
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((row) => (
+                {filteredRows.map((row) => (
                   <TableRow key={row.studentAdmissionId}>
                     <TableCell>{row.admissionNo || '—'}</TableCell>
                     <TableCell>{row.studentName || '—'}</TableCell>
@@ -220,12 +345,14 @@ export function ExamAbsenceEntryPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!isLoading && rows.length === 0 && (
+                {!isLoading && filteredRows.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
                       {!examId
                         ? t('examAbsencePenalty.selectExam') || 'Select exam'
-                        : t('common.noData') || 'No students found'}
+                        : searchTerm.trim()
+                          ? t('examAbsencePenalty.noSearchResults') || 'No students match your search'
+                          : t('common.noData') || 'No students found'}
                     </TableCell>
                   </TableRow>
                 )}

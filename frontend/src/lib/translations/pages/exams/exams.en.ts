@@ -954,6 +954,8 @@ export default {
     filters: "Filters",
     filtersHint: "Choose an exam and optionally filter by exam class.",
     students: "Students",
+    searchStudentsPlaceholder: "Search by name or admission number...",
+    noSearchResults: "No students match your search",
     absenceCount: "Absences",
     absencesSaved: "Absence totals saved",
     absencesSaveFailed: "Failed to save absences",

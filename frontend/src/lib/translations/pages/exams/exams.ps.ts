@@ -957,6 +957,8 @@ export default {
     filters: "فلټرونه",
     filtersHint: "ازموینه وټاکئ او اختیاري د ازموینې صنف فلټر کړئ.",
     students: "زده‌کوونکي",
+    searchStudentsPlaceholder: "د نوم یا د شمولیت شمیرې له مخې لټون...",
+    noSearchResults: "هیڅ زده کوونکی ستاسو لټون سره سمون نه لري",
     absenceCount: "غیرحاضري",
     absencesSaved: "غیرحاضري خوندي شوې",
     absencesSaveFailed: "غیرحاضري خوندي نشوې",

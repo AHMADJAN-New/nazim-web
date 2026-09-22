@@ -954,6 +954,8 @@ export default {
     filters: "فیلترها",
     filtersHint: "یک امتحان انتخاب کنید و در صورت نیاز بر اساس صنف امتحان فیلتر کنید.",
     students: "شاگردان",
+    searchStudentsPlaceholder: "جستجو بر اساس نام یا شماره شمولیت...",
+    noSearchResults: "هیچ شاگردی با جستجوی شما مطابقت ندارد",
     absenceCount: "غیابت‌ها",
     absencesSaved: "غیابت‌ها ذخیره شد",
     absencesSaveFailed: "ذخیره غیابت‌ها ناموفق بود",
