@@ -9,6 +9,7 @@ use App\Models\ExamAbsencePenaltySetting;
 use App\Models\ExamClass;
 use App\Models\ExamStudent;
 use App\Models\ExamStudentAbsence;
+use App\Services\Exams\ExamAbsenceImportXlsxService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,10 @@ use Illuminate\Validation\ValidationException;
 
 class ExamAbsencePenaltyController extends Controller
 {
+    public function __construct(
+        private ExamAbsenceImportXlsxService $absenceImportXlsxService
+    ) {}
+
     public function showSettings(Request $request)
     {
         $context = $this->authorizeContext($request, 'exams.read');
@@ -311,6 +316,109 @@ class ExamAbsencePenaltyController extends Controller
 
             return response()->json([
                 'exam_id' => $exam->id,
+                'rows' => $saved,
+            ]);
+        });
+    }
+
+    public function downloadAbsencesTemplate(Request $request)
+    {
+        $context = $this->authorizeContext($request, 'exams.read');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            return $context;
+        }
+        [$profile, $currentSchoolId] = $context;
+
+        $validated = $request->validate([
+            'exam_id' => ['required', 'uuid'],
+            'exam_class_id' => ['nullable', 'uuid'],
+        ]);
+
+        $exam = $this->findExamOrFail($validated['exam_id'], $profile->organization_id, $currentSchoolId);
+        if ($exam instanceof \Illuminate\Http\JsonResponse) {
+            return $exam;
+        }
+
+        if (! empty($validated['exam_class_id'])) {
+            $this->assertExamClassesBelongToExam(
+                [$validated['exam_class_id']],
+                $exam->id,
+                $profile->organization_id,
+                $currentSchoolId
+            );
+        }
+
+        $xlsx = $this->absenceImportXlsxService->generateTemplate(
+            $profile->organization_id,
+            $currentSchoolId,
+            $exam->id,
+            $validated['exam_class_id'] ?? null,
+            (string) ($exam->name ?? 'exam'),
+        );
+
+        return response($xlsx['content'], 200, [
+            'Content-Type' => $xlsx['mime'],
+            'Content-Disposition' => 'attachment; filename="'.$xlsx['filename'].'"',
+        ]);
+    }
+
+    public function importAbsences(Request $request)
+    {
+        $context = $this->authorizeContext($request, 'exams.update');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            return $context;
+        }
+        [$profile, $currentSchoolId] = $context;
+
+        $validated = $request->validate([
+            'exam_id' => ['required', 'uuid'],
+            'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:10240'],
+        ]);
+
+        $exam = $this->findExamOrFail($validated['exam_id'], $profile->organization_id, $currentSchoolId);
+        if ($exam instanceof \Illuminate\Http\JsonResponse) {
+            return $exam;
+        }
+
+        $path = $request->file('file')?->getRealPath();
+        if (! is_string($path) || $path === '') {
+            throw ValidationException::withMessages([
+                'file' => ['Unable to read the uploaded Excel file.'],
+            ]);
+        }
+
+        $rows = $this->absenceImportXlsxService->parseImportRows(
+            $path,
+            $profile->organization_id,
+            $currentSchoolId,
+            $exam->id,
+        );
+
+        return DB::transaction(function () use ($profile, $currentSchoolId, $exam, $rows) {
+            $saved = [];
+
+            foreach ($rows as $row) {
+                $record = ExamStudentAbsence::updateOrCreate(
+                    [
+                        'exam_id' => $exam->id,
+                        'student_admission_id' => $row['student_admission_id'],
+                    ],
+                    [
+                        'organization_id' => $profile->organization_id,
+                        'school_id' => $currentSchoolId,
+                        'absence_count' => (int) $row['absence_count'],
+                    ]
+                );
+
+                $saved[] = [
+                    'student_admission_id' => $record->student_admission_id,
+                    'absence_count' => (int) $record->absence_count,
+                ];
+            }
+
+            return response()->json([
+                'exam_id' => $exam->id,
+                'updated' => count($saved),
                 'rows' => $saved,
             ]);
         });

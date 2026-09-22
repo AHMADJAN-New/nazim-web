@@ -3779,6 +3779,29 @@ export const examAbsencePenaltyApi = {
     return apiClient.put('/exam-absence-penalty/absences', data);
   },
 
+  downloadAbsencesTemplate: async (params: {
+    exam_id: string;
+    exam_class_id?: string;
+  }) => {
+    return apiClient.requestFile('/exam-absence-penalty/absences/template', {
+      method: 'GET',
+      params,
+    });
+  },
+
+  importAbsences: async (examId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('exam_id', examId);
+    formData.append('file', file);
+    return apiClient.post<{
+      exam_id: string;
+      updated: number;
+      rows: Array<{ student_admission_id: string; absence_count: number }>;
+    }>('/exam-absence-penalty/absences/import', formData, {
+      headers: {},
+    });
+  },
+
   copy: async (data: {
     source_exam_id: string;
     target_exam_id: string;

@@ -934,9 +934,11 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             // Optional absence → mark penalty (per-exam; off by default)
             Route::get('/exam-absence-penalty/settings', [ExamAbsencePenaltyController::class, 'showSettings']);
             Route::get('/exam-absence-penalty/absences', [ExamAbsencePenaltyController::class, 'listAbsences']);
+            Route::get('/exam-absence-penalty/absences/template', [ExamAbsencePenaltyController::class, 'downloadAbsencesTemplate']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::put('/exam-absence-penalty/settings', [ExamAbsencePenaltyController::class, 'updateSettings']);
                 Route::put('/exam-absence-penalty/absences', [ExamAbsencePenaltyController::class, 'upsertAbsences']);
+                Route::post('/exam-absence-penalty/absences/import', [ExamAbsencePenaltyController::class, 'importAbsences']);
                 Route::post('/exam-absence-penalty/copy', [ExamAbsencePenaltyController::class, 'copyFromExam']);
             });
         });

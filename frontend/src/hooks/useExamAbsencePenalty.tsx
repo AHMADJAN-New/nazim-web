@@ -229,3 +229,72 @@ export function useUpsertExamStudentAbsences() {
     },
   });
 }
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function useDownloadExamAbsencesTemplate() {
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (payload: { examId: string; examClassId?: string }) => {
+      const result = await examAbsencePenaltyApi.downloadAbsencesTemplate({
+        exam_id: payload.examId,
+        exam_class_id: payload.examClassId,
+      });
+      downloadBlob(result.blob, result.filename || 'exam-absences.xlsx');
+      return result;
+    },
+    onSuccess: () => {
+      showToast.success(
+        t('examAbsencePenalty.templateDownloaded') || 'Excel template downloaded',
+      );
+    },
+    onError: (error: Error) => {
+      showToast.error(
+        error.message ||
+          t('examAbsencePenalty.templateDownloadFailed') ||
+          'Failed to download template',
+      );
+    },
+  });
+}
+
+export function useImportExamAbsences() {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (payload: { examId: string; file: File }) => {
+      return examAbsencePenaltyApi.importAbsences(payload.examId, payload.file);
+    },
+    onSuccess: (data, variables) => {
+      showToast.success(
+        t('examAbsencePenalty.importSuccess', { count: data.updated }) ||
+          `Imported absences for ${data.updated} student(s)`,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: [
+          'exam-absence-penalty-absences',
+          profile?.organization_id ?? null,
+          profile?.default_school_id ?? null,
+          variables.examId,
+        ],
+      });
+    },
+    onError: (error: Error) => {
+      showToast.error(
+        error.message || t('examAbsencePenalty.importFailed') || 'Failed to import absences',
+      );
+    },
+  });
+}

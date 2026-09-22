@@ -119,6 +119,7 @@ class ExamAbsencePenaltyTest extends TestCase
             'school_id' => $school->id,
             'full_name' => 'Test Student',
             'father_name' => 'Test Father',
+            'admission_no' => 'ADM-1001',
         ]);
 
         $admission = StudentAdmission::create([
@@ -468,5 +469,102 @@ class ExamAbsencePenaltyTest extends TestCase
         $this->assertDatabaseMissing('exam_student_absences', [
             'exam_id' => $targetExam->id,
         ]);
+    }
+
+    public function test_absences_excel_template_download_and_import_by_admission_no(): void
+    {
+        $fx = $this->createFixture();
+
+        $download = $this->actingAsUser($fx['user'])->get(
+            '/api/exam-absence-penalty/absences/template?exam_id='.$fx['exam']->id
+        );
+
+        $download->assertOk();
+        $this->assertStringContainsString(
+            'spreadsheetml',
+            (string) $download->headers->get('content-type')
+        );
+        $this->assertNotEmpty($download->getContent());
+
+        $inputPath = tempnam(sys_get_temp_dir(), 'exam-absence-tpl-');
+        $this->assertNotFalse($inputPath);
+        file_put_contents($inputPath, $download->getContent());
+
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($inputPath);
+        $sheet = $spreadsheet->getSheetByName('Absences');
+        $this->assertNotNull($sheet);
+        $this->assertSame('ADM-1001', (string) $sheet->getCell('B2')->getValue());
+        $this->assertSame('Class 10A', (string) $sheet->getCell('E2')->getValue());
+        $sheet->setCellValue('F2', 7);
+
+        $filledPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.'exam-absence-filled-'.uniqid('', true).'.xlsx';
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($filledPath);
+        @unlink($inputPath);
+
+        $import = $this->actingAsUser($fx['user'])->post(
+            '/api/exam-absence-penalty/absences/import',
+            [
+                'exam_id' => $fx['exam']->id,
+                'file' => new \Illuminate\Http\UploadedFile(
+                    $filledPath,
+                    'absences.xlsx',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    null,
+                    true
+                ),
+            ]
+        );
+
+        $import->assertOk()
+            ->assertJsonPath('exam_id', $fx['exam']->id)
+            ->assertJsonPath('updated', 1);
+
+        $this->assertDatabaseHas('exam_student_absences', [
+            'exam_id' => $fx['exam']->id,
+            'student_admission_id' => $fx['admission']->id,
+            'absence_count' => 7,
+        ]);
+
+        @unlink($filledPath);
+    }
+
+    public function test_absences_excel_import_matches_admission_no_without_meta(): void
+    {
+        $fx = $this->createFixture();
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Absences');
+        $sheet->fromArray(['Admission No', 'Student Name', 'Father Name', 'Absences'], null, 'A1');
+        $sheet->fromArray(['ADM-1001', 'Test Student', 'Test Father', 12], null, 'A2');
+
+        $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'exam-absence-simple-'.uniqid('', true).'.xlsx';
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($path);
+
+        $import = $this->actingAsUser($fx['user'])->post(
+            '/api/exam-absence-penalty/absences/import',
+            [
+                'exam_id' => $fx['exam']->id,
+                'file' => new \Illuminate\Http\UploadedFile(
+                    $path,
+                    'absences.xlsx',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    null,
+                    true
+                ),
+            ]
+        );
+
+        $import->assertOk()->assertJsonPath('updated', 1);
+
+        $this->assertDatabaseHas('exam_student_absences', [
+            'exam_id' => $fx['exam']->id,
+            'student_admission_id' => $fx['admission']->id,
+            'absence_count' => 12,
+        ]);
+
+        @unlink($path);
     }
 }

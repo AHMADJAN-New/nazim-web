@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Search, Upload } from 'lucide-react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,10 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
+  useDownloadExamAbsencesTemplate,
   useExamAbsencePenaltySettings,
   useExamStudentAbsences,
+  useImportExamAbsences,
   useUpsertExamStudentAbsences,
 } from '@/hooks/useExamAbsencePenalty';
 import { useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
@@ -78,6 +80,9 @@ export function ExamAbsenceEntryPage() {
     examClassId === 'all' ? undefined : examClassId,
   );
   const upsert = useUpsertExamStudentAbsences();
+  const downloadTemplate = useDownloadExamAbsencesTemplate();
+  const importAbsences = useImportExamAbsences();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!examId && latestExam?.id) {
@@ -191,6 +196,22 @@ export function ExamAbsenceEntryPage() {
     });
   };
 
+  const handleDownloadTemplate = () => {
+    if (!examId) return;
+    downloadTemplate.mutate({
+      examId,
+      examClassId: examClassId === 'all' ? undefined : examClassId,
+    });
+  };
+
+  const handleImportFile = (file: File | undefined) => {
+    if (!examId || !canUpdate || !file) return;
+    importAbsences.mutate({ examId, file });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-6xl space-y-6 overflow-x-hidden p-4 md:p-6">
       <PageHeader
@@ -272,16 +293,59 @@ export function ExamAbsenceEntryPage() {
                   : `${rows.length} ${t('common.students') || 'students'}`}
             </CardDescription>
           </div>
-          {canUpdate && (
+          <div className="flex flex-wrap items-center gap-2">
             <Button
-              onClick={() => void handleSave()}
-              disabled={!examId || upsert.isPending || rows.length === 0}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-shrink-0"
+              disabled={!examId || downloadTemplate.isPending}
+              onClick={handleDownloadTemplate}
+              aria-label={t('examAbsencePenalty.downloadTemplate') || 'Download Excel template'}
             >
-              {t('common.save') || 'Save'}
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline ms-2">
+                {t('examAbsencePenalty.downloadTemplate') || 'Download template'}
+              </span>
             </Button>
-          )}
+            {canUpdate && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  className="hidden"
+                  onChange={(e) => handleImportFile(e.target.files?.[0])}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0"
+                  disabled={!examId || importAbsences.isPending}
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label={t('examAbsencePenalty.importExcel') || 'Import Excel'}
+                >
+                  <Upload className="h-4 w-4" />
+                  <span className="hidden sm:inline ms-2">
+                    {t('examAbsencePenalty.importExcel') || 'Import Excel'}
+                  </span>
+                </Button>
+                <Button
+                  onClick={() => void handleSave()}
+                  disabled={!examId || upsert.isPending || rows.length === 0}
+                >
+                  {t('common.save') || 'Save'}
+                </Button>
+              </>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {t('examAbsencePenalty.excelHint') ||
+              'Download the Excel template, fill the Absences column, then import. Matching uses admission number (or the template ID column).'}
+          </p>
           <div className="relative max-w-md">
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
