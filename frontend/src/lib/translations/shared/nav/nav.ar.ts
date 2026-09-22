@@ -179,7 +179,7 @@ export default {
     "academic.academicYears.title": "السنوات الأكاديمية",
     examTypes: "أنواع الامتحانات",
     examAbsencePenalty: {
-      absencesNav: "الغيابات السنوية",
+      absencesNav: "غيابات الامتحان",
       settingsNav: "خصم درجات الغياب"
     },
     "grades.management": "إدارة الدرجات",

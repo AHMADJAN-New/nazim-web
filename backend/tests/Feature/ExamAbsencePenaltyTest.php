@@ -8,16 +8,17 @@ use App\Models\ClassModel;
 use App\Models\ClassSubject;
 use App\Models\Exam;
 use App\Models\ExamAbsencePenaltyBand;
+use App\Models\ExamAbsencePenaltyExamClass;
 use App\Models\ExamAbsencePenaltySetting;
 use App\Models\ExamClass;
 use App\Models\ExamResult;
 use App\Models\ExamStudent;
+use App\Models\ExamStudentAbsence;
 use App\Models\ExamSubject;
 use App\Models\Organization;
 use App\Models\Permission;
 use App\Models\SchoolBranding;
 use App\Models\Student;
-use App\Models\StudentAcademicYearAbsence;
 use App\Models\StudentAdmission;
 use App\Models\Subject;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -204,11 +205,16 @@ class ExamAbsencePenaltyTest extends TestCase
         setPermissionsTeamId(null);
     }
 
-    private function enablePenaltyWithExampleBands(Organization $organization, SchoolBranding $school): void
-    {
+    private function enablePenaltyForExam(
+        Organization $organization,
+        SchoolBranding $school,
+        Exam $exam,
+        ?ExamClass $examClass = null,
+    ): void {
         ExamAbsencePenaltySetting::create([
             'organization_id' => $organization->id,
             'school_id' => $school->id,
+            'exam_id' => $exam->id,
             'is_enabled' => true,
         ]);
 
@@ -222,26 +228,42 @@ class ExamAbsencePenaltyTest extends TestCase
             ExamAbsencePenaltyBand::create([
                 'organization_id' => $organization->id,
                 'school_id' => $school->id,
+                'exam_id' => $exam->id,
                 'min_absences' => $band['min'],
                 'max_absences' => $band['max'],
                 'marks_per_absence' => $band['marks'],
                 'sort_order' => $band['order'],
             ]);
         }
+
+        if ($examClass) {
+            ExamAbsencePenaltyExamClass::create([
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+                'exam_id' => $exam->id,
+                'exam_class_id' => $examClass->id,
+            ]);
+        }
     }
 
     /** @test */
-    public function settings_default_to_disabled_and_can_be_updated(): void
+    public function settings_and_absences_crud_for_an_exam(): void
     {
         $fx = $this->createFixture();
 
-        $get = $this->jsonAs($fx['user'], 'GET', '/api/exam-absence-penalty/settings');
+        $get = $this->jsonAs($fx['user'], 'GET', '/api/exam-absence-penalty/settings', [
+            'exam_id' => $fx['exam']->id,
+        ]);
         $get->assertOk()
+            ->assertJsonPath('exam_id', $fx['exam']->id)
             ->assertJsonPath('is_enabled', false)
-            ->assertJsonPath('bands', []);
+            ->assertJsonPath('bands', [])
+            ->assertJsonPath('exam_class_ids', []);
 
         $put = $this->jsonAs($fx['user'], 'PUT', '/api/exam-absence-penalty/settings', [
+            'exam_id' => $fx['exam']->id,
             'is_enabled' => true,
+            'exam_class_ids' => [$fx['examClass']->id],
             'bands' => [
                 ['min_absences' => 0, 'max_absences' => 4, 'marks_per_absence' => 0],
                 ['min_absences' => 5, 'max_absences' => null, 'marks_per_absence' => 2],
@@ -250,22 +272,20 @@ class ExamAbsencePenaltyTest extends TestCase
 
         $put->assertOk()
             ->assertJsonPath('is_enabled', true)
-            ->assertJsonCount(2, 'bands');
+            ->assertJsonCount(2, 'bands')
+            ->assertJsonPath('exam_class_ids.0', $fx['examClass']->id);
 
         $this->assertDatabaseHas('exam_absence_penalty_settings', [
-            'organization_id' => $fx['organization']->id,
-            'school_id' => $fx['school']->id,
+            'exam_id' => $fx['exam']->id,
             'is_enabled' => true,
         ]);
-    }
+        $this->assertDatabaseHas('exam_absence_penalty_exam_classes', [
+            'exam_id' => $fx['exam']->id,
+            'exam_class_id' => $fx['examClass']->id,
+        ]);
 
-    /** @test */
-    public function absences_can_be_upserted_for_academic_year(): void
-    {
-        $fx = $this->createFixture();
-
-        $put = $this->jsonAs($fx['user'], 'PUT', '/api/exam-absence-penalty/absences', [
-            'academic_year_id' => $fx['academicYear']->id,
+        $absencesPut = $this->jsonAs($fx['user'], 'PUT', '/api/exam-absence-penalty/absences', [
+            'exam_id' => $fx['exam']->id,
             'rows' => [
                 [
                     'student_admission_id' => $fx['admission']->id,
@@ -274,15 +294,16 @@ class ExamAbsencePenaltyTest extends TestCase
             ],
         ]);
 
-        $put->assertOk();
-        $this->assertDatabaseHas('student_academic_year_absences', [
+        $absencesPut->assertOk();
+        $this->assertDatabaseHas('exam_student_absences', [
+            'exam_id' => $fx['exam']->id,
             'student_admission_id' => $fx['admission']->id,
-            'academic_year_id' => $fx['academicYear']->id,
             'absence_count' => 12,
         ]);
 
         $list = $this->jsonAs($fx['user'], 'GET', '/api/exam-absence-penalty/absences', [
-            'academic_year_id' => $fx['academicYear']->id,
+            'exam_id' => $fx['exam']->id,
+            'exam_class_id' => $fx['examClass']->id,
         ]);
 
         $list->assertOk()
@@ -310,15 +331,15 @@ class ExamAbsencePenaltyTest extends TestCase
     }
 
     /** @test */
-    public function consolidated_report_applies_progressive_penalty_when_enabled(): void
+    public function consolidated_report_applies_progressive_penalty_when_enabled_and_class_selected(): void
     {
         $fx = $this->createFixture();
-        $this->enablePenaltyWithExampleBands($fx['organization'], $fx['school']);
+        $this->enablePenaltyForExam($fx['organization'], $fx['school'], $fx['exam'], $fx['examClass']);
 
-        StudentAcademicYearAbsence::create([
+        ExamStudentAbsence::create([
             'organization_id' => $fx['organization']->id,
             'school_id' => $fx['school']->id,
-            'academic_year_id' => $fx['academicYear']->id,
+            'exam_id' => $fx['exam']->id,
             'student_admission_id' => $fx['admission']->id,
             'absence_count' => 12,
         ]);
@@ -340,11 +361,39 @@ class ExamAbsencePenaltyTest extends TestCase
         $this->assertSame(60.0, (float) $student['total_obtained']);
         $this->assertSame(60.0, (float) $student['percentage']);
 
-        // Stored marks must remain untouched
         $this->assertDatabaseHas('exam_results', [
             'exam_student_id' => $fx['examStudent']->id,
             'marks_obtained' => 90,
         ]);
+    }
+
+    /** @test */
+    public function consolidated_report_does_not_cut_when_exam_class_not_selected(): void
+    {
+        $fx = $this->createFixture();
+        // Enabled with bands, but no exam_class selected → no cut
+        $this->enablePenaltyForExam($fx['organization'], $fx['school'], $fx['exam'], null);
+
+        ExamStudentAbsence::create([
+            'organization_id' => $fx['organization']->id,
+            'school_id' => $fx['school']->id,
+            'exam_id' => $fx['exam']->id,
+            'student_admission_id' => $fx['admission']->id,
+            'absence_count' => 12,
+        ]);
+
+        $response = $this->jsonAs(
+            $fx['user'],
+            'GET',
+            "/api/exams/{$fx['exam']->id}/reports/classes/{$fx['examClass']->id}/consolidated"
+        );
+
+        $response->assertOk();
+        $this->assertFalse((bool) $response->json('absence_penalty_enabled'));
+
+        $student = collect($response->json('students'))->first();
+        $this->assertSame(90.0, (float) $student['total_obtained']);
+        $this->assertArrayNotHasKey('marks_cut', $student);
     }
 
     /** @test */
@@ -355,7 +404,7 @@ class ExamAbsencePenaltyTest extends TestCase
             'organization_id' => $fx['organization']->id,
         ]);
 
-        $this->enablePenaltyWithExampleBands($fx['organization'], $fx['school']);
+        $this->enablePenaltyForExam($fx['organization'], $fx['school'], $fx['exam'], $fx['examClass']);
 
         $otherUser = $this->createUser(
             [],
@@ -367,9 +416,57 @@ class ExamAbsencePenaltyTest extends TestCase
         );
         $this->grantPermissions($otherUser, $fx['organization'], ['exams.read', 'exams.update']);
 
-        $response = $this->jsonAs($otherUser, 'GET', '/api/exam-absence-penalty/settings');
+        // Other school cannot see this exam (different school) — settings for a non-owned exam 404
+        $response = $this->jsonAs($otherUser, 'GET', '/api/exam-absence-penalty/settings', [
+            'exam_id' => $fx['exam']->id,
+        ]);
+        $response->assertNotFound();
+    }
+
+    /** @test */
+    public function copy_from_another_exam_copies_settings_and_maps_classes(): void
+    {
+        $fx = $this->createFixture();
+        $this->enablePenaltyForExam($fx['organization'], $fx['school'], $fx['exam'], $fx['examClass']);
+
+        $targetExam = Exam::factory()->create([
+            'organization_id' => $fx['organization']->id,
+            'school_id' => $fx['school']->id,
+            'academic_year_id' => $fx['academicYear']->id,
+            'start_date' => now()->addDays(20)->toDateString(),
+            'end_date' => now()->addDays(30)->toDateString(),
+            'status' => Exam::STATUS_SCHEDULED,
+        ]);
+
+        $targetExamClass = ExamClass::create([
+            'exam_id' => $targetExam->id,
+            'class_academic_year_id' => $fx['examClass']->class_academic_year_id,
+            'organization_id' => $fx['organization']->id,
+            'school_id' => $fx['school']->id,
+        ]);
+
+        ExamStudentAbsence::create([
+            'organization_id' => $fx['organization']->id,
+            'school_id' => $fx['school']->id,
+            'exam_id' => $fx['exam']->id,
+            'student_admission_id' => $fx['admission']->id,
+            'absence_count' => 12,
+        ]);
+
+        $response = $this->jsonAs($fx['user'], 'POST', '/api/exam-absence-penalty/copy', [
+            'source_exam_id' => $fx['exam']->id,
+            'target_exam_id' => $targetExam->id,
+            'copy_exam_classes' => true,
+        ]);
+
         $response->assertOk()
-            ->assertJsonPath('is_enabled', false)
-            ->assertJsonPath('bands', []);
+            ->assertJsonPath('exam_id', $targetExam->id)
+            ->assertJsonPath('is_enabled', true)
+            ->assertJsonCount(3, 'bands')
+            ->assertJsonPath('exam_class_ids.0', $targetExamClass->id);
+
+        $this->assertDatabaseMissing('exam_student_absences', [
+            'exam_id' => $targetExam->id,
+        ]);
     }
 }

@@ -27,6 +27,7 @@ class StudentHistoryService
     public function __construct(
         private AbsenceMarkPenaltyCalculator $absenceMarkPenaltyCalculator
     ) {}
+
     /**
      * Get complete student history
      */
@@ -393,9 +394,10 @@ class StudentHistoryService
             })->toArray();
 
             $schoolId = (string) ($examStudent->school_id ?? $examStudent->exam?->school_id ?? '');
-            $academicYearId = (string) ($examStudent->exam?->academic_year_id ?? '');
+            $examId = (string) ($examStudent->exam_id ?? $examStudent->exam?->id ?? '');
+            $examClassId = $examStudent->exam_class_id ? (string) $examStudent->exam_class_id : null;
 
-            if ($schoolId === '' || $academicYearId === '') {
+            if ($schoolId === '' || $examId === '') {
                 $penalty = [
                     'enabled' => false,
                     'absence_count' => 0,
@@ -410,7 +412,8 @@ class StudentHistoryService
                 $penalty = $this->absenceMarkPenaltyCalculator->applyForAdmission(
                     organizationId: $organizationId,
                     schoolId: $schoolId,
-                    academicYearId: $academicYearId,
+                    examId: $examId,
+                    examClassId: $examClassId,
                     studentAdmissionId: $examStudent->student_admission_id,
                     rawTotal: (float) $examMarks,
                     totalMaximum: (float) $examMaxMarks,

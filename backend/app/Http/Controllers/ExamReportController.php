@@ -9,8 +9,8 @@ use App\Models\ExamResult;
 use App\Models\ExamStudent;
 use App\Models\ExamSubject;
 use App\Models\StudentAdmission;
-use App\Services\ExamSubjectScheduleService;
 use App\Services\Exams\AbsenceMarkPenaltyCalculator;
+use App\Services\ExamSubjectScheduleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -500,7 +500,8 @@ class ExamReportController extends Controller
         $penaltyContext = $this->absenceMarkPenaltyCalculator->loadContext(
             $profile->organization_id,
             $currentSchoolId,
-            (string) $exam->academic_year_id,
+            (string) $exam->id,
+            (string) $classId,
             $examStudents->pluck('student_admission_id')->all()
         );
 
@@ -746,7 +747,8 @@ class ExamReportController extends Controller
         $penalty = $this->absenceMarkPenaltyCalculator->applyForAdmission(
             organizationId: $profile->organization_id,
             schoolId: $currentSchoolId,
-            academicYearId: (string) $exam->academic_year_id,
+            examId: (string) $exam->id,
+            examClassId: $examStudent->exam_class_id ? (string) $examStudent->exam_class_id : null,
             studentAdmissionId: $examStudent->student_admission_id,
             rawTotal: (float) $totalObtained,
             totalMaximum: (float) $totalMax,
@@ -874,7 +876,8 @@ class ExamReportController extends Controller
         $penaltyContext = $this->absenceMarkPenaltyCalculator->loadContext(
             $profile->organization_id,
             $currentSchoolId,
-            (string) $exam->academic_year_id,
+            (string) $exam->id,
+            (string) $classId,
             $examStudents->pluck('student_admission_id')->all()
         );
 

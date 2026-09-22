@@ -931,12 +931,13 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/exams/{exam}/reports/classes/{class}/consolidated', [ExamReportController::class, 'consolidatedClassReport']);
             Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
 
-            // Optional absence → mark penalty (school-scoped; off by default)
+            // Optional absence → mark penalty (per-exam; off by default)
             Route::get('/exam-absence-penalty/settings', [ExamAbsencePenaltyController::class, 'showSettings']);
             Route::get('/exam-absence-penalty/absences', [ExamAbsencePenaltyController::class, 'listAbsences']);
             Route::middleware(['subscription:write'])->group(function () {
                 Route::put('/exam-absence-penalty/settings', [ExamAbsencePenaltyController::class, 'updateSettings']);
                 Route::put('/exam-absence-penalty/absences', [ExamAbsencePenaltyController::class, 'upsertAbsences']);
+                Route::post('/exam-absence-penalty/copy', [ExamAbsencePenaltyController::class, 'copyFromExam']);
             });
         });
 

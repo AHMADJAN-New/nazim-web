@@ -7,13 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-class StudentAcademicYearAbsence extends Model
+class ExamStudentAbsence extends Model
 {
     use HasFactory;
 
     protected $connection = 'pgsql';
 
-    protected $table = 'student_academic_year_absences';
+    protected $table = 'exam_student_absences';
 
     protected $primaryKey = 'id';
 
@@ -25,7 +25,7 @@ class StudentAcademicYearAbsence extends Model
         'id',
         'organization_id',
         'school_id',
-        'academic_year_id',
+        'exam_id',
         'student_admission_id',
         'absence_count',
     ];
@@ -60,9 +60,9 @@ class StudentAcademicYearAbsence extends Model
         return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
-    public function academicYear(): BelongsTo
+    public function exam(): BelongsTo
     {
-        return $this->belongsTo(AcademicYear::class, 'academic_year_id');
+        return $this->belongsTo(Exam::class, 'exam_id');
     }
 
     public function studentAdmission(): BelongsTo

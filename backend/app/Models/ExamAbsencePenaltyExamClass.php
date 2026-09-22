@@ -7,13 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-class ExamAbsencePenaltyBand extends Model
+class ExamAbsencePenaltyExamClass extends Model
 {
     use HasFactory;
 
     protected $connection = 'pgsql';
 
-    protected $table = 'exam_absence_penalty_bands';
+    protected $table = 'exam_absence_penalty_exam_classes';
 
     protected $primaryKey = 'id';
 
@@ -26,19 +26,12 @@ class ExamAbsencePenaltyBand extends Model
         'organization_id',
         'school_id',
         'exam_id',
-        'min_absences',
-        'max_absences',
-        'marks_per_absence',
-        'sort_order',
+        'exam_class_id',
     ];
 
     protected function casts(): array
     {
         return [
-            'min_absences' => 'integer',
-            'max_absences' => 'integer',
-            'marks_per_absence' => 'decimal:2',
-            'sort_order' => 'integer',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -70,19 +63,8 @@ class ExamAbsencePenaltyBand extends Model
         return $this->belongsTo(Exam::class, 'exam_id');
     }
 
-    /**
-     * Whether absence number N (1-based count position) falls in this band.
-     */
-    public function containsAbsenceNumber(int $absenceNumber): bool
+    public function examClass(): BelongsTo
     {
-        if ($absenceNumber < $this->min_absences) {
-            return false;
-        }
-
-        if ($this->max_absences === null) {
-            return true;
-        }
-
-        return $absenceNumber <= $this->max_absences;
+        return $this->belongsTo(ExamClass::class, 'exam_class_id');
     }
 }

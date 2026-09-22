@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -13,48 +14,57 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useClassAcademicYears } from '@/hooks/useClasses';
 import {
   useExamAbsencePenaltySettings,
-  useStudentAcademicYearAbsences,
-  useUpsertStudentAcademicYearAbsences,
+  useExamStudentAbsences,
+  useUpsertExamStudentAbsences,
 } from '@/hooks/useExamAbsencePenalty';
+import { useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
-import { Navigate } from 'react-router-dom';
+
+function examClassLabel(examClass: {
+  id: string;
+  classAcademicYear?: { sectionName?: string | null; class?: { name?: string | null } | null } | null;
+}): string {
+  const className =
+    examClass.classAcademicYear?.class?.name ||
+    examClass.classAcademicYear?.sectionName ||
+    examClass.id;
+  const sectionName = examClass.classAcademicYear?.sectionName;
+  if (sectionName && !String(className).includes(String(sectionName))) {
+    return `${className} — ${sectionName}`;
+  }
+  return String(className);
+}
 
 export function ExamAbsenceEntryPage() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
   const canUpdate = useHasPermission('exams.update');
   const canRead = useHasPermission('exams.read');
-  const { data: settings } = useExamAbsencePenaltySettings();
-  const { data: currentYear } = useCurrentAcademicYear(profile?.organization_id);
-  const { data: academicYears = [] } = useAcademicYears(profile?.organization_id);
 
-  const [academicYearId, setAcademicYearId] = useState('');
-  const [classAcademicYearId, setClassAcademicYearId] = useState<string>('all');
+  const { data: exams = [] } = useExams(profile?.organization_id);
+  const latestExam = useLatestExamFromCurrentYear(profile?.organization_id);
+
+  const [examId, setExamId] = useState('');
+  const [examClassId, setExamClassId] = useState<string>('all');
   const [draftCounts, setDraftCounts] = useState<Record<string, number>>({});
 
-  const { data: classYears = [] } = useClassAcademicYears(
-    academicYearId || undefined,
-    profile?.organization_id,
+  const { data: settings } = useExamAbsencePenaltySettings(examId || undefined);
+  const { data: examClasses = [] } = useExamClasses(examId || undefined);
+  const { data: rows = [], isLoading } = useExamStudentAbsences(
+    examId || undefined,
+    examClassId === 'all' ? undefined : examClassId,
   );
-
-  const { data: rows = [], isLoading } = useStudentAcademicYearAbsences(
-    academicYearId || undefined,
-    classAcademicYearId === 'all' ? undefined : classAcademicYearId,
-  );
-
-  const upsert = useUpsertStudentAcademicYearAbsences();
+  const upsert = useUpsertExamStudentAbsences();
 
   useEffect(() => {
-    if (currentYear?.id && !academicYearId) {
-      setAcademicYearId(currentYear.id);
+    if (!examId && latestExam?.id) {
+      setExamId(latestExam.id);
     }
-  }, [currentYear?.id, academicYearId]);
+  }, [examId, latestExam?.id]);
 
   useEffect(() => {
     const next: Record<string, number> = {};
@@ -66,11 +76,11 @@ export function ExamAbsenceEntryPage() {
 
   const classOptions = useMemo(
     () =>
-      classYears.map((cay) => ({
-        id: cay.id,
-        label: [cay.class?.name, cay.sectionName].filter(Boolean).join(' - ') || cay.id,
+      examClasses.map((examClass) => ({
+        id: examClass.id,
+        label: examClassLabel(examClass),
       })),
-    [classYears],
+    [examClasses],
   );
 
   if (!canRead) {
@@ -78,9 +88,9 @@ export function ExamAbsenceEntryPage() {
   }
 
   const handleSave = async () => {
-    if (!academicYearId) return;
+    if (!examId || !canUpdate) return;
     await upsert.mutateAsync({
-      academicYearId,
+      examId,
       rows: Object.entries(draftCounts).map(([studentAdmissionId, absenceCount]) => ({
         studentAdmissionId,
         absenceCount: Math.max(0, Number(absenceCount) || 0),
@@ -91,18 +101,18 @@ export function ExamAbsenceEntryPage() {
   return (
     <div className="container mx-auto max-w-6xl space-y-6 overflow-x-hidden p-4 md:p-6">
       <PageHeader
-        title={t('examAbsencePenalty.absencesTitle') || 'Yearly Absences'}
+        title={t('examAbsencePenalty.absencesTitle') || 'Exam Absences'}
         description={
           t('examAbsencePenalty.absencesDescription') ||
-          'Enter total absences from paper registers for the academic year. Used only when absence mark penalty is enabled.'
+          'Enter absence totals for this exam\'s period. Used when absence mark penalty is enabled for the exam.'
         }
       />
 
-      {!settings?.isEnabled && (
+      {examId && settings && !settings.isEnabled && (
         <Card>
           <CardContent className="pt-6 text-sm text-muted-foreground">
             {t('examAbsencePenalty.disabledHint') ||
-              'Absence mark penalty is currently off for this school. Enable it under Settings → Absence Mark Penalty.'}
+              'Absence mark penalty is currently off for this exam. You can still enter absences; enable the feature under Settings → Absence Mark Penalty.'}
           </CardContent>
         </Card>
       )}
@@ -111,31 +121,35 @@ export function ExamAbsenceEntryPage() {
         <CardHeader>
           <CardTitle>{t('examAbsencePenalty.filters') || 'Filters'}</CardTitle>
           <CardDescription>
-            {t('examAbsencePenalty.filtersHint') || 'Choose academic year and optionally a class.'}
+            {t('examAbsencePenalty.filtersHint') ||
+              'Choose an exam and optionally filter by exam class.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 grid-cols-1 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>{t('common.academicYear') || 'Academic Year'}</Label>
-            <Select value={academicYearId} onValueChange={(value) => {
-              setAcademicYearId(value);
-              setClassAcademicYearId('all');
-            }}>
+            <Label>{t('examAbsencePenalty.selectExam') || 'Select exam'}</Label>
+            <Select
+              value={examId}
+              onValueChange={(value) => {
+                setExamId(value);
+                setExamClassId('all');
+              }}
+            >
               <SelectTrigger>
-                <SelectValue placeholder={t('common.select') || 'Select'} />
+                <SelectValue placeholder={t('examAbsencePenalty.selectExam') || 'Select exam'} />
               </SelectTrigger>
               <SelectContent>
-                {academicYears.map((year: { id: string; name: string }) => (
-                  <SelectItem key={year.id} value={year.id}>
-                    {year.name}
+                {exams.map((exam) => (
+                  <SelectItem key={exam.id} value={exam.id}>
+                    {exam.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t('common.class') || 'Class'}</Label>
-            <Select value={classAcademicYearId} onValueChange={setClassAcademicYearId}>
+            <Label>{t('examAbsencePenalty.examClass') || 'Exam class'}</Label>
+            <Select value={examClassId} onValueChange={setExamClassId} disabled={!examId}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -163,7 +177,10 @@ export function ExamAbsenceEntryPage() {
             </CardDescription>
           </div>
           {canUpdate && (
-            <Button onClick={handleSave} disabled={!academicYearId || upsert.isPending || rows.length === 0}>
+            <Button
+              onClick={() => void handleSave()}
+              disabled={!examId || upsert.isPending || rows.length === 0}
+            >
               {t('common.save') || 'Save'}
             </Button>
           )}
@@ -176,7 +193,9 @@ export function ExamAbsenceEntryPage() {
                   <TableHead>{t('common.admissionNo') || 'Admission No'}</TableHead>
                   <TableHead>{t('common.studentName') || 'Student'}</TableHead>
                   <TableHead>{t('common.fatherName') || 'Father'}</TableHead>
-                  <TableHead className="w-40">{t('examAbsencePenalty.absenceCount') || 'Absences'}</TableHead>
+                  <TableHead className="w-40">
+                    {t('examAbsencePenalty.absenceCount') || 'Absences'}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -204,7 +223,9 @@ export function ExamAbsenceEntryPage() {
                 {!isLoading && rows.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      {t('common.noData') || 'No students found'}
+                      {!examId
+                        ? t('examAbsencePenalty.selectExam') || 'Select exam'
+                        : t('common.noData') || 'No students found'}
                     </TableCell>
                   </TableRow>
                 )}

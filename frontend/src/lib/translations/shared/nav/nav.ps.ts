@@ -205,7 +205,7 @@ export default {
     "academic.academicYears.title": "تعلیمي کالونه",
     examTypes: "د ازموینو ډولونه",
     examAbsencePenalty: {
-      absencesNav: "کلنی غیرحاضري",
+      absencesNav: "د ازموینې غیرحاضري",
       settingsNav: "د غیرحاضري نمرو کمښت"
     },
     "grades.management": "د نمرو  مدیریت",

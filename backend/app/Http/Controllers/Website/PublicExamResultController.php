@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Website;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
 use App\Models\Exam;
-use App\Models\ExamResult;
 use App\Models\ExamStudent;
 use App\Models\Student;
 use App\Services\Exams\AbsenceMarkPenaltyCalculator;
@@ -17,6 +16,7 @@ class PublicExamResultController extends Controller
     public function __construct(
         private AbsenceMarkPenaltyCalculator $absenceMarkPenaltyCalculator
     ) {}
+
     public function options(Request $request)
     {
         $schoolId = $request->attributes->get('school_id');
@@ -97,7 +97,7 @@ class PublicExamResultController extends Controller
                 })
                 ->first();
 
-            if (!$examStudent) {
+            if (! $examStudent) {
                 continue;
             }
 
@@ -163,7 +163,8 @@ class PublicExamResultController extends Controller
             $penalty = $this->absenceMarkPenaltyCalculator->applyForAdmission(
                 organizationId: (string) $exam->organization_id,
                 schoolId: (string) $schoolId,
-                academicYearId: (string) $exam->academic_year_id,
+                examId: (string) $exam->id,
+                examClassId: $examStudent->exam_class_id ? (string) $examStudent->exam_class_id : null,
                 studentAdmissionId: $examStudent->student_admission_id,
                 rawTotal: (float) $totalObtained,
                 totalMaximum: (float) $totalMaxMarks,
@@ -175,6 +176,7 @@ class PublicExamResultController extends Controller
                 }
                 $passMarks = $result->pass_marks ?? 0;
                 $obtained = $result->marks_obtained ?? 0;
+
                 return $obtained >= $passMarks;
             });
 
@@ -207,7 +209,7 @@ class PublicExamResultController extends Controller
         // We need to return the pagination metadata along with the *processed* results
         // The $students object contains the pagination info.
         // We can use setCollection to replace the raw student list with our processed results,
-        // BUT strict typings/structure might differ. 
+        // BUT strict typings/structure might differ.
         // Safer to construct response normally.
 
         $customPagination = [

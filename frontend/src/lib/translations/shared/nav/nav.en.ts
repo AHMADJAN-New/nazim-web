@@ -205,7 +205,7 @@ export default {
     "academic.academicYears.title": "Academic Years",
     examTypes: "Exam Types",
     examAbsencePenalty: {
-      absencesNav: "Yearly Absences",
+      absencesNav: "Exam Absences",
       settingsNav: "Absence Mark Penalty"
     },
     "grades.management": "Grades Management",

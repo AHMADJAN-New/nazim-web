@@ -3,8 +3,9 @@
 namespace App\Services\Exams;
 
 use App\Models\ExamAbsencePenaltyBand;
+use App\Models\ExamAbsencePenaltyExamClass;
 use App\Models\ExamAbsencePenaltySetting;
-use App\Models\StudentAcademicYearAbsence;
+use App\Models\ExamStudentAbsence;
 use Illuminate\Support\Collection;
 
 class AbsenceMarkPenaltyCalculator
@@ -61,7 +62,7 @@ class AbsenceMarkPenaltyCalculator
     }
 
     /**
-     * Load school settings/bands/absence counts and apply penalty for one student admission.
+     * Load exam settings/bands/absence counts and apply penalty for one student admission.
      *
      * @return array{
      *   enabled: bool,
@@ -75,45 +76,31 @@ class AbsenceMarkPenaltyCalculator
     public function applyForAdmission(
         string $organizationId,
         string $schoolId,
-        string $academicYearId,
+        string $examId,
+        ?string $examClassId,
         ?string $studentAdmissionId,
         float $rawTotal,
         float $totalMaximum,
-        ?ExamAbsencePenaltySetting $setting = null,
-        ?Collection $bands = null,
-        ?int $absenceCount = null,
+        ?array $context = null,
     ): array {
-        $setting ??= ExamAbsencePenaltySetting::query()
-            ->where('organization_id', $organizationId)
-            ->where('school_id', $schoolId)
-            ->first();
+        $context ??= $this->loadContext(
+            $organizationId,
+            $schoolId,
+            $examId,
+            $examClassId,
+            $studentAdmissionId ? [$studentAdmissionId] : []
+        );
 
-        $enabled = (bool) ($setting?->is_enabled);
-
-        if (! $enabled) {
+        if (! $context['enabled']) {
             return $this->passthrough($rawTotal, $totalMaximum);
         }
 
-        $bands ??= ExamAbsencePenaltyBand::query()
-            ->where('organization_id', $organizationId)
-            ->where('school_id', $schoolId)
-            ->orderBy('sort_order')
-            ->orderBy('min_absences')
-            ->get();
-
-        if ($absenceCount === null) {
-            $absenceCount = 0;
-            if ($studentAdmissionId) {
-                $absenceCount = (int) (StudentAcademicYearAbsence::query()
-                    ->where('organization_id', $organizationId)
-                    ->where('school_id', $schoolId)
-                    ->where('academic_year_id', $academicYearId)
-                    ->where('student_admission_id', $studentAdmissionId)
-                    ->value('absence_count') ?? 0);
-            }
+        $absenceCount = 0;
+        if ($studentAdmissionId) {
+            $absenceCount = (int) ($context['absences_by_admission'][$studentAdmissionId] ?? 0);
         }
 
-        $bandPayload = $bands->map(fn (ExamAbsencePenaltyBand $band) => [
+        $bandPayload = $context['bands']->map(fn (ExamAbsencePenaltyBand $band) => [
             'min_absences' => (int) $band->min_absences,
             'max_absences' => $band->max_absences === null ? null : (int) $band->max_absences,
             'marks_per_absence' => (float) $band->marks_per_absence,
@@ -129,39 +116,61 @@ class AbsenceMarkPenaltyCalculator
     }
 
     /**
-     * Prefetch setting, bands, and absence map for a batch of admissions (report hot path).
+     * Prefetch setting, bands, and absence map for a report hot path.
+     *
+     * Enabled only when the exam setting is on AND the report's exam_class is
+     * in the selected list. An empty selected list means no cut (not enabled).
      *
      * @param  array<int, string|null>  $studentAdmissionIds
      * @return array{
      *   enabled: bool,
      *   bands: Collection<int, ExamAbsencePenaltyBand>,
-     *   absences_by_admission: array<string, int>
+     *   absences_by_admission: array<string, int>,
+     *   selected_exam_class_ids: list<string>
      * }
      */
     public function loadContext(
         string $organizationId,
         string $schoolId,
-        string $academicYearId,
-        array $studentAdmissionIds,
+        string $examId,
+        ?string $examClassId = null,
+        array $studentAdmissionIds = [],
     ): array {
         $setting = ExamAbsencePenaltySetting::query()
             ->where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
+            ->where('exam_id', $examId)
             ->first();
 
-        $enabled = (bool) ($setting?->is_enabled);
+        $selectedExamClassIds = ExamAbsencePenaltyExamClass::query()
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->where('exam_id', $examId)
+            ->pluck('exam_class_id')
+            ->map(fn ($id) => (string) $id)
+            ->values()
+            ->all();
+
+        $settingEnabled = (bool) ($setting?->is_enabled);
+        $hasSelectedClasses = $selectedExamClassIds !== [];
+        $classMatches = $examClassId !== null && in_array($examClassId, $selectedExamClassIds, true);
+
+        // Empty selection = no cut. Missing exam_class_id when classes are selected = no cut.
+        $enabled = $settingEnabled && $hasSelectedClasses && $classMatches;
 
         if (! $enabled) {
             return [
                 'enabled' => false,
                 'bands' => collect(),
                 'absences_by_admission' => [],
+                'selected_exam_class_ids' => $selectedExamClassIds,
             ];
         }
 
         $bands = ExamAbsencePenaltyBand::query()
             ->where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
+            ->where('exam_id', $examId)
             ->orderBy('sort_order')
             ->orderBy('min_absences')
             ->get();
@@ -170,10 +179,10 @@ class AbsenceMarkPenaltyCalculator
         $absencesByAdmission = [];
 
         if ($ids !== []) {
-            $absencesByAdmission = StudentAcademicYearAbsence::query()
+            $absencesByAdmission = ExamStudentAbsence::query()
                 ->where('organization_id', $organizationId)
                 ->where('school_id', $schoolId)
-                ->where('academic_year_id', $academicYearId)
+                ->where('exam_id', $examId)
                 ->whereIn('student_admission_id', $ids)
                 ->pluck('absence_count', 'student_admission_id')
                 ->map(fn ($count) => (int) $count)
@@ -184,6 +193,7 @@ class AbsenceMarkPenaltyCalculator
             'enabled' => true,
             'bands' => $bands,
             'absences_by_admission' => $absencesByAdmission,
+            'selected_exam_class_ids' => $selectedExamClassIds,
         ];
     }
 

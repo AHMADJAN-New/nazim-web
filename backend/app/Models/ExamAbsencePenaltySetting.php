@@ -26,6 +26,7 @@ class ExamAbsencePenaltySetting extends Model
         'id',
         'organization_id',
         'school_id',
+        'exam_id',
         'is_enabled',
     ];
 
@@ -59,22 +60,20 @@ class ExamAbsencePenaltySetting extends Model
         return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
-    public function bands(): HasMany
+    public function exam(): BelongsTo
     {
-        return $this->hasMany(ExamAbsencePenaltyBand::class, 'school_id', 'school_id')
-            ->orderBy('sort_order');
+        return $this->belongsTo(Exam::class, 'exam_id');
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, ExamAbsencePenaltyBand>
-     */
-    public function bandsForSchool()
+    public function bands(): HasMany
     {
-        return ExamAbsencePenaltyBand::query()
-            ->where('organization_id', $this->organization_id)
-            ->where('school_id', $this->school_id)
+        return $this->hasMany(ExamAbsencePenaltyBand::class, 'exam_id', 'exam_id')
             ->orderBy('sort_order')
-            ->orderBy('min_absences')
-            ->get();
+            ->orderBy('min_absences');
+    }
+
+    public function examClasses(): HasMany
+    {
+        return $this->hasMany(ExamAbsencePenaltyExamClass::class, 'exam_id', 'exam_id');
     }
 }

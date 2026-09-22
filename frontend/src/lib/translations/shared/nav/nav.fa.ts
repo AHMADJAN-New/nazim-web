@@ -204,7 +204,7 @@ export default {
     "academic.academicYears.title": "سال‌های تعلیمی",
     examTypes: "انواع امتحان",
     examAbsencePenalty: {
-      absencesNav: "غیابت‌های سالانه",
+      absencesNav: "غیابت‌های امتحان",
       settingsNav: "کسر نمره غیابت"
     },
     "grades.management": "مدیریت درجات",

@@ -1086,7 +1086,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: Medal,
           }] : []),
           ...(hasExamsPermission ? [{
-            title: "Yearly Absences",
+            title: "Exam Absences",
             titleKey: "examAbsencePenalty.absencesNav",
             url: "/exams/absence-totals",
             icon: ListChecks,
