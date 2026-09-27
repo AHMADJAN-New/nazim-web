@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LibraryBook;
 use App\Models\LibraryCopy;
 use App\Services\ActivityLogService;
+use App\Services\Library\LibraryBookNumberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -13,7 +14,8 @@ use Illuminate\Validation\Rule;
 class LibraryBookController extends Controller
 {
     public function __construct(
-        private ActivityLogService $activityLogService
+        private ActivityLogService $activityLogService,
+        private LibraryBookNumberService $bookNumbers
     ) {}
 
     public function index(Request $request)
@@ -113,22 +115,29 @@ class LibraryBookController extends Controller
             unset($data['category_id']);
         }
 
-        $book = LibraryBook::create(array_merge($data, [
-            'organization_id' => $profile->organization_id,
-            'school_id' => $currentSchoolId,
-            'price' => $data['price'] ?? 0,
-            'default_loan_days' => $data['default_loan_days'] ?? 30,
-        ]));
-
         $copiesToCreate = (int) ($data['initial_copies'] ?? 0);
-        for ($i = 0; $i < $copiesToCreate; $i++) {
-            LibraryCopy::create([
-                'book_id' => $book->id,
-                'copy_code' => $book->isbn ? $book->isbn.'-'.($i + 1) : null,
-                'status' => 'available',
+        unset($data['initial_copies'], $data['book_number']);
+
+        $book = DB::transaction(function () use ($data, $profile, $currentSchoolId, $copiesToCreate) {
+            $book = LibraryBook::create(array_merge($data, [
+                'organization_id' => $profile->organization_id,
                 'school_id' => $currentSchoolId,
-            ]);
-        }
+                'book_number' => $this->bookNumbers->lockAndNext($profile->organization_id, $currentSchoolId),
+                'price' => $data['price'] ?? 0,
+                'default_loan_days' => $data['default_loan_days'] ?? 30,
+            ]));
+
+            for ($i = 0; $i < $copiesToCreate; $i++) {
+                LibraryCopy::create([
+                    'book_id' => $book->id,
+                    'copy_code' => $book->isbn ? $book->isbn.'-'.($i + 1) : null,
+                    'status' => 'available',
+                    'school_id' => $currentSchoolId,
+                ]);
+            }
+
+            return $book;
+        });
 
         // Log library book creation
         try {
@@ -153,6 +162,30 @@ class LibraryBookController extends Controller
         return response()->json($book->load(['category', 'currency', 'financeAccount.currency'])->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
             $builder->where('status', 'available');
         }]));
+    }
+
+    public function nextNumber(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile || ! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (! $user->hasPermissionTo('library_books.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            // Allow if permission not present during migration
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        return response()->json([
+            'book_number' => $this->bookNumbers->nextNumber($profile->organization_id, $currentSchoolId),
+        ]);
     }
 
     public function show(string $id)
@@ -195,13 +228,15 @@ class LibraryBookController extends Controller
 
         $this->trimLibraryBookRequest($request);
 
-        $data = $request->validate($this->libraryBookUpdateValidationRules($profile, $currentSchoolId, $id));
+        $data = $request->validate($this->libraryBookUpdateValidationRules($profile, $currentSchoolId));
 
         // Check if category_id column exists before trying to update it
         $hasCategoryIdColumn = Schema::hasColumn('library_books', 'category_id');
         if (! $hasCategoryIdColumn && isset($data['category_id'])) {
             unset($data['category_id']);
         }
+
+        unset($data['book_number']);
 
         $book->update($data);
 
@@ -311,16 +346,7 @@ class LibraryBookController extends Controller
             'title' => 'required|string|min:1|max:255',
             'author' => 'nullable|string|max:255',
             'isbn' => 'nullable|string|max:100',
-            'book_number' => [
-                'required',
-                'string',
-                'min:1',
-                'max:100',
-                Rule::unique('library_books', 'book_number')
-                    ->where('organization_id', $profile->organization_id)
-                    ->where('school_id', $currentSchoolId)
-                    ->whereNull('deleted_at'),
-            ],
+            'book_number' => 'nullable|string|max:100',
             'category' => 'nullable|string|max:150',
             'category_id' => [
                 'required',
@@ -358,23 +384,13 @@ class LibraryBookController extends Controller
      * @param  \stdClass  $profile
      * @return array<string, mixed>
      */
-    private function libraryBookUpdateValidationRules(object $profile, string $currentSchoolId, string $bookId): array
+    private function libraryBookUpdateValidationRules(object $profile, string $currentSchoolId): array
     {
         return [
             'title' => 'sometimes|required|string|min:1|max:255',
             'author' => 'nullable|string|max:255',
             'isbn' => 'nullable|string|max:100',
-            'book_number' => [
-                'required',
-                'string',
-                'min:1',
-                'max:100',
-                Rule::unique('library_books', 'book_number')
-                    ->ignore($bookId)
-                    ->where('organization_id', $profile->organization_id)
-                    ->where('school_id', $currentSchoolId)
-                    ->whereNull('deleted_at'),
-            ],
+            'book_number' => 'nullable|string|max:100',
             'category' => 'nullable|string|max:150',
             'category_id' => [
                 'required',

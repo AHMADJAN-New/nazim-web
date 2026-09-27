@@ -3084,6 +3084,10 @@ export const libraryBooksApi = {
     return apiClient.get(`/library-books/${id}`);
   },
 
+  nextNumber: async () => {
+    return apiClient.get<{ book_number: string }>('/library-books/next-number');
+  },
+
   create: async (data: {
     title: string;
     author?: string | null;
@@ -3162,6 +3166,21 @@ export const libraryLoansApi = {
     notes?: string | null;
   }) => {
     return apiClient.post('/library-loans', data);
+  },
+
+  update: async (id: string, data: {
+    student_id?: string | null;
+    staff_id?: string | null;
+    loan_date: string;
+    due_date?: string | null;
+    deposit_amount?: number;
+    notes?: string | null;
+  }) => {
+    return apiClient.put(`/library-loans/${id}`, data);
+  },
+
+  remove: async (id: string) => {
+    return apiClient.delete(`/library-loans/${id}`);
   },
 
   returnCopy: async (id: string, data?: {
@@ -3586,6 +3605,21 @@ export const examsApi = {
 
   studentReport: async (examId: string, studentId: string) => {
     return apiClient.get(`/exams/${examId}/reports/students/${studentId}`);
+  },
+
+  exportStudentReportCardsPdf: async (
+    examId: string,
+    data: {
+      exam_student_ids: string[];
+      language?: string;
+      calendar_preference?: string;
+      branding_id?: string;
+    }
+  ) => {
+    return apiClient.post<{ id: string; status: string; message?: string }>(
+      `/exams/${examId}/reports/students/export/pdf`,
+      data
+    );
   },
 
   enrollmentStats: async (examId: string) => {

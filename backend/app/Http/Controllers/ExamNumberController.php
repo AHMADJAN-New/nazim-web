@@ -62,7 +62,6 @@ class ExamNumberController extends Controller
         $query = ExamStudent::with([
             'examClass.classAcademicYear.class',
             'studentAdmission.student',
-            'studentAdmission.classAcademicYear.class',
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)

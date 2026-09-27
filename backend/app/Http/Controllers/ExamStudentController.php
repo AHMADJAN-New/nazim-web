@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Exam;
-use App\Models\ExamStudent;
 use App\Models\ExamClass;
+use App\Models\ExamStudent;
 use App\Models\StudentAdmission;
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
@@ -15,8 +15,7 @@ class ExamStudentController extends Controller
 {
     public function __construct(
         private ActivityLogService $activityLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Get all students enrolled in an exam
@@ -26,29 +25,29 @@ class ExamStudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.read')) {
+            if (! $user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.read: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $query = ExamStudent::with([
-            'exam',
             'examClass.classAcademicYear.class',
-            'studentAdmission.student'
+            'studentAdmission.student',
         ])->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id);
 
@@ -87,22 +86,23 @@ class ExamStudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.enroll_students')) {
+            if (! $user->hasPermissionTo('exams.enroll_students')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.enroll_students: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.enroll_students: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -119,7 +119,7 @@ class ExamStudentController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -127,7 +127,7 @@ class ExamStudentController extends Controller
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot enroll students in a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -139,7 +139,7 @@ class ExamStudentController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examClass) {
+        if (! $examClass) {
             return response()->json(['error' => 'Exam class does not belong to this exam'], 400);
         }
 
@@ -152,7 +152,7 @@ class ExamStudentController extends Controller
             ->eligibleForExamEnrollment()
             ->first();
 
-        if (!$studentAdmission) {
+        if (! $studentAdmission) {
             return response()->json([
                 'error' => 'Student admission not found, inactive, or student registration was deleted',
             ], 403);
@@ -202,7 +202,7 @@ class ExamStudentController extends Controller
         $examStudent->load([
             'exam',
             'examClass.classAcademicYear.class',
-            'studentAdmission.student'
+            'studentAdmission.student',
         ]);
 
         // Log student enrollment
@@ -222,7 +222,7 @@ class ExamStudentController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log student enrollment: ' . $e->getMessage());
+            Log::warning('Failed to log student enrollment: '.$e->getMessage());
         }
 
         return response()->json($examStudent, 201);
@@ -236,22 +236,23 @@ class ExamStudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.enroll_students')) {
+            if (! $user->hasPermissionTo('exams.enroll_students')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.enroll_students: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.enroll_students: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -267,7 +268,7 @@ class ExamStudentController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -275,7 +276,7 @@ class ExamStudentController extends Controller
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot enroll students in a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -288,7 +289,7 @@ class ExamStudentController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$examClass) {
+        if (! $examClass) {
             return response()->json(['error' => 'Exam class does not belong to this exam'], 400);
         }
 
@@ -313,7 +314,7 @@ class ExamStudentController extends Controller
         if ($studentAdmissions->isEmpty()) {
             return response()->json([
                 'error' => 'No active students found for this class',
-                'class_academic_year_id' => $examClass->class_academic_year_id
+                'class_academic_year_id' => $examClass->class_academic_year_id,
             ], 404);
         }
 
@@ -335,8 +336,9 @@ class ExamStudentController extends Controller
                 if ($existing) {
                     $skipped[] = [
                         'student_admission_id' => $admission->id,
-                        'reason' => 'already_enrolled'
+                        'reason' => 'already_enrolled',
                     ];
+
                     continue;
                 }
 
@@ -353,7 +355,7 @@ class ExamStudentController extends Controller
                 } catch (\Exception $e) {
                     $errors[] = [
                         'student_admission_id' => $admission->id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ];
                 }
             }
@@ -379,7 +381,7 @@ class ExamStudentController extends Controller
                     request: $request
                 );
             } catch (\Exception $e) {
-                Log::warning('Failed to log bulk enrollment: ' . $e->getMessage());
+                Log::warning('Failed to log bulk enrollment: '.$e->getMessage());
             }
 
             return response()->json([
@@ -393,7 +395,8 @@ class ExamStudentController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Bulk enrollment failed: " . $e->getMessage());
+            Log::error('Bulk enrollment failed: '.$e->getMessage());
+
             return response()->json(['error' => 'Bulk enrollment failed', 'message' => $e->getMessage()], 500);
         }
     }
@@ -407,22 +410,23 @@ class ExamStudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.enroll_students')) {
+            if (! $user->hasPermissionTo('exams.enroll_students')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.enroll_students: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.enroll_students: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -433,7 +437,7 @@ class ExamStudentController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -441,7 +445,7 @@ class ExamStudentController extends Controller
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot enroll students in a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -454,7 +458,7 @@ class ExamStudentController extends Controller
 
         if ($examClasses->isEmpty()) {
             return response()->json([
-                'error' => 'No classes assigned to this exam'
+                'error' => 'No classes assigned to this exam',
             ], 404);
         }
 
@@ -498,6 +502,7 @@ class ExamStudentController extends Controller
 
                     if ($existing) {
                         $skipped++;
+
                         continue;
                     }
 
@@ -547,7 +552,7 @@ class ExamStudentController extends Controller
                     request: $request
                 );
             } catch (\Exception $e) {
-                Log::warning('Failed to log enroll all: ' . $e->getMessage());
+                Log::warning('Failed to log enroll all: '.$e->getMessage());
             }
 
             return response()->json([
@@ -561,7 +566,8 @@ class ExamStudentController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Enroll all failed: " . $e->getMessage());
+            Log::error('Enroll all failed: '.$e->getMessage());
+
             return response()->json(['error' => 'Enrollment failed', 'message' => $e->getMessage()], 500);
         }
     }
@@ -574,22 +580,23 @@ class ExamStudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.enroll_students')) {
+            if (! $user->hasPermissionTo('exams.enroll_students')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.enroll_students: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.enroll_students: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -601,7 +608,7 @@ class ExamStudentController extends Controller
             })
             ->first();
 
-        if (!$examStudent) {
+        if (! $examStudent) {
             return response()->json(['error' => 'Exam student enrollment not found'], 404);
         }
 
@@ -614,7 +621,7 @@ class ExamStudentController extends Controller
         if ($exam && $exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot remove students from a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -627,7 +634,7 @@ class ExamStudentController extends Controller
         if ($hasResults) {
             return response()->json([
                 'error' => 'Cannot remove student who has exam results. Delete the results first.',
-                'has_results' => true
+                'has_results' => true,
             ], 422);
         }
 
@@ -635,7 +642,7 @@ class ExamStudentController extends Controller
         $examStudent->load([
             'exam',
             'examClass.classAcademicYear.class',
-            'studentAdmission.student'
+            'studentAdmission.student',
         ]);
 
         // Log student removal
@@ -656,7 +663,7 @@ class ExamStudentController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log student removal: ' . $e->getMessage());
+            Log::warning('Failed to log student removal: '.$e->getMessage());
         }
 
         $examStudent->delete();
@@ -672,22 +679,23 @@ class ExamStudentController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
-            if (!$user->hasPermissionTo('exams.read')) {
+            if (! $user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.read: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -697,7 +705,7 @@ class ExamStudentController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -736,8 +744,8 @@ class ExamStudentController extends Controller
                 'section_name' => $examClass->classAcademicYear?->section_name,
                 'enrolled_count' => $enrolledCount,
                 'available_count' => $availableCount,
-                'enrollment_percentage' => $availableCount > 0 
-                    ? round(($enrolledCount / $availableCount) * 100, 1) 
+                'enrollment_percentage' => $availableCount > 0
+                    ? round(($enrolledCount / $availableCount) * 100, 1)
                     : 0,
             ];
 
@@ -749,8 +757,8 @@ class ExamStudentController extends Controller
             'exam_id' => $examId,
             'total_enrolled' => $totalEnrolled,
             'total_available' => $totalAvailable,
-            'overall_percentage' => $totalAvailable > 0 
-                ? round(($totalEnrolled / $totalAvailable) * 100, 1) 
+            'overall_percentage' => $totalAvailable > 0
+                ? round(($totalEnrolled / $totalAvailable) * 100, 1)
                 : 0,
             'class_stats' => $classStats,
         ]);

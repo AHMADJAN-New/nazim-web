@@ -10,7 +10,12 @@ use App\Models\ExamStudent;
 use App\Models\ExamSubject;
 use App\Models\StudentAdmission;
 use App\Services\Exams\AbsenceMarkPenaltyCalculator;
+use App\Services\Exams\StudentExamReportCardService;
 use App\Services\ExamSubjectScheduleService;
+use App\Services\Reports\ReportConfig;
+use App\Services\Reports\ReportService;
+use App\Services\Reports\StudentExamReportCardLabels;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +24,9 @@ class ExamReportController extends Controller
 {
     public function __construct(
         private ExamSubjectScheduleService $examSubjectScheduleService,
-        private AbsenceMarkPenaltyCalculator $absenceMarkPenaltyCalculator
+        private AbsenceMarkPenaltyCalculator $absenceMarkPenaltyCalculator,
+        private StudentExamReportCardService $studentExamReportCardService,
+        private ReportService $reportService,
     ) {}
 
     /**
@@ -663,134 +670,137 @@ class ExamReportController extends Controller
             return response()->json(['error' => 'Student not enrolled in this exam'], 404);
         }
 
-        // Get all results for this student in this exam
-        $results = ExamResult::with('examSubject.subject')
-            ->where('exam_student_id', $studentId)
-            ->where('exam_id', $examId)
-            ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $currentSchoolId)
-            ->whereNull('deleted_at')
-            ->get();
+        $language = (string) $request->get('language', 'en');
+        $calendarPreference = (string) $request->get('calendar_preference', 'jalali');
 
-        // Get all subjects for this student's class
-        $examSubjects = ExamSubject::with('subject')
-            ->where('exam_class_id', $examStudent->exam_class_id)
-            ->where('exam_id', $examId)
-            ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $currentSchoolId)
-            ->whereNull('deleted_at')
-            ->get();
-
-        // Build subject results
-        $subjectResults = $examSubjects->map(function ($examSubject) use ($results) {
-            $result = $results->firstWhere('exam_subject_id', $examSubject->id);
-
-            $marks = $result ? $result->marks_obtained : null;
-            $isAbsent = $result ? $result->is_absent : false;
-            $remarks = $result ? $result->remarks : null;
-
-            $isPass = null;
-            if (! $isAbsent && $marks !== null && $examSubject->passing_marks !== null) {
-                $isPass = $marks >= $examSubject->passing_marks;
-            }
-
-            $percentage = null;
-            if (! $isAbsent && $marks !== null && $examSubject->total_marks) {
-                $percentage = round(($marks / $examSubject->total_marks) * 100, 2);
-            }
-
-            return [
-                'exam_subject_id' => $examSubject->id,
-                'subject' => [
-                    'id' => $examSubject->subject?->id,
-                    'name' => $examSubject->subject?->name ?? 'Unknown',
-                    'code' => $examSubject->subject?->code,
-                ],
-                'marks' => [
-                    'obtained' => $marks,
-                    'total' => $examSubject->total_marks,
-                    'passing' => $examSubject->passing_marks,
-                    'percentage' => $percentage,
-                ],
-                'is_absent' => $isAbsent,
-                'is_pass' => $isPass,
-                'remarks' => $remarks,
-            ];
-        });
-
-        // Calculate totals
-        $totalObtained = 0;
-        $totalMax = 0;
-        $passedSubjects = 0;
-        $failedSubjects = 0;
-        $absentSubjects = 0;
-
-        foreach ($subjectResults as $result) {
-            if ($result['is_absent']) {
-                $absentSubjects++;
-            } elseif ($result['marks']['obtained'] !== null) {
-                $totalObtained += $result['marks']['obtained'];
-                if ($result['marks']['total']) {
-                    $totalMax += $result['marks']['total'];
-                }
-                if ($result['is_pass'] === true) {
-                    $passedSubjects++;
-                } elseif ($result['is_pass'] === false) {
-                    $failedSubjects++;
-                }
-            }
-        }
-
-        $overallPercentage = $totalMax > 0 ? round(($totalObtained / $totalMax) * 100, 2) : 0;
-        $overallResult = $failedSubjects === 0 && $absentSubjects === 0 && $passedSubjects > 0 ? 'Pass' : 'Fail';
-
-        $penalty = $this->absenceMarkPenaltyCalculator->applyForAdmission(
-            organizationId: $profile->organization_id,
-            schoolId: $currentSchoolId,
-            examId: (string) $exam->id,
-            examClassId: $examStudent->exam_class_id ? (string) $examStudent->exam_class_id : null,
-            studentAdmissionId: $examStudent->student_admission_id,
-            rawTotal: (float) $totalObtained,
-            totalMaximum: (float) $totalMax,
+        $card = $this->studentExamReportCardService->buildCard(
+            $exam,
+            $examStudent,
+            $profile->organization_id,
+            $currentSchoolId,
+            $language,
+            $calendarPreference,
+            embedPicture: false,
         );
 
-        $summary = [
-            'total_subjects' => $examSubjects->count(),
-            'passed_subjects' => $passedSubjects,
-            'failed_subjects' => $failedSubjects,
-            'absent_subjects' => $absentSubjects,
-            'total_marks_obtained' => $penalty['total_adjusted'],
-            'total_maximum_marks' => $totalMax,
-            'overall_percentage' => $penalty['percentage_adjusted'],
-            'overall_result' => $overallResult,
-        ];
+        return response()->json($card);
+    }
 
-        if ($penalty['enabled']) {
-            $summary['total_marks_obtained_raw'] = $penalty['total_raw'];
-            $summary['marks_cut'] = $penalty['marks_cut'];
-            $summary['absence_count'] = $penalty['absence_count'];
+    /**
+     * Export one or more student report cards as a branded PDF.
+     * POST /api/exams/{exam}/reports/students/export/pdf
+     */
+    public function exportStudentReportCardsPdf(Request $request, string $examId): JsonResponse
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        return response()->json([
-            'exam' => [
-                'id' => $exam->id,
-                'name' => $exam->name,
-                'status' => $exam->status,
-                'start_date' => $exam->start_date,
-                'end_date' => $exam->end_date,
-                'academic_year' => $exam->academicYear?->name,
-            ],
-            'student' => [
-                'id' => $examStudent->studentAdmission?->student?->id,
-                'full_name' => $examStudent->studentAdmission?->student?->full_name ?? 'Unknown',
-                'admission_no' => $examStudent->studentAdmission?->student?->admission_no,
-                'roll_number' => $examStudent->studentAdmission?->roll_number,
-                'class' => $examStudent->examClass?->classAcademicYear?->class?->name,
-                'section' => $examStudent->examClass?->classAcademicYear?->section_name,
-            ],
-            'subjects' => $subjectResults,
-            'summary' => $summary,
+        if (! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        try {
+            if (! $user->hasPermissionTo('exams.view_reports')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for exams.view_reports: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'exam_student_ids' => 'required|array|min:1|max:100',
+            'exam_student_ids.*' => 'required|uuid',
+            'language' => 'nullable|string|in:en,ps,fa,ar,dari',
+            'calendar_preference' => 'nullable|string|in:gregorian,jalali,qamari,hijri_shamsi,hijri_qamari',
+            'branding_id' => 'nullable|uuid',
         ]);
+
+        $exam = Exam::with('academicYear')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $examId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        $examStudents = ExamStudent::with([
+            'studentAdmission.student',
+            'examClass.classAcademicYear.class',
+        ])
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereIn('id', $validated['exam_student_ids'])
+            ->whereNull('deleted_at')
+            ->withLiveActiveAdmission($exam->academic_year_id)
+            ->get();
+
+        if ($examStudents->isEmpty()) {
+            return response()->json(['error' => 'No enrolled students found for export'], 404);
+        }
+
+        // Preserve request order
+        $ordered = collect($validated['exam_student_ids'])
+            ->map(fn (string $id) => $examStudents->firstWhere('id', $id))
+            ->filter();
+
+        $language = (string) ($validated['language'] ?? 'ps');
+        $calendarPreference = (string) ($validated['calendar_preference'] ?? 'jalali');
+
+        try {
+            $reportData = $this->studentExamReportCardService->buildPdfPayload(
+                $exam,
+                $ordered,
+                $profile->organization_id,
+                $currentSchoolId,
+                $language,
+                $calendarPreference,
+            );
+
+            $config = ReportConfig::fromArray([
+                'report_key' => 'student_report_card',
+                'report_type' => 'pdf',
+                'branding_id' => $validated['branding_id'] ?? $currentSchoolId,
+                'title' => StudentExamReportCardLabels::reportTitle($language, $exam->name),
+                'calendar_preference' => $calendarPreference,
+                'language' => $language === 'dari' ? 'fa' : $language,
+                'template_name' => 'student-report-card',
+                'parameters' => [
+                    'exam_id' => $examId,
+                    'exam_student_ids' => $validated['exam_student_ids'],
+                ],
+            ]);
+
+            $reportRun = $this->reportService->generateReport(
+                $config,
+                $reportData,
+                $profile->organization_id
+            );
+
+            return response()->json([
+                'id' => $reportRun->id,
+                'status' => $reportRun->status,
+                'message' => 'Report generation started',
+            ], 202);
+        } catch (\Exception $e) {
+            Log::error('Error exporting student report cards PDF: '.$e->getMessage(), [
+                'exam_id' => $examId,
+                'exception' => $e,
+            ]);
+
+            return response()->json(['error' => 'Failed to generate PDF report'], 500);
+        }
     }
 
     /**

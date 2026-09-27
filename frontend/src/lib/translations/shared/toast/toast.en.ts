@@ -453,7 +453,11 @@ export default {
       copyAdded: "Book copy added successfully",
       copyAddFailed: "Failed to add book copy",
       loanCreated: "Book loan created successfully",
-      loanCreateFailed: "Failed to create book loan"
+      loanCreateFailed: "Failed to create book loan",
+      loanUpdated: "Book loan updated successfully",
+      loanUpdateFailed: "Failed to update book loan",
+      loanDeleted: "Book loan deleted successfully",
+      loanDeleteFailed: "Failed to delete book loan"
     },
     limitOverrideAdded: "Limit override added",
     licenseSigned: "License signed successfully",

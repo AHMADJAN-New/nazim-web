@@ -16,19 +16,19 @@ class LibraryLoanController extends Controller
     public function __construct(
         private ActivityLogService $activityLogService,
         private NotificationService $notificationService
-    ) {
-    }
+    ) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json([]);
         }
 
         try {
-            if (!$user->hasPermissionTo('library_loans.read')) {
+            if (! $user->hasPermissionTo('library_loans.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -40,7 +40,13 @@ class LibraryLoanController extends Controller
             'book' => function ($builder) {
                 $builder->with('category');
             },
-            'copy'
+            'copy',
+            'student' => function ($builder) {
+                $builder->select('id', 'full_name', 'father_name', 'admission_no');
+            },
+            'staff' => function ($builder) {
+                $builder->select('id', 'first_name', 'father_name');
+            },
         ])
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
@@ -76,12 +82,12 @@ class LibraryLoanController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('library_loans.create')) {
+            if (! $user->hasPermissionTo('library_loans.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -98,7 +104,7 @@ class LibraryLoanController extends Controller
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($data['book_id']);
-        if (!$book) {
+        if (! $book) {
             return response()->json(['error' => 'Book not found'], 404);
         }
 
@@ -141,14 +147,14 @@ class LibraryLoanController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            \Log::warning('Failed to log library loan creation: ' . $e->getMessage());
+            \Log::warning('Failed to log library loan creation: '.$e->getMessage());
         }
 
         // Notify if book is overdue or due soon
         try {
             $now = Carbon::now();
             $dueDate = $loan->due_date ? Carbon::parse($loan->due_date) : null;
-            
+
             if ($dueDate) {
                 if ($dueDate->isPast()) {
                     // Book is already overdue
@@ -186,26 +192,84 @@ class LibraryLoanController extends Controller
         return response()->json($loan, 201);
     }
 
-    public function returnCopy(Request $request, string $id)
+    public function update(Request $request, string $id)
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('library_loans.update')) {
+            if (! $user->hasPermissionTo('library_loans.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            \Log::warning("Permission check failed for library_loans.update: " . $e->getMessage());
+            \Log::warning('Permission check failed for library_loans.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Validate UUID format
-        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id)) {
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id)) {
+            return response()->json(['error' => 'Invalid loan ID format'], 400);
+        }
+
+        $data = $request->validate([
+            'student_id' => 'nullable|uuid',
+            'staff_id' => 'nullable|uuid',
+            'loan_date' => 'required|date',
+            'due_date' => 'nullable|date',
+            'deposit_amount' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        if (empty($data['student_id']) && empty($data['staff_id'])) {
+            return response()->json(['error' => 'Borrower is required'], 422);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $loan = LibraryLoan::where('id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->first();
+
+        if (! $loan) {
+            return response()->json(['error' => 'Loan not found'], 404);
+        }
+
+        $loan->update([
+            'student_id' => $data['student_id'] ?? null,
+            'staff_id' => $data['staff_id'] ?? null,
+            'loan_date' => $data['loan_date'],
+            'due_date' => $data['due_date'] ?? null,
+            'deposit_amount' => $data['deposit_amount'] ?? $loan->deposit_amount,
+            'notes' => array_key_exists('notes', $data) ? $data['notes'] : $loan->notes,
+        ]);
+
+        return response()->json($loan->fresh()->load(['book', 'copy']));
+    }
+
+    public function destroy(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile || ! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (! $user->hasPermissionTo('library_loans.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Permission check failed for library_loans.update: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id)) {
             return response()->json(['error' => 'Invalid loan ID format'], 400);
         }
 
@@ -215,7 +279,59 @@ class LibraryLoanController extends Controller
             ->where('school_id', $currentSchoolId)
             ->first();
 
-        if (!$loan) {
+        if (! $loan) {
+            return response()->json(['error' => 'Loan not found'], 404);
+        }
+
+        DB::transaction(function () use ($loan) {
+            if (! $loan->returned_at && $loan->copy && $loan->copy->status === 'loaned') {
+                $otherOpenLoan = LibraryLoan::where('book_copy_id', $loan->book_copy_id)
+                    ->where('id', '!=', $loan->id)
+                    ->whereNull('returned_at')
+                    ->exists();
+
+                if (! $otherOpenLoan) {
+                    $loan->copy->update(['status' => 'available']);
+                }
+            }
+
+            $loan->delete();
+        });
+
+        return response()->noContent();
+    }
+
+    public function returnCopy(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile || ! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (! $user->hasPermissionTo('library_loans.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Permission check failed for library_loans.update: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Validate UUID format
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id)) {
+            return response()->json(['error' => 'Invalid loan ID format'], 400);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $loan = LibraryLoan::where('id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->first();
+
+        if (! $loan) {
             return response()->json(['error' => 'Loan not found'], 404);
         }
 
@@ -266,7 +382,7 @@ class LibraryLoanController extends Controller
                     request: $request
                 );
             } catch (\Exception $e) {
-                \Log::warning('Failed to log library loan return: ' . $e->getMessage());
+                \Log::warning('Failed to log library loan return: '.$e->getMessage());
             }
 
             // Notify about return (optional - asset.returned equivalent)
@@ -274,11 +390,12 @@ class LibraryLoanController extends Controller
 
             return response()->json($loan);
         } catch (\Exception $e) {
-            \Log::error('Error returning loan: ' . $e->getMessage(), [
+            \Log::error('Error returning loan: '.$e->getMessage(), [
                 'loan_id' => $id,
                 'user_id' => $user->id,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => 'Failed to return loan. Please try again.'], 500);
         }
     }
@@ -288,11 +405,11 @@ class LibraryLoanController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile || !$profile->organization_id) {
+        if (! $profile || ! $profile->organization_id) {
             return response()->json([]);
         }
 
-        $days = (int)($request->get('days') ?? 7);
+        $days = (int) ($request->get('days') ?? 7);
         $date = Carbon::now()->addDays($days)->toDateString();
 
         $currentSchoolId = $this->getCurrentSchoolId($request);
@@ -300,7 +417,13 @@ class LibraryLoanController extends Controller
             'book' => function ($builder) {
                 $builder->with('category');
             },
-            'copy'
+            'copy',
+            'student' => function ($builder) {
+                $builder->select('id', 'full_name', 'father_name', 'admission_no');
+            },
+            'staff' => function ($builder) {
+                $builder->select('id', 'first_name', 'father_name');
+            },
         ])
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)

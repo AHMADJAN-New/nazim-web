@@ -453,7 +453,11 @@ export default {
       copyAdded: "د کتاب کاپي په بریالیتوب سره اضافه شوه",
       copyAddFailed: "د کتاب کاپي اضافه کول ناکام شول",
       loanCreated: "د کتاب پور په بریالیتوب سره جوړ شو",
-      loanCreateFailed: "د کتاب پور جوړول ناکام شول"
+      loanCreateFailed: "د کتاب پور جوړول ناکام شول",
+      loanUpdated: "د کتاب امانت په بریالیتوب سره تازه شو",
+      loanUpdateFailed: "د کتاب امانت تازه کول ناکام شول",
+      loanDeleted: "د کتاب امانت په بریالیتوب سره ړنګ شو",
+      loanDeleteFailed: "د کتاب امانت ړنګول ناکام شول"
     },
     limitOverrideAdded: "محدودیت زیاتول اضافه شول",
     licenseSigned: "جواز په بریالیتوب سره لاسلیک شو",

@@ -5,15 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class LibraryBook extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -104,6 +106,22 @@ class LibraryBook extends Model
     public function loans()
     {
         return $this->hasMany(LibraryLoan::class, 'book_id');
+    }
+
+    /**
+     * The books table stores a legacy string column named category, and this
+     * relation uses the same name. A null relation would replace that string
+     * with null in JSON, so the category column on the books page stays blank.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray()
+    {
+        if ($this->relationLoaded('category') && $this->getRelation('category') === null) {
+            $this->unsetRelation('category');
+        }
+
+        return parent::toArray();
     }
 
     /**

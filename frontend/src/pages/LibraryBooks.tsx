@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X, Eye, MoreVertical } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -24,6 +25,7 @@ import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import { useStaff } from '@/hooks/useStaff';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useProfile } from '@/hooks/useProfiles';
+import { libraryBooksApi } from '@/lib/api/client';
 import { getLibraryBookCategoryName } from '@/lib/libraryBookCategory';
 import { parseApiDateInput, safeFormatDate } from '@/lib/dateUtils';
 import { formatDate, cn, formatCurrency, getAccountCurrencyCode } from '@/lib/utils';
@@ -116,6 +118,7 @@ function dateLocaleFromLanguage(language: string): string {
 
 export default function LibraryBooks() {
     const { t, isRTL } = useLanguage();
+    const { data: profile } = useProfile();
     const hasCreatePermission = useHasPermission('library_books.create');
     const hasUpdatePermission = useHasPermission('library_books.update');
     const hasDeletePermission = useHasPermission('library_books.delete');
@@ -154,6 +157,7 @@ export default function LibraryBooks() {
         reset,
         control,
         setValue,
+        watch,
         formState: { errors },
     } = useForm<BookFormData>({
         resolver: bookResolver,
@@ -165,6 +169,21 @@ export default function LibraryBooks() {
             finance_account_id: null,
         },
     });
+
+    const bookNumberValue = watch('book_number');
+    const { data: nextBookNumber } = useQuery<{ book_number: string }>({
+        queryKey: ['library-books-next-number', profile?.organization_id, profile?.default_school_id ?? null],
+        queryFn: () => libraryBooksApi.nextNumber(),
+        enabled: isDialogOpen && !selectedBook && !!profile?.organization_id && !!profile?.default_school_id,
+        staleTime: 0,
+        refetchOnWindowFocus: false,
+    });
+
+    useEffect(() => {
+        if (isDialogOpen && !selectedBook && nextBookNumber?.book_number) {
+            setValue('book_number', nextBookNumber.book_number);
+        }
+    }, [isDialogOpen, selectedBook, nextBookNumber, setValue]);
 
     const { data: financeAccounts } = useFinanceAccounts();
     const { data: currencies } = useCurrencies();
@@ -192,7 +211,7 @@ export default function LibraryBooks() {
                 title: book.title,
                 author: book.author || null,
                 isbn: book.isbn || null,
-                book_number: book.book_number || null,
+                book_number: book.book_number || '',
                 category_id: book.category_id || null,
                 volume: book.volume || null,
                 description: book.description || null,
@@ -208,7 +227,7 @@ export default function LibraryBooks() {
                 title: '',
                 author: null,
                 isbn: null,
-                book_number: null,
+                book_number: '',
                 category_id: null,
                 volume: null,
                 description: null,
@@ -230,7 +249,7 @@ export default function LibraryBooks() {
             title: '',
             author: null,
             isbn: null,
-            book_number: null,
+            book_number: '',
             category_id: null,
             volume: null,
             description: null,
@@ -639,14 +658,18 @@ export default function LibraryBooks() {
                                 </div>
                                 <div>
                                     <Label htmlFor="book_number">
-                                        {t('library.bookNumber')} <span className="text-destructive">*</span>
+                                        {t('library.bookNumber')}
                                     </Label>
                                     <Input
                                         id="book_number"
                                         {...register('book_number')}
-                                        placeholder={t('library.bookNumberPlaceholder')}
-                                        className={errors.book_number ? 'border-destructive' : ''}
+                                        readOnly
+                                        placeholder={t('library.bookNumberAutomatic')}
+                                        className="bg-muted"
                                     />
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {t('library.bookNumberAutomatic')}
+                                    </p>
                                     {errors.book_number && (
                                         <p className="text-sm text-destructive mt-1">{errors.book_number.message}</p>
                                     )}
@@ -845,7 +868,11 @@ export default function LibraryBooks() {
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={createBook.isPending || updateBook.isPending}
+                                disabled={
+                                    createBook.isPending ||
+                                    updateBook.isPending ||
+                                    (!selectedBook && !bookNumberValue)
+                                }
                             >
                                 {selectedBook ? t('events.update') : t('events.create')}
                             </Button>
@@ -1072,12 +1099,19 @@ function BookHistoryPanel({ bookId, allLoans }: { bookId: string; allLoans?: Lib
             <CardContent>
                 <div className="space-y-4">
                     {bookLoans.map((loan, index) => {
-                        const borrower = loan.student_id
-                            ? (Array.isArray(students) ? students.find((s) => s.id === loan.student_id) : null)
-                            : (Array.isArray(staff) ? staff.find((s) => s.id === loan.staff_id) : null);
-                        const borrowerName = borrower
-                            ? ('fullName' in borrower ? borrower.fullName : (borrower as { name?: string }).name || t('library.unknownBorrower'))
-                            : t('library.unknownBorrower');
+                        const listedStudent = loan.student_id && Array.isArray(students)
+                            ? students.find((s) => s.id === loan.student_id)
+                            : null;
+                        const listedStaff = loan.staff_id && Array.isArray(staff)
+                            ? staff.find((s) => s.id === loan.staff_id)
+                            : null;
+                        const staffFromLoan = [loan.staff?.first_name, loan.staff?.father_name]
+                            .filter(Boolean)
+                            .join(' ')
+                            .trim();
+                        const borrowerName = loan.student_id
+                            ? (loan.student?.full_name || listedStudent?.fullName || t('library.unknownBorrower'))
+                            : (staffFromLoan || listedStaff?.fullName || t('library.unknownBorrower'));
                         const isReturned =
                             loan.returned_at != null && String(loan.returned_at).trim() !== '';
                         const dueParsed = parseApiDateInput(loan.due_date);

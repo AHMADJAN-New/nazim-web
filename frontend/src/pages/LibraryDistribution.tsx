@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { Plus, Search, BookCheck, RefreshCw, Calendar, User, X, Minus } from 'lucide-react';
+import { Plus, Search, BookCheck, RefreshCw, Calendar, User, X, Minus, Pencil, Trash2 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 
@@ -9,7 +9,7 @@ import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useLibraryLoans, useCreateLibraryLoan, useReturnLibraryLoan } from '@/hooks/useLibrary';
+import { useLibraryLoans, useCreateLibraryLoan, useReturnLibraryLoan, useUpdateLibraryLoan, useDeleteLibraryLoan } from '@/hooks/useLibrary';
 import { useLibraryBooks } from '@/hooks/useLibrary';
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
@@ -87,7 +87,10 @@ export default function LibraryDistribution() {
 
     const [isLoanDialogOpen, setIsLoanDialogOpen] = useState(false);
     const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+    const [isDeleteLoanDialogOpen, setIsDeleteLoanDialogOpen] = useState(false);
     const [selectedLoan, setSelectedLoan] = useState<LibraryLoan | null>(null);
+    const [editingLoan, setEditingLoan] = useState<LibraryLoan | null>(null);
+    const [loanToDelete, setLoanToDelete] = useState<LibraryLoan | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [borrowerFilter, setBorrowerFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('');
@@ -109,6 +112,8 @@ export default function LibraryDistribution() {
     }, [studentAdmissions]);
     const { data: staff } = useStaff();
     const createLoan = useCreateLibraryLoan();
+    const updateLoan = useUpdateLibraryLoan();
+    const deleteLoan = useDeleteLibraryLoan();
     const returnLoan = useReturnLibraryLoan();
 
     const formMethods = useForm<LoanFormData>({
@@ -165,11 +170,24 @@ export default function LibraryDistribution() {
 
     const studentOptions = useMemo(() => {
         if (!Array.isArray(students)) return [];
-        return students.map((student) => ({
-            value: student.id,
-            label: student.fullName,
-        }));
-    }, [students]);
+        const seen = new Set<string>();
+        return students.flatMap((student) => {
+            if (!student.id || seen.has(student.id)) return [];
+            seen.add(student.id);
+            const admissionNumber = student.admissionNumber?.trim();
+            const fatherName = student.fatherName?.trim();
+            const details = [
+                admissionNumber ? `${t('common.admissionNo')}: ${admissionNumber}` : null,
+                fatherName ? `${t('common.fatherName')}: ${fatherName}` : null,
+            ].filter((part): part is string => !!part);
+            return [{
+                value: student.id,
+                label: student.fullName,
+                description: details.length > 0 ? details.join(' · ') : undefined,
+                filterKeywords: [admissionNumber, fatherName].filter(Boolean).join(' '),
+            }];
+        });
+    }, [students, t]);
 
     const staffOptions = useMemo(() => {
         if (!Array.isArray(staff)) return [];
@@ -208,6 +226,7 @@ export default function LibraryDistribution() {
     
     // Update deposit amount when book or copies change
     useEffect(() => {
+        if (editingLoan) return;
         if (selectedBook && selectedBook.price !== undefined && selectedBook.price !== null) {
             const price = typeof selectedBook.price === 'string' 
                 ? parseFloat(selectedBook.price) 
@@ -215,7 +234,7 @@ export default function LibraryDistribution() {
             const totalAmount = price * copiesToIssue;
             setValue('deposit_amount', isNaN(totalAmount) ? 0 : totalAmount);
         }
-    }, [selectedBook, copiesToIssue, setValue]);
+    }, [selectedBook, copiesToIssue, setValue, editingLoan]);
 
     const filteredLoans = useMemo(() => {
         if (!Array.isArray(openLoans)) return [];
@@ -253,6 +272,7 @@ export default function LibraryDistribution() {
     }, [openLoans, searchQuery, borrowerFilter]);
 
     const handleOpenLoanDialog = () => {
+        setEditingLoan(null);
         reset({
             book_id: '',
             borrower_type: 'student',
@@ -268,6 +288,7 @@ export default function LibraryDistribution() {
 
     const handleCloseLoanDialog = () => {
         setIsLoanDialogOpen(false);
+        setEditingLoan(null);
         reset({
             book_id: '',
             borrower_type: 'student',
@@ -281,6 +302,39 @@ export default function LibraryDistribution() {
     };
 
     const onSubmitLoan = async (data: LoanFormData) => {
+        let studentId: string | null = null;
+        let staffId: string | null = null;
+
+        if (data.borrower_type === 'student') {
+            studentId = data.student_id && data.student_id !== '' ? data.student_id : null;
+        } else {
+            staffId = data.staff_id && data.staff_id !== '' ? data.staff_id : null;
+        }
+
+        if (!studentId && !staffId) {
+            toast.error('Please select a borrower');
+            return;
+        }
+
+        if (editingLoan) {
+            try {
+                await updateLoan.mutateAsync({
+                    id: editingLoan.id,
+                    student_id: studentId,
+                    staff_id: staffId,
+                    loan_date: data.loan_date,
+                    due_date: data.due_date || null,
+                    deposit_amount: data.deposit_amount || 0,
+                });
+                handleCloseLoanDialog();
+            } catch (error) {
+                if (import.meta.env.DEV) {
+                    console.error('Failed to update loan:', error);
+                }
+            }
+            return;
+        }
+
         if (!selectedBook || availableCopies.length === 0) {
             toast.error('No available copies for this book');
             return;
@@ -313,22 +367,6 @@ export default function LibraryDistribution() {
                 }
                 return;
             }
-        }
-        
-        // Set borrower based on type, converting empty strings to null
-        let studentId: string | null = null;
-        let staffId: string | null = null;
-        
-        if (data.borrower_type === 'student') {
-            studentId = data.student_id && data.student_id !== '' ? data.student_id : null;
-        } else {
-            staffId = data.staff_id && data.staff_id !== '' ? data.staff_id : null;
-        }
-        
-        // Validate borrower is set
-        if (!studentId && !staffId) {
-            toast.error('Please select a borrower');
-            return;
         }
         
         // Create loans for each copy sequentially to avoid race conditions
@@ -374,6 +412,33 @@ export default function LibraryDistribution() {
     const handleReturn = (loan: LibraryLoan) => {
         setSelectedLoan(loan);
         setIsReturnDialogOpen(true);
+    };
+
+    const toDateInput = (value?: string | null) => (value ? value.slice(0, 10) : null);
+
+    const handleEditLoan = (loan: LibraryLoan) => {
+        setEditingLoan(loan);
+        reset({
+            book_id: loan.book_id,
+            borrower_type: loan.staff_id ? 'staff' : 'student',
+            student_id: loan.student_id ?? null,
+            staff_id: loan.staff_id ?? null,
+            loan_date: toDateInput(loan.loan_date) || defaultLoanDate,
+            due_date: toDateInput(loan.due_date),
+            deposit_amount: Number(loan.deposit_amount) || 0,
+        });
+        setCopiesToIssue(1);
+        setIsLoanDialogOpen(true);
+    };
+
+    const handleConfirmDeleteLoan = () => {
+        if (!loanToDelete) return;
+        deleteLoan.mutate(loanToDelete.id, {
+            onSuccess: () => {
+                setIsDeleteLoanDialogOpen(false);
+                setLoanToDelete(null);
+            },
+        });
     };
 
     const handleConfirmReturn = () => {
@@ -594,12 +659,19 @@ export default function LibraryDistribution() {
                                         </TableRow>
                                     ) : (
                                         filteredLoans.map((loan, index) => {
-                                            const borrower = loan.student_id
-                                                ? (Array.isArray(students) ? students.find((s) => s.id === loan.student_id) : null)
-                                                : (Array.isArray(staff) ? staff.find((s) => s.id === loan.staff_id) : null);
-                                            const borrowerName = borrower
-                                                ? (borrower.fullName || (borrower as any).name || 'Unknown')
-                                                : 'Unknown';
+                                            const listedStudent = loan.student_id && Array.isArray(students)
+                                                ? students.find((s) => s.id === loan.student_id)
+                                                : null;
+                                            const listedStaff = loan.staff_id && Array.isArray(staff)
+                                                ? staff.find((s) => s.id === loan.staff_id)
+                                                : null;
+                                            const staffFromLoan = [loan.staff?.first_name, loan.staff?.father_name]
+                                                .filter(Boolean)
+                                                .join(' ')
+                                                .trim();
+                                            const borrowerName = loan.student_id
+                                                ? (loan.student?.full_name || listedStudent?.fullName || t('library.unknownBorrower'))
+                                                : (staffFromLoan || listedStaff?.fullName || (listedStaff as { name?: string } | null)?.name || t('library.unknownBorrower'));
                                             const isOverdue = loan.due_date && new Date(loan.due_date) < new Date();
 
                                             // Ensure unique key - use loan.id if valid UUID, otherwise use combination of fields with index
@@ -657,14 +729,35 @@ export default function LibraryDistribution() {
                                                     <TableCell>{loan.deposit_amount ?? 0}</TableCell>
                                                     <TableCell className="text-right">
                                                         {hasUpdatePermission && (
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handleReturn(loan)}
-                                                            >
-                                                                <RefreshCw className="h-4 w-4 mr-2" />
-                                                                {t('library.return') || 'Return'}
-                                                            </Button>
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handleReturn(loan)}
+                                                                >
+                                                                    <RefreshCw className="h-4 w-4 sm:me-2" />
+                                                                    <span className="hidden sm:inline">{t('library.return') || 'Return'}</span>
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleEditLoan(loan)}
+                                                                    aria-label={t('library.editLoan')}
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => {
+                                                                        setLoanToDelete(loan);
+                                                                        setIsDeleteLoanDialogOpen(true);
+                                                                    }}
+                                                                    aria-label={t('library.deleteLoan')}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                                </Button>
+                                                            </div>
                                                         )}
                                                     </TableCell>
                                                 </TableRow>
@@ -679,13 +772,23 @@ export default function LibraryDistribution() {
             </Card>
 
             {/* Assign Book Dialog */}
-            <Dialog open={isLoanDialogOpen} onOpenChange={setIsLoanDialogOpen}>
+            <Dialog open={isLoanDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    handleCloseLoanDialog();
+                } else {
+                    setIsLoanDialogOpen(true);
+                }
+            }}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>{t('library.assignBook') || 'Assign Book'}</DialogTitle>
+                        <DialogTitle>
+                            {editingLoan ? t('library.editLoan') : (t('library.assignBook') || 'Assign Book')}
+                        </DialogTitle>
                         <DialogDescription>
-                            {t('library.assignBookDescription') ||
-                                'Loan a book to a student or staff member'}
+                            {editingLoan
+                                ? t('library.editLoanDescription')
+                                : (t('library.assignBookDescription') ||
+                                    'Loan a book to a student or staff member')}
                         </DialogDescription>
                     </DialogHeader>
                     <FormProvider {...formMethods}>
@@ -709,6 +812,7 @@ export default function LibraryDistribution() {
                                                         field.onChange(value);
                                                         handleBookChange(value);
                                                     }}
+                                                    disabled={!!editingLoan}
                                                     placeholder={
                                                         t('library.searchAndSelectBook') ||
                                                         'Search and select a book...'
@@ -726,7 +830,7 @@ export default function LibraryDistribution() {
                                             )}
                                         />
                                     </div>
-                                    {selectedBook && availableCopies.length > 0 && (
+                                    {selectedBook && !editingLoan && availableCopies.length > 0 && (
                                         <div className="flex items-center gap-2 border rounded-md px-3 py-2 min-w-[140px]">
                                             <Button
                                                 type="button"
@@ -754,7 +858,7 @@ export default function LibraryDistribution() {
                                         </div>
                                     )}
                                 </div>
-                                {selectedBook && (
+                                {selectedBook && !editingLoan && (
                                     <div className="mt-2 text-sm text-muted-foreground">
                                         {availableCopies.length > 0 ? (
                                             <span>
@@ -894,32 +998,68 @@ export default function LibraryDistribution() {
                                 </div>
                             </div>
 
-                            <div>
-                                <Label htmlFor="deposit_amount">
-                                    {t('library.depositAmount') || 'Deposit Amount'}
-                                </Label>
-                                <Input
-                                    id="deposit_amount"
-                                    type="number"
-                                    min={0}
-                                    step="0.01"
-                                    {...register('deposit_amount', { valueAsNumber: true })}
-                                />
-                                {errors.deposit_amount && (
-                                    <p className="text-sm text-destructive mt-1">{errors.deposit_amount.message}</p>
-                                )}
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                                <div className="flex-1">
+                                    <Label>{t('library.bookNumber')}</Label>
+                                    <p className="mt-1 text-sm font-medium">
+                                        {selectedBook?.book_number || '\u2014'}
+                                    </p>
+                                </div>
+                                <div className="w-full sm:w-28">
+                                    <Label htmlFor="deposit_amount">
+                                        {t('library.depositAmount') || 'Deposit Amount'}
+                                    </Label>
+                                    <Input
+                                        id="deposit_amount"
+                                        type="number"
+                                        min={0}
+                                        step="0.01"
+                                        className="w-full"
+                                        {...register('deposit_amount', { valueAsNumber: true })}
+                                    />
+                                    {errors.deposit_amount && (
+                                        <p className="text-sm text-destructive mt-1">{errors.deposit_amount.message}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseLoanDialog}>
                                 {t('common.cancel') || 'Cancel'}
                             </Button>
-                            <Button type="submit" disabled={createLoan.isPending}>
-                                {t('library.assignBook') || 'Assign Book'}
+                            <Button type="submit" disabled={createLoan.isPending || updateLoan.isPending}>
+                                {editingLoan
+                                    ? (t('common.save') || 'Save')
+                                    : (t('library.assignBook') || 'Assign Book')}
                             </Button>
                         </DialogFooter>
                     </form>
                     </FormProvider>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteLoanDialogOpen} onOpenChange={setIsDeleteLoanDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('library.deleteLoan')}</DialogTitle>
+                        <DialogDescription>
+                            {t('library.deleteLoanConfirm', {
+                                title: loanToDelete?.book?.title ?? '',
+                            })}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDeleteLoanDialogOpen(false)}>
+                            {t('common.cancel') || 'Cancel'}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleConfirmDeleteLoan}
+                            disabled={deleteLoan.isPending}
+                        >
+                            {t('library.deleteLoan')}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

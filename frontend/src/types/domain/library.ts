@@ -67,4 +67,15 @@ export interface LibraryLoan {
   notes?: string | null;
   book?: LibraryBook;
   copy?: LibraryCopy;
+  student?: {
+    id: string;
+    full_name?: string | null;
+    father_name?: string | null;
+    admission_no?: string | null;
+  } | null;
+  staff?: {
+    id: string;
+    first_name?: string | null;
+    father_name?: string | null;
+  } | null;
 }

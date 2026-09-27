@@ -927,6 +927,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/exams/{exam}/report', [ExamReportController::class, 'show']);
             Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
             Route::get('/exams/{exam}/reports/classes/{class}', [ExamReportController::class, 'classReport']);
+            Route::post('/exams/{exam}/reports/students/export/pdf', [ExamReportController::class, 'exportStudentReportCardsPdf']);
             Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
             Route::get('/exams/{exam}/reports/classes/{class}/consolidated', [ExamReportController::class, 'consolidatedClassReport']);
             Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
@@ -1212,6 +1213,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/library-categories', [LibraryCategoryController::class, 'index']);
             Route::get('/library-categories/{library_category}', [LibraryCategoryController::class, 'show']);
             Route::get('/library-books', [LibraryBookController::class, 'index']);
+            Route::get('/library-books/next-number', [LibraryBookController::class, 'nextNumber']);
             Route::get('/library-books/{library_book}', [LibraryBookController::class, 'show']);
             Route::get('/library-loans', [LibraryLoanController::class, 'index']);
             Route::get('/library-loans/due-soon', [LibraryLoanController::class, 'dueSoon']);
@@ -1226,6 +1228,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
                 Route::put('/library-copies/{id}', [LibraryCopyController::class, 'update']);
                 Route::delete('/library-copies/{id}', [LibraryCopyController::class, 'destroy']);
                 Route::post('/library-loans', [LibraryLoanController::class, 'store']);
+                Route::put('/library-loans/{id}', [LibraryLoanController::class, 'update']);
+                Route::delete('/library-loans/{id}', [LibraryLoanController::class, 'destroy']);
                 Route::post('/library-loans/{id}/return', [LibraryLoanController::class, 'returnCopy']);
             });
         });

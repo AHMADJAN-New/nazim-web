@@ -453,7 +453,11 @@ export default {
       copyAdded: "کاپی کتاب با موفقیت اضافه شد",
       copyAddFailed: "اضافه کردن کاپی کتاب ناموفق بود",
       loanCreated: "قرض کتاب با موفقیت ایجاد شد",
-      loanCreateFailed: "ایجاد قرض کتاب ناموفق بود"
+      loanCreateFailed: "ایجاد قرض کتاب ناموفق بود",
+      loanUpdated: "امانت کتاب با موفقیت به‌روزرسانی شد",
+      loanUpdateFailed: "به‌روزرسانی امانت کتاب ناموفق بود",
+      loanDeleted: "امانت کتاب با موفقیت حذف شد",
+      loanDeleteFailed: "حذف امانت کتاب ناموفق بود"
     },
     limitOverrideAdded: "تجاوز از حد اضافه شد",
     licenseSigned: "جواز با موفقیت امضا شد",

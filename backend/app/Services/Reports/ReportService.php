@@ -641,6 +641,18 @@ class ReportService
             $layout['rtl'] = StudentHistoryReportLabels::isRtl((string) $config->language);
         }
 
+        if ($templateName === 'student-report-card' || $config->reportKey === 'student_report_card') {
+            $layout['font_family'] = 'Bahij Nassim';
+            $layout['font_size'] = $layout['font_size'] ?? '10px';
+            $layout['rtl'] = StudentExamReportCardLabels::isRtl((string) $config->language);
+            $layout['orientation'] = 'portrait';
+            $layout['page_size'] = 'A5';
+            $layout['margins'] = '8mm 8mm 10mm 8mm';
+            $layout['logo_height_px'] = $layout['logo_height_px'] ?? 56;
+            $layout['show_page_numbers'] = $layout['show_page_numbers'] ?? false;
+            $layout['show_generation_date'] = $layout['show_generation_date'] ?? true;
+        }
+
         if ($templateName === 'exam_seating_map' || $config->reportKey === 'exam_seating_map') {
             $layout['font_family'] = 'Bahij Nassim';
             $layout['font_size'] = $layout['font_size'] ?? '10px';

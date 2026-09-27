@@ -12,7 +12,9 @@ class LibraryLoan extends Model
     use HasFactory, SoftDeletes;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -66,5 +68,15 @@ class LibraryLoan extends Model
     public function school()
     {
         return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class, 'student_id');
+    }
+
+    public function staff()
+    {
+        return $this->belongsTo(Staff::class, 'staff_id');
     }
 }

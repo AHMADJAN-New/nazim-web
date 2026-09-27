@@ -1,13 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
-import { Printer, Award, User, TrendingUp, BookOpen, Trophy, AlertCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+﻿import { useQuery } from '@tanstack/react-query';
+import { FileDown, Printer, Award, Calendar, User, TrendingUp, BookOpen, Trophy, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useExams, useLatestExamFromCurrentYear, useExamClasses } from '@/hooks/useExams';
 import { useExamStudentsWithNumbers } from '@/hooks/useExamNumbers';
@@ -78,7 +78,7 @@ type StudentReportData = {
     total_marks_obtained_raw?: number;
     total_maximum_marks?: number;
     overall_percentage?: number;
-    overall_result?: 'Pass' | 'Fail' | 'Incomplete';
+    overall_result?: 'Pass' | 'Fail';
     overall_grade?: string | null;
     marks_cut?: number;
     absence_count?: number;
@@ -219,14 +219,14 @@ function GradeCard({
 
   return (
     <div className="student-report-card space-y-4 print:space-y-0" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* School banner — prominent in print, subtle on screen */}
+      {/* School banner â€” prominent in print, subtle on screen */}
       <div className="src-school-banner hidden print:block rounded-t-md">
         {displaySchoolName ? (
           <h2 className="src-school-name">{displaySchoolName}</h2>
         ) : null}
         <p className="src-report-title">{t('nav.studentReportCard')}</p>
         <p className="src-exam-meta">
-          {[examName, classLabel, academicYear?.name].filter(Boolean).join(' · ')}
+          {[examName, classLabel, academicYear?.name].filter(Boolean).join(' Â· ')}
         </p>
       </div>
 
@@ -451,14 +451,10 @@ function GradeCard({
               <Separator className="src-print-hide" />
               <div className="src-result-stat flex justify-between items-center">
                 <span className="text-muted-foreground">{t('examReports.result')}:</span>
-                {reportData.summary?.overall_result === 'Pass' ? (
+                {reportData.summary?.overall_result?.toLowerCase() === 'pass' ? (
                   <Badge variant="default" className="gap-1 text-base px-3 py-1">
                     <TrendingUp className="h-4 w-4 src-print-hide" />
                     {t('events.pass')}
-                  </Badge>
-                ) : reportData.summary?.overall_result === 'Incomplete' ? (
-                  <Badge variant="outline" className="text-base px-3 py-1">
-                    {t('examReports.incomplete') || 'Incomplete'}
                   </Badge>
                 ) : (
                   <Badge variant="destructive" className="text-base px-3 py-1">
@@ -514,397 +510,3 @@ function GradeCard({
   );
 }
 
-export default function StudentExamReport() {
-  const { t, isRTL } = useLanguage();
-  const canViewReports = useHasPermission('students.read');
-  const { data: profile } = useProfile();
-  const { data: organization } = useCurrentOrganization();
-  const { data: school } = useSchool(profile?.default_school_id ?? '');
-  const exportPdf = useExportStudentExamReportCardsPdf();
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
-
-  const [selectedExamStudentIds, setSelectedExamStudentIds] = useState<string[]>([]);
-  const [selectedExamId, setSelectedExamId] = useState<string>('');
-  const [selectedClassId, setSelectedClassId] = useState<string>('');
-
-  const { data: exams, isLoading: examsLoading } = useExams();
-  const { data: academicYears } = useAcademicYears();
-  const { isLoading: currentYearLoading } = useCurrentAcademicYear();
-  const latestExam = useLatestExamFromCurrentYear();
-  const { data: examClasses, isLoading: examClassesLoading } = useExamClasses(selectedExamId);
-
-  const { data: studentsWithNumbers, isLoading: examStudentsLoading } = useExamStudentsWithNumbers(
-    selectedExamId && selectedClassId ? selectedExamId : undefined,
-    selectedClassId || undefined
-  );
-  const classStudents = studentsWithNumbers?.students ?? [];
-
-  useEffect(() => {
-    if (!selectedExamId && !examsLoading && !currentYearLoading && exams !== undefined) {
-      if (latestExam) {
-        setSelectedExamId(latestExam.id);
-      } else if (exams && exams.length > 0) {
-        setSelectedExamId(exams[0].id);
-      }
-    }
-  }, [exams, latestExam, selectedExamId, examsLoading, currentYearLoading]);
-
-  useEffect(() => {
-    if (examClasses && examClasses.length > 0 && !selectedClassId && !examClassesLoading) {
-      setSelectedClassId(examClasses[0].id);
-    }
-  }, [examClasses, selectedClassId, examClassesLoading]);
-
-  useEffect(() => {
-    setSelectedClassId('');
-    setSelectedExamStudentIds([]);
-  }, [selectedExamId]);
-
-  useEffect(() => {
-    setSelectedExamStudentIds([]);
-  }, [selectedClassId]);
-
-  const selectedExam = exams?.find((e) => e.id === selectedExamId);
-  const academicYear = academicYears?.find((y) => y.id === selectedExam?.academicYearId);
-
-  const examOptions: ComboboxOption[] = (exams || []).map((exam) => ({
-    value: exam.id,
-    label: `${exam.name}${exam.academicYear ? ` (${exam.academicYear.name})` : ''}`,
-  }));
-
-  const classOptions: ComboboxOption[] = (examClasses || []).map((examClass) => {
-    const className = examClass.classAcademicYear?.class?.name || 'Unknown';
-    const section = examClass.classAcademicYear?.sectionName || '';
-    return {
-      value: examClass.id,
-      label: `${className}${section ? ` - ${section}` : ''}`,
-    };
-  });
-
-  const studentOptions: ComboboxOption[] = classStudents.map((es) => {
-    const roll = es.examRollNumber ?? '';
-    const secret = es.examSecretNumber ?? '';
-    const name = es.fullName || '';
-    return {
-      value: es.examStudentId,
-      label: `${name}${roll ? ` • Roll ${roll}` : ''}${secret ? ` • Secret ${secret}` : ''}`,
-    };
-  });
-
-  const { data: reportsData, isLoading: reportsLoading, isFetching: reportsFetching } = useQuery({
-    queryKey: ['student-exam-reports', selectedExamStudentIds.join(','), selectedExamId],
-    queryFn: async () => {
-      if (!selectedExamStudentIds.length || !selectedExamId) return [];
-
-      const reportPromises = selectedExamStudentIds.map(async (examStudentId) => {
-        try {
-          const response = await examsApi.studentReport(selectedExamId, examStudentId);
-          if (response && typeof response === 'object' && 'data' in response) {
-            return (response as { data: StudentReportData }).data;
-          }
-          return response as StudentReportData;
-        } catch (error) {
-          if (import.meta.env.DEV) {
-            console.error('Error fetching student report:', error);
-          }
-          return null;
-        }
-      });
-
-      return Promise.all(reportPromises);
-    },
-    enabled: Boolean(selectedExamStudentIds.length > 0 && selectedExamId),
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: false,
-  });
-
-  const handlePrint = () => {
-    if (!selectedExamId || selectedExamStudentIds.length === 0) return;
-    setExportDialogOpen(true);
-    exportPdf.mutate({
-      examId: selectedExamId,
-      examStudentIds: selectedExamStudentIds,
-      brandingId: profile?.default_school_id || undefined,
-    });
-  };
-
-  const handleStudentToggle = (examStudentId: string) => {
-    setSelectedExamStudentIds((prev) =>
-      prev.includes(examStudentId) ? prev.filter((id) => id !== examStudentId) : [...prev, examStudentId]
-    );
-  };
-
-  const handleSelectAll = () => {
-    if (selectedExamStudentIds.length === studentOptions.length) {
-      setSelectedExamStudentIds([]);
-    } else {
-      setSelectedExamStudentIds(studentOptions.map((opt) => opt.value));
-    }
-  };
-
-  if (!canViewReports) {
-    return (
-      <div className="container mx-auto py-6">
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">{t('events.noPermission')}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="student-exam-report-page container mx-auto py-6 space-y-6 max-w-7xl overflow-x-hidden">
-      <PageHeader
-        title={t('nav.examReports')}
-        description={t('studentReportCard.selectStudentPrompt')}
-        icon={<Award className="h-5 w-5" />}
-        className="no-print"
-      />
-
-      <FilterPanel title={t('library.selectStudent')} className="no-print">
-        <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="exam">{t('examReports.selectExam')}</Label>
-              <Combobox
-                options={examOptions}
-                value={selectedExamId}
-                onValueChange={(val) => {
-                  setSelectedExamId(val);
-                }}
-                placeholder={t('examReports.selectExamPrompt')}
-                searchPlaceholder={t('events.search') || 'Search...'}
-                emptyText={t('exams.noExams') || 'No exams'}
-                disabled={examsLoading}
-              />
-              {selectedExam && academicYear && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('examReports.academicYear')}: <span className="font-semibold">{academicYear.name}</span>
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="class">{t('search.class')}</Label>
-              <Combobox
-                options={classOptions}
-                value={selectedClassId}
-                onValueChange={setSelectedClassId}
-                placeholder={selectedExamId ? t('events.selectClass') || 'Select class' : t('examReports.selectExamFirst') || 'Select an exam first'}
-                searchPlaceholder={t('events.search') || 'Search...'}
-                emptyText={
-                  selectedExamId
-                    ? (examClassesLoading ? t('common.loading') || 'Loading...' : t('classes.noClasses') || 'No classes')
-                    : t('examReports.selectExamFirst') || 'Select an exam first'
-                }
-                disabled={!selectedExamId || examClassesLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="student">{t('library.selectStudent')}</Label>
-                {studentOptions.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSelectAll}
-                    className="h-7 text-xs"
-                  >
-                    {selectedExamStudentIds.length === studentOptions.length ? t('events.deselectAll') || 'Deselect All' : t('events.selectAll') || 'Select All'}
-                  </Button>
-                )}
-              </div>
-              <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-2">
-                {selectedClassId ? (
-                  examStudentsLoading ? (
-                    <div className="text-sm text-muted-foreground text-center py-4">{t('common.loading') || 'Loading...'}</div>
-                  ) : studentOptions.length > 0 ? (
-                    studentOptions.map((option, optIdx) => {
-                      const isSelected = selectedExamStudentIds.includes(option.value);
-                      return (
-                        <div key={option.value || `student-option-${optIdx}`} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`student-${option.value}`}
-                            checked={isSelected}
-                            onCheckedChange={() => handleStudentToggle(option.value)}
-                          />
-                          <label
-                            htmlFor={`student-${option.value}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                          >
-                            {option.label}
-                          </label>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-4">{t('students.noStudents') || 'No students'}</div>
-                  )
-                ) : (
-                  <div className="text-sm text-muted-foreground text-center py-4">
-                    {selectedExamId ? t('examReports.selectClassFirst') || 'Select a class first' : t('examReports.selectExamFirst') || 'Select an exam first'}
-                  </div>
-                )}
-              </div>
-              {selectedExamStudentIds.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {selectedExamStudentIds.length} {t('events.selected') || 'selected'}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {selectedExamStudentIds.length > 0 && selectedExamId && (
-            <div className="flex gap-2 mt-4">
-              <Button
-                variant="outline"
-                onClick={handlePrint}
-                disabled={exportPdf.isPending || exportPdf.isPolling}
-              >
-                <Printer className="h-4 w-4 mr-2" />
-                {exportPdf.isPolling
-                  ? (t('studentReportCard.generating') || 'Generating...')
-                  : t('studentReportCard.printCard')}
-              </Button>
-              {reportsData && reportsData.length > 0 && reportsData.some(r => r !== null) && (
-                <ReportExportButtons
-                  data={reportsData.filter((r): r is StudentReportData => r !== null)}
-                  columns={[
-                    { key: 'studentName', label: t('userManagement.fullName') || 'Student Name' },
-                    { key: 'rollNumber', label: t('students.rollNo') || 'Roll Number' },
-                    { key: 'className', label: t('search.class') || 'Class' },
-                    { key: 'subjects', label: t('events.subjects') || 'Subjects' },
-                    { key: 'absenceCount', label: t('examAbsencePenalty.absenceCount') || 'Absences' },
-                    { key: 'marksCut', label: t('examAbsencePenalty.marksCut') || 'Marks cut' },
-                    { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
-                    { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
-                    { key: 'grade', label: t('studentReportCard.grade') || 'Grade' },
-                    { key: 'result', label: t('examReports.result') || 'Result' },
-                  ]}
-                  reportKey="student_report_card_summary"
-                  title={`${t('nav.studentReportCard') || 'Student Report Card'} - ${selectedExam?.name || ''}`}
-                  transformData={(data) => data.map((report: StudentReportData) => {
-                    const subjectsList = (report.subjects || []).map((s) => {
-                      const subjectName = s.subject?.name || s.name || '-';
-                      const marks = s.marks;
-                      const isAbsent = s.is_absent;
-                      if (isAbsent) {
-                        return `${subjectName}: ${t('examReports.absent') || 'Absent'}`;
-                      }
-                      if (marks?.obtained !== null && marks?.obtained !== undefined) {
-                        return `${subjectName}: ${marks.obtained}/${marks.total}`;
-                      }
-                      return `${subjectName}: -`;
-                    }).join('; ');
-
-                    return {
-                      studentName: report.student?.full_name || '-',
-                      rollNumber: report.student?.roll_number || '-',
-                      className: report.student?.class
-                        ? `${report.student.class}${report.student.section ? ` - ${report.student.section}` : ''}`
-                        : '-',
-                      subjects: subjectsList,
-                      absenceCount: report.summary?.absence_count ?? '-',
-                      marksCut: report.summary?.marks_cut ?? '-',
-                      totalMarks: `${report.summary?.total_marks_obtained || 0}/${report.summary?.total_maximum_marks || 0}`,
-                      percentage: report.summary?.overall_percentage !== null && report.summary?.overall_percentage !== undefined
-                        ? `${report.summary.overall_percentage.toFixed(2)}%`
-                        : '-',
-                      grade: report.summary?.overall_grade || '-',
-                      result: report.summary?.overall_result === 'Pass'
-                        ? (t('events.pass') || 'Pass')
-                        : report.summary?.overall_result === 'Incomplete'
-                          ? (t('examReports.incomplete') || 'Incomplete')
-                          : (t('events.fail') || 'Fail'),
-                    };
-                  })}
-                  buildFiltersSummary={() => {
-                    const parts: string[] = [];
-                    if (selectedExam?.name) parts.push(`Exam: ${selectedExam.name}`);
-                    if (academicYear?.name) parts.push(`Academic Year: ${academicYear.name}`);
-                    parts.push(`Students: ${selectedExamStudentIds.length}`);
-                    return parts.join(' | ');
-                  }}
-                  schoolId={profile?.default_school_id}
-                  templateType="student_report_card"
-                  disabled={!reportsData || reportsData.length === 0}
-                />
-              )}
-            </div>
-          )}
-      </FilterPanel>
-
-      {selectedExamStudentIds.length > 0 && selectedExamId && (
-        <div className="space-y-6">
-          {reportsLoading || reportsFetching ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="space-y-4">
-                  <Skeleton className="h-8 w-3/4 mx-auto" />
-                  <Skeleton className="h-6 w-1/2 mx-auto" />
-                  <Skeleton className="h-64 w-full" />
-                </div>
-              </CardContent>
-            </Card>
-          ) : reportsData ? (
-            reportsData.map((reportData, index) => {
-              const examStudentId = selectedExamStudentIds[index];
-              const uniqueKey = examStudentId || `report-${index}`;
-
-              if (!reportData) {
-                return (
-                  <Card key={`no-data-${uniqueKey}`}>
-                    <CardContent className="flex items-center justify-center py-12">
-                      <div className="text-center space-y-2">
-                        <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
-                        <p className="text-muted-foreground">{t('examReports.noDataAvailable') || 'No data available'}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              }
-
-              return (
-                <div key={`report-${uniqueKey}`}>
-                  <GradeCard
-                    reportData={reportData}
-                    selectedExam={selectedExam}
-                    academicYear={academicYear}
-                    schoolName={school?.schoolName}
-                    organizationName={organization?.name}
-                    t={t}
-                    isRTL={isRTL}
-                  />
-                </div>
-              );
-            })
-          ) : null}
-        </div>
-      )}
-
-      <ReportProgressDialog
-        open={exportDialogOpen && (exportPdf.isPending || exportPdf.isPolling || exportPdf.status !== null)}
-        onOpenChange={(open) => {
-          setExportDialogOpen(open);
-          if (!open) {
-            exportPdf.reset();
-          }
-        }}
-        status={exportPdf.status}
-        progress={exportPdf.progress}
-        fileName={exportPdf.fileName}
-        error={exportPdf.error}
-        onDownload={() => {
-          void exportPdf.downloadReport();
-        }}
-        onClose={() => {
-          setExportDialogOpen(false);
-          exportPdf.reset();
-        }}
-      />
-    </div>
-  );
-}

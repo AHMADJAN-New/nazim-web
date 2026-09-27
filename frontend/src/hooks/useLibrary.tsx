@@ -115,6 +115,7 @@ export const useCreateLibraryBook = () => {
     onSuccess: async () => {
       showToast.success('toast.library.bookSaved');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.invalidateQueries({ queryKey: ['library-books-next-number'] });
       await qc.invalidateQueries({ queryKey: ['library-loans'] });
       await qc.invalidateQueries({ queryKey: ['library-due-soon'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
@@ -216,6 +217,49 @@ export const useCreateLibraryLoan = () => {
       await qc.refetchQueries({ queryKey: ['library-loans'] });
     },
     onError: () => showToast.error('toast.library.loanCreateFailed'),
+  });
+};
+
+export const useUpdateLibraryLoan = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string; [key: string]: unknown }) => libraryLoansApi.update(id, data as {
+      loan_date: string;
+      student_id?: string | null;
+      staff_id?: string | null;
+      due_date?: string | null;
+      deposit_amount?: number;
+    }),
+    onSuccess: async () => {
+      showToast.success('toast.library.loanUpdated');
+      await qc.invalidateQueries({ queryKey: ['library-loans'] });
+      await qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.invalidateQueries({ queryKey: ['library-due-soon'] });
+      await qc.refetchQueries({ queryKey: ['library-loans'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'toast.library.loanUpdateFailed');
+    },
+  });
+};
+
+export const useDeleteLibraryLoan = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await libraryLoansApi.remove(id);
+    },
+    onSuccess: async () => {
+      showToast.success('toast.library.loanDeleted');
+      await qc.invalidateQueries({ queryKey: ['library-loans'] });
+      await qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.invalidateQueries({ queryKey: ['library-due-soon'] });
+      await qc.refetchQueries({ queryKey: ['library-loans'] });
+      await qc.refetchQueries({ queryKey: ['library-books'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'toast.library.loanDeleteFailed');
+    },
   });
 };
 
