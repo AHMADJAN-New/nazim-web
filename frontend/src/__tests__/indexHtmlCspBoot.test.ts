@@ -38,4 +38,10 @@ describe('index.html CSP-safe boot assets', () => {
     expect(readIndexHtml()).toMatch(/src=["'](?:%BASE_URL%|\/)theme-init\.js["']/);
     expect(existsSync(resolve(frontendRoot, 'public/theme-init.js'))).toBe(true);
   });
+
+  it('opts the document out of browser translation', () => {
+    const html = readIndexHtml();
+    expect(html).toMatch(/<html\b[^>]*\btranslate=["']no["']/);
+    expect(html).toMatch(/<meta\s+name=["']google["']\s+content=["']notranslate["']\s*\/?>/i);
+  });
 });

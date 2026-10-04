@@ -101,6 +101,7 @@ export default {
     markAttendance: "ثبت حاضري",
     courseCertificates: "تصدیق‌نامه‌های کورس",
     leaveReports: "گزارشات رخصتی",
+    leaveApprovals: "تأیید و رد",
     events: "رویدادها",
     "events.all": "همه رویدادها",
     "events.checkin": "ثبت حضور",

@@ -53,6 +53,7 @@ const DialogContent = React.forwardRef<
           className
         )}
         {...props}
+        translate="no"
       >
         {children}
         {/* Add hidden description if aria-describedby is not explicitly provided

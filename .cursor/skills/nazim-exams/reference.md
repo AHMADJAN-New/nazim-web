@@ -10,6 +10,7 @@
 - `exams.create`
 - `exams.update`
 - `exams.delete`
+- `exams.reopen` — reopen completed → in_progress (default: organization_admin only)
 
 Use for nav visibility and backend controller checks. Format is `{resource}.{action}` (no prefix like `academic.exams.read`).
 

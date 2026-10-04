@@ -653,6 +653,18 @@ class ReportService
             $layout['show_generation_date'] = $layout['show_generation_date'] ?? true;
         }
 
+        if ($templateName === 'leave-request-slip' || $config->reportKey === 'leave_request_slip') {
+            $layout['font_family'] = 'Bahij Nassim';
+            $layout['font_size'] = $layout['font_size'] ?? '7px';
+            $layout['rtl'] = LeaveRequestSlipLabels::isRtl((string) $config->language);
+            $layout['orientation'] = 'portrait';
+            $layout['page_size'] = 'A6';
+            $layout['margins'] = '3mm 3mm 3mm 3mm';
+            $layout['logo_height_px'] = 28;
+            $layout['show_page_numbers'] = false;
+            $layout['show_generation_date'] = false;
+        }
+
         if ($templateName === 'exam_seating_map' || $config->reportKey === 'exam_seating_map') {
             $layout['font_family'] = 'Bahij Nassim';
             $layout['font_size'] = $layout['font_size'] ?? '10px';

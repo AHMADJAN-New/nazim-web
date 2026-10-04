@@ -151,6 +151,7 @@ import {
   LibraryDistribution,
   LibraryReports,
   LeaveManagement,
+  LeaveApprovals,
   LeaveReports,
   PhoneBook,
   Assets,
@@ -1872,6 +1873,13 @@ const App = () => (
                       <PermissionRoute permission="leave_requests.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <LeaveManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/leave-requests/approvals" element={
+                      <PermissionRoute permission="leave_requests.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LeaveApprovals />
                         </Suspense>
                       </PermissionRoute>
                     } />

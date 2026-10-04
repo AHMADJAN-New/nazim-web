@@ -26,6 +26,7 @@ export const mapLeaveRequestApiToDomain = (api: LeaveApi.LeaveRequest): LeaveReq
     ? {
         id: api.student.id,
         fullName: api.student.full_name,
+        fatherName: api.student.father_name ?? null,
         admissionNo: api.student.admission_no,
         studentCode: api.student.student_code,
         picturePath: api.student.picture_path,
@@ -33,7 +34,9 @@ export const mapLeaveRequestApiToDomain = (api: LeaveApi.LeaveRequest): LeaveReq
     : undefined,
   className: api.class_model?.name || null,
   gradeLevel: api.class_model?.grade_level ?? null,
-  schoolName: api.school?.name ?? null,
+  schoolName: api.school?.school_name ?? api.school?.name ?? null,
+  schoolNamePashto: api.school?.school_name_pashto ?? null,
+  schoolNameArabic: api.school?.school_name_arabic ?? null,
 });
 
 export const mapLeaveRequestDomainToInsert = (payload: LeaveRequestInsert): any => ({

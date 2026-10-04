@@ -23,6 +23,7 @@ export interface LeaveRequest {
   student?: {
     id: string;
     full_name: string;
+    father_name?: string | null;
     admission_no: string;
     student_code: string | null;
     picture_path?: string | null;
@@ -35,5 +36,8 @@ export interface LeaveRequest {
   school?: {
     id: string;
     name: string;
+    school_name?: string | null;
+    school_name_pashto?: string | null;
+    school_name_arabic?: string | null;
   };
 }

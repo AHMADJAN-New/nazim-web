@@ -3224,7 +3224,18 @@ export const leaveRequestsApi = {
   reject: async (id: string, data?: { approval_note?: string | null }) =>
     apiClient.post(`/leave-requests/${id}/reject`, data || {}),
 
-  printData: async (id: string) => apiClient.get(`/leave-requests/${id}/print`),
+  printData: async (
+    id: string,
+    data?: {
+      calendar_preference?: 'gregorian' | 'jalali' | 'qamari';
+      language?: 'en' | 'ps' | 'fa' | 'ar';
+      labels?: Record<string, string>;
+    }
+  ) =>
+    apiClient.requestFile(`/leave-requests/${id}/print`, {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    }),
 
   scan: async (token: string) => apiClient.get(`/leave-requests/scan/${token}`),
 

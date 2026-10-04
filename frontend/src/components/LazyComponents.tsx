@@ -101,6 +101,7 @@ export const LibraryDashboard = lazy(() => import('@/pages/LibraryDashboard'));
 export const LibraryDistribution = lazy(() => import('@/pages/LibraryDistribution'));
 export const LibraryReports = lazy(() => import('@/pages/LibraryReports'));
 export const LeaveManagement = lazy(() => import('@/pages/LeaveManagement').then(module => ({ default: module.default })));
+export const LeaveApprovals = lazy(() => import('@/pages/LeaveApprovals').then(module => ({ default: module.default })));
 export const LeaveReports = lazy(() => import('@/pages/LeaveReports').then(module => ({ default: module.default })));
 export const PhoneBook = lazy(() => import('@/pages/PhoneBook').then(module => ({ default: module.default })));
 export const Assets = lazy(() => import('@/pages/Assets').then(module => ({ default: module.default })));

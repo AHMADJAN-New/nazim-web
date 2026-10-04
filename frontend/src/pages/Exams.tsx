@@ -68,7 +68,7 @@ const statusTransitions: Record<ExamStatus, ExamStatus[]> = {
   draft: ['scheduled'],
   scheduled: ['draft', 'in_progress'],
   in_progress: ['completed'],
-  completed: ['archived'],
+  completed: ['in_progress', 'archived'],
   archived: [],
 };
 
@@ -235,6 +235,7 @@ export function Exams() {
   const hasCreate = useHasPermission('exams.create');
   const hasUpdate = useHasPermission('exams.update');
   const hasDelete = useHasPermission('exams.delete');
+  const hasReopen = useHasPermission('exams.reopen');
   const hasManage = useHasPermission('exams.manage');
   const hasManageTimetable = useHasPermission('exams.manage_timetable');
   const hasEnrollStudents = useHasPermission('exams.enroll_students');
@@ -242,6 +243,15 @@ export function Exams() {
   const hasViewReports = useHasPermission('exams.view_reports');
   const hasManageAttendance = useHasPermission('exams.manage_attendance');
   const hasViewAttendanceReports = useHasPermission('exams.view_attendance_reports');
+
+  const getAvailableStatusTransitions = (status: ExamStatus): ExamStatus[] => {
+    return (statusTransitions[status] ?? []).filter((newStatus) => {
+      if (status === 'completed' && newStatus === 'in_progress') {
+        return hasReopen;
+      }
+      return true;
+    });
+  };
 
   // Check for view query param and auto-expand exam row
   useEffect(() => {
@@ -646,10 +656,10 @@ export function Exams() {
                           <DropdownMenuSeparator />
                           
                           {/* Status Change Actions */}
-                          {hasUpdate && statusTransitions[exam.status]?.length > 0 && (
+                          {hasUpdate && getAvailableStatusTransitions(exam.status).length > 0 && (
                             <>
                               <DropdownMenuLabel>{t('exams.changeStatus') || 'Change Status'}</DropdownMenuLabel>
-                              {statusTransitions[exam.status].map(newStatus => (
+                              {getAvailableStatusTransitions(exam.status).map(newStatus => (
                                 <DropdownMenuItem 
                                   key={newStatus}
                                   onClick={() => openStatusDialog(exam, newStatus)}

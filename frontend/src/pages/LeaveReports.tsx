@@ -33,6 +33,7 @@ import { useLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import { displayLeaveSchoolName } from '@/lib/leave/leaveSchoolName';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
 
@@ -488,10 +489,14 @@ export default function LeaveReports() {
                           <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('search.class')}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
-                          <div className="text-xs text-slate-500">{req.schoolName || t('leave.school')}</div>
+                          <div className="text-sm">{formatDate(req.startDate)} → {formatDate(req.endDate)}</div>
+                          <div className="text-xs text-slate-500">{displayLeaveSchoolName(req, language, t('leave.mainSchool')) || t('leave.school')}</div>
                         </TableCell>
-                        <TableCell><Badge variant="outline" className="capitalize">{req.status}</Badge></TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={statusChips.find((status) => status.value === req.status)?.color}>
+                            {statusChips.find((status) => status.value === req.status)?.label ?? req.status}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="max-w-[280px]"><div className="line-clamp-2 text-sm">{req.reason}</div></TableCell>
                       </TableRow>
                     ))}
@@ -568,7 +573,7 @@ export default function LeaveReports() {
                           <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('search.class')}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
+                          <div className="text-sm">{formatDate(req.startDate)} → {formatDate(req.endDate)}</div>
                         </TableCell>
                         <TableCell className="max-w-[280px]"><div className="line-clamp-2 text-sm">{req.reason}</div></TableCell>
                       </TableRow>
@@ -637,7 +642,7 @@ export default function LeaveReports() {
                           <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('search.class')}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
+                          <div className="text-sm">{formatDate(req.startDate)} → {formatDate(req.endDate)}</div>
                         </TableCell>
                         <TableCell className="max-w-[280px]"><div className="line-clamp-2 text-sm">{req.reason}</div></TableCell>
                       </TableRow>
@@ -706,7 +711,7 @@ export default function LeaveReports() {
                           <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('search.class')}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
+                          <div className="text-sm">{formatDate(req.startDate)} → {formatDate(req.endDate)}</div>
                         </TableCell>
                         <TableCell className="max-w-[280px]"><div className="line-clamp-2 text-sm">{req.reason}</div></TableCell>
                       </TableRow>

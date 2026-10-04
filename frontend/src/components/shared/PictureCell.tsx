@@ -14,7 +14,7 @@ interface PictureCellProps {
   entityId: string | null | undefined;
   picturePath: string | null | undefined;
   alt?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
@@ -22,6 +22,7 @@ const sizeClasses = {
   sm: { container: 'w-10 h-10', icon: 'h-5 w-5' },
   md: { container: 'w-12 h-12', icon: 'h-6 w-6' },
   lg: { container: 'w-20 h-20', icon: 'h-10 w-10' },
+  xl: { container: 'w-24 h-24 sm:w-28 sm:h-28', icon: 'h-12 w-12' },
 };
 
 /**

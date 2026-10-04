@@ -692,6 +692,10 @@ export const permissionsManagementCatalogAr: PermissionsManagementCatalog = {
       "actionLabel": "حذف",
       "description": "حذف — الامتحانات"
     },
+    "exams.reopen": {
+      "actionLabel": "إعادة فتح",
+      "description": "إعادة فتح الامتحانات المكتملة إلى قيد التنفيذ لإدخال الدرجات"
+    },
     "exams.enroll_students": {
       "actionLabel": "تسجيل الطلاب",
       "description": "تسجيل الطلاب — الامتحانات"

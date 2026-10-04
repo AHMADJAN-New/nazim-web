@@ -692,6 +692,10 @@ export const permissionsManagementCatalogFa: PermissionsManagementCatalog = {
       "actionLabel": "حذف",
       "description": "حذف — امتحانات"
     },
+    "exams.reopen": {
+      "actionLabel": "بازگشایی",
+      "description": "بازگشایی امتحانات تکمیل‌شده به در جریان برای ثبت نمرات"
+    },
     "exams.enroll_students": {
       "actionLabel": "ثبت‌نام شاگردان",
       "description": "ثبت‌نام شاگردان — امتحانات"

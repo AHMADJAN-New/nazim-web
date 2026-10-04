@@ -24,6 +24,7 @@ export interface LeaveRequest {
   student?: {
     id: string;
     fullName: string;
+    fatherName?: string | null;
     admissionNo: string;
     studentCode: string | null;
     picturePath?: string | null;
@@ -31,6 +32,8 @@ export interface LeaveRequest {
   className?: string | null;
   gradeLevel?: number | null;
   schoolName?: string | null;
+  schoolNamePashto?: string | null;
+  schoolNameArabic?: string | null;
 }
 
 export interface LeaveRequestInsert {

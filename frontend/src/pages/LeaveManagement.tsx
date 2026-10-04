@@ -1,13 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { format, addDays, addWeeks } from 'date-fns';
-import { Calendar, CheckCircle2, Download, Eye, FileText, Loader2, Printer, Shield, UserRound, Zap, Search, Scan, X, Clock, MapPin, Building2 } from 'lucide-react';
+import { addDays, addWeeks, format } from 'date-fns';
+import { calendarState } from '@/lib/calendarState';
+import { Calendar, CheckCircle2, ChevronDown, Eye, FileText, Loader2, MoreHorizontal, Printer, UserRound, Zap, Search, Scan, X, Clock, MapPin, Building2 } from 'lucide-react';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import {
   DropdownMenu,
@@ -20,20 +23,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useLeaveRequests, useCreateLeaveRequest, useApproveLeaveRequest, useRejectLeaveRequest } from '@/hooks/useLeaveRequests';
+import { useLeaveRequests, useCreateLeaveRequest, useApproveLeaveRequest, useRejectLeaveRequest, useUpdateLeaveRequest } from '@/hooks/useLeaveRequests';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import type { Student } from '@/types/domain/student';
 import { useProfile } from '@/hooks/useProfiles';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PictureCell } from '@/components/shared/PictureCell';
+import { cn } from '@/lib/utils';
 import {
   findStudentBySearchTerm,
-  getInitialLeaveFilterDate,
   resolveStudentSelectionOnClassChange,
 } from '@/lib/leave/leaveManagementHelpers';
 import { showToast } from '@/lib/toast';
@@ -41,6 +44,13 @@ import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
 import { leaveRequestsApi, studentAdmissionsApi } from '@/lib/api/client';
 import type { LeaveRequest, LeaveRequestInsert } from '@/types/domain/leave';
 import { mapLeaveRequestApiToDomain } from '@/mappers/leaveMapper';
+import {
+  buildLeaveApprovalFilters,
+  canEditLeaveRequestDates,
+  type LeaveApprovalStatusFilter,
+} from '@/lib/leave/leaveApprovalWorkspace';
+import { displayLeaveSchoolName } from '@/lib/leave/leaveSchoolName';
+import { formatDate } from '@/lib/utils';
 import { useLanguage } from '@/hooks/useLanguage';
 
 const statusColors: Record<string, string> = {
@@ -50,8 +60,13 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
 };
 
-export default function LeaveManagement() {
-  const { t, isRTL } = useLanguage();
+interface LeaveManagementProps {
+  mode?: 'create' | 'approvals';
+}
+
+export default function LeaveManagement({ mode = 'create' }: LeaveManagementProps) {
+  const { t, isRTL, language } = useLanguage();
+  const isApprovalsView = mode === 'approvals';
   const { data: profile } = useProfile();
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -69,9 +84,24 @@ export default function LeaveManagement() {
   const [fastSearch, setFastSearch] = useState<string>('');
   const [isSearching, setIsSearching] = useState(false);
   const [panelApprovalNote, setPanelApprovalNote] = useState<string>('');
+  const [approvalStatus, setApprovalStatus] = useState<LeaveApprovalStatusFilter>('pending');
+  const [approvalDateFrom, setApprovalDateFrom] = useState('');
+  const [approvalDateTo, setApprovalDateTo] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pendingStudentFromScanRef = useRef<string | null>(null);
   const [scannedStudentOption, setScannedStudentOption] = useState<ComboboxOption | null>(null);
+  const [lastCreatedRequest, setLastCreatedRequest] = useState<LeaveRequest | null>(null);
+  const [approvalNoteOpen, setApprovalNoteOpen] = useState(false);
+  const [identityStudent, setIdentityStudent] = useState<{
+    id: string;
+    fullName: string;
+    fatherName: string | null;
+    code: string | null;
+    className: string | null;
+    picturePath: string | null;
+  } | null>(null);
 
   // Get current academic year
   const { data: currentAcademicYear } = useCurrentAcademicYear(profile?.organization_id);
@@ -82,34 +112,18 @@ export default function LeaveManagement() {
     profile?.organization_id
   );
 
-  // Initialize filter date to first day of current month, constrained to academic year
-  const getInitialFilterDate = useCallback((): Date => {
-    return getInitialLeaveFilterDate(new Date(), currentAcademicYear ?? null);
-  }, [currentAcademicYear]);
+  const approvalFilters = useMemo(
+    () => buildLeaveApprovalFilters(approvalStatus, approvalDateFrom, approvalDateTo),
+    [approvalStatus, approvalDateFrom, approvalDateTo],
+  );
 
-  const [filterDate, setFilterDate] = useState<Date>(getInitialFilterDate());
+  const { requests, pagination, page, pageSize, setPage, setPageSize, isLoading } = useLeaveRequests(
+    isApprovalsView ? approvalFilters : {},
+  );
 
-  // Reset filter date when academic year changes
-  useEffect(() => {
-    if (currentAcademicYear) {
-      const newDate = getInitialFilterDate();
-      setFilterDate(newDate);
-    }
-  }, [currentAcademicYear?.id, getInitialFilterDate]);
-
-  // Extract month and year from filter date (always has a value)
-  const filterMonth = useMemo(() => filterDate.getMonth() + 1, [filterDate]);
-  const filterYear = useMemo(() => filterDate.getFullYear(), [filterDate]);
-
-  const { requests, pagination, page, pageSize, setPage, setPageSize, isLoading } = useLeaveRequests({
-    month: filterMonth,
-    year: filterYear,
-  });
-
-  // Reset pagination when history month/year filter changes
   useEffect(() => {
     setPage(1);
-  }, [filterMonth, filterYear, setPage]);
+  }, [approvalStatus, approvalDateFrom, approvalDateTo, setPage]);
 
   // Get student admissions with active status and class filter
   const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
@@ -127,6 +141,7 @@ export default function LeaveManagement() {
   const createLeave = useCreateLeaveRequest();
   const approveLeave = useApproveLeaveRequest();
   const rejectLeave = useRejectLeaveRequest();
+  const updateLeave = useUpdateLeaveRequest();
 
   // Get classes from class academic years (only for current academic year)
   const classOptions = useMemo<ComboboxOption[]>(() => {
@@ -238,19 +253,76 @@ export default function LeaveManagement() {
     setScannedStudentOption(null);
   }, [selectedClass]);
 
+  // Keep identity card in sync when class/student list resolves after scan or manual pick
+  useEffect(() => {
+    if (!selectedStudent) {
+      setIdentityStudent(null);
+      return;
+    }
+
+    const className = classOptions.find((c) => c.value === selectedClass)?.label || null;
+    const fromList = students.find((s) => s.id === selectedStudent);
+    if (fromList) {
+      setIdentityStudent({
+        id: fromList.id,
+        fullName: fromList.fullName,
+        fatherName: fromList.fatherName || null,
+        code: fromList.studentCode || fromList.admissionNumber || null,
+        className,
+        picturePath: fromList.picturePath || null,
+      });
+      return;
+    }
+
+    setIdentityStudent((prev) => {
+      if (prev?.id === selectedStudent) {
+        return { ...prev, className: className ?? prev.className };
+      }
+      if (scannedStudentOption?.value === selectedStudent) {
+        return {
+          id: selectedStudent,
+          fullName: scannedStudentOption.label.split(' (')[0] || scannedStudentOption.label,
+          fatherName: null,
+          code: null,
+          className,
+          picturePath: null,
+        };
+      }
+      return prev;
+    });
+  }, [selectedStudent, students, selectedClass, classOptions, scannedStudentOption]);
+
+  const resetLeaveFields = useCallback(() => {
+    setLeaveType('full_day');
+    setStartDate('');
+    setEndDate('');
+    setStartTime('');
+    setEndTime('');
+    setReason('');
+    setApprovalNote('');
+    setApprovalNoteOpen(false);
+  }, []);
+
+  const handleNextStudent = useCallback(() => {
+    setLastCreatedRequest(null);
+    setSelectedStudent('');
+    setScannedStudentOption(null);
+    setIdentityStudent(null);
+    setFastSearch('');
+    resetLeaveFields();
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+  }, [resetLeaveFields]);
+
   const handleCreate = async () => {
     if (!selectedStudent || !startDate || !endDate) {
       showToast.error('leave.requiredFields');
       return;
     }
 
-    // Get class academic year ID for the selected class
-    const classAcademicYear = classAcademicYears?.find(cay => cay.classId === selectedClass);
-    
     const payload: LeaveRequestInsert = {
       studentId: selectedStudent,
       classId: selectedClass || null,
-      schoolId: null, // Removed - students exist in schools
+      schoolId: null,
       academicYearId: currentAcademicYear?.id || null,
       leaveType,
       startDate: new Date(startDate),
@@ -262,22 +334,37 @@ export default function LeaveManagement() {
     };
 
     try {
-      await createLeave.mutateAsync(payload);
-      // Reset form after successful creation
+      const created = await createLeave.mutateAsync(payload);
+      const enriched: LeaveRequest = {
+        ...created,
+        student: created.student ?? (identityStudent
+          ? {
+              id: identityStudent.id,
+              fullName: identityStudent.fullName,
+              fatherName: identityStudent.fatherName,
+              admissionNo: identityStudent.code || '',
+              studentCode: identityStudent.code,
+              picturePath: identityStudent.picturePath,
+            }
+          : undefined),
+        className: created.className ?? identityStudent?.className ?? null,
+      };
+      setLastCreatedRequest(enriched);
       setSelectedStudent('');
-      // Keep class selected for faster entry
-      setLeaveType('full_day');
-      setStartDate('');
-      setEndDate('');
-      setStartTime('');
-      setEndTime('');
-      setReason('');
-      setApprovalNote('');
-      showToast.success('leave.requestCreated');
-    } catch (error) {
+      setScannedStudentOption(null);
+      setIdentityStudent(null);
+      setFastSearch('');
+      resetLeaveFields();
+    } catch {
       // Error is handled by the mutation hook
     }
   };
+
+  useEffect(() => {
+    if (!isApprovalsView) {
+      searchInputRef.current?.focus();
+    }
+  }, [isApprovalsView]);
 
   const handleApprove = async (request: LeaveRequest) => {
     try {
@@ -309,6 +396,30 @@ export default function LeaveManagement() {
     setSelectedRequest(request);
     setRequestPanelOpen(true);
     setPanelApprovalNote('');
+    setEditStartDate(dateToLocalYYYYMMDD(request.startDate));
+    setEditEndDate(dateToLocalYYYYMMDD(request.endDate));
+  };
+
+  const handleSaveDates = async () => {
+    if (!selectedRequest || !canEditLeaveRequestDates(selectedRequest.status)) return;
+
+    if (!editStartDate || !editEndDate || editEndDate < editStartDate) {
+      showToast.error('leave.requiredFields');
+      return;
+    }
+
+    try {
+      const updated = await updateLeave.mutateAsync({
+        id: selectedRequest.id,
+        data: {
+          startDate: parseLocalDate(editStartDate),
+          endDate: parseLocalDate(editEndDate),
+        },
+      });
+      setSelectedRequest(updated);
+    } catch {
+      // Mutation hook shows the translated error toast.
+    }
   };
 
   const handleViewHistory = (request: LeaveRequest) => {
@@ -336,210 +447,97 @@ export default function LeaveManagement() {
 
   const handlePrint = async (request: LeaveRequest) => {
     try {
-      const data = await leaveRequestsApi.printData(request.id) as { scan_url: string };
-      const scanUrl = data.scan_url;
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(scanUrl)}`;
-      
-      // Create a hidden iframe for printing in the same page
-      const printFrame = document.createElement('iframe');
-      printFrame.style.position = 'fixed';
-      printFrame.style.right = '0';
-      printFrame.style.bottom = '0';
-      printFrame.style.width = '0';
-      printFrame.style.height = '0';
-      printFrame.style.border = '0';
-      document.body.appendChild(printFrame);
-      
-      const printDoc = printFrame.contentWindow?.document || printFrame.contentDocument;
-      if (!printDoc) return;
-      
-      // A6 size: 105mm x 148mm (portrait) - perfect for leave slips
-      const printContent = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>${t('leave.leaveRequest')}</title>
-            <style>
-              @page {
-                size: A6;
-                margin: 4mm;
-              }
-              @media print {
-                body { margin: 0; padding: 0; }
-                .no-print { display: none; }
-              }
-              body {
-                font-family: Arial, sans-serif;
-                padding: 6mm;
-                margin: 0;
-                width: 97mm;
-                min-height: 140mm;
-              }
-              .header {
-                text-align: center;
-                border-bottom: 2px solid #000;
-                padding-bottom: 4mm;
-                margin-bottom: 5mm;
-              }
-              .header h1 {
-                margin: 0;
-                font-size: 16px;
-                font-weight: bold;
-                text-transform: uppercase;
-              }
-              .card {
-                border: 1px solid #000;
-                border-radius: 4px;
-                padding: 6mm;
-              }
-              .row {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 3mm;
-                font-size: 11px;
-              }
-              .label {
-                color: #666;
-                font-size: 9px;
-                text-transform: uppercase;
-                font-weight: bold;
-                min-width: 35mm;
-              }
-              .value {
-                font-weight: 600;
-                font-size: 11px;
-                text-align: right;
-                flex: 1;
-              }
-              .reason-row {
-                margin-top: 4mm;
-                padding-top: 4mm;
-                border-top: 1px dashed #ccc;
-              }
-              .reason-value {
-                font-size: 10px;
-                line-height: 1.4;
-                margin-top: 2mm;
-              }
-              .qr-section {
-                margin-top: 5mm;
-                text-align: center;
-                padding-top: 5mm;
-                border-top: 1px dashed #ccc;
-              }
-              .qr-section img {
-                width: 40mm;
-                height: 40mm;
-              }
-              .instructions {
-                margin-top: 3mm;
-                font-size: 8px;
-                color: #666;
-                text-align: center;
-                line-height: 1.3;
-              }
-              .status-badge {
-                display: inline-block;
-                padding: 2mm 4mm;
-                border-radius: 3px;
-                font-size: 9px;
-                font-weight: bold;
-                text-transform: uppercase;
-                margin-top: 2mm;
-              }
-              .status-approved {
-                background-color: #10b981;
-                color: white;
-              }
-              .status-pending {
-                background-color: #f59e0b;
-                color: white;
-              }
-              .status-rejected {
-                background-color: #ef4444;
-                color: white;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>${t('leave.leaveRequest')}</h1>
-            </div>
-            <div class="card">
-              <div class="row">
-                <div class="label">${t('leave.student')}:</div>
-                <div class="value">${request.student?.fullName || ''}</div>
-              </div>
-              <div class="row">
-                <div class="label">${t('events.code')}:</div>
-                <div class="value">${request.student?.studentCode || request.student?.admissionNo || ''}</div>
-              </div>
-              <div class="row">
-                <div class="label">${t('search.class')}:</div>
-                <div class="value">${request.className || ''}</div>
-              </div>
-              <div class="row">
-                <div class="label">${t('events.startDate')}:</div>
-                <div class="value">${format(request.startDate, 'dd/MM/yyyy')}</div>
-              </div>
-              <div class="row">
-                <div class="label">${t('events.endDate')}:</div>
-                <div class="value">${format(request.endDate, 'dd/MM/yyyy')}</div>
-              </div>
-              ${request.startTime && request.endTime ? `
-              <div class="row">
-                <div class="label">${t('leave.startTime')} - ${t('leave.endTime')}:</div>
-                <div class="value">${request.startTime} - ${request.endTime}</div>
-              </div>
-              ` : ''}
-              <div class="row reason-row">
-                <div class="label">${t('leave.reason')}:</div>
-                <div class="value"></div>
-              </div>
-              <div class="reason-value">${request.reason}</div>
-              ${request.approvalNote ? `
-              <div class="row" style="margin-top: 3mm;">
-                <div class="label">${t('leave.approvalNote')}:</div>
-                <div class="value"></div>
-              </div>
-              <div class="reason-value">${request.approvalNote}</div>
-              ` : ''}
-              <div class="row" style="margin-top: 3mm;">
-                <div class="label">${t('events.status')}:</div>
-                <div class="value">
-                  <span class="status-badge status-${request.status}">${t('leave.' + request.status)}</span>
-                </div>
-              </div>
-              <div class="qr-section">
-                <img src="${qrUrl}" alt="QR Code" />
-                <div class="instructions">
-                  ${t('leave.scanToVerify')}<br/>
-                  Scan this QR code to verify this leave request
-                </div>
-              </div>
-            </div>
-          </body>
-        </html>
-      `;
-      
-      printDoc.open();
-      printDoc.write(printContent);
-      printDoc.close();
-      
-      // Wait for iframe to load, then print
-      printFrame.onload = () => {
+      const calendar = calendarState.get();
+      const calendarPreference =
+        calendar === 'gregorian' ? 'gregorian' : calendar === 'hijri_shamsi' ? 'jalali' : 'qamari';
+      const langCode =
+        language === 'en' ? 'en' : language === 'ps' ? 'ps' : language === 'fa' ? 'fa' : 'ar';
+
+      const leaveTypeKey =
+        request.leaveType === 'partial_day'
+          ? 'partialDay'
+          : request.leaveType === 'time_bound'
+            ? 'timeBound'
+            : 'fullDay';
+
+      const { blob } = await leaveRequestsApi.printData(request.id, {
+        calendar_preference: calendarPreference,
+        language: langCode,
+        labels: {
+          title: t('leave.leaveRequest'),
+          student: t('leave.student'),
+          fatherName: t('leave.fatherName'),
+          code: t('leave.code'),
+          class: t('leave.class'),
+          leaveType: t('leave.leaveType'),
+          fullDay: t('leave.fullDay'),
+          partialDay: t('leave.partialDay'),
+          timeBound: t('leave.timeBound'),
+          startDate: t('leave.startDate'),
+          endDate: t('leave.endDate'),
+          time: `${t('leave.startTime')} - ${t('leave.endTime')}`,
+          duration: t('leave.leaveDuration'),
+          days: t('leave.leaves'),
+          hours: t('leave.hours'),
+          reason: t('leave.reason'),
+          status: t('leave.status'),
+          pending: t('leave.pending'),
+          approved: t('leave.approved'),
+          rejected: t('leave.rejected'),
+          cancelled: t('leave.cancelled'),
+          approvalNote: t('leave.approvalNote'),
+          approvedBy: t('leave.approvedBy'),
+          approvedAt: t('leave.approvedAt'),
+          leaveId: t('leave.leaveId'),
+          printedOn: t('leave.printedOn'),
+          scanToVerify: t('leave.scanToVerify'),
+          signatureGuard: t('leave.signatureGuard'),
+          signatureDate: t('leave.signatureDate'),
+          systemNote: t('leave.systemNote'),
+          [leaveTypeKey]: t(`leave.${leaveTypeKey}`),
+          [request.status]: t(`leave.${request.status}`),
+        },
+      });
+
+      const blobUrl = URL.createObjectURL(blob);
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
         setTimeout(() => {
-          printFrame.contentWindow?.focus();
-          printFrame.contentWindow?.print();
-          // Remove iframe after printing
-          setTimeout(() => {
-            document.body.removeChild(printFrame);
-          }, 1000);
-        }, 250);
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } finally {
+            const cleanup = () => {
+              setTimeout(() => {
+                if (iframe.parentNode) {
+                  document.body.removeChild(iframe);
+                }
+                URL.revokeObjectURL(blobUrl);
+                window.removeEventListener('afterprint', cleanup);
+              }, 500);
+            };
+            window.addEventListener('afterprint', cleanup);
+            // Fallback cleanup if afterprint never fires (cancel / some browsers)
+            setTimeout(cleanup, 30000);
+          }
+        }, 500);
       };
     } catch (error) {
-      showToast.error('leave.couldNotPrint');
-      console.error('Print error:', error);
+      showToast.error(t('leave.couldNotPrint') || 'Could not print leave request');
+      if (import.meta.env.DEV) {
+        console.error('Print error:', error);
+      }
     }
   };
 
@@ -601,11 +599,6 @@ export default function LeaveManagement() {
 
   const handleQuickReason = (reasonText: string) => {
     setReason(reasonText);
-    // Focus on approval note or submit button
-    setTimeout(() => {
-      const approvalNoteInput = document.getElementById('approval-note');
-      approvalNoteInput?.focus();
-    }, 100);
   };
 
   // Fast search handler - search by card number, student code, or admission number
@@ -651,16 +644,23 @@ export default function LeaveManagement() {
           const classExists = classOptions.some(opt => opt.value === admission.class_id);
           
           if (classExists) {
+            const className = classOptions.find(c => c.value === admission.class_id)?.label || t('events.unknown');
             pendingStudentFromScanRef.current = foundStudent.id;
             setScannedStudentOption(buildStudentOption(foundStudent));
+            setIdentityStudent({
+              id: foundStudent.id,
+              fullName: foundStudent.fullName,
+              fatherName: foundStudent.fatherName || null,
+              code: foundStudent.studentCode || foundStudent.admissionNumber || null,
+              className,
+              picturePath: foundStudent.picturePath || null,
+            });
             setSelectedClass(admission.class_id);
             setFastSearch('');
-            const className = classOptions.find(c => c.value === admission.class_id)?.label || t('events.unknown');
             showToast.success('leave.studentFound', { name: foundStudent.fullName, class: className });
 
             setTimeout(() => {
-              const reasonInput = document.getElementById('reason');
-              reasonInput?.focus();
+              document.getElementById('reason')?.focus();
             }, 200);
           } else {
             showToast.error('leave.classNotAvailable');
@@ -692,287 +692,397 @@ export default function LeaveManagement() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
       <PageHeader
-        title={t('nav.leaveRequests')}
-        description={t('leave.subtitle')}
+        title={isApprovalsView ? t('nav.leaveApprovals') : t('nav.leaveRequests')}
+        description={isApprovalsView ? t('leave.awaitingApproval') : t('leave.subtitle')}
         icon={<FileText className="h-5 w-5" />}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-8 -mt-8 opacity-50 pointer-events-none" />
-            <CardHeader>
-            <CardTitle className={`flex items-center gap-2 text-white ${isRTL ? 'flex-row-reverse' : ''}`}><Shield className="h-5 w-5" /> {t('leave.leaveGovernance')}</CardTitle>
-            <CardDescription className="text-slate-200 hidden md:block">{t('leave.qrReadySlips')}</CardDescription>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('leave.currentMonth')}</CardDescription>
-            <CardTitle className="text-3xl font-bold">{sortedRequests.filter(r => r.startDate.getMonth() === new Date().getMonth()).length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('leave.approvedThisYear')}</CardDescription>
-            <CardTitle className="text-3xl font-bold text-green-600">
-              {sortedRequests.filter(r => r.status === 'approved' && r.startDate.getFullYear() === new Date().getFullYear()).length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {!isApprovalsView ? (
+        <div className="space-y-4">
+          {lastCreatedRequest && (
+            <Card className="border-green-200 bg-green-50/60 dark:bg-green-950/20 dark:border-green-900">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="space-y-1 min-w-0">
+                    <div className={`flex items-center gap-2 text-green-800 dark:text-green-300 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+                      <p className="font-semibold">{t('leave.requestCreatedSummary')}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {lastCreatedRequest.student?.fullName || t('leave.student')}
+                      {' · '}
+                      {formatDate(lastCreatedRequest.startDate)} → {formatDate(lastCreatedRequest.endDate)}
+                      {' · '}
+                      {t(`leave.${lastCreatedRequest.leaveType === 'partial_day' ? 'partialDay' : lastCreatedRequest.leaveType === 'time_bound' ? 'timeBound' : 'fullDay'}`)}
+                    </p>
+                  </div>
+                  <div className={`flex flex-col sm:flex-row gap-2 flex-shrink-0 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePrint(lastCreatedRequest)}
+                      aria-label={t('leave.printSlip')}
+                    >
+                      <Printer className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-2">{t('leave.printSlip')}</span>
+                    </Button>
+                    <Button onClick={handleNextStudent} aria-label={t('leave.nextStudent')}>
+                      <Scan className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-2">{t('leave.nextStudent')}</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-          <Tabs defaultValue="create" className="space-y-4">
-        <TabsList className="grid grid-cols-2 w-full">
-          <TabsTrigger value="create" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <FileText className="h-4 w-4" />
-            {t('leave.newRequest')}
-          </TabsTrigger>
-          <TabsTrigger value="history" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <Calendar className="h-4 w-4" />
-            {t('assets.history')}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="create">
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="text-xl font-semibold">{t('leave.createRequest')}</CardTitle>
               <CardDescription className="hidden md:block">{t('leave.createRequestDescription')}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Fast Search Field */}
-              <div className="space-y-2">
-                <Label htmlFor="fast-search" className="text-base font-semibold flex items-center gap-2">
-                  <Scan className="h-4 w-4" />
-                  {t('leave.fastSearchScan')}
-                </Label>
-                <div className="relative">
-                  <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
-                  <Input
-                    id="fast-search"
-                    ref={searchInputRef}
-                    type="text"
-                    value={fastSearch}
-                    onChange={(e) => setFastSearch(e.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                    placeholder={t('leave.scanCardPlaceholder')}
-                    className={`${isRTL ? 'pr-9 pl-4' : 'pl-9 pr-4'} h-12 text-base`}
-                    disabled={isSearching || !currentAcademicYear}
-                    autoComplete="off"
-                    dir={isRTL ? 'rtl' : 'ltr'}
-                  />
-                  {isSearching && (
-                    <Loader2 className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground`} />
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {t('leave.scanCardHint')}
-                </p>
-              </div>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                {/* Left — Student */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fast-search" className={`text-base font-semibold flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <Scan className="h-4 w-4" />
+                      {t('leave.fastSearchScan')}
+                    </Label>
+                    <div className="relative">
+                      <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
+                      <Input
+                        id="fast-search"
+                        ref={searchInputRef}
+                        type="text"
+                        value={fastSearch}
+                        onChange={(e) => setFastSearch(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
+                        placeholder={t('leave.scanCardPlaceholder')}
+                        className={`${isRTL ? 'pr-9 pl-4' : 'pl-9 pr-4'} h-12 text-base`}
+                        disabled={isSearching || !currentAcademicYear}
+                        autoComplete="off"
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      />
+                      {isSearching && (
+                        <Loader2 className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground`} />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t('leave.scanCardHint')}</p>
+                  </div>
 
-              <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="class-select">{t('search.class')} <span className="text-destructive">*</span></Label>
-                <Combobox
-                  options={classOptions}
-                  value={selectedClass}
-                  onValueChange={setSelectedClass}
-                  placeholder={t('leave.selectClassPlaceholder')}
-                  searchPlaceholder={t('leave.searchClassesPlaceholder')}
-                  emptyText={currentAcademicYear ? t('leave.noClassesFound') : t('leave.loadingAcademicYear')}
-                  disabled={!currentAcademicYear}
-                />
-                {currentAcademicYear && (
-                  <p className="text-xs text-muted-foreground">
-                    {t('leave.showingClassesFor')} {currentAcademicYear.name}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="student-select">{t('leave.student')} <span className="text-destructive">*</span></Label>
-                <div key={selectedStudent || 'no-student'}>
-                  <Combobox
-                    options={studentOptionsWithSelected}
-                    value={selectedStudent}
-                    onValueChange={setSelectedStudent}
-                    placeholder={selectedClass ? t('leave.selectStudentPlaceholder') : t('examReports.selectClassFirst')}
-                    searchPlaceholder={t('events.searchStudentPlaceholder')}
-                    emptyText={selectedClass ? t('leave.noStudentsInClass') : t('leave.selectClassFirstMessage')}
-                    disabled={!selectedClass}
-                  />
-                </div>
-                {selectedStudent && (
-                  <p className="text-xs text-muted-foreground">
-                    {t('events.selected')} {studentOptionsWithSelected.find(s => s.value === selectedStudent)?.label || t('leave.student')}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>{t('leave.leaveType')}</Label>
-                <Select value={leaveType} onValueChange={(value) => setLeaveType(value as any)}>
-                  <SelectTrigger><SelectValue placeholder={t('leave.typePlaceholder')} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full_day">{t('leave.fullDay')}</SelectItem>
-                    <SelectItem value="partial_day">{t('leave.partialDay')}</SelectItem>
-                    <SelectItem value="time_bound">{t('leave.timeBound')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-base font-medium">{t('leave.leaveDuration')}</Label>
-                  <div className={`flex flex-wrap gap-1.5 sm:gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    {quickEntryOptions.map(option => (
-                      <Button
-                        key={option.days}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuickEntry(option.days)}
-                        className={`h-8 text-xs flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}
-                      >
-                        <span className="sm:hidden font-semibold">{option.days}</span>
-                        <Zap className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'} hidden sm:inline`} />
-                        <span className="hidden sm:inline">{option.label}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="start-date">{t('events.startDate')} <span className="text-destructive">*</span></Label>
-                    <CalendarDatePicker date={startDate ? parseLocalDate(startDate) : undefined} onDateChange={(date) => setStartDate(date ? dateToLocalYYYYMMDD(date) : "")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="end-date">{t('events.endDate')} <span className="text-destructive">*</span></Label>
-                    <CalendarDatePicker date={endDate ? parseLocalDate(endDate) : undefined} onDateChange={(date) => setEndDate(date ? dateToLocalYYYYMMDD(date) : "")} />
-                  </div>
-                </div>
-              </div>
-              {leaveType !== 'full_day' && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Label>{t('leave.startTime')}</Label>
-                    <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} dir={isRTL ? 'rtl' : 'ltr'} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t('leave.endTime')}</Label>
-                    <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} dir={isRTL ? 'rtl' : 'ltr'} />
-                  </div>
-                </div>
-              )}
-              </div>
-              
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="reason" className="text-base font-medium">{t('leave.reason')} <span className="text-destructive">*</span></Label>
-                  <div className={`flex flex-wrap gap-1.5 sm:gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    {quickReasonOptions.map(option => (
-                      <Button
-                        key={option.label}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuickReason(option.reason)}
-                        className="h-8 text-xs flex-shrink-0"
-                      >
-                        <span className="truncate max-w-[120px] sm:max-w-none">{option.label}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <Textarea 
-                  id="reason"
-                  value={reason} 
-                  onChange={e => setReason(e.target.value)} 
-                  placeholder={t('leave.reasonPlaceholder')} 
-                  className="min-h-[100px]"
-                  dir={isRTL ? 'rtl' : 'ltr'}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="approval-note">{t('leave.approvalNote')} <span className="text-muted-foreground text-xs font-normal">({t('events.optional')})</span></Label>
-                <Textarea 
-                  id="approval-note"
-                  value={approvalNote} 
-                  onChange={e => setApprovalNote(e.target.value)} 
-                  placeholder={t('leave.approvalNotePlaceholder')} 
-                  className="min-h-[80px]"
-                  dir={isRTL ? 'rtl' : 'ltr'}
-                />
-              </div>
-              
-              <div className={`flex flex-col sm:flex-row ${isRTL ? 'justify-start sm:flex-row-reverse' : 'justify-end'} gap-3 pt-4 border-t`}>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setSelectedStudent('');
-                    // Keep class selected for faster entry
-                    setLeaveType('full_day');
-                    setStartDate('');
-                    setEndDate('');
-                    setStartTime('');
-                    setEndTime('');
-                    setReason('');
-                    setApprovalNote('');
-                  }}
-                  disabled={createLeave.isPending}
-                >
-                  {t('leave.clearForm')}
-                </Button>
-                <Button 
-                  onClick={handleCreate} 
-                  disabled={createLeave.isPending || !selectedStudent || !startDate || !endDate}
-                  size="lg"
-                >
-                  {createLeave.isPending ? (
-                    <>
-                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                      {t('events.creating')}
-                    </>
+                  {identityStudent ? (
+                    <div className="rounded-xl border bg-gradient-to-br from-primary/5 via-background to-muted/40 p-4 sm:p-5">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                        {t('leave.studentIdentity')}
+                      </p>
+                      <div className="flex items-stretch gap-4 sm:gap-5">
+                        <div className="flex-shrink-0 self-center">
+                          <PictureCell
+                            type="student"
+                            entityId={identityStudent.id}
+                            picturePath={identityStudent.picturePath}
+                            alt={identityStudent.fullName}
+                            size="xl"
+                            className="ring-2 ring-primary/15 shadow-sm"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-3 text-start">
+                          <div>
+                            <p className="font-semibold text-lg sm:text-xl leading-tight truncate">
+                              {identityStudent.fullName}
+                            </p>
+                            {identityStudent.fatherName && (
+                              <p className="mt-1 text-sm text-muted-foreground truncate">
+                                <span className="text-muted-foreground/80">{t('leave.fatherName')}: </span>
+                                {identityStudent.fatherName}
+                              </p>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {identityStudent.code && (
+                              <div className="rounded-lg bg-background/80 border px-3 py-2 min-w-0">
+                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                  {t('leave.code')}
+                                </p>
+                                <p className="text-sm font-medium truncate mt-0.5">{identityStudent.code}</p>
+                              </div>
+                            )}
+                            {identityStudent.className && (
+                              <div className="rounded-lg bg-background/80 border px-3 py-2 min-w-0">
+                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                  {t('leave.class')}
+                                </p>
+                                <p className="text-sm font-medium truncate mt-0.5">{identityStudent.className}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
-                    <>
-                      <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                      {t('leave.createRequest')}
-                    </>
+                    <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground text-center">
+                      {t('leave.scanCardHint')}
+                    </div>
                   )}
-                </Button>
+
+                  <div className="space-y-3 pt-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t('leave.manualSelect')}
+                    </p>
+                    <div className="space-y-2">
+                      <Label>{t('leave.class')}</Label>
+                      <Combobox
+                        options={classOptions}
+                        value={selectedClass}
+                        onValueChange={setSelectedClass}
+                        placeholder={t('leave.selectClassPlaceholder')}
+                        searchPlaceholder={t('leave.searchClassesPlaceholder')}
+                        emptyText={currentAcademicYear ? t('leave.noClassesFound') : t('leave.loadingAcademicYear')}
+                        disabled={!currentAcademicYear}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t('leave.student')}</Label>
+                      <div key={selectedStudent || 'no-student'}>
+                        <Combobox
+                          options={studentOptionsWithSelected}
+                          value={selectedStudent}
+                          onValueChange={setSelectedStudent}
+                          placeholder={selectedClass ? t('leave.selectStudentPlaceholder') : t('leave.selectClassFirstMessage')}
+                          searchPlaceholder={t('events.searchStudentPlaceholder')}
+                          emptyText={selectedClass ? t('leave.noStudentsInClass') : t('leave.selectClassFirstMessage')}
+                          disabled={!selectedClass}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right — Leave details */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>{t('leave.leaveType')}</Label>
+                    <div className={`flex flex-wrap gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      {([
+                        { value: 'full_day' as const, label: t('leave.fullDay') },
+                        { value: 'partial_day' as const, label: t('leave.partialDay') },
+                        { value: 'time_bound' as const, label: t('leave.timeBound') },
+                      ]).map((option) => (
+                        <Button
+                          key={option.value}
+                          type="button"
+                          size="sm"
+                          variant={leaveType === option.value ? 'default' : 'outline'}
+                          onClick={() => setLeaveType(option.value)}
+                          className="h-8 text-xs"
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{t('leave.leaveDuration')}</Label>
+                    <div className={`flex flex-wrap gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      {quickEntryOptions.map((option) => (
+                        <Button
+                          key={option.days}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleQuickEntry(option.days)}
+                          className={`h-8 text-xs flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}
+                        >
+                          <span className="sm:hidden font-semibold">{option.days}</span>
+                          <Zap className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'} hidden sm:inline`} />
+                          <span className="hidden sm:inline">{option.label}</span>
+                        </Button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label>{t('leave.startDate')} <span className="text-destructive">*</span></Label>
+                        <CalendarDatePicker
+                          date={startDate ? parseLocalDate(startDate) : undefined}
+                          onDateChange={(date) => setStartDate(date ? dateToLocalYYYYMMDD(date) : '')}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{t('leave.endDate')} <span className="text-destructive">*</span></Label>
+                        <CalendarDatePicker
+                          date={endDate ? parseLocalDate(endDate) : undefined}
+                          onDateChange={(date) => setEndDate(date ? dateToLocalYYYYMMDD(date) : '')}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {leaveType !== 'full_day' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label>{t('leave.startTime')}</Label>
+                        <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} dir={isRTL ? 'rtl' : 'ltr'} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{t('leave.endTime')}</Label>
+                        <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} dir={isRTL ? 'rtl' : 'ltr'} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reason">{t('leave.reason')} <span className="text-destructive">*</span></Label>
+                    <div className={`flex flex-wrap gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      {quickReasonOptions.map((option) => (
+                        <Button
+                          key={option.label}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleQuickReason(option.reason)}
+                          className="h-8 text-xs flex-shrink-0"
+                        >
+                          <span className="truncate max-w-[120px] sm:max-w-none">{option.label}</span>
+                        </Button>
+                      ))}
+                    </div>
+                    <Textarea
+                      id="reason"
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder={t('leave.reasonPlaceholder')}
+                      className="min-h-[88px]"
+                      dir={isRTL ? 'rtl' : 'ltr'}
+                    />
+                  </div>
+
+                  <Collapsible open={approvalNoteOpen} onOpenChange={setApprovalNoteOpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-full justify-between px-2">
+                        <span>{t('leave.addApprovalNote')}</span>
+                        <ChevronDown className={cn('h-4 w-4 transition-transform', approvalNoteOpen && 'rotate-180')} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-2">
+                      <Textarea
+                        id="approval-note"
+                        value={approvalNote}
+                        onChange={(e) => setApprovalNote(e.target.value)}
+                        placeholder={t('leave.approvalNotePlaceholder')}
+                        className="min-h-[72px]"
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  <div className={`flex flex-col sm:flex-row gap-2 pt-2 border-t ${isRTL ? 'sm:flex-row-reverse sm:justify-start' : 'sm:justify-end'}`}>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedStudent('');
+                        setScannedStudentOption(null);
+                        setFastSearch('');
+                        resetLeaveFields();
+                        setLastCreatedRequest(null);
+                      }}
+                      disabled={createLeave.isPending}
+                    >
+                      {t('leave.clearForm')}
+                    </Button>
+                    <Button
+                      onClick={handleCreate}
+                      disabled={createLeave.isPending || !selectedStudent || !startDate || !endDate || !reason.trim()}
+                      size="lg"
+                    >
+                      {createLeave.isPending ? (
+                        <>
+                          <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                          {t('leave.creating')}
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                          {t('leave.createRequest')}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      ) : (
+        <Tabs
+          value={approvalStatus}
+          onValueChange={(value) => setApprovalStatus(value as LeaveApprovalStatusFilter)}
+          className="space-y-4"
+        >
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="pending">
+              <Clock className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('leave.pending')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="approved">
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('leave.approved')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="rejected">
+              <X className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('leave.rejected')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="all">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('leave.allRequests')}</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="history">
+          <FilterPanel
+            title={t('leave.filters')}
+            defaultOpenDesktop
+            defaultOpenMobile={false}
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>{t('leave.from')}</Label>
+                <CalendarDatePicker
+                  date={approvalDateFrom ? parseLocalDate(approvalDateFrom) : undefined}
+                  onDateChange={(date) => setApprovalDateFrom(date ? dateToLocalYYYYMMDD(date) : '')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('leave.to')}</Label>
+                <CalendarDatePicker
+                  date={approvalDateTo ? parseLocalDate(approvalDateTo) : undefined}
+                  onDateChange={(date) => setApprovalDateTo(date ? dateToLocalYYYYMMDD(date) : '')}
+                  minDate={approvalDateFrom ? parseLocalDate(approvalDateFrom) : undefined}
+                />
+              </div>
+            </div>
+            {(approvalDateFrom || approvalDateTo) && (
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setApprovalDateFrom('');
+                    setApprovalDateTo('');
+                  }}
+                >
+                  {t('leave.resetFilters')}
+                </Button>
+              </div>
+            )}
+          </FilterPanel>
+
           <Card>
             <CardHeader>
-              <CardTitle>{t('leave.leaveHistory')}</CardTitle>
-              <CardDescription className="hidden md:block">{t('leave.filterDescription')}</CardDescription>
+              <CardTitle>{t('nav.leaveApprovals')}</CardTitle>
+              <CardDescription className="hidden md:block">{t('leave.awaitingApproval')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className={`flex flex-wrap gap-3 items-end mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className="space-y-2">
-                  <Label>{t('leave.month')} & {t('admissions.year')}</Label>
-                  <CalendarDatePicker 
-                    date={filterDate} 
-                    onDateChange={(date) => {
-                      if (date) {
-                        // Set to first day of the selected month for consistent filtering
-                        const firstOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-                        setFilterDate(firstOfMonth);
-                      }
-                    }} 
-                    placeholder={t('leave.selectMonthYear') || 'Select Month & Year'}
-                    minDate={currentAcademicYear?.startDate ? new Date(currentAcademicYear.startDate) : undefined}
-                    maxDate={currentAcademicYear?.endDate ? new Date(currentAcademicYear.endDate) : undefined}
-                  />
-                  {currentAcademicYear && (
-                    <p className="text-xs text-muted-foreground">
-                      {t('leave.showingRequestsFor') || 'Showing requests for'} {format(filterDate, 'MMMM yyyy')} • {currentAcademicYear.name}
-                    </p>
-                  )}
-                </div>
-              </div>
               <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -1001,11 +1111,16 @@ export default function LeaveManagement() {
                             <UserRound className="h-4 w-4 text-slate-500" />
                             {request.student?.fullName || t('leave.student')}
                           </div>
+                          {request.student?.fatherName && (
+                            <div className="text-xs text-slate-500">
+                              {t('leave.fatherName')}: {request.student.fatherName}
+                            </div>
+                          )}
                           <div className="text-xs text-slate-500">{request.student?.studentCode || request.student?.admissionNo}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">{format(request.startDate, 'PP')} → {format(request.endDate, 'PP')}</div>
-                          <div className="text-xs text-slate-500">{request.className || t('search.class')} / {request.schoolName || t('common.selectSchool')}</div>
+                          <div className="text-sm">{formatDate(request.startDate)} → {formatDate(request.endDate)}</div>
+                          <div className="text-xs text-slate-500">{request.className || t('search.class')} / {displayLeaveSchoolName(request, language, t('leave.mainSchool')) || t('common.selectSchool')}</div>
                         </TableCell>
                         <TableCell className="max-w-[240px]"><div className="line-clamp-2 text-sm">{request.reason}</div></TableCell>
                         <TableCell>
@@ -1015,7 +1130,7 @@ export default function LeaveManagement() {
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Download className="h-4 w-4" />
+                                <MoreHorizontal className="h-4 w-4" />
                                 <span className="sr-only">{t('events.actions')}</span>
                               </Button>
                             </DropdownMenuTrigger>
@@ -1023,15 +1138,15 @@ export default function LeaveManagement() {
                               <DropdownMenuLabel>{t('events.actions')}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleRowClick(request)}>
-                                <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                <Eye className={`h-4 w-4 text-blue-600 dark:text-blue-400 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                                 {t('events.view')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleViewHistory(request)}>
-                                <Calendar className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                <Calendar className={`h-4 w-4 text-purple-600 dark:text-purple-400 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                                 {t('assets.history')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handlePrint(request)}>
-                                <Printer className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                <Printer className={`h-4 w-4 text-indigo-600 dark:text-indigo-400 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                                 {t('events.print')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1058,8 +1173,8 @@ export default function LeaveManagement() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </Tabs>
+      )}
 
       {/* Leave Request Details Panel */}
       <Sheet open={requestPanelOpen} onOpenChange={(open) => { 
@@ -1070,7 +1185,7 @@ export default function LeaveManagement() {
         }
       }}>
         <SheetContent 
-          className="w-full sm:w-[500px] overflow-y-auto"
+          className="w-full sm:max-w-xl sm:w-[560px] overflow-y-auto"
         >
           {selectedRequest && (
             <>
@@ -1085,6 +1200,30 @@ export default function LeaveManagement() {
               </SheetHeader>
 
               <div className="mt-6 space-y-6">
+                <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <Button
+                    onClick={() => handlePrint(selectedRequest)}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Printer className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                    {t('events.print')}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      handleViewHistory(selectedRequest);
+                      setRequestPanelOpen(false);
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Calendar className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                    {t('assets.history')}
+                  </Button>
+                </div>
+
                 {/* Student Information */}
                 <Card>
                   <CardHeader className="pb-3">
@@ -1097,6 +1236,10 @@ export default function LeaveManagement() {
                     <div className="flex justify-between items-start">
                       <span className="text-sm text-muted-foreground">{t('common.name')}:</span>
                       <span className="text-sm font-semibold text-right">{selectedRequest.student?.fullName || '-'}</span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm text-muted-foreground">{t('leave.fatherName')}:</span>
+                      <span className="text-sm font-medium text-right">{selectedRequest.student?.fatherName || '-'}</span>
                     </div>
                     <div className="flex justify-between items-start">
                       <span className="text-sm text-muted-foreground">{t('events.code')}:</span>
@@ -1130,14 +1273,53 @@ export default function LeaveManagement() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex justify-between items-start">
-                      <span className="text-sm text-muted-foreground">{t('events.startDate')}:</span>
-                      <span className="text-sm font-medium text-right">{format(selectedRequest.startDate, 'PP')}</span>
-                    </div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-sm text-muted-foreground">{t('events.endDate')}:</span>
-                      <span className="text-sm font-medium text-right">{format(selectedRequest.endDate, 'PP')}</span>
-                    </div>
+                    {canEditLeaveRequestDates(selectedRequest.status) ? (
+                      <>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label>{t('events.startDate')}</Label>
+                            <CalendarDatePicker
+                              date={editStartDate ? parseLocalDate(editStartDate) : undefined}
+                              onDateChange={(date) => setEditStartDate(date ? dateToLocalYYYYMMDD(date) : '')}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{t('events.endDate')}</Label>
+                            <CalendarDatePicker
+                              date={editEndDate ? parseLocalDate(editEndDate) : undefined}
+                              onDateChange={(date) => setEditEndDate(date ? dateToLocalYYYYMMDD(date) : '')}
+                              minDate={editStartDate ? parseLocalDate(editStartDate) : undefined}
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleSaveDates}
+                          disabled={updateLeave.isPending}
+                        >
+                          {updateLeave.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Calendar className="h-4 w-4" />
+                          )}
+                          {t('common.save')}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-start">
+                          <span className="text-sm text-muted-foreground">{t('events.startDate')}:</span>
+                          <span className="text-sm font-medium text-right">{formatDate(selectedRequest.startDate)}</span>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-sm text-muted-foreground">{t('events.endDate')}:</span>
+                          <span className="text-sm font-medium text-right">{formatDate(selectedRequest.endDate)}</span>
+                        </div>
+                      </>
+                    )}
                     {selectedRequest.startTime && selectedRequest.endTime && (
                       <>
                         <div className="flex justify-between items-start">
@@ -1165,29 +1347,23 @@ export default function LeaveManagement() {
                   </CardContent>
                 </Card>
 
-                {/* Class & School */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      {t('search.class')} & {t('common.school')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {selectedRequest.className && (
+                {/* Class */}
+                {selectedRequest.className && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        {t('search.class')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
                       <div className="flex justify-between items-start">
                         <span className="text-sm text-muted-foreground">{t('search.class')}:</span>
                         <span className="text-sm font-medium text-right">{selectedRequest.className}</span>
                       </div>
-                    )}
-                    {selectedRequest.schoolName && (
-                      <div className="flex justify-between items-start">
-                        <span className="text-sm text-muted-foreground">{t('common.school')}:</span>
-                        <span className="text-sm font-medium text-right">{selectedRequest.schoolName}</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Reason */}
                 <Card>
@@ -1271,28 +1447,6 @@ export default function LeaveManagement() {
                   </Card>
                 )}
 
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-2 pb-4">
-                  <Button 
-                    onClick={() => handlePrint(selectedRequest)} 
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Printer className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    {t('events.print')}
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      handleViewHistory(selectedRequest);
-                      setRequestPanelOpen(false);
-                    }}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Calendar className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    {t('assets.history')}
-                  </Button>
-                </div>
               </div>
             </>
           )}
@@ -1359,7 +1513,7 @@ export default function LeaveManagement() {
                   <div key={entry.id} className="rounded-lg border px-3 py-2">
                     <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''} justify-between`}>
                       <div>
-                        <p className="font-medium text-sm">{format(entry.startDate, 'PP')} → {format(entry.endDate, 'PP')}</p>
+                        <p className="font-medium text-sm">{formatDate(entry.startDate)} → {formatDate(entry.endDate)}</p>
                         <p className="text-xs text-slate-500">{entry.reason}</p>
                       </div>
                       <Badge variant="outline" className={statusColors[entry.status] || ''}>{t(`leave.${entry.status}`)}</Badge>

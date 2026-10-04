@@ -101,6 +101,7 @@ export default {
     markAttendance: "Mark Attendance",
     courseCertificates: "Course Certificates",
     leaveReports: "Leave Reports",
+    leaveApprovals: "Approve / Reject",
     events: "Events",
     "events.all": "All Events",
     "events.checkin": "Check-in",

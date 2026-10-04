@@ -22,6 +22,7 @@ const TooltipContent = React.forwardRef<
         className
       )}
       {...props}
+      translate="no"
     />
   </TooltipPrimitive.Portal>
 ))

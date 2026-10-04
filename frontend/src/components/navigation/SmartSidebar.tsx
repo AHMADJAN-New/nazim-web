@@ -898,6 +898,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: CalendarClock,
           },
           {
+            title: "Approve / Reject",
+            titleKey: "leaveApprovals",
+            url: "/leave-requests/approvals",
+            icon: CalendarCheck,
+          },
+          {
             title: "Leave Reports",
             titleKey: "leaveReports",
             url: "/leave-requests/reports",

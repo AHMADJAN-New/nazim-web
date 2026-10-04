@@ -67,6 +67,7 @@ const DropdownMenuContent = React.forwardRef<
         className
       )}
       {...props}
+      translate="no"
     />
   </DropdownMenuPrimitive.Portal>
 ))

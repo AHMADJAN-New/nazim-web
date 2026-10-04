@@ -35,6 +35,7 @@ class PermissionSeeder extends Seeder
                 'create',         // Create new exams
                 'update',         // Edit exam details
                 'delete',         // Delete exams
+                'reopen',         // Reopen completed exams to in_progress (org-admin by default)
                 'assign',         // Assign classes to exams
                 'manage',         // Manage exam configuration (classes, subjects)
                 'manage_timetable', // Create/edit exam timetable
@@ -205,6 +206,7 @@ class PermissionSeeder extends Seeder
         }
 
         return $permissionName === 'schools.access_all'
+            || $permissionName === 'exams.reopen'
             || str_starts_with($permissionName, 'hr_staff.')
             || str_starts_with($permissionName, 'hr_assignments.')
             || str_starts_with($permissionName, 'hr_payroll.')

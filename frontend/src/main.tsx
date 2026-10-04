@@ -1,6 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
+import { installExternalDomMutationGuard } from '@/lib/dom/guardExternalDomMutations'
+
+installExternalDomMutationGuard()
+
 import App from './App.tsx'
 
 import './index.css'

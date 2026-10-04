@@ -693,6 +693,10 @@ export const permissionsManagementCatalogEn: PermissionsManagementCatalog = {
       "actionLabel": "Delete",
       "description": "Delete exams"
     },
+    "exams.reopen": {
+      "actionLabel": "Reopen",
+      "description": "Reopen completed exams to in progress for marks entry"
+    },
     "exams.enroll_students": {
       "actionLabel": "Enroll Students",
       "description": "Enroll_students exams"

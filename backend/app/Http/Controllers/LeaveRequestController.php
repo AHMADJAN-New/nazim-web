@@ -9,6 +9,7 @@ use App\Models\AttendanceSession;
 use App\Models\LeaveRequest;
 use App\Models\Student;
 use App\Services\Reports\DateConversionService;
+use App\Services\Reports\LeaveRequestSlipLabels;
 use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
 use Carbon\Carbon;
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class LeaveRequestController extends Controller
 {
@@ -236,6 +238,14 @@ class LeaveRequestController extends Controller
         }
 
         $validated = $request->validated();
+        $changesDates = array_key_exists('start_date', $validated) || array_key_exists('end_date', $validated);
+
+        if ($changesDates && $leave->status !== 'pending') {
+            return response()->json([
+                'error' => 'Only pending leave request dates can be changed',
+            ], 409);
+        }
+
         // Prevent scope changes
         unset($validated['school_id'], $validated['organization_id']);
         $leave->update($validated);
@@ -335,9 +345,9 @@ class LeaveRequestController extends Controller
         return response()->json($leave->fresh(['student', 'classModel', 'school', 'academicYear', 'approver']));
     }
 
-    public function printData(string $id)
+    public function printData(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (! $profile || ! $profile->organization_id) {
@@ -354,8 +364,23 @@ class LeaveRequestController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $currentSchoolId = $this->getCurrentSchoolId(request());
-        $leave = LeaveRequest::with(['student', 'classModel', 'school'])
+        $validated = $request->validate([
+            'calendar_preference' => 'nullable|in:gregorian,jalali,qamari',
+            'language' => 'nullable|in:en,ps,fa,ar',
+            'labels' => 'nullable|array',
+            'labels.*' => 'nullable|string|max:255',
+        ]);
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $calendarPreference = $validated['calendar_preference'] ?? 'jalali';
+        $language = $validated['language'] ?? 'ps';
+        // Prefer UI page translations when provided; fall back to backend slip labels.
+        $labels = array_merge(
+            LeaveRequestSlipLabels::forLanguage($language),
+            array_filter($validated['labels'] ?? [], fn ($value) => is_string($value) && $value !== '')
+        );
+
+        $leave = LeaveRequest::with(['student', 'classModel', 'school', 'approver.profile'])
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
@@ -366,11 +391,100 @@ class LeaveRequestController extends Controller
         }
 
         $scanUrl = url('/api/leave-requests/scan/'.$leave->qr_token);
+        // SVG avoids Imagick (PNG backend) which is not available on many local/dev hosts.
+        $qrSvg = QrCode::format('svg')->size(120)->margin(0)->generate($scanUrl);
+        $qrDataUri = 'data:image/svg+xml;base64,'.base64_encode($qrSvg);
 
-        return response()->json([
-            'request' => $leave,
-            'scan_url' => $scanUrl,
+        $leaveTypeKey = match ($leave->leave_type) {
+            'partial_day' => 'partialDay',
+            'time_bound' => 'timeBound',
+            default => 'fullDay',
+        };
+
+        $start = Carbon::parse($leave->start_date)->startOfDay();
+        $end = Carbon::parse($leave->end_date)->startOfDay();
+        $dayCount = max(1, $start->diffInDays($end) + 1);
+
+        $duration = $dayCount.' '.($labels['days'] ?? 'day(s)');
+        $timeRange = null;
+        if ($leave->start_time && $leave->end_time) {
+            $startTime = Carbon::parse($leave->start_time)->format('H:i');
+            $endTime = Carbon::parse($leave->end_time)->format('H:i');
+            $timeRange = "{$startTime} - {$endTime}";
+            if (in_array($leave->leave_type, ['partial_day', 'time_bound'], true) && $dayCount === 1) {
+                $minutes = Carbon::parse($leave->start_time)->diffInMinutes(Carbon::parse($leave->end_time));
+                $hours = max(1, (int) ceil($minutes / 60));
+                $duration = $hours.' '.($labels['hours'] ?? 'hour(s)');
+            }
+        }
+
+        $approverName = null;
+        if ($leave->approver) {
+            $approverName = $leave->approver->profile?->full_name
+                ?? $leave->approver->email
+                ?? null;
+        }
+
+        $slip = [
+            'short_id' => strtoupper(substr(str_replace('-', '', (string) $leave->id), -8)),
+            'student_name' => $leave->student?->full_name ?? '—',
+            'father_name' => $leave->student?->father_name ?: '—',
+            'student_code' => $leave->student?->student_code ?: ($leave->student?->admission_no ?? '—'),
+            'class_name' => $leave->classModel?->name ?? '—',
+            'leave_type_label' => $labels[$leaveTypeKey] ?? $leave->leave_type,
+            'start_date' => $this->dateService->formatDate($leave->start_date, $calendarPreference, 'full', $language),
+            'end_date' => $this->dateService->formatDate($leave->end_date, $calendarPreference, 'full', $language),
+            'time_range' => $timeRange,
+            'duration' => $duration,
+            'reason' => $leave->reason ?: '—',
+            'status' => $leave->status,
+            'status_label' => $labels[$leave->status] ?? ucfirst((string) $leave->status),
+            'approval_note' => $leave->approval_note,
+            'approved_by' => $approverName,
+            'approved_at' => $leave->approved_at
+                ? $this->dateService->formatDate($leave->approved_at, $calendarPreference, 'full', $language).' '.Carbon::parse($leave->approved_at)->format('H:i')
+                : null,
+        ];
+
+        $config = ReportConfig::fromArray([
+            'report_key' => 'leave_request_slip',
+            'report_type' => 'pdf',
+            'branding_id' => $currentSchoolId,
+            'title' => $labels['title'] ?? 'Leave Request Slip',
+            'calendar_preference' => $calendarPreference,
+            'language' => $language,
+            'template_name' => 'leave-request-slip',
+            'notes_mode' => 'none',
+            'watermark_mode' => 'none',
         ]);
+
+        try {
+            $result = $this->reportService->generateContentBinary(
+                $config,
+                [
+                    'columns' => [],
+                    'rows' => [],
+                    'labels' => $labels,
+                    'slip' => $slip,
+                    'qr_data_uri' => $qrDataUri,
+                ],
+                $profile->organization_id
+            );
+
+            $filename = $result['filename'] ?? ('leave-slip-'.$slip['short_id'].'.pdf');
+
+            return response($result['content'], 200)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'inline; filename="'.$filename.'"')
+                ->header('Cache-Control', 'private, max-age=0');
+        } catch (\Exception $e) {
+            Log::error('Failed to generate leave request slip PDF', [
+                'leave_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Failed to generate leave slip PDF'], 500);
+        }
     }
 
     public function scanPublic(string $token)

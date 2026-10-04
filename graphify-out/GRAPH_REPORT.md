@@ -1,12 +1,12 @@
-# Graph Report - nazim-web-1  (2026-09-22)
+# Graph Report - nazim-web-1  (2026-10-04)
 
 ## Corpus Check
-- 11620 files · ~17,539,654 words
+- 11642 files · ~17,546,490 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 221396 nodes · 825227 edges · 540 communities detected
-- Extraction: 69% EXTRACTED · 31% INFERRED · 0% AMBIGUOUS · INFERRED: 254207 edges (avg confidence: 0.8)
+- 221500 nodes · 825517 edges · 553 communities detected
+- Extraction: 69% EXTRACTED · 31% INFERRED · 0% AMBIGUOUS · INFERRED: 254384 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -189,13 +189,13 @@
 - [[_COMMUNITY_Community 176|Community 176]]
 - [[_COMMUNITY_Community 177|Community 177]]
 - [[_COMMUNITY_Community 178|Community 178]]
+- [[_COMMUNITY_Community 179|Community 179]]
 - [[_COMMUNITY_Community 180|Community 180]]
 - [[_COMMUNITY_Community 181|Community 181]]
 - [[_COMMUNITY_Community 182|Community 182]]
 - [[_COMMUNITY_Community 183|Community 183]]
 - [[_COMMUNITY_Community 184|Community 184]]
 - [[_COMMUNITY_Community 185|Community 185]]
-- [[_COMMUNITY_Community 186|Community 186]]
 - [[_COMMUNITY_Community 187|Community 187]]
 - [[_COMMUNITY_Community 188|Community 188]]
 - [[_COMMUNITY_Community 189|Community 189]]
@@ -253,6 +253,7 @@
 - [[_COMMUNITY_Community 241|Community 241]]
 - [[_COMMUNITY_Community 242|Community 242]]
 - [[_COMMUNITY_Community 243|Community 243]]
+- [[_COMMUNITY_Community 244|Community 244]]
 - [[_COMMUNITY_Community 245|Community 245]]
 - [[_COMMUNITY_Community 246|Community 246]]
 - [[_COMMUNITY_Community 247|Community 247]]
@@ -262,13 +263,15 @@
 - [[_COMMUNITY_Community 251|Community 251]]
 - [[_COMMUNITY_Community 252|Community 252]]
 - [[_COMMUNITY_Community 253|Community 253]]
-- [[_COMMUNITY_Community 254|Community 254]]
 - [[_COMMUNITY_Community 255|Community 255]]
 - [[_COMMUNITY_Community 256|Community 256]]
+- [[_COMMUNITY_Community 257|Community 257]]
+- [[_COMMUNITY_Community 258|Community 258]]
 - [[_COMMUNITY_Community 259|Community 259]]
 - [[_COMMUNITY_Community 260|Community 260]]
 - [[_COMMUNITY_Community 261|Community 261]]
 - [[_COMMUNITY_Community 262|Community 262]]
+- [[_COMMUNITY_Community 263|Community 263]]
 - [[_COMMUNITY_Community 264|Community 264]]
 - [[_COMMUNITY_Community 265|Community 265]]
 - [[_COMMUNITY_Community 266|Community 266]]
@@ -278,12 +281,9 @@
 - [[_COMMUNITY_Community 270|Community 270]]
 - [[_COMMUNITY_Community 271|Community 271]]
 - [[_COMMUNITY_Community 272|Community 272]]
-- [[_COMMUNITY_Community 273|Community 273]]
-- [[_COMMUNITY_Community 274|Community 274]]
 - [[_COMMUNITY_Community 275|Community 275]]
 - [[_COMMUNITY_Community 276|Community 276]]
 - [[_COMMUNITY_Community 277|Community 277]]
-- [[_COMMUNITY_Community 278|Community 278]]
 - [[_COMMUNITY_Community 279|Community 279]]
 - [[_COMMUNITY_Community 280|Community 280]]
 - [[_COMMUNITY_Community 281|Community 281]]
@@ -363,7 +363,11 @@
 - [[_COMMUNITY_Community 355|Community 355]]
 - [[_COMMUNITY_Community 356|Community 356]]
 - [[_COMMUNITY_Community 357|Community 357]]
+- [[_COMMUNITY_Community 358|Community 358]]
 - [[_COMMUNITY_Community 359|Community 359]]
+- [[_COMMUNITY_Community 360|Community 360]]
+- [[_COMMUNITY_Community 361|Community 361]]
+- [[_COMMUNITY_Community 362|Community 362]]
 - [[_COMMUNITY_Community 363|Community 363]]
 - [[_COMMUNITY_Community 364|Community 364]]
 - [[_COMMUNITY_Community 365|Community 365]]
@@ -371,11 +375,7 @@
 - [[_COMMUNITY_Community 367|Community 367]]
 - [[_COMMUNITY_Community 368|Community 368]]
 - [[_COMMUNITY_Community 369|Community 369]]
-- [[_COMMUNITY_Community 370|Community 370]]
 - [[_COMMUNITY_Community 371|Community 371]]
-- [[_COMMUNITY_Community 372|Community 372]]
-- [[_COMMUNITY_Community 373|Community 373]]
-- [[_COMMUNITY_Community 374|Community 374]]
 - [[_COMMUNITY_Community 375|Community 375]]
 - [[_COMMUNITY_Community 376|Community 376]]
 - [[_COMMUNITY_Community 377|Community 377]]
@@ -400,6 +400,7 @@
 - [[_COMMUNITY_Community 396|Community 396]]
 - [[_COMMUNITY_Community 397|Community 397]]
 - [[_COMMUNITY_Community 398|Community 398]]
+- [[_COMMUNITY_Community 399|Community 399]]
 - [[_COMMUNITY_Community 400|Community 400]]
 - [[_COMMUNITY_Community 401|Community 401]]
 - [[_COMMUNITY_Community 402|Community 402]]
@@ -411,7 +412,6 @@
 - [[_COMMUNITY_Community 408|Community 408]]
 - [[_COMMUNITY_Community 409|Community 409]]
 - [[_COMMUNITY_Community 410|Community 410]]
-- [[_COMMUNITY_Community 411|Community 411]]
 - [[_COMMUNITY_Community 412|Community 412]]
 - [[_COMMUNITY_Community 413|Community 413]]
 - [[_COMMUNITY_Community 414|Community 414]]
@@ -443,34 +443,34 @@
 - [[_COMMUNITY_Community 440|Community 440]]
 - [[_COMMUNITY_Community 441|Community 441]]
 - [[_COMMUNITY_Community 442|Community 442]]
+- [[_COMMUNITY_Community 443|Community 443]]
+- [[_COMMUNITY_Community 444|Community 444]]
 - [[_COMMUNITY_Community 445|Community 445]]
 - [[_COMMUNITY_Community 446|Community 446]]
+- [[_COMMUNITY_Community 447|Community 447]]
 - [[_COMMUNITY_Community 448|Community 448]]
 - [[_COMMUNITY_Community 449|Community 449]]
 - [[_COMMUNITY_Community 450|Community 450]]
 - [[_COMMUNITY_Community 451|Community 451]]
 - [[_COMMUNITY_Community 452|Community 452]]
+- [[_COMMUNITY_Community 453|Community 453]]
 - [[_COMMUNITY_Community 454|Community 454]]
-- [[_COMMUNITY_Community 466|Community 466]]
+- [[_COMMUNITY_Community 457|Community 457]]
+- [[_COMMUNITY_Community 458|Community 458]]
+- [[_COMMUNITY_Community 460|Community 460]]
+- [[_COMMUNITY_Community 461|Community 461]]
+- [[_COMMUNITY_Community 462|Community 462]]
+- [[_COMMUNITY_Community 463|Community 463]]
+- [[_COMMUNITY_Community 464|Community 464]]
+- [[_COMMUNITY_Community 465|Community 465]]
 - [[_COMMUNITY_Community 467|Community 467]]
-- [[_COMMUNITY_Community 471|Community 471]]
-- [[_COMMUNITY_Community 472|Community 472]]
-- [[_COMMUNITY_Community 473|Community 473]]
-- [[_COMMUNITY_Community 474|Community 474]]
-- [[_COMMUNITY_Community 477|Community 477]]
-- [[_COMMUNITY_Community 525|Community 525]]
-- [[_COMMUNITY_Community 526|Community 526]]
-- [[_COMMUNITY_Community 527|Community 527]]
-- [[_COMMUNITY_Community 528|Community 528]]
-- [[_COMMUNITY_Community 529|Community 529]]
-- [[_COMMUNITY_Community 530|Community 530]]
-- [[_COMMUNITY_Community 531|Community 531]]
-- [[_COMMUNITY_Community 532|Community 532]]
-- [[_COMMUNITY_Community 533|Community 533]]
-- [[_COMMUNITY_Community 534|Community 534]]
-- [[_COMMUNITY_Community 535|Community 535]]
-- [[_COMMUNITY_Community 536|Community 536]]
-- [[_COMMUNITY_Community 537|Community 537]]
+- [[_COMMUNITY_Community 479|Community 479]]
+- [[_COMMUNITY_Community 480|Community 480]]
+- [[_COMMUNITY_Community 484|Community 484]]
+- [[_COMMUNITY_Community 485|Community 485]]
+- [[_COMMUNITY_Community 486|Community 486]]
+- [[_COMMUNITY_Community 487|Community 487]]
+- [[_COMMUNITY_Community 490|Community 490]]
 - [[_COMMUNITY_Community 538|Community 538]]
 - [[_COMMUNITY_Community 539|Community 539]]
 - [[_COMMUNITY_Community 540|Community 540]]
@@ -538,22 +538,35 @@
 - [[_COMMUNITY_Community 602|Community 602]]
 - [[_COMMUNITY_Community 603|Community 603]]
 - [[_COMMUNITY_Community 604|Community 604]]
+- [[_COMMUNITY_Community 605|Community 605]]
 - [[_COMMUNITY_Community 606|Community 606]]
+- [[_COMMUNITY_Community 607|Community 607]]
+- [[_COMMUNITY_Community 608|Community 608]]
+- [[_COMMUNITY_Community 609|Community 609]]
+- [[_COMMUNITY_Community 610|Community 610]]
+- [[_COMMUNITY_Community 611|Community 611]]
+- [[_COMMUNITY_Community 612|Community 612]]
+- [[_COMMUNITY_Community 613|Community 613]]
+- [[_COMMUNITY_Community 614|Community 614]]
 - [[_COMMUNITY_Community 615|Community 615]]
-- [[_COMMUNITY_Community 622|Community 622]]
-- [[_COMMUNITY_Community 623|Community 623]]
-- [[_COMMUNITY_Community 624|Community 624]]
-- [[_COMMUNITY_Community 625|Community 625]]
-- [[_COMMUNITY_Community 626|Community 626]]
-- [[_COMMUNITY_Community 627|Community 627]]
-- [[_COMMUNITY_Community 1661|Community 1661]]
-- [[_COMMUNITY_Community 1662|Community 1662]]
-- [[_COMMUNITY_Community 1663|Community 1663]]
-- [[_COMMUNITY_Community 1664|Community 1664]]
+- [[_COMMUNITY_Community 616|Community 616]]
+- [[_COMMUNITY_Community 617|Community 617]]
+- [[_COMMUNITY_Community 619|Community 619]]
+- [[_COMMUNITY_Community 628|Community 628]]
+- [[_COMMUNITY_Community 635|Community 635]]
+- [[_COMMUNITY_Community 636|Community 636]]
+- [[_COMMUNITY_Community 637|Community 637]]
+- [[_COMMUNITY_Community 638|Community 638]]
+- [[_COMMUNITY_Community 639|Community 639]]
+- [[_COMMUNITY_Community 640|Community 640]]
+- [[_COMMUNITY_Community 1679|Community 1679]]
+- [[_COMMUNITY_Community 1680|Community 1680]]
+- [[_COMMUNITY_Community 1681|Community 1681]]
+- [[_COMMUNITY_Community 1682|Community 1682]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Ce()` - 8665 edges
-2. `t()` - 5394 edges
+2. `t()` - 5395 edges
 3. `t()` - 5389 edges
 4. `E()` - 5103 edges
 5. `s()` - 4343 edges
@@ -579,211 +592,211 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.0
-Nodes (30388): t(), ia(), ia(), ia(), ra(), ra(), ia(), ra() (+30380 more)
+Nodes (31550): t(), ia(), ia(), ia(), ra(), ra(), ia(), ra() (+31542 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.0
-Nodes (11626): $(), _0(), $a(), a0(), a1(), Aa(), ab(), ac() (+11618 more)
+Nodes (14917): handleSearchBlur(), fc(), Fm(), _m(), rx(), tx(), Yn(), $() (+14909 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.0
-Nodes (4431): down(), up(), down(), up(), down(), up(), up(), up() (+4423 more)
+Nodes (2087): down(), up(), down(), up(), down(), up(), up(), up() (+2079 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.0
-Nodes (4979): _a(), aa(), an(), ar(), At(), ba(), Be(), Bn() (+4971 more)
+Nodes (5774): down(), up(), down(), up(), down(), up(), down(), up() (+5766 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.0
-Nodes (3504): down(), up(), down(), up(), down(), up(), down(), up() (+3496 more)
+Nodes (2492): ae(), es(), Se(), ve(), __vite__mapDeps(), we(), Xe(), Ze() (+2484 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.0
-Nodes (2362): i(), i(), i(), i(), i(), i(), i(), i() (+2354 more)
+Nodes (2249): i(), i(), i(), i(), i(), i(), i(), i() (+2241 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.0
-Nodes (2410): Fe(), ns(), Oe(), Qe(), Se(), Ve(), We(), Fe() (+2402 more)
+Nodes (2202): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2194 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.0
-Nodes (2179): setDefaultOptions(), setTimeoutProvider(), _(), _0(), $0t(), _1e(), _2e(), _3e() (+2171 more)
+Nodes (2191): aht(), dht(), lht(), aht(), eht(), sht(), Kht(), nht() (+2183 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.0
-Nodes (2121): wf(), wf(), wf(), wf(), wf(), wf(), wf(), _() (+2113 more)
+Nodes (2191): Evt(), j0t(), ovt(), ovt(), ivt(), kxt(), tvt(), Vdt() (+2183 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.0
-Nodes (2151): Oje(), xut(), xut(), Hut(), xut(), xut(), vut(), vut() (+2143 more)
+Nodes (2173): setDefaultOptions(), setTimeoutProvider(), setDefaultOptions(), setTimeoutProvider(), setDefaultOptions(), setTimeoutProvider(), setDefaultOptions(), setTimeoutProvider() (+2165 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.0
-Nodes (2161): Evt(), j0t(), ovt(), ovt(), ivt(), kxt(), tvt(), Vdt() (+2153 more)
+Nodes (2141): mtt(), htt(), ytt(), mtt(), mtt(), ytt(), ftt(), xtt() (+2133 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.0
-Nodes (2130): invalidate(), onMutationUpdate(), invalidate(), onMutationUpdate(), invalidate(), onMutationUpdate(), invalidate(), onMutationUpdate() (+2122 more)
+Nodes (2132): wf(), wf(), wf(), wf(), wf(), wf(), _v(), wf() (+2124 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.0
-Nodes (2121): Uft(), Uft(), Uft(), Uft(), Uft(), Uft(), _(), _0() (+2113 more)
+Nodes (2137): Gdt(), Kdt(), Kdt(), ugt(), Kdt(), Kdt(), Gdt(), Gdt() (+2129 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.0
-Nodes (2115): $Me(), _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t() (+2107 more)
+Nodes (2131): invalidate(), onMutationUpdate(), invalidate(), onMutationUpdate(), invalidate(), onMutationUpdate(), invalidate(), onMutationUpdate() (+2123 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.0
-Nodes (2110): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2102 more)
+Nodes (2123): Uft(), Uft(), Uft(), Uft(), Uft(), _(), _0(), $0t() (+2115 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.0
-Nodes (2108): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2100 more)
+Nodes (2141): Oje(), SPe(), xut(), xut(), Hut(), xut(), xut(), vut() (+2133 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.0
-Nodes (2108): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2100 more)
+Nodes (2126): cdt(), _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t() (+2118 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.0
-Nodes (2108): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2100 more)
+Nodes (2114): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2106 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.0
-Nodes (2122): SPe(), $dt(), tkt(), A0t(), h0t(), A0t(), h0t(), C0t() (+2114 more)
+Nodes (2114): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2106 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.0
-Nodes (2095): ft(), __vite__mapDeps(), Xs(), ft(), __vite__mapDeps(), Xs(), ft(), __vite__mapDeps() (+2087 more)
+Nodes (2114): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2106 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.0
-Nodes (2109): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2101 more)
+Nodes (2112): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2104 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.0
-Nodes (2110): ugt(), _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t() (+2102 more)
+Nodes (2111): _(), _0(), $0t(), _1e(), _2e(), _3e(), _3t(), _4e() (+2103 more)
 
 ### Community 22 - "Community 22"
 Cohesion: 0.0
-Nodes (2101): mtt(), htt(), ytt(), mtt(), mtt(), ytt(), ftt(), xtt() (+2093 more)
+Nodes (2105): _(), _0(), _2(), $2e(), _2t(), _3e(), _3t(), $4e() (+2097 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.0
-Nodes (2076): k5t(), _(), _2(), $2e(), _2t(), _3e(), $3t(), $4e() (+2068 more)
+Nodes (2086): n5t(), n5t(), n5t(), n5t(), _(), _0e(), _1e(), $2() (+2078 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.0
-Nodes (2104): _(), _0(), _2(), $2e(), _2t(), _3e(), _3t(), $4e() (+2096 more)
+Nodes (2081): w5t(), w5t(), j5t(), j5t(), _(), _2(), $2e(), _2t() (+2073 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.0
-Nodes (2088): j5t(), j5t(), j5t(), _(), _0e(), _0t(), _1e(), $2() (+2080 more)
+Nodes (2086): _(), _0e(), _0t(), _1e(), $2(), $2e(), _2t(), _3e() (+2078 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.0
-Nodes (2084): ooe(), _(), _0e(), _1e(), $2(), $2e(), _2t(), _3e() (+2076 more)
+Nodes (2086): invalidate(), onMutationUpdate(), invalidate(), onMutationUpdate(), invalidate(), onMutationUpdate(), invalidate(), onMutationUpdate() (+2078 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.0
-Nodes (2086): _(), _0e(), _0t(), _1e(), $2(), $2e(), _2t(), _3e() (+2078 more)
+Nodes (2085): Zft(), _(), _0e(), _0t(), _1e(), $2(), $2e(), _2t() (+2077 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.0
-Nodes (2084): _(), _0e(), _0t(), _1e(), $2(), $2e(), _2t(), _3e() (+2076 more)
+Nodes (2080): _(), _0e(), _1e(), $2(), $2e(), _2t(), _3e(), _3t() (+2072 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.0
-Nodes (2086): _(), _2(), $2e(), _2t(), _3e(), $3t(), $4e(), _4t() (+2078 more)
+Nodes (2083): _(), _0e(), _0t(), _1e(), $2(), $2e(), _2t(), _3e() (+2075 more)
 
 ### Community 30 - "Community 30"
 Cohesion: 0.0
-Nodes (2078): _(), _0e(), _1e(), $2(), $2e(), _2t(), _3e(), _3t() (+2070 more)
+Nodes (2095): _(), _0(), _2(), $2e(), _2t(), _3e(), _3t(), $4e() (+2087 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.0
-Nodes (2076): _(), _0e(), _1e(), $2(), $2e(), _2t(), _3e(), _3t() (+2068 more)
+Nodes (2078): _(), _0e(), _1e(), $2(), $2e(), _2t(), _3e(), _3t() (+2070 more)
 
 ### Community 32 - "Community 32"
 Cohesion: 0.0
-Nodes (2087): EPe(), MPe(), EPe(), MPe(), EPe(), MPe(), EPe(), MPe() (+2079 more)
+Nodes (2078): _(), _0e(), _1e(), $2(), $2e(), _2t(), _3e(), _3t() (+2070 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.0
-Nodes (2076): Qft(), Qft(), _(), _2(), $2e(), _2t(), _3e(), $3t() (+2068 more)
+Nodes (2085): _(), _2(), $2e(), _2t(), _3e(), $3t(), $4e(), _4t() (+2077 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.0
-Nodes (2070): _(), _2(), $2e(), _2t(), _3e(), $3t(), $4e(), _4t() (+2062 more)
+Nodes (2077): _(), _2(), $2e(), _2t(), _3e(), $3t(), $4e(), _4t() (+2069 more)
 
 ### Community 35 - "Community 35"
 Cohesion: 0.0
-Nodes (2083): _v(), _(), _0(), _0e(), _0t(), $1(), $2e(), _2t() (+2075 more)
+Nodes (2071): _(), _2(), $2e(), _2t(), _3e(), $3t(), $4e(), _4t() (+2063 more)
 
 ### Community 36 - "Community 36"
 Cohesion: 0.0
-Nodes (2069): _(), _2(), $2e(), _2t(), _3e(), $3t(), $4e(), _4t() (+2061 more)
+Nodes (1888): copy(), copy(), copy(), copy(), copy(), copy(), ct(), De() (+1880 more)
 
 ### Community 37 - "Community 37"
 Cohesion: 0.0
-Nodes (1840): copy(), copy(), copy(), copy(), copy(), copy(), getLang(), getStepContent() (+1832 more)
+Nodes (1644): bs(), Ps(), bs(), Ps(), Fs(), Is(), ys(), bs() (+1636 more)
 
 ### Community 38 - "Community 38"
 Cohesion: 0.0
-Nodes (1540): CPe(), eEe(), ree(), ree(), invalidate(), onMutationUpdate(), rEe(), ree() (+1532 more)
+Nodes (1533): CPe(), eEe(), ree(), ree(), rEe(), ree(), ree(), rEe() (+1525 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.0
-Nodes (1523): _(), $0(), _1(), $2(), _3e(), _4e(), _5e(), _6e() (+1515 more)
+Nodes (1526): mtt(), plugins(), addKeyboardShortcuts(), DPt(), plugins(), b(), plugins(), plugins() (+1518 more)
 
 ### Community 40 - "Community 40"
 Cohesion: 0.0
-Nodes (1522): mtt(), plugins(), DPt(), plugins(), b(), plugins(), plugins(), DPt() (+1514 more)
+Nodes (1522): _(), _0(), _2(), _3e(), _4e(), _5e(), _6e(), _7e() (+1514 more)
 
 ### Community 41 - "Community 41"
 Cohesion: 0.0
-Nodes (1519): _(), _0(), _2(), _3e(), _4e(), _5e(), _6e(), _7e() (+1511 more)
+Nodes (1483): AcademicYearFactory, i4e(), setDefaultOptions(), setTimeoutProvider(), _(), _0(), _0e(), $1 (+1475 more)
 
 ### Community 42 - "Community 42"
 Cohesion: 0.0
-Nodes (1490): buildShuffledCardNumbers(), init(), ae(), es(), Qe(), Se(), ve(), __vite__mapDeps() (+1482 more)
+Nodes (1474): cleanup(), finish(), nextPaint(), YHe(), _(), _0(), _0e(), $1 (+1466 more)
 
 ### Community 43 - "Community 43"
 Cohesion: 0.0
-Nodes (1475): _(), _0(), _0e(), $1, $1e(), _2(), $2e(), $3e() (+1467 more)
+Nodes (923): mapAcademicYearDomainToInsert(), mapAcademicYearDomainToUpdate(), getStatusBadgeVariant(), getStatusLabel(), handleCloseDialog(), handleDeleteConfirm(), handleOpenDialog(), handleSetCurrent() (+915 more)
 
 ### Community 44 - "Community 44"
 Cohesion: 0.0
-Nodes (1464): _(), _0(), _0e(), $1, $1e(), _2(), $2e(), $3e() (+1456 more)
+Nodes (228): async(), ptt(), ptt(), qF(), qF(), utt(), kfe(), Hpe() (+220 more)
 
 ### Community 45 - "Community 45"
 Cohesion: 0.0
-Nodes (234): Is(), async(), checkSupport(), handleConfirmCheckin(), ptt(), ptt(), qF(), qF() (+226 more)
+Nodes (781): canAccessOrgAdminArea(), canAccessOrgAdminDashboard(), hasOrgAdminDashboardPermission(), hasOrgAdminEntryPermission(), hasOrgWideScope(), shouldDefaultToOrgAdminArea(), CalendarPreferenceSyncFromProfile(), CalendarDatePicker() (+773 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.0
-Nodes (743): createAnnouncer(), getFocusableElements(), hexToRgb(), formatMark(), getAllStudentsForCurrentClassExport(), hasValidConsolidatedMarks(), extractPagination(), extractReport() (+735 more)
+Nodes (833): he(), ie(), Ks(), p(), Qs(), Xe(), We(), getFileIcon() (+825 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.0
-Nodes (777): canAccessOrgAdminArea(), canAccessOrgAdminDashboard(), hasOrgAdminDashboardPermission(), hasOrgAdminEntryPermission(), hasOrgWideScope(), shouldDefaultToOrgAdminArea(), CalendarPreferenceSyncFromProfile(), CourseAttendance() (+769 more)
+Cohesion: 0.01
+Nodes (540): $(), _0(), $a(), a0(), a1(), Aa(), ab(), ac() (+532 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.0
-Nodes (409): mapAcademicYearDomainToInsert(), mapAcademicYearDomainToUpdate(), getStatusBadgeVariant(), getStatusLabel(), handleCloseDialog(), handleDeleteConfirm(), handleOpenDialog(), handleSetCurrent() (+401 more)
+Cohesion: 0.01
+Nodes (371): bLe(), byt(), d1t(), Fyt(), g1t(), Jyt(), Lyt(), m1t() (+363 more)
 
 ### Community 49 - "Community 49"
-Cohesion: 0.0
-Nodes (497): formatFieldName(), formatSubjectType(), formatValue(), getEventBadgeVariant(), getMethodBadgeVariant(), parseProperties(), CourseStudent, handleCopyLicenseJson() (+489 more)
+Cohesion: 0.01
+Nodes (357): formatTeacherFatherName(), formatTeacherPrimaryLabel(), AssignedIdCardStudentAvatar(), handleEditCard(), handleFocus(), selectAllStudents(), selectByClass(), invalidateQueries() (+349 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.01
-Nodes (361): d1t(), Fyt(), g1t(), Jyt(), Lyt(), m1t(), T1t(), Tyt() (+353 more)
+Cohesion: 0.02
+Nodes (109): aa(), an(), ar(), At, B(), ba(), bn, br() (+101 more)
 
 ### Community 51 - "Community 51"
 Cohesion: 0.02
-Nodes (109): aa(), an(), ar(), At, B(), ba(), bn, br() (+101 more)
+Nodes (109): aa(), an(), ar(), At, B(), bn, br(), Bt (+101 more)
 
 ### Community 52 - "Community 52"
 Cohesion: 0.02
@@ -791,23 +804,23 @@ Nodes (109): aa(), an(), ar(), At, B(), ba(), bn, br() (+101 more)
 
 ### Community 53 - "Community 53"
 Cohesion: 0.02
-Nodes (109): aa(), an(), ar(), At, B(), ba(), bn, br() (+101 more)
+Nodes (108): aa(), an(), ar(), At, B(), bn, br(), Bt (+100 more)
 
 ### Community 54 - "Community 54"
 Cohesion: 0.02
-Nodes (109): aa(), an(), ar(), At, B(), ba(), bn, br() (+101 more)
+Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.02
-Nodes (109): aa(), an(), ar(), At, B(), bn, br(), Bt (+101 more)
+Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.02
-Nodes (109): aa(), an(), ar(), At, B(), ba(), bn, br() (+101 more)
+Nodes (108): aa(), an(), ar(), At, B(), bn, br(), Bt (+100 more)
 
 ### Community 57 - "Community 57"
 Cohesion: 0.02
-Nodes (109): aa(), an(), ar(), At, B(), ba(), bn, br() (+101 more)
+Nodes (108): aa(), an(), ar(), At, B(), bn, br(), Bt (+100 more)
 
 ### Community 58 - "Community 58"
 Cohesion: 0.02
@@ -819,59 +832,59 @@ Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
 
 ### Community 60 - "Community 60"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), bn, br(), Bt (+100 more)
+Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
 
 ### Community 61 - "Community 61"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), bn, br(), Bt (+99 more)
 
 ### Community 62 - "Community 62"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), bn, br(), Bt (+99 more)
 
 ### Community 63 - "Community 63"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 64 - "Community 64"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 65 - "Community 65"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), bn, br(), Bt (+99 more)
 
 ### Community 66 - "Community 66"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), bn, br(), Bt (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 67 - "Community 67"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), bn, br(), Bt (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 68 - "Community 68"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 69 - "Community 69"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 70 - "Community 70"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 71 - "Community 71"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), bn, br(), Bt (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 72 - "Community 72"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 73 - "Community 73"
 Cohesion: 0.02
-Nodes (108): aa(), an(), ar(), At, B(), ba(), bn, br() (+100 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 74 - "Community 74"
 Cohesion: 0.02
@@ -891,15 +904,15 @@ Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 78 - "Community 78"
 Cohesion: 0.02
-Nodes (106): aa(), an(), ar(), At, B(), bn, br(), Bt (+98 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 79 - "Community 79"
 Cohesion: 0.02
-Nodes (106): aa(), an(), ar(), At, B(), ba(), bn, br() (+98 more)
+Nodes (107): aa(), an(), ar(), At, B(), bn, br(), Bt (+99 more)
 
 ### Community 80 - "Community 80"
 Cohesion: 0.02
-Nodes (106): aa(), an(), ar(), At, B(), bn, br(), Bt (+98 more)
+Nodes (107): aa(), an(), ar(), At, B(), ba(), bn, br() (+99 more)
 
 ### Community 81 - "Community 81"
 Cohesion: 0.02
@@ -907,35 +920,35 @@ Nodes (106): aa(), an(), ar(), At, B(), ba(), bn, br() (+98 more)
 
 ### Community 82 - "Community 82"
 Cohesion: 0.02
-Nodes (102): aa(), an(), ar(), At, B(), ba(), bn, br() (+94 more)
+Nodes (106): aa(), an(), ar(), At, B(), bn, br(), Bt (+98 more)
 
 ### Community 83 - "Community 83"
 Cohesion: 0.02
-Nodes (103): aa(), an(), ar(), At, B(), ba(), bn, br() (+95 more)
+Nodes (106): aa(), an(), ar(), At, B(), ba(), bn, br() (+98 more)
 
 ### Community 84 - "Community 84"
-Cohesion: 0.03
-Nodes (127): aht(), dht(), lht(), aht(), eht(), hht(), sht(), Uht() (+119 more)
+Cohesion: 0.02
+Nodes (106): aa(), an(), ar(), At, B(), ba(), bn, br() (+98 more)
 
 ### Community 85 - "Community 85"
-Cohesion: 0.04
-Nodes (55): mapAttendanceSummaryApiToDomain(), mapClassMarkSheetApiToDomain(), mapEnrollmentStatsApiToDomain(), mapExamApiToDomain(), mapExamAttendanceApiToDomain(), mapExamAttendanceReportDetailApiToDomain(), mapExamClassApiToDomain(), mapExamDomainToInsert() (+47 more)
+Cohesion: 0.02
+Nodes (106): aa(), an(), ar(), At, B(), ba(), bn, br() (+98 more)
 
 ### Community 86 - "Community 86"
-Cohesion: 0.14
-Nodes (29): ae(), be(), ce(), de(), E(), Ee(), Fe(), g() (+21 more)
+Cohesion: 0.02
+Nodes (106): aa(), an(), ar(), At, B(), ba(), bn, br() (+98 more)
 
 ### Community 87 - "Community 87"
-Cohesion: 0.14
-Nodes (29): ae(), be(), ce(), de(), E(), Ee(), Fe(), g() (+21 more)
+Cohesion: 0.02
+Nodes (106): aa(), an(), ar(), At, B(), ba(), bn, br() (+98 more)
 
 ### Community 88 - "Community 88"
-Cohesion: 0.14
-Nodes (29): ae(), be(), ce(), de(), E(), Ee(), Fe(), g() (+21 more)
+Cohesion: 0.02
+Nodes (102): aa(), an(), ar(), At, B(), ba(), bn, br() (+94 more)
 
 ### Community 89 - "Community 89"
-Cohesion: 0.14
-Nodes (29): ae(), be(), ce(), de(), E(), Ee(), Fe(), g() (+21 more)
+Cohesion: 0.04
+Nodes (55): mapAttendanceSummaryApiToDomain(), mapClassMarkSheetApiToDomain(), mapEnrollmentStatsApiToDomain(), mapExamApiToDomain(), mapExamAttendanceApiToDomain(), mapExamAttendanceReportDetailApiToDomain(), mapExamClassApiToDomain(), mapExamDomainToInsert() (+47 more)
 
 ### Community 90 - "Community 90"
 Cohesion: 0.14
@@ -943,75 +956,75 @@ Nodes (29): ae(), be(), ce(), de(), E(), Ee(), Fe(), g() (+21 more)
 
 ### Community 91 - "Community 91"
 Cohesion: 0.14
-Nodes (19): b(), d(), E(), f(), h(), j(), k(), L() (+11 more)
+Nodes (29): ae(), be(), ce(), de(), E(), Ee(), Fe(), g() (+21 more)
 
 ### Community 92 - "Community 92"
-Cohesion: 0.18
-Nodes (1): DateConversionService
+Cohesion: 0.14
+Nodes (29): ae(), be(), ce(), de(), E(), Ee(), Fe(), g() (+21 more)
 
 ### Community 93 - "Community 93"
 Cohesion: 0.14
-Nodes (13): mapAssignmentStudentApiToDomain(), mapExamSeatingAssignmentApiToDomain(), mapExamSeatingMapApiToDomain(), mapExamSeatingMapDetailApiToDomain(), mapExamSeatingRunApiToDomain(), mapReportDataApiToDomain(), mapRollNumberConfirmApiToDomain(), mapRollNumberPreviewApiToDomain() (+5 more)
+Nodes (29): ae(), be(), ce(), de(), E(), Ee(), Fe(), g() (+21 more)
 
 ### Community 94 - "Community 94"
+Cohesion: 0.14
+Nodes (29): ae(), be(), ce(), de(), E(), Ee(), Fe(), g() (+21 more)
+
+### Community 95 - "Community 95"
+Cohesion: 0.11
+Nodes (13): at(), dt(), ee(), et(), Ge(), ht(), mt(), nt() (+5 more)
+
+### Community 96 - "Community 96"
+Cohesion: 0.14
+Nodes (19): b(), d(), E(), f(), h(), j(), k(), L() (+11 more)
+
+### Community 97 - "Community 97"
+Cohesion: 0.17
+Nodes (16): bt(), ct(), D(), dt(), ft(), ge(), It(), k() (+8 more)
+
+### Community 98 - "Community 98"
+Cohesion: 0.14
+Nodes (13): mapAssignmentStudentApiToDomain(), mapExamSeatingAssignmentApiToDomain(), mapExamSeatingMapApiToDomain(), mapExamSeatingMapDetailApiToDomain(), mapExamSeatingRunApiToDomain(), mapReportDataApiToDomain(), mapRollNumberConfirmApiToDomain(), mapRollNumberPreviewApiToDomain() (+5 more)
+
+### Community 99 - "Community 99"
 Cohesion: 0.16
 Nodes (14): mapAccountBalancesReportApiToDomain(), mapDailyCashbookApiToDomain(), mapDonorApiToDomain(), mapDonorSummaryReportApiToDomain(), mapExpenseCategoryApiToDomain(), mapExpenseEntryApiToDomain(), mapFinanceAccountApiToDomain(), mapFinanceDashboardApiToDomain() (+6 more)
 
-### Community 95 - "Community 95"
+### Community 100 - "Community 100"
 Cohesion: 0.2
 Nodes (19): $(), D(), f(), G(), H(), I(), j(), k() (+11 more)
 
-### Community 96 - "Community 96"
+### Community 101 - "Community 101"
 Cohesion: 0.2
 Nodes (3): g, m(), p()
 
-### Community 97 - "Community 97"
-Cohesion: 0.2
-Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
-
-### Community 98 - "Community 98"
-Cohesion: 0.2
-Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
-
-### Community 99 - "Community 99"
-Cohesion: 0.2
-Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
-
-### Community 100 - "Community 100"
-Cohesion: 0.2
-Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
-
-### Community 101 - "Community 101"
-Cohesion: 0.22
-Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
-
 ### Community 102 - "Community 102"
-Cohesion: 0.22
-Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
+Cohesion: 0.19
+Nodes (14): bt(), ct(), D(), dt(), ft(), k(), me(), mt() (+6 more)
 
 ### Community 103 - "Community 103"
-Cohesion: 0.22
+Cohesion: 0.2
 Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 104 - "Community 104"
-Cohesion: 0.22
+Cohesion: 0.2
 Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 105 - "Community 105"
-Cohesion: 0.22
+Cohesion: 0.2
 Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 106 - "Community 106"
-Cohesion: 0.22
+Cohesion: 0.2
 Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 107 - "Community 107"
-Cohesion: 0.22
-Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
+Cohesion: 0.14
+Nodes (13): formatMark(), getAllStudentsForCurrentClassExport(), hasValidConsolidatedMarks(), extractPagination(), extractReport(), fetchAllConsolidatedMarkSheetRows(), getConsolidatedExportIdentityColumns(), isObject() (+5 more)
 
 ### Community 108 - "Community 108"
-Cohesion: 0.22
-Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
+Cohesion: 0.12
+Nodes (8): ae(), Ge(), mt(), N(), pt(), ss(), ws(), Zs()
 
 ### Community 109 - "Community 109"
 Cohesion: 0.22
@@ -1122,36 +1135,36 @@ Cohesion: 0.22
 Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 136 - "Community 136"
-Cohesion: 0.12
-Nodes (1): Student
+Cohesion: 0.22
+Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 137 - "Community 137"
-Cohesion: 0.37
-Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+Cohesion: 0.22
+Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 138 - "Community 138"
-Cohesion: 0.37
-Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+Cohesion: 0.22
+Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 139 - "Community 139"
-Cohesion: 0.35
-Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+Cohesion: 0.22
+Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 140 - "Community 140"
-Cohesion: 0.37
-Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+Cohesion: 0.22
+Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 141 - "Community 141"
-Cohesion: 0.37
-Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+Cohesion: 0.22
+Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 142 - "Community 142"
-Cohesion: 0.35
-Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+Cohesion: 0.22
+Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 143 - "Community 143"
-Cohesion: 0.37
-Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+Cohesion: 0.22
+Nodes (17): D(), f(), G(), H(), I(), J(), k(), M() (+9 more)
 
 ### Community 144 - "Community 144"
 Cohesion: 0.37
@@ -1162,7 +1175,7 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 146 - "Community 146"
-Cohesion: 0.37
+Cohesion: 0.35
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 147 - "Community 147"
@@ -1174,7 +1187,7 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 149 - "Community 149"
-Cohesion: 0.37
+Cohesion: 0.35
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 150 - "Community 150"
@@ -1186,7 +1199,7 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 152 - "Community 152"
-Cohesion: 0.35
+Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 153 - "Community 153"
@@ -1194,11 +1207,11 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 154 - "Community 154"
-Cohesion: 0.35
+Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 155 - "Community 155"
-Cohesion: 0.35
+Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 156 - "Community 156"
@@ -1214,7 +1227,7 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 159 - "Community 159"
-Cohesion: 0.37
+Cohesion: 0.35
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 160 - "Community 160"
@@ -1222,11 +1235,11 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 161 - "Community 161"
-Cohesion: 0.37
+Cohesion: 0.35
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 162 - "Community 162"
-Cohesion: 0.37
+Cohesion: 0.35
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 163 - "Community 163"
@@ -1238,7 +1251,7 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 165 - "Community 165"
-Cohesion: 0.35
+Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 166 - "Community 166"
@@ -1250,11 +1263,11 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 168 - "Community 168"
-Cohesion: 0.35
+Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 169 - "Community 169"
-Cohesion: 0.35
+Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 170 - "Community 170"
@@ -1262,11 +1275,11 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 171 - "Community 171"
-Cohesion: 0.35
+Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 172 - "Community 172"
-Cohesion: 0.37
+Cohesion: 0.35
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 173 - "Community 173"
@@ -1278,60 +1291,60 @@ Cohesion: 0.37
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 175 - "Community 175"
-Cohesion: 0.37
+Cohesion: 0.35
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 176 - "Community 176"
-Cohesion: 0.37
+Cohesion: 0.35
 Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
 
 ### Community 177 - "Community 177"
+Cohesion: 0.37
+Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+
+### Community 178 - "Community 178"
+Cohesion: 0.35
+Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+
+### Community 179 - "Community 179"
+Cohesion: 0.37
+Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+
+### Community 180 - "Community 180"
+Cohesion: 0.37
+Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+
+### Community 181 - "Community 181"
+Cohesion: 0.37
+Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+
+### Community 182 - "Community 182"
+Cohesion: 0.37
+Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+
+### Community 183 - "Community 183"
+Cohesion: 0.37
+Nodes (15): ae(), D(), ee(), G(), H(), J(), M(), N() (+7 more)
+
+### Community 184 - "Community 184"
 Cohesion: 0.28
 Nodes (14): mapAcademicYearApiToDomain(), mapAdmissionRecordApiToDomain(), mapAttendanceHistoryApiToDomain(), mapCourseHistoryApiToDomain(), mapExamHistoryApiToDomain(), mapFeeHistoryApiToDomain(), mapGraduationHistoryApiToDomain(), mapHistoryEventApiToDomain() (+6 more)
 
-### Community 178 - "Community 178"
+### Community 185 - "Community 185"
 Cohesion: 0.19
 Nodes (13): mapFeeAssignmentApiToDomain(), mapFeeAssignmentDomainToInsert(), mapFeeAssignmentDomainToUpdate(), mapFeeExceptionApiToDomain(), mapFeeExceptionDomainToInsert(), mapFeeExceptionDomainToUpdate(), mapFeePaymentApiToDomain(), mapFeePaymentDomainToInsert() (+5 more)
 
-### Community 180 - "Community 180"
+### Community 187 - "Community 187"
 Cohesion: 0.18
 Nodes (1): Staff
 
-### Community 181 - "Community 181"
+### Community 188 - "Community 188"
 Cohesion: 0.19
 Nodes (7): f(), ge(), je(), K(), Ne(), pe(), ve()
 
-### Community 182 - "Community 182"
+### Community 189 - "Community 189"
 Cohesion: 0.21
 Nodes (9): addTextBlock(), addVariableBlock(), duplicateBlock(), generateId(), handleBlockMouseDown(), mmToPx(), renderResizeHandles(), updateBlock() (+1 more)
-
-### Community 183 - "Community 183"
-Cohesion: 0.32
-Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
-
-### Community 184 - "Community 184"
-Cohesion: 0.32
-Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
-
-### Community 185 - "Community 185"
-Cohesion: 0.32
-Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
-
-### Community 186 - "Community 186"
-Cohesion: 0.32
-Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
-
-### Community 187 - "Community 187"
-Cohesion: 0.32
-Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
-
-### Community 188 - "Community 188"
-Cohesion: 0.32
-Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
-
-### Community 189 - "Community 189"
-Cohesion: 0.32
-Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
 
 ### Community 190 - "Community 190"
 Cohesion: 0.32
@@ -1434,80 +1447,80 @@ Cohesion: 0.32
 Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
 
 ### Community 215 - "Community 215"
+Cohesion: 0.32
+Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
+
+### Community 216 - "Community 216"
+Cohesion: 0.32
+Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
+
+### Community 217 - "Community 217"
+Cohesion: 0.32
+Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
+
+### Community 218 - "Community 218"
+Cohesion: 0.32
+Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
+
+### Community 219 - "Community 219"
+Cohesion: 0.32
+Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
+
+### Community 220 - "Community 220"
+Cohesion: 0.32
+Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
+
+### Community 221 - "Community 221"
+Cohesion: 0.32
+Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
+
+### Community 222 - "Community 222"
+Cohesion: 0.32
+Nodes (11): _(), A(), C(), f(), h(), K(), q(), S() (+3 more)
+
+### Community 223 - "Community 223"
 Cohesion: 0.23
 Nodes (8): mapFacilityMaintenanceApiToDomain(), mapFacilityMaintenanceDomainToInsert(), mapFacilityStaffDomainToInsert(), mapFacilityTypeApiToDomain(), mapOrgFacilityApiToDomain(), mapOrgFacilityDomainToInsert(), mapOrgFacilityDomainToUpdate(), parseDecimal()
 
-### Community 216 - "Community 216"
+### Community 224 - "Community 224"
 Cohesion: 0.45
 Nodes (10): A(), K(), m(), Q(), R(), S(), T(), U() (+2 more)
 
-### Community 217 - "Community 217"
+### Community 225 - "Community 225"
 Cohesion: 0.45
 Nodes (10): A(), K(), m(), Q(), R(), S(), T(), U() (+2 more)
 
-### Community 218 - "Community 218"
+### Community 226 - "Community 226"
 Cohesion: 0.45
 Nodes (10): A(), K(), m(), Q(), R(), S(), T(), U() (+2 more)
 
-### Community 219 - "Community 219"
+### Community 227 - "Community 227"
 Cohesion: 0.45
 Nodes (10): A(), K(), m(), Q(), R(), S(), T(), U() (+2 more)
 
-### Community 220 - "Community 220"
+### Community 228 - "Community 228"
 Cohesion: 0.45
 Nodes (10): A(), K(), m(), Q(), R(), S(), T(), U() (+2 more)
 
-### Community 221 - "Community 221"
+### Community 229 - "Community 229"
 Cohesion: 0.45
 Nodes (10): A(), K(), m(), Q(), R(), S(), T(), U() (+2 more)
 
-### Community 222 - "Community 222"
+### Community 230 - "Community 230"
 Cohesion: 0.45
 Nodes (10): A(), K(), m(), Q(), R(), S(), T(), U() (+2 more)
 
-### Community 223 - "Community 223"
+### Community 231 - "Community 231"
 Cohesion: 0.24
 Nodes (4): handleCloseDialog(), handleOpenDialog(), handleSave(), resetForm()
 
-### Community 224 - "Community 224"
-Cohesion: 0.24
-Nodes (6): d(), f(), o(), r(), u(), v()
-
-### Community 225 - "Community 225"
-Cohesion: 0.24
-Nodes (6): d(), f(), o(), r(), u(), v()
-
-### Community 226 - "Community 226"
-Cohesion: 0.49
-Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
-
-### Community 227 - "Community 227"
-Cohesion: 0.49
-Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
-
-### Community 228 - "Community 228"
-Cohesion: 0.49
-Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
-
-### Community 229 - "Community 229"
-Cohesion: 0.49
-Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
-
-### Community 230 - "Community 230"
-Cohesion: 0.49
-Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
-
-### Community 231 - "Community 231"
-Cohesion: 0.49
-Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
-
 ### Community 232 - "Community 232"
-Cohesion: 0.49
-Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+Cohesion: 0.24
+Nodes (6): d(), f(), o(), r(), u(), v()
 
 ### Community 233 - "Community 233"
-Cohesion: 0.49
-Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+Cohesion: 0.24
+Nodes (6): d(), f(), o(), r(), u(), v()
 
 ### Community 234 - "Community 234"
 Cohesion: 0.49
@@ -1534,196 +1547,196 @@ Cohesion: 0.49
 Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
 
 ### Community 240 - "Community 240"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 241 - "Community 241"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 242 - "Community 242"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 243 - "Community 243"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 244 - "Community 244"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 245 - "Community 245"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 246 - "Community 246"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 247 - "Community 247"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 248 - "Community 248"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 249 - "Community 249"
+Cohesion: 0.49
+Nodes (9): A(), D(), E(), K(), L(), Q(), S(), T() (+1 more)
+
+### Community 250 - "Community 250"
 Cohesion: 0.29
 Nodes (8): mapStaffApiToDomain(), mapStaffDocumentDomainToInsert(), mapStaffDocumentDomainToUpdate(), mapStaffDomainToInsert(), mapStaffDomainToUpdate(), mapStaffTypeApiToDomain(), mapStaffTypeDomainToInsert(), mapStaffTypeDomainToUpdate()
 
-### Community 241 - "Community 241"
+### Community 251 - "Community 251"
 Cohesion: 0.27
 Nodes (6): mapTeacherPreferenceDomainToInsert(), mapTeacherPreferenceDomainToUpdate(), mapTimetableDomainToInsert(), mapTimetableDomainToUpdate(), mapTimetableEntryDomainToInsert(), mapTimetableEntryDomainToUpdate()
 
-### Community 242 - "Community 242"
+### Community 252 - "Community 252"
 Cohesion: 0.29
 Nodes (6): handleCreateExpense(), handleCreateIncome(), handleUpdateExpense(), handleUpdateIncome(), resetExpenseForm(), resetIncomeForm()
 
-### Community 243 - "Community 243"
+### Community 253 - "Community 253"
 Cohesion: 0.27
 Nodes (4): handleCloseDialog(), handleOpenDialog(), handleSave(), resetForm()
 
-### Community 245 - "Community 245"
+### Community 255 - "Community 255"
 Cohesion: 0.36
 Nodes (7): _(), c(), d(), n(), r(), s(), t()
-
-### Community 246 - "Community 246"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
-
-### Community 247 - "Community 247"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
-
-### Community 248 - "Community 248"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
-
-### Community 249 - "Community 249"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
-
-### Community 250 - "Community 250"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
-
-### Community 251 - "Community 251"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
-
-### Community 252 - "Community 252"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
-
-### Community 253 - "Community 253"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
-
-### Community 254 - "Community 254"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
-
-### Community 255 - "Community 255"
-Cohesion: 0.33
-Nodes (5): N(), O(), P(), R(), U()
 
 ### Community 256 - "Community 256"
 Cohesion: 0.33
 Nodes (5): N(), O(), P(), R(), U()
 
+### Community 257 - "Community 257"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 258 - "Community 258"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
 ### Community 259 - "Community 259"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 260 - "Community 260"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 261 - "Community 261"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 262 - "Community 262"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 263 - "Community 263"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 264 - "Community 264"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 265 - "Community 265"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 266 - "Community 266"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 267 - "Community 267"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 268 - "Community 268"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 269 - "Community 269"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 270 - "Community 270"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 271 - "Community 271"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 272 - "Community 272"
+Cohesion: 0.33
+Nodes (5): N(), O(), P(), R(), U()
+
+### Community 275 - "Community 275"
 Cohesion: 0.28
 Nodes (3): handleCreate(), handleUpdate(), resetForm()
 
-### Community 260 - "Community 260"
-Cohesion: 0.31
-Nodes (4): handleCloseDialog(), handleOpenDialog(), handleSave(), resetForm()
-
-### Community 261 - "Community 261"
+### Community 276 - "Community 276"
 Cohesion: 0.43
 Nodes (5): mapOnlineAdmissionApiToDomain(), mapOnlineAdmissionDocumentApiToDomain(), mapOnlineAdmissionFieldApiToDomain(), mapOnlineAdmissionFieldValueApiToDomain(), toDate()
 
-### Community 262 - "Community 262"
+### Community 277 - "Community 277"
 Cohesion: 0.36
 Nodes (6): mapPermissionApiToDomain(), mapPermissionDomainToInsert(), mapPermissionDomainToUpdate(), mapRolePermissionApiToDomain(), mapRolePermissionDomainToInsert(), mapRolePermissionDomainToUpdate()
 
-### Community 264 - "Community 264"
+### Community 279 - "Community 279"
 Cohesion: 0.32
 Nodes (3): handleCreate(), handleUpdate(), resetForm()
 
-### Community 265 - "Community 265"
-Cohesion: 0.43
-Nodes (6): getCodeStatus(), handleCopyCode(), handleDelete(), handleOpenCreate(), handleOpenEdit(), handleSubmit()
-
-### Community 266 - "Community 266"
-Cohesion: 0.52
-Nodes (6): _(), C(), d(), g(), v(), y()
-
-### Community 267 - "Community 267"
-Cohesion: 0.52
-Nodes (6): _(), C(), d(), g(), v(), y()
-
-### Community 268 - "Community 268"
-Cohesion: 0.52
-Nodes (6): _(), C(), d(), g(), v(), y()
-
-### Community 269 - "Community 269"
-Cohesion: 0.52
-Nodes (6): _(), C(), d(), g(), v(), y()
-
-### Community 270 - "Community 270"
-Cohesion: 0.43
-Nodes (4): d(), g(), p(), y()
-
-### Community 271 - "Community 271"
-Cohesion: 0.43
-Nodes (4): d(), g(), p(), y()
-
-### Community 272 - "Community 272"
-Cohesion: 0.43
-Nodes (4): d(), g(), p(), y()
-
-### Community 273 - "Community 273"
-Cohesion: 0.43
-Nodes (4): b(), f(), i(), y()
-
-### Community 274 - "Community 274"
-Cohesion: 0.43
-Nodes (4): b(), i(), p(), y()
-
-### Community 275 - "Community 275"
-Cohesion: 0.43
-Nodes (4): d(), g(), p(), y()
-
-### Community 276 - "Community 276"
-Cohesion: 0.43
-Nodes (4): b(), f(), i(), y()
-
-### Community 277 - "Community 277"
-Cohesion: 0.43
-Nodes (4): b(), i(), p(), y()
-
-### Community 278 - "Community 278"
-Cohesion: 0.43
-Nodes (4): d(), g(), p(), y()
-
-### Community 279 - "Community 279"
-Cohesion: 0.43
-Nodes (4): b(), f(), i(), y()
-
 ### Community 280 - "Community 280"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 281 - "Community 281"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 282 - "Community 282"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 283 - "Community 283"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 284 - "Community 284"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 285 - "Community 285"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 286 - "Community 286"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 287 - "Community 287"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 288 - "Community 288"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 289 - "Community 289"
+Cohesion: 0.52
+Nodes (6): _(), C(), d(), g(), v(), y()
+
+### Community 290 - "Community 290"
 Cohesion: 0.38
 Nodes (4): mapClassAcademicYearApiToDomain(), mapClassApiToDomain(), mapClassDomainToInsert(), mapClassDomainToUpdate()
 
-### Community 281 - "Community 281"
+### Community 291 - "Community 291"
 Cohesion: 0.38
 Nodes (3): handleCreate(), handleUpdate(), resetForm()
-
-### Community 282 - "Community 282"
-Cohesion: 0.4
-Nodes (2): $e(), S()
-
-### Community 283 - "Community 283"
-Cohesion: 0.4
-Nodes (2): $e(), S()
-
-### Community 284 - "Community 284"
-Cohesion: 0.4
-Nodes (2): $e(), S()
-
-### Community 285 - "Community 285"
-Cohesion: 0.4
-Nodes (2): $e(), S()
-
-### Community 286 - "Community 286"
-Cohesion: 0.4
-Nodes (2): $e(), S()
-
-### Community 287 - "Community 287"
-Cohesion: 0.4
-Nodes (2): $e(), S()
-
-### Community 288 - "Community 288"
-Cohesion: 0.4
-Nodes (2): $e(), S()
-
-### Community 289 - "Community 289"
-Cohesion: 0.4
-Nodes (2): $e(), S()
-
-### Community 290 - "Community 290"
-Cohesion: 0.4
-Nodes (2): He(), S()
-
-### Community 291 - "Community 291"
-Cohesion: 0.4
-Nodes (2): $e(), S()
 
 ### Community 292 - "Community 292"
 Cohesion: 0.4
@@ -1755,15 +1768,15 @@ Nodes (2): $e(), S()
 
 ### Community 299 - "Community 299"
 Cohesion: 0.4
-Nodes (2): He(), S()
+Nodes (2): $e(), S()
 
 ### Community 300 - "Community 300"
 Cohesion: 0.4
-Nodes (2): Qe(), S()
+Nodes (2): He(), S()
 
 ### Community 301 - "Community 301"
 Cohesion: 0.4
-Nodes (2): He(), S()
+Nodes (2): $e(), S()
 
 ### Community 302 - "Community 302"
 Cohesion: 0.4
@@ -1775,7 +1788,7 @@ Nodes (2): $e(), S()
 
 ### Community 304 - "Community 304"
 Cohesion: 0.4
-Nodes (2): He(), S()
+Nodes (2): $e(), S()
 
 ### Community 305 - "Community 305"
 Cohesion: 0.4
@@ -1799,15 +1812,15 @@ Nodes (2): He(), S()
 
 ### Community 310 - "Community 310"
 Cohesion: 0.4
-Nodes (2): $e(), S()
+Nodes (2): Qe(), S()
 
 ### Community 311 - "Community 311"
 Cohesion: 0.4
-Nodes (2): $e(), S()
+Nodes (2): He(), S()
 
 ### Community 312 - "Community 312"
 Cohesion: 0.4
-Nodes (2): Qe(), S()
+Nodes (2): $e(), S()
 
 ### Community 313 - "Community 313"
 Cohesion: 0.4
@@ -1815,15 +1828,15 @@ Nodes (2): $e(), S()
 
 ### Community 314 - "Community 314"
 Cohesion: 0.4
-Nodes (2): $e(), S()
+Nodes (2): He(), S()
 
 ### Community 315 - "Community 315"
 Cohesion: 0.4
-Nodes (2): Qe(), S()
+Nodes (2): $e(), S()
 
 ### Community 316 - "Community 316"
 Cohesion: 0.4
-Nodes (2): Qe(), S()
+Nodes (2): $e(), S()
 
 ### Community 317 - "Community 317"
 Cohesion: 0.4
@@ -1831,11 +1844,11 @@ Nodes (2): $e(), S()
 
 ### Community 318 - "Community 318"
 Cohesion: 0.4
-Nodes (2): Qe(), S()
+Nodes (2): $e(), S()
 
 ### Community 319 - "Community 319"
 Cohesion: 0.4
-Nodes (2): $e(), S()
+Nodes (2): He(), S()
 
 ### Community 320 - "Community 320"
 Cohesion: 0.4
@@ -1847,43 +1860,43 @@ Nodes (2): $e(), S()
 
 ### Community 322 - "Community 322"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): Qe(), S()
 
 ### Community 323 - "Community 323"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): $e(), S()
 
 ### Community 324 - "Community 324"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): $e(), S()
 
 ### Community 325 - "Community 325"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): Qe(), S()
 
 ### Community 326 - "Community 326"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): Qe(), S()
 
 ### Community 327 - "Community 327"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): $e(), S()
 
 ### Community 328 - "Community 328"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): Qe(), S()
 
 ### Community 329 - "Community 329"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): $e(), S()
 
 ### Community 330 - "Community 330"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): $e(), S()
 
 ### Community 331 - "Community 331"
 Cohesion: 0.4
-Nodes (3): b(), l(), p()
+Nodes (2): $e(), S()
 
 ### Community 332 - "Community 332"
 Cohesion: 0.4
@@ -1926,268 +1939,268 @@ Cohesion: 0.4
 Nodes (3): b(), l(), p()
 
 ### Community 342 - "Community 342"
-Cohesion: 0.33
-Nodes (1): handleAdd()
+Cohesion: 0.4
+Nodes (3): b(), l(), p()
 
 ### Community 343 - "Community 343"
-Cohesion: 0.47
-Nodes (3): handleCreate(), handleUpdate(), resetForm()
+Cohesion: 0.4
+Nodes (3): b(), l(), p()
 
 ### Community 344 - "Community 344"
-Cohesion: 0.47
-Nodes (3): handleCreate(), handleUpdate(), resetForm()
+Cohesion: 0.4
+Nodes (3): b(), l(), p()
 
 ### Community 345 - "Community 345"
-Cohesion: 0.47
-Nodes (3): handleCreate(), handleUpdate(), resetForm()
+Cohesion: 0.4
+Nodes (3): b(), l(), p()
 
 ### Community 346 - "Community 346"
-Cohesion: 0.47
-Nodes (3): handleCreate(), handleUpdate(), resetForm()
+Cohesion: 0.4
+Nodes (3): b(), l(), p()
 
 ### Community 347 - "Community 347"
 Cohesion: 0.4
-Nodes (2): getLandingMetadata(), handleOpenDialog()
+Nodes (3): b(), l(), p()
 
 ### Community 348 - "Community 348"
 Cohesion: 0.4
-Nodes (2): s(), u()
+Nodes (3): b(), l(), p()
 
 ### Community 349 - "Community 349"
-Cohesion: 0.5
-Nodes (3): de(), Te(), Ye()
+Cohesion: 0.4
+Nodes (3): b(), l(), p()
 
 ### Community 350 - "Community 350"
-Cohesion: 0.5
-Nodes (3): de(), Te(), Ye()
+Cohesion: 0.4
+Nodes (3): b(), l(), p()
 
 ### Community 351 - "Community 351"
-Cohesion: 0.5
-Nodes (3): de(), Te(), Ye()
+Cohesion: 0.4
+Nodes (3): b(), l(), p()
 
 ### Community 352 - "Community 352"
-Cohesion: 0.5
-Nodes (3): de(), Te(), Ye()
+Cohesion: 0.33
+Nodes (1): handleAdd()
 
 ### Community 353 - "Community 353"
-Cohesion: 0.5
-Nodes (3): de(), Te(), Ye()
+Cohesion: 0.33
+Nodes (3): mapAttendanceSessionApiToDomain(), mapAttendanceSessionDomainToInsert(), mapAttendanceSessionDomainToUpdate()
 
 ### Community 354 - "Community 354"
-Cohesion: 0.5
-Nodes (3): de(), Te(), Ye()
+Cohesion: 0.47
+Nodes (3): handleCreate(), handleUpdate(), resetForm()
 
 ### Community 355 - "Community 355"
-Cohesion: 0.5
-Nodes (3): de(), Te(), Ye()
+Cohesion: 0.47
+Nodes (3): handleCreate(), handleUpdate(), resetForm()
 
 ### Community 356 - "Community 356"
+Cohesion: 0.47
+Nodes (3): handleCreate(), handleUpdate(), resetForm()
+
+### Community 357 - "Community 357"
+Cohesion: 0.47
+Nodes (3): handleCreate(), handleUpdate(), resetForm()
+
+### Community 358 - "Community 358"
+Cohesion: 0.4
+Nodes (2): getLandingMetadata(), handleOpenDialog()
+
+### Community 359 - "Community 359"
+Cohesion: 0.4
+Nodes (2): s(), u()
+
+### Community 360 - "Community 360"
 Cohesion: 0.5
 Nodes (3): de(), Te(), Ye()
 
-### Community 357 - "Community 357"
-Cohesion: 0.4
-Nodes (2): addRestDay(), startDate()
-
-### Community 359 - "Community 359"
+### Community 361 - "Community 361"
 Cohesion: 0.5
-Nodes (2): mapPaginatedResponseToDomain(), mapPaginationApiToDomain()
+Nodes (3): de(), Te(), Ye()
+
+### Community 362 - "Community 362"
+Cohesion: 0.5
+Nodes (3): de(), Te(), Ye()
 
 ### Community 363 - "Community 363"
-Cohesion: 0.4
-Nodes (1): openEditSettings()
+Cohesion: 0.5
+Nodes (3): de(), Te(), Ye()
 
 ### Community 364 - "Community 364"
 Cohesion: 0.5
-Nodes (1): BulkSyncAttendanceRequest
+Nodes (3): de(), Te(), Ye()
 
 ### Community 365 - "Community 365"
 Cohesion: 0.5
-Nodes (1): CopyClassesRequest
+Nodes (3): de(), Te(), Ye()
 
 ### Community 366 - "Community 366"
 Cohesion: 0.5
-Nodes (1): CopyToMainRequest
+Nodes (3): de(), Te(), Ye()
 
 ### Community 367 - "Community 367"
 Cohesion: 0.5
-Nodes (1): EnrollFromMainRequest
+Nodes (3): de(), Te(), Ye()
 
 ### Community 368 - "Community 368"
 Cohesion: 0.5
-Nodes (1): MarkAttendanceRecordsRequest
+Nodes (3): de(), Te(), Ye()
 
 ### Community 369 - "Community 369"
 Cohesion: 0.5
-Nodes (1): StoreAssetAssignmentRequest
-
-### Community 370 - "Community 370"
-Cohesion: 0.5
-Nodes (1): StoreAssetMaintenanceRequest
+Nodes (3): de(), Te(), Ye()
 
 ### Community 371 - "Community 371"
 Cohesion: 0.5
-Nodes (1): StoreLeaveRequest
-
-### Community 372 - "Community 372"
-Cohesion: 0.5
-Nodes (1): StoreShortTermCourseRequest
-
-### Community 373 - "Community 373"
-Cohesion: 0.5
-Nodes (1): StoreTeacherTimetablePreferenceRequest
-
-### Community 374 - "Community 374"
-Cohesion: 0.5
-Nodes (1): StoreTimetableEntryRequest
+Nodes (2): mapPaginatedResponseToDomain(), mapPaginationApiToDomain()
 
 ### Community 375 - "Community 375"
-Cohesion: 0.5
-Nodes (1): UpdateAssetAssignmentRequest
+Cohesion: 0.4
+Nodes (1): openEditSettings()
 
 ### Community 376 - "Community 376"
 Cohesion: 0.5
-Nodes (1): UpdateAssetMaintenanceRequest
+Nodes (1): BulkSyncAttendanceRequest
 
 ### Community 377 - "Community 377"
 Cohesion: 0.5
-Nodes (1): UpdateLeaveRequest
+Nodes (1): CopyClassesRequest
 
 ### Community 378 - "Community 378"
 Cohesion: 0.5
-Nodes (1): UpdateShortTermCourseRequest
+Nodes (1): CopyToMainRequest
 
 ### Community 379 - "Community 379"
 Cohesion: 0.5
-Nodes (1): UpdateTeacherTimetablePreferenceRequest
+Nodes (1): EnrollFromMainRequest
 
 ### Community 380 - "Community 380"
 Cohesion: 0.5
-Nodes (1): SolveExamSeatingMapRequest
+Nodes (1): MarkAttendanceRecordsRequest
 
 ### Community 381 - "Community 381"
 Cohesion: 0.5
-Nodes (1): StoreExamSeatingMapRequest
+Nodes (1): StoreAssetAssignmentRequest
 
 ### Community 382 - "Community 382"
 Cohesion: 0.5
-Nodes (1): SyncExamSeatingAssignmentsRequest
+Nodes (1): StoreAssetMaintenanceRequest
 
 ### Community 383 - "Community 383"
 Cohesion: 0.5
-Nodes (1): SyncExamSeatingClassColorsRequest
+Nodes (1): StoreLeaveRequest
 
 ### Community 384 - "Community 384"
 Cohesion: 0.5
-Nodes (1): SyncExamSeatingMapClassesRequest
+Nodes (1): StoreShortTermCourseRequest
 
 ### Community 385 - "Community 385"
 Cohesion: 0.5
-Nodes (1): UpdateExamSeatingMapRequest
+Nodes (1): StoreTeacherTimetablePreferenceRequest
 
 ### Community 386 - "Community 386"
 Cohesion: 0.5
-Nodes (1): FeeAssignmentStoreRequest
+Nodes (1): StoreTimetableEntryRequest
 
 ### Community 387 - "Community 387"
 Cohesion: 0.5
-Nodes (1): FeeAssignmentUpdateRequest
+Nodes (1): UpdateAssetAssignmentRequest
 
 ### Community 388 - "Community 388"
 Cohesion: 0.5
-Nodes (1): FeeExceptionStoreRequest
+Nodes (1): UpdateAssetMaintenanceRequest
 
 ### Community 389 - "Community 389"
 Cohesion: 0.5
-Nodes (1): FeeExceptionUpdateRequest
+Nodes (1): UpdateLeaveRequest
 
 ### Community 390 - "Community 390"
 Cohesion: 0.5
-Nodes (1): FeePaymentStoreRequest
+Nodes (1): UpdateShortTermCourseRequest
 
 ### Community 391 - "Community 391"
 Cohesion: 0.5
-Nodes (1): FeeStructureStoreRequest
+Nodes (1): UpdateTeacherTimetablePreferenceRequest
 
 ### Community 392 - "Community 392"
 Cohesion: 0.5
-Nodes (1): FeeStructureUpdateRequest
+Nodes (1): SolveExamSeatingMapRequest
 
 ### Community 393 - "Community 393"
 Cohesion: 0.5
-Nodes (1): CommitStudentImportFileRequest
+Nodes (1): StoreExamSeatingMapRequest
 
 ### Community 394 - "Community 394"
 Cohesion: 0.5
-Nodes (1): ValidateStudentImportFileRequest
+Nodes (1): SyncExamSeatingAssignmentsRequest
 
 ### Community 395 - "Community 395"
 Cohesion: 0.5
-Nodes (1): CommitSubjectImportFileRequest
+Nodes (1): SyncExamSeatingClassColorsRequest
 
 ### Community 396 - "Community 396"
 Cohesion: 0.5
-Nodes (1): DownloadSubjectImportTemplateRequest
+Nodes (1): SyncExamSeatingMapClassesRequest
 
 ### Community 397 - "Community 397"
 Cohesion: 0.5
-Nodes (1): ReportServiceProvider
+Nodes (1): UpdateExamSeatingMapRequest
 
 ### Community 398 - "Community 398"
 Cohesion: 0.5
-Nodes (1): TelescopeServiceProvider
+Nodes (1): FeeAssignmentStoreRequest
+
+### Community 399 - "Community 399"
+Cohesion: 0.5
+Nodes (1): FeeAssignmentUpdateRequest
 
 ### Community 400 - "Community 400"
-Cohesion: 0.83
-Nodes (3): a(), s(), u()
+Cohesion: 0.5
+Nodes (1): FeeExceptionStoreRequest
 
 ### Community 401 - "Community 401"
 Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): FeeExceptionUpdateRequest
 
 ### Community 402 - "Community 402"
 Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): FeePaymentStoreRequest
 
 ### Community 403 - "Community 403"
 Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): FeeStructureStoreRequest
 
 ### Community 404 - "Community 404"
 Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): FeeStructureUpdateRequest
 
 ### Community 405 - "Community 405"
 Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): CommitStudentImportFileRequest
 
 ### Community 406 - "Community 406"
 Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): ValidateStudentImportFileRequest
 
 ### Community 407 - "Community 407"
 Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): CommitSubjectImportFileRequest
 
 ### Community 408 - "Community 408"
 Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): DownloadSubjectImportTemplateRequest
 
 ### Community 409 - "Community 409"
 Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): ReportServiceProvider
 
 ### Community 410 - "Community 410"
 Cohesion: 0.5
-Nodes (1): n()
-
-### Community 411 - "Community 411"
-Cohesion: 0.5
-Nodes (1): n()
+Nodes (1): TelescopeServiceProvider
 
 ### Community 412 - "Community 412"
-Cohesion: 0.5
-Nodes (1): n()
+Cohesion: 0.83
+Nodes (3): a(), s(), u()
 
 ### Community 413 - "Community 413"
 Cohesion: 0.5
@@ -2302,124 +2315,124 @@ Cohesion: 0.5
 Nodes (1): n()
 
 ### Community 441 - "Community 441"
-Cohesion: 0.67
-Nodes (2): d(), l()
+Cohesion: 0.5
+Nodes (1): n()
 
 ### Community 442 - "Community 442"
-Cohesion: 0.67
-Nodes (2): formatAssetPrice(), getAssetCurrencySymbol()
+Cohesion: 0.5
+Nodes (1): n()
+
+### Community 443 - "Community 443"
+Cohesion: 0.5
+Nodes (1): n()
+
+### Community 444 - "Community 444"
+Cohesion: 0.5
+Nodes (1): n()
 
 ### Community 445 - "Community 445"
 Cohesion: 0.5
-Nodes (1): getStatusLabel()
+Nodes (1): n()
 
 ### Community 446 - "Community 446"
-Cohesion: 1.0
-Nodes (3): getMapSeatRangeEnd(), getSeatRangeEnd(), getSeatRangeOverlap()
+Cohesion: 0.5
+Nodes (1): n()
+
+### Community 447 - "Community 447"
+Cohesion: 0.5
+Nodes (1): n()
 
 ### Community 448 - "Community 448"
-Cohesion: 0.83
-Nodes (3): calculateGrade(), findGradeByPercentage(), getGradeName()
+Cohesion: 0.5
+Nodes (1): n()
 
 ### Community 449 - "Community 449"
-Cohesion: 0.67
-Nodes (2): mapBuildingDomainToInsert(), mapBuildingDomainToUpdate()
+Cohesion: 0.5
+Nodes (1): n()
 
 ### Community 450 - "Community 450"
-Cohesion: 0.67
-Nodes (2): mapExamPaperTemplateFileDomainToInsert(), mapExamPaperTemplateFileDomainToUpdate()
+Cohesion: 0.5
+Nodes (1): n()
 
 ### Community 451 - "Community 451"
-Cohesion: 0.67
-Nodes (2): mapIdCardTemplateDomainToInsert(), mapIdCardTemplateDomainToUpdate()
+Cohesion: 0.5
+Nodes (1): n()
 
 ### Community 452 - "Community 452"
+Cohesion: 0.5
+Nodes (1): n()
+
+### Community 453 - "Community 453"
 Cohesion: 0.67
-Nodes (2): mapOrganizationDomainToInsert(), mapOrganizationDomainToUpdate()
+Nodes (2): d(), l()
 
 ### Community 454 - "Community 454"
 Cohesion: 0.67
+Nodes (2): formatAssetPrice(), getAssetCurrencySymbol()
+
+### Community 457 - "Community 457"
+Cohesion: 0.5
+Nodes (1): getStatusLabel()
+
+### Community 458 - "Community 458"
+Cohesion: 1.0
+Nodes (3): getMapSeatRangeEnd(), getSeatRangeEnd(), getSeatRangeOverlap()
+
+### Community 460 - "Community 460"
+Cohesion: 0.83
+Nodes (3): getReportLocaleOptions(), mapCalendarToReportPreference(), mapLanguageToReportCode()
+
+### Community 461 - "Community 461"
+Cohesion: 0.83
+Nodes (3): calculateGrade(), findGradeByPercentage(), getGradeName()
+
+### Community 462 - "Community 462"
+Cohesion: 0.67
+Nodes (2): mapBuildingDomainToInsert(), mapBuildingDomainToUpdate()
+
+### Community 463 - "Community 463"
+Cohesion: 0.67
+Nodes (2): mapExamPaperTemplateFileDomainToInsert(), mapExamPaperTemplateFileDomainToUpdate()
+
+### Community 464 - "Community 464"
+Cohesion: 0.67
+Nodes (2): mapIdCardTemplateDomainToInsert(), mapIdCardTemplateDomainToUpdate()
+
+### Community 465 - "Community 465"
+Cohesion: 0.67
+Nodes (2): mapOrganizationDomainToInsert(), mapOrganizationDomainToUpdate()
+
+### Community 467 - "Community 467"
+Cohesion: 0.67
 Nodes (2): mapRoomDomainToInsert(), mapRoomDomainToUpdate()
 
-### Community 466 - "Community 466"
+### Community 479 - "Community 479"
 Cohesion: 0.83
 Nodes (3): handleClose(), handleSubmit(), resetForm()
 
-### Community 467 - "Community 467"
+### Community 480 - "Community 480"
 Cohesion: 0.5
 Nodes (1): getSchoolDisplayName()
 
-### Community 471 - "Community 471"
+### Community 484 - "Community 484"
 Cohesion: 0.67
 Nodes (1): PlatformWebsiteConfigController
 
-### Community 472 - "Community 472"
+### Community 485 - "Community 485"
 Cohesion: 0.67
 Nodes (1): Authenticate
 
-### Community 473 - "Community 473"
+### Community 486 - "Community 486"
 Cohesion: 0.67
 Nodes (1): Permission
 
-### Community 474 - "Community 474"
+### Community 487 - "Community 487"
 Cohesion: 0.67
 Nodes (1): OrganizationFactory
 
-### Community 477 - "Community 477"
+### Community 490 - "Community 490"
 Cohesion: 0.67
 Nodes (1): GradeModelTest
-
-### Community 525 - "Community 525"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 526 - "Community 526"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 527 - "Community 527"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 528 - "Community 528"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 529 - "Community 529"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 530 - "Community 530"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 531 - "Community 531"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 532 - "Community 532"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 533 - "Community 533"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 534 - "Community 534"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 535 - "Community 535"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 536 - "Community 536"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
-
-### Community 537 - "Community 537"
-Cohesion: 0.67
-Nodes (1): __vite__mapDeps()
 
 ### Community 538 - "Community 538"
 Cohesion: 0.67
@@ -2531,55 +2544,55 @@ Nodes (1): __vite__mapDeps()
 
 ### Community 565 - "Community 565"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 566 - "Community 566"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 567 - "Community 567"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 568 - "Community 568"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 569 - "Community 569"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 570 - "Community 570"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 571 - "Community 571"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 572 - "Community 572"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 573 - "Community 573"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 574 - "Community 574"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 575 - "Community 575"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 576 - "Community 576"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 577 - "Community 577"
 Cohesion: 0.67
-Nodes (1): i()
+Nodes (1): __vite__mapDeps()
 
 ### Community 578 - "Community 578"
 Cohesion: 0.67
@@ -2689,531 +2702,577 @@ Nodes (1): i()
 Cohesion: 0.67
 Nodes (1): i()
 
+### Community 605 - "Community 605"
+Cohesion: 0.67
+Nodes (1): i()
+
 ### Community 606 - "Community 606"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 607 - "Community 607"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 608 - "Community 608"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 609 - "Community 609"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 610 - "Community 610"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 611 - "Community 611"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 612 - "Community 612"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 613 - "Community 613"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 614 - "Community 614"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 615 - "Community 615"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 616 - "Community 616"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 617 - "Community 617"
+Cohesion: 0.67
+Nodes (1): i()
+
+### Community 619 - "Community 619"
 Cohesion: 1.0
 Nodes (2): getSubjectStatus(), t()
 
-### Community 615 - "Community 615"
+### Community 628 - "Community 628"
 Cohesion: 1.0
 Nodes (2): getProgressColor(), isSingleSchoolLimit()
 
-### Community 622 - "Community 622"
+### Community 635 - "Community 635"
 Cohesion: 0.67
 Nodes (1): getDefaultTab()
 
-### Community 623 - "Community 623"
+### Community 636 - "Community 636"
 Cohesion: 0.67
 Nodes (1): handleSelect()
 
-### Community 624 - "Community 624"
+### Community 637 - "Community 637"
 Cohesion: 0.67
 Nodes (1): MockImage
 
-### Community 625 - "Community 625"
+### Community 638 - "Community 638"
 Cohesion: 0.67
 Nodes (1): scriptSrcAttributes()
 
-### Community 626 - "Community 626"
+### Community 639 - "Community 639"
 Cohesion: 1.0
 Nodes (1): LoginLockout
 
-### Community 627 - "Community 627"
+### Community 640 - "Community 640"
 Cohesion: 1.0
 Nodes (1): reports.partials.bahij-font-faces
 
-### Community 1661 - "Community 1661"
+### Community 1679 - "Community 1679"
 Cohesion: 1.0
 Nodes (1): Pick `needed` seats spread evenly across the hall.      When seats > students, u
 
-### Community 1662 - "Community 1662"
+### Community 1680 - "Community 1680"
 Cohesion: 1.0
 Nodes (1): Validate seat/student data and derive movable assignment problem.
 
-### Community 1663 - "Community 1663"
+### Community 1681 - "Community 1681"
 Cohesion: 1.0
 Nodes (1): Fast deterministic seating for large exams (seconds, not minutes).
 
-### Community 1664 - "Community 1664"
+### Community 1682 - "Community 1682"
 Cohesion: 1.0
 Nodes (1): Max students of a *single* class that can be seated with zero 8-directional
 
 ## Knowledge Gaps
 - **27 isolated node(s):** `Initialize the user interface with Nazim standards - Two panel layout`, `Helper method for creating consistent labels (Nazim standard)`, `Helper method for consistent message boxes (Nazim standard)`, `Create button with Nazim standards`, `Apply Nazim table styling standards` (+22 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 92`** (22 nodes): `DateConversionService.php`, `DateConversionService`, `.formatDate()`, `.formatGregorianDate()`, `.formatHijriDate()`, `.formatJalaliDate()`, `.getCurrentDate()`, `.getDateComponents()`, `.gregorianToJulian()`, `.hijriToGregorian()`, `.hijriToJulian()`, `.isHijriLeapYear()`, `.isJalaliLeapYear()`, `.jalaliToGregorian()`, `.julianToGregorian()`, `.julianToHijri()`, `.normalizeCalendarPreference()`, `.toArabicNumerals()`, `.toCarbon()`, `.toHijriQamari()`, `.toJalali()`, `.toPersianNumerals()`
+- **Thin community `Community 187`** (13 nodes): `Staff.php`, `Staff`, `.createdBy()`, `.documents()`, `.getActivitylogOptions()`, `.organization()`, `.profile()`, `.school()`, `.scopeActive()`, `.scopeByType()`, `.scopeForOrganization()`, `.staffType()`, `.updatedBy()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 136`** (16 nodes): `Student.php`, `Student`, `.admissions()`, `.disciplineRecords()`, `.documents()`, `.educationalHistory()`, `.getActivitylogOptions()`, `.organization()`, `.school()`, `.scopeActive()`, `.scopeByFeeStatus()`, `.scopeByGender()`, `.scopeByStatus()`, `.scopeForOrganization()`, `.scopeForSchool()`, `.scopeOrphans()`
+- **Thin community `Community 292`** (6 nodes): `DesktopReleasesManagement-akL2bPCe.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 180`** (13 nodes): `Staff.php`, `Staff`, `.createdBy()`, `.documents()`, `.getActivitylogOptions()`, `.organization()`, `.profile()`, `.school()`, `.scopeActive()`, `.scopeByType()`, `.scopeForOrganization()`, `.staffType()`, `.updatedBy()`
+- **Thin community `Community 293`** (6 nodes): `DesktopReleasesManagement-B0X_6Ocw.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 282`** (6 nodes): `DesktopReleasesManagement-akL2bPCe.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 294`** (6 nodes): `DesktopReleasesManagement-B1PRkPyL.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 283`** (6 nodes): `DesktopReleasesManagement-B0X_6Ocw.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 295`** (6 nodes): `DesktopReleasesManagement-B9CMbqwd.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 284`** (6 nodes): `DesktopReleasesManagement-B1PRkPyL.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 296`** (6 nodes): `DesktopReleasesManagement-BAaXzLHR.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 285`** (6 nodes): `DesktopReleasesManagement-B9CMbqwd.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 297`** (6 nodes): `DesktopReleasesManagement-BbF4dR-J.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 286`** (6 nodes): `DesktopReleasesManagement-BAaXzLHR.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 298`** (6 nodes): `DesktopReleasesManagement-BEkuTcsj.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 287`** (6 nodes): `DesktopReleasesManagement-BbF4dR-J.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 299`** (6 nodes): `DesktopReleasesManagement-Bgj1XvPt.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 288`** (6 nodes): `DesktopReleasesManagement-BEkuTcsj.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 300`** (6 nodes): `DesktopReleasesManagement-BgNUnJ2Q.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 289`** (6 nodes): `DesktopReleasesManagement-Bgj1XvPt.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 301`** (6 nodes): `DesktopReleasesManagement-BJauhRse.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 290`** (6 nodes): `DesktopReleasesManagement-BgNUnJ2Q.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 302`** (6 nodes): `DesktopReleasesManagement-BMbRFmOi.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 291`** (6 nodes): `DesktopReleasesManagement-BJauhRse.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 303`** (6 nodes): `DesktopReleasesManagement-BPEaYh2L.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 292`** (6 nodes): `DesktopReleasesManagement-BMbRFmOi.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 304`** (6 nodes): `DesktopReleasesManagement-Bs50nkAz.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 293`** (6 nodes): `DesktopReleasesManagement-BPEaYh2L.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 305`** (6 nodes): `DesktopReleasesManagement-BVKUYu1K.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 294`** (6 nodes): `DesktopReleasesManagement-Bs50nkAz.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 306`** (6 nodes): `DesktopReleasesManagement-BWAf4UAc.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 295`** (6 nodes): `DesktopReleasesManagement-BVKUYu1K.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 307`** (6 nodes): `DesktopReleasesManagement-BYI52DTm.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 296`** (6 nodes): `DesktopReleasesManagement-BWAf4UAc.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 308`** (6 nodes): `DesktopReleasesManagement-C5TNILQg.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 297`** (6 nodes): `DesktopReleasesManagement-BYI52DTm.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 309`** (6 nodes): `DesktopReleasesManagement-CEA9geHY.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 298`** (6 nodes): `DesktopReleasesManagement-C5TNILQg.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 310`** (6 nodes): `DesktopReleasesManagement-CIFcjavm.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 299`** (6 nodes): `DesktopReleasesManagement-CEA9geHY.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 311`** (6 nodes): `DesktopReleasesManagement-CjLIC-xE.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 300`** (6 nodes): `DesktopReleasesManagement-CIFcjavm.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 312`** (6 nodes): `DesktopReleasesManagement-CL5v369T.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 301`** (6 nodes): `DesktopReleasesManagement-CjLIC-xE.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 313`** (6 nodes): `DesktopReleasesManagement-CS0R6-fa.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 302`** (6 nodes): `DesktopReleasesManagement-CL5v369T.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 314`** (6 nodes): `DesktopReleasesManagement-CULGheYv.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 303`** (6 nodes): `DesktopReleasesManagement-CS0R6-fa.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 315`** (6 nodes): `DesktopReleasesManagement-Cvq-0v6s.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 304`** (6 nodes): `DesktopReleasesManagement-CULGheYv.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 316`** (6 nodes): `DesktopReleasesManagement-D3YzpFNK.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 305`** (6 nodes): `DesktopReleasesManagement-Cvq-0v6s.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 317`** (6 nodes): `DesktopReleasesManagement-D74U18p0.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 306`** (6 nodes): `DesktopReleasesManagement-D3YzpFNK.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 318`** (6 nodes): `DesktopReleasesManagement-D9dwtGiF.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 307`** (6 nodes): `DesktopReleasesManagement-D74U18p0.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 319`** (6 nodes): `DesktopReleasesManagement-DAI1l75S.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 308`** (6 nodes): `DesktopReleasesManagement-D9dwtGiF.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 320`** (6 nodes): `DesktopReleasesManagement-DALwo61n.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 309`** (6 nodes): `DesktopReleasesManagement-DAI1l75S.js`, `bs()`, `He()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 321`** (6 nodes): `DesktopReleasesManagement-DArKQlbP.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 310`** (6 nodes): `DesktopReleasesManagement-DALwo61n.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 322`** (6 nodes): `DesktopReleasesManagement-DedCXJJc.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 311`** (6 nodes): `DesktopReleasesManagement-DArKQlbP.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 323`** (6 nodes): `DesktopReleasesManagement-DicNNk7J.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 312`** (6 nodes): `DesktopReleasesManagement-DedCXJJc.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 324`** (6 nodes): `DesktopReleasesManagement-Dnt3pImj.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 313`** (6 nodes): `DesktopReleasesManagement-DicNNk7J.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 325`** (6 nodes): `DesktopReleasesManagement-DNz5S3og.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 314`** (6 nodes): `DesktopReleasesManagement-Dnt3pImj.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 326`** (6 nodes): `DesktopReleasesManagement-FM9-gvIp.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 315`** (6 nodes): `DesktopReleasesManagement-DNz5S3og.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 327`** (6 nodes): `DesktopReleasesManagement-fPfrijGq.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 316`** (6 nodes): `DesktopReleasesManagement-FM9-gvIp.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 328`** (6 nodes): `DesktopReleasesManagement-OV31KLcF.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 317`** (6 nodes): `DesktopReleasesManagement-fPfrijGq.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 329`** (6 nodes): `DesktopReleasesManagement-qx41vSvI.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 318`** (6 nodes): `DesktopReleasesManagement-OV31KLcF.js`, `bs()`, `Qe()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 330`** (6 nodes): `DesktopReleasesManagement-ubetH5ev.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 319`** (6 nodes): `DesktopReleasesManagement-qx41vSvI.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 331`** (6 nodes): `DesktopReleasesManagement-x_g1n2Do.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 320`** (6 nodes): `DesktopReleasesManagement-ubetH5ev.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 352`** (6 nodes): `VariableEditor.tsx`, `cancelEdit()`, `handleAdd()`, `handleDelete()`, `handleUpdate()`, `startEdit()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 321`** (6 nodes): `DesktopReleasesManagement-x_g1n2Do.js`, `bs()`, `$e()`, `S()`, `W()`, `ys()`
+- **Thin community `Community 358`** (6 nodes): `LandingOffersPage.tsx`, `formatCountdown()`, `getLandingMetadata()`, `handleOpenDialog()`, `handleSave()`, `handleToggleLanding()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 342`** (6 nodes): `VariableEditor.tsx`, `cancelEdit()`, `handleAdd()`, `handleDelete()`, `handleUpdate()`, `startEdit()`
+- **Thin community `Community 359`** (5 nodes): `m()`, `o()`, `s()`, `u()`, `attendanceMapper-mFJJCLqt.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 347`** (6 nodes): `LandingOffersPage.tsx`, `formatCountdown()`, `getLandingMetadata()`, `handleOpenDialog()`, `handleSave()`, `handleToggleLanding()`
+- **Thin community `Community 371`** (5 nodes): `mapActivityLogApiToDomain()`, `mapFiltersToApi()`, `mapPaginatedResponseToDomain()`, `mapPaginationApiToDomain()`, `activityLogMapper.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 348`** (5 nodes): `m()`, `o()`, `s()`, `u()`, `attendanceMapper-mFJJCLqt.js`
+- **Thin community `Community 375`** (5 nodes): `WebsiteManagementPage.tsx`, `getSubdomainUrl()`, `openEditDomain()`, `openEditSettings()`, `toggleEnabledLanguage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 357`** (5 nodes): `addRestDay()`, `handleGenerate()`, `removeRestDay()`, `startDate()`, `ExamTimetableGeneratePanel.tsx`
+- **Thin community `Community 376`** (4 nodes): `BulkSyncAttendanceRequest.php`, `BulkSyncAttendanceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 359`** (5 nodes): `mapActivityLogApiToDomain()`, `mapFiltersToApi()`, `mapPaginatedResponseToDomain()`, `mapPaginationApiToDomain()`, `activityLogMapper.ts`
+- **Thin community `Community 377`** (4 nodes): `CopyClassesRequest.php`, `CopyClassesRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 363`** (5 nodes): `WebsiteManagementPage.tsx`, `getSubdomainUrl()`, `openEditDomain()`, `openEditSettings()`, `toggleEnabledLanguage()`
+- **Thin community `Community 378`** (4 nodes): `CopyToMainRequest.php`, `CopyToMainRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 364`** (4 nodes): `BulkSyncAttendanceRequest.php`, `BulkSyncAttendanceRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 379`** (4 nodes): `EnrollFromMainRequest.php`, `EnrollFromMainRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 365`** (4 nodes): `CopyClassesRequest.php`, `CopyClassesRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 380`** (4 nodes): `MarkAttendanceRecordsRequest.php`, `MarkAttendanceRecordsRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 366`** (4 nodes): `CopyToMainRequest.php`, `CopyToMainRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 381`** (4 nodes): `StoreAssetAssignmentRequest.php`, `StoreAssetAssignmentRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 367`** (4 nodes): `EnrollFromMainRequest.php`, `EnrollFromMainRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 382`** (4 nodes): `StoreAssetMaintenanceRequest.php`, `StoreAssetMaintenanceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 368`** (4 nodes): `MarkAttendanceRecordsRequest.php`, `MarkAttendanceRecordsRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 383`** (4 nodes): `StoreLeaveRequest.php`, `StoreLeaveRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 369`** (4 nodes): `StoreAssetAssignmentRequest.php`, `StoreAssetAssignmentRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 384`** (4 nodes): `StoreShortTermCourseRequest.php`, `StoreShortTermCourseRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 370`** (4 nodes): `StoreAssetMaintenanceRequest.php`, `StoreAssetMaintenanceRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 385`** (4 nodes): `StoreTeacherTimetablePreferenceRequest.php`, `StoreTeacherTimetablePreferenceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 371`** (4 nodes): `StoreLeaveRequest.php`, `StoreLeaveRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 386`** (4 nodes): `StoreTimetableEntryRequest.php`, `StoreTimetableEntryRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 372`** (4 nodes): `StoreShortTermCourseRequest.php`, `StoreShortTermCourseRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 387`** (4 nodes): `UpdateAssetAssignmentRequest.php`, `UpdateAssetAssignmentRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 373`** (4 nodes): `StoreTeacherTimetablePreferenceRequest.php`, `StoreTeacherTimetablePreferenceRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 388`** (4 nodes): `UpdateAssetMaintenanceRequest.php`, `UpdateAssetMaintenanceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 374`** (4 nodes): `StoreTimetableEntryRequest.php`, `StoreTimetableEntryRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 389`** (4 nodes): `UpdateLeaveRequest.php`, `UpdateLeaveRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 375`** (4 nodes): `UpdateAssetAssignmentRequest.php`, `UpdateAssetAssignmentRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 390`** (4 nodes): `UpdateShortTermCourseRequest.php`, `UpdateShortTermCourseRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 376`** (4 nodes): `UpdateAssetMaintenanceRequest.php`, `UpdateAssetMaintenanceRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 391`** (4 nodes): `UpdateTeacherTimetablePreferenceRequest.php`, `UpdateTeacherTimetablePreferenceRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 377`** (4 nodes): `UpdateLeaveRequest.php`, `UpdateLeaveRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 392`** (4 nodes): `SolveExamSeatingMapRequest.php`, `SolveExamSeatingMapRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 378`** (4 nodes): `UpdateShortTermCourseRequest.php`, `UpdateShortTermCourseRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 393`** (4 nodes): `StoreExamSeatingMapRequest.php`, `StoreExamSeatingMapRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 379`** (4 nodes): `UpdateTeacherTimetablePreferenceRequest.php`, `UpdateTeacherTimetablePreferenceRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 394`** (4 nodes): `SyncExamSeatingAssignmentsRequest.php`, `SyncExamSeatingAssignmentsRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 380`** (4 nodes): `SolveExamSeatingMapRequest.php`, `SolveExamSeatingMapRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 395`** (4 nodes): `SyncExamSeatingClassColorsRequest.php`, `SyncExamSeatingClassColorsRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 381`** (4 nodes): `StoreExamSeatingMapRequest.php`, `StoreExamSeatingMapRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 396`** (4 nodes): `SyncExamSeatingMapClassesRequest.php`, `SyncExamSeatingMapClassesRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 382`** (4 nodes): `SyncExamSeatingAssignmentsRequest.php`, `SyncExamSeatingAssignmentsRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 397`** (4 nodes): `UpdateExamSeatingMapRequest.php`, `UpdateExamSeatingMapRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 383`** (4 nodes): `SyncExamSeatingClassColorsRequest.php`, `SyncExamSeatingClassColorsRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 398`** (4 nodes): `FeeAssignmentStoreRequest.php`, `FeeAssignmentStoreRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 384`** (4 nodes): `SyncExamSeatingMapClassesRequest.php`, `SyncExamSeatingMapClassesRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 399`** (4 nodes): `FeeAssignmentUpdateRequest.php`, `FeeAssignmentUpdateRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 385`** (4 nodes): `UpdateExamSeatingMapRequest.php`, `UpdateExamSeatingMapRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 400`** (4 nodes): `FeeExceptionStoreRequest.php`, `FeeExceptionStoreRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 386`** (4 nodes): `FeeAssignmentStoreRequest.php`, `FeeAssignmentStoreRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 401`** (4 nodes): `FeeExceptionUpdateRequest.php`, `FeeExceptionUpdateRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 387`** (4 nodes): `FeeAssignmentUpdateRequest.php`, `FeeAssignmentUpdateRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 402`** (4 nodes): `FeePaymentStoreRequest.php`, `FeePaymentStoreRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 388`** (4 nodes): `FeeExceptionStoreRequest.php`, `FeeExceptionStoreRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 403`** (4 nodes): `FeeStructureStoreRequest.php`, `FeeStructureStoreRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 389`** (4 nodes): `FeeExceptionUpdateRequest.php`, `FeeExceptionUpdateRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 404`** (4 nodes): `FeeStructureUpdateRequest.php`, `FeeStructureUpdateRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 390`** (4 nodes): `FeePaymentStoreRequest.php`, `FeePaymentStoreRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 405`** (4 nodes): `CommitStudentImportFileRequest.php`, `CommitStudentImportFileRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 391`** (4 nodes): `FeeStructureStoreRequest.php`, `FeeStructureStoreRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 406`** (4 nodes): `ValidateStudentImportFileRequest.php`, `ValidateStudentImportFileRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 392`** (4 nodes): `FeeStructureUpdateRequest.php`, `FeeStructureUpdateRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 407`** (4 nodes): `CommitSubjectImportFileRequest.php`, `CommitSubjectImportFileRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 393`** (4 nodes): `CommitStudentImportFileRequest.php`, `CommitStudentImportFileRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 408`** (4 nodes): `DownloadSubjectImportTemplateRequest.php`, `DownloadSubjectImportTemplateRequest`, `.authorize()`, `.rules()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 394`** (4 nodes): `ValidateStudentImportFileRequest.php`, `ValidateStudentImportFileRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 409`** (4 nodes): `ReportServiceProvider.php`, `ReportServiceProvider`, `.boot()`, `.register()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 395`** (4 nodes): `CommitSubjectImportFileRequest.php`, `CommitSubjectImportFileRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 410`** (4 nodes): `TelescopeServiceProvider.php`, `TelescopeServiceProvider`, `.boot()`, `.register()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 396`** (4 nodes): `DownloadSubjectImportTemplateRequest.php`, `DownloadSubjectImportTemplateRequest`, `.authorize()`, `.rules()`
+- **Thin community `Community 413`** (4 nodes): `radio-group-2cxN03Aw.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 397`** (4 nodes): `ReportServiceProvider.php`, `ReportServiceProvider`, `.boot()`, `.register()`
+- **Thin community `Community 414`** (4 nodes): `radio-group-7mgI2PwU.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 398`** (4 nodes): `TelescopeServiceProvider.php`, `TelescopeServiceProvider`, `.boot()`, `.register()`
+- **Thin community `Community 415`** (4 nodes): `radio-group-aiu4TgMg.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 401`** (4 nodes): `radio-group-2cxN03Aw.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 416`** (4 nodes): `radio-group-BcftPhJx.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 402`** (4 nodes): `radio-group-7mgI2PwU.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 417`** (4 nodes): `radio-group-Bdn4Cj4D.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 403`** (4 nodes): `radio-group-aiu4TgMg.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 418`** (4 nodes): `radio-group-Bfr4g6tk.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 404`** (4 nodes): `radio-group-BcftPhJx.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 419`** (4 nodes): `radio-group-Bi9N6a5X.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 405`** (4 nodes): `radio-group-Bdn4Cj4D.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 420`** (4 nodes): `radio-group-BIjC1RNH.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 406`** (4 nodes): `radio-group-Bfr4g6tk.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 421`** (4 nodes): `radio-group-BKx3gnr9.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 407`** (4 nodes): `radio-group-Bi9N6a5X.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 422`** (4 nodes): `radio-group-BPagqyVc.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 408`** (4 nodes): `radio-group-BIjC1RNH.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 423`** (4 nodes): `radio-group-BUeWpQg3.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 409`** (4 nodes): `radio-group-BKx3gnr9.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 424`** (4 nodes): `radio-group-Bxnn7A5s.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 410`** (4 nodes): `radio-group-BPagqyVc.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 425`** (4 nodes): `radio-group-C-jF4Svk.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 411`** (4 nodes): `radio-group-BUeWpQg3.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 426`** (4 nodes): `radio-group-C1o7-PoG.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 412`** (4 nodes): `radio-group-Bxnn7A5s.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 427`** (4 nodes): `radio-group-C6BBRaH8.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 413`** (4 nodes): `radio-group-C-jF4Svk.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 428`** (4 nodes): `radio-group-C7lrfcD2.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 414`** (4 nodes): `radio-group-C1o7-PoG.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 429`** (4 nodes): `radio-group-Cabf4f2U.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 415`** (4 nodes): `radio-group-C6BBRaH8.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 430`** (4 nodes): `radio-group-CDo3ajGV.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 416`** (4 nodes): `radio-group-C7lrfcD2.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 431`** (4 nodes): `radio-group-CLGt8Mr-.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 417`** (4 nodes): `radio-group-Cabf4f2U.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 432`** (4 nodes): `radio-group-CQeXuqSF.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 418`** (4 nodes): `radio-group-CDo3ajGV.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 433`** (4 nodes): `radio-group-CqReh26W.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 419`** (4 nodes): `radio-group-CLGt8Mr-.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 434`** (4 nodes): `radio-group-Csdq5dSJ.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 420`** (4 nodes): `radio-group-CQeXuqSF.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 435`** (4 nodes): `radio-group-CVby01gZ.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 421`** (4 nodes): `radio-group-CqReh26W.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 436`** (4 nodes): `radio-group-CZ-44Cjo.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 422`** (4 nodes): `radio-group-Csdq5dSJ.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 437`** (4 nodes): `radio-group-D2uP5b6N.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 423`** (4 nodes): `radio-group-CVby01gZ.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 438`** (4 nodes): `radio-group-D4mOWGH-.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 424`** (4 nodes): `radio-group-CZ-44Cjo.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 439`** (4 nodes): `radio-group-D6iyvMGn.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 425`** (4 nodes): `radio-group-D2uP5b6N.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 440`** (4 nodes): `radio-group-DG7v0dBz.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 426`** (4 nodes): `radio-group-D4mOWGH-.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 441`** (4 nodes): `radio-group-DgN0yp76.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 427`** (4 nodes): `radio-group-D6iyvMGn.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 442`** (4 nodes): `radio-group-Dl-DtgO0.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 428`** (4 nodes): `radio-group-DG7v0dBz.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 443`** (4 nodes): `radio-group-DUSrbAQx.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 429`** (4 nodes): `radio-group-DgN0yp76.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 444`** (4 nodes): `radio-group-DyaAJIs0.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 430`** (4 nodes): `radio-group-Dl-DtgO0.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 445`** (4 nodes): `radio-group-DzGptMC2.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 431`** (4 nodes): `radio-group-DUSrbAQx.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 446`** (4 nodes): `radio-group-f-0xt87k.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 432`** (4 nodes): `radio-group-DyaAJIs0.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 447`** (4 nodes): `radio-group-F2hEiqQd.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 433`** (4 nodes): `radio-group-DzGptMC2.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 448`** (4 nodes): `radio-group-itzBKdQg.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 434`** (4 nodes): `radio-group-f-0xt87k.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 449`** (4 nodes): `radio-group-jgP0p7_Y.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 435`** (4 nodes): `radio-group-F2hEiqQd.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 450`** (4 nodes): `radio-group-vMUDcAO8.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 436`** (4 nodes): `radio-group-itzBKdQg.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 451`** (4 nodes): `radio-group-_s42a16n.js`, `A()`, `l()`, `n()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 437`** (4 nodes): `radio-group-jgP0p7_Y.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 452`** (4 nodes): `radio-group-_tmegMHH.js`, `l()`, `n()`, `S()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 438`** (4 nodes): `radio-group-vMUDcAO8.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 453`** (4 nodes): `roomMapper-yXwfJZAM.js`, `d()`, `e()`, `l()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 439`** (4 nodes): `radio-group-_s42a16n.js`, `A()`, `l()`, `n()`
+- **Thin community `Community 454`** (4 nodes): `formatAmountWithSymbol()`, `formatAssetPrice()`, `getAssetCurrencySymbol()`, `AssetReportsTab.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 440`** (4 nodes): `radio-group-_tmegMHH.js`, `l()`, `n()`, `S()`
+- **Thin community `Community 457`** (4 nodes): `getStatusBadgeVariant()`, `getStatusIcon()`, `getStatusLabel()`, `AttendanceSection.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 441`** (4 nodes): `roomMapper-yXwfJZAM.js`, `d()`, `e()`, `l()`
+- **Thin community `Community 462`** (4 nodes): `mapBuildingApiToDomain()`, `mapBuildingDomainToInsert()`, `mapBuildingDomainToUpdate()`, `buildingMapper.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 442`** (4 nodes): `formatAmountWithSymbol()`, `formatAssetPrice()`, `getAssetCurrencySymbol()`, `AssetReportsTab.tsx`
+- **Thin community `Community 463`** (4 nodes): `mapExamPaperTemplateFileApiToDomain()`, `mapExamPaperTemplateFileDomainToInsert()`, `mapExamPaperTemplateFileDomainToUpdate()`, `examPaperTemplateFileMapper.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 445`** (4 nodes): `getStatusBadgeVariant()`, `getStatusIcon()`, `getStatusLabel()`, `AttendanceSection.tsx`
+- **Thin community `Community 464`** (4 nodes): `idCardTemplateMapper.ts`, `mapIdCardTemplateApiToDomain()`, `mapIdCardTemplateDomainToInsert()`, `mapIdCardTemplateDomainToUpdate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 449`** (4 nodes): `mapBuildingApiToDomain()`, `mapBuildingDomainToInsert()`, `mapBuildingDomainToUpdate()`, `buildingMapper.ts`
+- **Thin community `Community 465`** (4 nodes): `organizationMapper.ts`, `mapOrganizationApiToDomain()`, `mapOrganizationDomainToInsert()`, `mapOrganizationDomainToUpdate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 450`** (4 nodes): `mapExamPaperTemplateFileApiToDomain()`, `mapExamPaperTemplateFileDomainToInsert()`, `mapExamPaperTemplateFileDomainToUpdate()`, `examPaperTemplateFileMapper.ts`
+- **Thin community `Community 467`** (4 nodes): `roomMapper.ts`, `mapRoomApiToDomain()`, `mapRoomDomainToInsert()`, `mapRoomDomainToUpdate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 451`** (4 nodes): `idCardTemplateMapper.ts`, `mapIdCardTemplateApiToDomain()`, `mapIdCardTemplateDomainToInsert()`, `mapIdCardTemplateDomainToUpdate()`
+- **Thin community `Community 480`** (4 nodes): `OrganizationHrStaffPage.tsx`, `getSchoolDisplayName()`, `handleViewStaff()`, `statusVariant()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 452`** (4 nodes): `organizationMapper.ts`, `mapOrganizationApiToDomain()`, `mapOrganizationDomainToInsert()`, `mapOrganizationDomainToUpdate()`
+- **Thin community `Community 484`** (3 nodes): `PlatformWebsiteConfigController.php`, `PlatformWebsiteConfigController`, `.show()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 454`** (4 nodes): `roomMapper.ts`, `mapRoomApiToDomain()`, `mapRoomDomainToInsert()`, `mapRoomDomainToUpdate()`
+- **Thin community `Community 485`** (3 nodes): `Authenticate`, `.redirectTo()`, `Authenticate.php`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 467`** (4 nodes): `OrganizationHrStaffPage.tsx`, `getSchoolDisplayName()`, `handleViewStaff()`, `statusVariant()`
+- **Thin community `Community 486`** (3 nodes): `Permission.php`, `Permission`, `.scopeForOrganization()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 471`** (3 nodes): `PlatformWebsiteConfigController.php`, `PlatformWebsiteConfigController`, `.show()`
+- **Thin community `Community 487`** (3 nodes): `OrganizationFactory.php`, `OrganizationFactory`, `.definition()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 472`** (3 nodes): `Authenticate`, `.redirectTo()`, `Authenticate.php`
+- **Thin community `Community 490`** (3 nodes): `GradeModelTest.php`, `GradeModelTest`, `.it_keeps_the_tenant_and_school_ids_when_mass_assigned()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 473`** (3 nodes): `Permission.php`, `Permission`, `.scopeForOrganization()`
+- **Thin community `Community 538`** (3 nodes): `PictureCell-1oSHL9Rg.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 474`** (3 nodes): `OrganizationFactory.php`, `OrganizationFactory`, `.definition()`
+- **Thin community `Community 539`** (3 nodes): `PictureCell-a91p69WE.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 477`** (3 nodes): `GradeModelTest.php`, `GradeModelTest`, `.it_keeps_the_tenant_and_school_ids_when_mass_assigned()`
+- **Thin community `Community 540`** (3 nodes): `PictureCell-BhJIHz08.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 525`** (3 nodes): `PictureCell-1oSHL9Rg.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 541`** (3 nodes): `PictureCell-BI_zuqoR.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 526`** (3 nodes): `PictureCell-a91p69WE.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 542`** (3 nodes): `PictureCell-BjM7SdC1.js`, `C()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 527`** (3 nodes): `PictureCell-BhJIHz08.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 543`** (3 nodes): `PictureCell-BKQYYLrF.js`, `__vite__mapDeps()`, `x()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 528`** (3 nodes): `PictureCell-BI_zuqoR.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 544`** (3 nodes): `PictureCell-Bpo6zlKK.js`, `__vite__mapDeps()`, `x()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 529`** (3 nodes): `PictureCell-BjM7SdC1.js`, `C()`, `__vite__mapDeps()`
+- **Thin community `Community 545`** (3 nodes): `PictureCell-BpQAhrzR.js`, `C()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 530`** (3 nodes): `PictureCell-BKQYYLrF.js`, `__vite__mapDeps()`, `x()`
+- **Thin community `Community 546`** (3 nodes): `PictureCell-Busazn7_.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 531`** (3 nodes): `PictureCell-Bpo6zlKK.js`, `__vite__mapDeps()`, `x()`
+- **Thin community `Community 547`** (3 nodes): `PictureCell-BXJMFw9D.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 532`** (3 nodes): `PictureCell-BpQAhrzR.js`, `C()`, `__vite__mapDeps()`
+- **Thin community `Community 548`** (3 nodes): `PictureCell-By9wU8Cd.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 533`** (3 nodes): `PictureCell-Busazn7_.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 549`** (3 nodes): `PictureCell-C2ls49B2.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 534`** (3 nodes): `PictureCell-BXJMFw9D.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 550`** (3 nodes): `PictureCell-C2Q4H6bN.js`, `__vite__mapDeps()`, `x()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 535`** (3 nodes): `PictureCell-By9wU8Cd.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 551`** (3 nodes): `PictureCell-Caf5v_cA.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 536`** (3 nodes): `PictureCell-C2ls49B2.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 552`** (3 nodes): `PictureCell-CfyHUa-s.js`, `__vite__mapDeps()`, `x()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 537`** (3 nodes): `PictureCell-C2Q4H6bN.js`, `__vite__mapDeps()`, `x()`
+- **Thin community `Community 553`** (3 nodes): `PictureCell-COQ_lOhu.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 538`** (3 nodes): `PictureCell-Caf5v_cA.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 554`** (3 nodes): `PictureCell-Czjd3Igr.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 539`** (3 nodes): `PictureCell-CfyHUa-s.js`, `__vite__mapDeps()`, `x()`
+- **Thin community `Community 555`** (3 nodes): `PictureCell-D3wBFAmt.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 540`** (3 nodes): `PictureCell-COQ_lOhu.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 556`** (3 nodes): `PictureCell-D8YZf4zr.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 541`** (3 nodes): `PictureCell-Czjd3Igr.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 557`** (3 nodes): `PictureCell-DC90MRqe.js`, `C()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 542`** (3 nodes): `PictureCell-D3wBFAmt.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 558`** (3 nodes): `PictureCell-DCv2hnvk.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 543`** (3 nodes): `PictureCell-D8YZf4zr.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 559`** (3 nodes): `PictureCell-DDu-ltWe.js`, `C()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 544`** (3 nodes): `PictureCell-DC90MRqe.js`, `C()`, `__vite__mapDeps()`
+- **Thin community `Community 560`** (3 nodes): `PictureCell-DDZhsGb6.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 545`** (3 nodes): `PictureCell-DCv2hnvk.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 561`** (3 nodes): `PictureCell-DE6l5yfg.js`, `C()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 546`** (3 nodes): `PictureCell-DDu-ltWe.js`, `C()`, `__vite__mapDeps()`
+- **Thin community `Community 562`** (3 nodes): `PictureCell-DFOHlani.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 547`** (3 nodes): `PictureCell-DDZhsGb6.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 563`** (3 nodes): `PictureCell-DMBI7WWR.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 548`** (3 nodes): `PictureCell-DE6l5yfg.js`, `C()`, `__vite__mapDeps()`
+- **Thin community `Community 564`** (3 nodes): `PictureCell-DMZax6L9.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 549`** (3 nodes): `PictureCell-DFOHlani.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 565`** (3 nodes): `PictureCell-DNlJynIY.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 550`** (3 nodes): `PictureCell-DMBI7WWR.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 566`** (3 nodes): `PictureCell-DrYVq8Lv.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 551`** (3 nodes): `PictureCell-DMZax6L9.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 567`** (3 nodes): `PictureCell-DWG_rPem.js`, `C()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 552`** (3 nodes): `PictureCell-DNlJynIY.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 568`** (3 nodes): `PictureCell-i7zBth90.js`, `C()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 553`** (3 nodes): `PictureCell-DrYVq8Lv.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 569`** (3 nodes): `PictureCell-IFjbBdFN.js`, `__vite__mapDeps()`, `x()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 554`** (3 nodes): `PictureCell-DWG_rPem.js`, `C()`, `__vite__mapDeps()`
+- **Thin community `Community 570`** (3 nodes): `PictureCell-i_l6bsZl.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 555`** (3 nodes): `PictureCell-i7zBth90.js`, `C()`, `__vite__mapDeps()`
+- **Thin community `Community 571`** (3 nodes): `PictureCell-jsXFncdV.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 556`** (3 nodes): `PictureCell-IFjbBdFN.js`, `__vite__mapDeps()`, `x()`
+- **Thin community `Community 572`** (3 nodes): `PictureCell-mv50IGPW.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 557`** (3 nodes): `PictureCell-i_l6bsZl.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 573`** (3 nodes): `PictureCell-OI7wAEcr.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 558`** (3 nodes): `PictureCell-jsXFncdV.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 574`** (3 nodes): `PictureCell-QA6uEmwD.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 559`** (3 nodes): `PictureCell-mv50IGPW.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 575`** (3 nodes): `PictureCell-sjebcfD9.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 560`** (3 nodes): `PictureCell-OI7wAEcr.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 576`** (3 nodes): `PictureCell-VadR3Gol.js`, `__vite__mapDeps()`, `x()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 561`** (3 nodes): `PictureCell-QA6uEmwD.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 577`** (3 nodes): `PictureCell-vsYwifg3.js`, `U()`, `__vite__mapDeps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 562`** (3 nodes): `PictureCell-sjebcfD9.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 578`** (3 nodes): `SecurityBadge-B4B9JGSF.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 563`** (3 nodes): `PictureCell-VadR3Gol.js`, `__vite__mapDeps()`, `x()`
+- **Thin community `Community 579`** (3 nodes): `SecurityBadge-B8p1hn1T.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 564`** (3 nodes): `PictureCell-vsYwifg3.js`, `U()`, `__vite__mapDeps()`
+- **Thin community `Community 580`** (3 nodes): `SecurityBadge-BA8YC5GL.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 565`** (3 nodes): `SecurityBadge-B4B9JGSF.js`, `b()`, `i()`
+- **Thin community `Community 581`** (3 nodes): `SecurityBadge-BjmeOsJ_.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 566`** (3 nodes): `SecurityBadge-B8p1hn1T.js`, `b()`, `i()`
+- **Thin community `Community 582`** (3 nodes): `SecurityBadge-BK6LiNO7.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 567`** (3 nodes): `SecurityBadge-BA8YC5GL.js`, `b()`, `i()`
+- **Thin community `Community 583`** (3 nodes): `SecurityBadge-Bld8ybJy.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 568`** (3 nodes): `SecurityBadge-BjmeOsJ_.js`, `b()`, `i()`
+- **Thin community `Community 584`** (3 nodes): `SecurityBadge-BMdNHDOG.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 569`** (3 nodes): `SecurityBadge-BK6LiNO7.js`, `b()`, `i()`
+- **Thin community `Community 585`** (3 nodes): `SecurityBadge-BMuJryWr.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 570`** (3 nodes): `SecurityBadge-Bld8ybJy.js`, `b()`, `i()`
+- **Thin community `Community 586`** (3 nodes): `SecurityBadge-Bs984CLC.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 571`** (3 nodes): `SecurityBadge-BMdNHDOG.js`, `b()`, `i()`
+- **Thin community `Community 587`** (3 nodes): `SecurityBadge-BUPRbpog.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 572`** (3 nodes): `SecurityBadge-BMuJryWr.js`, `b()`, `i()`
+- **Thin community `Community 588`** (3 nodes): `SecurityBadge-BuTNwYOm.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 573`** (3 nodes): `SecurityBadge-Bs984CLC.js`, `b()`, `i()`
+- **Thin community `Community 589`** (3 nodes): `SecurityBadge-BYB23dKb.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 574`** (3 nodes): `SecurityBadge-BUPRbpog.js`, `b()`, `i()`
+- **Thin community `Community 590`** (3 nodes): `SecurityBadge-Bz5eoRJ5.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 575`** (3 nodes): `SecurityBadge-BuTNwYOm.js`, `b()`, `i()`
+- **Thin community `Community 591`** (3 nodes): `SecurityBadge-C8zXv0I-.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 576`** (3 nodes): `SecurityBadge-BYB23dKb.js`, `b()`, `i()`
+- **Thin community `Community 592`** (3 nodes): `SecurityBadge-C9Ci4mzG.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 577`** (3 nodes): `SecurityBadge-Bz5eoRJ5.js`, `b()`, `i()`
+- **Thin community `Community 593`** (3 nodes): `SecurityBadge-C9JGMeOn.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 578`** (3 nodes): `SecurityBadge-C8zXv0I-.js`, `b()`, `i()`
+- **Thin community `Community 594`** (3 nodes): `SecurityBadge-C9XWFt2J.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 579`** (3 nodes): `SecurityBadge-C9Ci4mzG.js`, `b()`, `i()`
+- **Thin community `Community 595`** (3 nodes): `SecurityBadge-CDdx9NCy.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 580`** (3 nodes): `SecurityBadge-C9JGMeOn.js`, `b()`, `i()`
+- **Thin community `Community 596`** (3 nodes): `SecurityBadge-CfNBi2SX.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 581`** (3 nodes): `SecurityBadge-C9XWFt2J.js`, `b()`, `i()`
+- **Thin community `Community 597`** (3 nodes): `SecurityBadge-CGIgrrH1.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 582`** (3 nodes): `SecurityBadge-CDdx9NCy.js`, `b()`, `i()`
+- **Thin community `Community 598`** (3 nodes): `SecurityBadge-Ch8UlhDA.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 583`** (3 nodes): `SecurityBadge-CfNBi2SX.js`, `b()`, `i()`
+- **Thin community `Community 599`** (3 nodes): `SecurityBadge-CQdSj5Iy.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 584`** (3 nodes): `SecurityBadge-CGIgrrH1.js`, `b()`, `i()`
+- **Thin community `Community 600`** (3 nodes): `SecurityBadge-Cs7sK3hP.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 585`** (3 nodes): `SecurityBadge-Ch8UlhDA.js`, `b()`, `i()`
+- **Thin community `Community 601`** (3 nodes): `SecurityBadge-CvaaCE7L.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 586`** (3 nodes): `SecurityBadge-CQdSj5Iy.js`, `b()`, `i()`
+- **Thin community `Community 602`** (3 nodes): `SecurityBadge-CwWyGyt0.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 587`** (3 nodes): `SecurityBadge-Cs7sK3hP.js`, `b()`, `i()`
+- **Thin community `Community 603`** (3 nodes): `SecurityBadge-D1iyZsaN.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 588`** (3 nodes): `SecurityBadge-CvaaCE7L.js`, `b()`, `i()`
+- **Thin community `Community 604`** (3 nodes): `SecurityBadge-Db7dy1hb.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 589`** (3 nodes): `SecurityBadge-CwWyGyt0.js`, `b()`, `i()`
+- **Thin community `Community 605`** (3 nodes): `SecurityBadge-DImoTTIB.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 590`** (3 nodes): `SecurityBadge-D1iyZsaN.js`, `b()`, `i()`
+- **Thin community `Community 606`** (3 nodes): `SecurityBadge-DIYfmIAo.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 591`** (3 nodes): `SecurityBadge-Db7dy1hb.js`, `b()`, `i()`
+- **Thin community `Community 607`** (3 nodes): `SecurityBadge-DPn55NRD.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 592`** (3 nodes): `SecurityBadge-DImoTTIB.js`, `b()`, `i()`
+- **Thin community `Community 608`** (3 nodes): `SecurityBadge-DTnB5S3Y.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 593`** (3 nodes): `SecurityBadge-DIYfmIAo.js`, `b()`, `i()`
+- **Thin community `Community 609`** (3 nodes): `SecurityBadge-DTt94LZ1.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 594`** (3 nodes): `SecurityBadge-DPn55NRD.js`, `b()`, `i()`
+- **Thin community `Community 610`** (3 nodes): `SecurityBadge-DUui6rrQ.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 595`** (3 nodes): `SecurityBadge-DTnB5S3Y.js`, `b()`, `i()`
+- **Thin community `Community 611`** (3 nodes): `SecurityBadge-Dv_s8ZCw.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 596`** (3 nodes): `SecurityBadge-DTt94LZ1.js`, `b()`, `i()`
+- **Thin community `Community 612`** (3 nodes): `SecurityBadge-gyTIH7hd.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 597`** (3 nodes): `SecurityBadge-DUui6rrQ.js`, `b()`, `i()`
+- **Thin community `Community 613`** (3 nodes): `SecurityBadge-HGRiXw2A.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 598`** (3 nodes): `SecurityBadge-Dv_s8ZCw.js`, `b()`, `i()`
+- **Thin community `Community 614`** (3 nodes): `SecurityBadge-L7aop0-Y.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 599`** (3 nodes): `SecurityBadge-gyTIH7hd.js`, `b()`, `i()`
+- **Thin community `Community 615`** (3 nodes): `SecurityBadge-OPuMe7Wd.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 600`** (3 nodes): `SecurityBadge-HGRiXw2A.js`, `b()`, `i()`
+- **Thin community `Community 616`** (3 nodes): `SecurityBadge-RTmvP8yi.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 601`** (3 nodes): `SecurityBadge-L7aop0-Y.js`, `b()`, `i()`
+- **Thin community `Community 617`** (3 nodes): `SecurityBadge-XBozU79m.js`, `b()`, `i()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 602`** (3 nodes): `SecurityBadge-OPuMe7Wd.js`, `b()`, `i()`
+- **Thin community `Community 619`** (3 nodes): `getSubjectStatus()`, `t()`, `ExamReports.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 603`** (3 nodes): `SecurityBadge-RTmvP8yi.js`, `b()`, `i()`
+- **Thin community `Community 628`** (3 nodes): `UsageSummaryCard.tsx`, `getProgressColor()`, `isSingleSchoolLimit()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 604`** (3 nodes): `SecurityBadge-XBozU79m.js`, `b()`, `i()`
+- **Thin community `Community 635`** (3 nodes): `getDefaultTab()`, `handleTabChange()`, `FinanceSettings.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 606`** (3 nodes): `getSubjectStatus()`, `t()`, `ExamReports.tsx`
+- **Thin community `Community 636`** (3 nodes): `MediaPicker.tsx`, `handleConfirmMultiple()`, `handleSelect()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 615`** (3 nodes): `UsageSummaryCard.tsx`, `getProgressColor()`, `isSingleSchoolLimit()`
+- **Thin community `Community 637`** (3 nodes): `idCardCanvasRenderer.runtime.test.ts`, `MockImage`, `.src()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 622`** (3 nodes): `getDefaultTab()`, `handleTabChange()`, `FinanceSettings.tsx`
+- **Thin community `Community 638`** (3 nodes): `indexHtmlCspBoot.test.ts`, `readIndexHtml()`, `scriptSrcAttributes()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 623`** (3 nodes): `MediaPicker.tsx`, `handleConfirmMultiple()`, `handleSelect()`
+- **Thin community `Community 639`** (2 nodes): `LoginLockout.php`, `LoginLockout`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 624`** (3 nodes): `idCardCanvasRenderer.runtime.test.ts`, `MockImage`, `.src()`
+- **Thin community `Community 640`** (2 nodes): `roll-slips.blade.php`, `reports.partials.bahij-font-faces`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 625`** (3 nodes): `indexHtmlCspBoot.test.ts`, `readIndexHtml()`, `scriptSrcAttributes()`
+- **Thin community `Community 1679`** (1 nodes): `Pick `needed` seats spread evenly across the hall.      When seats > students, u`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 626`** (2 nodes): `LoginLockout.php`, `LoginLockout`
+- **Thin community `Community 1680`** (1 nodes): `Validate seat/student data and derive movable assignment problem.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 627`** (2 nodes): `roll-slips.blade.php`, `reports.partials.bahij-font-faces`
+- **Thin community `Community 1681`** (1 nodes): `Fast deterministic seating for large exams (seconds, not minutes).`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1661`** (1 nodes): `Pick `needed` seats spread evenly across the hall.      When seats > students, u`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1662`** (1 nodes): `Validate seat/student data and derive movable assignment problem.`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1663`** (1 nodes): `Fast deterministic seating for large exams (seconds, not minutes).`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 1664`** (1 nodes): `Max students of a *single* class that can be seated with zero 8-directional`
+- **Thin community `Community 1682`** (1 nodes): `Max students of a *single* class that can be seated with zero 8-directional`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Ce()` connect `Community 6` to `Community 0`, `Community 2`, `Community 4`, `Community 5`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 15`, `Community 16`, `Community 17`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 23`, `Community 24`, `Community 25`, `Community 26`, `Community 27`, `Community 28`, `Community 29`, `Community 30`, `Community 31`, `Community 32`, `Community 33`, `Community 34`, `Community 35`, `Community 36`, `Community 40`, `Community 42`, `Community 43`, `Community 44`, `Community 49`, `Community 51`, `Community 52`, `Community 53`, `Community 54`, `Community 55`, `Community 56`, `Community 57`, `Community 58`, `Community 59`, `Community 60`, `Community 61`, `Community 62`, `Community 63`, `Community 64`, `Community 65`, `Community 66`, `Community 67`, `Community 68`, `Community 69`, `Community 70`, `Community 71`, `Community 72`, `Community 73`, `Community 74`, `Community 75`, `Community 76`, `Community 77`, `Community 78`, `Community 79`, `Community 80`, `Community 81`, `Community 82`, `Community 83`?**
-  _High betweenness centrality (0.092) - this node is a cross-community bridge._
-- **Why does `String()` connect `Community 4` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 15`, `Community 16`, `Community 17`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 23`, `Community 24`, `Community 25`, `Community 26`, `Community 27`, `Community 28`, `Community 29`, `Community 30`, `Community 31`, `Community 32`, `Community 33`, `Community 34`, `Community 35`, `Community 36`, `Community 37`, `Community 38`, `Community 39`, `Community 40`, `Community 41`, `Community 42`, `Community 43`, `Community 44`, `Community 45`, `Community 46`, `Community 48`, `Community 49`?**
-  _High betweenness centrality (0.060) - this node is a cross-community bridge._
-- **Why does `E()` connect `Community 5` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 15`, `Community 16`, `Community 17`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 23`, `Community 24`, `Community 25`, `Community 26`, `Community 27`, `Community 28`, `Community 29`, `Community 30`, `Community 31`, `Community 32`, `Community 33`, `Community 34`, `Community 35`, `Community 36`, `Community 37`, `Community 38`, `Community 39`, `Community 40`, `Community 41`, `Community 42`, `Community 43`, `Community 44`, `Community 45`, `Community 51`, `Community 52`, `Community 53`, `Community 54`, `Community 55`, `Community 56`, `Community 57`, `Community 58`, `Community 59`, `Community 60`, `Community 61`, `Community 62`, `Community 63`, `Community 64`, `Community 65`, `Community 66`, `Community 67`, `Community 68`, `Community 69`, `Community 70`, `Community 71`, `Community 72`, `Community 73`, `Community 74`, `Community 75`, `Community 76`, `Community 77`, `Community 78`, `Community 79`, `Community 80`, `Community 81`, `Community 82`, `Community 83`?**
+- **Why does `Ce()` connect `Community 6` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 15`, `Community 16`, `Community 17`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 23`, `Community 24`, `Community 25`, `Community 26`, `Community 27`, `Community 28`, `Community 29`, `Community 30`, `Community 31`, `Community 32`, `Community 33`, `Community 34`, `Community 35`, `Community 39`, `Community 41`, `Community 42`, `Community 43`, `Community 49`, `Community 50`, `Community 51`, `Community 52`, `Community 53`, `Community 54`, `Community 55`, `Community 56`, `Community 57`, `Community 58`, `Community 59`, `Community 60`, `Community 61`, `Community 62`, `Community 63`, `Community 64`, `Community 65`, `Community 66`, `Community 67`, `Community 68`, `Community 69`, `Community 70`, `Community 71`, `Community 72`, `Community 73`, `Community 74`, `Community 75`, `Community 76`, `Community 77`, `Community 78`, `Community 79`, `Community 80`, `Community 81`, `Community 82`, `Community 83`, `Community 84`, `Community 85`, `Community 86`, `Community 87`, `Community 88`?**
+  _High betweenness centrality (0.074) - this node is a cross-community bridge._
+- **Why does `A()` connect `Community 0` to `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 15`, `Community 16`, `Community 17`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 23`, `Community 24`, `Community 25`, `Community 26`, `Community 27`, `Community 28`, `Community 29`, `Community 30`, `Community 31`, `Community 32`, `Community 33`, `Community 34`, `Community 35`, `Community 36`, `Community 38`, `Community 39`, `Community 41`, `Community 42`, `Community 43`, `Community 44`, `Community 47`, `Community 48`, `Community 50`, `Community 51`, `Community 52`, `Community 53`, `Community 54`, `Community 55`, `Community 56`, `Community 57`, `Community 58`, `Community 59`, `Community 60`, `Community 61`, `Community 62`, `Community 63`, `Community 64`, `Community 65`, `Community 66`, `Community 67`, `Community 68`, `Community 69`, `Community 70`, `Community 71`, `Community 72`, `Community 73`, `Community 74`, `Community 75`, `Community 76`, `Community 77`, `Community 78`, `Community 79`, `Community 80`, `Community 81`, `Community 82`, `Community 83`, `Community 84`, `Community 85`, `Community 86`, `Community 87`, `Community 88`, `Community 100`, `Community 101`?**
+  _High betweenness centrality (0.059) - this node is a cross-community bridge._
+- **Why does `String()` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 15`, `Community 16`, `Community 17`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 23`, `Community 24`, `Community 25`, `Community 26`, `Community 27`, `Community 28`, `Community 29`, `Community 30`, `Community 31`, `Community 32`, `Community 33`, `Community 34`, `Community 35`, `Community 36`, `Community 37`, `Community 38`, `Community 39`, `Community 40`, `Community 41`, `Community 42`, `Community 43`, `Community 44`, `Community 46`, `Community 47`, `Community 95`?**
   _High betweenness centrality (0.046) - this node is a cross-community bridge._
 - **Are the 8662 inferred relationships involving `Ce()` (e.g. with `ia()` and `ia()`) actually correct?**
   _`Ce()` has 8662 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 5393 inferred relationships involving `t()` (e.g. with `es()` and `es()`) actually correct?**
-  _`t()` has 5393 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 5394 inferred relationships involving `t()` (e.g. with `es()` and `es()`) actually correct?**
+  _`t()` has 5394 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 5388 inferred relationships involving `t()` (e.g. with `es()` and `es()`) actually correct?**
   _`t()` has 5388 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 5082 inferred relationships involving `E()` (e.g. with `.preview()` and `.bodyTextToSafeHtml()`) actually correct?**

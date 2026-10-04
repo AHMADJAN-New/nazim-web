@@ -98,6 +98,24 @@ class GraduationCertificatesTest extends TestCase
 
         $user = $this->authenticate([], ['organization_id' => $org->id], $org, $school);
 
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        setPermissionsTeamId($org->id);
+
+        foreach (['exams.update', 'exams.reopen'] as $permissionName) {
+            [$resource, $action] = explode('.', $permissionName, 2);
+            $permission = \App\Models\Permission::firstOrCreate([
+                'name' => $permissionName,
+                'guard_name' => 'web',
+                'organization_id' => $org->id,
+            ], [
+                'resource' => $resource,
+                'action' => $action,
+            ]);
+            $user->givePermissionTo($permission);
+        }
+
+        setPermissionsTeamId(null);
+
         // Attempt to change exam status from completed to in_progress
         $response = $this->jsonAs($user, 'POST', "/api/exams/{$exam->id}/status", [
             'status' => Exam::STATUS_IN_PROGRESS,

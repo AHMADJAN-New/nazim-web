@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Exam;
 use App\Models\AcademicYear;
+use App\Models\Exam;
 use App\Models\GraduationBatch;
-use App\Services\Notifications\NotificationService;
 use App\Services\ActivityLogService;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,8 +17,8 @@ class ExamController extends Controller
     public function __construct(
         private NotificationService $notificationService,
         private ActivityLogService $activityLogService
-    ) {
-    }
+    ) {}
+
     /**
      * Get all exams for the organization
      */
@@ -27,20 +27,21 @@ class ExamController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.read')) {
+            if (! $user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.read: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -64,12 +65,13 @@ class ExamController extends Controller
 
             return response()->json($exams);
         } catch (\Exception $e) {
-            Log::error('Error fetching exams: ' . $e->getMessage(), [
+            Log::error('Error fetching exams: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'user_id' => $user->id,
                 'organization_id' => $profile->organization_id,
             ]);
-            return response()->json(['error' => 'Failed to fetch exams: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to fetch exams: '.$e->getMessage()], 500);
         }
     }
 
@@ -81,20 +83,21 @@ class ExamController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.create')) {
+            if (! $user->hasPermissionTo('exams.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.create: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.create: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -110,12 +113,12 @@ class ExamController extends Controller
         // Validate academic year belongs to organization
         $academicYear = AcademicYear::find($validated['academic_year_id']);
         $currentSchoolId = $this->getCurrentSchoolId($request);
-        if (!$academicYear || $academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
+        if (! $academicYear || $academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
             return response()->json(['error' => 'Academic year does not belong to your school'], 403);
         }
 
         // Validate date range consistency
-        if (!empty($validated['start_date']) && !empty($validated['end_date'])) {
+        if (! empty($validated['start_date']) && ! empty($validated['end_date'])) {
             $startDate = \Carbon\Carbon::parse($validated['start_date']);
             $endDate = \Carbon\Carbon::parse($validated['end_date']);
             if ($endDate->lt($startDate)) {
@@ -170,7 +173,7 @@ class ExamController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log exam creation: ' . $e->getMessage());
+            Log::warning('Failed to log exam creation: '.$e->getMessage());
         }
 
         return response()->json($exam, 201);
@@ -184,20 +187,21 @@ class ExamController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.read')) {
+            if (! $user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.read: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -209,15 +213,16 @@ class ExamController extends Controller
                 ->whereNull('deleted_at')
                 ->first();
         } catch (\Exception $e) {
-            Log::error('Error fetching exam: ' . $e->getMessage(), [
+            Log::error('Error fetching exam: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'exam_id' => $id,
                 'user_id' => $user->id,
             ]);
-            return response()->json(['error' => 'Failed to fetch exam: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Failed to fetch exam: '.$e->getMessage()], 500);
         }
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -232,20 +237,21 @@ class ExamController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.update')) {
+            if (! $user->hasPermissionTo('exams.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.update: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -256,7 +262,7 @@ class ExamController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -264,7 +270,7 @@ class ExamController extends Controller
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot modify a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -280,7 +286,7 @@ class ExamController extends Controller
         // Validate academic year if being changed
         if (isset($validated['academic_year_id'])) {
             $academicYear = AcademicYear::find($validated['academic_year_id']);
-            if (!$academicYear || $academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
+            if (! $academicYear || $academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
                 return response()->json(['error' => 'Academic year does not belong to your school'], 403);
             }
         }
@@ -288,7 +294,7 @@ class ExamController extends Controller
         // Validate date range
         $startDate = $validated['start_date'] ?? $exam->start_date;
         $endDate = $validated['end_date'] ?? $exam->end_date;
-        
+
         if ($startDate && $endDate) {
             $start = \Carbon\Carbon::parse($startDate);
             $end = \Carbon\Carbon::parse($endDate);
@@ -299,20 +305,20 @@ class ExamController extends Controller
 
         // Validate status transition if status is being changed
         if (isset($validated['status']) && $validated['status'] !== $exam->status) {
-            if (!$exam->canTransitionTo($validated['status'])) {
+            if (! $exam->canTransitionTo($validated['status'])) {
                 return response()->json([
                     'error' => "Cannot transition from '{$exam->status}' to '{$validated['status']}'",
-                    'allowed_transitions' => Exam::getStatusTransitionRules()[$exam->status] ?? []
+                    'allowed_transitions' => Exam::getStatusTransitionRules()[$exam->status] ?? [],
                 ], 422);
             }
         }
 
         // Track old status for status change notification
         $oldStatus = $exam->status;
-        
+
         // Capture old values before update
         $oldValues = $exam->only(['name', 'academic_year_id', 'description', 'start_date', 'end_date', 'status']);
-        
+
         $exam->fill($validated);
         $exam->save();
 
@@ -368,7 +374,7 @@ class ExamController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log exam update: ' . $e->getMessage());
+            Log::warning('Failed to log exam update: '.$e->getMessage());
         }
 
         return response()->json($exam);
@@ -382,20 +388,21 @@ class ExamController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.delete')) {
+            if (! $user->hasPermissionTo('exams.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -406,7 +413,7 @@ class ExamController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -414,7 +421,7 @@ class ExamController extends Controller
         if ($exam->hasResults()) {
             return response()->json([
                 'error' => 'Cannot delete an exam that has results entered. Please delete the results first or archive the exam.',
-                'has_results' => true
+                'has_results' => true,
             ], 422);
         }
 
@@ -422,7 +429,7 @@ class ExamController extends Controller
         if ($exam->hasTimetable() && $exam->status !== Exam::STATUS_DRAFT) {
             return response()->json([
                 'error' => 'Cannot delete an exam with scheduled timetable. Please delete the timetable first or archive the exam.',
-                'has_timetable' => true
+                'has_timetable' => true,
             ], 422);
         }
 
@@ -430,7 +437,7 @@ class ExamController extends Controller
         if ($exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot delete a completed or archived exam',
-                'status' => $exam->status
+                'status' => $exam->status,
             ], 422);
         }
 
@@ -449,7 +456,7 @@ class ExamController extends Controller
                 request: request()
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log exam deletion: ' . $e->getMessage());
+            Log::warning('Failed to log exam deletion: '.$e->getMessage());
         }
 
         return response()->noContent();
@@ -463,20 +470,21 @@ class ExamController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.update')) {
+            if (! $user->hasPermissionTo('exams.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.update: " . $e->getMessage());
+            Log::warning('Permission check failed for exams.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -487,7 +495,7 @@ class ExamController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
@@ -498,12 +506,31 @@ class ExamController extends Controller
         $newStatus = $validated['status'];
 
         // Validate transition
-        if (!$exam->canTransitionTo($newStatus)) {
+        if (! $exam->canTransitionTo($newStatus)) {
             return response()->json([
                 'error' => "Cannot transition from '{$exam->status}' to '{$newStatus}'",
                 'current_status' => $exam->status,
-                'allowed_transitions' => Exam::getStatusTransitionRules()[$exam->status] ?? []
+                'allowed_transitions' => Exam::getStatusTransitionRules()[$exam->status] ?? [],
             ], 422);
+        }
+
+        // Reopening a completed exam for marks entry requires exams.reopen
+        if ($exam->status === Exam::STATUS_COMPLETED && $newStatus === Exam::STATUS_IN_PROGRESS) {
+            try {
+                if (! $user->hasPermissionTo('exams.reopen')) {
+                    return response()->json([
+                        'error' => 'This action is unauthorized',
+                        'required_permission' => 'exams.reopen',
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Permission check failed for exams.reopen: '.$e->getMessage());
+
+                return response()->json([
+                    'error' => 'This action is unauthorized',
+                    'required_permission' => 'exams.reopen',
+                ], 403);
+            }
         }
 
         // Prevent rolling back from completed status if graduation batches exist
@@ -516,7 +543,7 @@ class ExamController extends Controller
                 return response()->json([
                     'error' => 'Cannot change exam status because graduation batches have been created for this exam',
                     'graduation_batch_count' => $graduationBatchCount,
-                    'message' => 'Delete all graduation batches first before changing exam status'
+                    'message' => 'Delete all graduation batches first before changing exam status',
                 ], 422);
             }
         }
@@ -524,13 +551,13 @@ class ExamController extends Controller
         // Additional validation for specific transitions
         if ($newStatus === Exam::STATUS_SCHEDULED) {
             // Require start and end dates for scheduling
-            if (!$exam->start_date || !$exam->end_date) {
+            if (! $exam->start_date || ! $exam->end_date) {
                 return response()->json([
                     'error' => 'Cannot schedule exam without start and end dates',
                     'missing_fields' => [
-                        'start_date' => !$exam->start_date,
-                        'end_date' => !$exam->end_date,
-                    ]
+                        'start_date' => ! $exam->start_date,
+                        'end_date' => ! $exam->end_date,
+                    ],
                 ], 422);
             }
         }
@@ -539,18 +566,18 @@ class ExamController extends Controller
             // Check if exam has classes and subjects assigned
             $classCount = $exam->examClasses()->whereNull('deleted_at')->count();
             $subjectCount = $exam->examSubjects()->whereNull('deleted_at')->count();
-            
+
             if ($classCount === 0) {
                 return response()->json([
                     'error' => 'Cannot start exam without any classes assigned',
-                    'class_count' => 0
+                    'class_count' => 0,
                 ], 422);
             }
-            
+
             if ($subjectCount === 0) {
                 return response()->json([
                     'error' => 'Cannot start exam without any subjects assigned',
-                    'subject_count' => 0
+                    'subject_count' => 0,
                 ], 422);
             }
         }
@@ -572,7 +599,7 @@ class ExamController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log exam status change: ' . $e->getMessage());
+            Log::warning('Failed to log exam status change: '.$e->getMessage());
         }
 
         $exam->load(['academicYear']);
@@ -616,7 +643,7 @@ class ExamController extends Controller
 
         return response()->json([
             'message' => "Exam status changed to '{$newStatus}'",
-            'exam' => $exam
+            'exam' => $exam,
         ]);
     }
 }

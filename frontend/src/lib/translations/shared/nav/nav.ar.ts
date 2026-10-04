@@ -95,6 +95,7 @@ export default {
     markAttendance: "تسجيل الحضور",
     courseCertificates: "شهادات الدورة",
     leaveReports: "تقارير الإجازات",
+    leaveApprovals: "الموافقة والرفض",
     events: "الأحداث",
     "events.all": "جميع الأحداث",
     "events.checkin": "تسجيل الدخول",

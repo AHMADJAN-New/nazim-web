@@ -43,6 +43,7 @@ const AlertDialogContent = React.forwardRef<
           className
         )}
         {...props}
+        translate="no"
       />
     </AlertDialogPortal>
   );

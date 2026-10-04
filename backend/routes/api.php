@@ -1404,7 +1404,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
 
         // Leave Requests (requires leave_management feature)
         Route::middleware(['feature:leave_management'])->group(function () {
-            Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
+            Route::post('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
             Route::get('/leave-requests', [LeaveRequestController::class, 'index']);
             Route::get('/leave-requests/{leave_request}', [LeaveRequestController::class, 'show']);
             Route::middleware(['subscription:write'])->group(function () {

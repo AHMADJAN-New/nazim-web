@@ -101,6 +101,7 @@ export default {
     markAttendance: "حاضري واخلئ ",
     courseCertificates: "د دوره/ کورس سندونه",
     leaveReports: "د رخصتۍ راپورونه",
+    leaveApprovals: "تصویب او رد",
     events: "جلسې/ غونډې",
     "events.all": "ټولې جلسې/ غونډې",
     "events.checkin": "ننوتل",

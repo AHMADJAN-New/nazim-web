@@ -692,6 +692,10 @@ export const permissionsManagementCatalogPs: PermissionsManagementCatalog = {
       "actionLabel": "ړنګول",
       "description": "ړنګول — ازموینې"
     },
+    "exams.reopen": {
+      "actionLabel": "بیا پرانیستل",
+      "description": "بشپړې شوې ازموینې بیا په جریان کې پرانیستل د نمرو ثبت لپاره"
+    },
     "exams.enroll_students": {
       "actionLabel": "زده‌کوونکي نوم لیکنه",
       "description": "زده‌کوونکي نوم لیکنه — ازموینې"

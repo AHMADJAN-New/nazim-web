@@ -99,6 +99,8 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     // Set direction on html element - this affects the entire page
     document.documentElement.setAttribute('dir', direction);
     document.documentElement.setAttribute('lang', language);
+    document.documentElement.setAttribute('translate', 'no');
+    document.documentElement.classList.add('notranslate');
     
     // Update body class for font
     document.body.className = document.body.className
