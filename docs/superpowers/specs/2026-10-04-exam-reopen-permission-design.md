@@ -5,11 +5,11 @@
 
 ## Goal
 
-Allow authorized users to reopen a **completed** exam to **in_progress** so marks can be entered again. Default access is limited to organization admins via a dedicated permission.
+Allow authorized users to reopen a **completed** exam to **in_progress** so marks can be entered again. Default access is given to organization admins and school admins via a dedicated permission.
 
 ## Decision
 
-Use permission `exams.reopen` (not a hard role check). Assign by default only to the `organization_admin` role. School admins and other roles do not get it unless granted explicitly later.
+Use permission `exams.reopen` (not a hard role check). Assign by default to `organization_admin` and school `admin` roles.
 
 ## Behavior
 
@@ -28,8 +28,7 @@ Use permission `exams.reopen` (not a hard role check). Assign by default only to
 ### Seeding / migration
 
 - Add `reopen` to the `exams` actions in `PermissionSeeder`.
-- Treat `exams.reopen` as school-admin restricted (same pattern as org-only permissions).
-- Migration creates the permission and assigns it only to `organization_admin` roles for existing orgs.
+- Migration creates the permission and assigns it to `organization_admin` and `admin` roles for existing orgs.
 
 ## Out of scope
 

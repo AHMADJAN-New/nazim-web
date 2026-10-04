@@ -38,7 +38,7 @@ Query keys include `profile?.organization_id`, `profile?.default_school_id`. Use
 ## Permissions
 
 - `exams.read`, `exams.create`, `exams.update`, `exams.delete`, `exams.reopen` — use for menu visibility and backend checks
-- `exams.reopen` — reopen completed exams to in_progress (default: organization_admin only)
+- `exams.reopen` — reopen completed exams to in_progress (default: organization_admin and admin)
 - Use `useHasPermission('exams.read')` etc. in main app (not platform admin)
 
 ## Pages

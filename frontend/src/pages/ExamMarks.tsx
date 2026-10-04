@@ -194,8 +194,14 @@ export function ExamMarks() {
   const { data: examClasses } = useExamClasses(selectedExamId);
   const { data: examSubjects } = useExamSubjects(selectedExamId, selectedClassId);
   const { data: allExamSubjects } = useExamSubjects(selectedExamId);
-  const { data: examStudents } = useExamStudents(selectedExamId, selectedClassId);
-  const { data: examResults } = useExamResults(selectedExamId, selectedSubjectId);
+  const { data: examStudents } = useExamStudents(
+    selectedClassId ? selectedExamId : undefined,
+    selectedClassId || undefined
+  );
+  const { data: examResults } = useExamResults(
+    selectedSubjectId ? selectedExamId : undefined,
+    selectedSubjectId || undefined
+  );
 
   const saveResult = useSaveExamResult();
   const bulkSaveResults = useBulkSaveExamResults();

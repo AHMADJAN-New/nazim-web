@@ -742,11 +742,13 @@ export const useRemoveStudentFromExam = () => {
 
 export const useExamResults = (examId?: string, examSubjectId?: string, examStudentId?: string) => {
   const { user, profile } = useAuth();
+  // Backend requires subject or student scope to avoid multi‑MB full-exam payloads.
+  const hasScopedFilter = !!examSubjectId || !!examStudentId;
 
   return useQuery({
     queryKey: ['exam-results', examId, examSubjectId, examStudentId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
-      if (!user || !profile) return [];
+      if (!user || !profile || !hasScopedFilter) return [];
       const params: { exam_id?: string; exam_subject_id?: string; exam_student_id?: string } = {};
       if (examId) params.exam_id = examId;
       if (examSubjectId) params.exam_subject_id = examSubjectId;
@@ -755,7 +757,7 @@ export const useExamResults = (examId?: string, examSubjectId?: string, examStud
       const apiExamResults = await examResultsApi.list(params);
       return (apiExamResults as ExamApi.ExamResult[]).map(mapExamResultApiToDomain);
     },
-    enabled: !!user && !!profile && (!!examId || !!examSubjectId || !!examStudentId),
+    enabled: !!user && !!profile && hasScopedFilter,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

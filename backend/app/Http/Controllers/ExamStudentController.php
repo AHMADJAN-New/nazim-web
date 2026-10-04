@@ -46,15 +46,11 @@ class ExamStudentController extends Controller
         }
 
         $query = ExamStudent::with([
-            'examClass.classAcademicYear.class',
-            'studentAdmission.student',
+            'examClass.classAcademicYear.class:id,name,organization_id,school_id',
+            'studentAdmission.student:id,organization_id,school_id,full_name,admission_no,student_code,card_number,father_name,gender,admission_year,guardian_name,guardian_phone',
         ])->whereNull('deleted_at')
-            ->where('organization_id', $profile->organization_id);
-
-        // Strict school scoping via parent exam
-        $query->whereHas('exam', function ($q) use ($currentSchoolId) {
-            $q->where('school_id', $currentSchoolId)->whereNull('deleted_at');
-        });
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         $examAcademicYearId = null;
         if ($request->filled('exam_id')) {

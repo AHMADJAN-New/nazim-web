@@ -42,12 +42,15 @@ class ExamSubjectController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $query = ExamSubject::with(['subject', 'classSubject.classAcademicYear', 'examClass'])
+        $query = ExamSubject::with([
+            'subject:id,organization_id,school_id,name,code,description,is_active,created_at,updated_at,deleted_at',
+            'classSubject:id,class_subject_template_id,class_academic_year_id,subject_id,organization_id,school_id,teacher_id,room_id,credits,hours_per_week,is_required,notes,created_at,updated_at,deleted_at',
+            'classSubject.classAcademicYear:id,class_id,academic_year_id,organization_id,school_id,section_name',
+            'examClass:id,exam_id,class_academic_year_id,organization_id,school_id',
+        ])
             ->whereNull('deleted_at')
-            ->where('organization_id', $profile->organization_id);
-        $query->whereHas('exam', function ($q) use ($currentSchoolId) {
-            $q->where('school_id', $currentSchoolId);
-        });
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         if ($request->filled('exam_id')) {
             $query->where('exam_id', $request->exam_id);
